@@ -28,7 +28,6 @@ function [behaviour,position] = import_and_align_Masa_VR_Bonsai(StimulusName,opt
 
 % Program to import bonsai logs and eye data and align to ePhys data and
 % align the data based on the delay between quad and photodioide signal
-% Everything is resampled to 60Hz
 
 % Find Bonsai files
 bonsai_files_names = options(1).bonsai_files_names;
@@ -36,13 +35,10 @@ bonsai_files_names = options(1).bonsai_files_names;
 
 photodiode_path = bonsai_files_names(contains(bonsai_files_names,'PDAsync'));
 peripheral_path = bonsai_files_names(contains(bonsai_files_names,'WheelLog'));
+% eyedata_path = bonsai_files_names(contains(bonsai_files_names,'EyeLog'));
 trial_path = bonsai_files_names(contains(bonsai_files_names,'Trial_info'));
 reward_path = bonsai_files_names(contains(bonsai_files_names,'Reward'));
 lick_performance_path = bonsai_files_names(contains(bonsai_files_names,'Lick_Performance'));
-
-% DLC Eyedata pupil size
-% eyedata_path = bonsai_files_names(contains(bonsai_files_names,'EyeLog'));
-
 BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 
 

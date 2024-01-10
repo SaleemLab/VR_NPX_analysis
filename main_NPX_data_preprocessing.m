@@ -12,7 +12,9 @@
 
 
 %% Set the data folders and processing parameters
-addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
+% addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 % addpath('Z:\ibn-vision\USERS\Masa\code\Masa_utility')
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\NPXAnalysis\NPXAnalysis2022'));
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\visual_analysis'));
@@ -20,39 +22,52 @@ addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\LFP_analysis'));
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\spikes'));
 
-if ismac
-    ROOTPATH = '/Users/s.solomon/Filestore/Research2/ibn-vision';
-else
 %     ROOTPATH = 'X:\ibn-vision';
-    ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
-%     ROOTPATH = '/research';
-end
+ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-SUBJECTS = {'M23017','M23028','M23029'};
+
+% SUBJECTS = {'M23017','M23028','M23029'};
+SUBJECTS = {'M23087'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS);
-Stimulus_type = 'Masa2tracks';
+
 
 %% import and align and store Bonsai data
+
+% maybe import_and_align_Bonsai_batch.m eventually?
+% import_and_align_Bonsai_batch(experiment_info,Stimulus_type)
+
+% Stimulus_type = 'OpenField';
 Stimulus_type = 'Masa2tracks';
-for nsession =4:length(experiment_info)
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
-            session_info(n).probe(nprobe).task_type = stimulus_name{n};
-        end
+%         for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
+%             session_info(n).probe(nprobe).task_type = stimulus_name{n};
+%         end
 
         if length(session_info(n).probe) >1
             align_probes_NX1(session_info(n).probe);
         end
 
         options = session_info(n).probe(1);
-        [Behaviour,position] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},session_info(n).probe);
-        
-        if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis')) == 0
-            mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
+        if contains(Stimulus_type,'OpenField')
+            [Behaviour,~] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
+        elseif contains(Stimulus_type,'Masa2tracks')
+            [Behaviour,position] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},session_info(n).probe);
+
+        elseif contains(Stimulus_type,'Diao')
+            
+        elseif contains(Stimulus_type,'Edd')
+            
+        else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
+
         end
-        cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
+
+        if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION)) == 0
+            mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION))
+        end
+        cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION))
    
         save(sprintf('bonsai_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type)),'Behaviour')
         save(sprintf('extracted_position%s.mat',erase(stimulus_name{n},Stimulus_type)),'position')
@@ -185,6 +200,26 @@ for nsession =1:length(experiment_info)
     end
 end
 
+%% get cell types (can be used without cell explorer)
+%%%%% Will work on it later
+
+for iunit = 1:numel(goodUnits)
+    [ccg, t] = CCG(goodUnits(iunit).spike_times, ones(size(goodUnits(iunit).spike_times)),...
+        'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
+    goodUnits(iunit).acg = ccg;
+    fit_params_out = fit_ACG(ccg,false);
+
+    goodUnits(iunit).tau_rise = fit_params_out.acg_tau_rise;
+end
+
+narrow_idx = find([goodUnits.duration]<=0.45);
+wide_idx = find([goodUnits.duration]>0.45 & [goodUnits.tau_rise]>6);
+pyr_idx = find(~ismember(1:numel(goodUnits), [narrow_idx,wide_idx]));
+
+[goodUnits.cellType] = deal(nan);
+[goodUnits(pyr_idx).cellType] = deal(1);
+[goodUnits(narrow_idx).cellType] = deal(2);
+[goodUnits(wide_idx).cellType] = deal(3);
 
 %% ripple power during immobility and during running (not complete as of 22/09/23)
 Stimulus_type = 'RUN'; % extract LFP during RUN
