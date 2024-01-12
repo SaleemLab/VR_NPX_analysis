@@ -16,7 +16,7 @@ ROOTPATH = 'Z:\ibn-vision';
 if contains(options,'bilateral')
     EXPERIMENT_INFO_PATH = 'Z:\ibn-vision\USERS\Masa\recording_info';
 else
-
+    
 end
 
 
@@ -28,8 +28,8 @@ nexperiment = 1;
 for nsubject = 1:length(SUBJECTS)
     if contains(options,'bilateral')
         stimuli_info = readtable('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',SUBJECTS{nsubject});
-    else
-
+    elseif contains(options,'V1-MEC')
+           stimuli_info = readtable(['Z:\ibn-vision\USERS\Diao\ephys_recording_info\session_stimuli_table_DT'],'Sheet',SUBJECTS{nsubject});
     end
 
     all_sessions_this_animal = unique(stimuli_info.date);
@@ -37,6 +37,9 @@ for nsubject = 1:length(SUBJECTS)
         stimuli_info.probe_number = cellstr(num2str(stimuli_info.probe_number));
         if contains(options,'bilateral')
             stimuli_info.probe_hemisphere = cellstr(num2str(stimuli_info.probe_hemisphere));
+        elseif contains(options,'V1-MEC')
+            stimuli_info.V1 = cellstr(num2str(stimuli_info.V1));
+            stimuli_info.MEC = cellstr(num2str(stimuli_info.MEC));
         end
     end
 
@@ -82,7 +85,12 @@ for nsubject = 1:length(SUBJECTS)
 
             else 
                 this_stimulus = StimulusName{nstimuli};
-                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.csv']));
+                if isequal(this_stimulus , 'Track')
+                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '_*.csv']));
+                else
+                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '*.csv']));
+                end
+                
                 
                 if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.bin'])))
                     bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.bin']));
@@ -93,6 +101,9 @@ for nsubject = 1:length(SUBJECTS)
             probe_id = str2num(experiment_info(nexperiment).probe_number{nstimuli});
             if contains(options,'bilateral')
                 probe_hemisphere = str2num(experiment_info(nexperiment).probe_hemisphere{nstimuli});
+            elseif contains(options,'V1-MEC')
+                probe_V1 = str2num(experiment_info(nexperiment).probe_V1{nstimuli});
+                probe_MEC = str2num(experiment_info(nexperiment).probe_MEC{nstimuli});
             end
 
             % If it is normal 
@@ -123,8 +134,11 @@ for nsubject = 1:length(SUBJECTS)
 
                 if contains(options,'bilateral')
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_hemisphere = probe_hemisphere;
+                elseif contains(options,'V1-MEC')
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_V1 = probe_V1;
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_MEC = probe_MEC;
                 end
-                
+
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).MAP_FILE = ...
                     fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id),'.ap_kilosortChanMap.mat']);
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).KS_CATGT_FNAME =...
@@ -143,16 +157,19 @@ for nsubject = 1:length(SUBJECTS)
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_DATAPATH = KS_DATAPATH;
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).gFileNum = EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli);
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).probe_id = probe_id(nprobe);
-                    
+
                     if contains(options,'bilateral')
                         experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).probe_hemisphere = probe_hemisphere(nprobe);
+                    elseif contains(options,'V1-MEC')
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_V1 = probe_V1;
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_MEC = probe_MEC;
                     end
 
                     fullfile(experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_DATAPATH...
                         ,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g',num2str(probe_id(nprobe)),'_tcat.imec0.ap_kilosortChanMap.mat']);
 
-                experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).MAP_FILE = ...
-                    fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id(nprobe)),'.ap_kilosortChanMap.mat']);
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).MAP_FILE = ...
+                        fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id(nprobe)),'.ap_kilosortChanMap.mat']);
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_CATGT_FNAME =...
                         fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'.log']);
 
