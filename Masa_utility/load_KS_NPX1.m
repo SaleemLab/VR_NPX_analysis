@@ -1,4 +1,5 @@
 function [clusters chan_config sorted_config] = load_KS_NPX1(options,column,varargin)
+% Function used to load KS cluster data
 
 [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);
 

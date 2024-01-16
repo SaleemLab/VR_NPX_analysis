@@ -25,110 +25,93 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
+all_SUBJECTS = {'M23017','M23028','M23029','M23087'};
+for n = 1:length(all_SUBJECTS)
+    % extract information about this animal
+    SUBJECTS = {all_SUBJECTS{n}};
+    experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 
-% SUBJECTS = {'M23017','M23028','M23029'};
-SUBJECTS = {'M23087'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS);
-
-
-%% import and align and store Bonsai and spike data
-
-% maybe import_and_align_Bonsai_batch.m eventually?
-% import_and_align_Bonsai_batch(experiment_info,Stimulus_type)
-
-% Stimulus_type = 'OpenField';
-Stimulus_type = 'Masa2tracks';
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    for n = 1:length(session_info) % just in case there might be multiple recording for the same stimulus type (e.g. PRE RUN POST Masa2tracks)
-
-        if length(session_info(n).probe) >1
-            align_probes_NX1(session_info(n).probe);
-        end
-
-        options = session_info(n).probe(1);
-        if contains(Stimulus_type,'OpenField')
-            [Behaviour,~] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
-        elseif contains(Stimulus_type,'Masa2tracks')
-           [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
-
-        elseif contains(Stimulus_type,'Diao')
-            
-        elseif contains(Stimulus_type,'Edd')
-            
-        else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
-          [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai(stimulus_name{n},options);
-
-        end
-
-        if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION)) == 0
-            mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION))
-        end
-
-        
-        if contains(Stimulus_type,'Masa2tracks')
-            % If Masa2tracks, PRE, RUN and/or POST saved in one folder
-            if exist((fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,Stimulus_type))) == 0
-                mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,Stimulus_type))
-            end
-
-            save(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,Stimulus_type,...
-                sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))),'Behaviour')
-            save(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,Stimulus_type,...
-                sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},Stimulus_type))),'Task_info')
-            save(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,Stimulus_type,...
-                sprintf('extracted_peripherals%s.mat',erase(stimulus_name{n},Stimulus_type))),'Peripherals')
-        else
-            if exist((fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,stimulus_name{n}))) == 0
-                mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,stimulus_name{n}))
-            end
-
-            save(sprintf('extracted_behaviour%s.mat','Behaviour'))
-            save(sprintf('extracted_Task_info%s.mat','Task_info'))
-            save(sprintf('extracted_peripherals%s.mat','Peripherals'))
-        end
-
-
-%         save(sprintf('extracted_position%s.mat',erase(stimulus_name{n},Stimulus_type)),'position')
-        
-%         if contains(stimulus_name{n},'RUN')
-%             lap_times = extract_laps_masa(1,Behaviour,position)
-%             save extracted_laps lap_times
-%         end
-
-
-        % figure
-        % hold on
-        % plot(MousePos.sglxTime,MousePos.pos)
-        % scatter(MousePos.stimuli_onset(MousePos.stimuli_track == 1),1000*MousePos.stimuli_track(MousePos.stimuli_track == 1),'r')
-        % scatter(MousePos.stimuli_onset(MousePos.stimuli_track == 2),100*MousePos.stimuli_track(MousePos.stimuli_track == 2),'b')
+    if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis')) == 0
+        mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis'))
     end
+    % save experiment info into analysis folder
+    save(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis','experiment_info'),'experiment_info')
+    
+    % For each session, loop through all stimuli
+    for nsession = 1:length(experiment_info)
+        for nstimuli = 1:length(experiment_info(nsession).stimuli_type)
+            clear session_info
+%             for nprobe = 1:length(experiment_info(nsession).stimuli_type(nstimuli).probe)
+%                 session_info(nprobe) = experiment_info(nsession).stimuli_type(nstimuli).probe(nprobe);
+%             end
 
+            session_info = experiment_info(nsession).stimuli_type(nstimuli);
+
+            if exist(session_info.probe(1).ANALYSIS_DATAPATH) == 0
+                mkdir(session_info.probe(1).ANALYSIS_DATAPATH)
+            end
+            
+            stimulus_name = session_info.probe(1).StimulusName;
+            if contains(stimulus_name,'Masa2tracks')
+                stimulus_name = 'Masa2tracks';
+            end
+
+            if contains(session_info.probe(1).StimulusName,'Masa2tracks')
+                save(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,sprintf('session_info%s',erase(session_info.probe(1).StimulusName,'Masa2tracks'))),'session_info')
+            else
+                save(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,'session_info'),'session_info')
+            end
+
+        end
+    end
 end
 
-% 
-% Stimulus_type = 'Masa2tracks_POST';
-% for nsession =5:length(experiment_info)
-%     session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-%     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-%     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-%         for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
-%             session_info(n).probe(nprobe).task_type = stimulus_name{n};
-%         end
-% 
-%         if length(session_info(n).probe) >1
-%             align_probes_NX1(session_info(n).probe);
-%         end
-%     end
-% end
+%% import and align and store Bonsai and ephys data
+
+%%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
+%%%%%% want to process. 
+SUBJECTS = {'M23017','M23028','M23029','M23087'};
+options = 'bilateral';
+% Stimulus_type = 'Masa2tracks';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+Stimulus_type = 'Checkerboard';
+extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type,options)
+
+
+%%%%%% Option 2 go to specific animal folder to do specific session(s) you
+%%%%%% want to process.
+% SUBJECTS = {'M23017'}
+SUBJECTS = 'M23028';
+SESSION = '20230706';
+options = 'bilateral';
+Stimulus_type = 'Masa2tracks';
+% Stimulus_type = 'OpenField';
+
+if contains(Stimulus_type,'Masa2tracks')
+    dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,'session_info*.mat'))
+    extract_and_preprocess_NPX(session_info,Stimulus_type)
+else
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,'session_info.mat'))
+    extract_and_preprocess_NPX(session_info,Stimulus_type)
+end
+
+
+
+
+%% import and align spike data
+
+% Old cluster extraction function in 2023 is load_KS_NPX1
+% [SUA.probe{nprobe} chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'group','by channel','cell_exporer','on');
+% Extract continuous cluster data at 60Hz and discrete spike time
+extract_clusters_NPX
 
 %% PSD analysis and LFP profile
 clear all
-Stimulus_type = 'checkerboard'; % extract LFP during RUN
+Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision'
 SUBJECTS = {'M23028'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS);
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));

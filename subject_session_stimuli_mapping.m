@@ -13,11 +13,11 @@ function experiment_info = subject_session_stimuli_mapping(SUBJECTS,options)
 
 ROOTPATH = 'Z:\ibn-vision';
 
-if contains(options,'bilateral')
-    EXPERIMENT_INFO_PATH = 'Z:\ibn-vision\USERS\Masa\recording_info';
-else
-    
-end
+% if contains(options,'bilateral')
+%     EXPERIMENT_INFO_PATH = 'Z:\ibn-vision\USERS\Masa\recording_info';
+% else
+%     
+% end
 
 
 
@@ -117,9 +117,18 @@ for nsubject = 1:length(SUBJECTS)
 
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).SUBJECT = SUBJECTS{nsubject};
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).SESSION = num2str(all_sessions_this_animal(nsession));
-                
+                experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).StimulusName = StimulusName{nstimuli};
                 folderName = findGFolder(EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli));
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).EPHYS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,folderName,[folderName,'_imec',num2str(probe_id)]);
+                
+                if contains(StimulusName{nstimuli},'Masa2tracks')
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).ANALYSIS_DATAPATH =...
+                        fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_sessions_this_animal(nsession)),'Masa2tracks');
+                else
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).ANALYSIS_DATAPATH =...
+                        fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_sessions_this_animal(nsession)),StimulusName{nstimuli});
+                end
+
                 if ~exist(fullfile(EPHYS_DATAPATH_temp,'kilosort'), 'dir')
                     KS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,['kilosort_probe_',num2str(probe_id+1)]); % e.g. imec0 is in kilosort_probe_1 folder
 
@@ -129,7 +138,7 @@ for nsubject = 1:length(SUBJECTS)
                 end
 
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).KS_DATAPATH = KS_DATAPATH;
-                experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).gFileNum = EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli);
+                experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).gFileNum = experiment_info(nexperiment).gFileNum(nstimuli);
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).probe_id = probe_id;
 
                 if contains(options,'bilateral')
@@ -150,12 +159,21 @@ for nsubject = 1:length(SUBJECTS)
                 for nprobe = 1:length(probe_id)
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).SUBJECT = SUBJECTS{nsubject};
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).SESSION = num2str(all_sessions_this_animal(nsession));
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).StimulusName = StimulusName{nstimuli};
+
+                    if contains(StimulusName{nstimuli},'Masa2tracks')
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
+                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_sessions_this_animal(nsession)),'Masa2tracks');
+                    else
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
+                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_sessions_this_animal(nsession)),StimulusName{nstimuli});
+                    end
 
                     folderName = findGFolder(EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli));
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).EPHYS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,folderName,[folderName,'_imec',num2str(probe_id(nprobe))]);
                     KS_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,['kilosort_probe_',num2str(nprobe)]);
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_DATAPATH = KS_DATAPATH;
-                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).gFileNum = EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli);
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).gFileNum = experiment_info(nexperiment).gFileNum(nstimuli);
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).probe_id = probe_id(nprobe);
 
                     if contains(options,'bilateral')

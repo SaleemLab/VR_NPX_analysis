@@ -261,6 +261,7 @@ behaviour.computer_timevec = resample(peripherals.Time,peripherals.corrected_sgl
 %% wheel spikeGLX time (Use this for ephys)
 behaviour.sglxTime = resample(peripherals.corrected_sglxTime,peripherals.corrected_sglxTime,60)';
 behaviour.sglxTime_uncorrected = resample(peripherals.sglxTime,peripherals.corrected_sglxTime,60)';
+behaviour.tvec = behaviour.sglxTime;% standard timevec used for all behaviour related analysis
 
 %% wheel raw input
 behaviour.wheel_raw_input = resample(peripherals.Wheel,peripherals.corrected_sglxTime,60)';
@@ -493,7 +494,7 @@ task_info.lick_position = cellfun(@str2double,task_info.lick_position);
 
 behaviour.lick_count = [];
 t_edges = behaviour.sglxTime(1)-(behaviour.sglxTime(2) - behaviour.sglxTime(1))/2:1/60:behaviour.sglxTime(end)+(behaviour.sglxTime(end) - behaviour.sglxTime(end-1))/2;
-for lick_id = 1:max(task_info.lick_state)
+for lick_id = 1:max(task_info.lick_state) % left = 1 and right = 2
      [N,edges,bin] = histcounts(task_info.lick_time(find(task_info.lick_state==lick_id)),t_edges);
      behaviour.lick_count(lick_id,:) = N;
 end
