@@ -74,7 +74,7 @@ if contains(sorter,'off')
     % ylabel('isi ratio')
     % zlabel('presence ratio')
 
-else
+else % place holder for other sorters
 
 
 end
@@ -138,8 +138,14 @@ switch group
         SUA_spike_id = [];
         SUA_peak_channel_waveforms = [];
         SUA_peak_channel = [];
+        SUA_peak_depth = [];
         SUA_cell_type = [];
         id_conversion = [];
+        SUA_spike_count_raw = [];
+        SUA_spike_count_smoothed = [];
+        SUA_zscore = [];
+        good_clusters_all= [];
+        SUA_good_unit = [];
         
         for nchannel = selected_channels(1):selected_channels(2)
             clusters_this_channel = find(peakChannel == nchannel); % ID for all clusters
@@ -176,6 +182,7 @@ switch group
         toc
 
         % Continuous spike data
+        clusters.timevec = tvec;
         clusters.spike_count_raw = SUA_spike_count_raw;
         clusters.spike_count_smoothed = SUA_spike_count_smoothed;
         clusters.zscore_smoothed = SUA_zscore;
@@ -205,8 +212,14 @@ switch group
         SUA_spike_id = [];
         SUA_peak_channel_waveforms = [];
         SUA_peak_channel = [];
+        SUA_peak_depth = [];
         SUA_cell_type = [];
         id_conversion = [];
+        SUA_spike_count_raw = [];
+        SUA_spike_count_smoothed = [];
+        SUA_zscore = [];
+        good_clusters_all= [];
+        SUA_good_unit = [];
 
         for nchannel = selected_channels(1):selected_channels(2)
             clusters_this_channel = find(peakChannel == nchannel); % ID for all clusters
@@ -225,7 +238,7 @@ switch group
 
                     SUA_peak_channel(count) = nchannel;
                     SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
-                    good_clusters_all(count) = good_unit_all(unit);
+                    good_clusters_all(count) = good_unit_all(index(unit));
 
                     SUA_good_unit(count) = index(unit);
                     SUA_peak_channel_waveforms(count,:) = peak_channel_waveforms(index(unit),:);
@@ -239,6 +252,7 @@ switch group
         toc
 
         % Continuous spike data
+        clusters.timevec = tvec;
         clusters.spike_count_raw = SUA_spike_count_raw;
         clusters.spike_count_smoothed = SUA_spike_count_smoothed;
         clusters.zscore_smoothed = SUA_zscore;

@@ -21,6 +21,7 @@ column = 1;
 
 load(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis',"best_channels.mat"))
 load(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis',"extracted_PSD.mat"))
+
 lfpAvg.filter_type = {'all'};
 lfpAvg.event_group = {'Checkerboard'};
 lfpAvg.probe_no = nprobe;

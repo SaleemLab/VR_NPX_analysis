@@ -18,58 +18,81 @@ end
 
 % Part 2 Import and align bonsai data to Spikeglx time (always to probe 1)
 options = session_info.probe(1);
-if contains(Stimulus_type,'OpenField')
-    [Behaviour,~] = import_and_align_Bonsai_OpenField(stimulus_name,options);
-elseif contains(Stimulus_type,'Masa2tracks')
-    [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name,options);
-
-elseif contains(Stimulus_type,'Diao')
-
-elseif contains(Stimulus_type,'Edd')
-
-else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
-    [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai(stimulus_name,options);
-end
-
-if exist(options.ANALYSIS_DATAPATH) == 0
-    mkdir(options.ANALYSIS_DATAPATH)
-end
-
+% Search behaviour files
 if contains(Stimulus_type,'Masa2tracks')
-    % If Masa2tracks, PRE, RUN and/or POST saved in one folder
-    save(fullfile(options.ANALYSIS_DATAPATH,...
-        sprintf('extracted_behaviour%s.mat',erase(stimulus_name,Stimulus_type))),'Behaviour')
-    save(fullfile(options.ANALYSIS_DATAPATH,...
-        sprintf('extracted_task_info%s.mat',erase(stimulus_name,Stimulus_type))),'Task_info')
-    save(fullfile(options.ANALYSIS_DATAPATH,...
-        sprintf('extracted_peripherals%s.mat',erase(stimulus_name,Stimulus_type))),'Peripherals')
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf("extracted_behaviour%s.mat",erase(stimulus_name,Stimulus_type))));
 else
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'),'Task_info')
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
+end
+
+if isempty(DIR) % skip behaviour extraction if already saved
+    if contains(Stimulus_type,'OpenField')
+        [Behaviour,~] = import_and_align_Bonsai_OpenField(stimulus_name,options);
+    elseif contains(Stimulus_type,'Masa2tracks')
+        [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name,options);
+
+    elseif contains(Stimulus_type,'Diao')
+
+    elseif contains(Stimulus_type,'Edd')
+
+    else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
+        [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai(stimulus_name,options);
+    end
+
+    if exist(options.ANALYSIS_DATAPATH) == 0
+        mkdir(options.ANALYSIS_DATAPATH)
+    end
+
+    if contains(Stimulus_type,'Masa2tracks')
+        % If Masa2tracks, PRE, RUN and/or POST saved in one folder
+        save(fullfile(options.ANALYSIS_DATAPATH,...
+            sprintf('extracted_behaviour%s.mat',erase(stimulus_name,Stimulus_type))),'Behaviour')
+        save(fullfile(options.ANALYSIS_DATAPATH,...
+            sprintf('extracted_task_info%s.mat',erase(stimulus_name,Stimulus_type))),'Task_info')
+        save(fullfile(options.ANALYSIS_DATAPATH,...
+            sprintf('extracted_peripherals%s.mat',erase(stimulus_name,Stimulus_type))),'Peripherals')
+    else
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'),'Task_info')
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
+    end
 end
 
 % Part 3 Extract spike data
+options = session_info.probe(1); % load behaviour variable first
+if contains(Stimulus_type,'Masa2tracks')
+    load(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_behaviour%s.mat',erase(stimulus_name,Stimulus_type))))
+else
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
+end
+
+
 for nprobe = 1:length(session_info.probe)
     options = session_info.probe(nprobe);
 
-    if contains(Stimulus_type,'Masa2tracks')
-        load(fullfile(options.ANALYSIS_DATAPATH,...
-            sprintf('extracted_behaviour%s.mat',erase(stimulus_name,Stimulus_type))))
-    else
-       load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
-    end
-   
-    [clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','good clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-%     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-
+    [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','good clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+    %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
 end
+
+spikes = clusters;
+fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
+clusters = rmfield(clusters,fields_to_remove);
+
 
 if contains(Stimulus_type,'Masa2tracks')
     % If Masa2tracks, PRE, RUN and/or POST saved in one folder
     save(fullfile(options.ANALYSIS_DATAPATH,...
-        sprintf('extracted_behaviour%s.mat',erase(stimulus_name,Stimulus_type))),'Behaviour')
+        sprintf('extracted_clusters%s.mat',erase(stimulus_name,Stimulus_type))),'clusters')
+    save(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_spikes%s.mat',erase(stimulus_name,Stimulus_type))),'spikes')
 else
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'spikes')
 end
-% Part 4 LFP
+
+end
+
+
+
+

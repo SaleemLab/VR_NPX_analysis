@@ -66,7 +66,7 @@ for n = 1:length(all_SUBJECTS)
     end
 end
 
-%% import and align and store Bonsai and ephys data
+%% import and align and store Bonsai and cluster spike data
 
 %%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
 %%%%%% want to process. 
@@ -99,20 +99,32 @@ else
 end
 
 
-
-
-%% import and align spike data
-
-% Old cluster extraction function in 2023 is load_KS_NPX1
-% [SUA.probe{nprobe} chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'group','by channel','cell_exporer','on');
-% Extract continuous cluster data at 60Hz and discrete spike time
-extract_clusters_NPX
-
 %% PSD analysis and LFP profile
 clear all
+
+% Single session
+SUBJECT = 'M23028';
+SESSION = '20230706';
+options = 'bilateral';
+Stimulus_type = 'Masa2tracks';
+% Stimulus_type = 'OpenField';
+if contains(Stimulus_type,'Masa2tracks')
+    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
+    for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
+        load(fullfile(session_files(n).folder, session_files(n).name))
+        extract_PSD_profile(session_info,Stimulus_type)
+    end
+else
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    extract_PSD_profile(session_info,Stimulus_type)
+end
+% 
+
+% Batch PSD analysis
 Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision'
-SUBJECTS = {'M23028'};
+% SUBJECTS = {'M23028'};
+SUBJECTS = {'M23087'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 
 for nsession =1:length(experiment_info)
@@ -142,18 +154,25 @@ for nsession =1:length(experiment_info)
             mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,stimulus_name{n}))
         end
         cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
+        save extracted_PSD PSD power
+        save best_channels best_channels
 %         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
 %         filename = sprintf('%s %s PSD profile probe %i.pdf',options.SUBJECT,options.SESSION,nprobe)
 %         saveas(gcf,filename)
 %         filename = sprintf('%s %s PSD profile probe %i.fig',options.SUBJECT,options.SESSION,nprobe)
 %         saveas(gcf,filename)
     end
+    save(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis',"best_channels.mat"),"best_channels")
+    % Replot based on updated channels
+    plot_perievent_CSD_LFP(lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power{options.probe_no},chan_config,sorted_config,best_channels{options.probe_no},options)
+    save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'),[])
+
     save extracted_PSD PSD power
     save best_channels best_channels
 end
 
 
-%% L4 based on checkerboard
+%% L4 based on checkerboard (require manual updating)
 addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 if ismac
     ROOTPATH = '/Users/s.solomon/Filestore/Research2/ibn-vision';
@@ -205,115 +224,6 @@ for nsession =1:length(experiment_info)
     end
 end
 
-%% get cell types (can be used without cell explorer)
-%%%%% Will work on it later
-
-for iunit = 1:numel(goodUnits)
-    [ccg, t] = CCG(goodUnits(iunit).spike_times, ones(size(goodUnits(iunit).spike_times)),...
-        'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
-    goodUnits(iunit).acg = ccg;
-    fit_params_out = fit_ACG(ccg,false);
-
-    goodUnits(iunit).tau_rise = fit_params_out.acg_tau_rise;
-end
-
-narrow_idx = find([goodUnits.duration]<=0.45);
-wide_idx = find([goodUnits.duration]>0.45 & [goodUnits.tau_rise]>6);
-pyr_idx = find(~ismember(1:numel(goodUnits), [narrow_idx,wide_idx]));
-
-[goodUnits.cellType] = deal(nan);
-[goodUnits(pyr_idx).cellType] = deal(1);
-[goodUnits(narrow_idx).cellType] = deal(2);
-[goodUnits(wide_idx).cellType] = deal(3);
-
-%% ripple power during immobility and during running (not complete as of 22/09/23)
-Stimulus_type = 'RUN'; % extract LFP during RUN
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,'RUN'));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-
-    cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
-    load best_channels
-    load extracted_PSD
-    load(sprintf('extracted_position%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-
-
-    for nprobe = 1:length(session_info.probe)
-        options = session_info.probe(nprobe);
-        options.importMode = 'LF';
-        column = 1;
-        if nprobe ~= 1
-            session_info.probe(1).importMode = 'KS';
-            [~, imecMeta, ~, ~] = extract_NPX_channel_config(session_info.probe(1),column);
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column,'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
-        else
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column);
-        end
-
-        if ~isempty(tvec)
-            LFP_tvec = tvec;
-        else
-            LFP_tvec = [];
-        end
-        tic
-        
-        % Ripple band
-        parameters = list_of_parameters;
-        filter_type  = 'bandpass';
-        filter_width = [125 300];                 % range of frequencies in Hz you want to filter between
-        filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
-        norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        b_gamma = fir1(filter_order, norm_freq_range,filter_type);
-
-        for nchannel = 1:size(sorted_config,1)
-            LFP.probe(nprobe).ripple(nchannel,:) = filtfilt(b_gamma,1,raw_LFP(nchannel,:));
-            %     LFP(nchannel).gamma_zscore = zscore(abs(hilbert(LFP(nchannel).gamma)));
-            LFP.probe(nprobe).ripple_hilbert(nchannel,:) = abs(hilbert(filtfilt(b_gamma,1,raw_LFP(nchannel,:))));
-        end
-        toc
-        tic
-        % Slow wave band
-        parameters = list_of_parameters;
-        filter_type  = 'bandpass';
-        filter_width = [0.5 3];                 % range of frequencies in Hz you want to filter between
-        filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
-        norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        b_gamma = fir1(filter_order, norm_freq_range,filter_type);
-
-        for nchannel = 1:size(sorted_config,1)
-            LFP.probe(nprobe).SO(nchannel,:) = filtfilt(b_gamma,1,raw_LFP(nchannel,:));
-            %     LFP(nchannel).gamma_zscore = zscore(abs(hilbert(LFP(nchannel).gamma)));
-            LFP.probe(nprobe).SO_hilbert(nchannel,:) = abs(hilbert(filtfilt(b_gamma,1,raw_LFP(nchannel,:))));
-        end
-        toc
-
-        speed_during_LFP = interp1(position.t,position.v,LFP_tvec,'nearest');
-        
-%         immobility_period = speed_during_LFP(speed_during_LFP <= 5);
-%         running_period = speed_during_LFP(speed_during_LFP > 5);
-        
-        for nchannel = 1:size(sorted_config,1)
-            
-            immobility_channel_power.SO{nprobe}(nchannel) = mean(LFP.probe(nprobe).SO_hilbert(nchannel,speed_during_LFP <= 1));
-            running_channel_power.SO{nprobe}(nchannel) = mean(LFP.probe(nprobe).SO_hilbert(nchannel,speed_during_LFP > 20));
-
-            immobility_channel_power.ripple{nprobe}(nchannel) = mean(LFP.probe(nprobe).ripple_hilbert(nchannel,speed_during_LFP <= 1));
-            running_channel_power.ripple{nprobe}(nchannel) = mean(LFP.probe(nprobe).ripple_hilbert(nchannel,speed_during_LFP > 20));
-        end
-        figure
-        plot(immobility_channel_power.SO{nprobe},sorted_config.Ks_ycoord);hold on
-        plot(running_channel_power.SO{nprobe},sorted_config.Ks_ycoord);
-
-        plot([0 1],[chan_config.Ks_ycoord(best_channels{nprobe}.first_in_brain_channel) chan_config.Ks_ycoord(best_channels{nprobe}.first_in_brain_channel)],'--k','LineWidth',2)
-        plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L4_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L4_channel))],'--b','LineWidth',2)
-        plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel ==best_channels{nprobe}.L5_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L5_channel))],'--c','LineWidth',2)
-
-        if ~isempty(best_channels{nprobe}.CA1_channel)
-            plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.CA1_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.CA1_channel))],'--r','LineWidth',2)
-        end
-        xlim([0 max(immobility_channel_power.SO{nprobe})])
-    end
-end
 
 %% Manual update best channels (this is manual for now...)
 Stimulus_type = 'Checkerboard';
@@ -592,3 +502,95 @@ end
 cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
 load('StaticGratings.mat')
 tuning_curve = plot_tuning_curve(StaticGratings.probe(1).grating_response,1,0);
+
+
+
+
+%% ripple power during immobility and during running (not complete as of 22/09/23)
+Stimulus_type = 'RUN'; % extract LFP during RUN
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,'RUN'));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+
+    cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
+    load best_channels
+    load extracted_PSD
+    load(sprintf('extracted_position%s.mat',erase(stimulus_name{n},'Masa2tracks')))
+
+
+    for nprobe = 1:length(session_info.probe)
+        options = session_info.probe(nprobe);
+        options.importMode = 'LF';
+        column = 1;
+        if nprobe ~= 1
+            session_info.probe(1).importMode = 'KS';
+            [~, imecMeta, ~, ~] = extract_NPX_channel_config(session_info.probe(1),column);
+            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column,'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
+        else
+            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column);
+        end
+
+        if ~isempty(tvec)
+            LFP_tvec = tvec;
+        else
+            LFP_tvec = [];
+        end
+        tic
+        
+        % Ripple band
+        parameters = list_of_parameters;
+        filter_type  = 'bandpass';
+        filter_width = [125 300];                 % range of frequencies in Hz you want to filter between
+        filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
+        norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_gamma = fir1(filter_order, norm_freq_range,filter_type);
+
+        for nchannel = 1:size(sorted_config,1)
+            LFP.probe(nprobe).ripple(nchannel,:) = filtfilt(b_gamma,1,raw_LFP(nchannel,:));
+            %     LFP(nchannel).gamma_zscore = zscore(abs(hilbert(LFP(nchannel).gamma)));
+            LFP.probe(nprobe).ripple_hilbert(nchannel,:) = abs(hilbert(filtfilt(b_gamma,1,raw_LFP(nchannel,:))));
+        end
+        toc
+        tic
+        % Slow wave band
+        parameters = list_of_parameters;
+        filter_type  = 'bandpass';
+        filter_width = [0.5 3];                 % range of frequencies in Hz you want to filter between
+        filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
+        norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_gamma = fir1(filter_order, norm_freq_range,filter_type);
+
+        for nchannel = 1:size(sorted_config,1)
+            LFP.probe(nprobe).SO(nchannel,:) = filtfilt(b_gamma,1,raw_LFP(nchannel,:));
+            %     LFP(nchannel).gamma_zscore = zscore(abs(hilbert(LFP(nchannel).gamma)));
+            LFP.probe(nprobe).SO_hilbert(nchannel,:) = abs(hilbert(filtfilt(b_gamma,1,raw_LFP(nchannel,:))));
+        end
+        toc
+
+        speed_during_LFP = interp1(position.t,position.v,LFP_tvec,'nearest');
+        
+%         immobility_period = speed_during_LFP(speed_during_LFP <= 5);
+%         running_period = speed_during_LFP(speed_during_LFP > 5);
+        
+        for nchannel = 1:size(sorted_config,1)
+            
+            immobility_channel_power.SO{nprobe}(nchannel) = mean(LFP.probe(nprobe).SO_hilbert(nchannel,speed_during_LFP <= 1));
+            running_channel_power.SO{nprobe}(nchannel) = mean(LFP.probe(nprobe).SO_hilbert(nchannel,speed_during_LFP > 20));
+
+            immobility_channel_power.ripple{nprobe}(nchannel) = mean(LFP.probe(nprobe).ripple_hilbert(nchannel,speed_during_LFP <= 1));
+            running_channel_power.ripple{nprobe}(nchannel) = mean(LFP.probe(nprobe).ripple_hilbert(nchannel,speed_during_LFP > 20));
+        end
+        figure
+        plot(immobility_channel_power.SO{nprobe},sorted_config.Ks_ycoord);hold on
+        plot(running_channel_power.SO{nprobe},sorted_config.Ks_ycoord);
+
+        plot([0 1],[chan_config.Ks_ycoord(best_channels{nprobe}.first_in_brain_channel) chan_config.Ks_ycoord(best_channels{nprobe}.first_in_brain_channel)],'--k','LineWidth',2)
+        plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L4_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L4_channel))],'--b','LineWidth',2)
+        plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel ==best_channels{nprobe}.L5_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.L5_channel))],'--c','LineWidth',2)
+
+        if ~isempty(best_channels{nprobe}.CA1_channel)
+            plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.CA1_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels{nprobe}.CA1_channel))],'--r','LineWidth',2)
+        end
+        xlim([0 max(immobility_channel_power.SO{nprobe})])
+    end
+end

@@ -27,17 +27,13 @@ for nsession =1:length(experiment_info)
 
         % Part 2 Import and align bonsai data to Spikeglx time (always to probe 1)
         options = session_info(n).probe(1);
-        if contains(Stimulus_type,'Masa2tracks')
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf("extracted_behaviour%s.mat",erase(stimulus_name{n},Stimulus_type))));
-        else
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
-        end
-
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
         if isempty(DIR)
             if contains(Stimulus_type,'OpenField')
                 [Behaviour,~] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
             elseif contains(Stimulus_type,'Masa2tracks')
                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
+
             elseif contains(Stimulus_type,'Diao')
 
             elseif contains(Stimulus_type,'Edd')
@@ -66,31 +62,42 @@ for nsession =1:length(experiment_info)
         end
 
         % Part 3 extract spike data
-        options = session_info(n).probe(1);
-        if contains(Stimulus_type,'Masa2tracks')
-            load(fullfile(options.ANALYSIS_DATAPATH,...
-                sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))))
-        else
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
-        end
-
         for nprobe = 1:length(session_info(n).probe) >1
             options = session_info(n).probe(nprobe);
-
-            [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','good clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+            if contains(Stimulus_type,'Masa2tracks')
+                load(fullfile(options.ANALYSIS_DATAPATH,...
+                    sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))))
+            else
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
+            end
+            [clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','good clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
             %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+
         end
 
         if contains(Stimulus_type,'Masa2tracks')
             % If Masa2tracks, PRE, RUN and/or POST saved in one folder
             save(fullfile(options.ANALYSIS_DATAPATH,...
-                sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters')
+                sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},Stimulus_type))),'Behaviour')
         else
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'Behaviour')
         end
 
-        % Part 4 LFP PSD profile
+%         save(sprintf('extracted_position%s.mat',erase(stimulus_name{n},Stimulus_type)),'position')
+        
+%         if contains(stimulus_name{n},'RUN')
+%             lap_times = extract_laps_masa(1,Behaviour,position)
+%             save extracted_laps lap_times
+%         end
 
+
+        % figure
+        % hold on
+        % plot(MousePos.sglxTime,MousePos.pos)
+        % scatter(MousePos.stimuli_onset(MousePos.stimuli_track == 1),1000*MousePos.stimuli_track(MousePos.stimuli_track == 1),'r')
+        % scatter(MousePos.stimuli_onset(MousePos.stimuli_track == 2),100*MousePos.stimuli_track(MousePos.stimuli_track == 2),'b')
     end
+
+    % Part 4 LFP
 
 end
