@@ -27,13 +27,13 @@ for nsession =1:length(experiment_info)
 
         % Part 2 Import and align bonsai data to Spikeglx time (always to probe 1)
         options = session_info(n).probe(1);
-%         if contains(Stimulus_type,'Masa2tracks')
-%             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf("extracted_behaviour%s.mat",erase(stimulus_name{n},Stimulus_type))));
-%         else
-%             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
-%         end
-        DIR = [];
-
+        if contains(Stimulus_type,'Masa2tracks')
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf("extracted_behaviour%s.mat",erase(stimulus_name{n},Stimulus_type))));
+        else
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
+        end
+%         DIR = [];
+        
         if isempty(DIR)
             if contains(Stimulus_type,'OpenField')
                 [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
@@ -103,5 +103,5 @@ for nsession =1:length(experiment_info)
         clear clusters spikes
 
     end
-
+    close all
 end

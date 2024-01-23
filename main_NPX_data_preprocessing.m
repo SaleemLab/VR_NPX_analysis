@@ -77,9 +77,10 @@ options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
 % Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'Checkerboard';
+
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-Stimulus_type = 'Checkerboard';
 % experiment_info = experiment_info(2)
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})

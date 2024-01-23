@@ -100,5 +100,6 @@ else
      tt = interp1(t_bonsai, t_npix, bonsai_data.sglxTime,'linear','extrap');
 %     tt = interp1(unique(bonsai_data.corrected_sglxTime),unique(bonsai_data.corrected_sglxTime),linspace(bonsai_data.corrected_sglxTime(1),bonsai_data.corrected_sglxTime(end),length(bonsai_data.corrected_sglxTime)),'linear')';
     [unique_t,index,~] = unique(tt);
-     bonsai_data.corrected_sglxTime = interp1(index,unique_t,1:length(tt));
+%     xx= interp1(index,unique_t,1:length(tt),'linear');
+     bonsai_data.corrected_sglxTime = interp1(index,unique_t,1:length(tt),'linear','extrap');
 end
