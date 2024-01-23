@@ -41,7 +41,9 @@ reward_path = bonsai_files_names(contains(bonsai_files_names,'Reward'));
 lick_performance_path = bonsai_files_names(contains(bonsai_files_names,'Lick_Performance'));
 
 % DLC Eyedata pupil size
-% eyedata_path = bonsai_files_names(contains(bonsai_files_names,'EyeLog'));
+
+DLC_EYEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'DLC'))));% new eye log
+FACEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'proc'))));% face data;
 
 BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 
@@ -240,7 +242,14 @@ end
 
 
 % raw_LFP(nchannel,:) = interp1(peripherals.sglxTime,raw_LFP(nchannel,:),probe_1_tvec(1:2:end),'linear'); %probe 1 LFP time to match probe 2 LFP time
+if ~isempty(DLC_EYEDATA_DATAPATH)
+    eye_data_raw = readmatrix(DLC_EYEDATA_DATAPATH);
+    [pupil_ellipse,new_tracking_points_coordinates] = eye_data_conversion(eye_data_raw);
+end
 
+if ~isempty(FACEDATA_DATAPATH)
+    facedata = load(FACEDATA_DATAPATH); % load face energy data
+end
 
 %%%%%%
 %%%%%%
@@ -249,22 +258,23 @@ end
 behaviour = [];
 
 %% wheel frame
-behaviour.wheel_frame_count = resample(peripherals.FrameNumber,peripherals.corrected_sglxTime,60)';
+% behaviour.wheel_frame_count = resample(peripherals.FrameNumber,peripherals.corrected_sglxTime,60)';
+behaviour.wheel_frame_count = interp1(peripherals.corrected_sglxTime,peripherals.FrameNumber,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'previous');
 %% wheel Time
-behaviour.wheel_time = resample(peripherals.FrameTime,peripherals.corrected_sglxTime,60)';
+behaviour.wheel_time = interp1(peripherals.corrected_sglxTime,peripherals.FrameTime,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
 
 %% wheel computer time
 % This is the total milisecond of the day from Bonsai. This info is also
 % saved in other meta file such as trial info which can be used to find when lick happens and when each lap starts  
-behaviour.computer_timevec = resample(peripherals.Time,peripherals.corrected_sglxTime,60)';
+behaviour.computer_timevec = interp1(peripherals.corrected_sglxTime,peripherals.Time,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
 
 %% wheel spikeGLX time (Use this for ephys)
-behaviour.sglxTime = resample(peripherals.corrected_sglxTime,peripherals.corrected_sglxTime,60)';
-behaviour.sglxTime_uncorrected = resample(peripherals.sglxTime,peripherals.corrected_sglxTime,60)';
+behaviour.sglxTime = interp1(peripherals.corrected_sglxTime,peripherals.corrected_sglxTime,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
+behaviour.sglxTime_uncorrected = interp1(peripherals.corrected_sglxTime,peripherals.sglxTime,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
 behaviour.tvec = behaviour.sglxTime;% standard timevec used for all behaviour related analysis
 
 %% wheel raw input
-behaviour.wheel_raw_input = resample(peripherals.Wheel,peripherals.corrected_sglxTime,60)';
+behaviour.wheel_raw_input = interp1(peripherals.corrected_sglxTime,peripherals.Wheel,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
 
 % Not needed
 % %% wheel left lick
@@ -276,9 +286,23 @@ behaviour.wheel_raw_input = resample(peripherals.Wheel,peripherals.corrected_sgl
 % %% wheel quad state
 % behaviour.wheel_quad_state = peripherals.QuadState;
 
-%% wheel camera frame count
-behaviour.camera_frame_count = resample(peripherals.EyeFrameCount,peripherals.corrected_sglxTime,60)';
-% behaviour.wheel_reference_timestamp = peripherals.Time;% probably not needed....
+%% eye data
+behaviour.camera_frame_count = interp1(peripherals.sglxTime,peripherals.EyeFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
+
+if ~isempty(DLC_EYEDATA_DATAPATH)
+    behaviour.eye_coordinates  = new_tracking_points_coordinates(behaviour.camera_frame_count+1,:);% bonsai eye camera frame and DLC frame is 0 based hence adding 1
+    behaviour.pupil_size =  pupil_ellipse(behaviour.camera_frame_count+1,6)';
+    behaviour.pupil_movement_angle =  pupil_ellipse(behaviour.camera_frame_count+1,8)';
+    behaviour.pupil_movement_distance =  pupil_ellipse(behaviour.camera_frame_count+1,7)';
+end
+
+%% facemap - face motion energy and SVD#
+
+if ~isempty(FACEDATA_DATAPATH)
+    behaviour.face_motion_enegy = facedata.motion_1(behaviour.camera_frame_count+1); % total motion energt
+    behaviour.face_motion_SVD = facedata.motSVD_1(behaviour.camera_frame_count+1,1:100); % 1st 100 SVD face energy variable (temporal component)
+    behaviour.face_motion_mask = facedata.motMask_1(:,1:100); % Mask (spatial component) 1st 100
+end
 
 %% wheel timestamp of serial string read (time of day, total millisecond)
 % This is subject to delete as well, because in the future we will have one
@@ -287,7 +311,7 @@ behaviour.camera_frame_count = resample(peripherals.EyeFrameCount,peripherals.co
 % behaviour.wheel_arduino_read_time = resample(peripherals.Time,peripherals.corrected_sglxTime,60);
 
 %% 'Real' wheel position and real speed
-behaviour.wheel_position = resample(peripherals.Position,peripherals.corrected_sglxTime,60)';
+behaviour.wheel_position = interp1(peripherals.corrected_sglxTime,peripherals.Position,peripherals.corrected_sglxTime(1):1/60:peripherals.corrected_sglxTime(end),'linear');
 
 % Real speed based on wheel raw input
 % For actual speed related analysis, This should be used.
@@ -296,7 +320,7 @@ tick_to_cm_conversion = 3.1415*20/1024; % radius 20 cm and one circle is 1024 ti
 speed = [0 diff(behaviour.wheel_raw_input*tick_to_cm_conversion)];
 speed(speed<-100) = 0;% big change in speed often due to teleportation or wheel tick resetting
 speed(speed>100) = 0;
-behaviour.speed = speed/mean(diff(behaviour.sglxTime));% 
+behaviour.speed = speed./([0 diff(behaviour.sglxTime)]);% 
 
 %% Virtual position and virtual speed
 % Convert raw wheel wheel position into virtual position (0 - 140cm for both tracks)
@@ -340,7 +364,7 @@ end
 
 %%  Reward Delivery Time Based on Eye Frame Count, or Time
 
-DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]))
+DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
 task_info.reward_delivery_time = [];
 task_info.reward_delivery_time_original = [];
 
@@ -492,12 +516,19 @@ task_info.lick_position = cellfun(@str2double,task_info.lick_position);
 
 %% Lick count time series
 
-behaviour.lick_count = [];
-t_edges = behaviour.sglxTime(1)-(behaviour.sglxTime(2) - behaviour.sglxTime(1))/2:1/60:behaviour.sglxTime(end)+(behaviour.sglxTime(end) - behaviour.sglxTime(end-1))/2;
-for lick_id = 1:max(task_info.lick_state) % left = 1 and right = 2
-     [N,edges,bin] = histcounts(task_info.lick_time(find(task_info.lick_state==lick_id)),t_edges);
-     behaviour.lick_count(lick_id,:) = N;
-end
+% behaviour.lick_count = []; 
+
+
+% Based on task info lick time (only after task started)
+% t_edges = behaviour.sglxTime(1)-(behaviour.sglxTime(2) - behaviour.sglxTime(1))/2:1/60:behaviour.sglxTime(end)+(behaviour.sglxTime(end) - behaviour.sglxTime(end-1))/2;
+% for lick_id = 1:max(task_info.lick_state) % left = 1 and right = 2
+%      [N,edges,bin] = histcounts(task_info.lick_time(find(task_info.lick_state==lick_id)),t_edges);
+%      behaviour.lick_count(lick_id,:) = N;
+% end
+
+% Based on Peripheral-logged lick
+behaviour.lick_count(1,:) = interp1(peripherals.sglxTime,[0; diff(peripherals.LickL)],peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
+behaviour.lick_count(2,:) = interp1(peripherals.sglxTime,[0; diff(peripherals.LickR)],peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
 
 %% Lap info 
 

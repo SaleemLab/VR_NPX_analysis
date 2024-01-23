@@ -1,6 +1,6 @@
 function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX1(options,column,varargin)
 
-
+options.importMode = 'LF';
 [LF_FILE imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
 
 % Default values

@@ -68,15 +68,30 @@ end
 
 %% import and align and store Bonsai and cluster spike data
 
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 %%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
 %%%%%% want to process. 
 SUBJECTS = {'M23017','M23028','M23029','M23087'};
+SUBJECTS = {'M23028','M23029','M23087'};
 options = 'bilateral';
+ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
+
 % Stimulus_type = 'Masa2tracks';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 Stimulus_type = 'Checkerboard';
-extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type,options)
+% experiment_info = experiment_info(2)
+for n = 1:length(All_stimuli)
+    extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
+end
+
+SUBJECTS = {'M23087'};
+options = 'bilateral';
+Stimulus_type = 'OpenFieldChronic';
+% Stimulus_type = 'SparseNoise_fullscreen';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+experiment_info = experiment_info(2);
+extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
 
 %%%%%% Option 2 go to specific animal folder to do specific session(s) you
@@ -84,9 +99,14 @@ extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type,options)
 % SUBJECTS = {'M23017'}
 SUBJECT = 'M23028';
 SESSION = '20230706';
+
+SUBJECT = 'M23087';
+% SESSION = '20231212';
+SESSION = '20231212';
 options = 'bilateral';
-Stimulus_type = 'Masa2tracks';
-% Stimulus_type = 'OpenField';
+% Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'Checkerboard';
+% Stimulus_type = 'OpenFieldChronic';
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
     for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
@@ -100,13 +120,14 @@ end
 
 
 %% PSD analysis and LFP profile
+ROOTPATH = 'Z:\ibn-vision';
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 clear all
-
 % Single session
 SUBJECT = 'M23028';
 SESSION = '20230706';
 options = 'bilateral';
-Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'OpenField';
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
@@ -118,147 +139,69 @@ else
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     extract_PSD_profile(session_info,Stimulus_type)
 end
-% 
+
 
 % Batch PSD analysis
 Stimulus_type = 'Checkerboard'; % extract LFP during RUN
-ROOTPATH = 'Z:\ibn-vision'
+ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
 SUBJECTS = {'M23087'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+experiment_info = experiment_info(end);
+extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-   
-    PSD = [];
-    power = [];
-    best_channels = [];
-    for nprobe = 1:length(session_info.probe)
-        session_info.probe(nprobe).importMode = 'LF';
-        options = session_info.probe(nprobe);
 
-        column = 1;
-        if nprobe ~= 1
-            % Information about AP band probe 1 sample size to align probe
-            % 2 LFP traces.
-            session_info.probe(1).importMode = 'KS';
-            [~, imecMeta, ~, ~] = extract_NPX_channel_config(session_info.probe(1),column);
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column,'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
-        else
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column);
-        end
+%% Determine L4 of V1 based on checkerboard (require manual updating)
+% addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 
-        [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
-        % [gamma_coherence gamma_phase_coherence] = gamma_coherence_analysis(raw_LFP,tvec,SR,best_channels,sorted_config) % This function
-        if exist((fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,stimulus_name{n}))) == 0
-            mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,stimulus_name{n}))
-        end
-        cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
-        save extracted_PSD PSD power
-        save best_channels best_channels
-%         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
-%         filename = sprintf('%s %s PSD profile probe %i.pdf',options.SUBJECT,options.SESSION,nprobe)
-%         saveas(gcf,filename)
-%         filename = sprintf('%s %s PSD profile probe %i.fig',options.SUBJECT,options.SESSION,nprobe)
-%         saveas(gcf,filename)
-    end
-    save(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis',"best_channels.mat"),"best_channels")
+clear all
+
+% Single session checkerboard
+SUBJECT = 'M23028';
+SESSION = '20230706';
+options = 'bilateral';
+Stimulus_type = 'Checkerboard';
+for nprobe = 1:length(session_info.probe) % For each session, how many probes
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    options= session_info.probe(nprobe);
+    %             options.ROOTPATH = ROOTPATH;
+    options.importMode = 'LF';
+    options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+
+    [lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power,best_channels] = checkerboard_CSD_profile(options);
+    save_all_figures(options.ANALYSIS_DATAPATH,[]);
+    close
+
+    save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+
+    column = 1;
+    [LF_FILE imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+    [best_channels_updated{options.probe_no}] = update_best_channels(options,sorted_config);
+
+    % If updating all
+    best_channels{options.probe_no}.first_in_brain_channel = best_channels_updated{options.probe_no}(1);
+    best_channels{options.probe_no}.L4_channel = best_channels_updated{options.probe_no}(2);
+    %             best_channels{nprobe}.L4_channel = [];
+    best_channels{options.probe_no}.L5_channel = best_channels_updated{options.probe_no}(3);
+    best_channels{options.probe_no}.CA1_channel = best_channels_updated{options.probe_no}(4);
+
+    close
+
+    save(fullfile(erase(options.ANALYSIS_DATAPATH,['\','Checkerboard']),"best_channels.mat"),'best_channels')
     % Replot based on updated channels
     plot_perievent_CSD_LFP(lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power{options.probe_no},chan_config,sorted_config,best_channels{options.probe_no},options)
-    save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'),[])
-
-    save extracted_PSD PSD power
-    save best_channels best_channels
+    save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
 
-
-%% L4 based on checkerboard (require manual updating)
-addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-if ismac
-    ROOTPATH = '/Users/s.solomon/Filestore/Research2/ibn-vision';
-else
-%     ROOTPATH = 'X:\ibn-vision';
-    ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
-%     ROOTPATH = '/research';
-end
-
+% Checkerboard CSD batch
 % SUBJECTS = {'M23017','M23028','M23029'};
 SUBJECTS = {'M23087'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS);
+options = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 Stimulus_type = 'Checkerboard';
-
-
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        for nprobe = 1:length(session_info.probe) % For each session, how many probes
-            options= session_info(n).probe(nprobe);
-            options.ROOTPATH = ROOTPATH;
-            options.importMode = 'LF';
-            options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-
-            [lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power,best_channels] = determine_best_channels(options,options.probe_no);
-            save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'),[])
-            close
-
-            column = 1;
-            [LF_FILE imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
-            [best_channels_updated{options.probe_no}] = update_best_channels(options,sorted_config);
-            
-            % If updating all
-            best_channels{options.probe_no}.first_in_brain_channel = best_channels_updated{options.probe_no}(1);
-            best_channels{options.probe_no}.L4_channel = best_channels_updated{options.probe_no}(2);
-%             best_channels{nprobe}.L4_channel = [];
-            best_channels{options.probe_no}.L5_channel = best_channels_updated{options.probe_no}(3);
-            best_channels{options.probe_no}.CA1_channel = best_channels_updated{options.probe_no}(4);
-            
-            close
-            
-            save(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis',"best_channels.mat"),"best_channels")
-            % Replot based on updated channels
-            plot_perievent_CSD_LFP(lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power{options.probe_no},chan_config,sorted_config,best_channels{options.probe_no},options)
-            save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'),[])
-        end
-
-    end
-end
-
-
-%% Manual update best channels (this is manual for now...)
-Stimulus_type = 'Checkerboard';
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-
-    cd(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
-    load best_channels 
-    load extracted_PSD
-%     openfig('Checkerboard event (all filtered).fig')
-    for nprobe = 1:length(session_info.probe)
-        options = session_info.probe(nprobe);
-        options.importMode = 'LF';
-%         options.importMode = 'KS';
-        options.probe_no = options.probe_id + 1;
-        column = 1;
-        [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);
-       
-        [best_channels_updated{nprobe}] = update_best_channels(options,PSD{nprobe},power{nprobe},best_channels{nprobe},sorted_config);
-        
-        % If updating all 
-        best_channels{nprobe}.first_in_brain_channel = best_channels_updated{nprobe}(1);
-        best_channels{nprobe}.L4_channel = best_channels_updated{nprobe}(2);
-        best_channels{nprobe}.L5_channel = best_channels_updated{nprobe}(3);
-        best_channels{nprobe}.CA1_channel = best_channels_updated{nprobe}(4);
-
-        save best_channels best_channels
-
-    end
-    
-
-    save best_channels best_channels
-end
-
+% determine_best_channels
+calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 
 %% Visual tuning based on SparseNoise
 clear all

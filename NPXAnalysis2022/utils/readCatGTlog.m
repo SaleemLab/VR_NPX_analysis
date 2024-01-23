@@ -79,8 +79,11 @@ for irow = 1:size(filt_text)
     
     
 end
-
-catGT_table = array2table(logVals, 'VariableNames', {'g_idx', 'out_start_smp', 'inp_gap_smp', 'out_zeros_smp'});
+if ~isempty(logVals)
+    catGT_table = array2table(logVals, 'VariableNames', {'g_idx', 'out_start_smp', 'inp_gap_smp', 'out_zeros_smp'});
+else
+    catGT_table = [];
+end
 
 end
 

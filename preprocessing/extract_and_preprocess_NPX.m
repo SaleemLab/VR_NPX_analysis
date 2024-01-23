@@ -88,7 +88,7 @@ if contains(Stimulus_type,'Masa2tracks')
         sprintf('extracted_spikes%s.mat',erase(stimulus_name,Stimulus_type))),'spikes')
 else
     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'spikes')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
 end
 
 end

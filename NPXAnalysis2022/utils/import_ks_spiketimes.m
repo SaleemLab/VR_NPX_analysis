@@ -58,38 +58,49 @@ if sum(contains(KS_CATGT_FNAME,'.mat'))
     end
 else
     catGT_table = readCatGTlog(fullfile(KS_DATAPATH,KS_CATGT_FNAME));
-    if length(catGT_table.g_idx) ~= length(unique(catGT_table.g_idx)) % If not one probe
-        if options.probe_id ~= 0 % if not probe 1
-            catGT_table = catGT_table(length(unique(catGT_table.g_idx))+1:length(catGT_table.g_idx),:);
-        else
-            catGT_table = catGT_table(1:length(unique(catGT_table.g_idx)),:);
+
+    if ~isempty(catGT_table) % If catGT file exists 
+
+        if length(catGT_table.g_idx) ~= length(unique(catGT_table.g_idx)) % If not one probe
+            if options.probe_id ~= 0 % if not probe 1
+                catGT_table = catGT_table(length(unique(catGT_table.g_idx))+1:length(catGT_table.g_idx),:);
+            else
+                catGT_table = catGT_table(1:length(unique(catGT_table.g_idx)),:);
+            end
         end
+        g_number = catGT_table.g_idx;
+        out_start_smp = catGT_table.out_start_smp;
+        out_zeros_smp = catGT_table.out_zeros_smp;
     end
-    g_number = catGT_table.g_idx;
-    out_start_smp = catGT_table.out_start_smp;
-    out_zeros_smp = catGT_table.out_zeros_smp;
 end
 
 % In both cases we are assuming that the first file in the list was ignored
 % in the output log; and further that this was one g file less than the
 % first in the list
-g_number = [g_number(1)-1 g_number(:)'];
-out_start_smp = [NaN out_start_smp(:)'];
-out_zeros_smp = [NaN out_zeros_smp(:)'];
+if ~isempty(catGT_table) % If catGT file exists (with more than one recording)
 
-% Find where this file is in the concatenated list
-thisGFile = find(g_number == gfileNum);
-if thisGFile == 1 % First file in the concatenated data
+
+    g_number = [g_number(1)-1 g_number(:)'];
+    out_start_smp = [NaN out_start_smp(:)'];
+    out_zeros_smp = [NaN out_zeros_smp(:)'];
+
+    % Find where this file is in the concatenated list
+    thisGFile = find(g_number == gfileNum);
+    if thisGFile == 1 % First file in the concatenated data
+        sampleStart = 1;
+        sampleEnd = out_start_smp(2)-out_zeros_smp(2);
+    elseif thisGFile == length(g_number) % Last file
+        sampleStart = out_start_smp(end)+out_zeros_smp(end);
+        sampleEnd = max(ks_spike_times);
+    else
+        sampleStart = out_start_smp(thisGFile)+out_zeros_smp(thisGFile);
+        sampleEnd = out_start_smp(thisGFile+1)-1;
+    end
+
+else % Just one recording (grab whole things)
     sampleStart = 1;
-    sampleEnd = out_start_smp(2)-out_zeros_smp(2);
-elseif thisGFile == length(g_number) % Last file
-    sampleStart = out_start_smp(end)+out_zeros_smp(end);
     sampleEnd = max(ks_spike_times);
-else
-    sampleStart = out_start_smp(thisGFile)+out_zeros_smp(thisGFile);
-    sampleEnd = out_start_smp(thisGFile+1)-1;
 end
-
 % Get the spike times for this file, referenced to start of the recording
 idx = ks_spike_times >= sampleStart & ks_spike_times <= sampleEnd;
 ks_spike_times = double(ks_spike_times(idx)) - sampleStart;

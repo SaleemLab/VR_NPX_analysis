@@ -37,11 +37,12 @@ function [updated_channels] = update_best_channels(options,sorted_config)
 % ylim([0 4000])
 % openfig(sprintf('Checkerboard event (all filtered) probe %i.fig',options.probe_no))
 openfig(sprintf('%s %s Checkerboard event (all filtered) probe %i.fig',options.SUBJECT,options.SESSION,options.probe_no))
+yyaxis left
 
 disp(['Select four channels manually: 1. first channel that enters the brain 2. L4 channel (putative)...' ...
     ' 3. L5 channel (based on high frequency power) 4. CA1 channel (based on low theta and high ripple power). ...' ...
     'Please press ENTRE key after selecting all four points'])
-[ ~ , updated_channels ] = getpts;
+[ X , updated_channels ] = getpts;
 
 % find the closest channels
 for nchannel = 1:length(updated_channels)

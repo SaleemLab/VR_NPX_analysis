@@ -73,7 +73,7 @@ for nsubject = 1:length(SUBJECTS)
             if contains(StimulusName{nstimuli},'PRE') | contains(StimulusName{nstimuli},'RUN') | contains(StimulusName{nstimuli},'POST')
                 bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['Masa2tracks_WheelLog', '*']));
                 [~,idx] = sort([bonsai_files.datenum]);
-                
+
                 file_time = erase(bonsai_files(idx(file_counter)).name,'Masa2tracks_WheelLog');
                 file_time = file_time(1:end-6); % sometimes the exact seconds can be off for different bonsai files, search based on hour and minute (may need optimisation);
                 bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
@@ -83,20 +83,27 @@ for nsubject = 1:length(SUBJECTS)
                 this_stimulus = 'StaticGratings';
                 bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.csv']));
 
-            else 
+            else
                 this_stimulus = StimulusName{nstimuli};
                 if isequal(this_stimulus , 'Track')
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '_*.csv']));
                 else
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '*.csv']));
                 end
-                
-                
+
+
                 if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.bin'])))
                     bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.bin']));
                     bonsai_files(size(bonsai_files,1)+1) = bin_files;
                 end
             end
+
+            % Add face data (saved as mat file) if exist
+            if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[StimulusName{nstimuli}, '*proc.mat'])))
+                mat_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[StimulusName{nstimuli}, '*proc.mat']));
+                bonsai_files(size(bonsai_files,1)+1) = mat_files;
+            end
+
 
             probe_id = str2num(experiment_info(nexperiment).probe_number{nstimuli});
             if contains(options,'bilateral')
@@ -150,8 +157,14 @@ for nsubject = 1:length(SUBJECTS)
 
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).MAP_FILE = ...
                     fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id),'.ap_kilosortChanMap.mat']);
-                experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).KS_CATGT_FNAME =...
-                    fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'.log']);
+                
+                if contains(StimulusName{nstimuli},'OpenField')
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).KS_CATGT_FNAME =...
+                        fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_OpenField.log']);
+                else
+                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).KS_CATGT_FNAME =...
+                        fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'.log']);
+                end
 
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).BONSAI_DATAPATH = experiment_info(nexperiment).BONSAI_DATAPATH;
                 experiment_info(nexperiment).stimuli_type(nstimuli).probe(1).bonsai_files_names = {bonsai_files.name};
@@ -188,8 +201,13 @@ for nsubject = 1:length(SUBJECTS)
 
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).MAP_FILE = ...
                         fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id(nprobe)),'.ap_kilosortChanMap.mat']);
-                    experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_CATGT_FNAME =...
-                        fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'.log']);
+                    if contains(StimulusName{nstimuli},'OpenField')
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_CATGT_FNAME =...
+                            fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'_OpenField.log']);
+                    else
+                        experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).KS_CATGT_FNAME =...
+                            fullfile(['CatGT_',SUBJECTS{nsubject},'_',num2str(all_sessions_this_animal(nsession)),'.log']);
+                    end
 
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).BONSAI_DATAPATH = experiment_info(nexperiment).BONSAI_DATAPATH;
                     experiment_info(nexperiment).stimuli_type(nstimuli).probe(nprobe).bonsai_files_names = {bonsai_files.name};

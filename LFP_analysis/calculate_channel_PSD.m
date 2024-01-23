@@ -131,7 +131,7 @@ if plot_option == 1
 
     % legend('1-3','4-12','30-60','60-100','125-300')
     legend([pl(selected_frequency)],{freq_legends{selected_frequency}});
-    ylim([0 4000])
+    ylim([0 max(sorted_config.Ks_ycoord)+0.1*max(sorted_config.Ks_ycoord)])
 end
 
 

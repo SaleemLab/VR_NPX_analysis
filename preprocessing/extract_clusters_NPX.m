@@ -59,7 +59,6 @@ if contains(sorter,'off')
         &cluster_metrics.isi_viol <= 0.5...
         &cluster_metrics.presence_ratio >=0.5;
 
-
     mean_waveforms = readNPY([options.KS_DATAPATH,'/mean_waveforms.npy']); % Information about mean waveform (for all clusters)
     %     cluster_ContamPct = tdfread(fullfile(options.KS_DATAPATH,'cluster_ContamPct.tsv'));% contamination percentage
 
@@ -73,56 +72,58 @@ if contains(sorter,'off')
     % xlabel('amplitude cutoff')
     % ylabel('isi ratio')
     % zlabel('presence ratio')
+    tic
+    parfor id = 1:length(cluster_id)
+        peak_channel_waveforms(id,:) = squeeze(mean_waveforms(cluster_id(id),peakChannel(id),:)); % Here ID is pre-KS id
+        [ccg, t] = CCG(    these_spike_times{id}, ones(size(these_spike_times{id})),...
+            'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
+        if isempty(ccg)
+            cluster_acg(id,:) = zeros(size(t));
+            tau_rise(id) = nan;
+            troughToPeak_all(id) = nan;
+            good_unit_all(id) = 0;
+        else
+            cluster_acg(id,:) = ccg;
+            fit_params_out = [];
+            fit_params_out = fit_ACG(ccg,false);% fit_ACG and isToolboxInstalled function from cell explorer repo
+            tau_rise(id) = fit_params_out.acg_tau_rise;
+            troughToPeak_all(id) = troughToPeak(cluster_metrics.cluster_id == cluster_id(id)-1) % -1 as cluster_id is 1 based (after adding 1) but cluster_metrics.cluster_id is 0 based (post-KS)
+            good_unit_all(id) = good_unit(cluster_metrics.cluster_id == cluster_id(id)-1); % good_unit_all for pre-ks id.
+        end
+    end
+    toc
+
+    % 1 is pyramidal, 2 is narrow and 3 is wide
+    narrow_idx = find([troughToPeak_all]<=0.425);
+    wide_idx = find([troughToPeak_all]>0.425 & [tau_rise]>6);
+    pyr_idx = find(~ismember(1:length(cluster_id), [narrow_idx,wide_idx]));
+
+    [cell_type_all] = deal(nan);
+    [cell_type_all(pyr_idx)] = deal(1);
+    [cell_type_all(narrow_idx)] = deal(2);
+    [cell_type_all(wide_idx)] = deal(3);
+    % cell_type_all(good_unit_all==0) = nan;
 
 else % place holder for other sorters
 
 
 end
 
-tic
-parfor id = 1:length(cluster_id)
-    peak_channel_waveforms(id,:) = squeeze(mean_waveforms(cluster_id(id),peakChannel(id),:)); % Here ID is pre-KS id
-    [ccg, t] = CCG(    these_spike_times{id}, ones(size(these_spike_times{id})),...
-        'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
-    if isempty(ccg)
-        cluster_acg(id,:) = zeros(size(t));
-        tau_rise(id) = nan;
-        troughToPeak_all(id) = nan;
-        good_unit_all(id) = 0;
-    else
-        cluster_acg(id,:) = ccg;
-        fit_params_out = [];
-        fit_params_out = fit_ACG(ccg,false);% fit_ACG and isToolboxInstalled function from cell explorer repo
-        tau_rise(id) = fit_params_out.acg_tau_rise;
-        troughToPeak_all(id) = troughToPeak(cluster_metrics.cluster_id == cluster_id(id)-1) % -1 as cluster_id is 1 based (after adding 1) but cluster_metrics.cluster_id is 0 based (post-KS)
-        good_unit_all(id) = good_unit(cluster_metrics.cluster_id == cluster_id(id)-1); % good_unit_all for pre-ks id.
-    end
-end
-toc
-
-% 1 is pyramidal, 2 is narrow and 3 is wide
-narrow_idx = find([troughToPeak_all]<=0.425);
-wide_idx = find([troughToPeak_all]>0.425 & [tau_rise]>6);
-pyr_idx = find(~ismember(1:length(cluster_id), [narrow_idx,wide_idx]));
-
-[cell_type_all] = deal(nan);
-[cell_type_all(pyr_idx)] = deal(1);
-[cell_type_all(narrow_idx)] = deal(2);
-[cell_type_all(wide_idx)] = deal(3);
-% cell_type_all(good_unit_all==0) = nan;
-
-
-
 clusters = [];
 
 if ~isempty(tvec)
     %smooth SUA activity with a gaussian kernel
-    filter_length = 41;
+    time_step = 1/SR;
+    filter_length = round(0.2*SR);
     filter_alpha = 2;
-    time_step=1/SR; %match timestep to LFP time
-    w=gausswin(filter_length,filter_alpha); %41,2
-    w=w./sum(w);  %gaussian kernel 10 ms STD, 2 std width
-    
+    %     stdev = 3;
+    %     filter_alpha = (filter_length - 1)/stdev/2;
+    stdev = (filter_length-1)/(2*filter_alpha);
+    gk=gausswin(filter_length);
+    gk = gk./sum(gk);
+
+%         clusters.spike_count_smoothed = conv2(SUA_spike_count_raw,gk,'same');
+
     time_bins_edges= tvec(1)-(tvec(2) - tvec(1))/2:time_step:tvec(end)+(tvec(end) - tvec(end-1))/2;
 end
 
@@ -162,8 +163,8 @@ switch group
                         SUA_spike_id = [SUA_spike_id; cluster_id(good_units_index(unit))*ones(length(these_spike_times{good_units_index(unit)}),1)];
 
                         SUA_spike_count_raw(count,:) = histcounts(these_spike_times{good_units_index(unit)},time_bins_edges);
-                        SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{good_units_index(unit)},time_bins_edges));
-                        SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
+%                         SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{good_units_index(unit)},time_bins_edges));
+%                         SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
 
                         SUA_peak_channel(count) = nchannel;
                         SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
@@ -179,13 +180,12 @@ switch group
             end
         end
 
-        toc
-
         % Continuous spike data
         clusters.timevec = tvec;
         clusters.spike_count_raw = SUA_spike_count_raw;
-        clusters.spike_count_smoothed = SUA_spike_count_smoothed;
-        clusters.zscore_smoothed = SUA_zscore;
+%         clusters.spike_count_smoothed = SUA_spike_count_smoothed; 
+         clusters.spike_count_smoothed = filtfilt(gk,1,SUA_spike_count_raw')';
+        clusters.zscore_smoothed = zscore(clusters.spike_count_smoothed,0,2);
         clusters.unit_id = SUA_good_unit;
         clusters.good_clusters = good_clusters_all;
 
@@ -233,8 +233,8 @@ switch group
                     SUA_spike_id = [SUA_spike_id; cluster_id(index(unit))*ones(length(these_spike_times{index(unit)}),1)];
 
                     SUA_spike_count_raw(count,:) = histcounts(these_spike_times{index(unit)},time_bins_edges);
-                    SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{index(unit)},time_bins_edges));
-                    SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
+%                     SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{index(unit)},time_bins_edges));
+%                     SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
 
                     SUA_peak_channel(count) = nchannel;
                     SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
@@ -249,12 +249,12 @@ switch group
             end
         end
 
-        toc
-
         % Continuous spike data
         clusters.timevec = tvec;
         clusters.spike_count_raw = SUA_spike_count_raw;
-        clusters.spike_count_smoothed = SUA_spike_count_smoothed;
+%         clusters.spike_count_smoothed = SUA_spike_count_smoothed; 
+         clusters.spike_count_smoothed = filtfilt(gk,1,SUA_spike_count_raw')';
+        clusters.zscore_smoothed = zscore(clusters.spike_count_smoothed,0,2);
         clusters.zscore_smoothed = SUA_zscore;
         clusters.unit_id = SUA_good_unit;
         clusters.good_clusters = good_clusters_all;
@@ -306,7 +306,7 @@ switch group
         end
 
         clusters = spikes;
-
 end
+toc
 
 end
