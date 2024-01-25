@@ -25,7 +25,7 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-all_SUBJECTS = {'M23017','M23028','M23029','M23087'};
+all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
     SUBJECTS = {all_SUBJECTS{n}};
@@ -39,13 +39,13 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
-        for nstimuli = 1:length(experiment_info(nsession).stimuli_type)
+        for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
 %             for nprobe = 1:length(experiment_info(nsession).stimuli_type(nstimuli).probe)
 %                 session_info(nprobe) = experiment_info(nsession).stimuli_type(nstimuli).probe(nprobe);
 %             end
 
-            session_info = experiment_info(nsession).stimuli_type(nstimuli);
+            session_info = experiment_info(nsession).session(nstimuli);
 
             if exist(session_info.probe(1).ANALYSIS_DATAPATH) == 0
                 mkdir(session_info.probe(1).ANALYSIS_DATAPATH)
@@ -80,7 +80,8 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+% All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(2)
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
@@ -101,12 +102,14 @@ extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 SUBJECT = 'M23028';
 SESSION = '20230706';
 
-SUBJECT = 'M23087';
+% SUBJECT = 'M23087';
+SUBJECT = 'M23153';
 % SESSION = '20231212';
 SESSION = '20231212';
 options = 'bilateral';
 % Stimulus_type = 'Masa2tracks';
 Stimulus_type = 'Checkerboard';
+Stimulus_type = 'SparseNoise_fullscreen';
 % Stimulus_type = 'OpenFieldChronic';
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));

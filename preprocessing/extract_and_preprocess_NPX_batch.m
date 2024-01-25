@@ -11,7 +11,7 @@ function extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 % extraction function.
 
 for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
     if isempty(stimulus_name) % If stimulus not existing for this session
@@ -100,6 +100,7 @@ for nsession =1:length(experiment_info)
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
         end
+        
         clear clusters spikes
 
     end

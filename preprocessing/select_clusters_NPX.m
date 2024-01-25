@@ -1,4 +1,4 @@
-function [clusters chan_config sorted_config] = extract_clusters_NPX(options,varargin)
+function [clusters chan_config sorted_config] = select_clusters_NPX(options,varargin)
 
 %%% Function to extract clusters based on different sorters
 % Was modified/simplified from old function: 
@@ -13,7 +13,7 @@ options.importMode = 'KS';
 % Default values
 p = inputParser;
 addParameter(p,'selected_channels',[1 size(chan_config,1)],@isnumeric) % Select channels for analysis (default is all the channles)
-addParameter(p,'group','all clusters',@isstr) % spike data grouped 'all clusters'
+addParameter(p,'group','good clusters',@isstr) % spike data grouped 'good clusters'
 addParameter(p,'plot_option',0,@isnumeric) % option to plot
 addParameter(p,'SR',60,@isnumeric) % SR for cluster spike count time course (normally 60Hz)
 addParameter(p,'tvec',[],@isnumeric) % Time vector
@@ -104,9 +104,7 @@ if contains(sorter,'off')
     [cell_type_all(wide_idx)] = deal(3);
     % cell_type_all(good_unit_all==0) = nan;
 
-elseif contains(sorter,'KS2') % place holder for other sorters
-
-elseif contains(sorter,'KS3')
+else % place holder for other sorters
 
 
 end
@@ -132,7 +130,7 @@ end
 
 tic
 switch group
-    case 'all clusters'
+    case 'good clusters'
 
         count = 1;
         unit_id = [];
@@ -182,12 +180,12 @@ switch group
             end
         end
 
-        % Continuous spike data (retired)
+        % Continuous spike data
         clusters.timevec = tvec;
-%         clusters.spike_count_raw = SUA_spike_count_raw;
+        clusters.spike_count_raw = SUA_spike_count_raw;
 %         clusters.spike_count_smoothed = SUA_spike_count_smoothed; 
-%          clusters.spike_count_smoothed = filtfilt(gk,1,SUA_spike_count_raw')';
-%         clusters.zscore_smoothed = zscore(clusters.spike_count_smoothed,0,2);
+         clusters.spike_count_smoothed = filtfilt(gk,1,SUA_spike_count_raw')';
+        clusters.zscore_smoothed = zscore(clusters.spike_count_smoothed,0,2);
         clusters.unit_id = SUA_good_unit;
         clusters.good_clusters = good_clusters_all;
 
@@ -204,6 +202,79 @@ switch group
         if isfield(options,'probe_hemisphere')
             clusters.probe_hemisphere = options.probe_hemisphere; % 1 is left and 2 is right;
         end
+
+    case 'all clusters'
+
+        count = 1;
+        unit_id = [];
+        unit_type = [];
+        SUA_spike_time = [];
+        SUA_spike_id = [];
+        SUA_peak_channel_waveforms = [];
+        SUA_peak_channel = [];
+        SUA_peak_depth = [];
+        SUA_cell_type = [];
+        id_conversion = [];
+        SUA_spike_count_raw = [];
+        SUA_spike_count_smoothed = [];
+        SUA_zscore = [];
+        good_clusters_all= [];
+        SUA_good_unit = [];
+
+        for nchannel = selected_channels(1):selected_channels(2)
+            clusters_this_channel = find(peakChannel == nchannel); % ID for all clusters
+            [~,index,]= intersect(cluster_id,clusters_this_channel);
+            %             good_units_this_channel = clusters_this_channel(find(nominal_KSLabel(index)=='good')); % ID for all clusters
+
+            if ~isempty(index) % If any clusters
+                for unit = 1:length(index)
+
+                    SUA_spike_time = [SUA_spike_time; these_spike_times{index(unit)}];
+                    SUA_spike_id = [SUA_spike_id; cluster_id(index(unit))*ones(length(these_spike_times{index(unit)}),1)];
+
+                    SUA_spike_count_raw(count,:) = histcounts(these_spike_times{index(unit)},time_bins_edges);
+%                     SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{index(unit)},time_bins_edges));
+%                     SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
+
+                    SUA_peak_channel(count) = nchannel;
+                    SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
+                    good_clusters_all(count) = good_unit_all(index(unit));
+
+                    SUA_good_unit(count) = index(unit);
+                    SUA_peak_channel_waveforms(count,:) = peak_channel_waveforms(index(unit),:);
+                    SUA_cell_type(count) = cell_type_all(index(unit));
+
+                    count = count + 1;
+                end
+            end
+        end
+
+        % Continuous spike data
+        clusters.timevec = tvec;
+        clusters.spike_count_raw = SUA_spike_count_raw;
+%         clusters.spike_count_smoothed = SUA_spike_count_smoothed; 
+         clusters.spike_count_smoothed = filtfilt(gk,1,SUA_spike_count_raw')';
+        clusters.zscore_smoothed = zscore(clusters.spike_count_smoothed,0,2);
+        clusters.zscore_smoothed = SUA_zscore;
+        clusters.unit_id = SUA_good_unit;
+        clusters.good_clusters = good_clusters_all;
+        
+
+        % Spike time and spike id
+        [~,index] = sort(SUA_spike_time); % Sort spike time from start to end
+        clusters.spike_id = SUA_spike_id(index);
+        clusters.spike_times = SUA_spike_time(index);
+        clusters.peak_channel = SUA_peak_channel;
+        clusters.peak_depth = SUA_peak_depth;
+        clusters.peak_channel_waveforms = SUA_peak_channel_waveforms;
+        clusters.cell_type = SUA_cell_type;
+        clusters.probe_id = options.probe_id; % 0 is probe 1 and 1 is probe 2.
+        clusters.group = group;% good clusters or all clusters or etc
+
+        if isfield(options,'probe_hemisphere')
+            clusters.probe_hemisphere = options.probe_hemisphere; % 1 is left and 2 is right;
+        end
+
 
     case 'Buz style'
         % Create Buz-style spike variables
