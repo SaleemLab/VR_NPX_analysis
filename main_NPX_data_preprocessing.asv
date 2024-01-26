@@ -25,7 +25,7 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-all_SUBJECTS = {'M23017','M23028','M23029','M23087'};
+all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
     SUBJECTS = {all_SUBJECTS{n}};
@@ -39,13 +39,13 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
-        for nstimuli = 1:length(experiment_info(nsession).stimuli_type)
+        for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
 %             for nprobe = 1:length(experiment_info(nsession).stimuli_type(nstimuli).probe)
 %                 session_info(nprobe) = experiment_info(nsession).stimuli_type(nstimuli).probe(nprobe);
 %             end
 
-            session_info = experiment_info(nsession).stimuli_type(nstimuli);
+            session_info = experiment_info(nsession).session(nstimuli);
 
             if exist(session_info.probe(1).ANALYSIS_DATAPATH) == 0
                 mkdir(session_info.probe(1).ANALYSIS_DATAPATH)
@@ -72,15 +72,20 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 %%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
 %%%%%% want to process. 
 SUBJECTS = {'M23017','M23028','M23029','M23087'};
+SUBJECTS = {'M23028','M23029','M23087'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
 % Stimulus_type = 'Masa2tracks';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 Stimulus_type = 'Checkerboard';
-extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+% All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+% experiment_info = experiment_info(2)
+for n = 1:length(All_stimuli)
+    extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
+end
 
 SUBJECTS = {'M23087'};
 options = 'bilateral';
@@ -97,12 +102,14 @@ extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 SUBJECT = 'M23028';
 SESSION = '20230706';
 
-SUBJECT = 'M23087';
+% SUBJECT = 'M23087';
+SUBJECT = 'M23153';
 % SESSION = '20231212';
 SESSION = '20231212';
 options = 'bilateral';
 % Stimulus_type = 'Masa2tracks';
 Stimulus_type = 'Checkerboard';
+Stimulus_type = 'SparseNoise_fullscreen';
 % Stimulus_type = 'OpenFieldChronic';
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
@@ -144,7 +151,7 @@ ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
 SUBJECTS = {'M23087'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-experiment_info = experiment_info(2);
+experiment_info = experiment_info(end);
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 
@@ -152,14 +159,46 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 
-if ismac
-    ROOTPATH = '/Users/s.solomon/Filestore/Research2/ibn-vision';
-else
-%     ROOTPATH = 'X:\ibn-vision';
-    ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
-%     ROOTPATH = '/research';
+clear all
+
+% Single session checkerboard
+SUBJECT = 'M23028';
+SESSION = '20230706';
+options = 'bilateral';
+Stimulus_type = 'Checkerboard';
+for nprobe = 1:length(session_info.probe) % For each session, how many probes
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    options= session_info.probe(nprobe);
+    %             options.ROOTPATH = ROOTPATH;
+    options.importMode = 'LF';
+    options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+
+    [lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power,best_channels] = checkerboard_CSD_profile(options);
+    save_all_figures(options.ANALYSIS_DATAPATH,[]);
+    close
+
+    save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+
+    column = 1;
+    [LF_FILE imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+    [best_channels_updated{options.probe_no}] = update_best_channels(options,sorted_config);
+
+    % If updating all
+    best_channels{options.probe_no}.first_in_brain_channel = best_channels_updated{options.probe_no}(1);
+    best_channels{options.probe_no}.L4_channel = best_channels_updated{options.probe_no}(2);
+    %             best_channels{nprobe}.L4_channel = [];
+    best_channels{options.probe_no}.L5_channel = best_channels_updated{options.probe_no}(3);
+    best_channels{options.probe_no}.CA1_channel = best_channels_updated{options.probe_no}(4);
+
+    close
+
+    save(fullfile(erase(options.ANALYSIS_DATAPATH,['\','Checkerboard']),"best_channels.mat"),'best_channels')
+    % Replot based on updated channels
+    plot_perievent_CSD_LFP(lfpAvg.nprobe(options.probe_no),csd.nprobe(options.probe_no),power{options.probe_no},chan_config,sorted_config,best_channels{options.probe_no},options)
+    save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
 
+% Checkerboard CSD batch
 % SUBJECTS = {'M23017','M23028','M23029'};
 SUBJECTS = {'M23087'};
 options = 'bilateral';
@@ -171,7 +210,9 @@ calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 %% Visual tuning based on SparseNoise
 clear all
 SUBJECTS = {'M23017','M23028','M23029'};
-SUBJECTS = {'M23087'};
+% SUBJECTS = {'M23087'};
+
+SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS);
 % Stimulus_type = 'Masa2tracks';
 ROOTPATH = 'Z:\ibn-vision';
@@ -180,15 +221,19 @@ initMap = [];
 probe_hemisphere_text = {'Left','Right'};
 
 for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
-        load('best_channels.mat')
+    gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
+%     cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
+    load('best_channels.mat')
+for n = 1:length()
     for nprobe = 1:length(session_info.probe) % For each session, how many probes
         options = session_info.probe(nprobe);
-        options.BinWidth = 1/60;
+        bin_size = 1/60;
+        AnalysisTimeWindow = [0 1/60*7];
+
+
         options.importMode = 'KS'; % LF or MUA or KS
         % options.importMode = 'LF'; % LF or MUA or KS
         options.BinWidth = 1/60; % resolution (in s) of output resps (e.g. 1/60)
@@ -197,15 +242,33 @@ for nsession =1:length(experiment_info)
         options.ks_unitType = 'good'; % 'mua', 'good' or ''
         options.PD_FLAG = 1;
         options.paradigm = 'masa';
-        options.gFileNum = gFileNum;
+%         options.gFileNum = gFileNum;
         options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
         [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
-        [resps,otherData,stimData,~,wheelData,photodiodeData,timeVector,options] = extractAndCollateNPData(options);
-        onDuration = photodiodeData.stim_off.sglxTime-photodiodeData.stim_on.sglxTime;
-        offDuration = photodiodeData.stim_on.sglxTime(2:end)-photodiodeData.stim_off.sglxTime(1:end-1);
+
+        load(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour.mat"))
+        load(fullfile(options.ANALYSIS_DATAPATH,"extracted_task_info.mat"))
+        load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters.mat"))
+        
+        % currently hard-coded
+        good_unit_index = (clusters.amplitude_cutoff <= 0.1...
+            &clusters.isi_viol <= 0.1...
+            &clusters.amplitude >=50);
+        good_unit = clusters.cluster_id(good_unit_index);
+
+        all_spike_data = [clusters.spike_id(find(ismember(clusters.spike_id, good_unit))) clusters.spike_times(find(ismember(clusters.spike_id, good_unit)))];
+
+        %         num_cell = length(unique(spike_data(:,1)));
+        for unit_id = 1:length(good_unit)
+            spikes_this_cell = all_spike_data(find(spike_data(:,1) == good_unit(unit_id)),2);
+
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
+            resps(unit_id,:,:) = binnedArray';
+        end
+
         % Calculate sparsenoise RFs
-        stim_matrix = cat(3,stimData.stim_matrix{:}); % N rows x M cols x nFrames
+        stim_matrix = cat(3,Task_info.stim_matrix{:}); % N rows x M cols x nFrames
         
         sn_options.grid_size = [size(stim_matrix,1) size(stim_matrix,2)];
         sn_options.mapSampleRate = 60; % Hz
@@ -216,11 +279,6 @@ for nsession =1:length(experiment_info)
         
         horizontalAngles = -30:(30+90)/8:90;
         verticalAngles = -120:240/16:120;
-        % Extract wheel and eye data
-        wheel_data = squeeze(nanmean(otherData(1,:,:),2))';
-        eye_data = squeeze(nanmean(otherData(2,:,:),2))';
-        
-        
 
         SUA_data = [];
         On_response = [];
@@ -259,13 +317,13 @@ for nsession =1:length(experiment_info)
                         SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
                         initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
                         initMap{unit_id,1} = initMap_temp;
-        
-        
+      
         end
 
-        RF.probe(options.probe_no).cluster_id = options.cluster_id;
-        RF.probe(options.probe_no).peak_channel = options.peakChannel;
-        RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(options.peakChannel);
+        RF.probe(options.probe_no).cluster_id = good_unit;
+        RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel(good_unit_index);
+        RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
+        RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
 
         RF.probe(options.probe_no).RF_map = initMap;
         initMap = [];

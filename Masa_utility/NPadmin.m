@@ -237,11 +237,11 @@ classdef NPadmin
             config.elecs = elecs;
             config.type = str2double(header{1,1});
             reftype = unique(refs);
-            if numel(reftype)==1
-                config.reference = reftype;
-            else
-                keyboard % not quite sure what to do in the case of different channels having different references... but that shouldn't happen the way we usually record!
-            end
+            %             if numel(reftype)==1
+            config.reference = reftype;
+%             else
+%                 keyboard % not quite sure what to do in the case of different channels having different references... but that shouldn't happen the way we usually record!
+%             end
         end
         
         function shanks = xcoordsToShank(xcoords)

@@ -1,34 +1,33 @@
 % function [stimulusData,eyeData,wheelData,photodiodeData,stimTimes] = importAndAlignBonsaiLogs(EPHYS_DATAPATH,TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH,EYEDATA_DATAPATH)
 % 
 % Program to import bonsai logs and eye data and align to ePhys data
+% (relative to probe 1 spikeglx time) during spatial VR tasks (linear tracks)
+% and then align the data based on the delay between quad and photodioide signal
+% Everything is resampled to 60Hz
 % 
-% inputs : EPHYS_DATAPATH, TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH, EYEDATA_DATAPATH
+% inputs
+% - StimulusName: stimulus name such as 'Masa2tracks' or 'Track' and so on
+% - options: usually 'session_info' strtcure which contains all the information about
+% data path, stimulus type, g file number and so on
+
 % outputs: stimulusData,eyeData,wheelData,photodiodeData (photdiode data derived from the
 %               peripherals dataset)
 %
-% History:  SGS 24/2/2022 ported from import_process_BonsaiData
-%           SGS 28/2/2022 added stimulus data parsing
-%           SGS 04/4/2022 shifted imec extract to here and allowed function to either call precomputed
-%                           asyncpulse times or load anew from LF (long) or AP (very long) imec data
-%           SGS 14/4/2022 moved to using toolbox from Jennifer Collonel
-%                       (SpikeGLX_Datafile_Tools) to read the async pulse from the ephys file
-%           FR 09/06/2022 changed how PD was being read due to stimuli
-%           adjustment issues
+% History: 
+
 % Dependencies:
 %   import_bonsai_peripherals
 %   import_bonsai_eyedata
 %   import_BonVisionParams
 %   import_processWheelEphys
 %   alignBonsaiAndEphysData
-%
+%   import_bonsai_photodiode
+
 %   Uses the following libraries, which are included in the folder
 %   https://billkarsh.github.io/SpikeGLX/ - SpikeGLX_Datafile_Tools
 %   
 function   [behaviour,task_info,peripherals] = import_and_align_Masa_VR_Bonsai(StimulusName,options)
 
-% Program to import bonsai logs and eye data and align to ePhys data and
-% align the data based on the delay between quad and photodioide signal
-% Everything is resampled to 60Hz
 
 % Find Bonsai files
 bonsai_files_names = options(1).bonsai_files_names;
