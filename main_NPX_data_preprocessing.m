@@ -120,6 +120,7 @@ if contains(Stimulus_type,'Masa2tracks')
 else
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     extract_and_preprocess_NPX(session_info,Stimulus_type)
+
 end
 
 

@@ -196,7 +196,7 @@ if contains(sorter,'off') % Load cluster table and find good units based on qual
         end
     end
 
-    [~,~,index] = intersect(SUA_good_unit-1,cluster_metrics.cluster_id)
+    [~,~,index] = intersect(SUA_good_unit-1,cluster_metrics.cluster_id);
     clusters = table2struct(cluster_metrics(index,:),"ToScalar",true);
     clusters.cluster_id = clusters.cluster_id+1; %1 based
 
