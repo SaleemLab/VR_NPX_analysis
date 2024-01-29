@@ -212,7 +212,7 @@ for nsubject = 1:length(SUBJECTS)
                 end
 
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).segment_frames =...
-                    fullfile(SORTER_DATAPATH,'segment_frames.csv');
+                    fullfile(SORTER_DATAPATH,'sorters','segment_frames.csv');
 
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).BONSAI_DATAPATH = experiment_info(nexperiment).BONSAI_DATAPATH;
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).bonsai_files_names = {bonsai_files.name};

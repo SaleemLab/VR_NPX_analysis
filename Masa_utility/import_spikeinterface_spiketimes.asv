@@ -37,7 +37,6 @@ spike_clusters = readNPY(fullfile(SORTER_DATAPATH,'spike_clusters.npy'));
 similar_templates = readNPY(fullfile(SORTER_DATAPATH,'similar_templates.npy'));
 
 spike_clusters = readNPY(fullfile(SORTER_DATAPATH,'templates.npy'));
-tem1 = readNPY(fullfile(options.KS_DATAPATH,'templates.npy'));
 
 % Get types of unit cluster Id
 % cd('X:\ibn-vision\DATA\SUBJECTS\M22069\ephys\20221201\kilosort')

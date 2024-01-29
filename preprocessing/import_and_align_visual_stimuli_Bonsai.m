@@ -76,7 +76,7 @@ end
 tstart = tic;
 
 [stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options);
-[stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,[],options);
+% [stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,[],options);
 
 
 if ~isempty(DLC_EYEDATA_DATAPATH)
@@ -194,7 +194,7 @@ switch(StimulusName)
         end
 end
 
-if ~isfield(options,'photodiode_failure') | isempty(photodiodeData)
+if ~isfield(options,'photodiode_failure') | ~isempty(photodiodeData)
     task_info.pd_on.sglxTime = photodiodeData.stim_on.sglxTime';
     task_info.pd_off.sglxTime = photodiodeData.stim_off.sglxTime';
 end

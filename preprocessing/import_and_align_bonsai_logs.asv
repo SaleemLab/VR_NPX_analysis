@@ -183,6 +183,8 @@ elseif strcmp(options.paradigm,'masa')
         
         % to get photodiode down we need to do some median filtering to
         % remove some awkward down swings when the quad is white
+
+
         frameidx_end = find(photodiode.FrameNumber >= frame_trial_end(itrial),1,'first');
         frameidx_end = frameidx_end + ceil(temp_idx/2)-1; % Adding half of the delay of the previous quad change
 
