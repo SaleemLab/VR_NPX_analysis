@@ -72,9 +72,9 @@ end
 for nprobe = 1:length(session_info.probe)
     options = session_info.probe(nprobe);
 
-%     [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-    [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','sorter','KS2','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-    [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','sorter','KS3','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+    %     [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+    [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+    [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
     %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
 end
 
@@ -86,11 +86,14 @@ end
 if contains(Stimulus_type,'Masa2tracks')
     % If Masa2tracks, PRE, RUN and/or POST saved in one folder
     save(fullfile(options.ANALYSIS_DATAPATH,...
-        sprintf('extracted_clusters%s.mat',erase(stimulus_name,Stimulus_type))),'clusters')
-%     save(fullfile(options.ANALYSIS_DATAPATH,...
-%         sprintf('extracted_spikes%s.mat',erase(stimulus_name,Stimulus_type))),'spikes')
+        sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks2')
+    save(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks3')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,...
+    %         sprintf('extracted_spikes%s.mat',erase(stimulus_name,Stimulus_type))),'spikes')
 else
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
 %     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
 end
 
