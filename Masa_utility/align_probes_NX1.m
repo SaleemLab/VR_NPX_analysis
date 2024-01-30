@@ -16,7 +16,7 @@ function [stimData,peripherals,eyeData,photodiode] = align_probes_NX1(options)
 for nprobe = 1:length(options)
     tic
     DIR = dir(fullfile(options(nprobe).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
-    DIR = [];
+%     DIR = [];
     [~,fname] = fileparts(options(nprobe).EPHYS_DATAPATH);
 
     if ~isempty(DIR)

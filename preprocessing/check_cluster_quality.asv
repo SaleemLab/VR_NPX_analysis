@@ -1,0 +1,40 @@
+function  check_cluster_quality(session_info,Stimulus_type)
+
+options = session_info.probe(1);
+
+if contains(Stimulus_type,'Masa2tracks')
+    % If Masa2tracks, PRE, RUN and/or POST saved in one folder
+    load(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_clusters_ks2%s.mat',erase(options.StimulusName,Stimulus_type))))
+    load(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_clusters_ks3%s.mat',erase(options.StimulusName,Stimulus_type))))
+    load(fullfile(options.ANALYSIS_DATAPATH,...
+        sprintf('extracted_clusters%s.mat',erase(options.StimulusName,Stimulus_type))))
+    %     save(fullfile(options.ANALYSIS_DATAPATH,...
+    %         sprintf('extracted_spikes%s.mat',erase(stimulus_name,Stimulus_type))),'spikes')
+else
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'))
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'))
+%     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
+end
+
+
+% isi violation
+figure
+count = 1
+for nprobe = 1:length(clusters_ks2)
+    subplot(2,2,count)
+    h(1) = histogram(clusters_ks2(nprobe).isi_violations_ratio,0:0.01:2,'FaceColor','red','FaceAlpha',0.5,'FaceEdge',''); hold on
+    h(2) = histogram(clusters_ks3(nprobe).isi_violations_ratio,0:0.01:2,'FaceColor','blue','FaceAlpha',0.5)
+    h(3) = histogram(clusters(nprobe).isi_viol,0:0.01:2,'FaceColor','m','FaceAlpha',0.5)
+    count = count + 1;
+    legend([h(1) h(2) h(3)],{'KS2','KS3','old KS3'})
+end
+
+for nprobe = 1:length(clusters_ks2)
+    subplot(2,2,count)
+    histogram(clusters_ks2(nprobe).amplitude_cutoff,'FaceColor','r','FaceAlpha','0.5'); hold on
+    histogram(clusters_ks3(nprobe).amplitude_cutoff,'FaceColor','b','FaceAlpha','0.5')
+    histogram(clusters(nprobe).amplitude_cutoff,'FaceColor','g','FaceAlpha','0.5')
+    count = count + 1;
+end
