@@ -446,14 +446,14 @@ end
 
 
 for nshank = 1:4
-%     subplot(2,2,nshank)
+    %     subplot(2,2,nshank)
     scal_f = 10; % scale image by this before...
     sigma = 3; % ...filtering by this
     V1_cell_id = find(RF.probe(options.probe_no).shank == nshank);
     fig = figure
     fig.Position = [300 150 1000 620]
     fig.Name = sprintf('%s %s Shank %i Averaged V1 Receptive field',options.SUBJECT,options.SESSION,nshank);
-    RF_map = [];
+
     for unit = 1:16
 
         subplot(4,4,unit)

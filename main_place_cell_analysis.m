@@ -1,3 +1,43 @@
+%% Main place cell and V1 spatial modulation analysis code
+
+%% Spatial modulation GLM analysis
+clear all
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'RUN';
+
+for  nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        for nprobe = 1:length(session_info(n).probe)
+            options = session_info(n).probe(nprobe);
+            
+            spatial_modulation_GLM_analysis(clusters, Behaviour)
+        end
+    end
+end
+
+
+% SUBJECTS = {'M23017'}
+SUBJECT = 'M23028';
+SESSION = '20230706';
+Stimulus_type = 'Masa2tracks';
+if contains(Stimulus_type,'Masa2tracks')
+    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
+    for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
+        load(fullfile(session_files(n).folder, session_files(n).name))
+        extract_and_preprocess_NPX(session_info,Stimulus_type)
+    end
+else
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    extract_and_preprocess_NPX(session_info,Stimulus_type)
+
+end
+
+
 
 %% Load Spike train data for place cell analysis
 clear all
