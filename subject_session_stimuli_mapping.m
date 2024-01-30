@@ -139,9 +139,16 @@ for nsubject = 1:length(SUBJECTS)
                 bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
 
 
-                if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.bin'])))
+                if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin'])))
+                    
+                    % Unfortunately... sometimes bin file time stamp can be 1 or 2
+                    % mins later than others....
+                    bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin']));
+                    [~,idx] = sort([bin_files.datenum]);
 
+                    file_time = extractPattern(bin_files(idx(stimulus_counter(nstimuli))).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
                     bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.bin']));
+
                     bonsai_files(size(bonsai_files,1)+1) = bin_files;
                 end
                 
