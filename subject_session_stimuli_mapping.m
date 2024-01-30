@@ -133,9 +133,9 @@ for nsubject = 1:length(SUBJECTS)
                 end
             end
 
-            [~,idx] = sort([bonsai_files.datenum]);
+%             [~,idx] = sort([bonsai_files.datenum]);
 
-            file_time = extractPattern(bonsai_files(idx(stimulus_counter(nstimuli))).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
+            file_time = extractPattern(bonsai_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
             bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
 
 
@@ -144,9 +144,9 @@ for nsubject = 1:length(SUBJECTS)
                 % Unfortunately... sometimes bin file time stamp can be 1 or 2
                 % mins later than others....
                 bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin']));
-                [~,idx] = sort([bin_files.datenum]);
+%                 [~,idx] = sort([bin_files.datenum]);
 
-                file_time1 = extractPattern(bin_files(idx(stimulus_counter(nstimuli))).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
+                file_time1 = extractPattern(bin_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
                 bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time1,'*.bin']));
 
                 bonsai_files(size(bonsai_files,1)+1) = bin_files;

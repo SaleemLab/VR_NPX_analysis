@@ -37,7 +37,7 @@ for nsession =1:length(experiment_info)
         if isempty(DIR)
             if contains(Stimulus_type,'OpenField')
                 [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
-            elseif contains(Stimulus_type,'Masa2tracks')
+            elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track') 
                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
             elseif contains(Stimulus_type,'Diao')
 
