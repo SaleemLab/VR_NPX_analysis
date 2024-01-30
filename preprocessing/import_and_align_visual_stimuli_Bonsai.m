@@ -179,8 +179,10 @@ task_info = [];
 % Task info about the onset of stimuli and/or stimuli info
 task_info.stim_onset = stimTimes;% Stimulus onset time
 
-if contains(stimData.Properties.VariableNames,'stim_matrix') % For sparse noise
-    task_info.stim_matrix = stimData.stim_matrix; %
+if ~isempty(stimData.Properties.VariableNames)
+    if contains(stimData.Properties.VariableNames,'stim_matrix') % For sparse noise
+        task_info.stim_matrix = stimData.stim_matrix; %
+    end
 end
 
 switch(StimulusName)

@@ -25,7 +25,7 @@ for nprobe = 1:length(session_info.probe)
         [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column);
     end
 
-    [PSD{nprobe} power{nprobe} best_channels(nprobe)] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
+    [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
 
     %         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
     %         filename = sprintf('%s %s PSD profile probe %i.pdf',options.SUBJECT,options.SESSION,nprobe)
