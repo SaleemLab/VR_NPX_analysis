@@ -184,7 +184,7 @@ if contains(stimData.Properties.VariableNames,'stim_matrix') % For sparse noise
 end
 
 switch(StimulusName)
-    case {'StaticGratings_short','StaticGratings'}
+    case {'StaticGratings_short'}
         task_info.stim_orientation = readmatrix('X:\ibn-vision\CODE\DEV\BONSAI\Diao\dome_dual_DT\Grating_trials_short.CSV');
     case {'StaticGratings_long'}
         task_info.stim_orientation = readmatrix('X:\ibn-vision\CODE\DEV\BONSAI\Diao\dome_dual_DT\Grating_trials.CSV');

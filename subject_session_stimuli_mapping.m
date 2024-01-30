@@ -118,9 +118,9 @@ for nsubject = 1:length(SUBJECTS)
         for nstimuli = 1:length(StimulusName)
 
             % Bonsai data path
-            if contains(StimulusName{nstimuli},'StaticGratings')
-                this_stimulus = 'StaticGratings';
-                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,[this_stimulus, '*.csv']));
+            if contains(StimulusName{nstimuli},'StaticGrating')
+                this_stimulus = 'StaticGrating';
+                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '*.csv']));
 
             else
                 this_stimulus = StimulusName{nstimuli};
