@@ -94,8 +94,8 @@ end
 % SUBJECTS = {'M23017'}
 SUBJECT = 'M23032';
 SESSION = ['20230718','20230719','20230720','20230721','20230722'];
-
 Stimulus_type = ['Track','StaticGratings','SparseNoise_fullscreen','CheckerBoard'];
+
 % Stimulus_type = 'OpenFieldChronic';
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
