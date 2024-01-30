@@ -407,6 +407,8 @@ behaviour.position(behaviour.position>140) = 140;
 task_info = [];
 
 if contains(StimulusName,'RUN') | contains(StimulusName,'Track')
+
+    if isempty(reward)
     task_info.reward_type = table2cell(reward(:,"Var1"));
     task_info.reward_type = cellfun(@(x) x(2:end), task_info.reward_type, 'UniformOutput',false);
     task_info.reward_type = cellfun(@str2double,task_info.reward_type);
@@ -587,7 +589,7 @@ behaviour.lick_count(2,:) = interp1(peripherals.sglxTime,[0; diff(peripherals.Li
 
 %% Lap info 
 
-if  ~isempty(trial_path) & contains(StimulusName,'RUN')
+if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path) & contains(StimulusName,'Track'))
 
 %     if table2array(trial_info(1,"Var5")) >100
 %         trial_info(1,:) =  [];
@@ -705,10 +707,10 @@ if ~isempty(task_info.start_time_all)
 end
 
 
-if isfield(options,'photodiode_failure')
-    task_info.pd_on.sglxTime = pdstart';
-    task_info.pd_off.sglxTime = pdend';
-end
+% if isfield(options,'photodiode_failure')
+task_info.pd_on.sglxTime = pdstart';
+task_info.pd_off.sglxTime = pdend';
+% end
 % extract_laps_masa(1,behaviour,position)
 
 end
