@@ -72,17 +72,12 @@ for nsubject = 1:length(SUBJECTS)
         if contains(options,'bilateral')
             stimuli_info.probe_hemisphere = cellstr(num2str(stimuli_info.probe_hemisphere));
         elseif contains(options,'V1-MEC')
-
-        end
-    end
-
-    if contains(options,'V1-MEC')
-        if ~iscell(stimuli_info.V1)
             stimuli_info.V1 = cellstr(num2str(stimuli_info.V1));
-        end
-        if ~iscell(stimuli_info.MEC)
             stimuli_info.MEC = cellstr(num2str(stimuli_info.MEC));
         end
+    end
+    if contains(options,'V1-MEC')
+        
     end
         
     for nsession = 1:length(all_dates_this_animal)
