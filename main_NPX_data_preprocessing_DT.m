@@ -93,22 +93,17 @@ end
 %%%%%% want to process.
 % SUBJECTS = {'M23017'}
 SUBJECT = 'M23032';
-SESSION = ['20230718','20230719','20230720','20230721','20230722'];
-Stimulus_type = ['Track','StaticGratings','SparseNoise_fullscreen','CheckerBoard'];
+load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis','experiment_info.mat'))
+SESSION = ['20230718';'20230719';'20230720';'20230721';'20230722'];
 
-% Stimulus_type = 'OpenFieldChronic';
-if contains(Stimulus_type,'Masa2tracks')
-    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
-    for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
-        load(fullfile(session_files(n).folder, session_files(n).name))
-        extract_and_preprocess_NPX(session_info,Stimulus_type)
+
+for iSession = 1:length(SESSION)
+    Stimulus_type = experiment_info(iSession).StimulusName;
+    for iStim = 1:length(Stimulus_type)
+        load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION(iSession,:),Stimulus_type{iStim},'session_info.mat'))
+        extract_and_preprocess_NPX(session_info,Stimulus_type{iStim})
     end
-else
-    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
-    extract_and_preprocess_NPX(session_info,Stimulus_type)
-
 end
-
 
 %% PSD analysis and LFP profile
 ROOTPATH = 'Z:\ibn-vision';

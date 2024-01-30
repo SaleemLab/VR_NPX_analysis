@@ -31,8 +31,8 @@ if isempty(DIR) % skip behaviour extraction if already saved
     elseif contains(Stimulus_type,'Masa2tracks')
         [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name,options);
 
-    elseif contains(Stimulus_type,'Diao')
-
+    elseif contains(Stimulus_type,'Track')
+        [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name,options);
     elseif contains(Stimulus_type,'Edd')
 
     else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc

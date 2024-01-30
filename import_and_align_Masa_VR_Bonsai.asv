@@ -270,7 +270,7 @@ end
 
 if isfield(options,'photodiode_failure') 
 %      peripherals.corrected_sglxTime = peripherals.sglxTime;
-     disp('photodiode signal noisy. Bonsai data still corrected. Use corrected timestamp with caution')
+     disp('photodiode signal failed. Bonsai data corrected using mean delay instead')
      [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
 %      [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'mean delay');
 else

@@ -34,6 +34,7 @@ if strcmp(option,'replay') % If visual stimuli during sleep
     bonsai_data.stimuli_track(bonsai_data.pos(locs)<200) = 2;
     bonsai_data.stimuli_track(bonsai_data.pos(locs)>200) = 1;
 elseif strcmp(option,'mean delay') % If visual stimuli during sleep
+
     bonsai_idx = sort([find(diff(bonsai_data.QuadState)==-1)+1; find(diff(bonsai_data.QuadState)==1)+1]);
     syncTimes_Quad = bonsai_data.sglxTime(bonsai_idx);
     mean_delay = nanmean(syncTimes_Quad - syncTimes_Photodiode);
