@@ -14,8 +14,10 @@ for  nsession =1:length(experiment_info)
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             
-            spatial_modulation_GLM_analysis(clusters, Behaviour)
+            spatial_modulation_GLM_analysis(clusters, Behaviour);
         end
     end
 end
