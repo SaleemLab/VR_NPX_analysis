@@ -69,6 +69,8 @@ end
 %% import and align and store Bonsai and cluster spike data
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
 %%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
 %%%%%% want to process. 
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
