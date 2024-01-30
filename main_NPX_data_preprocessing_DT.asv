@@ -100,8 +100,10 @@ SESSION = ['20230718';'20230719';'20230720';'20230721';'20230722'];
 for iSession = 1:length(SESSION)
     Stimulus_type = experiment_info(iSession).StimulusName;
     for iStim = 1:length(Stimulus_type)
-        load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION(iSession,:),Stimulus_type{iStim},'session_info.mat'))
-        extract_and_preprocess_NPX(session_info,Stimulus_type{iStim})
+        if ~contains(Stimulus_type{iStim},'StaticGrating')
+            load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION(iSession,:),Stimulus_type{iStim},'session_info.mat'))
+            extract_and_preprocess_NPX(session_info,Stimulus_type{iStim})
+        end
     end
 end
 
