@@ -271,7 +271,14 @@ end
 if isfield(options,'photodiode_failure') 
 %      peripherals.corrected_sglxTime = peripherals.sglxTime;
      disp('photodiode signal noisy. Bonsai data still corrected. Use corrected timestamp with caution')
-     [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+        
+     if isempty(pdstart) | isempty (pdend)
+         peripherals.corrected_sglxTime = peripherals.sglxTime;
+     else
+         [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+     end
+
+     
 %      [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'mean delay');
 else
     switch StimulusType
@@ -709,8 +716,12 @@ end
 
 
 % if isfield(options,'photodiode_failure')
+
+
 task_info.pd_on.sglxTime = pdstart';
 task_info.pd_off.sglxTime = pdend';
+
+
 % end
 % extract_laps_masa(1,behaviour,position)
 
