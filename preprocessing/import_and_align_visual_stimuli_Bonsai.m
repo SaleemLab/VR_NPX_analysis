@@ -86,8 +86,9 @@ end
 
 if ~isempty(FACEDATA_DATAPATH)
     facedata = load(FACEDATA_DATAPATH); % load face energy data
-    if isfield(facedata,'motion_1')
+    if ~isfield(facedata,'motion_1')
         facedata = [];
+        FACEDATA_DATAPATH = [];
     end
 end
 
