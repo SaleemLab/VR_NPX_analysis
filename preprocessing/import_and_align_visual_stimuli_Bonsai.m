@@ -202,7 +202,7 @@ if  ~isempty(photodiodeData)
     task_info.pd_on.sglxTime = photodiodeData.stim_on.sglxTime';
     task_info.pd_off.sglxTime = photodiodeData.stim_off.sglxTime';
     if isfield(photodiodeData,'photodiode_failure')
-        behaviour.photodiode_failure = options.photodiode_failure;
+        behaviour.photodiode_failure = photodiodeData.photodiode_failure;
     end
 else % if photodiode empty
     behaviour.photodiode_failure = 1;
