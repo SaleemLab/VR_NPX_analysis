@@ -170,7 +170,6 @@ elseif strcmp(options.paradigm,'masa')
     pd_thresh_up = 400;
     pd_thresh_down = 80;
     photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',10);
-    counts = 1 ;
     %     histogram(photodiode.Photodiode_smoothed,1000)
     for itrial =1:nTrials
         % find frame where Bonsai asked to change quad
@@ -180,7 +179,6 @@ elseif strcmp(options.paradigm,'masa')
         temp_idx = find(photodiode.Photodiode_smoothed(frameidx_start:end)>pd_thresh_up,1,'first');
         if isempty(temp_idx)
             temp_idx = 0;
-            counts = counts + 1;
         end
         idx_start = frameidx_start+temp_idx-1;
         % convert to spike GLX time
@@ -202,10 +200,6 @@ elseif strcmp(options.paradigm,'masa')
 
     photodiodeData.stim_on.sglxTime = pdstart';
     photodiodeData.stim_off.sglxTime = pdend';
-    
-    if counts > nTrials/2
-        photodiodeData.photodiode_failure = 1;
-    end
 
 elseif strcmp(options.paradigm,'SG')
         %hot fix of the static grating quadstate issue

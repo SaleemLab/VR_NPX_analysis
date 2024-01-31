@@ -124,18 +124,20 @@ behaviour.camera_frame_count = interp1(peripherals.sglxTime,peripherals.EyeFrame
 % behaviour.wheel_reference_timestamp = peripherals.Time;% probably not needed....
 
 %% eye data
-behaviour.camera_frame_count = interp1(peripherals.sglxTime,peripherals.EyeFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
-behaviour.eye_coordinates  = new_tracking_points_coordinates(behaviour.camera_frame_count+1,:);% bonsai eye camera frame and DLC frame is 0 based hence adding 1
-behaviour.pupil_size =  pupil_ellipse(behaviour.camera_frame_count+1,6)';
-behaviour.pupil_movement_angle =  pupil_ellipse(behaviour.camera_frame_count+1,8)';
-behaviour.pupil_movement_distance =  pupil_ellipse(behaviour.camera_frame_count+1,7)';
-
+if ~isempty(DLC_EYEDATA_DATAPATH)
+    behaviour.camera_frame_count = interp1(peripherals.sglxTime,peripherals.EyeFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
+    behaviour.eye_coordinates  = new_tracking_points_coordinates(behaviour.camera_frame_count+1,:);% bonsai eye camera frame and DLC frame is 0 based hence adding 1
+    behaviour.pupil_size =  pupil_ellipse(behaviour.camera_frame_count+1,6)';
+    behaviour.pupil_movement_angle =  pupil_ellipse(behaviour.camera_frame_count+1,8)';
+    behaviour.pupil_movement_distance =  pupil_ellipse(behaviour.camera_frame_count+1,7)';
+end
 
 %% facemap - face motion energy and SVD
-behaviour.face_motion_enegy = facedata.motion_1(behaviour.camera_frame_count+1); % total motion energt
-behaviour.face_motion_SVD = facedata.motSVD_1(behaviour.camera_frame_count+1,1:100); % 1st 100 SVD face energy variable (temporal component)
-behaviour.face_motion_mask = facedata.motMask_1(:,1:100); % Mask (spatial component) 1st 100 
-
+if ~isempty(FACEDATA_DATAPATH)
+    behaviour.face_motion_enegy = facedata.motion_1(behaviour.camera_frame_count+1); % total motion energt
+    behaviour.face_motion_SVD = facedata.motSVD_1(behaviour.camera_frame_count+1,1:100); % 1st 100 SVD face energy variable (temporal component)
+    behaviour.face_motion_mask = facedata.motMask_1(:,1:100); % Mask (spatial component) 1st 100
+end
 %% wheel raw input
 behaviour.wheel_raw_input = interp1(peripherals.sglxTime,peripherals.Wheel,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
 
@@ -196,9 +198,14 @@ switch(StimulusName)
         end
 end
 
-if ~isfield(options,'photodiode_failure') | ~isempty(photodiodeData)
+if  ~isempty(photodiodeData)
     task_info.pd_on.sglxTime = photodiodeData.stim_on.sglxTime';
     task_info.pd_off.sglxTime = photodiodeData.stim_off.sglxTime';
+    if isfield(photodiodeData,'photodiode_failure')
+        behaviour.photodiode_failure = options.photodiode_failure;
+    end
+else % if photodiode empty
+    behaviour.photodiode_failure = 1;
 end
 
 end
