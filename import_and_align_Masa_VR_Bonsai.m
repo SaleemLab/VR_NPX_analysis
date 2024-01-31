@@ -687,8 +687,10 @@ if ~isempty(task_info.start_time_all)
 
             if sum(on_track_x==0)>0
                 start_position = find(on_track_x == 0);
-                on_track_x = on_track_x(start_position(1):end);
-                on_track_t = on_track_t(start_position(1):end);
+                if start_position < length(on_track_x)-10 % if start position happens around the end, ignore this
+                    on_track_x = on_track_x(start_position(1):end);
+                    on_track_t = on_track_t(start_position(1):end);
+                end
             end
 
             if on_track_x(end) ~= on_track_x(end-1)

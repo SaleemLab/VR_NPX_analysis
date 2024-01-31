@@ -94,7 +94,7 @@ end
 % SUBJECTS = {'M23017'}
 SUBJECT = 'M23032';
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis','experiment_info.mat'))
-SESSION = ['20230718';'20230719';'20230720';'20230721';'20230722'];
+SESSION = ['20230720';'20230721';'20230722'];
 
 
 for iSession = 1:length(SESSION)

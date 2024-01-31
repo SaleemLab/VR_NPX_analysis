@@ -40,10 +40,6 @@ function [pupil_ellipse,new_tracking_points_coordinates] = eye_data_conversion(e
 % 17-19: pupil225, 20-22: pupil270, 23-25: pupil315, 26-28: eyelid0, 29-31:
 % eyelid90, 32-34: eyelid180, 35-37: eyelid270
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Dependency: conic-fit-tools
-% https://uk.mathworks.com/matlabcentral/fileexchange/87584-object-oriented-tools-for-fitting-conics-and-quadrics?status=SUCCESS
-% last updated 22/01/24
 
 %Consider convert coordinate values to NaN when the likelihood value is low
 y_coordinate_columns = 3:3:36;
@@ -55,16 +51,24 @@ tracking_points = 1:36;
 tracking_points(mod(tracking_points, 3) == 0) = [];
 tracking_points_columns = tracking_points + 1;
 %columns in the matrix that are likelihood values for each tracking point
-likelihood_columns = 4:3:37;
 tracking_points_coordinates = eye_data_new(:,tracking_points_columns);
-likelihood_threshold_index=eye_data_new(:,likelihood_columns) < 0.9;
-likelihood_index_XY = zeros(size(likelihood_threshold_index,1),size(likelihood_threshold_index,2)*2);
+likelihood_columns_pupil = 4:3:25;
+likelihood_threshold_index_pupil =eye_data_new(:,likelihood_columns_pupil) < 0.85;
+likelihood_index_XY_pupil = zeros(size(likelihood_threshold_index_pupil,1),size(likelihood_threshold_index_pupil,2)*2);
 for i=1:length(likelihood_columns)
-    likelihood_index_XY(:,i*2-1) = likelihood_threshold_index(:,i);
-    likelihood_index_XY(:,i*2) = likelihood_threshold_index(:,i);
+    likelihood_index_XY_pupil(:,i*2-1) = likelihood_threshold_index_pupil(:,i);
+    likelihood_index_XY_pupil(:,i*2) = likelihood_threshold_index_pupil(:,i);
 end
-tracking_points_coordinates(logical(likelihood_index_XY)) = NaN;
+tracking_points_coordinates(logical(likelihood_index_XY_pupil)) = NaN;
 
+likelihood_columns_eyelid = 28:3:37;
+likelihood_threshold_index_eyelid =eye_data_new(:,likelihood_columns_eyelid) < 0.8;
+likelihood_index_XY_eyelid = zeros(size(likelihood_threshold_index_eyelid,1),size(likelihood_threshold_index_eyelid,2)*2);
+for i=1:length(likelihood_columns)
+    likelihood_index_XY_eyelid(:,i*2-1) = likelihood_threshold_index_eyelid(:,i);
+    likelihood_index_XY_eyelid(:,i*2) = likelihood_threshold_index_eyelid(:,i);
+end
+tracking_points_coordinates(logical(likelihood_index_XY_eyelid)) = NaN;
 %change basis of coordinate from eyelid labels
 eyelid0 = tracking_points_coordinates(:, 17:18);
 eyelid90 = tracking_points_coordinates(:, 19:20);
@@ -83,7 +87,7 @@ if denominator == 0
 else
     t = ((mean_eyelid0(1)-mean_eyelid90(1))*(mean_eyelid90(2)-mean_eyelid270(2)) - (mean_eyelid0(2)-mean_eyelid90(2))*(mean_eyelid90(1)-mean_eyelid270(1))) / denominator;
     u = -((mean_eyelid0(1)-mean_eyelid180(1))*(mean_eyelid0(2)-mean_eyelid90(2)) - (mean_eyelid0(2)-mean_eyelid180(2))*(mean_eyelid0(1)-mean_eyelid90(1))) / denominator;
-    if t >= 0 && t <= 1 && u >= 0 && u <= 1
+    if t >= 0 && t <= 1 && u >= 0 && u <= 1 %%intersection point lies within the 4 points
         intersection = mean_eyelid0 + t * (mean_eyelid180 - mean_eyelid0);
     end
 end
@@ -164,15 +168,15 @@ mean_distance = nanmean(eyelid_distance);
 std_distance = nanstd(eyelid_distance);
 % Z-score the matrix
 z_eyelid_distance = (eyelid_distance - mean_distance) / std_distance;
-eye_blink = z_eyelid_distance < -3; % 5 standard deviations below the mean
+eye_blink = z_eyelid_distance < -5; % 5 standard deviations below the mean
 pupil_ellipse(:,9) = eye_blink;
 
 % % code to check eye_blinks
-% % new_tracking_points_X = new_tracking_points_coordinates(:,1:2:23);
-% % new_tracking_points_Y = new_tracking_points_coordinates(:,2:2:24);
-% % figure;
-% % eye_blink_frames = find(eye_blink == 1);
-% % eye_blink_frames = [eye_blink_frames; (500:510)']; 
+% new_tracking_points_X = new_tracking_points_coordinates(:,1:2:23);
+% new_tracking_points_Y = new_tracking_points_coordinates(:,2:2:24);
+% figure;
+% eye_blink_frames = find(eye_blink == 1);
+% eye_blink_frames = [eye_blink_frames; (500:510)']; 
 % % eye_blink_frames_expanded = [];
 % % 
 % % for i = 1:length(eye_blink_frames)
@@ -186,10 +190,10 @@ pupil_ellipse(:,9) = eye_blink;
 % %     % Append these indices to the expanded list
 % %     eye_blink_frames_expanded = [eye_blink_frames_expanded, prev_indices, curr_index, next_indices];
 % % end
-% % 
+% 
 % % Remove duplicates and sort the indices
 % % eye_blink_frames_expanded = unique(eye_blink_frames_expanded);
-% % frame_num = length(eye_blink_frames);
+% frame_num = length(eye_blink_frames);
 % % set(gcf, 'units', 'normalized', 'outerposition', [0 0 1 1]);
 % % ellipse_x = zeros(100,frame_num);
 % % ellipse_y = zeros(100,frame_num);
@@ -207,7 +211,7 @@ pupil_ellipse(:,9) = eye_blink;
 % %     iFrame = iFrame+1;
 % % end
 % % plot3(ellipse_time,ellipse_x,ellipse_y,'Color','k')
-% % hold on;
-% % for i = 1:12
-% %     scatter3(1:frame_num,new_tracking_points_X(eye_blink_frames,i)',new_tracking_points_Y(eye_blink_frames,i)')
-% % end
+% hold on;
+% for i = 1:12
+%     scatter3(1:frame_num,new_tracking_points_X(eye_blink_frames,i)',new_tracking_points_Y(eye_blink_frames,i)')
+% end
