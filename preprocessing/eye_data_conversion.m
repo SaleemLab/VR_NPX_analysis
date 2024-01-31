@@ -55,7 +55,7 @@ tracking_points_coordinates = eye_data_new(:,tracking_points_columns);
 likelihood_columns_pupil = 4:3:25;
 likelihood_threshold_index_pupil =eye_data_new(:,likelihood_columns_pupil) < 0.85;
 likelihood_index_XY_pupil = zeros(size(likelihood_threshold_index_pupil,1),size(likelihood_threshold_index_pupil,2)*2);
-for i=1:length(likelihood_columns)
+for i=1:length(likelihood_columns_pupil)
     likelihood_index_XY_pupil(:,i*2-1) = likelihood_threshold_index_pupil(:,i);
     likelihood_index_XY_pupil(:,i*2) = likelihood_threshold_index_pupil(:,i);
 end
@@ -64,7 +64,7 @@ tracking_points_coordinates(logical(likelihood_index_XY_pupil)) = NaN;
 likelihood_columns_eyelid = 28:3:37;
 likelihood_threshold_index_eyelid =eye_data_new(:,likelihood_columns_eyelid) < 0.8;
 likelihood_index_XY_eyelid = zeros(size(likelihood_threshold_index_eyelid,1),size(likelihood_threshold_index_eyelid,2)*2);
-for i=1:length(likelihood_columns)
+for i=1:length(likelihood_columns_eyelid)
     likelihood_index_XY_eyelid(:,i*2-1) = likelihood_threshold_index_eyelid(:,i);
     likelihood_index_XY_eyelid(:,i*2) = likelihood_threshold_index_eyelid(:,i);
 end

@@ -86,6 +86,9 @@ end
 
 if ~isempty(FACEDATA_DATAPATH)
     facedata = load(FACEDATA_DATAPATH); % load face energy data
+    if isfield(facedata,'motion_1')
+        facedata = [];
+    end
 end
 
 basicDataLoadTime = toc(tstart);
