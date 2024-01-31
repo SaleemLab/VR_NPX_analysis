@@ -25,7 +25,7 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-all_SUBJECTS = {'M23031','M23032','M23034','M23037','M23038'};
+all_SUBJECTS = {'M23032'};
 
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
