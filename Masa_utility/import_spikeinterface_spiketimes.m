@@ -44,7 +44,7 @@ if contains(options.sorter_folder,'kilosort')
     end
 
     % Get the spike times for this file, referenced to start of the recording
-    idx = spike_times >= sampleStart & spike_times <= sampleEnd;
+    idx = spike_times > sampleStart & spike_times <= sampleEnd;
     spike_times = double(spike_times(idx)) - sampleStart;
 
     if options.probe_id ~= 0 % if probe 2 convert to probe 1 based time
