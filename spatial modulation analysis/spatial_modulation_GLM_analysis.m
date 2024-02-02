@@ -1,4 +1,4 @@
-function spatial_modulation_GLM_analysis(clusters, Behaviour)
+function spatial_modulation_GLM_analysis(clusters,Behaviour,Task_info)
 % Main function for spatial modulatiom GLM analysis
 
 % This function fits a GLM to the data and compares the performance of
@@ -14,21 +14,6 @@ function spatial_modulation_GLM_analysis(clusters, Behaviour)
 % the smallest sum squared error is chosen as the best model. The
 % function also fits an ellipse to the distribution of model
 % predictions.
-
-cd('Z:\ibn-vision\DATA\SUBJECTS\M23028\analysis\20230706\Masa2tracks')
-
-clusters = clusters_ks3;
-nprobe = 1;
-track_id = 2;
-
-% Find 'good' V1 clusters
-good_unit_index = (clusters(nprobe).amplitude_cutoff <= 0.1...
-    &clusters(nprobe).isi_violations_ratio <= 0.05...
-    &clusters(nprobe).amplitude_median >=50);
-good_unit = clusters(nprobe).cluster_id(good_unit_index);
-max_depth = max(clusters(nprobe).peak_depth(good_unit_index));
-% good_unit = good_unit(clusters(nprobe).peak_channel(good_unit_index)...
-%     < best_channels{nprobe}.CA1_channel+10 & clusters(nprobe).peak_depth(good_unit_index) > best_channels{nprobe}.CA1_channel-10);
 
 % Define Gaussian window for smoothing
 windowWidth = 0.2; % seconds
@@ -122,7 +107,7 @@ count= 1;
 % for ncell = 1:length(good_unit)
 for ncell = 1:4:length(good_unit)
     % Convert spike times to spike count time series
-    SpikeTimes = clusters_ks3(nprobe).spike_times(clusters_ks3(nprobe).spike_id == good_unit(ncell));
+    SpikeTimes = clusters_ks3(nprobe).spike_times(clusters.spike_id == clusters.cluster_id(ncell));
 
     % Convolve spike count time series with Gaussian window
     y = histcounts(SpikeTimes, timevec_edge)';
@@ -151,6 +136,96 @@ for ncell = 1:4:length(good_unit)
         BestSpatialModel = [];
         BestNonSpatialModel = [];
         BestVisualModel = [];
+
+        parfor nshuffle = 1:1000
+            s = RandStream('mrg32k3a','Seed',nshuffle+10000*track_id); % Set random seed for resampling
+            % Fit models
+            for l = 1:length(lambda)
+                % Initialize models
+                visualModel = zeros(size(y));
+                nonSpatialModel = zeros(size(y));
+                spatialModel = zeros(size(y));
+
+                %%%%% Fit non-spatial model
+                for t = 1:length(tau)
+                    X = [pupil_size_lagged(:,t), speed_lagged(:,t), reward_lagged(:,t),...
+                        lick_L_lagged(:,t), lick_R_lagged(:,t),face_energy_lagged(:,t)];
+                    beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+                    nonSpatialModel = nonSpatialModel + beta * X;
+                    beta_nonSpatial = ridge(y, nonSpatialModel, lambda(l));
+
+                    % Perform 5-fold cross-validation
+                    cv = cvpartition(length(y), 'KFold', 5);
+                    for i = 1:cv.NumTestSets
+                        trainInd = cv.training(i);
+                        testInd = cv.test(i);
+                        beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
+                    end
+                end
+
+                for a = 1:length(alpha)
+                    for i = 1:20
+                        %%%%% Fit visual model
+                        X = I(x, i, sqrt(2), sqrt(2));
+                        beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+                        visualModel = visualModel + beta * X;
+
+                        %%%%% Fit spatial model
+                        X = I(x, i, alpha(a)/sqrt(alpha(a)^2+(1-alpha(a))^2), (1-alpha(a))/sqrt(alpha(a)^2+(1-alpha(a))^2));
+                        beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+
+                        %  beta_hat = (X'*X + lambda*eye(size(X,2))) \ X'*y;
+
+                        spatialModel = spatialModel + beta * X;
+                    end
+
+                    % Perform ridge regression
+                    beta_visual = ridge(y, visualModel, lambda(l));
+                    beta_spatial = ridge(y, spatialModel, lambda(l));
+
+                    % Perform 5-fold cross-validation
+                    cv = cvpartition(length(y), 'KFold', 5);
+                    for i = 1:cv.NumTestSets
+                        trainInd = cv.training(i);
+                        testInd = cv.test(i);
+                        beta_visual_cv = ridge(y(trainInd), visualModel(trainInd, :), lambda(l));
+                        beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
+                        beta_spatial_cv = ridge(y(trainInd), spatialModel(trainInd, :), lambda(l));
+                    end
+
+                    % Calculate sum squared error for each model
+                    SSE_visual = sum((y - visualModel * beta_visual).^2);
+                    %         SSE_nonSpatial = sum((y - nonSpatialModel * beta_nonSpatial).^2);
+                    SSE_spatial = sum((y - spatialModel * beta_spatial).^2);
+                    SST = sum((y - mean(y)).^2);
+
+                    if isempty(BestVisualModelError)
+                        BestVisualModelError = SSE_visual;
+                        BestVisualModel = visualModel;
+                    else
+                        if BestVisualModelError > SSE_visual
+                            BestVisualModelError = SSE_visual;
+                            BestVisualModel = visualModel;
+                        end
+                    end
+
+                    %         if spatialModelError > sum((y - spatialModel).^2)
+                    %             BestSpatialModelError = sum((y - spatialModel).^2);
+                    %         end
+                    if isempty(BestSpatialModelError)
+                        BestSpatialModelError = SSE_spatial;
+                        BestSpatialModel = spatialModel;
+                        BestAlpha = alpha(a);
+                    else
+                        if BestSpatialModelError > SSE_spatial
+                            BestSpatialModelError = SSE_spatial;
+                            BestSpatialModel = spatialModel;
+                            BestAlpha = alpha(a);
+                        end
+                    end
+                end
+            end
+        end
 
         % Fit models
         for l = 1:length(lambda)
@@ -249,6 +324,8 @@ for ncell = 1:4:length(good_unit)
         %     % Get the largest eigenvector (corresponding to the major axis of the ellipse)
         %     majorAxis = eigVec(:, largestEigInd);
         %     angle = rad2deg(atan2(majorAxis(2), majorAxis(2)));
+
+        spatial_modulation(nprobe).(ncell)
 
         if count >= 5
             fig = figure
