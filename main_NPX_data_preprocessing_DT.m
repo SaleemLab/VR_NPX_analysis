@@ -92,7 +92,7 @@ end
 %%%%%% Option 2 go to specific animal folder to do specific session(s) you
 %%%%%% want to process.
 % SUBJECTS = {'M23017'}
-SUBJECT = 'M23032';
+SUBJECT = 'M23034';
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis','experiment_info.mat'))
 SESSION = ['20230720';'20230721';'20230722'];
 
