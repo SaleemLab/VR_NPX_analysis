@@ -1,4 +1,4 @@
-function selected_clusters = select_clusters(clusters,params)
+function [selected_clusters cluster_filter_index] = select_clusters(clusters,params)
 
 selected_clusters = struct();
 all_metrics = fieldnames(params);

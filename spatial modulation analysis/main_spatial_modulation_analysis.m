@@ -12,18 +12,18 @@ for  nsession =1:length(experiment_info)
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        for nprobe = 1:length(session_info(n).probe)
-            options = session_info(n).probe(nprobe);
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters = clusters_ks3;
+        options = session_info(n).probe(nprobe);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        clusters = clusters_ks3;
 
+        for nprobe = 1:length(session_info(n).probe)
             metric_param = [];
             metric_param.isi_violations_ratio = @(x) x<=0.1;
             metric_param.amplitude_cutoff = @(x) x<=0.1;
             metric_param.amplitude_median = @(x) x>50;
             metric_param.peak_depth = @(x) x>max(clusters(nprobe).peak_depth)-1000 & x<max(clusters(nprobe).peak_depth); % metric_param.depth_range = [] -- full range?
-            selected_clusters = select_clusters(clusters(nprobe),metric_param);
+            [selected_clusters good_cell_index] = select_clusters(clusters(nprobe),metric_param);
 
             spatial_modulation_GLM_analysis(clusters(nprobe),Behaviour,Task_info);
         end
