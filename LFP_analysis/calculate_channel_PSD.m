@@ -77,7 +77,9 @@ best_L5_channel = sorted_config.Channel(best_high_frequency_channel_this_column)
 
 % Find CA1 channels below layer 5 and above theta-peaked channel
 % Find channel with max theta power (putative dentate region)
-[value, peak_theta_channel_this_column] = max(normalised_theta); 
+[value, peak_theta_channel_this_column] = max(normalised_theta(best_high_frequency_channel_this_column:end)); 
+peak_theta_channel_this_column = peak_theta_channel_this_column + best_high_frequency_channel_this_column - 1;
+
 channel_ranges = best_high_frequency_channel_this_column:peak_theta_channel_this_column;
 [value, candidate_index] = findpeaks(normalised_ripple(best_high_frequency_channel_this_column:peak_theta_channel_this_column),'MinPeakHeight',0.1); 
 [~,index]  = max(normalised_ripple(channel_ranges(candidate_index))-normalised_theta(channel_ranges(candidate_index)));  %find channel with maximum difference between theta and ripple power

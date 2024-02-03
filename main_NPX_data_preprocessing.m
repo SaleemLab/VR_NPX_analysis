@@ -82,7 +82,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'}
+All_stimuli = {'Masa2tracks'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(2)
 for n = 1:length(All_stimuli)
@@ -151,9 +151,11 @@ end
 Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
-SUBJECTS = {'M23087'};
+% SUBJECTS = {'M23087'};
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+% SUBJECTS = {'M23029','M23087','M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-experiment_info = experiment_info(end);
+% experiment_info = experiment_info(end);
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 
