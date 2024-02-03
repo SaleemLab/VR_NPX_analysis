@@ -1,11 +1,12 @@
-function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX1(options,column,varargin)
+function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX2(options,column,varargin)
+
 
 options.importMode = 'KS';
-[file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+[file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
 
 if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and LF
     options.importMode = 'LF';
-    [file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
 else
     probe_type = 2;
@@ -51,26 +52,27 @@ downSampleRate = fix(imecMeta.imSampRate*BinWidth); % Donwsample rate
 
 % Read the data
 % cd(options.ANALYSIS_DATAPATH)
-clipDur = 10; % seconds
-nClipSamps = round(imecMeta.imSampRate*clipDur);
-nClips = floor(nSamp/nClipSamps);
 samples_to_pass = 0;
-disp(sprintf('%i number of %i clip to process',nClips,clipDur));
+nSamp_LFP = floor(nSamp/12);
+disp(sprintf('%i sample number to process',nSamp));
 
 raw_LFP = [];
-for clip = 1:nClips
-    tic
-    disp(sprintf('loading clip %i',clip))
-    temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+tic
+for n = 1:2000
+%     tic
+%     disp(sprintf('loading clip %i',clip))
+    temp_LFP = ReadNPXBin(start_samp+samples_to_pass, 1, imecMeta, file_to_use, options.EPHYS_DATAPATH);
     temp_LFP(nEPhysChan+1:end,:) = []; % Get rid of sync channel
     temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
 
     % % Downsample the data
-    raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
-    samples_to_pass = samples_to_pass + nClipSamps;
-%     samples_to_pass = samples_to_pass + nClipSamps + 1;
-    toc
+%     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
+%     samples_to_pass = samples_to_pass + nClipSamps;
+raw_LFP = [raw_LFP temp_LFP(selected_channels,:)];
+    samples_to_pass = samples_to_pass + 12;
+%     toc
 end
+toc
 
 
 new_SR = imecMeta.imSampRate/downSampleRate;

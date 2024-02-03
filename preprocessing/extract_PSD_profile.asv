@@ -14,17 +14,17 @@ for nprobe = 1:length(session_info.probe)
 %     session_info.probe(nprobe).importMode = 'LF';
     options = session_info.probe(nprobe);
 
-%     column = 1;
+    column = 1;
     if nprobe ~= 1
         % Information about AP band probe 1 sample size to align probe
         % 2 LFP traces.
         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
-        [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-        [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
+        [~, imecMeta, chan_config, sorted_config] = extract_NPX_channel_config(session_info.probe(1),[]);
+        [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
     else
-%         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
-%         [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-        [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[]);
+        session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
+        [~, imecMeta, chan_config, sorted_config] = extract_NPX_channel_config(session_info.probe(1),[]);
+        [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX(options,[]);
     end
 
     [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)

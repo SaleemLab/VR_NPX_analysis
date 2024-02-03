@@ -15,24 +15,31 @@ end
 
 imecMeta = NPadmin.ReadMeta(file_to_use,options.EPHYS_DATAPATH);
 chan_config = NPadmin.getNPChannelConfig(imecMeta);
-switch str2double(imecMeta.imDatPrb_type)
-    case 0 
-    electrode_spacing_um = 20;
-    otherwise
-    electrode_spacing_um = 15;
-end
+% switch str2double(imecMeta.imDatPrb_type)
+%     case 0 
+%     electrode_spacing_um = 20;
+%     otherwise
+%     electrode_spacing_um = 15;
+% end
 
-% Set probe columns (4 columns for NPX1)
-% (x coordinate = 11, 27, 43 or 59 micron)
-shanks_available = unique(chan_config.Shank);
-for n=1:size(shanks_available)
-    cols_available = unique(chan_config.Ks_xcoord(chan_config.Shank==shanks_available(n)));
-end
+sorted_config = [];
 
 % Get channels from one column (x coordinate = 11, 27, 43 or 59 micron)
-col_ID = cols_available(column); % (1) is 11
-sorted_config = sortrows(chan_config,'Ks_ycoord','descend');
-col_idx = sorted_config.Ks_xcoord == col_ID;
-sorted_config = sorted_config(col_idx,:);
+if ~isempty(column)
+    % Set probe columns (4 columns for NPX1)
+    % (x coordinate = 11, 27, 43 or 59 micron)
+    cols_available = [];
 
+    shank_id = []; % the corresponding shank_id
+    shanks_available = unique(chan_config.Shank);
+    for n=1:size(shanks_available)
+        cols_available = [cols_available unique(chan_config.Ks_xcoord(chan_config.Shank==shanks_available(n)))];
+        shank_id = [shank_id shanks_available(n)];
+    end
+
+    col_ID = cols_available(column); % (1) is 11
+    sorted_config = sortrows(chan_config,'Ks_ycoord','descend');
+    col_idx = sorted_config.Ks_xcoord == col_ID;
+    sorted_config = sorted_config(col_idx,:);
+end
 end

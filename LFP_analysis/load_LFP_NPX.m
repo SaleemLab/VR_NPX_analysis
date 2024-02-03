@@ -1,11 +1,12 @@
-function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX1(options,column,varargin)
+function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX(options,column,varargin)
+
 
 options.importMode = 'KS';
-[file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+[file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
 
 if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and LF
     options.importMode = 'LF';
-    [file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
 else
     probe_type = 2;
@@ -58,7 +59,7 @@ samples_to_pass = 0;
 disp(sprintf('%i number of %i clip to process',nClips,clipDur));
 
 raw_LFP = [];
-for clip = 1:nClips
+for clip = 1:3
     tic
     disp(sprintf('loading clip %i',clip))
     temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, file_to_use, options.EPHYS_DATAPATH);
@@ -71,6 +72,10 @@ for clip = 1:nClips
 %     samples_to_pass = samples_to_pass + nClipSamps + 1;
     toc
 end
+
+meta = Neuropixel.ImecDataset(fullfile(options.EPHYS_DATAPATH,dir(fullfile(options.EPHYS_DATAPATH,'*ap.bin'))));
+
+meta = imec.readAPMeta
 
 
 new_SR = imecMeta.imSampRate/downSampleRate;
