@@ -1,5 +1,8 @@
 %% Main place cell and V1 spatial modulation analysis code
 
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
 %% Spatial modulation GLM analysis
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -22,10 +25,10 @@ for  nsession =1:length(experiment_info)
             metric_param.isi_violations_ratio = @(x) x<=0.1;
             metric_param.amplitude_cutoff = @(x) x<=0.1;
             metric_param.amplitude_median = @(x) x>50;
-            metric_param.peak_depth = @(x) x>max(clusters(nprobe).peak_depth)-1000 & x<max(clusters(nprobe).peak_depth); % metric_param.depth_range = [] -- full range?
+            metric_param.peak_depth = @(x) x>max(clusters(nprobe).peak_depth)-2000 & x<max(clusters(nprobe).peak_depth-1200); % metric_param.depth_range = [] -- full range?
             [selected_clusters good_cell_index] = select_clusters(clusters(nprobe),metric_param);
 
-            spatial_modulation_GLM_analysis(clusters(nprobe),Behaviour,Task_info);
+            spatial_modulation_GLM_analysis(selected_clusters(nprobe),Behaviour,Task_info);
         end
     end
 end

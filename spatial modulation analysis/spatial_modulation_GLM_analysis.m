@@ -15,21 +15,17 @@ function spatial_modulation_GLM_analysis(clusters,Behaviour,Task_info)
 % function also fits an ellipse to the distribution of model
 % predictions.
 
-% Define Gaussian window for smoothing
-windowWidth = 0.2; % seconds
-gaussianWindow = gausswin(windowWidth/mean(diff(timevec)));
-
-% Normalize to have an area of 1 (i.e., to be a probability distribution)
-gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
 
 % Behaviour variables
-timevec = clusters_ks3(nprobe).timevec';
+timevec = clusters.timevec';
 timevec_edge = (timevec(1)-(timevec(2)-timevec(1))/2....
     :mean(diff(timevec)):...
     timevec(end)+(timevec(end)-timevec(end-1))/2)';
 
-face_motion_energy = Behaviour.face_motion_enegy;
+
+camera_frame = 
+face_motion_energy = Behaviour.face_motion_enegy(Behaviour.camera_frame_count);
 pupil_size = Behaviour.pupil_size;
 lick_count_L = Behaviour.lick_count(1,:);
 lick_count_R = Behaviour.lick_count(2,:);
@@ -100,6 +96,14 @@ alpha = 0:0.1:1;
 I = @(x, i, a, b) (i <= 6) .* (x > (i-1)*5 & x <= i*5) + ... % Before visually repeating segments
     (i >= 7 & i <= 14) .* ((a * (x > (i-1)*5 & x <= (i)*5)) + (b * (x > (i+7)*5 & x <= (i+8)*5))) + ... % Visually repeating segments
     (i >= 15 & i <= 20) .* (x > (i+7)*5 & x <= (i+8)*5); % after visually repeating segments
+
+% Define Gaussian window for smoothing
+windowWidth = 0.2; % seconds
+gaussianWindow = gausswin(windowWidth/mean(diff(timevec)));
+
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
 
 fig = figure;
 fig.Position = [680,259,1111,719];
