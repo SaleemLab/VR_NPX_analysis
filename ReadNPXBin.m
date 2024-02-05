@@ -16,11 +16,30 @@ function dataArray = ReadNPXBin(samp0, nSamp, meta, binName, path)
     nFileSamp = meta.fileSizeBytes / (2 * nChan);
     samp0 = max(samp0, 0);
     nSamp = min(nSamp, nFileSamp - samp0);
+    dataArray = [];
 
-    sizeA = [nChan, nSamp];
+%     if isfield(meta,'selected_channels')
+%         % in progress not working
+%         sizeA = [1, nSamp];
+%         start_sample = samp0 * 2 * nChan;
+%         fid = fopen(fullfile(path, binName), 'rb');
+% 
+%         for n = 100
+%             fseek(fid, start_sample + (meta.selected_channels(n)-1)*nSamp, 'bof');
+%             dataArray(n,:)= fread(fid, nSamp, 'int16=>double');
+%         end
+%         fclose(fid);
+% 
+%     else
+%     
+        sizeA = [nChan, nSamp];
+        start_sample = samp0 * 2 * nChan;
+        fid = fopen(fullfile(path, binName), 'rb');
+        fseek(fid, start_sample, 'bof');
+        dataArray = fread(fid, sizeA, 'int16=>double');
+        fclose(fid);
+   
+%     end
+      
 
-    fid = fopen(fullfile(path, binName), 'rb');
-    fseek(fid, samp0 * 2 * nChan, 'bof');
-    dataArray = fread(fid, sizeA, 'int16=>double');
-    fclose(fid);
 end % ReadBin

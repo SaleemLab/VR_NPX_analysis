@@ -56,27 +56,57 @@ clipDur = 10; % seconds
 nClipSamps = round(imecMeta.imSampRate*clipDur);
 nClips = floor(nSamp/nClipSamps);
 samples_to_pass = 0;
-disp(sprintf('%i number of %i clip to process',nClips,clipDur));
 
+% imecMeta.selected_channels = selected_channels;
+
+
+% % 
+% raw_LFP = [];
+% for clip = 1:10
+%     tic
+%     disp(sprintf('loading clip %i',clip))
+%     temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+%     temp_LFP(nEPhysChan+1:end,:) = []; % Get rid of sync channel
+%     temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
+% 
+%     % % Downsample the data
+%     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
+%     samples_to_pass = samples_to_pass + nClipSamps;
+% %     samples_to_pass = samples_to_pass + nClipSamps + 1;
+%     toc
+% end
+
+
+% Loading LFP using neuropixel utilities function (load slightly faster)
+DIR = dir(fullfile(options.EPHYS_DATAPATH,'*ChanMap.mat'));
+if isempty(DIR) % If empty load ephys meta 
+    metafile = dir(fullfile(options.EPHYS_DATAPATH,'*.ap.meta'));
+    SGLXMetaToCoords_ChannelMap_masa(metafile);
+    DIR = dir(fullfile(options.EPHYS_DATAPATH,'*ChanMap.mat'));
+end
+
+channel_map_filename = fullfile(DIR.folder,DIR.name);
+
+imec = Neuropixel.ImecDataset(options.EPHYS_DATAPATH,'ChannelMap',channel_map_filename);
+samples_to_pass = 0;
 raw_LFP = [];
-for clip = 1:3
+
+disp(sprintf('%i number of %i clip to process',nClips,clipDur));
+for clip = 1:nClips
     tic
     disp(sprintf('loading clip %i',clip))
-    temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, file_to_use, options.EPHYS_DATAPATH);
-    temp_LFP(nEPhysChan+1:end,:) = []; % Get rid of sync channel
-    temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
+
+    timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
+    %     [temp_LFP, ~] = imec.readAP_timeWindow(timeWindow);
+    [temp_LFP] = double(imec.readAP_idx(timeWindow)); % if lf.bin load LF data, if ap.bin load AP data (for NPX2, only ap)
+
 
     % % Downsample the data
     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
+    %     time_to_pass = time_to_pass + clipDur;
     samples_to_pass = samples_to_pass + nClipSamps;
-%     samples_to_pass = samples_to_pass + nClipSamps + 1;
     toc
 end
-
-meta = Neuropixel.ImecDataset(fullfile(options.EPHYS_DATAPATH,dir(fullfile(options.EPHYS_DATAPATH,'*ap.bin'))));
-
-meta = imec.readAPMeta
-
 
 new_SR = imecMeta.imSampRate/downSampleRate;
 
