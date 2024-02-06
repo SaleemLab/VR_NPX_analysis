@@ -1,6 +1,5 @@
 function [lfpAvg,csd,PSD,best_channels] = checkerboard_CSD_profile(options)
 
-power = [];
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
@@ -107,8 +106,12 @@ for nchannel = 1:size(chan_config,1)
     xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
     ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
 end
-
 xcoord_avaliable = unique(xcoord);
+
+% sort channel according to y coordinate
+[ycoord idx] = sort(ycoord,'ascend');
+xcoord = xcoord(idx);
+power{nprobe} = power{nprobe}(idx,:);
 
 if isempty(best_channels{nprobe})
     [~,ycoord_max] = max(ycoord);
