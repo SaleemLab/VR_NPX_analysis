@@ -207,6 +207,7 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     [ycoord idx] = sort(ycoord,'ascend');
     xcoord = xcoord(idx);
     power = power(idx,:);
+    chan_config = chan_config(idx,:);
 
     % Replot based on updated channels
     for col = 1:length(lfpAvg(options.probe_no).column)
