@@ -36,7 +36,6 @@ if contains(Stimulus_type,'Masa2tracks')
 else
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     extract_and_preprocess_NPX(session_info,Stimulus_type)
-
 end
 
 
@@ -74,10 +73,6 @@ for nsession =1:length(experiment_info)
             probe_no = session_info(n).probe(nprobe).probe_id + 1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             options.probe_no = probe_no;
             options.ROOTPATH = ROOTPATH;
-            % Load all spike data sorted according to the channel position
-
-            [SUA.probe{probe_no} chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'group','by channel','cell_exporer','on');
-
 
             if ~isempty(best_channels{probe_no}.L4_channel)
                 % L4 spike data (roughly 100 micron or 10 channels)

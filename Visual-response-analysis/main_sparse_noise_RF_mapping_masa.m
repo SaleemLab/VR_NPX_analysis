@@ -25,7 +25,8 @@ for nsession =1:length(experiment_info)
     gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
     %     cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
-    load('best_channels.mat')
+    load(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"))
+    
     for n = 1:length(session_info)
         for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
             options = session_info(n).probe(nprobe);

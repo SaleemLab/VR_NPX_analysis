@@ -45,4 +45,5 @@ for nsession =1:length(experiment_info)
     save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..'),[])
     save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
     save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')
+    close all
 end
