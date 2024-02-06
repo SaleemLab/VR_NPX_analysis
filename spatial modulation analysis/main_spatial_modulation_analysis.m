@@ -13,11 +13,14 @@ Stimulus_type = 'RUN';
 for  nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(nprobe);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        
         clusters = clusters_ks3;
 
         for nprobe = 1:length(session_info(n).probe)
