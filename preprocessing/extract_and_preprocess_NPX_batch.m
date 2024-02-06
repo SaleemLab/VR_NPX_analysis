@@ -69,44 +69,48 @@ for nsession =1:length(experiment_info)
             end
         end
 % 
-%         % Part 3 extract spike data
-%         options = session_info(n).probe(1);
-%         if contains(Stimulus_type,'Masa2tracks')
-%             load(fullfile(options.ANALYSIS_DATAPATH,...
-%                 sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))))
-%         else
-%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
-%         end
+        % Part 3 extract spike data
+        options = session_info(n).probe(1);
+        if contains(Stimulus_type,'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,...
+                sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))))
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
+        end
+
+        for nprobe = 1:length(session_info(n).probe)
+            options = session_info(n).probe(nprobe);
+            DIR_SORTER = dir(options.SORTER_DATAPATH);
+            DIR_KS = dir(options.KS_DATAPATH);
+            if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
+                [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+            elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
+                [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','off','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+            end
+            %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+        end
+
+%         spikes = clusters;
+%         fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
+%         clusters = rmfield(clusters,fields_to_remove);
 % 
-%         for nprobe = 1:length(session_info(n).probe)
-%             options = session_info(n).probe(nprobe);
-% % 
-%             [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-%             [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-% %             [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','off','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-%             %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
-%         end
-% 
-% %         spikes = clusters;
-% %         fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
-% %         clusters = rmfield(clusters,fields_to_remove);
-% % 
-% 
-%         if contains(Stimulus_type,'Masa2tracks')
-%             % If Masa2tracks, PRE, RUN and/or POST saved in one folder
+
+        if contains(Stimulus_type,'Masa2tracks')
+            % If Masa2tracks, PRE, RUN and/or POST saved in one folder
+            save(fullfile(options.ANALYSIS_DATAPATH,...
+                sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks2')
+            save(fullfile(options.ANALYSIS_DATAPATH,...
+                sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks3')
 %             save(fullfile(options.ANALYSIS_DATAPATH,...
-%                 sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks2')
-%             save(fullfile(options.ANALYSIS_DATAPATH,...
-%                 sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks3')
-% %             save(fullfile(options.ANALYSIS_DATAPATH,...
-% %                 sprintf('extracted_spikes%s.mat',erase(stimulus_name{n},Stimulus_type))),'spikes')
-%         else
-%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
-%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
-% %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
-%         end
-%         
-%         clear clusters_ks2 clusters_ks3
+%                 sprintf('extracted_spikes%s.mat',erase(stimulus_name{n},Stimulus_type))),'spikes')
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
+        end
+        
+        clear clusters_ks2 clusters_ks3
 
     end
     close all

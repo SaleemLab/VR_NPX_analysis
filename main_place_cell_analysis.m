@@ -43,21 +43,23 @@ end
 
 %% Load Spike train data for place cell analysis
 clear all
-SUBJECTS = {'M23017','M23028','M23029'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS);
+SUBJECTS = {'M23017','M23028','M23029','M23087'};
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 Stimulus_type = 'RUN'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
 
 for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+%     gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info(n).probe(1).SUBJECT,'ephys',session_info(n).probe(1).SESSION,'analysis'))
-        load best_channels
-        load extracted_PSD
-        load(sprintf('extracted_position%s.mat',erase(stimulus_name{n},'Masa2tracks')))
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
+        %         load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_k3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+
         column = 1;
 
 
