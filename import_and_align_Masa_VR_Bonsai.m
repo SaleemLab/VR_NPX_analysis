@@ -413,170 +413,171 @@ behaviour.position(behaviour.position>140) = 140;
 % 1 = T1 passive, 2 = T2 passive, 10 = T1 active and 20 = T2 active
 task_info = [];
 
-if  ~isempty(lick_performance)| contains(StimulusName,'RUN') | contains(StimulusName,'Track')
+if contains(StimulusName,'RUN') | contains(StimulusName,'Track')
+    if  ~isempty(lick_performance)
+        if ~isempty(reward)
+            task_info.reward_type = table2cell(reward(:,"Var1"));
+            task_info.reward_type = cellfun(@(x) x(2:end), task_info.reward_type, 'UniformOutput',false);
+            task_info.reward_type = cellfun(@str2double,task_info.reward_type);
 
-    if ~isempty(reward)
-        task_info.reward_type = table2cell(reward(:,"Var1"));
-        task_info.reward_type = cellfun(@(x) x(2:end), task_info.reward_type, 'UniformOutput',false);
-        task_info.reward_type = cellfun(@str2double,task_info.reward_type);
-
-        % If first datapoint is due to initialisation
-        if task_info.reward_type(1) == 0
-            task_info.reward_type(1) = [];
-            reward(1,:) = [];
-        end
-
-        %%  Reward Delivery Time Based on Eye Frame Count, or Time
-
-        DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
-        task_info.reward_delivery_time = [];
-        task_info.reward_delivery_time_original = [];
-
-        if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
-            reward_delivery_time = table2array(reward(:,"Var2")); % May want to simplify this in the future
-
-            % Initially search for reward delivery time using original spikeglx timestamp (not 60Hz resampled one)
-            for n = 1:length(reward_delivery_time)
-                start_index = find(reward_delivery_time(n) == peripherals.Time);
-
-                %         start_index = interp1(behaviour.computer_timevec,behaviour.computer_timevec,reward_delivery_time(n),'nearest') == behaviour.computer_timevec;
-
-                if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
-                    for count = 1:10
-                        start_index = find(reward_delivery_time(n)+count == peripherals.Time);
-                        if ~isempty(start_index)
-                            break
-                        end
-                    end
-                end
-                % Original reward time
-                task_info.reward_delivery_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
-                % Reward time basewd on resampled 60Hz timestamp
-                task_info.reward_delivery_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
-            end
-        elseif DIR.datenum < datenum('14-June-2023 13:00:00')
-            % Before 14/06/2023 During training, camera/eye frame count was used to find
-            % when reward delivered.
-            reward_delivery_camera_frame_count = table2array(reward(:,"Var2"));
-
-            for n = 1:length(reward_delivery_camera_frame_count)
-                start_index = find(reward_delivery_camera_frame_count(n) == peripherals.EyeFrameCount);
-
-                if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
-                    for count = 1:10
-                        start_index = find(reward_delivery_camera_frame_count(n)+count == peripherals.EyeFrameCount);
-                        if ~isempty(start_index)
-                            break
-                        end
-                    end
-                end
-
-                % Original reward time
-                task_info.reward_delivery_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
-                % Reward time basewd on resampled 60Hz timestamp
-                task_info.reward_delivery_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
-            end
-        end
-
-        %% Track 1 count
-        % For each lap, what is the current cumulative track 1 count
-        % For example, for 11th lap, it may be 3rd lap of track 2 but with track 1 count
-        % of 8
-        task_info.reward_track1_count = table2array(reward(:,"Var3"));
-
-        %% Track 2 count
-        % For each lap, what is the current cumulative track 2 count
-        task_info.reward_track2_count = table2array(reward(:,"Var4"));
-
-
-        %% Track 1 performance
-        % Probably not needed
-        task_info.track1_performance = table2array(reward(:,"Var5"));
-
-        %% Track 2 performance
-        task_info.track2_performance = table2array(reward(:,"Var6"));
-
-        %% reward delivery position
-        task_info.reward_position = table2cell(reward(:,"Var7"));
-        task_info.reward_position = cellfun(@(x) x(1:end-1), task_info.reward_position, 'UniformOutput',false);
-        task_info.reward_position = cellfun(@str2double,task_info.reward_position);
-
-        %% Lick State
-        % 1 is left and 2 is right
-        task_info.lick_state = table2cell(lick_performance(:,"Var1"));
-        task_info.lick_state = cellfun(@(x) x(2:end), task_info.lick_state, 'UniformOutput',false);
-        task_info.lick_state = cellfun(@str2double,task_info.lick_state);
-
-        if isempty(task_info.lick_state) == 1
-            task_info.lick_state = [];
-        elseif task_info.lick_state(1) == 0
-            task_info.lick_state(1) = [];
-            lick_performance(1,:) = [];
-        end
-
-        %% Lick time
-        task_info.lick_time_original = [];
-        task_info.lick_time = [];
-
-        if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
-            lick_time =  table2array(lick_performance(:,"Var2"));
-
-            for n = 1:length(lick_time)
-                start_index = find(lick_time(n) == peripherals.Time);
-
-                if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
-                    for count = 1:10
-                        start_index = find(lick_time(n)+count == peripherals.Time);
-                        if ~isempty(start_index)
-                            break
-                        end
-                    end
-                end
-
-                task_info.lick_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
-                % Reward time basewd on resampled 60Hz timestamp
-                task_info.lick_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.lick_time_original(n,1),'nearest');
+            % If first datapoint is due to initialisation
+            if task_info.reward_type(1) == 0
+                task_info.reward_type(1) = [];
+                reward(1,:) = [];
             end
 
-        elseif DIR.datenum < datenum('14-June-2023 13:00:00')
+            %%  Reward Delivery Time Based on Eye Frame Count, or Time
 
-            % Before 14/06/2023 During training, camera/eye frame count was used to find
-            % when licked.
-            lick_camera_frame_count = table2array(reward(:,"Var2"));
+            DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
+            task_info.reward_delivery_time = [];
+            task_info.reward_delivery_time_original = [];
 
-            for n = 1:length(lick_camera_frame_count)
-                start_index = find(lick_camera_frame_count(n) == peripherals.EyeFrameCount);
+            if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
+                reward_delivery_time = table2array(reward(:,"Var2")); % May want to simplify this in the future
 
-                if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
-                    for count = 1:10
-                        start_index = find(lick_camera_frame_count(n)+count == peripherals.EyeFrameCount);
-                        if ~isempty(start_index)
-                            break
+                % Initially search for reward delivery time using original spikeglx timestamp (not 60Hz resampled one)
+                for n = 1:length(reward_delivery_time)
+                    start_index = find(reward_delivery_time(n) == peripherals.Time);
+
+                    %         start_index = interp1(behaviour.computer_timevec,behaviour.computer_timevec,reward_delivery_time(n),'nearest') == behaviour.computer_timevec;
+
+                    if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                        for count = 1:10
+                            start_index = find(reward_delivery_time(n)+count == peripherals.Time);
+                            if ~isempty(start_index)
+                                break
+                            end
                         end
                     end
+                    % Original reward time
+                    task_info.reward_delivery_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+                    % Reward time basewd on resampled 60Hz timestamp
+                    task_info.reward_delivery_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
                 end
-                task_info.lick_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
-                % Reward time basewd on resampled 60Hz timestamp
-                task_info.lick_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
+            elseif DIR.datenum < datenum('14-June-2023 13:00:00')
+                % Before 14/06/2023 During training, camera/eye frame count was used to find
+                % when reward delivered.
+                reward_delivery_camera_frame_count = table2array(reward(:,"Var2"));
+
+                for n = 1:length(reward_delivery_camera_frame_count)
+                    start_index = find(reward_delivery_camera_frame_count(n) == peripherals.EyeFrameCount);
+
+                    if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                        for count = 1:10
+                            start_index = find(reward_delivery_camera_frame_count(n)+count == peripherals.EyeFrameCount);
+                            if ~isempty(start_index)
+                                break
+                            end
+                        end
+                    end
+
+                    % Original reward time
+                    task_info.reward_delivery_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+                    % Reward time basewd on resampled 60Hz timestamp
+                    task_info.reward_delivery_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
+                end
             end
+
+            %% Track 1 count
+            % For each lap, what is the current cumulative track 1 count
+            % For example, for 11th lap, it may be 3rd lap of track 2 but with track 1 count
+            % of 8
+            task_info.reward_track1_count = table2array(reward(:,"Var3"));
+
+            %% Track 2 count
+            % For each lap, what is the current cumulative track 2 count
+            task_info.reward_track2_count = table2array(reward(:,"Var4"));
+
+
+            %% Track 1 performance
+            % Probably not needed
+            task_info.track1_performance = table2array(reward(:,"Var5"));
+
+            %% Track 2 performance
+            task_info.track2_performance = table2array(reward(:,"Var6"));
+
+            %% reward delivery position
+            task_info.reward_position = table2cell(reward(:,"Var7"));
+            task_info.reward_position = cellfun(@(x) x(1:end-1), task_info.reward_position, 'UniformOutput',false);
+            task_info.reward_position = cellfun(@str2double,task_info.reward_position);
+
+            %% Lick State
+            % 1 is left and 2 is right
+            task_info.lick_state = table2cell(lick_performance(:,"Var1"));
+            task_info.lick_state = cellfun(@(x) x(2:end), task_info.lick_state, 'UniformOutput',false);
+            task_info.lick_state = cellfun(@str2double,task_info.lick_state);
+
+            if isempty(task_info.lick_state) == 1
+                task_info.lick_state = [];
+            elseif task_info.lick_state(1) == 0
+                task_info.lick_state(1) = [];
+                lick_performance(1,:) = [];
+            end
+
+            %% Lick time
+            task_info.lick_time_original = [];
+            task_info.lick_time = [];
+
+            if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
+                lick_time =  table2array(lick_performance(:,"Var2"));
+
+                for n = 1:length(lick_time)
+                    start_index = find(lick_time(n) == peripherals.Time);
+
+                    if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                        for count = 1:10
+                            start_index = find(lick_time(n)+count == peripherals.Time);
+                            if ~isempty(start_index)
+                                break
+                            end
+                        end
+                    end
+
+                    task_info.lick_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+                    % Reward time basewd on resampled 60Hz timestamp
+                    task_info.lick_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.lick_time_original(n,1),'nearest');
+                end
+
+            elseif DIR.datenum < datenum('14-June-2023 13:00:00')
+
+                % Before 14/06/2023 During training, camera/eye frame count was used to find
+                % when licked.
+                lick_camera_frame_count = table2array(reward(:,"Var2"));
+
+                for n = 1:length(lick_camera_frame_count)
+                    start_index = find(lick_camera_frame_count(n) == peripherals.EyeFrameCount);
+
+                    if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                        for count = 1:10
+                            start_index = find(lick_camera_frame_count(n)+count == peripherals.EyeFrameCount);
+                            if ~isempty(start_index)
+                                break
+                            end
+                        end
+                    end
+                    task_info.lick_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+                    % Reward time basewd on resampled 60Hz timestamp
+                    task_info.lick_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.reward_delivery_time_original(n,1),'nearest');
+                end
+            end
+
+
+            %% Track ID respective to lick
+            task_info.lick_track_ID = table2array(lick_performance(:,"Var3"));
+
+            %% lick track 1 lap count
+            % redundant info
+            task_info.lick_track1_count = table2array(lick_performance(:,"Var4"));
+
+            %% lick track 2 lap count
+            % redundant info
+            task_info.lick_track2_count = table2array(lick_performance(:,"Var5"));
+
+            %% reward delivery position
+            task_info.lick_position = table2cell(lick_performance(:,"Var6"));
+            task_info.lick_position = cellfun(@(x) x(1:end-1), task_info.lick_position, 'UniformOutput',false);
+            task_info.lick_position = cellfun(@str2double,task_info.lick_position);
         end
-
-
-        %% Track ID respective to lick
-        task_info.lick_track_ID = table2array(lick_performance(:,"Var3"));
-
-        %% lick track 1 lap count
-        % redundant info
-        task_info.lick_track1_count = table2array(lick_performance(:,"Var4"));
-
-        %% lick track 2 lap count
-        % redundant info
-        task_info.lick_track2_count = table2array(lick_performance(:,"Var5"));
-
-        %% reward delivery position
-        task_info.lick_position = table2cell(lick_performance(:,"Var6"));
-        task_info.lick_position = cellfun(@(x) x(1:end-1), task_info.lick_position, 'UniformOutput',false);
-        task_info.lick_position = cellfun(@str2double,task_info.lick_position);
     end
 end
 %% Lick count time series
@@ -599,10 +600,10 @@ behaviour.lick_count(2,:) = interp1(peripherals.corrected_sglxTime,[0; diff(peri
 
 if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path) & contains(StimulusName,'Track'))
 
-%     if table2array(trial_info(1,"Var5")) >100
-%         trial_info(1,:) =  [];
-%     end
-    
+    %     if table2array(trial_info(1,"Var5")) >100
+    %         trial_info(1,:) =  [];
+    %     end
+    DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(trial_path)]));
     % Track ID of each lap 
     task_info.track_ID_all = table2cell(trial_info(:,"Var1"));
     task_info.track_ID_all = cellfun(@(x) x(2:end), task_info.track_ID_all, 'UniformOutput',false);
