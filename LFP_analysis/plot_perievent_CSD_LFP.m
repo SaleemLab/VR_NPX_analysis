@@ -1,6 +1,6 @@
 function plot_perievent_CSD_LFP(lfpAvg,csd,power,chan_config,sorted_config,best_channels,options)
 
-if isfield(lfpAvg,'xcoord') %if different channels or depths for different columns/shanks
+if isfield(best_channels,'xcoord') %if different channels or depths for different columns/shanks
     col = find(best_channels.xcoord == lfpAvg.xcoord);
     fieldnames = fields(best_channels);  % Get the names of all fields in the structure
 
