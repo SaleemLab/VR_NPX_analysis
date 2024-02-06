@@ -1,4 +1,16 @@
 function plot_perievent_CSD_LFP(lfpAvg,csd,power,chan_config,sorted_config,best_channels,options)
+
+if isfield(lfpAvg,'xcoord') %if different channels or depths for different columns/shanks
+    col = find(best_channels.xcoord == lfpAvg.xcoord);
+    fieldnames = fields(best_channels);  % Get the names of all fields in the structure
+
+    % Loop over all fields
+    for i = 1:length(fieldnames)
+        % Get the ith value from the current field
+        best_channels.(fieldnames{i}) = best_channels.(fieldnames{i})((col));
+    end
+end
+
 filter_type = lfpAvg.filter_type;
 
 if isfield(lfpAvg,'probe_no')
@@ -12,7 +24,7 @@ for type = 1:length(lfpAvg.filter_type)
 
         fig = figure
         fig.Position = [334.7143 102.7143 1050 830]
-        fig.Name = sprintf('%s %s %s event (%s filtered) probe %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe);
+        fig.Name = sprintf('%s %s %s event (%s filtered) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
 
         subplot(1,3,1);
         colour_line= {[177,0,38]/256,[213,62,79]/256,[252,141,89]/256,...
@@ -21,39 +33,39 @@ for type = 1:length(lfpAvg.filter_type)
         selected_frequency = [2,6,7];
         %     subplot(1,4,2)
         hold on
-        plot([0 1],[chan_config.Ks_ycoord(best_channels.first_in_brain_channel) chan_config.Ks_ycoord(best_channels.first_in_brain_channel)],'--k','LineWidth',2)
+        plot([0 1],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)
         
         if isfield(best_channels,'L4_channel')
             if ~isempty(best_channels.L4_channel) % L4 is assumed to roughly 100 micron thick
-                plot([0 1],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50],'--b','LineWidth',0.5)
-                plot([0 1],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)+50 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)+50],'--b','LineWidth',0.5)
-                plot([0 1],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel) chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)],'--b','LineWidth',2)
+                plot([0 1],[best_channels.L4_depth-50 best_channels.L4_depth-50],'--b','LineWidth',0.5)
+                plot([0 1],[best_channels.L4_depth+50 best_channels.L4_depth+50],'--b','LineWidth',0.5)
+                plot([0 1],[best_channels.L4_depth best_channels.L4_depth],'--b','LineWidth',2)
             end
         end
 
         if isfield(best_channels,'L5_channel')
             if ~isempty(best_channels.L5_channel)
-                plot([0 1],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)-100 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L5_channel)-100],'--c','LineWidth',0.5)
+                plot([0 1],[best_channels.L5_depth-100 best_channels.L5_depth-100],'--c','LineWidth',0.5)
                 
-                if ~isfield(best_channels,'L4_channel') | isempty(best_channels.L4_channel) | chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100 < chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-60
+                if ~isfield(best_channels,'L4_channel') | isempty(best_channels.L4_channel) | best_channels.L5_depth+100 < best_channels.L4_depth-60
                     % If L4 empty or upper bound of L5 does not overlap
                     % with lower bound of L4, L5 is assumed to be roughly
                     % 200 micron thick
-                    plot([0 1],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100 chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100],'--c','LineWidth',0.5)
+                    plot([0 1],[best_channels.L5_depth+100 best_channels.L5_depth+100],'--c','LineWidth',0.5)
                 else % otherwise L5 thickness limited by lower bound of L4
-                    plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel ==best_channels.L4_channel))-60 chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.L4_channel))-60],'--c','LineWidth',0.5)
+                    plot([0 1],[best_channels.L4_depth-60 best_channels.L4_depth-60],'--c','LineWidth',0.5)
                 end
                 
-                plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel ==best_channels.L5_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.L5_channel))],'--c','LineWidth',2)
+                plot([0 1],[best_channels.L5_depth best_channels.L5_depth],'--c','LineWidth',2)
 
             end
         end
 
         if isfield(best_channels,'CA1_channel')
             if ~isempty(best_channels.CA1_channel)
-                plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel)-10) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel)-10)],'--r','LineWidth',0.5)
-                plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel)+10) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel)+10)],'--r','LineWidth',0.5)
-                plot([0 1],[chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel)) chan_config.Ks_ycoord(find(chan_config.Channel == best_channels.CA1_channel))],'--r','LineWidth',2)
+                plot([0 1],[best_channels.CA1_depth-100 best_channels.CA1_depth-100],'--r','LineWidth',0.5)
+                plot([0 1],[best_channels.CA1_depth+100 best_channels.CA1_depth+100],'--r','LineWidth',0.5)
+                plot([0 1],[best_channels.CA1_depth best_channels.CA1_depth],'--r','LineWidth',2)
             end
         end
 
@@ -90,54 +102,54 @@ for type = 1:length(lfpAvg.filter_type)
 
         hold on
 
-        plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(best_channels.first_in_brain_channel) chan_config.Ks_ycoord(best_channels.first_in_brain_channel)],'--k','LineWidth',2)
+        plot([min(taxis) max(taxis)],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)
 
-        if isfield(best_channels,'L4_channel')
+         if isfield(best_channels,'L4_channel')
             if ~isempty(best_channels.L4_channel) % L4 is assumed to roughly 100 micron thick
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50],'--b','LineWidth',0.5)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)+50 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)+50],'--b','LineWidth',0.5)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel) chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)],'--b','LineWidth',2)
+                plot([min(taxis) max(taxis)],[best_channels.L4_depth-50 best_channels.L4_depth-50],'--b','LineWidth',0.5)
+                plot([min(taxis) max(taxis)],[best_channels.L4_depth+50 best_channels.L4_depth+50],'--b','LineWidth',0.5)
+                plot([min(taxis) max(taxis)],[best_channels.L4_depth best_channels.L4_depth],'--b','LineWidth',2)
             end
         end
 
         if isfield(best_channels,'L5_channel')
             if ~isempty(best_channels.L5_channel)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)-100 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L5_channel)-100],'--c','LineWidth',0.5)
-
-                if ~isfield(best_channels,'L4_channel') | isempty(best_channels.L4_channel) | chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100 < chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-60
+                plot([min(taxis) max(taxis)],[best_channels.L5_depth-100 best_channels.L5_depth-100],'--c','LineWidth',0.5)
+                
+                if ~isfield(best_channels,'L4_channel') | isempty(best_channels.L4_channel) | best_channels.L5_depth+100 < best_channels.L4_depth-60
                     % If L4 empty or upper bound of L5 does not overlap
                     % with lower bound of L4, L5 is assumed to be roughly
                     % 200 micron thick
-                    plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100 chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel)+100],'--c','LineWidth',0.5)
+                    plot([min(taxis) max(taxis)],[best_channels.L5_depth+100 best_channels.L5_depth+100],'--c','LineWidth',0.5)
                 else % otherwise L5 thickness limited by lower bound of L4
-                    plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L4_channel)-60 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-60],'--c','LineWidth',0.5)
+                    plot([min(taxis) max(taxis)],[best_channels.L4_depth-60 best_channels.L4_depth-60],'--c','LineWidth',0.5)
                 end
-
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel ==best_channels.L5_channel) chan_config.Ks_ycoord(chan_config.Channel == best_channels.L5_channel)],'--c','LineWidth',2)
+                
+                plot([min(taxis) max(taxis)],[best_channels.L5_depth best_channels.L5_depth],'--c','LineWidth',2)
 
             end
         end
 
         if isfield(best_channels,'CA1_channel')
             if ~isempty(best_channels.CA1_channel)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel)-10 chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel)-10],'--r','LineWidth',0.5)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel)+10 chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel)+10],'--r','LineWidth',0.5)
-                plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel) chan_config.Ks_ycoord(chan_config.Channel == best_channels.CA1_channel)],'--r','LineWidth',2)
+                plot([min(taxis) max(taxis)],[best_channels.CA1_depth-100 best_channels.CA1_depth-100],'--r','LineWidth',0.5)
+                plot([min(taxis) max(taxis)],[best_channels.CA1_depth+100 best_channels.CA1_depth+100],'--r','LineWidth',0.5)
+                plot([min(taxis) max(taxis)],[best_channels.CA1_depth best_channels.CA1_depth],'--r','LineWidth',2)
             end
         end
 
-        ylim([0 max(chan_config.Ks_ycoord)*1.2])
+        ylim([0 max(sorted_config.Ks_ycoord)*1.2])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
         yyaxis right
         ax = gca;
         ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
-        ylim([-chan_config.Ks_ycoord(best_channels.first_in_brain_channel) max(chan_config.Ks_ycoord)*1.2-chan_config.Ks_ycoord(best_channels.first_in_brain_channel)])
+        ylim([-best_channels.surface_depth max(chan_config.Ks_ycoord)*1.2-best_channels.surface_depth])
 
 
         subplot(1,3,3);
         taxis = csd.(filter_type{type})(event).timestamps;
-        cmax = max(max(csd.(filter_type{type})(event).data(:,1:50)));
+        cmax = max(max(csd.(filter_type{type})(event).data(:,1:end)));
         contourf(taxis,sorted_config.Ks_ycoord,[zeros(1,size(csd.(filter_type{type})(event).data,1)); csd.(filter_type{type})(event).data'; zeros(1,size(csd.(filter_type{type})(event).data,1))],40,'LineColor','none');hold on;
         colormap jet; caxis([-cmax/2 cmax/2]);
         xlabel('time (s)');title('CSD');
@@ -149,7 +161,8 @@ for type = 1:length(lfpAvg.filter_type)
         title(sprintf('CSD (%s filtered)',filter_type{type}))
         colorbar
         hold on
-        plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(best_channels.first_in_brain_channel) chan_config.Ks_ycoord(best_channels.first_in_brain_channel)],'--k','LineWidth',2)
+        plot([min(taxis) max(taxis)],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)
+
         if isfield(best_channels,'L4_channel')
             if ~isempty(best_channels.L4_channel) % L4 is assumed to roughly 100 micron thick
                 plot([min(taxis) max(taxis)],[chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50 chan_config.Ks_ycoord(chan_config.Channel == best_channels.L4_channel)-50],'--b','LineWidth',0.5)

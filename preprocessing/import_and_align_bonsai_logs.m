@@ -33,7 +33,8 @@ if ~strcmp(options.paradigm,'photodiode_timestamp')
     [stimData,StimulusName] = import_BonVisionParams(TRIALDATA_DATAPATH);
 else % If based on photodiode timestamp in case trial info not saved properly
     % Parse for one of the following stimulus names (you can add to the list here, and to the switch case below)
-    specialFileTypes = {'StaticGratings_short','StaticGratings_long','StaticGratings','DriftingGratings','SparseNoise','SparseNoise_fullscreen','StaticTF','Grey','GratingsPhase','OriAdapt','PosAdapt','DriftingTF','Checkerboard'};
+    specialFileTypes = {'StaticGratings_short','StaticGratings_long','StaticGratings','DriftingGratings','SparseNoise','SparseNoise_fullscreen',...
+        'StaticTF','Grey','GratingsPhase','OriAdapt','PosAdapt','DriftingTF','Checkerboard','FullScreenFlash'};
     % See if there is a match within the file name that indicates that this is
     % from the special list
     StimulusTypeMatcher = zeros(1,length(specialFileTypes));
@@ -53,6 +54,9 @@ end
 % Step 2: import behavioural / eye etc
 peripherals = import_bonsai_peripherals(PERIPHERALS_DATAPATH);
 eyeData = import_bonsai_eyedata(EYEDATA_DATAPATH);
+eyeData = []; % currently bonsai eye data not used.
+
+
 if exist('PHOTODIODE_DATAPATH','var') && ~isempty(PHOTODIODE_DATAPATH)
     [photodiode, photodiode_sync] = import_bonsai_photodiode(PHOTODIODE_DATAPATH);
 else

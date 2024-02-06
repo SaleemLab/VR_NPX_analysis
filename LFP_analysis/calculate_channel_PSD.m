@@ -61,7 +61,7 @@ if plot_option == 1
     stimulus_name = extractAfter(options.ANALYSIS_DATAPATH,[fullfile('analysis',options.SESSION),'\']);
 
     fig = figure;
-    fig.Position = [260,150,1140,820]
+    fig.Position = [260,50,1140,900]
     fig.Name = sprintf('%s %s %s PSD profile heatmap probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
 
     freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
@@ -87,13 +87,12 @@ if plot_option == 1
         ylabel('Y coordinate (micron)');
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
-
+    sgtitle(sprintf('%s %s %s PSD profile heatmap probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1),'Interpreter', 'none')
 
     fig = figure;
-    fig.Position = [260,150,1140,820]
-
+    fig.Position = [260,50,1140,900]
+fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
     freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
-    fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
 
     % Loop over the frequency ranges
     for nfreq = 1:size(power, 2)
@@ -125,7 +124,7 @@ if plot_option == 1
         ylabel('Y coordinate (micron)');
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
-
+    sgtitle(sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1),'Interpreter', 'none')
 end
 
 best_channels = [];

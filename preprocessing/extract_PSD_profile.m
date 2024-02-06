@@ -39,5 +39,6 @@ end
 % specific stimuli folder because of the same session (day), the profile
 % should be usually more or less consistent
 
+save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..'),[])
 save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
 save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')

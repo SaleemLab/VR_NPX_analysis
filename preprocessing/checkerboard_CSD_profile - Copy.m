@@ -1,6 +1,5 @@
-function [lfpAvg,csd,PSD,best_channels] = checkerboard_CSD_profile(options)
+function [lfpAvg,csd,power,best_channels] = checkerboard_CSD_profile(options)
 
-power = [];
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
@@ -37,8 +36,21 @@ first_stim = stimTimes(1);
 %         % desired output binwidth
 %         d1 = designfilt('lowpassiir','FilterOrder',12, ...
 %             'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate', imec.fsLF);
-%%%% NEW - use SpikeGLX_Datafile_Tools
 
+% Loading LFP using neuropixel utilities function (load slightly faster)
+DIR = dir(fullfile(options.EPHYS_DATAPATH,'*ChanMap.mat'));
+if isempty(DIR) % If empty load ephys meta 
+    metafile = dir(fullfile(options.EPHYS_DATAPATH,'*.ap.meta'));
+    SGLXMetaToCoords_ChannelMap_masa(metafile);
+    DIR = dir(fullfile(options.EPHYS_DATAPATH,'*ChanMap.mat'));
+end
+
+tic
+channel_map_filename = fullfile(DIR.folder,DIR.name);
+imec = Neuropixel.ImecDataset(options.EPHYS_DATAPATH,'ChannelMap',channel_map_filename);
+
+
+%%%% NEW - use SpikeGLX_Datafile_Tools
 imecMeta = ReadMeta(fullfile(options.EPHYS_DATAPATH,file_to_use));
 nSamp = fix(SampRate(imecMeta)*range(AnalysisTimeWindow));
 chanTypes = str2double(strsplit(imecMeta.acqApLfSy, ','));
@@ -50,23 +62,19 @@ d1 = designfilt('lowpassiir','FilterOrder',12, ...
     'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate',SampRate(imecMeta));
 
 % Read the data
-tresps = ReadBin(fix(SampRate(imecMeta)*first_stim), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+timeWindow = [1+fix(SampRate(imecMeta)*first_stim):fix(SampRate(imecMeta)*first_stim)+nSamp]; % in seconds
+%     [temp_LFP, ~] = imec.readAP_timeWindow(timeWindow);
+[tresps] = double(imec.readAP_idx(timeWindow)); % if lf.bin load LF data, if ap.bin load AP data (for NPX2, only ap)
 tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
-if strcmp(imecMeta.typeThis, 'imec')
-    tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
-else
-    tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
-end
-
 % Downsample
 tresps = downsample(tresps',downSampleRate)';
+
+
 % Create vector for PSTH times at the downsampled rate (NB I am not
 % sure this is completely correct - it depends on how the imec
 % class does this [in the imec class, it does:
 %   idxWindow = imec.closestSampleLFForTime(timeWindowSec);
 %   sampleIdx = idxWindow(1):idxWindow(2);
-timeVector = linspace(AnalysisTimeWindow(1),AnalysisTimeWindow(2),size(tresps,2));
-
 % Initialise matrix for ephys data
 resps = zeros([size(tresps,1) size(tresps,2) length(stimTimes)]);
 % For each trial
@@ -75,18 +83,11 @@ for thisTrial = 1:length(stimTimes)
     waitbar(thisTrial/length(stimTimes),H)
     % Establish what the stimulus time would be in ephys
     stim_on = stimTimes(thisTrial);
-
+    
     % Get the LFP from IMEC file
     %%%% OLD - use Neuropixels library
-    %             tresps = imec.readLF_timeWindow([stim_on+AnalysisTimeWindow(1) stim_on+AnalysisTimeWindow(2)]);
-    %%%% NEW - use SpikeGLX_Datafile_Tools
-    tresps = ReadBin(fix(SampRate(imecMeta)*(stim_on+AnalysisTimeWindow(1))), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+    tresps = imec.readAP_idx(1+fix(SampRate(imecMeta)*stim_on):fix(SampRate(imecMeta)*stim_on)+length(timeWindow));
     tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
-    if strcmp(imecMeta.typeThis, 'imec')
-        tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
-    else
-        tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
-    end
 
     % Zero-mean the data ...
     tresps = tresps-repmat(mean(tresps,2),1,size(tresps,2));
@@ -98,7 +99,7 @@ for thisTrial = 1:length(stimTimes)
     resps(:,:,thisTrial) = single(ttresps);
 end
 close(H)
-
+toc
 
 timestamps = linspace(AnalysisTimeWindow(1),AnalysisTimeWindow(2),size(resps,2));
 
@@ -110,26 +111,29 @@ end
 
 xcoord_avaliable = unique(xcoord);
 
+
+
 if isempty(best_channels{nprobe})
     [~,ycoord_max] = max(ycoord);
-    best_channels{nprobe}.surface_channel = ycoord_max;
-    best_channels{nprobe}.surface_depth = max(ycoord);
+    best_channels{nprobe}.first_in_brain_channel = ycoord_max;
+    best_channels{nprobe}.first_in_brain_depth = max(ycoord);
 end
 
-lfpAvg = [];
-csd = [];
 for col = 1:length(xcoord_avaliable)
-    lfpAvg(col).filter_type = {'all'};
-    lfpAvg(col).event_group = {'Checkerboard'};
-    lfpAvg(col).probe_no = nprobe;
-%     lfpAvg(col).column = col;
-    lfpAvg(col).xcoord = xcoord_avaliable(col);
+    lfpAvg = [];
+    csd = [];
+    lfpAvg.filter_type = {'all'};
+    lfpAvg.event_group = {'Checkerboard'};
+    lfpAvg.probe_no = nprobe;
 
-    [csd(col).all, lfpAvg(col).all ] = perievent_CSD_LFP_amplitude_phase(permute(resps(xcoord == xcoord_avaliable(col),:,:), [2, 1, 3]), timestamps,[],'twin',[0.1 0.5]);
+    [csd.all, lfpAvg.all ] = perievent_CSD_LFP_amplitude_phase(permute(resps(xcoord == xcoord_avaliable(col),:,:), [2, 1, 3]), timestamps,[],'twin',[0.1 0.5]);
 
 
     % cd(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
     %             plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power{nprobe},chan_config,sorted_config,best_channels{nprobe})
 
-    plot_perievent_CSD_LFP(lfpAvg(col),csd(col),power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},options)
+    plot_perievent_CSD_LFP(lfpAvg,csd,power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},options)
 end
+
+
+

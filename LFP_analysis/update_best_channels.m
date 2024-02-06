@@ -1,4 +1,51 @@
-function [updated_channels] = update_best_channels(options,sorted_config)
+function [updated_channels] = update_best_channels(options,chan_config)
+
+options.importMode = 'KS';
+[file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,[]);% Since it is LF
+
+if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and LF
+    options.importMode = 'LF';
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,[]);% Since it is LF
+    probe_type = 1;
+else
+    probe_type = 2;
+end
+
+shanks_avaliable = unique(chan_config.Shank);
+columns_avaliable = unique(chan_config.Ks_xcoord);
+T.shanks_avaliable = shanks_avaliable;
+T.columns_avaliable = columns_avaliable;
+
+promp = sprintf('This is a NPX%i\n with shank(s):[%s]\n and unique column(s):[%s]\n',probe_type,join(string(T.shanks_avaliable),' '),join(string(T.columns_avaliable),' '))
+updated_channels = [];
+% shanks_to_process = input('What shank(s) do you want to analyse? e.g. If you want to analyse shank 1 and 3, input [1 3]:  ');
+columns_to_process = input('What columns(s) do you want to analyse? e.g. If you want to analyse 1st and 3rd column, input [1 3]:  ');
+regions_to_process = input('What regions do you want to process? (First one should be surface) e.g.{surface,L4,L5,CA1} (string inside each cell) ');
+
+for col = columns_to_process
+    nshank = unique(chan_config.Shank( chan_config.Ks_xcoord  ==  columns_avaliable(col)));
+    sprintf('This is Shank %i column %i (X coord %i micron)',nshank,col,columns_avaliable(col))
+    openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
+     datacursormode('on');
+
+    channel_this_column = find(chan_config.Ks_xcoord == columns_avaliable(col));
+    updated_channels.xcoord(col) =columns_avaliable(col);
+    for nregion = 1:length(regions_to_process)
+        confirm = 'N';
+        while sum(strncmp(confirm,'y',1))==0
+            best_depths(nregion) = input(sprintf('What is the best depth for %s (nan if not applicable):  ',regions_to_process{nregion}));
+            confirm = input('Do you confirm your entry? (y/n)  ','s');
+        end
+
+        [~,idx] = min(abs(best_depths(nregion)-chan_config.Ks_ycoord(channel_this_column)));
+        best_depths(nregion) = chan_config.Ks_ycoord(channel_this_column(idx));
+        best_channels(nregion) =  chan_config.Channel(channel_this_column(idx));
+        updated_channels.([regions_to_process{nregion},'_channel'])(col) =best_channels(nregion);
+        updated_channels.([regions_to_process{nregion},'_depth'])(col) =best_depths(nregion);
+    end
+    close all
+end
+
 
 % first_in_brain_channel = find(sorted_config.Channel == best_channels.first_in_brain_channel);
 % best_L4_channel =  find(sorted_config.Channel == best_channels.L4_channel);
@@ -36,19 +83,19 @@ function [updated_channels] = update_best_channels(options,sorted_config)
 % legend([pl(selected_frequency)],{freq_legends{selected_frequency}});
 % ylim([0 4000])
 % openfig(sprintf('Checkerboard event (all filtered) probe %i.fig',options.probe_no))
-openfig(sprintf('%s %s Checkerboard event (all filtered) probe %i.fig',options.SUBJECT,options.SESSION,options.probe_no))
-yyaxis left
-
-disp(['Select four channels manually: 1. first channel that enters the brain 2. L4 channel (putative)...' ...
-    ' 3. L5 channel (based on high frequency power) 4. CA1 channel (based on low theta and high ripple power). ...' ...
-    'Please press ENTRE key after selecting all four points'])
-[ X , updated_channels ] = getpts;
-
-% find the closest channels
-for nchannel = 1:length(updated_channels)
-    [~,index]= min(abs(sorted_config.Ks_ycoord- updated_channels(nchannel)));
-    updated_channels(nchannel) = sorted_config.Channel(index);
-end
+% openfig(sprintf('%s %s Checkerboard event (all filtered) probe %i.fig',options.SUBJECT,options.SESSION,options.probe_no))
+% yyaxis left
+% 
+% disp(['Select four channels manually: 1. first channel that enters the brain 2. L4 channel (putative)...' ...
+%     ' 3. L5 channel (based on high frequency power) 4. CA1 channel (based on low theta and high ripple power). ...' ...
+%     'Please press ENTRE key after selecting all four points'])
+% [ X , updated_channels ] = getpts;
+% 
+% % find the closest channels
+% for nchannel = 1:length(updated_channels)
+%     [~,index]= min(abs(sorted_config.Ks_ycoord- updated_channels(nchannel)));
+%     updated_channels(nchannel) = sorted_config.Channel(index);
+% end
 
 % best_channels.first_in_brain_channel = updated_channels(1);
 % best_channels.L4_channel = updated_channels(2);

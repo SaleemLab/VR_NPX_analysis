@@ -47,7 +47,7 @@ if contains(options.bonsai_files_names{1,1},'SparseNoise_fullscreen')
 end
 
 
-if contains(options.StimulusName,'Checkerboard')
+if contains(options.StimulusName,'Checkerboard')|contains(options.StimulusName,'FullScreenFlash')
     options.paradigm = 'photodiode_timestamp';
 else
     options.paradigm = 'masa';

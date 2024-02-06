@@ -27,12 +27,12 @@ for nsession =1:length(experiment_info)
             % 2 LFP traces.
             session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
             [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',chan_config.Channel);
+            [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
         else
-            [raw_LFP tvec SR chan_config sorted_config] = load_LFP_NPX(options,[]);
+            [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[]);
         end
         
-        [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,'plot_option',1)
+        [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,'plot_option',1);
 %         [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
 
         %         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
@@ -42,9 +42,7 @@ for nsession =1:length(experiment_info)
         %         saveas(gcf,filename)
     end
     
-
-    save_dir = fullfile(options.ANALYSIS_DATAPATH, '..'); % find parent dir
-
-    save(fullfile(save_dir,"best_channels.mat"),'best_channels')
-    save(fullfile(save_dir,"extracted_PSD.mat"),'PSD','power')
+    save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..'),[])
+    save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
+    save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')
 end
