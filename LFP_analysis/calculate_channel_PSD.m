@@ -71,13 +71,14 @@ if plot_option == 1
         subplot(ceil(size(power, 2) / 2), 2, nfreq);
 
         % Create a scatter plot for this frequency range
-        scatter(xcoord, ycoord, 24, power(:,nfreq)/max(power(:,nfreq)), 'filled');
+        for col = 1:length(xcoord_avaliable)
+            scatter(xcoord(xcoord == xcoord_avaliable(col)), ycoord(xcoord == xcoord_avaliable(col)), 24, power(xcoord == xcoord_avaliable(col),nfreq)/max(power(xcoord == xcoord_avaliable(col),nfreq)), 'filled'); hold on
+        end
         xlim([0 1.25*max(xcoord)])
         ylim([0 1.25*max(ycoord)])
         % Add a colorbar
         colorbar;
         colormap(flip(gray))
-
 
         % Set the title
         title(['Frequency range ',freq_legends{nfreq}]);
@@ -91,8 +92,11 @@ if plot_option == 1
 
     fig = figure;
     fig.Position = [260,50,1140,900]
-fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
+    fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
     freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
+    
+
+    scaling_factor = ceil(max(xcoord_avaliable)/length(xcoord_avaliable)/10)*10;
 
     % Loop over the frequency ranges
     for nfreq = 1:size(power, 2)
@@ -103,18 +107,18 @@ fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSI
         Xticks = [];
         for col = 1:length(xcoord_avaliable)
             if col < length(xcoord_avaliable)
-                plot(xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+100*power(xcoord == xcoord_avaliable(col),nfreq)/max(power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
+                plot(xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+scaling_factor*power(xcoord == xcoord_avaliable(col),nfreq)/max(power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
 
-                Xticks = [Xticks xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+50];
+                Xticks = [Xticks xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+scaling_factor/2];
             else
-                plot(1.1*xcoord_avaliable(col)+100*power(xcoord == xcoord_avaliable(col),nfreq)/max(power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
-                Xticks = [Xticks 1.1*xcoord_avaliable(col)+50];
+                plot(1.1*xcoord_avaliable(col)+scaling_factor*power(xcoord == xcoord_avaliable(col),nfreq)/max(power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
+                Xticks = [Xticks 1.1*xcoord_avaliable(col)+scaling_factor/2];
             end
         end
 
         xticks(Xticks)
         xticklabels(xcoord_avaliable)
-        xlim([0 1.25*max(xcoord)])
+        xlim([0 1.25*(scaling_factor+max(xcoord_avaliable(end)))])
         ylim([0 1.25*max(ycoord)])
         % Set the title
         title(['Frequency range ',freq_legends{nfreq}]);
