@@ -112,6 +112,7 @@ xcoord_avaliable = unique(xcoord);
 [ycoord idx] = sort(ycoord,'ascend');
 xcoord = xcoord(idx);
 power{nprobe} = power{nprobe}(idx,:);
+chan_config = chan_config(idx);
 
 if isempty(best_channels{nprobe})
     [~,ycoord_max] = max(ycoord);
