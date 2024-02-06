@@ -53,7 +53,10 @@ for nchannel = 1:size(chan_config,1)
     xcoord(nchannel) = PSD(nchannel).xcoord;
     ycoord(nchannel) = PSD(nchannel).ycoord;
 end
-
+% sort channel according to y coordinate
+[ycoord idx] = sort(ycoord,'ascend');
+xcoord = xcoord(idx);
+power = power(idx,:);
 
 if plot_option == 1
     xcoord_avaliable = unique(xcoord);
