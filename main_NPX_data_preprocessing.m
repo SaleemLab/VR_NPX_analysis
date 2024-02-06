@@ -85,6 +85,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(2)
+All_stimuli = {'StaticGratings'}
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
@@ -152,8 +153,8 @@ Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-% SUBJECTS = {'M23029','M23087','M23153'};
+SUBJECTS = {'M23017','M23028','M23029','M23087'};
+SUBJECTS = {'M23087'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % experiment_info = experiment_info(end);
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
@@ -167,11 +168,11 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23153';
-SESSION = '20231221';
+SUBJECT = 'M23087';
+SESSION = '20231207';
 options = 'bilateral';
 % Stimulus_type = 'FullScreenFlash_2';
-Stimulus_type = 'Checkerbpard';
+Stimulus_type = 'Checkerboard';
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
 
 for nprobe = 1:length(session_info.probe) % For each session, how many probes
@@ -201,6 +202,11 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
         xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
         ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
     end
+
+    % sort channel according to y coordinate
+    [ycoord idx] = sort(ycoord,'ascend');
+    xcoord = xcoord(idx);
+    power = power(idx,:);
 
     % Replot based on updated channels
     for col = 1:length(lfpAvg(options.probe_no).column)
