@@ -413,7 +413,7 @@ behaviour.position(behaviour.position>140) = 140;
 % 1 = T1 passive, 2 = T2 passive, 10 = T1 active and 20 = T2 active
 task_info = [];
 
-if contains(StimulusName,'RUN') | contains(StimulusName,'Track')
+if contains(StimulusName,'RUN') | contains(StimulusName,'Track') | ~isempty(lick_performance)
 
     if ~isempty(reward)
         task_info.reward_type = table2cell(reward(:,"Var1"));
