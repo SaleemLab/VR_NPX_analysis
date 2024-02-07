@@ -26,7 +26,7 @@ for nsession =1:length(experiment_info)
 
     %     cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
     load(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"))
-    
+
     for n = 1:length(session_info)
         for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
             options = session_info(n).probe(nprobe);
@@ -130,66 +130,7 @@ for nsession =1:length(experiment_info)
         end
 
         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields.mat'),'RF')
-%         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
-
-
-        fig = figure
-        fig.Position = [300 150 1000 620]
-        fig.Name = sprintf('%s %s Averaged V1 Receptive field',options.SUBJECT,options.SESSION);
-
-
-        for nprobe = 1:length(session_info.probe) % For each session, how many probes
-            options = session_info.probe(nprobe);
-            options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-            options.importMode = 'KS';
-
-            [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
-
-            for unit_id = 1:length(RF.probe(options.probe_no).cluster_id)
-
-                initMap_temp = RF.probe(options.probe_no).RF_map{unit_id}(:,:,:,4);
-
-                for x = 1:size(initMap_temp,1)
-                    for y = 1:size(initMap_temp,2)
-                        RF_map(unit_id,x,y) = mean(initMap_temp(x,y,4:7));
-                    end
-                end
-                temp = RF_map(unit_id,:,:)/max(max(RF_map(unit_id,:,:)));
-                temp(isinf(temp)) = nan;
-                RF_map(unit_id,:,:) = temp;
-                %         imagesc(initMap{options.probe_no}{100}(:,:,4,4))
-            end
-
-
-
-            %         c = 1;
-            %         for unit = 200:239
-            %
-            %             subplot(5,8,c)
-            %             imagesc(flip(squeeze(RF_map(unit,:,:))))
-            %             c = c + 1;
-            %         end
-            subplot(2,2,nprobe)
-            scal_f = 10; % scale image by this before...
-            sigma = 3; % ...filtering by this
-            V1_cell_id = find(RF.probe(options.probe_no).peak_location <= chan_config.Ks_ycoord(best_channels{options.probe_no}.first_in_brain_channel) & RF.probe(options.probe_no).peak_location >= chan_config.Ks_ycoord(best_channels{options.probe_no}.first_in_brain_channel)-800);
-            
-            
-            thisMap_s = imresize(squeeze(nanmean(RF_map(V1_cell_id,:,:))),scal_f);
-            thisMap_s = imgaussfilt(thisMap_s,sigma);
-            imagesc(flip(thisMap_s/max(max(thisMap_s))))
-            xlabel('Azimuth')
-            ylabel('Elevation')
-            xticks(linspace(1,size(thisMap_s,2),13))
-            xticklabels(-120:20:120)
-            yticks(linspace(1,size(thisMap_s,1),7))
-            yticklabels(flip(-30:20:90))
-            title(sprintf('Averaged %s V1 Receptive field',probe_hemisphere_text{options.probe_hemisphere}))
-            colorbar
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-        end
-        mkdir('visual')
-        save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','visual'),[])
+        %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
     end
 end
 
@@ -210,8 +151,8 @@ for unit_id = 1:length(RF.probe(options.probe_no).cluster_id)
             RF_map(unit_id,x,y) = mean(initMap_temp(x,y,4:7));
         end
     end
-%     temp = zscore(RF_map(unit_id,:,:),0,"all");
-     temp = RF_map(unit_id,:,:);
+    %     temp = zscore(RF_map(unit_id,:,:),0,"all");
+    temp = RF_map(unit_id,:,:);
     temp(isinf(temp)) = nan;
     RF_map(unit_id,:,:) = temp;
     %         imagesc(initMap{options.probe_no}{100}(:,:,4,4))
@@ -228,16 +169,16 @@ for nshank = 1:4
 
     thisMap_s = imresize(squeeze(nanmean(RF_map(V1_cell_id,:,:))),scal_f);
     thisMap_s = imgaussfilt(thisMap_s,sigma);
-%     thisMap_s = zscore(thisMap_s,0,'all');
+    %     thisMap_s = zscore(thisMap_s,0,'all');
     imagesc(flip(thisMap_s))
 
 
     xlabel('Azimuth')
     ylabel('Elevation')
     xticks(linspace(1,size(thisMap_s,2),13))
-        xticklabels(-120:20:120)
+    xticklabels(-120:20:120)
     yticks(linspace(1,size(thisMap_s,1),7))
-        yticklabels(flip(-30:20:90))
+    yticklabels(flip(-30:20:90))
     title(sprintf('Averaged Shank %i V1 Receptive field',nshank))
     colorbar
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -275,3 +216,64 @@ for nshank = 1:4
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
+
+
+
+
+fig = figure
+fig.Position = [300 150 1000 620]
+fig.Name = sprintf('%s %s Averaged V1 Receptive field',options.SUBJECT,options.SESSION);
+
+
+for nprobe = 1:length(session_info.probe) % For each session, how many probes
+    options = session_info.probe(nprobe);
+    options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+    options.importMode = 'KS';
+
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
+
+    for unit_id = 1:length(RF.probe(options.probe_no).cluster_id)
+
+        initMap_temp = RF.probe(options.probe_no).RF_map{unit_id}(:,:,:,4);
+
+        for x = 1:size(initMap_temp,1)
+            for y = 1:size(initMap_temp,2)
+                RF_map(unit_id,x,y) = mean(initMap_temp(x,y,4:7));
+            end
+        end
+        temp = RF_map(unit_id,:,:)/max(max(RF_map(unit_id,:,:)));
+        temp(isinf(temp)) = nan;
+        RF_map(unit_id,:,:) = temp;
+        %         imagesc(initMap{options.probe_no}{100}(:,:,4,4))
+    end
+
+
+
+    %         c = 1;
+    %         for unit = 200:239
+    %
+    %             subplot(5,8,c)
+    %             imagesc(flip(squeeze(RF_map(unit,:,:))))
+    %             c = c + 1;
+    %         end
+    subplot(2,2,nprobe)
+    scal_f = 10; % scale image by this before...
+    sigma = 3; % ...filtering by this
+    V1_cell_id = find(RF.probe(options.probe_no).peak_location <= chan_config.Ks_ycoord(best_channels{options.probe_no}.first_in_brain_channel) & RF.probe(options.probe_no).peak_location >= chan_config.Ks_ycoord(best_channels{options.probe_no}.first_in_brain_channel)-800);
+
+
+    thisMap_s = imresize(squeeze(nanmean(RF_map(V1_cell_id,:,:))),scal_f);
+    thisMap_s = imgaussfilt(thisMap_s,sigma);
+    imagesc(flip(thisMap_s/max(max(thisMap_s))))
+    xlabel('Azimuth')
+    ylabel('Elevation')
+    xticks(linspace(1,size(thisMap_s,2),13))
+    xticklabels(-120:20:120)
+    yticks(linspace(1,size(thisMap_s,1),7))
+    yticklabels(flip(-30:20:90))
+    title(sprintf('Averaged %s V1 Receptive field',probe_hemisphere_text{options.probe_hemisphere}))
+    colorbar
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+mkdir('visual')
+save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','visual'),[])

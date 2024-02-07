@@ -31,11 +31,11 @@ if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
     for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
         load(fullfile(session_files(n).folder, session_files(n).name))
-        extract_and_preprocess_NPX(session_info,Stimulus_type)
+%         extract_and_preprocess_NPX(session_info,Stimulus_type)
     end
 else
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
-    extract_and_preprocess_NPX(session_info,Stimulus_type)
+%     extract_and_preprocess_NPX(session_info,Stimulus_type)
 end
 
 
