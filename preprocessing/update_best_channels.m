@@ -27,6 +27,8 @@ for col = columns_to_process
     sprintf('This is Shank %i column %i (X coord %i micron)',nshank,col,columns_avaliable(col))
     openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
      datacursormode('on');
+     openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s cluster density probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
+     datacursormode('on');
 
     channel_this_column = find(chan_config.Ks_xcoord == columns_avaliable(col));
     updated_channels.xcoord(col) =columns_avaliable(col);

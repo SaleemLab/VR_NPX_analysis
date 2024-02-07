@@ -160,9 +160,18 @@ for col = 1:length(xcoord_avaliable)
     %             plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power{nprobe},chan_config,sorted_config,best_channels{nprobe})
 
     plot_perievent_CSD_LFP(lfpAvg(col),csd(col),power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},options)
+    
+    if ~isempty(clusters)
+        [~,cluster_id] = intersect(clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)));
+        all_fields = fieldnames(clusters);
+        clusters_info = struct();
 
-    intersect(    clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)))
-    clusters(nprobe).peak_channel();
+        for nfield = 1:length(all_fields)
+            if length(clusters(nprobe).(all_fields{nfield})) > length(cluster_id)
+                clusters_info.(all_fields{nfield}) = clusters(nprobe).(all_fields{nfield})(cluster_id);
+            end
+        end
 
-    plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters(nprobe),options);
+        plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters_info,options);
+    end
 end

@@ -85,28 +85,54 @@ colour_line= {[177,0,38]/256,[213,62,79]/256,[252,141,89]/256,...
 freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
 selected_frequency = [2,6,7];
 %     subplot(1,4,2)
+
+% select good units based on simple metrics (remove obvious bad clusters)
+if isfield(clusters,'isi_viol')
+    good_unit_index = find(clusters.isi_viol < 0.1 ...
+        & clusters.amplitude_cutoff < 0.1 ...
+        & clusters.amplitude > 50);
+
+elseif isfield(clusters,'sliding_rp_violation')
+    good_unit_index = find(clusters.sliding_rp_violation < 0.1 ...
+        & clusters.amplitude_cutoff < 0.1 ...
+        & clusters.amplitude_median > 50 ...
+        & clusters.isi_violations_ratio < 0.1);
+end
+
+bin_edge = sorted_config.Ks_ycoord(1)-(sorted_config.Ks_ycoord(2)-sorted_config.Ks_ycoord(1))/2:...
+    mean(diff(sorted_config.Ks_ycoord)):...
+    max(sorted_config.Ks_ycoord)+(sorted_config.Ks_ycoord(end)-sorted_config.Ks_ycoord(end-1))/2;
+
+% Find density of units for each cell type
+
+% intersect(good_unit_index,find(clusters.cell_type==1)
+pyramidal_density = histcounts(clusters.peak_depth(intersect(good_unit_index,find(clusters.cell_type==1))),bin_edge);
+narrow_interneuron_density = histcounts(clusters.peak_depth(intersect(good_unit_index,find(clusters.cell_type==2))),bin_edge);
+wide_interneuron_density = histcounts(clusters.peak_depth(intersect(good_unit_index,find(clusters.cell_type==3))),bin_edge);
+bin_max = 1.2*max([pyramidal_density narrow_interneuron_density wide_interneuron_density]);
+
 hold on
-plot([0 1],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)
+plot([0 bin_max],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)
 
 if isfield(best_channels,'L4_channel')
     if ~isempty(best_channels.L4_channel) % L4 is assumed to roughly 100 micron thick
-        plot([0 1],[best_channels.L4_depth-50 best_channels.L4_depth-50],'--b','LineWidth',0.5)
-        plot([0 1],[best_channels.L4_depth+50 best_channels.L4_depth+50],'--b','LineWidth',0.5)
-        plot([0 1],[best_channels.L4_depth best_channels.L4_depth],'--b','LineWidth',2)
+        plot([0 bin_max],[best_channels.L4_depth-50 best_channels.L4_depth-50],'--b','LineWidth',0.5)
+        plot([0 bin_max],[best_channels.L4_depth+50 best_channels.L4_depth+50],'--b','LineWidth',0.5)
+        plot([0 bin_max],[best_channels.L4_depth best_channels.L4_depth],'--b','LineWidth',2)
     end
 end
 
 if isfield(best_channels,'L5_channel')
     if ~isempty(best_channels.L5_channel)
-        plot([0 1],[best_channels.L5_depth-100 best_channels.L5_depth-100],'--c','LineWidth',0.5)
+        plot([0 bin_max],[best_channels.L5_depth-100 best_channels.L5_depth-100],'--c','LineWidth',0.5)
 
         if ~isfield(best_channels,'L4_channel') | isempty(best_channels.L4_channel) | best_channels.L5_depth+100 < best_channels.L4_depth-60
             % If L4 empty or upper bound of L5 does not overlap
             % with lower bound of L4, L5 is assumed to be roughly
             % 200 micron thick
-            plot([0 1],[best_channels.L5_depth+100 best_channels.L5_depth+100],'--c','LineWidth',0.5)
+            plot([0 bin_max],[best_channels.L5_depth+100 best_channels.L5_depth+100],'--c','LineWidth',0.5)
         else % otherwise L5 thickness limited by lower bound of L4
-            plot([0 1],[best_channels.L4_depth-60 best_channels.L4_depth-60],'--c','LineWidth',0.5)
+            plot([0 bin_max],[best_channels.L4_depth-60 best_channels.L4_depth-60],'--c','LineWidth',0.5)
         end
 
         plot([0 1],[best_channels.L5_depth best_channels.L5_depth],'--c','LineWidth',2)
@@ -116,26 +142,19 @@ end
 
 if isfield(best_channels,'CA1_channel')
     if ~isempty(best_channels.CA1_channel)
-        plot([0 1],[best_channels.CA1_depth-100 best_channels.CA1_depth-100],'--r','LineWidth',0.5)
-        plot([0 1],[best_channels.CA1_depth+100 best_channels.CA1_depth+100],'--r','LineWidth',0.5)
-        plot([0 1],[best_channels.CA1_depth best_channels.CA1_depth],'--r','LineWidth',2)
+        plot([0 bin_max],[best_channels.CA1_depth-100 best_channels.CA1_depth-100],'--r','LineWidth',0.5)
+        plot([0 bin_max],[best_channels.CA1_depth+100 best_channels.CA1_depth+100],'--r','LineWidth',0.5)
+        plot([0 bin_max],[best_channels.CA1_depth best_channels.CA1_depth],'--r','LineWidth',2)
     end
 end
 
-if isfield(clusters,'isi_viol')
-    good_unit_index = clusters.isi_viol < 0.1 ...
-        & clusters.amplitude_cutoff < 0.1 ...
-        & clusters.amplitude > 50;
 
-elseif isfield(clusters,'sliding_rp_violation')
-    good_unit_index = clusters.sliding_rp_violation < 0.1 ...
-        & clusters.amplitude_cutoff < 0.1 ...
-        & clusters.amplitude_median > 50 ...
-        &
-    ;
-end
-clusters.peak_depth(good_unit_index)
-p2 = histcounts()
+
+hold on
+b(1) = barh(sorted_config.Ks_ycoord',pyramidal_density,'r','EdgeColor','none','FaceAlpha',0.3);
+b(2) = barh(sorted_config.Ks_ycoord',narrow_interneuron_density,'b','EdgeColor','none','FaceAlpha',0.3);
+b(3) = barh(sorted_config.Ks_ycoord',wide_interneuron_density,'k','EdgeColor','none','FaceAlpha',0.3);
+legend(b(:),{'pyramidal','narrow','wide'},'Location','southeast','Color','none')
 % legend('1-3','4-12','30-60','60-100','125-300')
 ylabel('probe depth (um)')
 legend([pl(selected_frequency)],{freq_legends{selected_frequency}},'Location','southeast','Color','none');
