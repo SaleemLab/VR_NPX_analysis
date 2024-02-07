@@ -115,11 +115,17 @@ ROOTPATH = 'Z:\ibn-vision';
 
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 % Single session
-SUBJECT = 'M23032';
-SESSION = '20230721';
+SUBJECT = ['M23032';'M23034';'M23038'];
+
+SESSION = {['20230718';'20230719';'20230720';'20230721';'20230722'];
+    ['20230804';'20230805';'20230806'];
+    ['20230816';'20230817']};
 options = 'bilateral';
 Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'OpenField';
+for iMouse = 1:3
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
+    for iSession = 1:size(SESSION{iMouse},1)
 if contains(Stimulus_type,'Masa2tracks')
     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
     for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
@@ -127,8 +133,10 @@ if contains(Stimulus_type,'Masa2tracks')
         extract_PSD_profile(session_info,Stimulus_type)
     end
 else
-    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),Stimulus_type,'session_info.mat'))
     extract_PSD_profile(session_info,Stimulus_type)
+end
+    end
 end
 
 % Batch PSD analysis
@@ -136,9 +144,9 @@ Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+all_SUBJECTS = {'M23031','M23032','M23034','M23037','M23038'};
 % SUBJECTS = {'M23029','M23087','M23153'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+experiment_info = subject_session_stimuli_mapping(all_SUBJECTS,'V1-MEC');
 % experiment_info = experiment_info(end);
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
