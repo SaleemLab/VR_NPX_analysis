@@ -22,7 +22,7 @@ if ~isempty(DIR)
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'))
         clusters = clusters_ks3;
     else
-        clusters = load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'))
     end
 else
     clusters{nprobe} = [];

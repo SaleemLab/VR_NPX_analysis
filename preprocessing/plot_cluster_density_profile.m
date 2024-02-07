@@ -1,7 +1,7 @@
 function plot_cluster_density_profile(power,chan_config,sorted_config,best_channels,clusters,options)
 
 if isfield(best_channels,'xcoord') %if different channels or depths for different columns/shanks
-    col = find(best_channels.xcoord == lfpAvg.xcoord);
+    col = find(best_channels.xcoord == unique(sorted_config.Ks_xcoord));
     fieldnames = fields(best_channels);  % Get the names of all fields in the structure
 
     % Loop over all fields
