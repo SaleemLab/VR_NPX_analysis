@@ -74,7 +74,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 %%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
 %%%%%% want to process. 
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-% SUBJECTS = {'M23028','M23029','M23087'};
+SUBJECTS = {'M23028','M23087','M23153'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -85,7 +85,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(2)
-All_stimuli = {'StaticGratings'}
+All_stimuli = {'Checkerboard'}
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
@@ -182,7 +182,7 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
     
     [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
-
+    
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
     close all
 

@@ -341,8 +341,9 @@ else % if KS2 and KS3
         end
     end
 
-    clusters = table2struct(cluster_metrics,"ToScalar",true);
-    clusters.cluster_id = cluster_id; %1 based
+    [~,~,index] = intersect(SUA_good_unit-1,table2array(cluster_metrics(:,1)));
+    clusters = table2struct(cluster_metrics(index,:),"ToScalar",true);
+    clusters.cluster_id = clusters.cluster_id+1; %1 based
 
     % Continuous spike data (retired)
     clusters.timevec = tvec; % for future continuous spike data at 60Hz
