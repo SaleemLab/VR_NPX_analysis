@@ -1,5 +1,5 @@
 function [lfpAvg,csd,PSD,best_channels] = checkerboard_CSD_profile(options)
-
+power = [];
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
