@@ -1,14 +1,22 @@
 function [lfpAvg,csd,PSD,best_channels] = checkerboard_CSD_profile(options)
-power = [];
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
-load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
-load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
 
 BinWidth = 1/1250;
 % options.importMode = 'LF'; % LF or MUA or KS
 AnalysisTimeWindow = [-0.1 0.5];% two-element vector specifying time window around stim-on (e.g. [-0.25 1.25])
 %             options.ks_unitType = 'good'; % 'mua', 'good' or ''
 nprobe = options.probe_id+1; % probe_no is [1,2] based on options.probe_id (0 and 1)
+
+power = [];
+load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
+DIR = dir(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+if ~isempty(DIR)
+    load(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'))
+else
+    best_channels{nprobe} = [];
+end
+load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
+
+
 
 column = 1;
 options.importMode = 'KS';

@@ -1,4 +1,4 @@
-function [PSD power best_channels] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,varargin)
+function [PSD power] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,varargin)
 
 % Default values
 p = inputParser;
@@ -134,8 +134,6 @@ if plot_option == 1
     end
     sgtitle(sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1),'Interpreter', 'none')
 end
-
-best_channels = [];
 
 
 end

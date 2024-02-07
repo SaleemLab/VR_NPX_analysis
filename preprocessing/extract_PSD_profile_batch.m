@@ -16,7 +16,7 @@ for nsession =1:length(experiment_info)
 
     PSD = [];
     power = [];
-    best_channels = [];
+%     best_channels = [];
     for nprobe = 1:length(session_info.probe)
 %         session_info.probe(nprobe).importMode = 'LF';
         options = session_info.probe(nprobe);
@@ -32,7 +32,7 @@ for nsession =1:length(experiment_info)
             [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[]);
         end
         
-        [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,'plot_option',1);
+        [PSD{nprobe} power{nprobe}] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,'plot_option',1);
 %         [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
 
         %         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
@@ -43,7 +43,7 @@ for nsession =1:length(experiment_info)
     end
     
     save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..'),[])
-    save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
+%     save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
     save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')
     close all
 end
