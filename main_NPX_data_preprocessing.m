@@ -168,8 +168,8 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23087';
-SESSION = '20231207';
+SUBJECT = 'M23028';
+SESSION = '20230706';
 options = 'bilateral';
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';

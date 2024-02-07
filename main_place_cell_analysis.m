@@ -15,8 +15,14 @@ for  nsession =1:length(experiment_info)
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+            params = create_cluster_selection_params; % default cluster selection params
+            params.peak_depth = @(x) x<=0.0008 & x>= 0.0002;
+
+            selected_clusters = select_clusters(clusters,params)
+
             spatial_modulation_GLM_analysis(clusters, Behaviour);
         end
     end
@@ -57,11 +63,9 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
         %         load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_k3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        
         column = 1;
-
-
         LFP_tvec = [];
         
         x_bins_width = 10; % bin for decoding

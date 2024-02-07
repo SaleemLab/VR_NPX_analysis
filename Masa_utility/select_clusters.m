@@ -48,3 +48,4 @@ for iField = 1:size(all_cluster_fields,1)
 
     end
 end
+selected_clusters.params = params;% Save the parameters that were used for selection.

@@ -8,9 +8,9 @@ nprobe = options.probe_id+1; % probe_no is [1,2] based on options.probe_id (0 an
 
 power = [];
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
-DIR = dir(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+DIR = dir(fullfile(options.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 if ~isempty(DIR)
-    load(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'))
+    load(fullfile(options.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'))
 else
     best_channels{nprobe} = [];
 end
