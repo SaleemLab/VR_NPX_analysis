@@ -18,8 +18,7 @@ for  nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
-            params = create_cluster_selection_params; % default cluster selection params
-            params.peak_depth = @(x) x<=0.0008 & x>= 0.0002;
+            params = create_cluster_selection_params; % default cluster selection params            params.peak_depth = @(x) x<=0.0008 & x>= 0.0002;
 
             selected_clusters = select_clusters(clusters,params)
 
