@@ -13,6 +13,9 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         
         spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
         event_position(iLap,1) = (iLap)*1000;
+
+
+        
     end
     track1_event_position = event_position(Task_info.track_ID_all==1);
     track2_event_position = event_position(Task_info.track_ID_all==2);
@@ -31,7 +34,8 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         if iCluster+(iPlot-1)*no_subplot > no_cluster
             break
         end
-        subplot(no_subplot_y*2,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x))*no_subplot_x)
+        subplot_scale = 0:3; 
+        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
         cluster_spike_id{iCluster+(iPlot-1)*no_subplot} = cluster.spike_id == cluster.cluster_id(iCluster+(iPlot-1)*no_subplot);
     
         [~,~,rasterX,rasterY,~,~] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_position, window, psthBinSize);
@@ -43,9 +47,9 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         track1_rasterY = reshape(rasterY_reshaped(:,track1_raster_id),[1 sum(track1_raster_id)*3]);
         track2_rasterX = reshape(rasterX_reshaped(:,track2_raster_id),[1 sum(track2_raster_id)*3]);
         track2_rasterY = reshape(rasterY_reshaped(:,track2_raster_id),[1 sum(track2_raster_id)*3]);
-        plot(track1_rasterX,track1_rasterY,'LineWidth',1.5)
+        plot(track1_rasterX,track1_rasterY,'LineWidth',1)
         hold on; 
-        plot(track2_rasterX,track2_rasterY,'LineWidth', 1.5)
+        plot(track2_rasterX,track2_rasterY,'LineWidth', 1)
 
             ylim([0 length(Task_info.start_time_all)])
             xlim(window)
@@ -55,12 +59,12 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 
-        subplot(no_subplot_y*2,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+1)*no_subplot_x)
-        [psth_track1,bins,~,~,~,~] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize);
-        [psth_track2,bins,~,~,~,~] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize);
-        plot(bins,psth_track1,'LineWidth',2)
+        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        [psth_track1,bins,~,~,~,binnedarray_track1] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize);
+        [psth_track2,bins,~,~,~,binnedarray_track2] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize);
+        plot(bins,mean(binnedarray_track1),'LineWidth',2)
         hold on;
-        plot(bins,psth_track2,'LineWidth',2)
+        plot(bins,mean(binnedarray_track2),'LineWidth',2)
         legend(['track 1'],['track 2'])
         xlim(window)
         xlabel('position')
