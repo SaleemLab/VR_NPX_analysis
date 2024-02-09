@@ -156,49 +156,56 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23032';
-SESSION = '20230721';
-options = 'bilateral';
+SUBJECT = ['M23032';'M23034';'M23038'];
+
+SESSION = {['20230718';'20230719';'20230720';'20230721';'20230722'];
+    ['20230804';'20230805';'20230806'];
+    ['20230816';'20230817']};
+
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';
-load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
-
-for nprobe = 1:length(session_info.probe) % For each session, how many probes
-    options= session_info.probe(nprobe);
-    %             options.ROOTPATH = ROOTPATH;
-    options.importMode = 'KS';
-    options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+for iMouse = 1:3
     
-    [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
+    for iSession = 1:size(SESSION{iMouse},1)
+load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),Stimulus_type,'session_info.mat'))
 
-    save_all_figures(options.ANALYSIS_DATAPATH,[]);
-    close all
-
-    save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
-
-    [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-    [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-
-    save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-    
-    power = [];
-    xcoord = [];
-    ycoord = [];
-
-    for nchannel = 1:size(PSD{options.probe_no},2)
-        power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
-        xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
-        ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
+        for nprobe = 1:length(session_info.probe) % For each session, how many probes
+            options= session_info.probe(nprobe);
+            %             options.ROOTPATH = ROOTPATH;
+            options.importMode = 'KS';
+            options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+            
+            [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
+        
+            save_all_figures(options.ANALYSIS_DATAPATH,[]);
+            close all
+        
+            save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+        
+            [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+            [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+        
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+            
+            power = [];
+            xcoord = [];
+            ycoord = [];
+        
+            for nchannel = 1:size(PSD{options.probe_no},2)
+                power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
+                xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
+                ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
+            end
+        
+            % Replot based on updated channels
+            for col = 1:length(lfpAvg(options.probe_no).column)
+                xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
+                plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
+            end
+            save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        end
     end
-
-    % Replot based on updated channels
-    for col = 1:length(lfpAvg(options.probe_no).column)
-        xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
-        plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
-    end
-    save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
-
 % Checkerboard CSD batch
 % SUBJECTS = {'M23017','M23028','M23029'};
 SUBJECTS = {'M23087'};
