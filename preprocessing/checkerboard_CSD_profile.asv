@@ -13,7 +13,7 @@ DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
 if ~isempty(DIR)
     load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
 
-    if nprobe > 1 & length(best_channels) < nprobe
+    if nprobe > 1 & length(best_channels) == 1
         best_channels{nprobe} = [];
     end
 else
