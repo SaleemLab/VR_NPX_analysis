@@ -1,4 +1,4 @@
-function  place_cell_reliability_analysis(clusters,Behaviour)
+function  spatial_cell_reliability_analysis(clusters,Behaviour,Task_info)
     
 % Assuming spikeTimes and positions are given
 binSize = 2; % cm

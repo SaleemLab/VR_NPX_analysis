@@ -1,24 +1,51 @@
-function plot_raster_both_track(cluster,Task_info,Behaviour,subplot_xy,window,psthBinSize)
+function plot_raster_both_track_extended(cluster,Task_info,Behaviour,subplot_xy,window,psthBinSize)
 no_subplot_x = subplot_xy(1); %no of subplot in one figure columns
 no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
-
+    
     t_bin = 1/60;
+    
+    no_lap = size(Task_info.start_time_all,1);
+   
+    distance = Behaviour.speed*(1/60);
+    position_extended = Behaviour.position;
+    max_distance_extended = nan([no_lap,1]);
+    for iLap = 1:no_lap
+        if iLap < no_lap
+            
+            position_lap_end_index = find(Behaviour.tvec >= Task_info.end_time_all(iLap) & Behaviour.tvec < Task_info.start_time_all(iLap+1));
+            if ~isempty(position_lap_end_index) & length(position_lap_end_index) >3
+            position_extended(position_lap_end_index(1:end-3)) = position_extended(position_lap_end_index(1)-1)+ cumsum(distance(position_lap_end_index(1:end-3)));
+            max_distance_extended(iLap) = max(cumsum(distance(position_lap_end_index(1:end-3))));
+            end
+        end
+        
+    end
+    window = [0, floor(max(max_distance_extended)/psthBinSize)*psthBinSize];
     position_edges = window(1):psthBinSize:window(2);
     %   convert spikes time to corresponding postions
-    spike_position = interp1(Behaviour.tvec,Behaviour.position,cluster.spike_times,'nearest');
+    spike_position = interp1(Behaviour.tvec,position_extended,cluster.spike_times,'nearest');
     spike_speed = interp1(Behaviour.tvec,Behaviour.speed,cluster.spike_times,'nearest');
-    no_lap = size(Task_info.start_time_all,1);
+    
     event_position = zeros(size(Task_info.start_time_all));
     
+    
+
     position_bin_time = zeros(no_lap,(window(2)-window(1))/psthBinSize);
     for iLap = 1:no_lap
-        spike_times_lap_index = cluster.spike_times <= Task_info.end_time_all(iLap)...
+        if iLap < no_lap
+        spike_times_lap_index = cluster.spike_times < Task_info.start_time_all(iLap+1)...
             & cluster.spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
-        
+        position_bin_time(iLap,:) = t_bin.*histcounts(position_extended(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
+            & Behaviour.tvec <Task_info.start_time_all(iLap+1) & Behaviour.speed > 5 ),position_edges);
+        else
+            spike_times_lap_index = cluster.spike_times <= Task_info.end_time_all(iLap)...
+            & cluster.spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
+            position_bin_time(iLap,:) = t_bin.*histcounts(position_extended(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
+            & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
+        end
         spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
         event_position(iLap,1) = (iLap)*1000;
-        position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
-            & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
+        
     end
     
 
@@ -58,8 +85,8 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         hold on; 
         plot(track2_rasterX,track2_rasterY,'LineWidth', 0.5)
         
-        yline(find(diff(Task_info.track_ID_all)==-1)+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
-        yline(find(diff(Task_info.track_ID_all)==1)+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
+        yline((find(diff(Task_info.track_ID_all)==-1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
+        yline((find(diff(Task_info.track_ID_all)==1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
         
             ylim([0 length(Task_info.start_time_all)])
             xlim(window)

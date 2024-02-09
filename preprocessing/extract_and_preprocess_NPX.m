@@ -91,12 +91,12 @@ if contains(Stimulus_type,'Masa2tracks')
     % If Masa2tracks, PRE, RUN and/or POST saved in one folder
     if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
         save(fullfile(options.ANALYSIS_DATAPATH,...
-            sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks2')
+            sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks2')
         save(fullfile(options.ANALYSIS_DATAPATH,...
-            sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks3')
+            sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks3')
     elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
         save(fullfile(options.ANALYSIS_DATAPATH,...
-            sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters')
+            sprintf('extracted_clusters%s.mat',erase(stimulus_name,Stimulus_type))),'clusters')
     end
     %             save(fullfile(options.ANALYSIS_DATAPATH,...
     %                 sprintf('extracted_spikes%s.mat',erase(stimulus_name{n},Stimulus_type))),'spikes')

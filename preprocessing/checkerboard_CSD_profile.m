@@ -7,6 +7,8 @@ AnalysisTimeWindow = [-0.1 0.5];% two-element vector specifying time window arou
 nprobe = options.probe_id+1; % probe_no is [1,2] based on options.probe_id (0 and 1)
 
 power = [];
+best_channels = [];
+
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
 DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
 if ~isempty(DIR)
