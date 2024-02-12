@@ -152,13 +152,13 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 %% Determine L4 of V1 based on checkerboard (require manual updating)
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
 SUBJECT = ['M23032';'M23034';'M23038'];
 
-SESSION = {['20230718';'20230719';'20230720';'20230721';'20230722'];
+SESSION = {['20230719';'20230720';'20230721';'20230722'];
     ['20230804';'20230805';'20230806'];
     ['20230816';'20230817']};
 
