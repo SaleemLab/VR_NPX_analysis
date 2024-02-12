@@ -22,6 +22,13 @@ updated_channels = [];
 columns_to_process = input('What columns(s) do you want to analyse? e.g. If you want to analyse 1st and 3rd column, input [1 3]:  ');
 regions_to_process = input('What regions do you want to process? (First one should be surface) e.g.{surface,L4,L5,CA1} (string inside each cell) ');
 
+
+for nregion = 1:length(regions_to_process)
+    updated_channels.([regions_to_process{nregion},'_channel'])(1:length(columns_avaliable)) =nan;
+    updated_channels.([regions_to_process{nregion},'_depth'])(1:length(columns_avaliable)) =nan;
+end
+updated_channels.xcoord =columns_avaliable;
+
 for col = columns_to_process
     nshank = unique(chan_config.Shank( chan_config.Ks_xcoord  ==  columns_avaliable(col)));
     sprintf('This is Shank %i column %i (X coord %i micron)',nshank,col,columns_avaliable(col))

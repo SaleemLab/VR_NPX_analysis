@@ -77,13 +77,6 @@ for nsession =1:length(experiment_info)
         plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
 
         plot_raster_both_track_extended(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        plot_raster_both_track_extended(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-
-
-        plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-
-        [ccg, t] = CCG(    these_spike_times{id}, ones(size(these_spike_times{id})),...
-            'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
 
 
         %plot speed of each lap

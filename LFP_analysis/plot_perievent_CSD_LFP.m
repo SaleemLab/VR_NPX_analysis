@@ -3,11 +3,16 @@ function plot_perievent_CSD_LFP(lfpAvg,csd,power,chan_config,sorted_config,best_
 if isfield(best_channels,'xcoord') %if different channels or depths for different columns/shanks
     col = find(best_channels.xcoord == lfpAvg.xcoord);
     fieldnames = fields(best_channels);  % Get the names of all fields in the structure
-
+%     best_channels1 = best_channels;
     % Loop over all fields
     for i = 1:length(fieldnames)
         % Get the ith value from the current field
-        best_channels.(fieldnames{i}) = best_channels.(fieldnames{i})((col));
+        if ~isnan(best_channels.(fieldnames{i})((col)))
+            best_channels.(fieldnames{i}) = best_channels.(fieldnames{i})((col));
+        else
+            shank_id = ceil(best_channels.xcoord/250);
+            best_channels.(fieldnames{i}) = median(best_channels.(fieldnames{i})(shank_id == shank_id(col)),'omitnan');
+        end
     end
 end
 
