@@ -15,24 +15,26 @@ disp('Circularly shifting position for each lap and re-calculate spatial firing 
 
 tic
 place_fields_shuffled = cell(1000,1);
+position_shuffled = cell(1000,1);
+
 parfor nshuffle = 1:1000
-%     tic
+    %     tic
     disp(sprintf('Shuffle %i',nshuffle))
-    position_shuffled = Behaviour.position;
+    position_shuffled{nshuffle} = Behaviour.position;
 
     for nlap = 1:length(Task_info.start_time_all)
         s = RandStream('mrg32k3a','Seed',nlap+nshuffle*1000); % Set random seed for resampling
 
-        position_shuffled(Behaviour.tvec  >= Task_info.start_time_all(nlap) & Behaviour.tvec <= Task_info.end_time_all(nlap)) =...
+        position_shuffled{nshuffle}(Behaviour.tvec  >= Task_info.start_time_all(nlap) & Behaviour.tvec <= Task_info.end_time_all(nlap)) =...
             circshift(Behaviour.position(Behaviour.tvec  >= Task_info.start_time_all(nlap) & Behaviour.tvec <= Task_info.end_time_all(nlap))...
             ,randi(s,length(Behaviour.tvec  >= Task_info.start_time_all(nlap) & Behaviour.tvec <= Task_info.end_time_all(nlap))));
     end
 
     Behaviour_temp = Behaviour;
-    Behaviour_temp.position = position_shuffled;
+    Behaviour_temp.position = position_shuffled{nshuffle};
 
     place_fields_shuffled{nshuffle} = calculate_spatial_cells(clusters,Task_info,Behaviour_temp,x_window,x_bin_width);
-%     toc
+    %     toc
 end
 toc
 
@@ -49,7 +51,7 @@ toc
 %             selected_laps = 1:2:length(start_times);
 %         elseif contains(lap_option,'second')
 %             selected_laps = 1:2:length(start_times);
-% 
+%
 %         elseif isnumeric(lap_option) % can input one lap or multiple laps (based on block or behaviour)
 %             selected_laps = lap_option;
 %         end
@@ -58,28 +60,25 @@ toc
 %         for nshuffle = 1:length(place_fields_shuffled)
 %             shuffled_ratemap(nshuffle,:,:) = place_fields_shuffled{nshuffle}(track_id).raw{iCluster};
 %         end
-%         
+%
 %         odd_map_shuffled = squeeze(mean(shuffled_ratemap(:,1:2:length(start_times),:),2));
 %         even_map_shuffled = squeeze(mean(shuffled_ratemap(:,2:2:length(start_times),:),2));
-% 
+%
 %         odd_map = mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}(1:2:length(start_times),:));
 %         even_map = mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}(2:2:length(start_times),:));
-%         
+%
 %         first_half_map_shuffled = squeeze(mean(shuffled_ratemap(:,1:2:length(start_times),:),2));
 %         second_half_map_shuffled = squeeze(mean(shuffled_ratemap(:,2:2:length(start_times),:),2));
-% 
+%
 %         first_half_map = mean(place_fields(track_id).raw{iCluster}(1:length(start_times)/2,:));
 %         second_half_map = mean(place_fields(track_id).raw{iCluster}(length(start_times)/2+1:end,:));
-
-% Spatial cell stability
+tic
+% Spatial cell stability and peak
 for iCluster = 1:length(place_fields(track_id).raw)
-
+tic
     % Stability
     for track_id = 1:max(Behaviour.track_ID)
         start_times = Task_info.start_time_all(Task_info.track_ID_all == track_id);
-        
-        place_fields(track_id).raw_peak(iCluster) = max(mean(place_fields(track_id).raw{iCluster})); % peak FR
-        
 
         lap_correlation = corr(normalize(place_fields(track_id).raw{iCluster}','range'),...
             normalize(place_fields(track_id).raw{iCluster}','range')); % lap by lap correlation
@@ -92,6 +91,9 @@ for iCluster = 1:length(place_fields(track_id).raw)
         place_fields(track_id).odd_even_corr(iCluster) = odd_even_corr;
 
         for nshuffle = 1:1000
+            peak_shuffled(nshuffle) = max(mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}));
+            skaggs_info_shuffled(nshuffle) = place_fields_shuffled{nshuffle}(track_id).skaggs_info(iCluster);
+
             lap_correlation = corr(normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'),...
                 normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'));
 
@@ -104,6 +106,11 @@ for iCluster = 1:length(place_fields(track_id).raw)
 
         place_fields(track_id).odd_even_corr_shuffled(iCluster,:) = odd_even_corr_shuffled;
         place_fields(track_id).odd_even_stability(iCluster) = sum(odd_even_corr > odd_even_corr_shuffled)/length(odd_even_corr_shuffled);
+
+        place_fields(track_id).raw_peak(iCluster) = max(mean(place_fields(track_id).raw{iCluster})); % peak FR
+        place_fields(track_id).peak_percentile(iCluster) = sum(max(mean(place_fields(track_id).raw{iCluster}))>peak_shuffled)/length(peak_shuffled); % peak FR relative to peak of shuffled data
+
+        place_fields(track_id).skaggs_percentile(iCluster) = sum(place_fields(track_id).skaggs_info(iCluster)>skaggs_info_shuffled)/length(skaggs_info_shuffled);
     end
 
     % Remapping (correlation between track 1 and track 2)
@@ -125,26 +132,42 @@ for iCluster = 1:length(place_fields(track_id).raw)
     place_fields(track_id).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
     place_fields(track_id).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
 
-    % Reliability
-    for track_id = 1:max(Behaviour.track_ID)
-        
-        Behaviour_temp = Behaviour;
-        Behaviour_temp.position = ;
+    place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
+    place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
 
-        for iCluster = 1:length(place_fields(track_id).cluster_id)
-            spikeTimes = clusters.spike_times(clusters.spike_id == place_fields(track_id).cluster_id(iCluster));
-            spikePositions = 
-            [reliability shuffled_reliability] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,Task_info,x_window,2);
-        end
-    end
+    % Reliability/ explained variance (currently taking 80 seconds to run one cell)
+
+    %     if  place_fields(1).first_second_stability(iCluster) > 0.99 | place_fields(2).first_second_stability(iCluster) > 0.99 % if stability better than shuffled data
+    %         spikeTimes = clusters.spike_times(clusters.spike_id == place_fields(1).cluster_id(iCluster));
+    %         [reliability,shuffled_reliability] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,position_shuffled,Task_info,x_window,2,1);
+    %     else
+    spikeTimes = clusters.spike_times(clusters.spike_id == place_fields(1).cluster_id(iCluster));
+    [reliability,~] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,position_shuffled,Task_info,x_window,1,0);
+    shuffled_reliability = zeros(1000,2,10); % 1000 shuffles x 2 tracks x 10 folds
+    %     end
+    reliability(isinf(reliability)) = nan;
+    place_fields(1).explained_variance(iCluster,:) = reliability(1,:);
+    place_fields(2).explained_variance(iCluster,:) = reliability(2,:);
+%     place_fields(1).reliability(iCluster,:) = sum(mean(reliability(1,:),'omitnan')>mean(squeeze(shuffled_reliability(:,1,:)),2,'omitnan'))/1000;
+%     place_fields(2).reliability(iCluster,:) = sum(mean(reliability(2,:),'omitnan')>mean(squeeze(shuffled_reliability(:,2,:)),2,'omitnan'))/1000;
+
+%     place_fields(2).reliability(iCluster,:) = mean(reliability(2,:));
+%     sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
+%     place_fields(1).explained_variance_shuffled(iCluster,:,:) = shuffled_reliability(:,1,:);
+%     place_fields(2).explained_variance_shuffled(iCluster,:,:) = shuffled_reliability(:,2,:);
+toc
 end
+toc
 
-
+for track_id = 1:max(Behaviour.track_ID)
     % Find cells that pass the 'Place cell' thresholds -
     % both peak of smoothed place field or peak of raw place field need to be above the respective thresholds
-    putative_place_cells = find((place_fields.track(track_id).peak >= parameters.min_smooth_peak...
-        & place_fields.track(track_id).raw_peak >= parameters.min_raw_peak)...
-        & place_fields.track(track_id).first_second_stability >= 0.99); % rather than based on skaggs_info. Now based on if peak is significantly higher than shuffle distribution.
+    place_fields(track_id).explained_variance(isinf(place_fields(track_id).explained_variance)) = nan;
+
+    putative_place_cells = find(place_fields(track_id).raw_peak >= 1 ...
+        & mean(place_fields(track_id).explained_variance,2,'omitnan')' > 0 ...
+        & place_fields(track_id).first_second_stability >= 0.99 ...
+        & place_fields(track_id).peak_percentile >= 0.99); % rather than based on skaggs_info. Now based on if reliability and stability is significantly better than shuffle distribution.
 
     %         % Set a less conservative criteria for place cells, having to pass either peak firing rate thresholds (smoothed PF and raw PF)
     %         putative_place_cells_LIBERAL = find(place_fields.track(track_id).peak >= parameters.min_smooth_peak...
@@ -155,22 +178,24 @@ end
 
 
     if ~isempty(clusters.cell_type)
+        pyramidal_cells = clusters.cluster_id(clusters.cell_type == 1);
         place_fields.track(track_id).good_cells = intersect(putative_place_cells,pyramidal_cells); % Check that the cells that passed the threshold are pyramidal cells
         place_fields.track(track_id).good_cells_LIBERAL = putative_place_cells; % No cell type restrictions
     else
-        putative_pyramidal_cells = find(place_fields.mean_rate <= parameters.max_mean_rate);
-        place_fields.track(track_id).good_cells = intersect(putative_place_cells,putative_pyramidal_cells);
         place_fields.track(track_id).good_cells_LIBERAL = putative_place_cells;
     end
     %
     % Sort place fields according to the location of their peak
-    [~,index] = sort(place_fields.track(track_id).centre);
-    place_fields.track(track_id).sorted = index;
-    [~,index1] = sort(place_fields.track(track_id).centre(place_fields.track(track_id).good_cells));
+    all_maps = reshape([place_fields(track_id).raw{:}],[size(place_fields(track_id).raw{1}) length(place_fields(track_id).raw)]);
+    average_maps = squeeze(mean(all_maps,1));
+    [~,peak_id]=max(average_maps);
+    [~,index] = sort(peak_id);
+    place_fields(track_id).sorted = index;
+    [~,index1] = sort(place_fields.track(track_id).centre(place_fields(track_id).good_cells));
     place_fields.track(track_id).sorted_good_cells = place_fields.track(track_id).good_cells(index1);
     [~,index2] = sort(place_fields.track(track_id).centre(place_fields.track(track_id).good_cells_LIBERAL));
     place_fields.track(track_id).sorted_good_cells_LIBERAL = place_fields.track(track_id).good_cells_LIBERAL(index2);
-
+end
 %% Classify cells as good place cells, interneuron, pyramidal cells & other cells
 
 %interneurons classfication

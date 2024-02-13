@@ -114,6 +114,9 @@ for nsession =1:length(experiment_info)
         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+
+
+        
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
 
         HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
@@ -126,6 +129,15 @@ end
 
 
 %% Spatial modulation GLM analysis
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\NeuralTraj'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\NeuralTraj'))
+
+% rmpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\NeuralTraj'))
+% rmpath(genpath('C:\Users\masah\Documents\GitHub\NeuralTraj'))
+
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';

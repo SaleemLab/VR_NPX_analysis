@@ -110,10 +110,13 @@ for nsession =1:length(experiment_info)
 %         end
 % 
         
-        % Spatial firing fields stability and 
-        place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_L,Task_info,Behaviour,[0 140],5,[]);
+        % Spatial firing fields stability and reliability
+        place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+
+        place_fields = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
-        combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R)
+
+        HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
 
         spatial_modulation_GLM_analysis(clusters_L,Behaviour,Task_info);
 
@@ -123,6 +126,10 @@ end
 
 
 %% Spatial modulation GLM analysis
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\NeuralTraj'))
+
+
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';

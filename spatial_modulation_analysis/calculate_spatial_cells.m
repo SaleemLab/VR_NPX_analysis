@@ -52,8 +52,8 @@ raw1 = cell(size(clusters.cluster_id));
 raw2 = cell(size(clusters.cluster_id));
 spatial_xcorr1 = cell(size(clusters.cluster_id));
 spatial_xcorr2 = cell(size(clusters.cluster_id));
-skaggs_info1 = cell(size(clusters.cluster_id));
-skaggs_info2 = cell(size(clusters.cluster_id));
+skaggs_info1 = nan(size(clusters.cluster_id));
+skaggs_info2 = nan(size(clusters.cluster_id));
 
 % list_of_parameters
 % Create smoothing filter (gamma)
@@ -67,7 +67,7 @@ w = w./sum(w); %make sure smoothing filter sums to 1
 
 
 
-for iCluster = 1:no_cluster
+parfor iCluster = 1:no_cluster
     cluster_spike_id = clusters.spike_id == clusters.cluster_id(iCluster);
 
     [psth_track1,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track1_event_position, x_window, x_bin_width,position_bin_time(Task_info.track_ID_all==1,:));
@@ -89,7 +89,7 @@ for iCluster = 1:no_cluster
     meanFR= nansum(ratemap.*prob_x);
     norm_rate= ratemap/meanFR;
     log_norm= log2(norm_rate);
-    skaggs_info1{iCluster}= nansum(prob_x.*norm_rate.*log_norm);
+    skaggs_info1(iCluster)= nansum(prob_x.*norm_rate.*log_norm);
 
     [psth_track2,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track2_event_position, x_window, x_bin_width,position_bin_time(Task_info.track_ID_all==2,:));
     binnedArray(isnan(binnedArray)) = 0;
@@ -110,7 +110,7 @@ for iCluster = 1:no_cluster
     meanFR= nansum(ratemap.*prob_x);
     norm_rate= ratemap/meanFR;
     log_norm= log2(norm_rate);
-    skaggs_info2{iCluster}= nansum(prob_x.*norm_rate.*log_norm);
+    skaggs_info2(iCluster)= nansum(prob_x.*norm_rate.*log_norm);
 
     % Compute autocorrelation of the firing rate time series
     [track1_CCG, lags] = xcorr(psth_track1,psth_track1,'coeff');
