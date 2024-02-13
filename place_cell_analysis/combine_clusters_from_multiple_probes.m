@@ -1,30 +1,25 @@
-function clusters_combined = combine_clusters_from_multiple_probes(clusters)
+function clusters_combined = combine_clusters_from_multiple_probes(clusters1,clusters2)
 % Functions for combining clusters from multiple probes into one structure
-% 
+%
+all_fields = fieldnames(clusters1);
 
-% give new cell id to cell from probe 2
-for ncell = 1:length(clusters.probe(2).cell_type)
-    if clusters.probe(2).id_conversion(ncell,2) < 10000
-        clusters.probe(2).spike_id(clusters.probe(2).spike_id == clusters.probe(2).id_conversion(ncell,2))...
-            = clusters.probe(2).id_conversion(ncell,2) + 10000;
-        clusters.probe(2).id_conversion(ncell,2) = clusters.probe(2).id_conversion(ncell,2) + 10000;
-    end
+
+for ncell =1:length(clusters2.cluster_id)
+    % give cluster 2 spikes new cluster id
+    clusters2.spike_id(clusters2.spike_id == clusters2.cluster_id(ncell)) = clusters2.cluster_id(ncell) + 10000;
+    clusters2.cluster_id(ncell) = clusters2.cluster_id(ncell) + 10000;
 end
 
 clusters_combined = [];
-combined_spike_times = [clusters.probe(1).spike_times; clusters.probe(2).spike_times];
-[~,spike_index]  = sort(combined_spike_times) ;
-clusters_combined.spike_id = [clusters.probe(1).spike_id; clusters.probe(2).spike_id];
-clusters_combined.spike_id = clusters_combined.spike_id(spike_index);
-clusters_combined.spike_times = combined_spike_times(spike_index);
-clusters_combined.peak_channel = [clusters.probe(1).peak_channel clusters.probe(2).peak_channel];
-clusters_combined.peak_channel_waveform = [clusters.probe(1).peak_channel_waveforms; clusters.probe(2).peak_channel_waveforms];
-clusters_combined.cell_type = [clusters.probe(1).cell_type clusters.probe(2).cell_type];
-clusters_combined.probe_no = [ones(1,length(clusters.probe(1).cell_type)) 2*ones(1,length(clusters.probe(2).cell_type))];
 
-clusters_combined.id_conversion = [clusters.probe(1).id_conversion; clusters.probe(2).id_conversion];
-clusters_combined.id_conversion(:,1) = 1:length(clusters_combined.cell_type);
-clusters_combined.MUA_zscore = [clusters.probe(1).MUA_zscore; clusters.probe(1).MUA_zscore];
-clusters_combined.MUA_tvec = clusters.probe(1).MUA_tvec;
+for n = 1:length(all_fields)
+    clusters_combined.(all_fields{n}) = [clusters1.(all_fields{n}); clusters2.(all_fields{n})];
+end
+
+combined_spike_times = [clusters1.spike_times; clusters2.spike_times];
+[~,spike_index]  = sort(combined_spike_times) ;
+% clusters_combined.spike_id = [clusters1.spike_id; clusters2.spike_id];
+clusters_combined.spike_id = clusters_combined.spike_id(spike_index);
+clusters_combined.spike_times = clusters_combined.spike_times(spike_index);
 
 end

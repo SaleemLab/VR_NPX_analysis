@@ -33,6 +33,13 @@ for nsession =1:length(experiment_info)
         metric_param = create_cluster_selection_params;
         clusters_R= [];
         clusters_L= [];
+
+        HPC_clusters_R = [];
+        V1_clusters_R = [];
+
+        HPC_clusters_L = [];
+        V1_clusters_L = [];
+
         place_field = struct();
 
 
@@ -43,34 +50,33 @@ for nsession =1:length(experiment_info)
                 V1_channels_L = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
                 HPC_channels_L = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
 
+                metric_param.peak_channel = @(x) ismember(x,V1_channels_L); 
+                [V1_clusters_L] = select_clusters(clusters_L,metric_param);
+
+                metric_param.peak_channel = @(x) ismember(x,HPC_channels_L); % metric_param.depth_range = [] -- full range?
+                [HPC_clusters_L] = select_clusters(clusters_L,metric_param);
+
             elseif clusters(nprobe).probe_hemisphere == 2
                 clusters_R = clusters(nprobe);
                 V1_channels_R = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
                 HPC_channels_R = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
+
+                metric_param.peak_channel = @(x) ismember(x,V1_channels_R); % metric_param.depth_range = [] -- full range?
+                [V1_clusters_R] = select_clusters(clusters_R,metric_param);
+
+                metric_param.peak_channel = @(x) ismember(x,HPC_channels_R); % metric_param.depth_range = [] -- full range?
+                [HPC_clusters_R] = select_clusters(clusters_R,metric_param);
+
             end
 
         end
 
         % V1
 
-        metric_param.peak_channel = @(x) ismember(x,V1_channels_L); % metric_param.depth_range = [] -- full range?
-        [V1_clusters_L] = select_clusters(clusters_L,metric_param);
-
-        metric_param.peak_channel = @(x) ismember(x,HPC_channels_L); % metric_param.depth_range = [] -- full range?
-        [HPC_clusters_L] = select_clusters(clusters_L,metric_param);
-
-        metric_param.peak_channel = @(x) ismember(x,V1_channels_R); % metric_param.depth_range = [] -- full range?
-        [V1_clusters_R] = select_clusters(clusters_R,metric_param);
-
-        metric_param.peak_channel = @(x) ismember(x,HPC_channels_R); % metric_param.depth_range = [] -- full range?
-        [HPC_clusters_R] = select_clusters(clusters_R,metric_param);
-
-        % HPC
-%         plot_raster_both_track(selected_clusters_probe0,Task_info,Behaviour,[5 1])
-
         plot_raster_both_track(V1_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
         plot_raster_both_track(V1_clusters_R,Task_info,Behaviour,[5 1],[0 140],5)
 
+        % HPC
         plot_raster_both_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
         plot_raster_both_track(HPC_clusters_R,Task_info,Behaviour,[5 1],[0 140],5)
 
@@ -82,31 +88,35 @@ for nsession =1:length(experiment_info)
 
         plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
 
-        [ccg, t] = CCG(    these_spike_times{id}, ones(size(these_spike_times{id})),...
-            'binSize', 0.0005, 'duration', 0.1,'norm', 'rate');
+% 
+%         %plot speed of each lap
+%         no_lap = size(Task_info.start_time_all,1);
+%         no_bin = 70;
+%         psth_speed = zeros(no_lap,no_bin);
+%         for iLap = 1:no_lap
+%             lap_index = Behaviour.tvec >= Task_info.start_time_all(iLap) & Behaviour.tvec <= Task_info.end_time_all(iLap);
+%             timevec_lap = Behaviour.tvec(lap_index);
+%             position_lap = Behaviour.position(lap_index);
+%             speed_lap = Behaviour.speed(lap_index);
+%             [N,edges,bin] = histcounts(position_lap,no_bin);
+%             for iBin = 1:no_bin
+%                 psth_speed(iLap,iBin) = median(speed_lap(bin == iBin));
+%             end
+%         end
+%         figure;hold on;
+%         for iBlock = 1:5
+% 
+%             plot(1:2:139,mean(psth_speed((iBlock-1)*40+1:iBlock*40,:),'omitnan'))
+%         end
+% 
+        
+        % Spatial firing fields stability and reliability
+        place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
+        place_fields = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+        place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
 
-        %plot speed of each lap
-        no_lap = size(Task_info.start_time_all,1);
-        no_bin = 70;
-        psth_speed = zeros(no_lap,no_bin);
-        for iLap = 1:no_lap
-            lap_index = Behaviour.tvec >= Task_info.start_time_all(iLap) & Behaviour.tvec <= Task_info.end_time_all(iLap);
-            timevec_lap = Behaviour.tvec(lap_index);
-            position_lap = Behaviour.position(lap_index);
-            speed_lap = Behaviour.speed(lap_index);
-            [N,edges,bin] = histcounts(position_lap,no_bin);
-            for iBin = 1:no_bin
-                psth_speed(iLap,iBin) = median(speed_lap(bin == iBin));
-            end
-        end
-        figure;hold on;
-        for iBlock = 1:5
-
-            plot(1:2:139,mean(psth_speed((iBlock-1)*40+1:iBlock*40,:),'omitnan'))
-        end
-
-
+        HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
 
         spatial_modulation_GLM_analysis(clusters_L,Behaviour,Task_info);
 

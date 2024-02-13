@@ -1,4 +1,4 @@
-function [psth,bin] = spatial_psth(spike_position,event_position, window, psthBinSize,position_bin_time)
+function [psth,bin,binnedArray] = spatial_psth(spike_position,event_position, window, psthBinSize,position_bin_time)
 
 no_bin = (window(2)-window(1))/psthBinSize;
 binnedArray = zeros([length(event_position),no_bin]);

@@ -29,20 +29,6 @@ end
 track1_event_position = event_position(Task_info.track_ID_all==1);
 track2_event_position = event_position(Task_info.track_ID_all==2);
 
-% Time edge whole
-timevec = Behaviour.tvec';
-timevec_edge = (timevec(1)-(timevec(2)-timevec(1))/2....
-    :mean(diff(timevec)):...
-    timevec(end)+(timevec(end)-timevec(end-1))/2)';
-
-% Define Gaussian window for smoothing
-windowWidth = 0.2; % seconds
-gaussianWindow = gausswin(windowWidth/mean(diff(timevec)));
-
-% Normalize to have an area of 1 (i.e., to be a probability distribution)
-gaussianWindow = gaussianWindow / sum(gaussianWindow);
-
-
 
 cluster_spike_id = cell(size(cluster.cluster_id));
 no_cluster = length(cluster.cluster_id);
@@ -103,8 +89,6 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         title('PSTH')
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
-
-
 
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
         
