@@ -43,6 +43,16 @@ for track_id = 1:max(Behaviour.track_ID)
     place_fields(track_id).skaggs_info = cell(size(clusters.cluster_id));
     place_fields(track_id).spatial_xcorr = cell(size(clusters.cluster_id));
     place_fields(track_id).cluster_id = clusters.cluster_id;
+    place_fields(track_id).peak_depth = clusters.peak_depth;
+    place_fields(track_id).peak_channel = clusters.peak_channel;
+    place_fields(track_id).cell_type = clusters.cell_type;
+    place_fields(track_id).peak_channel_waveforms = clusters.peak_channel_waveforms;
+    place_fields(track_id).probe_id = clusters.probe_id;
+
+    if isfield(clusters,'probe_hemisphere')
+        place_fields(track_id).probe_hemisphere = clusters.probe_hemisphere;
+    end
+    
     place_fields(track_id).dwell_map = position_bin_time(Task_info.track_ID_all==1,:);
 
 end

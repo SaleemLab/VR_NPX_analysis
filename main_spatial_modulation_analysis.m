@@ -111,12 +111,25 @@ for nsession =1:length(experiment_info)
 % 
         
         % Spatial firing fields stability and reliability
-        place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+%         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
-        place_fields = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
-
-
+        place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+        place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],5,[]);
+        place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+        place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],5,[]);
         
+        place_fields_V1(1).track = place_fields_V1_L;
+        place_fields_V1(2).track = place_fields_V1_L;
+
+        save('extracted_place_fields_V1_L.mat')
+        save('extracted_place_fields_V1_R.mat')
+        save('extracted_place_fields_HPC_L.mat')
+        save('extracted_place_fields_HPC_R.mat')
+
+        fieldnames(place_fields)
+        place_fields
+        combine_structures_from_multiple_probes
+
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
 
         HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);

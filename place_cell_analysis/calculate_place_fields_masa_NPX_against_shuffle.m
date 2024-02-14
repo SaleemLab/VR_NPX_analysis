@@ -74,7 +74,7 @@ toc
 %         second_half_map = mean(place_fields(track_id).raw{iCluster}(length(start_times)/2+1:end,:));
 tic
 % Spatial cell stability and peak
-for iCluster = 1:length(place_fields(track_id).raw)
+for iCluster = 1:length(place_fields(1).raw)
 tic
     % Stability
     for track_id = 1:max(Behaviour.track_ID)
@@ -119,8 +119,10 @@ tic
     lap_correlation(lap_correlation==1) = nan;
     t1_t2_corr = mean(mean(lap_correlation,'omitnan'),'omitnan');
 
-    place_fields(track_id).across_tracks_correlation(iCluster,:,:) = lap_correlation;
-    place_fields(track_id).t1_t2_corr(iCluster) = t1_t2_corr;
+    place_fields(1).across_tracks_correlation(iCluster,:,:) = lap_correlation;
+    place_fields(1).t1_t2_corr(iCluster) = t1_t2_corr;
+    place_fields(2).across_tracks_correlation(iCluster,:,:) = lap_correlation;
+    place_fields(2).t1_t2_corr(iCluster) = t1_t2_corr;
 
     for nshuffle = 1:1000
         lap_correlation = corr(normalize(place_fields_shuffled{nshuffle}(1).raw{iCluster}','range'),...
@@ -129,11 +131,10 @@ tic
         t1_t2_corr_shuffled(nshuffle) = mean(mean(lap_correlation,'omitnan'),'omitnan');
     end
 
-    place_fields(track_id).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
-    place_fields(track_id).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
-
+    place_fields(1).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
     place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
-    place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
+    place_fields(2).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
+    place_fields(2).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
 
     % Reliability/ explained variance (currently taking 80 seconds to run one cell)
 
@@ -162,12 +163,14 @@ toc
 for track_id = 1:max(Behaviour.track_ID)
     % Find cells that pass the 'Place cell' thresholds -
     % both peak of smoothed place field or peak of raw place field need to be above the respective thresholds
-    place_fields(track_id).explained_variance(isinf(place_fields(track_id).explained_variance)) = nan;
 
     putative_place_cells = find(place_fields(track_id).raw_peak >= 1 ...
-        & mean(place_fields(track_id).explained_variance,2,'omitnan')' > 0 ...
         & place_fields(track_id).first_second_stability >= 0.99 ...
-        & place_fields(track_id).peak_percentile >= 0.99); % rather than based on skaggs_info. Now based on if reliability and stability is significantly better than shuffle distribution.
+        & place_fields(track_id).peak_percentile >= 0.99 ...
+        & place_fields(track_id).skaggs_percentile >= 0.99); % If peak FR, skaggs_info and 1st vs 2nd half stability are significantly better than shuffle distribution.
+
+%         & mean(place_fields(track_id).explained_variance,2,'omitnan')' > 0 ...
+
 
     %         % Set a less conservative criteria for place cells, having to pass either peak firing rate thresholds (smoothed PF and raw PF)
     %         putative_place_cells_LIBERAL = find(place_fields.track(track_id).peak >= parameters.min_smooth_peak...
@@ -178,11 +181,11 @@ for track_id = 1:max(Behaviour.track_ID)
 
 
     if ~isempty(clusters.cell_type)
-        pyramidal_cells = clusters.cluster_id(clusters.cell_type == 1);
-        place_fields.track(track_id).good_cells = intersect(putative_place_cells,pyramidal_cells); % Check that the cells that passed the threshold are pyramidal cells
-        place_fields.track(track_id).good_cells_LIBERAL = putative_place_cells; % No cell type restrictions
+        pyramidal_cells = find(clusters.cell_type == 1)';
+        place_fields(track_id).good_cells = intersect(putative_place_cells,pyramidal_cells); % Check that the cells that passed the threshold are pyramidal cells
+        place_fields(track_id).good_cells_LIBERAL = putative_place_cells; % No cell type restrictions
     else
-        place_fields.track(track_id).good_cells_LIBERAL = putative_place_cells;
+        place_fields(track_id).good_cells_LIBERAL = putative_place_cells; % No cell type restrictions
     end
     %
     % Sort place fields according to the location of their peak
@@ -191,64 +194,35 @@ for track_id = 1:max(Behaviour.track_ID)
     [~,peak_id]=max(average_maps);
     [~,index] = sort(peak_id);
     place_fields(track_id).sorted = index;
-    [~,index1] = sort(place_fields.track(track_id).centre(place_fields(track_id).good_cells));
-    place_fields.track(track_id).sorted_good_cells = place_fields.track(track_id).good_cells(index1);
-    [~,index2] = sort(place_fields.track(track_id).centre(place_fields.track(track_id).good_cells_LIBERAL));
-    place_fields.track(track_id).sorted_good_cells_LIBERAL = place_fields.track(track_id).good_cells_LIBERAL(index2);
+
+    all_maps = reshape([place_fields(track_id).raw{place_fields(track_id).good_cells}],[size(place_fields(track_id).raw{1}) length(place_fields(track_id).good_cells)]);
+    average_maps = squeeze(mean(all_maps,1));
+    [~,peak_id]=max(average_maps);
+    [~,index1] = sort(peak_id);
+    place_fields(track_id).sorted_good_cells = place_fields(track_id).good_cells(index1);
+
+    all_maps = reshape([place_fields(track_id).raw{place_fields(track_id).good_cells_LIBERAL}],[size(place_fields(track_id).raw{1}) length(place_fields(track_id).good_cells_LIBERAL)]);
+    average_maps = squeeze(mean(all_maps,1));
+    [~,peak_id]=max(average_maps);
+    [~,index2] = sort(peak_id);
+    place_fields(track_id).sorted_good_cells_LIBERAL = place_fields(track_id).good_cells_LIBERAL(index2);
 end
-%% Classify cells as good place cells, interneuron, pyramidal cells & other cells
 
-%interneurons classfication
-interneurons = find(place_fields.mean_rate > parameters.max_mean_rate);
-place_fields.interneurons=interneurons;
-
-good_place_cells=[]; track=[];
-for track_id=1:length(position.linear) %good cells classfication
-    all_cells = 1:1:length(place_fields.track(track_id).raw);
-    good_place_cells = [good_place_cells place_fields.track(track_id).sorted_good_cells];
-    track =[track track_id*ones(size(place_fields.track(track_id).sorted_good_cells))];
+for track_id = 1:2
+    place_fields(track_id).all_good_cells_LIBERAL = unique([place_fields(:).good_cells]);
+    place_fields(track_id).common_good_cells_LIBERAL = intersect(place_fields(1).good_cells_LIBERAL,place_fields(2).good_cells_LIBERAL);
+    place_fields(track_id).all_good_cells = unique([place_fields(:).good_cells_LIBERAL]);
+    place_fields(track_id).common_good_cells = intersect(place_fields(1).good_cells,place_fields(2).good_cells);
 end
-place_fields.good_place_cells = unique(good_place_cells);
-place_fields.all_cells = unique(all_cells);
 
-good_place_cells_LIBERAL=[];
-for track_id=1:length(position.linear) %good cells (liberal threshold) classfication
-    good_place_cells_LIBERAL = [good_place_cells_LIBERAL place_fields.track(track_id).sorted_good_cells_LIBERAL];
-end
-place_fields.good_place_cells_LIBERAL = unique(good_place_cells_LIBERAL);
+[C,i1,i2] = setxor(place_fields(1).good_cells_LIBERAL,place_fields(2).good_cells_LIBERAL);
+place_fields(1).unique_good_cells_LIBERAL = place_fields(1).good_cells_LIBERAL(i1);
+place_fields(2).unique_good_cells_LIBERAL = place_fields(2).good_cells_LIBERAL(i2);
 
-% cells that are unique for each track
-unique_cells=[];
-for track_id = 1:length(position.linear)
-    place_fields.track(track_id).unique_cells = setdiff(good_place_cells(track==track_id),good_place_cells(track~=track_id),'stable');
-    unique_cells = [unique_cells, place_fields.track(track_id).unique_cells];
-end
-place_fields.unique_cells = unique_cells;  % all cells that have good place fields only on a single track
+[C,i1,i2] = setxor(place_fields(1).good_cells,place_fields(2).good_cells);
+place_fields(1).unique_good_cells = place_fields(1).good_cells(i1);
+place_fields(2).unique_good_cells = place_fields(2).good_cells(i2);
 
-% putative pyramidal cells classification:  pyramidal cells that pass the 'Pyramidal type' threshold (but not need to be place cells)
-putative_pyramidal_cells = find(place_fields.mean_rate <= parameters.max_mean_rate);
-
-if ~isempty(clusters.cell_type)
-    place_fields.pyramidal_cells = intersect(putative_pyramidal_cells,pyramidal_cells);
-else
-    place_fields.pyramidal_cells = putative_pyramidal_cells;
-end
-place_fields.pyramidal_cells=unique(place_fields.pyramidal_cells);
-
-other_cells = setdiff(1:length(unique(clusters.spike_id)),good_place_cells,'stable'); %find the excluded putative pyramidal cells
-place_fields.other_cells = setdiff(other_cells,interneurons,'stable'); %remove also the interneurons
-
-%save place fields (different filenames used based on x_bins_width chosen)
-%     if x_bins_width== parameters.x_bins_width_bayesian
-%         place_fields_BAYESIAN=place_fields;
-%         save extracted_place_fields_BAYESIAN place_fields_BAYESIAN;
-%     elseif x_bins_width== parameters.x_bins_width
-%         save extracted_place_fields place_fields;
-%     else disp('error: x_bin_width does not match expected value')
-%     end
-
-
-close(H)
 end
 
 
