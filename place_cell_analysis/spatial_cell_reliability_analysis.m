@@ -112,7 +112,7 @@ for track_id = 1:max(Behaviour.track_ID)
                 bestReliability(track_id,i) = reliability(i);
             elseif mean(reliability) > mean(bestReliability(track_id,:))
                 bestReliability(track_id,:) = reliability;
-                nWin
+%                 nWin
             end
 
         end
