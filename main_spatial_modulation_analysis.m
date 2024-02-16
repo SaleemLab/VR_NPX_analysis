@@ -117,18 +117,15 @@ for nsession =1:length(experiment_info)
         place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],5,[]);
         place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],5,[]);
         place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],5,[]);
-        
-        place_fields_V1(1).track = place_fields_V1_L;
-        place_fields_V1(2).track = place_fields_V1_L;
+        place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
 
-        save('extracted_place_fields_V1_L.mat')
-        save('extracted_place_fields_V1_R.mat')
-        save('extracted_place_fields_HPC_L.mat')
-        save('extracted_place_fields_HPC_R.mat')
+        save('extracted_place_fields_V1.mat','place_fields_V1_L','place_fields_V1_R')
+        save('extracted_place_fields_HPC.mat','place_fields_HPC_L','place_fields_HPC_R','place_fields_HPC_combined')
+
 
         fieldnames(place_fields)
-        place_fields
-        combine_structures_from_multiple_probes
+
+        combine_clusters_from_multiple_probes
 
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
 

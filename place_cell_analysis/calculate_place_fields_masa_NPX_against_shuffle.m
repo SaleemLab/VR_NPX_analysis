@@ -209,9 +209,9 @@ for track_id = 1:max(Behaviour.track_ID)
 end
 
 for track_id = 1:2
-    place_fields(track_id).all_good_cells_LIBERAL = unique([place_fields(:).good_cells]);
+    place_fields(track_id).all_good_cells_LIBERAL = unique([place_fields(:).good_cells_LIBERAL]);
     place_fields(track_id).common_good_cells_LIBERAL = intersect(place_fields(1).good_cells_LIBERAL,place_fields(2).good_cells_LIBERAL);
-    place_fields(track_id).all_good_cells = unique([place_fields(:).good_cells_LIBERAL]);
+    place_fields(track_id).all_good_cells = unique([place_fields(:).good_cells]);
     place_fields(track_id).common_good_cells = intersect(place_fields(1).good_cells,place_fields(2).good_cells);
 end
 
