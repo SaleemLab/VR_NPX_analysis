@@ -82,7 +82,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-All_stimuli = {'FullScreenFlash'}
+% All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(2)
 All_stimuli = {'Checkerboard'}
@@ -169,7 +169,7 @@ clear all
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
 SUBJECT = 'M23028';
-SESSION = '20230706';
+SESSION = '20230705';
 options = 'bilateral';
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';
@@ -181,6 +181,12 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     options.importMode = 'KS';
     options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
     
+%     DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"))
+% 
+%     if ~isempty(DIR)
+%         load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+%     end
+
     [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
     
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
@@ -192,28 +198,29 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
 
     save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-    
-    power = [];
-    xcoord = [];
-    ycoord = [];
 
-    for nchannel = 1:size(PSD{options.probe_no},2)
-        power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
-        xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
-        ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
-    end
-
-    % sort channel according to y coordinate
-    [ycoord idx] = sort(ycoord,'ascend');
-    xcoord = xcoord(idx);
-    power = power(idx,:);
-    chan_config = chan_config(idx,:);
-
-    % Replot based on updated channels
-    for col = 1:length(lfpAvg(options.probe_no).column)
-        xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
-        plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
-    end
+    %     power = [];
+    %     xcoord = [];
+    %     ycoord = [];
+    %
+    %     for nchannel = 1:size(PSD{options.probe_no},2)
+    %         power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
+    %         xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
+    %         ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
+    %     end
+    %
+    %     % sort channel according to y coordinate
+    %     [ycoord idx] = sort(ycoord,'ascend');
+    %     xcoord = xcoord(idx);
+    %     power = power(idx,:);
+    %     chan_config = chan_config(idx,:);
+    %
+    %     % Replot based on updated channels
+    %     for col = 1:length(lfpAvg(options.probe_no).column)
+    %         xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
+    %         plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
+    %     end
+    checkerboard_CSD_profile(options);
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
 
