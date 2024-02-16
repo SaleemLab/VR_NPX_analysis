@@ -19,7 +19,7 @@ for nsession =1:length(experiment_info)
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters = clusters_ks3;
@@ -28,7 +28,7 @@ for nsession =1:length(experiment_info)
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
 
         metric_param = create_cluster_selection_params;
         clusters_R= [];
@@ -44,13 +44,13 @@ for nsession =1:length(experiment_info)
 
 
         for nprobe = 1:length(clusters)
-            
+
             if clusters(nprobe).probe_hemisphere == 1
                 clusters_L = clusters(nprobe);
                 V1_channels_L = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
                 HPC_channels_L = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
 
-                metric_param.peak_channel = @(x) ismember(x,V1_channels_L); 
+                metric_param.peak_channel = @(x) ismember(x,V1_channels_L);
                 [V1_clusters_L] = select_clusters(clusters_L,metric_param);
 
                 metric_param.peak_channel = @(x) ismember(x,HPC_channels_L); % metric_param.depth_range = [] -- full range?
@@ -88,40 +88,40 @@ for nsession =1:length(experiment_info)
 
         plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
 
-% 
-%         %plot speed of each lap
-%         no_lap = size(Task_info.start_time_all,1);
-%         no_bin = 70;
-%         psth_speed = zeros(no_lap,no_bin);
-%         for iLap = 1:no_lap
-%             lap_index = Behaviour.tvec >= Task_info.start_time_all(iLap) & Behaviour.tvec <= Task_info.end_time_all(iLap);
-%             timevec_lap = Behaviour.tvec(lap_index);
-%             position_lap = Behaviour.position(lap_index);
-%             speed_lap = Behaviour.speed(lap_index);
-%             [N,edges,bin] = histcounts(position_lap,no_bin);
-%             for iBin = 1:no_bin
-%                 psth_speed(iLap,iBin) = median(speed_lap(bin == iBin));
-%             end
-%         end
-%         figure;hold on;
-%         for iBlock = 1:5
-% 
-%             plot(1:2:139,mean(psth_speed((iBlock-1)*40+1:iBlock*40,:),'omitnan'))
-%         end
-% 
-        
+        %
+        %         %plot speed of each lap
+        %         no_lap = size(Task_info.start_time_all,1);
+        %         no_bin = 70;
+        %         psth_speed = zeros(no_lap,no_bin);
+        %         for iLap = 1:no_lap
+        %             lap_index = Behaviour.tvec >= Task_info.start_time_all(iLap) & Behaviour.tvec <= Task_info.end_time_all(iLap);
+        %             timevec_lap = Behaviour.tvec(lap_index);
+        %             position_lap = Behaviour.position(lap_index);
+        %             speed_lap = Behaviour.speed(lap_index);
+        %             [N,edges,bin] = histcounts(position_lap,no_bin);
+        %             for iBin = 1:no_bin
+        %                 psth_speed(iLap,iBin) = median(speed_lap(bin == iBin));
+        %             end
+        %         end
+        %         figure;hold on;
+        %         for iBlock = 1:5
+        %
+        %             plot(1:2:139,mean(psth_speed((iBlock-1)*40+1:iBlock*40,:),'omitnan'))
+        %         end
+        %
+
         % Spatial firing fields stability and reliability
-%         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+        %         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
-place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
-place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],5,[]);
-place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],5,[]);
-place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],5,[]);
-place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
-place_fields_V1_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
+        place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
+        place_fields_V1_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
 
-save('extracted_place_fields_V1.mat','place_fields_V1_L','place_fields_V1_R')
-save('extracted_place_fields_HPC.mat','place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
+        save('extracted_place_fields_V1.mat','place_fields_V1_L','place_fields_V1_R')
+        save('extracted_place_fields_HPC.mat','place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
 
 
         fieldnames(place_fields)
@@ -165,7 +165,7 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         clusters = clusters_ks3;
 
         for nprobe = 1:length(session_info(n).probe)
