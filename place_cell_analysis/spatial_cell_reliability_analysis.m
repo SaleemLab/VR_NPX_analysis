@@ -73,7 +73,7 @@ for track_id = 1:max(Behaviour.track_ID)
 
             % Training data
             spikePositionsTrain = interp1(trackTime(trainIndices),trackPosition(trainIndices),spikeTimes,'nearest');
-%             spikeTimesTrain = interp1(trackTime(trainIndices),trackTime(trainIndices),spikeTimes,'nearest');
+            spikeTimesTrain = interp1(trackTime(trainIndices),trackTime(trainIndices),spikeTimes,'nearest');
             trackPositionTrain = trackPosition(trainIndices);
 
             % Test data
@@ -104,7 +104,7 @@ for track_id = 1:max(Behaviour.track_ID)
             y = histcounts(spikeTimesTest, trackTimeTest)./(diff(trackTimeTest));
             yHat = interp1(1:length(responseProfile), responseProfile, trackPositionTest(1:end-1)/x_bin_width); % predicted firing rate
             yHat(isnan(yHat))=0;
-            mu = mean(y,'omitnan'); % mean firing rate
+            mu = mean(histcounts(spikeTimesTrain,  trackTime(trainIndices))./(diff(trackTime(trainIndices))),'omitnan'); % mean firing rate
 
             reliability(i) = 1 - sum((y - yHat).^2) / sum((y - mu).^2); % percentage variance explained
             
@@ -112,6 +112,7 @@ for track_id = 1:max(Behaviour.track_ID)
                 bestReliability(track_id,i) = reliability(i);
             elseif mean(reliability) > mean(bestReliability(track_id,:))
                 bestReliability(track_id,:) = reliability;
+%                 nWin
             end
 
         end

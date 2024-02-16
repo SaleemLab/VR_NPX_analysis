@@ -143,8 +143,8 @@ tic
     %         [reliability,shuffled_reliability] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,position_shuffled,Task_info,x_window,2,1);
     %     else
     spikeTimes = clusters.spike_times(clusters.spike_id == place_fields(1).cluster_id(iCluster));
-    [reliability,~] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,position_shuffled,Task_info,x_window,1,0);
-    shuffled_reliability = zeros(1000,2,10); % 1000 shuffles x 2 tracks x 10 folds
+    [reliability,~] = spatial_cell_reliability_analysis(spikeTimes,Behaviour,position_shuffled,Task_info,x_window,2,0);
+%     shuffled_reliability = zeros(1000,2,10); % 1000 shuffles x 2 tracks x 10 folds
     %     end
     reliability(isinf(reliability)) = nan;
     place_fields(1).explained_variance(iCluster,:) = reliability(1,:);

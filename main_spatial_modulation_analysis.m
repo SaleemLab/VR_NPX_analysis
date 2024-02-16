@@ -113,6 +113,7 @@ for nsession =1:length(experiment_info)
         % Spatial firing fields stability and reliability
         %         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
+<<<<<<< HEAD
         place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
         place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],5,[]);
         place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],5,[]);
@@ -123,6 +124,17 @@ for nsession =1:length(experiment_info)
         save('extracted_place_fields_V1.mat','place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
         save('extracted_place_fields_HPC.mat','place_fields_HPC_L','place_fields_HPC_R','place_fields_HPC_combined')
 
+=======
+        place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+        place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
+        place_fields_V1_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_L);
+
+        save('extracted_place_fields_V1.mat','place_fields_V1_L','place_fields_V1_R')
+        save('extracted_place_fields_HPC.mat','place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
+>>>>>>> fd6d6f421ec5eeb845c88be6d9a25cc283b6e623
 
 
         fieldnames(place_fields)
@@ -174,7 +186,7 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         clusters = clusters_ks3;
 
         for nprobe = 1:length(session_info(n).probe)
