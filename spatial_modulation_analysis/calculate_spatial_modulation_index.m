@@ -37,7 +37,6 @@ for iLap = 1:no_lap
         & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
 end
 
-
 track1_event_position = event_position(Task_info.track_ID_all==1);
 track2_event_position = event_position(Task_info.track_ID_all==2);
 
@@ -50,6 +49,13 @@ else
     cluster_spike_id = cell(size(cluster.cluster_id));
     no_cluster = length(cluster.cluster_id);
 end
+
+
+% Define Gaussian window for smoothing
+gaussianWindow = gausswin(5);
+
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
 
 if plot_option == 1
@@ -106,14 +112,14 @@ if plot_option == 1
             ratemaps_track1 = place_fields(1).raw{place_fields(1).cluster_id==cell_index(iCluster+(iPlot-1)*no_subplot)};
             ratemaps_track2 = place_fields(2).raw{place_fields(2).cluster_id==cell_index(iCluster+(iPlot-1)*no_subplot)};
 
-            average_map_track1 = mean(ratemaps_track1);
-            average_map_track1_odd = mean(ratemaps_track1(1:2:end,:));
-            average_map_track1_even = mean(ratemaps_track1(2:2:end,:));
+            average_map_track1 = conv(mean(ratemaps_track1), gaussianWindow, 'same');
+            average_map_track1_odd = conv(mean(ratemaps_track1(1:2:end,:)), gaussianWindow, 'same');
+            average_map_track1_even = conv(mean(ratemaps_track1(2:2:end,:)), gaussianWindow, 'same');
 
-            average_map_track2 = mean(ratemaps_track2);
-            average_map_track2_odd = mean(ratemaps_track2(1:2:end,:));
-            average_map_track2_even = mean(ratemaps_track2(2:2:end,:));
-
+            average_map_track2 = conv(mean(ratemaps_track2), gaussianWindow, 'same');
+            average_map_track2_odd = conv(mean(ratemaps_track2(1:2:end,:)), gaussianWindow, 'same');
+            average_map_track2_even = conv(mean(ratemaps_track2(2:2:end,:)), gaussianWindow, 'same');
+            
             % (place_fields(2).x_bin_centres >= 50 & place_fields(2).x_bin_centres <= 130)
 
             h(1)=plot(place_fields(1).x_bin_centres,average_map_track1_odd,'LineWidth',2,'Color',colour_lines{1});
