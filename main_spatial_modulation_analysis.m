@@ -125,22 +125,17 @@ for nsession =1:length(experiment_info)
         save('extracted_place_fields_HPC.mat','place_fields_HPC_L','place_fields_HPC_R','place_fields_HPC_combined')
 
 
-        fieldnames(place_fields)
-
-        combine_clusters_from_multiple_probes
-
-        place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_R,Task_info,Behaviour,[0 140],5,[]);
-
-        HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
-
         spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
 
         spatial_modulation_GLM_analysis(V1_clusters_L,place_fields_V1_L(1).cluster_id(place_fields_V1_L(1).all_good_cells_LIBERAL),Behaviour,Task_info);
 
 
-        calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],5,1);
-        SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],2,'place_fields',place_fields_V1_L,'subplot_xy',[5 1],'plot_option',1)
+        x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
+        SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
+        SMI = calculate_spatial_modulation_index(V1_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_R,'subplot_xy',[3 1],'plot_option',1)
 
+        SMI = calculate_spatial_modulation_index(HPC_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_L,'subplot_xy',[3 1],'plot_option',1)
+        SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
 %         calculate_spatial_modulation_index(place_fields_V1_L);
 
     end

@@ -166,100 +166,100 @@ for ncell = 1:length(cell_index)
         BestNonSpatialModel = [];
         BestVisualModel = [];
 
-        parfor nshuffle = 1:1000
-            SpikeTimes_shuffled = [];
-
-            % Convolve spike count time series with Gaussian window
-            y_shuffled = histcounts(SpikeTimes_shuffled, timevec_edge)';
-            y_shuffled = conv(y_shuffled, gaussianWindow, 'same');
-
-            % Fit models
-            for l = 1:length(lambda)
-                % Initialize models
-                visualModel = zeros(size(y));
-                nonSpatialModel = zeros(size(y));
-                spatialModel = zeros(size(y));
-
-                %%%%% Fit non-spatial model
-                for t = 1:length(tau)
-                    X = [pupil_size_lagged(:,t), speed_lagged(:,t), reward_lagged(:,t),...
-                        lick_L_lagged(:,t), lick_R_lagged(:,t),face_energy_lagged(:,t)];
-                    beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
-                    nonSpatialModel = nonSpatialModel + beta * X;
-                    beta_nonSpatial = ridge(y, nonSpatialModel, lambda(l));
-
-                    % Perform 5-fold cross-validation
-                    cv = cvpartition(length(y), 'KFold', 5);
-                    for i = 1:cv.NumTestSets
-                        trainInd = cv.training(i);
-                        testInd = cv.test(i);
-                        beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
-                    end
-                end
-
-                for a = 1:length(alpha)
-                    for i = 1:20
-                        %%%%% Fit visual model
-                        X = I(x, i, sqrt(2), sqrt(2));
-                        beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
-                        visualModel = visualModel + beta * X;
-
-                        %%%%% Fit spatial model
-                        X = I(x, i, alpha(a)/sqrt(alpha(a)^2+(1-alpha(a))^2), (1-alpha(a))/sqrt(alpha(a)^2+(1-alpha(a))^2));
-                        beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
-
-                        %  beta_hat = (X'*X + lambda*eye(size(X,2))) \ X'*y;
-
-                        spatialModel = spatialModel + beta * X;
-                    end
-
-                    % Perform ridge regression
-                    beta_visual = ridge(y, visualModel, lambda(l));
-                    beta_spatial = ridge(y, spatialModel, lambda(l));
-
-                    % Perform 5-fold cross-validation
-                    cv = cvpartition(length(y), 'KFold', 5);
-                    for i = 1:cv.NumTestSets
-                        trainInd = cv.training(i);
-                        testInd = cv.test(i);
-                        beta_visual_cv = ridge(y(trainInd), visualModel(trainInd, :), lambda(l));
-                        beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
-                        beta_spatial_cv = ridge(y(trainInd), spatialModel(trainInd, :), lambda(l));
-                    end
-
-                    % Calculate sum squared error for each model
-                    SSE_visual = sum((y - visualModel * beta_visual).^2);
-                    %         SSE_nonSpatial = sum((y - nonSpatialModel * beta_nonSpatial).^2);
-                    SSE_spatial = sum((y - spatialModel * beta_spatial).^2);
-                    SST = sum((y - mean(y)).^2);
-
-                    if isempty(BestVisualModelError)
-                        BestVisualModelError = SSE_visual;
-                        BestVisualModel = visualModel;
-                    else
-                        if BestVisualModelError > SSE_visual
-                            BestVisualModelError = SSE_visual;
-                            BestVisualModel = visualModel;
-                        end
-                    end
-
-                    %         if spatialModelError > sum((y - spatialModel).^2)
-                    %             BestSpatialModelError = sum((y - spatialModel).^2);
-                    %         end
-                    if isempty(BestSpatialModelError)
-                        BestSpatialModelError = SSE_spatial;
-                        BestSpatialModel = spatialModel;
-                        BestAlpha = alpha(a);
-                    else
-                        if BestSpatialModelError > SSE_spatial
-                            BestSpatialModelError = SSE_spatial;
-                            BestSpatialModel = spatialModel;
-                            BestAlpha = alpha(a);
-                        end
-                    end
-                end
-            end
-        end
+%         parfor nshuffle = 1:1000
+%             SpikeTimes_shuffled = [];
+% 
+%             % Convolve spike count time series with Gaussian window
+%             y_shuffled = histcounts(SpikeTimes_shuffled, timevec_edge)';
+%             y_shuffled = conv(y_shuffled, gaussianWindow, 'same');
+% 
+%             % Fit models
+%             for l = 1:length(lambda)
+%                 % Initialize models
+%                 visualModel = zeros(size(y));
+%                 nonSpatialModel = zeros(size(y));
+%                 spatialModel = zeros(size(y));
+% 
+%                 %%%%% Fit non-spatial model
+%                 for t = 1:length(tau)
+%                     X = [pupil_size_lagged(:,t), speed_lagged(:,t), reward_lagged(:,t),...
+%                         lick_L_lagged(:,t), lick_R_lagged(:,t),face_energy_lagged(:,t)];
+%                     beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+%                     nonSpatialModel = nonSpatialModel + beta * X;
+%                     beta_nonSpatial = ridge(y, nonSpatialModel, lambda(l));
+% 
+%                     % Perform 5-fold cross-validation
+%                     cv = cvpartition(length(y), 'KFold', 5);
+%                     for i = 1:cv.NumTestSets
+%                         trainInd = cv.training(i);
+%                         testInd = cv.test(i);
+%                         beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
+%                     end
+%                 end
+% 
+%                 for a = 1:length(alpha)
+%                     for i = 1:20
+%                         %%%%% Fit visual model
+%                         X = I(x, i, sqrt(2), sqrt(2));
+%                         beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+%                         visualModel = visualModel + beta * X;
+% 
+%                         %%%%% Fit spatial model
+%                         X = I(x, i, alpha(a)/sqrt(alpha(a)^2+(1-alpha(a))^2), (1-alpha(a))/sqrt(alpha(a)^2+(1-alpha(a))^2));
+%                         beta = (X'*X + lambda(l)*eye(size(X,2))) \ X'*y;
+% 
+%                         %  beta_hat = (X'*X + lambda*eye(size(X,2))) \ X'*y;
+% 
+%                         spatialModel = spatialModel + beta * X;
+%                     end
+% 
+%                     % Perform ridge regression
+%                     beta_visual = ridge(y, visualModel, lambda(l));
+%                     beta_spatial = ridge(y, spatialModel, lambda(l));
+% 
+%                     % Perform 5-fold cross-validation
+%                     cv = cvpartition(length(y), 'KFold', 5);
+%                     for i = 1:cv.NumTestSets
+%                         trainInd = cv.training(i);
+%                         testInd = cv.test(i);
+%                         beta_visual_cv = ridge(y(trainInd), visualModel(trainInd, :), lambda(l));
+%                         beta_nonSpatial_cv = ridge(y(trainInd), nonSpatialModel(trainInd, :), lambda(l));
+%                         beta_spatial_cv = ridge(y(trainInd), spatialModel(trainInd, :), lambda(l));
+%                     end
+% 
+%                     % Calculate sum squared error for each model
+%                     SSE_visual = sum((y - visualModel * beta_visual).^2);
+%                     %         SSE_nonSpatial = sum((y - nonSpatialModel * beta_nonSpatial).^2);
+%                     SSE_spatial = sum((y - spatialModel * beta_spatial).^2);
+%                     SST = sum((y - mean(y)).^2);
+% 
+%                     if isempty(BestVisualModelError)
+%                         BestVisualModelError = SSE_visual;
+%                         BestVisualModel = visualModel;
+%                     else
+%                         if BestVisualModelError > SSE_visual
+%                             BestVisualModelError = SSE_visual;
+%                             BestVisualModel = visualModel;
+%                         end
+%                     end
+% 
+%                     %         if spatialModelError > sum((y - spatialModel).^2)
+%                     %             BestSpatialModelError = sum((y - spatialModel).^2);
+%                     %         end
+%                     if isempty(BestSpatialModelError)
+%                         BestSpatialModelError = SSE_spatial;
+%                         BestSpatialModel = spatialModel;
+%                         BestAlpha = alpha(a);
+%                     else
+%                         if BestSpatialModelError > SSE_spatial
+%                             BestSpatialModelError = SSE_spatial;
+%                             BestSpatialModel = spatialModel;
+%                             BestAlpha = alpha(a);
+%                         end
+%                     end
+%                 end
+%             end
+%         end
 
         % Fit models
         for l = 1:length(lambda)
