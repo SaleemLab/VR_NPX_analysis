@@ -34,10 +34,19 @@ for nsession =1:length(experiment_info)
                 HPC_channels_L = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by shank');
 
             elseif options.probe_hemisphere == 2
-                V1_channels_R = determine_region_channels(best_channels{nprobe},options,'region','L4','group','by shank');
+                if isfield(best_channels{nprobe},'L4_depth')
+                    [~,V1_channels_R] = determine_region_channels(best_channels{nprobe},options,'region','L4','group','by shank');
+                else
+                    
+                end
+
+                if isfield(best_channels{nprobe},'L5_depth')
+                    [~,V1_channels_R] = determine_region_channels(best_channels{nprobe},options,'region','L5','group','by shank');
+                end
+
+                if isfield(best_channels{nprobe},'CA1_depth')
                 HPC_channels_R = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by shank');
-                
-                shank_id_avaliable = ceil(best_channels{nprobe}.xcoord./250); % based on xcoord in best_channels
+                end
 
             end
 

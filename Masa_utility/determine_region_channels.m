@@ -1,4 +1,4 @@
-function  [region_channels,median_channels] = determine_region_channels(best_channels,options,varargin)
+function  [region_channels,best_channels_all_shanks_avaliable] = determine_region_channels(best_channels,options,varargin)
 % This is a function to quickly determine what is best channel for each
 % shank for each regions
 
@@ -80,7 +80,6 @@ elseif sum(contains(all_fields,region)) == 1
         end
 
         region_channels = [region_channels; all_channels_this_shank];
-        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
 
@@ -124,7 +123,6 @@ elseif contains(region,'V1')
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
-        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
 elseif contains(region,'HPC')
@@ -164,9 +162,14 @@ elseif contains(region,'HPC')
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
-        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
+end
+
+for nShank = 1:length(shanks_avaliable)
+    channels_this_shank = find(chan_config.Shank == shanks_avaliable(nShank));
+    [minValue,idx] = min(abs(best_depths_all_shanks_avaliable(nShank)-  chan_config.Ks_ycoord(channels_this_shank)));
+    best_channels_all_shanks_avaliable(nShank) = channels_this_shank(idx);
 end
 
 end
