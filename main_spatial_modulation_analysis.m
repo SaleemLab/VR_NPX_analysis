@@ -139,7 +139,9 @@ for nsession =1:length(experiment_info)
 
 
         calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],5,1);
-        SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],2,'place_fields',place_fields_V1_L,'subplot_xy',[5 1],'plot_option',1)
+
+        x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
+        SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
 
 %         calculate_spatial_modulation_index(place_fields_V1_L);
 
