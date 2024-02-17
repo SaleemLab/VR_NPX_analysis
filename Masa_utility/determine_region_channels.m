@@ -74,6 +74,10 @@ elseif sum(contains(all_fields,region)) == 1
             all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-100 ...
                 &chan_config.Ks_ycoord<depth_this_shank+100) & channels_this_shank) ;
 
+        elseif contains(region,'surface')
+            all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
+                &chan_config.Ks_ycoord<depth_this_shank+1) & channels_this_shank) ;
+
         elseif contains(region,'MEC')
             all_channels_this_shank = [];
 

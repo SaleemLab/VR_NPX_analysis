@@ -21,33 +21,46 @@ for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
+    
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-
+        raw_LFP = [];
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
+            selected_channels = [];
+            channel_regions = [];
+            shank_id = unique(ceil(best_channels{nprobe}.xcoord/250));
 
-            if options.probe_hemisphere == 1
-                V1_channels_L = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by shank');
-                HPC_channels_L = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by shank');
+            if isfield(best_channels{nprobe},'surface_depth')
+                [~,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region','surface','group','by shank');
+%                 noise_channel{options.probe_hemisphere} = channels_temp;
+                selected_channels = [selected_channels channels_temp];
+                channel_regions = [channel_regions ones(1,length(channels_temp))];
+                shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
+            end
 
-            elseif options.probe_hemisphere == 2
-                if isfield(best_channels{nprobe},'L4_depth')
-                    [~,V1_channels_R] = determine_region_channels(best_channels{nprobe},options,'region','L4','group','by shank');
-                else
-                    
-                end
+            if isfield(best_channels{nprobe},'L4_depth')
+                [~,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region','L4','group','by shank');
+%                 noise_channel{options.probe_hemisphere} = channels_temp;
+                selected_channels = [selected_channels channels_temp];
+                channel_regions = [channel_regions 2*ones(1,length(channels_temp))];
+                shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
+            end
 
-                if isfield(best_channels{nprobe},'L5_depth')
-                    [~,V1_channels_R] = determine_region_channels(best_channels{nprobe},options,'region','L5','group','by shank');
-                end
+            if isfield(best_channels{nprobe},'L5_depth')
+                [~,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region','L5','group','by shank');
+%                 noise_channel{options.probe_hemisphere} = channels_temp;
+                selected_channels = [selected_channels channels_temp];
+                channel_regions = [channel_regions 3*ones(1,length(channels_temp))];
+                shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
+            end
 
-                if isfield(best_channels{nprobe},'CA1_depth')
-                HPC_channels_R = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by shank');
-                end
-
+            if isfield(best_channels{nprobe},'CA1_depth')
+                [~,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region','CA1','group','by shank');
+                selected_channels = [selected_channels channels_temp];
+                channel_regions = [channel_regions 4*ones(1,length(channels_temp))];
+                shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
             end
 
             %     column = 1;
@@ -56,11 +69,11 @@ for nsession =1:length(experiment_info)
                 % 2 LFP traces.
                 session_info(n).probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
                 [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info(n).probe(1),[]);
-                [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',);
+                [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',selected_channels);
             else
                 %         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
                 %         [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-                [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[]);
+                 [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',selected_channels);
             end
 
         end
