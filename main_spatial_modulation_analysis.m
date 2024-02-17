@@ -23,14 +23,16 @@ for nsession =1:length(experiment_info)
         if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters = clusters_ks3;
+            sorting_option = 'spikeinterface';
         else
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            sorting_option = 'old';
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
 
-        metric_param = create_cluster_selection_params;
+        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
         clusters_R= [];
         clusters_L= [];
 
