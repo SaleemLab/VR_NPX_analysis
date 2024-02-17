@@ -1,4 +1,4 @@
-function  region_channels = determine_region_channels(best_channels,options,varargin)
+function  [region_channels,median_channels] = determine_region_channels(best_channels,options,varargin)
 % This is a function to quickly determine what is best channel for each
 % shank for each regions
 
@@ -80,6 +80,7 @@ elseif sum(contains(all_fields,region)) == 1
         end
 
         region_channels = [region_channels; all_channels_this_shank];
+        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
 
@@ -123,6 +124,7 @@ elseif contains(region,'V1')
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
+        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
 elseif contains(region,'HPC')
@@ -162,6 +164,7 @@ elseif contains(region,'HPC')
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
+        median_channels(nShank) = find(chan_config.Channel,median(chan_config.Ks_ycoord(all_channels_this_shank)),'first');
     end
 
 end
