@@ -1,10 +1,9 @@
-function [normalised_raw_matrix PPvector shuffled_globalRemap_PPvector shuffled_rateRemap_PPvector] = plot_place_cell_map_correlation(clusters,place_fields_all,place_fields_even,place_fields_odd,position,lap_times,options)
+function [normalised_raw_matrix PPvector shuffled_globalRemap_PPvector shuffled_rateRemap_PPvector] = plot_place_cell_map_correlation(clusters,place_fields,Task_info,Behaviour,options)
+
 % Function to plot spatial cell activity
 % Plot 1 is each cell's spatial ratemap for each lap
 % Plot 2 is each cell's spatial tuning stability by plotting place field
 % calculated by using all laps, odd no laps and even no laps.
-ROOTPATH = options.ROOTPATH;
-
 if isfield(options,'region')
     region = options.region;
 else
@@ -14,40 +13,48 @@ end
 if isfield(options,'probe_combined') && options.probe_combined == 1
     nprobe = 'combined';
 else
-    nprobe = options.probe_no;
+    nprobe = options.probe_id+1;
     probe_hemisphere = options.probe_hemisphere;
-    probe_hemisphere_text = {'left','right'}
+    probe_hemisphere_text = {'left','right'};
 end
 
 % probe_hemisphere_text = {'left','right'}
-
-x_bins_width = 10;
-
-
+% place_fields_all = calculate_spatial_cells(clusters,Task_info,Behaviour,[0 140],10);
+place_fields_all = place_fields;
 %Create linearised position matrix
 index_track = [];
 sorted_cells= [];
+normalised_raw_matrix = [];
+% good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99)...
+%     find(place_fields_all(2).peak_percentile>0.99)]);
+good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
+    find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
+% good_cell_index = place_fields(1).all_good_cells_LIBERAL;
+% good_cell_index = 1:length(place_fields_all(1).raw);
 
 for type = 1:3
 
-    if type == 3
-        place_fields = place_fields_all;
-        %         sgtitle('Whole')
-    elseif type == 1
-        place_fields = place_fields_odd;
-        %         sgtitle('Odd laps')
-    elseif type == 2
-        place_fields = place_fields_even;
-        %         sgtitle('Even laps')
-    end
-
     for track_id = 1:2
-        %                 max_FR = max([place_fields.track(1).raw_peak(place_fields_all.good_place_cells_LIBERAL);...
-        %                     place_fields.track(1).raw_peak(place_fields_all.good_place_cells_LIBERAL)])';
-        max_FR = place_fields.track(track_id).raw_peak(place_fields_all.good_place_cells_LIBERAL)';
-        raw_matrix = cat(1,place_fields.track(track_id).raw{place_fields_all.good_place_cells_LIBERAL});
-        normalised_raw_matrix{type}{track_id} = bsxfun(@rdivide, raw_matrix, max_FR);
-        normalised_raw_matrix{type}{track_id}(isnan(normalised_raw_matrix{type}{track_id})) = 0;
+        ratemap_matrix = [place_fields_all(track_id).raw{good_cell_index}];
+        ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+        
+%         ratemap_matrix = [place_fields_all(track_id).raw{place_fields(1).all_good_cells_LIBERAL}];
+%         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(place_fields(1).all_good_cells_LIBERAL));%laps X position bins X cells
+
+        if type == 3 %even laps
+            average_maps = normalize(squeeze(mean(ratemap_matrix,1)),'range');
+            average_maps(isnan(average_maps))=0;
+        elseif type == 1 %odd laps
+            average_maps = normalize(squeeze(mean(ratemap_matrix(1:2:end,:,:),1)),'range');
+            average_maps(isnan(average_maps))=0;
+        elseif type == 2 %even laps
+            average_maps = normalize(squeeze(mean(ratemap_matrix(2:2:end,:,:),1)),'range');
+            average_maps(isnan(average_maps))=0;
+        end
+
+
+        normalised_raw_matrix{type}{track_id} = average_maps';
+
         [~,index_track{type}(track_id,:)] = max(normalised_raw_matrix{type}{track_id},[],2);
         %     unsorted_cells(track_id,:) =
         [~,sorted_cells{type}(track_id,:)] = sort(index_track{type}(track_id,:));
@@ -94,9 +101,9 @@ for nplot = 1:16
     set(get(h,'label'),'string','Normalised firing rate');
     clim([0.3 1])
 
-    xticks([30 50 70 90 110 140]/10)
+    xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
     xticklabels([30 50 70 90 110 140])
-    xline(10,'r')
+    xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
 
     title(sprintf('%s laps T%i sorted by %s laps T%i',...
         laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
@@ -129,7 +136,7 @@ for nshuffle = 1 : 1000
     cellID_shuffled_matrix = []; rate_remap_matrix= [];
 
     % Create shuffled matrix for global remapping: shuffle cell ID & one for rate remapping: multiply each ratemap with a random num within 0.1 to 1.5
-    for track_id = 1 : length(place_fields_all.track)
+    for track_id = 1 : length(place_fields_all)
         s = RandStream('mrg32k3a','Seed',nshuffle*1000); % Set random seed for resampling
         cellID_shuffled_matrix{1}{track_id} = normalised_raw_matrix{1}{track_id}(randperm(s,size(normalised_raw_matrix{1}{track_id},1)),:);
         s = RandStream('mrg32k3a','Seed',nshuffle*1000+1); % Set random seed for resampling
@@ -169,43 +176,43 @@ end
 %             all_sig_diff_idx = find(all_c(:,6)<0.05);
 %         end
 
-fig = figure
-fig.Position = [500 70 1300 930];
-if isempty(region)
-    if ischar(nprobe)
-        sgtitle(sprintf('%s %s place cell PV correlation cumulative frequency comparision probes %s.pdf',options.SUBJECT,options.SESSION,nprobe))
-        fig.Name = sprintf('%s %s place cell PV correlation cumulative frequency comparision probes %s.pdf',options.SUBJECT,options.SESSION,nprobe);
-    else
-        sgtitle(sprintf('%s %s place cell PV correlation cumulative frequency comparision probe %s.fig',options.SUBJECT,options.SESSION,probe_hemisphere_text{probe_hemisphere}))
-        fig.Name = sprintf('%s %s place cell PV correlation cumulative frequency comparision probe %s.fig',options.SUBJECT,options.SESSION,probe_hemisphere_text{probe_hemisphere});
-    end
-else
-    if ischar(nprobe)
-        sgtitle(sprintf('%s %s %s cell PV correlation cumulative frequency comparision probes %s',options.SUBJECT,options.SESSION,region,nprobe));
-        fig.Name = sprintf('%s %s %s cell PV correlation cumulative frequency comparision probes %s',options.SUBJECT,options.SESSION,region,nprobe);
-    else
-        sgtitle(sprintf('%s %s %s cell PV correlation cumulative frequency comparision probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere}))
-        fig.Name = sprintf('%s %s %s cell PV correlation cumulative frequency comparision probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere});
-    end
-end
-
-for nplot = 1:16
-    if nplot == 1| nplot == 6 | nplot == 11| nplot == 16
-        continue
-    end
-    subplot(4,4,nplot)
-    h(1) = cdfplot(PPvector.population_vector(:,nplot));
-    hold on
-    h(2) = cdfplot(shuffled_globalRemap_PPvector.population_vector(:,nplot));
-    set( h(1), 'LineStyle', '-', 'Color', 'r');
-    set( h(2), 'LineStyle', '-.', 'Color', 'k');
-    xlabel('PV correlation')
-    ylabel('Cumulative frequency')
-    legend('Original','Cell ID shuffled','Color','none')
-    title(sprintf('%s laps T%i sorted by %s laps T%i',...
-        laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
-    set(gca,"TickDir","out",'box', 'off','Color','none')
-end
+% fig = figure
+% fig.Position = [500 70 1300 930];
+% if isempty(region)
+%     if ischar(nprobe)
+%         sgtitle(sprintf('%s %s place cell PV correlation cumulative frequency comparision probes %s.pdf',options.SUBJECT,options.SESSION,nprobe))
+%         fig.Name = sprintf('%s %s place cell PV correlation cumulative frequency comparision probes %s.pdf',options.SUBJECT,options.SESSION,nprobe);
+%     else
+%         sgtitle(sprintf('%s %s place cell PV correlation cumulative frequency comparision probe %s.fig',options.SUBJECT,options.SESSION,probe_hemisphere_text{probe_hemisphere}))
+%         fig.Name = sprintf('%s %s place cell PV correlation cumulative frequency comparision probe %s.fig',options.SUBJECT,options.SESSION,probe_hemisphere_text{probe_hemisphere});
+%     end
+% else
+%     if ischar(nprobe)
+%         sgtitle(sprintf('%s %s %s cell PV correlation cumulative frequency comparision probes %s',options.SUBJECT,options.SESSION,region,nprobe));
+%         fig.Name = sprintf('%s %s %s cell PV correlation cumulative frequency comparision probes %s',options.SUBJECT,options.SESSION,region,nprobe);
+%     else
+%         sgtitle(sprintf('%s %s %s cell PV correlation cumulative frequency comparision probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere}))
+%         fig.Name = sprintf('%s %s %s cell PV correlation cumulative frequency comparision probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere});
+%     end
+% end
+% 
+% for nplot = 1:16
+%     if nplot == 1| nplot == 6 | nplot == 11| nplot == 16
+%         continue
+%     end
+%     subplot(4,4,nplot)
+%     h(1) = cdfplot(PPvector.population_vector(:,nplot));
+%     hold on
+%     h(2) = cdfplot(shuffled_globalRemap_PPvector.population_vector(:,nplot));
+%     set( h(1), 'LineStyle', '-', 'Color', 'r');
+%     set( h(2), 'LineStyle', '-.', 'Color', 'k');
+%     xlabel('PV correlation')
+%     ylabel('Cumulative frequency')
+%     legend('Original','Cell ID shuffled','Color','none')
+%     title(sprintf('%s laps T%i sorted by %s laps T%i',...
+%         laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
+%     set(gca,"TickDir","out",'box', 'off','Color','none')
+% end
 
 
 % Place cell stability and remapping
@@ -235,8 +242,8 @@ for nplot = 1:16
     end
     subplot(4,4,nplot)
     hold on
-    x = 1:14;
-    CI_shuffle = prctile(reshape(shuffled_globalRemap_PPvector.population_vector(:,nplot),14,1000)',[1 99]);
+    x = 1:length(place_fields_all(1).x_bin_centres);
+    CI_shuffle = prctile(reshape(shuffled_globalRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
     x2 = [x, fliplr(x)];
@@ -245,9 +252,9 @@ for nplot = 1:16
 
     h(1) = plot(x,PPvector.population_vector(:,nplot),'r')
 
-    xticks([30 50 70 90 110 140]/10)
+    xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
     xticklabels([30 50 70 90 110 140])
-    xline(10,'r')
+    xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
 
     ylabel('PV Correlation')
     xlabel('Position bin')
@@ -286,8 +293,8 @@ for nplot = 1:16
     end
     subplot(4,4,nplot)
     hold on
-    x = 1:14;
-    CI_shuffle = prctile(reshape(shuffled_rateRemap_PPvector.population_vector(:,nplot),14,1000)',[1 99]);
+    x = 1:length(place_fields_all(1).x_bin_centres);
+    CI_shuffle = prctile(reshape(shuffled_rateRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
     x2 = [x, fliplr(x)];
@@ -298,9 +305,9 @@ for nplot = 1:16
 
     ylabel('PV Correlation')
     xlabel('Position bin')
-    xticks([30 50 70 90 110 140]/10)
+    xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
     xticklabels([30 50 70 90 110 140])
-    xline(10,'r')
+    xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
 
     title(sprintf('%s laps T%i VS %s laps T%i',...
         laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
@@ -309,7 +316,55 @@ end
 legend([h(1) h(2)],{'Original','Cell ID shuffled'},'Color','none')
 box off
 
+
+
+%% lap by lap PV correlation (odd/even laps representation)
+
+
+clear single_lap_PV_correlation
+
+for type = 1:2
+    for track_id = 1:2
+        ratemap_matrix = [place_fields_all(track_id).raw{good_cell_index}];
+        ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+        
+
+        if type == 2
+            % even lap template
+            average_maps = normalize(squeeze(mean(ratemap_matrix(2:2:end,:,:),1)),'range');
+            average_maps(isnan(average_maps))=0;
+            selected_laps = 1:2:sum(Task_info.track_ID_all == track_id);
+
+        else
+            % odd lap template
+            average_maps = normalize(squeeze(mean(ratemap_matrix(1:2:end,:,:),1)),'range');
+            average_maps(isnan(average_maps))=0;
+            selected_laps = 2:2:sum(Task_info.track_ID_all == track_id);
+        end
+        count = 1;
+        for nlap = selected_laps
+            lap_PV = normalize(squeeze(ratemap_matrix(nlap,:,:)),1,'range');
+            for j = 1:length(place_fields_all(1).x_bin_centres)
+                [Rrho,Rpval] = corr(lap_PV(j,:)', average_maps(j,:)');
+                single_lap_PV_correlation(track_id).population_vector{type}(count,j) =Rrho;
+                single_lap_PV_correlation(track_id).pval{type}(count,j) =Rpval;
+            end
+            count = count+1;
+        end
+        % odd lap template
+    end
+end
+
 % figure
-% plot(V1_clusters.probe(1).MUA_tvec,V1_clusters.probe(1).MUA_zscore);
-% hold on
-% plot(V1_clusters.probe(2).MUA_tvec,-V1_clusters.probe(2).MUA_zscore)
+% subplot(2,2,1)
+% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(1).population_vector{1}))
+% title('Track 1 odd template')
+% subplot(2,2,2)
+% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(1).population_vector{2}))
+% title('Track 1 even template')
+% subplot(2,2,3)
+% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(2).population_vector{1}))
+% title('Track 2 odd template')
+% subplot(2,2,4)
+% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(2).population_vector{2}))
+% title('Track 2 even template')

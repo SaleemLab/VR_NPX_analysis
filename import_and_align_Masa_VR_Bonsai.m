@@ -703,12 +703,24 @@ if ~isempty(task_info.start_time_all)
 %             task_info.end_time_all(nlap) = on_track_t(last_position_index);
 
             if last_position >= 139 % sometimes last lap ends before 140cm
-                task_info.end_time_all(nlap) = on_track_t(last_position_index); % End time in terms of reaching end of track
-                task_info.complete_laps_id = [task_info.complete_laps_id nlap];% Lap id here is all laps (not track-specific id)
+                if last_position_index*mean(diff(on_track_t)) < 0.1 % if 140 is reached in less than 0.1 second   (usually first point is still 140 )
+                    on_track_x(1:last_position_index) = [];
+                    on_track_t(1:last_position_index) = [];
+                    [last_position last_position_index] = max(on_track_x);
+                end
+                    task_info.end_time_all(nlap) = on_track_t(last_position_index); % End time in terms of reaching end of track
+                    task_info.complete_laps_id = [task_info.complete_laps_id nlap];% Lap id here is all laps (not track-specific id)
+                
 
             else
                 % If never reached the end, then end time is the end of the
-                % entire lap (jumped to next lap after reaching time threshold)
+                % entire lap (jumped to next lap after reaching time threshold or lick threshold)
+                if last_position_index*mean(diff(on_track_t)) < 0.1 % if 140 is reached in less than 0.1 second   (usually first point is still 140 )
+                    on_track_x(1:last_position_index) = [];
+                    on_track_t(1:last_position_index) = [];
+                    [last_position last_position_index] = max(on_track_x);
+                end
+
                 task_info.end_time_all(nlap) = on_track_t(end);
                 task_info.aborted_laps_id = [task_info.aborted_laps_id nlap]; % Lap id here is all laps (not track-specific id)
             end
