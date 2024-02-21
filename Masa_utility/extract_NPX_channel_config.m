@@ -3,8 +3,9 @@ function [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_
 % load chan_config and sorted config (from one of the four columns) based on ImecMeta files
 
 % Find config files for ephys data information
-[AP_FILE,LF_FILE] = findImecBinFile(options.EPHYS_DATAPATH);
+% [AP_FILE,LF_FILE] = findImecBinFile(options.EPHYS_DATAPATH);
 % imecMeta = ReadMeta(fullfile(options.EPHYS_DATAPATH,LF_FILE));
+[AP_FILE,LF_FILE] = findImecMetaFile(options.ANALYSIS_DATAPATH,options.probe_id);
 
 switch options.importMode
     case 'LF'
@@ -12,6 +13,8 @@ switch options.importMode
     case 'KS'
         file_to_use = AP_FILE;
 end
+
+file_to_use = strrep(file_to_use,'meta','bin'); % replace meta to bin.
 
 imecMeta = NPadmin.ReadMeta(file_to_use,options.EPHYS_DATAPATH);
 chan_config = NPadmin.getNPChannelConfig(imecMeta);

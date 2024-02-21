@@ -113,6 +113,23 @@ elseif exist('run_time_edges','var')  % When running each lap separately
     for k=1:length(place_field_index)
         bayesian_spike_count.n.run(k,:) = histcounts(clusters.spike_times(find(clusters.spike_id==place_field_index(k))),run_edges_concat);
     end
+    
+    bayesian_spike_count.run_time_edges = run_edges_concat;
+    bayesian_spike_count.run_time_centered = run_edges_concat(1:end-1)+run_bin_width/2;%centres of bins
+elseif size(start_time,2)==1 % When running each lap separately
+    bayesian_spike_count.n.run= [];
+    bayesian_spike_count.n.replay= [];
+    % Spike histogram per time bin for each place field,
+    % performed on bins across all laps events (time bin between lap gets ignored later because replay_event_indice is set to NaN
+    for k=1:length(place_field_index)
+        bayesian_spike_count.n.run(k,:) = histcounts(clusters.spike_times(find(clusters.spike_id==place_field_index(k))),t.run_edges);
+        bayesian_spike_count.n.replay(k,:) = histcounts(clusters.spike_times(find(clusters.spike_id==place_field_index(k))),t.replay_edges);
+    end
+
+    bayesian_spike_count.run_time_edges = t.run_edges;
+    bayesian_spike_count.run_time_centered = t.run_edges(1:end-1)+run_bin_width/2;%centres of bins
+    bayesian_spike_count.replay_time_edges = t.replay_edges;
+    bayesian_spike_count.replay_time_centered = t.replay_edges(1:end-1)+replay_bin_width/2; %centres of bins
 
 elseif isempty(start_time) && isempty(end_time)    % When running whole sesion together- Takes time vectors and centres each bin
     bayesian_spike_count.replay_time_edges = t.replay_edges;

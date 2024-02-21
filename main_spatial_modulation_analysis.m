@@ -71,25 +71,56 @@ for nsession =1:length(experiment_info)
                 [HPC_clusters_R] = select_clusters(clusters_R,metric_param);
 
             end
-
         end
 
-        % V1
+        if ~isempty(HPC_clusters_L)&~isempty(HPC_clusters_R)
+            HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
+        else
+            HPC_clusters_combined = [];
+        end
 
-        plot_raster_both_track(V1_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
-        plot_raster_both_track(V1_clusters_R,Task_info,Behaviour,[5 1],[0 140],5)
+        if ~isempty(V1_clusters_L)&~isempty(V1_clusters_R)
+            V1_clusters_combined = combine_clusters_from_multiple_probes(V1_clusters_L,V1_clusters_R);
+        else
+            V1_clusters_combined = [];
+        end
+
+
+
+
+        % V1
+        if ~isempty(V1_clusters_L)
+            %             plot_raster_both_track(V1_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
+            plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
+        end
+
+        if ~isempty(V1_clusters_R)
+            %             plot_raster_both_track(V1_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
+            plot_spatial_CCG(V1_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
+        end
 
         % HPC
-        plot_raster_both_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
-        plot_raster_both_track(HPC_clusters_R,Task_info,Behaviour,[5 1],[0 140],5)
+        if ~isempty(HPC_clusters_L)
+            plot_raster_both_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
+            plot_spatial_CCG(HPC_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
+        end
 
-        plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5)
+        if ~isempty(HPC_clusters_R)
+            plot_raster_both_track(HPC_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
+            plot_spatial_CCG(HPC_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
+        end
 
-        plot_raster_both_track_extended(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        plot_raster_both_track_extended(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
+        %         plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
 
+        if ~isempty(HPC_clusters_combined)
+            plot_raster_both_track_extended(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
+            plot_spatial_CCG(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
+        end
 
-        plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
+        if ~isempty(V1_clusters_combined)
+            plot_raster_both_track_extended(V1_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
+            plot_spatial_CCG(V1_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
+        end
 
         %
         %         %plot speed of each lap
@@ -117,8 +148,17 @@ for nsession =1:length(experiment_info)
         %         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
 
 
-        place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        regions
+        probe_hemispheres
+
+        if ~isempty(V1_clusters_L)
+            place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+        end
+
+        if ~isempty(V1_clusters_R)
         place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+        end
+
         place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],2,[]);
         place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],2,[]);
         place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_HPC_L,place_fields_HPC_R);
@@ -127,6 +167,8 @@ for nsession =1:length(experiment_info)
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_V1.mat'),'place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_HPC.mat'),'place_fields_HPC_L','place_fields_HPC_R','place_fields_HPC_combined')
 
+
+        % Spatial modulation
         x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
         SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
         SMI = calculate_spatial_modulation_index(V1_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_R,'subplot_xy',[3 1],'plot_option',1)
@@ -135,29 +177,71 @@ for nsession =1:length(experiment_info)
         SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
         %         calculate_spatial_modulation_index(place_fields_V1_L);
 
-        % plot lap by lap population vector correlation
-        options.region = 'V1';
-        HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
-
+        % plot population vector correlation
+        options.region = 'HPC';
         [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
             plot_place_cell_map_correlation(HPC_clusters_combined,place_fields_HPC_combined,...
             Task_info,Behaviour,options);
 
-        save_all_figures((fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','spatial cells')),[])
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'PV correlation')),[])
         options = rmfield(options,'probe_combined');
         close all
 
+
         % Bayesian decoding 10 fold cross validated
-        [probability_ratio_RUN_lap estimated_position_lap_CV_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_combined,place_fields_HPC_combined,Behaviour,Task_info);
-        save('estimated_position_lap_CV_HPC_combined.mat','estimated_position_lap_CV_HPC_combined')
-        save('probability_ratio_RUN_lap.mat','probability_ratio_RUN_lap')
-        estimated_position_lap_CV = estimated_position_lap_CV_HPC_combined.track;
+         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'));
+        if isempty(DIR)
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'))
+        end
 
+        options.region = 'HPC Left';
+        [probability_ratio_RUN_lap_HPC_L,estimated_position_lap_CV_HPC_L.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_L,place_fields_HPC_L,Behaviour,Task_info,options);
+        %
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+        
+        options.region = 'HPC Right';
+        [probability_ratio_RUN_lap_HPC_R,estimated_position_lap_CV_HPC_R.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_R,place_fields_HPC_R,Behaviour,Task_info,options);
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+        
+        if ~isempty(HPC_clusters_combined)
+        options.region = 'HPC Combined';
+        [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_combined,place_fields_HPC_combined,Behaviour,Task_info,options);
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
 
-        %GLM analysis
-        spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
+        else
+            probability_ratio_RUN_lap_HPC_combined = [];
+            estimated_position_lap_CV_HPC_combined = [];
+        end
 
-        spatial_modulation_GLM_analysis(V1_clusters_L,place_fields_V1_L(1).cluster_id(place_fields_V1_L(1).all_good_cells_LIBERAL),Behaviour,Task_info);
+        save('estimated_position_lap_CV_HPC.mat','estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC_L','estimated_position_lap_CV_HPC_R')
+        save('probability_ratio_RUN_lap_HPC.mat','probability_ratio_RUN_lap_HPC_combined',"probability_ratio_RUN_lap_HPC_L","probability_ratio_RUN_lap_HPC_R")
+        
+        if ~isempty(V1_clusters_combined)
+            options.region = 'V1 combined';
+            V1_clusters_combined = combine_clusters_from_multiple_probes(V1_clusters_L,V1_clusters_R);
+            [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_L,place_fields_V1_L,Behaviour,Task_info,options);
+            save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+        else
+            probability_ratio_RUN_lap_V1_combined = [];
+            estimated_position_lap_CV_V1_combined = [];
+        end
+
+        options.region = 'V1 Right';
+        [probability_ratio_RUN_lap_V1_R,estimated_position_lap_CV_V1_R.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_R,place_fields_V1_R,Behaviour,Task_info,options);
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+
+        options.region = 'V1 Left';
+        [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_combined,place_fields_V1_combined,Behaviour,Task_info,options);
+        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+
+        save('estimated_position_lap_CV_V1.mat','estimated_position_lap_CV_V1_L',"estimated_position_lap_CV_V1_R","estimated_position_lap_CV_V1_combined")
+        save('probability_ratio_RUN_lap.mat','probability_ratio_RUN_lap_V1_L','probability_ratio_RUN_lap_V1_R',"probability_ratio_RUN_lap_V1_combined")
+    
+
+%         %GLM analysis
+%         spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
+% 
+%         spatial_modulation_GLM_analysis(V1_clusters_L,place_fields_V1_L(1).cluster_id(place_fields_V1_L(1).all_good_cells_LIBERAL),Behaviour,Task_info);
     end
 end
 

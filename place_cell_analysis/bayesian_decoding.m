@@ -32,9 +32,13 @@ for track_id = 1:length(place_fields_BAYESIAN)
 
         all_place_fields{track_id} = place_fields_BAYESIAN(track_id).template;
         
-%        [~,cell_id] = max(place_fields_BAYESIAN(track_id).template');
+%        [~,cell_id] = max(place_fields_BAYESIAN(1).template');
 %        [~,cell_id] = sort(cell_id);
-% imagesc(place_fields_BAYESIAN(track_id).template(cell_id,:))
+% imagesc(place_fields_BAYESIAN(1).template(cell_id',:))
+% 
+% 
+% imagesc(n.run(cell_id,:))
+
     elseif strcmp(modify,'global_remapped')
 %     else
         % for global remapping, get place fields for each event
@@ -73,7 +77,6 @@ else
     end
 end
 
-position = []
 %%%%% BAYESIAN DECODING  %%%%%%
 for track_id=1:length(place_fields_BAYESIAN)
     % Creates a vector of position bins and finds centre
@@ -84,8 +87,7 @@ for track_id=1:length(place_fields_BAYESIAN)
     estimated_position(track_id).discrete_position = NaN(size(Behaviour.position));
     discrete_position = Behaviour.position;
 
-    estimated_position(track_id).discrete_position(Behaviour.track_ID==track_id) = Behaviour.position(Behaviour.track_ID==track_id);
-
+%     estimated_position(track_id).discrete_position(Behaviour.track_ID==track_id) = Behaviour.position(Behaviour.track_ID==track_id);
     discrete_position = discretize(discrete_position,position_bin_edges); %group position points in bins delimited by edges
     estimated_position(track_id).discrete_position(Behaviour.track_ID==track_id) = estimated_position(track_id).position_bin_centres(discrete_position(Behaviour.track_ID==track_id)); %creates new positions based on centre of bins
     
@@ -99,6 +101,8 @@ for track_id=1:length(place_fields_BAYESIAN)
 
     elseif isfield(bayesian_spike_count,'laps')   % When running replay events separately
         estimated_position(track_id).laps = bayesian_spike_count.laps;
+        estimated_position(track_id).run_time_edges = bayesian_spike_count.run_time_edges;
+        estimated_position(track_id).run_time_centered = bayesian_spike_count.run_time_centered;
         for i = 1 : length(bayesian_spike_count.laps)
             estimated_position(track_id).laps(i).run = zeros(length(estimated_position(track_id).position_bin_centres),length(estimated_position(track_id).laps(i).run_time_centered));
         end
@@ -131,6 +135,7 @@ for track_id=1:length(place_fields_BAYESIAN)
         else
             if isempty(option)
                 estimated_position(track_id).replay = reconstruct(n.replay,all_place_fields{track_id},replay_bin_width);
+                
             elseif strcmp(option,'ratemap shuffle') % Track 1 and Track 2 ratemap label randomly shuffled within each cell.
                 estimated_position(track_id).replay = reconstruct(n.replay,all_place_fields_ratemap_shuffled{track_id},replay_bin_width);
             end
@@ -186,7 +191,7 @@ for track_id=1:length(place_fields_BAYESIAN)     %normalize probability to sum t
     end
     if isfield(bayesian_spike_count,'run_time_edges') | isfield(bayesian_spike_count,'laps')
         estimated_position(track_id).run_OneTrack = NaN(size(estimated_position(track_id).run));
-        estimated_position(track_id).run_OneTrack = NaN(size(estimated_position(track_id).run));
+%         estimated_position(track_id).run = NaN(size(estimated_position(track_id).run));
         summed_probability_run=summed_probability_run+sum(estimated_position(track_id).run,1);
     end
 end
@@ -202,18 +207,20 @@ end
 
 % Divide decoded position by summed probability  (normalize)
 for track_id=1:length(place_fields_BAYESIAN)
-    for j=1:size(estimated_position(track_id).replay,2)
-        estimated_position(track_id).replay_OneTrack(:,j) = estimated_position(track_id).replay(:,j)./sum(estimated_position(track_id).replay(:,j)); %normalized by one track only
-        estimated_position(track_id).replay_Normalized(:,j) = estimated_position(track_id).replay(:,j)./summed_probability(track_id).replay(j); % normalized by the sum of prob of all tracks
-        if BAYSESIAN_NORMALIZED_ACROSS_TRACKS==1
-       estimated_position(track_id).replay(:,j) = estimated_position(track_id).replay_Normalized(:,j);
-        else
-        estimated_position(track_id).replay(:,j) = estimated_position(track_id).replay_OneTrack(:,j);
+    if isfield(bayesian_spike_count,'replay_events')
+        for j=1:size(estimated_position(track_id).replay,2)
+            estimated_position(track_id).replay_OneTrack(:,j) = estimated_position(track_id).replay(:,j)./sum(estimated_position(track_id).replay(:,j)); %normalized by one track only
+            estimated_position(track_id).replay_Normalized(:,j) = estimated_position(track_id).replay(:,j)./summed_probability(track_id).replay(j); % normalized by the sum of prob of all tracks
+            if BAYSESIAN_NORMALIZED_ACROSS_TRACKS==1
+                estimated_position(track_id).replay(:,j) = estimated_position(track_id).replay_Normalized(:,j);
+            else
+                estimated_position(track_id).replay(:,j) = estimated_position(track_id).replay_OneTrack(:,j);
+            end
         end
+        % Calculate replay bias  - measures which track has higher probability values for estimated positions
+        estimated_position(track_id).replay_bias=sum(estimated_position(track_id).replay_Normalized,1);
     end
-    % Calculate replay bias  - measures which track has higher probability values for estimated positions
-    estimated_position(track_id).replay_bias=sum(estimated_position(track_id).replay_Normalized,1);
-    
+
     if isfield(bayesian_spike_count,'run_time_edges')|isfield(bayesian_spike_count,'laps')
         for j=1:size(estimated_position(track_id).run,2)
             estimated_position(track_id).run_OneTrack(:,j) = estimated_position(track_id).run(:,j)./sum(estimated_position(track_id).run(:,j));
@@ -224,10 +231,10 @@ for track_id=1:length(place_fields_BAYESIAN)
         valid_bins = find(~isnan(index));
         estimated_position(track_id).peak_position(valid_bins) = estimated_position(track_id).position_bin_centres(index(valid_bins));  %only compute estimated position with peak probability for valid bins (leave as NaN for other bins)
         estimated_position(track_id).run_bias = sum(estimated_position(track_id).run,1);
-        estimated_position(track_id).run_error = abs(estimated_position(track_id).peak_position-interp1(position.t, estimated_position(track_id).discrete_position, estimated_position(track_id).run_time_centered, 'nearest'));
-        estimated_position(track_id).run_actual_position = interp1(position.t, estimated_position(track_id).discrete_position, estimated_position(track_id).run_time_centered, 'nearest');
-        estimated_position(track_id).actual_run_speed = interp1(position.t, position.v, estimated_position(track_id).run_time_centered, 'nearest');
-        estimated_position(track_id).run_speed = interp1(position.t, [0 diff(position.linear(track_id).linear)./diff(position.t)], estimated_position(track_id).run_time_centered, 'nearest'); % Based on movement in VR space (when reaching end, speed becomes zero but can still be running)
+        estimated_position(track_id).run_error = abs(estimated_position(track_id).peak_position-interp1(Behaviour.tvec, estimated_position(track_id).discrete_position, estimated_position(track_id).run_time_centered, 'nearest'));
+        estimated_position(track_id).run_actual_position = interp1(Behaviour.tvec, estimated_position(track_id).discrete_position, estimated_position(track_id).run_time_centered, 'nearest');
+        estimated_position(track_id).actual_run_speed = interp1(Behaviour.tvec, Behaviour.speed, estimated_position(track_id).run_time_centered, 'nearest');
+        estimated_position(track_id).run_speed = interp1(Behaviour.tvec, [0 diff(Behaviour.position)./diff(Behaviour.tvec)], estimated_position(track_id).run_time_centered, 'nearest'); % Based on movement in VR space (when reaching end, speed becomes zero but can still be running)
 
     end
 end
@@ -271,12 +278,30 @@ if isfield(bayesian_spike_count,'laps')
         elseif track_id == 2
             estimated_position(track_id).probability_ratio = sum(sum(estimated_position(2).run(speed_thresholded)))/sum(sum(estimated_position(1).run(speed_thresholded)));
         end
+
+        for nlap = 1 : length(bayesian_spike_count.laps)
+            thisLap_indxs = find(bayesian_spike_count.lap_indices == nlap);
+            estimated_position(track_id).laps(nlap).run = estimated_position(track_id).run(:,thisLap_indxs);
+%             estimated_position(track_id).replay_events(nlap).replay_actual_position = interp1(position.t, estimated_position(track_id).discrete_position, estimated_position(track_id).replay_events(nlap).replay_time_centered, 'nearest');
+            if track_id == 1
+                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(1).run(:,thisLap_indxs)))/sum(sum(estimated_position(2).run(:,thisLap_indxs)));
+            elseif track_id == 2
+                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(2).run(:,thisLap_indxs)))/sum(sum(estimated_position(1).run(:,thisLap_indxs)));
+            end
+        end
+
     end
 end
-
+% 
+% for nlap = 1:length(estimated_position(1).laps)
+%     subplot(2,3,nlap)
+%     imagesc(estimated_position(1).laps(nlap).run)
+% 
+% end
 % if strcmp(save_option, 'Y')
 %     save estimated_position estimated_position
 % end
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

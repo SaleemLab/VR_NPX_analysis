@@ -320,51 +320,37 @@ box off
 
 %% lap by lap PV correlation (odd/even laps representation)
 
-
-clear single_lap_PV_correlation
-
-for type = 1:2
-    for track_id = 1:2
-        ratemap_matrix = [place_fields_all(track_id).raw{good_cell_index}];
-        ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
-        
-
-        if type == 2
-            % even lap template
-            average_maps = normalize(squeeze(mean(ratemap_matrix(2:2:end,:,:),1)),'range');
-            average_maps(isnan(average_maps))=0;
-            selected_laps = 1:2:sum(Task_info.track_ID_all == track_id);
-
-        else
-            % odd lap template
-            average_maps = normalize(squeeze(mean(ratemap_matrix(1:2:end,:,:),1)),'range');
-            average_maps(isnan(average_maps))=0;
-            selected_laps = 2:2:sum(Task_info.track_ID_all == track_id);
-        end
-        count = 1;
-        for nlap = selected_laps
-            lap_PV = normalize(squeeze(ratemap_matrix(nlap,:,:)),1,'range');
-            for j = 1:length(place_fields_all(1).x_bin_centres)
-                [Rrho,Rpval] = corr(lap_PV(j,:)', average_maps(j,:)');
-                single_lap_PV_correlation(track_id).population_vector{type}(count,j) =Rrho;
-                single_lap_PV_correlation(track_id).pval{type}(count,j) =Rpval;
-            end
-            count = count+1;
-        end
-        % odd lap template
-    end
-end
-
-% figure
-% subplot(2,2,1)
-% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(1).population_vector{1}))
-% title('Track 1 odd template')
-% subplot(2,2,2)
-% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(1).population_vector{2}))
-% title('Track 1 even template')
-% subplot(2,2,3)
-% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(2).population_vector{1}))
-% title('Track 2 odd template')
-% subplot(2,2,4)
-% plot(place_fields_all(1).x_bin_centres,nanmean(single_lap_PV_correlation(2).population_vector{2}))
-% title('Track 2 even template')
+% 
+% clear single_lap_PV_correlation
+% 
+% for type = 1:2
+%     for track_id = 1:2
+%         ratemap_matrix = [place_fields_all(track_id).raw{good_cell_index}];
+%         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+%         
+% 
+%         if type == 2
+%             % even lap template
+%             average_maps = normalize(squeeze(mean(ratemap_matrix(2:2:end,:,:),1)),'range');
+%             average_maps(isnan(average_maps))=0;
+%             selected_laps = 1:2:sum(Task_info.track_ID_all == track_id);
+% 
+%         else
+%             % odd lap template
+%             average_maps = normalize(squeeze(mean(ratemap_matrix(1:2:end,:,:),1)),'range');
+%             average_maps(isnan(average_maps))=0;
+%             selected_laps = 2:2:sum(Task_info.track_ID_all == track_id);
+%         end
+%         count = 1;
+%         for nlap = selected_laps
+%             lap_PV = normalize(squeeze(ratemap_matrix(nlap,:,:)),1,'range');
+%             for j = 1:length(place_fields_all(1).x_bin_centres)
+%                 [Rrho,Rpval] = corr(lap_PV(j,:)', average_maps(j,:)');
+%                 single_lap_PV_correlation(track_id).population_vector{type}(count,j) =Rrho;
+%                 single_lap_PV_correlation(track_id).pval{type}(count,j) =Rpval;
+%             end
+%             count = count+1;
+%         end
+%         % odd lap template
+%     end
+% end
