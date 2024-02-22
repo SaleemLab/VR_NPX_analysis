@@ -6,7 +6,7 @@ function merged_clusters  = merge_cluster(clusters,match_ids)
 
 merged_clusters = clusters;
 
-merged_id = match_ids(:,2); original_id = match_ids(:,1); unstable_id = match_ids(:,3); % convert from 0 based counting to 1 based counting
+merged_id = match_ids(:,2); original_id = match_ids(:,1); unstable_id = logical(match_ids(:,3)); % convert from 0 based counting to 1 based counting
 
 merged_clusters.merged_cluster_id = clusters.cluster_id;
 
