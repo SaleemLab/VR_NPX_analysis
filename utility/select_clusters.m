@@ -19,7 +19,7 @@ all_metrics = fieldnames(params);
 cluster_filter_index = ones(size(clusters.cluster_id));
 for iMetric = 1:size(all_metrics,1)
     temp_cluster_index = params.(all_metrics{iMetric})(clusters.(all_metrics{iMetric}));
-    if ~ischar(clusters.(all_metrics{iMetric})(1)) % if ischar (region label) skip this
+    if ~isstring(clusters.(all_metrics{iMetric})) % if ischar (region label) skip this
         if sum(isnan(clusters.(all_metrics{iMetric}))) > 0
             temp_cluster_index(isnan(clusters.(all_metrics{iMetric}))) = 1;
         end

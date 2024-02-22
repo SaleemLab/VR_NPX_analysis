@@ -41,8 +41,8 @@ track1_event_position = event_position(Task_info.track_ID_all==1);
 track2_event_position = event_position(Task_info.track_ID_all==2);
 
 if ~isempty(place_fields)
-    good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
-    find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
+    good_cell_index = unique([find(place_fields(1).peak_percentile>0.99 & place_fields(1).odd_even_stability>0.99)...
+    find(place_fields(2).peak_percentile>0.99 & place_fields(2).odd_even_stability>0.99)]);
     
     cluster_spike_id = cell(size(good_cell_index));
     no_cluster = length(place_fields(1).all_good_cells_LIBERAL);
@@ -130,8 +130,8 @@ if plot_option == 1
             % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
             patch([place_fields(1).x_bin_centres fliplr(place_fields(1).x_bin_centres)],[average_map_track1_odd+map_error fliplr(average_map_track1_odd-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
 
-            [peak1,peak1_index] = max(average_map_track2(place_fields(1).x_bin_centres >= 46 & place_fields(1).x_bin_centres <= 86));
-            [peak2,peak2_index] = max(average_map_track2(place_fields(1).x_bin_centres > 86 & place_fields(1).x_bin_centres <= 126));
+            [peak1,peak1_index] = max(average_map_track1(place_fields(1).x_bin_centres >= 46 & place_fields(1).x_bin_centres <= 86));
+            [peak2,peak2_index] = max(average_map_track1(place_fields(1).x_bin_centres > 86 & place_fields(1).x_bin_centres <= 126));
 
             if  peak1 > peak2
                 peak1_index = peak1_index+46/psthBinSize;
@@ -150,8 +150,8 @@ if plot_option == 1
 
 
             if ismember(cell_index(iCluster+(iPlot-1)*no_subplot),place_fields(1).cluster_id(place_fields(1).good_cells_LIBERAL))
-                xline(place_fields(1).x_bin_centres(peak1_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
-                xline(place_fields(1).x_bin_centres(peak2_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
+                xline(place_fields(1).x_bin_centres(peak1_index),'LineWidth',2,'Color',colour_lines{1},'LineStyle','--')
+                xline(place_fields(1).x_bin_centres(peak2_index),'LineWidth',2,'Color',colour_lines{1},'LineStyle','--')
                 
             else
                 SMI(1,iCluster+(iPlot-1)*no_subplot)=nan;
@@ -207,7 +207,7 @@ if plot_option == 1
             xlim(window)
             xlabel('position')
 
-            title(sprintf('SMI T1=%i T2=%i',SMI(1,iCluster+(iPlot-1)*no_subplot),SMI(2,iCluster+(iPlot-1)*no_subplot)))
+            title(sprintf('SMI T1=%.3f T2=%.3f',SMI(1,iCluster+(iPlot-1)*no_subplot),SMI(2,iCluster+(iPlot-1)*no_subplot)))
             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 
