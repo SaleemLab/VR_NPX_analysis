@@ -41,8 +41,10 @@ track1_event_position = event_position(Task_info.track_ID_all==1);
 track2_event_position = event_position(Task_info.track_ID_all==2);
 
 if ~isempty(place_fields)
+    good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
+    find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
     
-    cluster_spike_id = cell(size(place_fields(1).all_good_cells_LIBERAL));
+    cluster_spike_id = cell(size(good_cell_index));
     no_cluster = length(place_fields(1).all_good_cells_LIBERAL);
     cell_index = place_fields(1).cluster_id(place_fields(1).all_good_cells_LIBERAL);
 else
@@ -106,7 +108,7 @@ if plot_option == 1
             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 
-            subplot_scale = 3:4;
+            subplot_scale = 3;
             subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
 
             ratemaps_track1 = place_fields(1).raw{place_fields(1).cluster_id==cell_index(iCluster+(iPlot-1)*no_subplot)};
@@ -128,17 +130,17 @@ if plot_option == 1
             % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
             patch([place_fields(1).x_bin_centres fliplr(place_fields(1).x_bin_centres)],[average_map_track1_odd+map_error fliplr(average_map_track1_odd-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
 
-            [peak1,peak1_index] = max(average_map_track1(place_fields(1).x_bin_centres >= 34 & place_fields(1).x_bin_centres <= 74));
-            [peak2,peak2_index] = max(average_map_track1(place_fields(1).x_bin_centres > 74 & place_fields(1).x_bin_centres <= 114));
+            [peak1,peak1_index] = max(average_map_track2(place_fields(1).x_bin_centres >= 46 & place_fields(1).x_bin_centres <= 86));
+            [peak2,peak2_index] = max(average_map_track2(place_fields(1).x_bin_centres > 86 & place_fields(1).x_bin_centres <= 126));
 
             if  peak1 > peak2
-                peak1_index = peak1_index+34/psthBinSize;
+                peak1_index = peak1_index+46/psthBinSize;
                 peak2_index = peak1_index+40/psthBinSize;
                 peak2 = average_map_track1(peak1_index+40/psthBinSize);
 
                 SMI(1,iCluster+(iPlot-1)*no_subplot)=(peak1-peak2)/(peak1+peak2);
             elseif  peak1 < peak2
-                peak2_index = peak2_index+74/psthBinSize;
+                peak2_index = peak2_index+86/psthBinSize;
                 peak1_index = peak2_index-40/psthBinSize;
                 peak1 = average_map_track1(peak2_index-40/psthBinSize);
                 SMI(1,iCluster+(iPlot-1)*no_subplot)=(peak2-peak1)/(peak1+peak2);
@@ -167,16 +169,16 @@ if plot_option == 1
             % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
             patch([place_fields(1).x_bin_centres fliplr(place_fields(1).x_bin_centres)],[average_map_track2_odd+map_error fliplr(average_map_track2_odd-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
 
-            [peak1,peak1_index] = max(average_map_track2(place_fields(2).x_bin_centres >= 34 & place_fields(2).x_bin_centres <= 74));
-            [peak2,peak2_index] = max(average_map_track2(place_fields(2).x_bin_centres > 74 & place_fields(2).x_bin_centres <= 114));
+            [peak1,peak1_index] = max(average_map_track2(place_fields(2).x_bin_centres >= 46 & place_fields(2).x_bin_centres <= 86));
+            [peak2,peak2_index] = max(average_map_track2(place_fields(2).x_bin_centres > 86 & place_fields(2).x_bin_centres <= 126));
 
             if  peak1 > peak2
-                peak1_index = peak1_index+34/psthBinSize;
+                peak1_index = peak1_index+46/psthBinSize;
                 peak2_index = peak1_index+40/psthBinSize;
                 peak2 = average_map_track2(peak2_index);
                 SMI(2,iCluster+(iPlot-1)*no_subplot)=(peak1-peak2)/(peak1+peak2);
             elseif  peak1 < peak2
-                peak2_index = peak2_index+74/psthBinSize;
+                peak2_index = peak2_index+86/psthBinSize;
                 peak1_index = peak2_index-40/psthBinSize;
                 peak1 = average_map_track2(peak1_index);
                 SMI(2,iCluster+(iPlot-1)*no_subplot)=(peak2-peak1)/(peak1+peak2);
@@ -209,26 +211,26 @@ if plot_option == 1
             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 
-%             subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
-%             [psth_track1,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==1,:));
-%             [psth_track2,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==2,:));
-% 
-%             % Compute autocorrelation of the firing rate time series
-%             [track1_CCG, lags] = xcorr(psth_track1,psth_track1,'coeff');
-%             [track2_CCG, lags] = xcorr(psth_track2,psth_track2,'coeff');
-% 
-%             plot(lags*psthBinSize,track1_CCG,'LineWidth',2)
-%             hold on;
-%             plot(lags*psthBinSize,track2_CCG,'LineWidth',2)
-%             %         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
-%             if iCluster == no_subplot
-%                 legend(['track 1'],['track 2'],'bkgd','boxoff','Color','none')
-%             end
-%             xlim(window)
-%             xlabel('position')
-% 
-%             title('Spatial autocorrelation')
-%             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+            subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+            [psth_track1,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==1,:));
+            [psth_track2,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==2,:));
+
+            % Compute autocorrelation of the firing rate time series
+            [track1_CCG, lags] = xcorr(psth_track1,psth_track1,'coeff');
+            [track2_CCG, lags] = xcorr(psth_track2,psth_track2,'coeff');
+
+            plot(lags*psthBinSize,track1_CCG,'LineWidth',2)
+            hold on;
+            plot(lags*psthBinSize,track2_CCG,'LineWidth',2)
+            %         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
+            if iCluster == no_subplot
+                legend(['track 1'],['track 2'],'bkgd','boxoff','Color','none')
+            end
+            xlim(window)
+            xlabel('position')
+
+            title('Spatial autocorrelation')
+            set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
         end
     end
 

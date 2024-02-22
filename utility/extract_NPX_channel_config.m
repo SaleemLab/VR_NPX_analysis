@@ -16,7 +16,7 @@ end
 
 file_to_use = strrep(file_to_use,'meta','bin'); % replace meta to bin.
 
-imecMeta = NPadmin.ReadMeta(file_to_use,options.EPHYS_DATAPATH);
+imecMeta = NPadmin.ReadMeta(file_to_use,options.ANALYSIS_DATAPATH);
 chan_config = NPadmin.getNPChannelConfig(imecMeta);
 % switch str2double(imecMeta.imDatPrb_type)
 %     case 0 

@@ -55,6 +55,13 @@ for n = 1:length(all_SUBJECTS)
             if contains(stimulus_name,'Masa2tracks')
                 stimulus_name = 'Masa2tracks';
             end
+            
+            for nprobe = 1:length(session_info.probe)
+                DIR = dir(fullfile(session_info.probe(nprobe).EPHYS_DATAPATH,'*.meta'));
+                for nfile = 1:length(DIR)
+                    copyfile(fullfile(DIR(nfile).folder,DIR(nfile).name),fullfile(session_info.probe(nprobe).ANALYSIS_DATAPATH,DIR(nfile).name))
+                end
+            end
 
             if contains(session_info.probe(1).StimulusName,'Masa2tracks')
                 save(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,sprintf('session_info%s',erase(session_info.probe(1).StimulusName,'Masa2tracks'))),'session_info')
@@ -168,8 +175,8 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23028';
-SESSION = '20230705';
+SUBJECT = 'M23017';
+SESSION = '20230628';
 options = 'bilateral';
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';
