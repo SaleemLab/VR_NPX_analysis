@@ -1,4 +1,4 @@
-function merged_clusters  = merge_cluster(clusters,original_id,merged_id)
+function merged_clusters  = merge_cluster(clusters,match_ids)
 
 % load clusters from a probe
 %merged_id is the unit match suggestions
@@ -6,7 +6,7 @@ function merged_clusters  = merge_cluster(clusters,original_id,merged_id)
 
 merged_clusters = clusters;
 
-merged_id = merged_id + 1; original_id = original_id + 1; % convert from 0 based counting to 1 based counting
+merged_id = match_ids(:,2); original_id = match_ids(:,1); unstable_id = match_ids(:,3); % convert from 0 based counting to 1 based counting
 
 merged_clusters.merged_cluster_id = clusters.cluster_id;
 
@@ -30,6 +30,7 @@ for number_id = 1:length(ids_to_merge)
    
 end
 
+merged_clusters.unstable_ids = original_id(unstable_id);
 
 
 
