@@ -7,10 +7,45 @@ function place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters
 % Main difference is to use bin centres rather than edges
 
 %% Place field calculation
+
 if isfield(clusters,'merged_spike_id')
+
+    clusters.cluster_id = unique(clusters.merged_cluster_id);
+    for ncell = 1:length(unique(clusters.merged_cluster_id))
+        tempt_peak_channel = clusters.peak_channel(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+        tempt_peak_depth = clusters.peak_depth(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+        tempt_peak_waveform = clusters.peak_channel_waveforms(clusters.merged_cluster_id == clusters.cluster_id(ncell),:);
+        tempt_cell_type = clusters.cell_type(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+
+        if length(tempt_peak_depth)== 2
+            tempt_peak_channel = tempt_peak_channel(1);
+            tempt_peak_depth = tempt_peak_depth(1);
+            tempt_peak_waveform = tempt_peak_waveform(1,:);
+            tempt_cell_type = tempt_cell_type(1);
+        else % find median peak depth assign that value to the unit
+            [~,index]= min(tempt_peak_depth - median(tempt_peak_depth));
+            tempt_peak_channel = tempt_peak_channel(index);
+            tempt_peak_depth = tempt_peak_depth(index);
+            tempt_peak_waveform = tempt_peak_waveform(index,:);
+            tempt_cell_type = tempt_cell_type(index);
+        end
+
+        merged_peak_channel(ncell) = tempt_peak_channel;
+        merged_peak_depth(ncell) = tempt_peak_depth;
+        merged_peak_waveform(ncell,:) = tempt_peak_waveform;
+        merged_cell_type(ncell,:) = tempt_cell_type;
+    end
+
+    clusters.peak_channel = merged_peak_channel;
+    clusters.peak_depth = merged_peak_depth;
+    clusters.peak_channel_waveforms = merged_peak_waveform;
+    clusters.cell_type = merged_cell_type;
+
     clusters.spike_id = clusters.merged_spike_id;
     clusters.cluster_id = unique(clusters.merged_cluster_id);
+    
 end
+
 place_fields = calculate_spatial_cells(clusters,Task_info,Behaviour,x_window,x_bin_width);
 
 disp('Circularly shifting position for each lap and re-calculate spatial firing rate')
