@@ -36,52 +36,7 @@ for nsession =1:length(experiment_info)
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
         place_field = struct();
 
-
-        for nprobe = 1:length(clusters)
-            clusters(nprobe).region = strings(1,length(clusters(nprobe).cluster_id));
-            clusters(nprobe).region(:) = "";
-
-            V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-            HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
-
-            if clusters(nprobe).probe_hemisphere == 1
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC_L';
-
-                metric_param.peak_channel = @(x) ismember(x,V1_channels_L);
-                [HPC_clusters_L] = select_clusters(clusters(nprobe),metric_param);
-
-                metric_param.peak_channel = @(x) ismember(x,HPC_channels_L); % metric_param.depth_range = [] -- full range?
-                [HPC_clusters_L] = select_clusters(clusters(nprobe),metric_param);
-
-            elseif clusters(nprobe).probe_hemisphere == 2
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = {'V1_R'};
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = {'HPC_R'};
-
-                metric_param.peak_channel = @(x) ismember(x,V1_channels); % metric_param.depth_range = [] -- full range?
-                [V1_clusters_R] = select_clusters(clusters(nprobe),metric_param);
-                
-                
-                metric_param.peak_channel = @(x) ismember(x,HPC_channels); % metric_param.depth_range = [] -- full range?
-                [HPC_clusters_R] = select_clusters(clusters(nprobe),metric_param);
-            end
-        end
-
-        selected_units = find(contains(clusters(nprobe).region(:),'V1_L'));
-        
-        if ~isempty(HPC_clusters_L)&~isempty(HPC_clusters_R)
-            HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters_L,HPC_clusters_R);
-        else
-            HPC_clusters_combined = [];
-        end
-
-        if ~isempty(V1_clusters_L)&~isempty(V1_clusters_R)
-            V1_clusters_combined = combine_clusters_from_multiple_probes(V1_clusters_L,V1_clusters_R);
-        else
-            V1_clusters_combined = [];
-        end
-
-        %         %plot speed of each lap
+      %         %plot speed of each lap
         %         no_lap = size(Task_info.start_time_all,1);
         %         no_bin = 70;
         %         psth_speed = zeros(no_lap,no_bin);
@@ -101,25 +56,48 @@ for nsession =1:length(experiment_info)
         %             plot(1:2:139,mean(psth_speed((iBlock-1)*40+1:iBlock*40,:),'omitnan'))
         %         end
         %
+        for nprobe = 1:length(clusters)
+            clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
+            clusters(nprobe).region(:) = 'n.a';
 
-        % Spatial firing fields stability and reliability
-        %         place_fields = calculate_spatial_cells(V1_clusters_L,Task_info,Behaviour,[0 140],5,[]);
+            V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
+            HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
 
-        if ~isempty(V1_clusters_L)
-            place_fields_V1_L = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_L,Task_info,Behaviour,[0 140],2,[]);
+            if clusters(nprobe).probe_hemisphere == 1
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC_L';
+
+            elseif clusters(nprobe).probe_hemisphere == 2
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_R';
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC_R';
+            end
         end
+       
+        % place holder for merging units
 
-        if ~isempty(V1_clusters_R)
-        place_fields_V1_R = calculate_place_fields_masa_NPX_against_shuffle(V1_clusters_R,Task_info,Behaviour,[0 140],2,[]);
+
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(clusters(1),clusters(2));
+        else
+            clusters_combined = clusters;
         end
+        
+        place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
 
-        place_fields_HPC_L = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_L,Task_info,Behaviour,[0 140],2,[]);
-        place_fields_HPC_R = calculate_place_fields_masa_NPX_against_shuffle(HPC_clusters_R,Task_info,Behaviour,[0 140],2,[]);
-        place_fields_HPC_combined = combine_fields_from_multiple_probes(place_fields_HPC_L,place_fields_HPC_R);
-        place_fields_V1_combined = combine_fields_from_multiple_probes(place_fields_V1_L,place_fields_V1_R);
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_V1.mat'),'place_fields_V1_L','place_fields_V1_R','place_fields_V1_combined')
-        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_HPC.mat'),'place_fields_HPC_L','place_fields_HPC_R','place_fields_HPC_combined')
+        for nprobe = 1:length(clusters)
+            if clusters.probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'V1_L'); % metric_param.depth_range = [] -- full range?
+            elseif clusters.probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'V1_R'); % metric_param.depth_range = [] -- full range?
+            end
+            [~,cluster_id] = select_clusters(clusters_combined,metric_param);
+            plot_raster_both_track_extended(clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
+             plot_raster_both_track_extended(clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
+             
+            plot_spatial_CCG(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
+        end
+  
 
 
         % plot spatial raster plot
@@ -147,8 +125,7 @@ for nsession =1:length(experiment_info)
         %         plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
 
         if ~isempty(HPC_clusters_combined)
-            plot_raster_both_track_extended(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            plot_spatial_CCG(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
+
         end
 
         if ~isempty(V1_clusters_combined)

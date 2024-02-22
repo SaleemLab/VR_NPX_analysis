@@ -5,8 +5,11 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
     t_bin = 1/60;
     
     no_lap = size(Task_info.start_time_all,1);
-   
-    distance = Behaviour.speed*(1/60);
+       speed =Behaviour.speed;
+    speed(speed>80) = NaN;
+    speed = medfilt1(speed);
+    distance = speed*(1/60);
+    
     position_extended = Behaviour.position;
     max_distance_extended = nan([no_lap,1]);
     for iLap = 1:no_lap
@@ -20,7 +23,8 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         end
         
     end
-    window = [0, floor(max(max_distance_extended)/psthBinSize)*psthBinSize];
+    sort_max_distance = sort(max_distance_extended);
+    window = [0, floor(max(sort_max_distance(1:floor(length(sort_max_distance(~isnan(sort_max_distance)))*0.95)))/psthBinSize)*psthBinSize];
     position_edges = window(1):psthBinSize:window(2);
     %   convert spikes time to corresponding postions
     spike_position = interp1(Behaviour.tvec,position_extended,cluster.spike_times,'nearest');
@@ -67,7 +71,7 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
             break
         end
         subplot_scale = 0:3; 
-        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        subplot(no_subplot_y*7,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
         cluster_spike_id{iCluster+(iPlot-1)*no_subplot} = cluster.spike_id == cluster.cluster_id(iCluster+(iPlot-1)*no_subplot);
     
         [~,~,rasterX,rasterY,~,~] = psthAndBA(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_position, window, psthBinSize/20);
@@ -87,7 +91,7 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         
         yline((find(diff(Task_info.track_ID_all)==-1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
         yline((find(diff(Task_info.track_ID_all)==1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
-        
+        xline(140, 'LineWidth',1,'Color',[0.5 0.5 0.5])
             ylim([0 length(Task_info.start_time_all)])
             xlim(window)
             ylabel('lap')
@@ -96,7 +100,7 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 
-        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        subplot(no_subplot_y*7,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+4)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
         [psth_track1,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==1,:));
         [psth_track2,bins] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==2,:));
         plot(bins,psth_track1,'LineWidth',2)
@@ -104,6 +108,7 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         hold on;
         plot(bins,psth_track2,'LineWidth',2)
         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
+        xline(140, 'LineWidth',1,'Color',[0.5 0.5 0.5])
         if iCluster == no_subplot
         legend(['track 1'],['track 2'],'bkgd','boxoff','Color','none')
         end
@@ -111,6 +116,35 @@ no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
         xlabel('position')
         
         title('PSTH')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
+
+        subplot(no_subplot_y*7,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+5)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        
+        % Compute autocorrelation of the firing rate time series
+        [track1_CCG, lags] = xcorr(psth_track1,psth_track1,'coeff');
+        [track2_CCG, lags] = xcorr(psth_track2,psth_track2,'coeff');
+
+        plot(lags*psthBinSize,track1_CCG,'LineWidth',2,'Color','b')
+
+%         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
+        if iCluster == no_subplot
+            legend(['track 1'])
+        end
+        
+        xlabel('lags(cm)')
+
+        title('Spatial autocorrelation')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        subplot(no_subplot_y*7,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+6)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+
+        plot(lags*psthBinSize,track2_CCG,'LineWidth',2,'Color','r')
+        if iCluster == no_subplot
+            legend(['track 2'])
+        end
+        xlabel('lags(cm)')
+
+        title('Spatial autocorrelation')
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     end
 end

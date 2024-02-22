@@ -30,4 +30,9 @@ if isfield(clusters1,'spike_id')
     clusters_combined.spike_times = clusters_combined.spike_times(spike_index);
 end
 
+if isfield(clusters1,'merged_spike_id')
+    clusters_combined.merged_spike_id = clusters_combined.merged_spike_id(spike_index);
+    clusters_combined.spike_times = clusters_combined.spike_times(spike_index);
+end
+
 end

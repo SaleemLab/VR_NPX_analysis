@@ -33,9 +33,14 @@ all_cluster_fields = fieldnames(clusters);
 for iField = 1:size(all_cluster_fields,1)
     if contains(all_cluster_fields{iField},'timevec')
         selected_clusters.timevec = clusters.timevec;
-    elseif contains(all_cluster_fields{iField},'spike_id')
+    elseif contains(all_cluster_fields{iField},'merged_spike_id')
+        spike_id_selected = ismember(clusters.spike_id,clusters.cluster_id(cluster_filter_index));
+        selected_clusters.merged_spike_id = clusters.merged_spike_id(spike_id_selected);
+    elseif strcmp(all_cluster_fields{iField},'spike_id')
         spike_id_selected = ismember(clusters.spike_id,clusters.cluster_id(cluster_filter_index));
         selected_clusters.spike_id = clusters.spike_id(spike_id_selected);
+%     elseif contains(all_cluster_fields{iField},'unstable_ids')
+%         selected_clusters.unstable_ids = clusters.unstable_ids;
     elseif contains(all_cluster_fields{iField},'spike_times')
         selected_clusters.spike_times = clusters.spike_times(spike_id_selected);
     elseif contains(all_cluster_fields{iField},'probe_id')
@@ -47,7 +52,6 @@ for iField = 1:size(all_cluster_fields,1)
     else
         temp_cluster_field = clusters.(all_cluster_fields{iField});
         selected_clusters.(all_cluster_fields{iField}) = temp_cluster_field(cluster_filter_index,:);
-
     end
 end
 selected_clusters.params = params;% Save the parameters that were used for selection.
