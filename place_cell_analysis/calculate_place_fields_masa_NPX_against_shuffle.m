@@ -9,7 +9,7 @@ function place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters
 %% Place field calculation
 if isfield(clusters,'merged_spike_id')
     clusters.spike_id = clusters.merged_spike_id;
-    clusters.cluster_id = clusters.merged_cluster_id;
+    clusters.cluster_id = unique(clusters.merged_cluster_id);
 end
 place_fields = calculate_spatial_cells(clusters,Task_info,Behaviour,x_window,x_bin_width);
 

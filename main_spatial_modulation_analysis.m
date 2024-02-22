@@ -86,14 +86,21 @@ for nsession =1:length(experiment_info)
             merged_cluster_temp  = merge_cluster(clusters(nprobe),match_ids);
             merged_clusters(nprobe) = select_clusters(merged_cluster_temp,metric_param);
         end
-
+        
+        % save merged cluster variables (useful more reactivation activity detection)
+        if contains(stimulus_name{n},'Masa')
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'merged_clusters');
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
+        end
         %
+
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
         else
             clusters_combined = merged_clusters;
         end
-
+        
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
 
