@@ -104,19 +104,25 @@ for nsession =1:length(experiment_info)
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
 
-        for nprobe = 1:length(clusters)
-            if clusters.probe_hemisphere == 1
-                metric_param.region = @(x) contains(x,'V1_L'); % metric_param.depth_range = [] -- full range?
-            elseif clusters.probe_hemisphere == 2
-                metric_param.region = @(x) contains(x,'V1_R'); % metric_param.depth_range = [] -- full range?
-            end
-            [~,cluster_id] = select_clusters(clusters_combined,metric_param);
-            plot_raster_both_track_extended(clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            plot_raster_both_track_extended(clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
+        % Plotting
+        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+        metric_param.unstable_ids = @(x) x==0;
+        for nprobe = 1:length(merged_clusters)
 
-            plot_spatial_CCG(clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
+            [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+
+            plot_raster_both_track(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
+
+            plot_raster_both_track_extended(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
+
+            plot_raster_end_of_track(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 3],2,...
+                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
+
+% plot_raster_both_track_extended(HPC_clusters.spike_times,HPC_clusters.merged_spike_id,Task_info,Behaviour,[3 1],[0 140],2,...
+%                 'unit_depth',HPC_clusters.peak_depth(ia),'unit_region',HPC_clusters.region(ia),'unit_id',C,'place_fields',place_fields);
         end
-
 
 
         % plot spatial raster plot

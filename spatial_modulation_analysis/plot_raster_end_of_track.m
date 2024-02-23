@@ -1,5 +1,4 @@
-function plot_raster_both_track_extended(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
-cluster = [];
+function plot_raster_end_of_track(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
 
 % Default values
 p = inputParser;
@@ -24,46 +23,23 @@ no_subplot_x = subplot_xy(1); %no of subplot in one figure columns
 no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
 
 t_bin = mean(diff(Behaviour.tvec));
-
 no_lap = size(Task_info.start_time_all,1);
-speed =Behaviour.speed;
-speed(speed>80) = NaN;
-speed = medfilt1(speed);
-distance = speed*(1/60);
-
-position_extended = Behaviour.position;
-max_distance_extended = nan([no_lap,1]);
-for iLap = 1:no_lap
-    if iLap < no_lap
-
-        position_lap_end_index = find(Behaviour.tvec >= Task_info.end_time_all(iLap) & Behaviour.tvec < Task_info.start_time_all(iLap+1));
-        if ~isempty(position_lap_end_index) & length(position_lap_end_index) >3
-            position_extended(position_lap_end_index(1:end-3)) = position_extended(position_lap_end_index(1)-1)+ cumsum(distance(position_lap_end_index(1:end-3)));
-            max_distance_extended(iLap) = max(cumsum(distance(position_lap_end_index(1:end-3))));
-        end
-    end
-
-end
-sort_max_distance = sort(max_distance_extended);
-window = [0, floor(max(sort_max_distance(1:floor(length(sort_max_distance(~isnan(sort_max_distance)))*0.95)))/psthBinSize)*psthBinSize];
 position_edges = window(1):psthBinSize:window(2);
-%   convert spikes time to corresponding postions
-spike_position = interp1(Behaviour.tvec,position_extended,spike_times,'nearest');
 spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
 
-event_position = zeros(size(Task_info.start_time_all));
+event_time = zeros(size(Task_info.start_time_all));
 
 position_bin_time = zeros(no_lap,(window(2)-window(1))/psthBinSize);
 for iLap = 1:no_lap
     if iLap < no_lap
         spike_times_lap_index = spike_times < Task_info.start_time_all(iLap+1)...
             & spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
-        position_bin_time(iLap,:) = t_bin.*histcounts(position_extended(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
+        position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
             & Behaviour.tvec <Task_info.start_time_all(iLap+1) & Behaviour.speed > 5 ),position_edges);
     else
         spike_times_lap_index = spike_times <= Task_info.end_time_all(iLap)...
             & spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
-        position_bin_time(iLap,:) = t_bin.*histcounts(position_extended(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
+        position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
             & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
     end
     spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
@@ -93,7 +69,7 @@ colour_lines = {[145,191,219]/255,[69,117,180]/255,[215,48,39]/255,[252,141,89]/
 for iPlot = 1: ceil(no_cluster/(no_subplot))
     fig = figure;
     fig.Position = [109 77 1426 878];
-    fig.Name = sprintf('Spatial modulation extended raster plot %s %i',unit_region(1+(iPlot-1)*no_subplot),iPlot);
+    fig.Name = sprintf('Spatial modulation raster plot %s %i',unit_region(1+(iPlot-1)*no_subplot),iPlot);
 
     for iCluster = 1:no_subplot
         if iCluster+(iPlot-1)*no_subplot > no_cluster
@@ -126,7 +102,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         ylabel('lap')
         xlabel('position')
         title(sprintf('%s unit %i at %i um',unit_region(iCluster+(iPlot-1)*no_subplot),unit_id(iCluster+(iPlot-1)*no_subplot),unit_depth(iCluster+(iPlot-1)*no_subplot)))
-        %         title(['unit: ',num2str(iCluster+(iPlot-1)*no_subplot),' at depth ',num2str(unit_depth(iCluster+(iPlot-1)*no_subplot))])
+
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
         subplot_scale = 3;
@@ -215,17 +191,17 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         elseif  peak1 == peak2
             SMI(2,iCluster+(iPlot-1)*no_subplot)=0;
         end
-        % cell_index = []
 
         xline(bins(peak1_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
         xline(bins(peak2_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
 
-        %         if ismember(unit_id(iCluster+(iPlot-1)*no_subplot),place_fields(2).cluster_id(place_fields(2).good_cells_LIBERAL))
-        %             xline(bins(peak1_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
-        %             xline(bins(peak2_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
-        %         else
-        %             SMI(2,iCluster+(iPlot-1)*no_subplot)=nan;
-        %         end
+% 
+%         if ismember(unit_id(iCluster+(iPlot-1)*no_subplot),place_fields(2).cluster_id(place_fields(2).good_cells_LIBERAL))
+%             xline(bins(peak1_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
+%             xline(bins(peak2_index),'LineWidth',2,'Color',colour_lines{3},'LineStyle','--')
+%         else
+%             SMI(2,iCluster+(iPlot-1)*no_subplot)=nan;
+%         end
 
         h(4)=plot(bins,average_map_track2_even,'LineWidth',2,'Color',colour_lines{4});
         map_error = std(average_map_track2_even)./sqrt(length(average_map_track2_even));
@@ -256,6 +232,9 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         hold on;
         plot(lags*psthBinSize,track2_CCG,'LineWidth',2)
         %         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
+        %         if iCluster == no_subplot
+        %             legend(['track 1'],['track 2'],'bkgd','boxoff','Color','none')
+        %         end
         xlim(window)
         xlabel('position')
 

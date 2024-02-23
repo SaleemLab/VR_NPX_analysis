@@ -48,7 +48,7 @@ for iField = 1:size(all_cluster_fields,1)
     elseif contains(all_cluster_fields{iField},'sorter')
         selected_clusters.sorter = clusters.sorter;
     elseif contains(all_cluster_fields{iField},'probe_hemisphere')
-        selected_clusters.sorter = clusters.probe_hemisphere;
+        selected_clusters.probe_hemisphere = clusters.probe_hemisphere;
     elseif contains(all_cluster_fields{iField},'params')
         
     else
