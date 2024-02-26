@@ -25,7 +25,9 @@ for nsession =1:length(experiment_info)
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
         raw_LFP = [];
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
@@ -180,7 +182,7 @@ for nsession =1:length(experiment_info)
                 'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on')
             
    
-            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(nprobe).spike_times, reactivations(nprobe).onset, [-0.2 0.2], 0.001);
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(V1_clusters(nprobe).spike_times, ripples(nprobe).onset, [-0.2 0.2], 0.001);
             subplot(2,2,1)
             plot(rasterX,rasterY); hold on
             plot(bins,zscore(psth));
