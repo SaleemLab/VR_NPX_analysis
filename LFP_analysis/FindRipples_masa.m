@@ -345,6 +345,7 @@ if strcmp(show,'on')
 %         subplot(4,1,2)
 %         plot(timevec,zscored_ripple)
 %         title('z-scored Ripple power (125-300Hz)')
+    end
 end
 
 
@@ -382,34 +383,36 @@ if p.Results.saveMat
 end
 
 
-function y = Filter0(b,x)
 
-if size(x,1) == 1
-	x = x(:);
-end
-
-if mod(length(b),2)~=1
-	error('filter order should be odd');
-end
-
-shift = (length(b)-1)/2;
-
-[y0 z] = filter(b,1,x);
-
-y = [y0(shift+1:end,:) ; z(1:shift,:)];
-
-function [U,stdA] = unity(A,sd,restrict)
-
-if ~isempty(restrict),
-	meanA = mean(A(restrict));
-	stdA = std(A(restrict));
-else
-	meanA = mean(A);
-	stdA = std(A);
-end
-if ~isempty(sd),
-	stdA = sd;
-end
-
-U = (A - meanA)/stdA;
+% 
+% function y = Filter0(b,x)
+% 
+% if size(x,1) == 1
+% 	x = x(:);
+% end
+% 
+% if mod(length(b),2)~=1
+% 	error('filter order should be odd');
+% end
+% 
+% shift = (length(b)-1)/2;
+% 
+% [y0 z] = filter(b,1,x);
+% 
+% y = [y0(shift+1:end,:) ; z(1:shift,:)];
+% 
+% function [U,stdA] = unity(A,sd,restrict)
+% 
+% if ~isempty(restrict),
+% 	meanA = mean(A(restrict));
+% 	stdA = std(A(restrict));
+% else
+% 	meanA = mean(A);
+% 	stdA = std(A);
+% end
+% if ~isempty(sd),
+% 	stdA = sd;
+% end
+% 
+% U = (A - meanA)/stdA;
 

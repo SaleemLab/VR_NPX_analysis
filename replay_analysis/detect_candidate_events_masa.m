@@ -1,4 +1,4 @@
-function [replay,reactivations] = detect_candidate_events_masa(tvec,raw_LFP,mua_zscore,spike_times,peripherals,zscore_min,zscore_max,options)
+function [replay,reactivations] = detect_candidate_events_masa(tvec,raw_LFP,spike_times,Behaviour,zscore_min,zscore_max,options)
 %   based on Davidson, Kloosterman, and Wilson(2009,Neuron) criteria.  
 %   - events detected by MUA only
 %   - zscore of 3 minimum, and edges detected by zscore of 0.  
@@ -45,11 +45,26 @@ theta_zscore = zscore(abs(hilbert(theta_LFP)));
 % ripple_zscore=interp1(LFP_time,ripple_zscore,MUA_time,'linear'); %adapt to MUA_time bins time steps
 % theta_zscore= interp1(LFP_time,theta_zscore,MUA_time,'linear'); %adapt to MUA_time bins time steps
 
-[replay,reactivations]=replay_search(tvec,spike_times,mua_zscore,ripple_zscore,theta_zscore,peripherals,parameters.min_zscore,parameters.max_zscore,options); % 0,3
+% MUA zscore
+
+% Define Gaussian window for smoothing
+windowWidth = 0.1; % seconds
+gaussianWindow = gausswin(windowWidth/mean(diff(tvec)));
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
+timevec_edge = (tvec(1)-(tvec(2)-tvec(1))/2....
+    :mean(diff(tvec)):...
+    tvec(end)+(tvec(end)-tvec(end-1))/2)';
+
+mua_zscore = histcounts(spike_times(:,1), timevec_edge)';
+mua_zscore = zscore(conv(mua_zscore, gaussianWindow, 'same'));
+
+[replay,reactivations]=replay_search(tvec,spike_times,mua_zscore,ripple_zscore,theta_zscore,Behaviour,parameters.min_zscore,parameters.max_zscore,options); % 0,3
 % save extracted_candidate_events replay reactivations
 end
 
-function [replay, reactivations]=replay_search(time,spike_times,mua_zscore,ripple_zscore,theta_zscore,peripherals,zscore_min,zscore_max,options)
+function [replay, reactivations]=replay_search(time,spike_times,mua_zscore,ripple_zscore,theta_zscore,Behaviour,zscore_min,zscore_max,options)
 % spike_times = [];
 % load extracted_clusters;
 % load extracted_place_fields;
@@ -192,7 +207,7 @@ for i = 1:length(replay.onset)
     replay.zscore(i) = max(mua_zscore(find(time>replay.onset(i) & time<replay.offset(i))));
     replay.ripple_peak(i) = max(ripple_zscore(find(time>replay.onset(i) & time<replay.offset(i))));
     replay.mean_theta(i) = mean(theta_zscore(find(time>replay.onset(i) & time<replay.offset(i))));
-    speed = interp1(peripherals.sglxTime,peripherals.speed,[replay.onset(i):.01:replay.offset(i)],'nearest');
+    speed = interp1(Behaviour.tvec,Behaviour.speed,[replay.onset(i):.01:replay.offset(i)],'nearest');
     replay.speed(i) = median(speed);
     spikes = spike_id_sorted(find(spike_times_sorted>=replay.onset(i) & spike_times_sorted<=replay.offset(i)));
     replay.spike_count(i)  = length(spikes);
