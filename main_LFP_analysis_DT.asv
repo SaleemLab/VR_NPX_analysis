@@ -304,11 +304,8 @@ for nsession =1:length(experiment_info)
 
             if isfield(options,'probe_hemisphere')
                 LFP(nprobe).probe_hemisphere = options.probe_hemisphere;
-                LFP(nprobe).probe_id = options.probe_id;
-            else
-                LFP(nprobe).probe_id = options.probe_id;
             end
-
+            
             LFP(nprobe).tvec = tvec;
             for nregion = 1:length(all_fields)
                 LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(channel_regions == nregion,:);

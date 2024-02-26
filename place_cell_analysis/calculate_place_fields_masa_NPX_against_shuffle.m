@@ -70,6 +70,7 @@ parfor nshuffle = 1:1000
 
     Behaviour_temp = Behaviour;
     Behaviour_temp.position = position_shuffled{nshuffle};
+    position_shuffled{nshuffle} = [];
 
     place_fields_shuffled{nshuffle} = calculate_spatial_cells(clusters,Task_info,Behaviour_temp,x_window,x_bin_width);
     %     toc

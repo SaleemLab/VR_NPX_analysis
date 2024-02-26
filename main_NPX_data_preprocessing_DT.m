@@ -57,6 +57,13 @@ for n = 1:length(all_SUBJECTS)
                 stimulus_name = 'Masa2tracks';
             end
 
+            for nprobe = 1:length(session_info.probe)
+                DIR = dir(fullfile(session_info.probe(nprobe).EPHYS_DATAPATH,'*.meta'));
+                for nfile = 1:length(DIR)
+                    copyfile(fullfile(DIR(nfile).folder,DIR(nfile).name),fullfile(session_info.probe(nprobe).ANALYSIS_DATAPATH,DIR(nfile).name))
+                end
+            end
+
             if contains(session_info.probe(1).StimulusName,'Masa2tracks')
                 save(fullfile(session_info.probe(1).ANALYSIS_DATAPATH,sprintf('session_info%s',erase(session_info.probe(1).StimulusName,'Masa2tracks'))),'session_info')
             else

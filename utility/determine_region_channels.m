@@ -78,8 +78,22 @@ elseif sum(contains(all_fields,region)) == 1
             all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
                 &chan_config.Ks_ycoord<depth_this_shank+1) & channels_this_shank) ;
 
-        elseif contains(region,'MEC')
-            all_channels_this_shank = [];
+        elseif contains(region,'MEC_entry') % putatively just taking 2000 mcrion from entry 
+            all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
+                &chan_config.Ks_ycoord<depth_this_shank+2000) & channels_this_shank) ;
+
+        elseif contains(region,'MEC_ripple') % for now just taking few channel 
+            all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
+                &chan_config.Ks_ycoord<depth_this_shank+1) & channels_this_shank) ;
+
+        elseif contains(region,'MEC_theta') % for now just taking few channel
+            all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
+                &chan_config.Ks_ycoord<depth_this_shank+1) & channels_this_shank) ;
+
+        elseif contains(region,'HVA') % for now just taking few channel for HVA
+            all_channels_this_shank = chan_config.Channel((chan_config.Ks_ycoord>depth_this_shank-1 ...
+                &chan_config.Ks_ycoord<depth_this_shank+1) & channels_this_shank) ;
+
 
         end
 

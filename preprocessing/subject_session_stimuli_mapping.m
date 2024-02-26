@@ -213,8 +213,8 @@ for nsubject = 1:length(SUBJECTS)
                 if contains(options,'bilateral')
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).probe_hemisphere = probe_hemisphere(nprobe);
                 elseif contains(options,'V1-MEC')
-                    experiment_info(nexperiment).session(nstimuli).probe(1).probe_V1 = probe_V1;
-                    experiment_info(nexperiment).session(nstimuli).probe(1).probe_MEC = probe_MEC;
+                    experiment_info(nexperiment).session(nstimuli).probe(nprobe).probe_V1 = probe_V1;
+                    experiment_info(nexperiment).session(nstimuli).probe(nprobe).probe_MEC = probe_MEC;
                 end
 
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).MAP_FILE = ...
