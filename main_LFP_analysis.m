@@ -76,7 +76,7 @@ for nsession =1:length(experiment_info)
             end
 
         end
-        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP')
 
 
         clear replay reactivations ripples raw_LFP
@@ -94,8 +94,9 @@ for nsession =1:length(experiment_info)
         end
 
         %%%%%%%%%%%%%%%%%%
-        % Ripple and candidate events detection
+        % Ripple and candidate reactivation events detection
         %%%%%%%%%%%%%%%%%%
+
         for nprobe = 1:length(session_info(n).probe)
 
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
@@ -138,7 +139,7 @@ for nsession =1:length(experiment_info)
             [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
                 [CA1_clusters.merged_spike_id CA1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
 
-            if length(reactivations.probe(probe_no).onset) < 50
+            if length(reactivations(probe_no).onset) < 50
                 HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
                 %             merged_clusters.region
                 sorting_option = 'spikeinterface';
@@ -149,13 +150,15 @@ for nsession =1:length(experiment_info)
                     [CA1_clusters.merged_spike_id CA1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
             end
 
-
+            
             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe')
             %             merged_clusters.region
             sorting_option = 'spikeinterface';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.peak_channel = @(x) ismember(x,V1_channels);
+            metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
             V1_clusters = select_clusters(merged_clusters(nprobe),metric_param);
+
             [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
                 [V1_clusters.merged_spike_id V1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
 
@@ -208,13 +211,19 @@ for nsession =1:length(experiment_info)
         end
 
         save(sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
-
         delete(sprintf('extracted_ripples_events%s.mat',erase(stimulus_name{n},'Masa2tracks')))
         save(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'ripples')
 
+        %%%%%%%%%%%%%%%%%%
+        % Ripple and candidate reactivation events detection
+        %%%%%%%%%%%%%%%%%%
 
     end
 end
+
+
+
+
 
 %% Ripple and Candidate event detection
 clear all
