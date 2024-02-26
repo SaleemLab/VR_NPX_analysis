@@ -263,6 +263,7 @@ for nsession =1:length(experiment_info)
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
         raw_LFP = [];
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
@@ -295,7 +296,7 @@ for nsession =1:length(experiment_info)
             else
                 %         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
                 %         [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-                [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',selected_channels);
+                [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels);
             end
 
             % Save downsampled LFP from key channels
@@ -322,7 +323,6 @@ for nsession =1:length(experiment_info)
         end
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
 
-
         clear replay reactivations ripples raw_LFP
 
         if contains(stimulus_name{n},'Masa')
@@ -341,7 +341,12 @@ for nsession =1:length(experiment_info)
         % Ripple and candidate events detection
         %%%%%%%%%%%%%%%%%%
         for nprobe = 1:length(session_info(n).probe)
-
+            
+            if session_info(n).probe(1).probe_id == 0 
+                if isfield(session_info(n).probe(1),'probe_V1') & session_info(n).probe(1).probe_V1 == 1
+                   nprobe = 2; 
+                end
+            end
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             %                 Behavioural state detection
@@ -352,6 +357,7 @@ for nsession =1:length(experiment_info)
             elseif isfield(LFP(nprobe),'L5')
                 cortex_LFP = LFP(nprobe).L5;
             elseif isfield(LFP(nprobe),'MEC')
+
             end
 
             if isfield(LFP(nprobe),'CA1')
@@ -373,13 +379,13 @@ for nsession =1:length(experiment_info)
             zscore_min = 0;
             zscore_max = 3;
             
-            HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','CA1','group','by probe');
+            HPC_channels = determine_region_channels(best_channels{2},options,'region','CA1','group','by probe');
 %             merged_clusters.region
             sorting_option = 'spikeinterface';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.peak_channel = @(x) ismember(x,HPC_channels);
-            CA1_clusters = select_clusters(merged_clusters(nprobe),metric_param);            
-            [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
+            CA1_clusters = select_clusters(merged_clusters(2),metric_param);            
+            [replay,reactivations] = detect_candidate_events_masa(LFP(2).tvec,CA1_LFP,...
                 [CA1_clusters.merged_spike_id CA1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
 
             if length(reactivations.probe(probe_no).onset) < 50
@@ -394,14 +400,31 @@ for nsession =1:length(experiment_info)
             end
 
 
-            V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe')
+            MEC_channels = determine_region_channels(best_channels{1},options,'region','MEC_entry','group','by probe');
+            %             merged_clusters.region
+            sorting_option = 'spikeinterface';
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.peak_channel = @(x) ismember(x,MEC_channels);
+            metric_param.cell_type = @(x) x==1;
+            MEC_non_ripple_clusters = select_clusters(merged_clusters(1),metric_param);
+
+            MEC_channels = determine_region_channels(best_channels{1},options,'region','MEC_ripple','group','by probe');
+            %             merged_clusters.region
+            sorting_option = 'spikeinterface';
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.peak_channel = @(x) ismember(x,MEC_channels);
+            metric_param.cell_type = @(x) x==1;
+            MEC_ripple_clusters = select_clusters(merged_clusters(1),metric_param);
+
+
+            V1_channels = determine_region_channels(best_channels{2},options,'region','V1','group','by probe');
             %             merged_clusters.region
             sorting_option = 'spikeinterface';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.peak_channel = @(x) ismember(x,V1_channels);
-            V1_clusters = select_clusters(merged_clusters(nprobe),metric_param);
-            [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
-                [V1_clusters.merged_spike_id V1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
+%             metric_param.cell_type = @(x) x==1;
+            V1_clusters = select_clusters(merged_clusters(2),metric_param);
+
 
             %
             %             [reactivations.probe(nprobe).awake_offset,reactivations.probe(nprobe).awake_index] = RestrictInts(reactivations.probe(nprobe).offset,behavioural_state.quietWake);
@@ -409,15 +432,37 @@ for nsession =1:length(experiment_info)
             %             reactivations.probe(nprobe).awake_peaktimes = reactivations.probe(nprobe).peaktimes(reactivations.awake_index);
 
             % Detect CA1 ripple events
-            [ripples(nprobe)] = FindRipples_masa(CA1_LFP',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            [ripples] = FindRipples_masa(CA1_LFP',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                 'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on')
-            
-   
-            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(nprobe).spike_times, ripples.probe(nprobe).peaktimes, [-0.2 0.2], 0.001);
-            plot(rasterX,rasterY); hold on
-            plot(bins,zscore(psth));
-            yyaxis right
 
+            subplot(2,4,1)
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters.spike_times, reactivations.onset, [-0.5 1], 0.001);
+            plot(rasterX,rasterY); hold on
+            subplot(2,4,5)
+            plot(bins,zscore(psth));
+            title('HPC')
+
+            subplot(2,4,2)
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_ripple_clusters.spike_times, reactivations.onset, [-0.5 1], 0.001);
+            plot(rasterX,rasterY); hold on
+            subplot(2,4,6)
+            plot(bins,zscore(psth));
+            title('MEC ripple')
+
+            subplot(2,4,3)
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_non_ripple_clusters.spike_times, reactivations.onset, [-0.5 1], 0.001);
+            plot(rasterX,rasterY); hold on
+            subplot(2,4,7)
+            plot(bins,zscore(psth));
+            title('MEC non ripple')
+            
+            subplot(2,4,4)
+          [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(V1_clusters.spike_times, reactivations.onset, [-0.5 1], 0.001);
+            plot(rasterX,rasterY); hold on
+            subplot(2,4,8)
+            plot(bins,zscore(psth));
+            title('V1')
+            
             close all
 
         end
