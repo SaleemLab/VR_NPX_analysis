@@ -57,7 +57,7 @@ timevec_edge = (tvec(1)-(tvec(2)-tvec(1))/2....
     :mean(diff(tvec)):...
     tvec(end)+(tvec(end)-tvec(end-1))/2)';
 
-mua_zscore = histcounts(spike_times(:,1), timevec_edge)';
+mua_zscore = histcounts(spike_times(:,2), timevec_edge)';
 mua_zscore = zscore(conv(mua_zscore, gaussianWindow, 'same'));
 
 [replay,reactivations]=replay_search(tvec,spike_times,mua_zscore,ripple_zscore,theta_zscore,Behaviour,parameters.min_zscore,parameters.max_zscore,options); % 0,3
