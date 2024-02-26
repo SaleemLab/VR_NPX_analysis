@@ -66,11 +66,8 @@ for nsession =1:length(experiment_info)
             else
                 %         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
                 %         [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-                %                 [raw_LFP{1} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels,'duration_sec',10);
+                [raw_LFP{1} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels);
                 %                 [raw_LFP{2} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels,'duration_sec',10);
-
-                [raw_LFP{1} tvec SR chan_config ~] = load_LFP_NPX(options,[],'duration_sec',10);
-                [raw_LFP{2} tvec SR chan_config ~] = load_LFP_NPX1(options,[],'duration_sec',10);
             end
 
             % Save downsampled LFP from key channels
@@ -85,15 +82,13 @@ for nsession =1:length(experiment_info)
 
             LFP(nprobe).tvec = tvec;
             for nregion = 1:length(all_fields)
-                LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(selected_channels(channel_regions == nregion),:);
+                LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(channel_regions == nregion,:);
                 LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = shank_id(channel_regions == nregion); % only avaliable shanks
                 LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = selected_channels(channel_regions == nregion);
                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
                 LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(selected_channels(channel_regions == nregion),:);
                 %                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
             end
-
-           raw_LFP{nprobe} = [];
         end
 
         save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP')
@@ -103,7 +98,7 @@ for nsession =1:length(experiment_info)
 
         if contains(stimulus_name{n},'Masa')
 %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            merged_clusters = clusters_ks3;
+%             merged_clusters = clusters_ks3;
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
         else
@@ -200,11 +195,11 @@ for nsession =1:length(experiment_info)
             %             reactivations.probe(nprobe).awake_peaktimes = reactivations.probe(nprobe).peaktimes(reactivations.awake_index);
 
             % Detect CA1 ripple events
-            [ripples(nprobe)] = FindRipples_masa(raw_LFP{nprobe}(229,:)',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',raw_LFP{nprobe}(378,:)','passband',[125 300],'thresholds',[3 5],'show','on');
+            [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on');
 
             figure
-            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(1).spike_times, ripples(1).onset, [-0.2 0.5], 0.001);
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(nprobe).spike_times, V1_reactivations(nprobe).onset, [-0.2 0.5], 0.001);
             subplot(2,2,1)
             plot(rasterX,rasterY); hold on
             subplot(2,2,3)
@@ -212,7 +207,7 @@ for nsession =1:length(experiment_info)
             yyaxis right
 
 %             figure
-            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(1).spike_times, Ripples(1).onset, [-0.2 0.5], 0.001);
+            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(V1_clusters(nprobe).spike_times, V1_reactivations(nprobe).onset, [-0.2 0.5], 0.001);
             subplot(2,2,2)
             plot(rasterX,rasterY); hold on
             subplot(2,2,4)

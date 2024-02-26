@@ -193,6 +193,11 @@ else
 end
 % First, make the REM period terminate if the animal moved
 yes = 0;
+
+if sum(size(REM) == [2,1]) == 2 % rare case where only one REM
+    REM = REM';
+end
+
 for j=1:size(REM)
     idx = find(movement(:,1)>REM(j,1),1);
     if movement(idx,1)<REM(j,2)
