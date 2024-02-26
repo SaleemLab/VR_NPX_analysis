@@ -98,9 +98,12 @@ for clip = 1:nClips
 
     timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
     %     [temp_LFP, ~] = imec.readAP_timeWindow(timeWindow);
-    [temp_LFP] = double(imec.readAP_idx(timeWindow)); % if lf.bin load LF data, if ap.bin load AP data (for NPX2, only ap)
-
-
+    if probe_type == 1
+        [temp_LFP] = double(imec.readLF_idx(timeWindow)); % if lf.bin load LF data, if ap.bin load AP data (for NPX2, only ap)
+    else
+        [temp_LFP] = double(imec.readAP_idx(timeWindow)); % if lf.bin load LF data, if ap.bin load AP data (for NPX2, only ap)
+        %     temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
+    end
     % % Downsample the data
     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
     %     time_to_pass = time_to_pass + clipDur;

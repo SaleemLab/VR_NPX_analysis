@@ -153,7 +153,7 @@ zscored_ripple = zscore(abs(hilbert(signal)));
 % Detect ripple periods by thresholding zscored ripple power
 
 speed = interp1(behaviour.sglxTime,behaviour.speed,timevec,'nearest');
-speed_thresholded = speed<5; % find events with speed below 5
+speed_thresholded = speed<1; % find events with speed below 5
 % speed_thresholded
 thresholded = zscored_ripple > lowThresholdFactor;
 thresholded = thresholded + speed_thresholded;
@@ -251,7 +251,7 @@ bad = [];
 if ~isempty(noise)
 
     noiselfp = filtfilt(b_ripple,1,noise);
-    zscored_noise = zscore(abs(hilbert(noise)));
+    zscored_noise = zscore(abs(hilbert(noiselfp)));
     
 %     squaredNoise = bz_Filter(double(noise),'filter','butter','passband',passband,'order', 3).^2;
 % 	window = ones(windowLength,1)/windowLength;

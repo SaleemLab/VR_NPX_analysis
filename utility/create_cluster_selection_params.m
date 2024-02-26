@@ -10,7 +10,7 @@ sorting_option = p.Results.sorting_option;
 
 if contains(sorting_option,'spikeinterface')
     % default values of the params
-    % params.isi_violations_ratio = @(x) x<=0.1;
+%     params.isi_violations_ratio = @(x) x<=0.1;
     params.amplitude_cutoff = @(x) x<=0.1; %0.01 if strict and removes lots of units
     params.amplitude_median = @(x) x>50; %IBL 50
     params.sliding_rp_violation = @(x) x<=0.1; % chosen as 10% at IBL

@@ -1,11 +1,11 @@
 function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX1(options,column,varargin)
 
 options.importMode = 'KS';
-[file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+[file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
 
 if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and LF
     options.importMode = 'LF';
-    [file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(options,column);% Since it is LF
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
 else
     probe_type = 2;
