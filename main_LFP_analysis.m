@@ -201,34 +201,40 @@ for nsession =1:length(experiment_info)
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
-            for event = 1:length(ripples.probe(probe_no).onset)
-                ripples.probe(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples.probe(probe_no).onset(event) & Behaviour.sglxTime <= ripples.probe(probe_no).offset(event))));
+            for event = 1:length(ripples(probe_no).onset)
+                ripples(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples(probe_no).onset(event) & Behaviour.sglxTime <= ripples(probe_no).offset(event))));
+            end
+            
+            lap_times(1).start = Task_info.start_time_all(Task_info.track_ID_all==1);
+            lap_times(1).end = Task_info.end_time_all(Task_info.track_ID_all==1)';
+
+            lap_times(2).start = Task_info.start_time_all(Task_info.track_ID_all==2);
+            lap_times(2).end = Task_info.end_time_all(Task_info.track_ID_all==2)';
+
+            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
+                [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
+                reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
+
+                [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
+                reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
             end
 
             if contains(Stimulus_type,'RUN') % If reactivation events during lap running
-                [reactivations.probe(probe_no).T1_offset,reactivations.probe(probe_no).T1_index] = RestrictInts(reactivations.probe(probe_no).offset',[lap_times(1).start' lap_times(1).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                reactivations.probe(probe_no).T1_onset = reactivations.probe(probe_no).onset(reactivations.probe(probe_no).T1_index);
-                reactivations.probe(probe_no).T1_midpoint = reactivations.probe(probe_no).midpoint(reactivations.probe(probe_no).T1_index);
+                [ripples(probe_no).T1_offset,ripples(probe_no).T1_index] = RestrictInts(ripples(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                ripples(probe_no).T1_onset = ripples(probe_no).onset(ripples(probe_no).T1_index);
+                ripples(probe_no).T1_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T1_index);
 
-                [reactivations.probe(probe_no).T2_offset,reactivations.probe(probe_no).T2_index] = RestrictInts(reactivations.probe(probe_no).offset',[lap_times(2).start' lap_times(2).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                reactivations.probe(probe_no).T2_onset = reactivations.probe(probe_no).onset(reactivations.probe(probe_no).T2_index);
-                reactivations.probe(probe_no).T2_midpoint = reactivations.probe(probe_no).midpoint(reactivations.probe(probe_no).T2_index);
-            end
-
-            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
-                [ripples.probe(probe_no).T1_offset,ripples.probe(probe_no).T1_index] = RestrictInts(ripples.probe(probe_no).offset',[lap_times(1).start' lap_times(1).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                ripples.probe(probe_no).T1_onset = ripples.probe(probe_no).onset(ripples.probe(probe_no).T1_index);
-                ripples.probe(probe_no).T1_peaktimes = ripples.probe(probe_no).peaktimes(ripples.probe(probe_no).T1_index);
-
-                [ripples.probe(probe_no).T2_offset,ripples.probe(probe_no).T2_index] = RestrictInts(ripples.probe(probe_no).offset',[lap_times(2).start' lap_times(2).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                ripples.probe(probe_no).T2_onset = ripples.probe(probe_no).onset(ripples.probe(probe_no).T2_index);
-                ripples.probe(probe_no).T2_peaktimes = ripples.probe(probe_no).peaktimes(ripples.probe(probe_no).T2_index);
+                [ripples(probe_no).T2_offset,ripples(probe_no).T2_index] = RestrictInts(ripples(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                ripples(probe_no).T2_onset = ripples(probe_no).onset(ripples(probe_no).T2_index);
+                ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
             end
         end
-
+        clear lap_times
 
         figure
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(1).spike_times, V1_reactivations(2).onset, [-0.2 0.5], 0.001);
+        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(2).spike_times, V1_reactivations(2).onset, [-1 1], 0.001);
         subplot(2,2,1)
         plot(rasterX,rasterY); hold on
         subplot(2,2,3)
@@ -236,7 +242,7 @@ for nsession =1:length(experiment_info)
         yyaxis right
 
         %             figure
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(2).spike_times, V1_reactivations(1).onset, [-0.2 0.5], 0.001);
+        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(1).spike_times, V1_reactivations(1).onset, [-1 1], 0.001);
         subplot(2,2,2)
         plot(rasterX,rasterY); hold on
         subplot(2,2,4)
@@ -247,9 +253,9 @@ for nsession =1:length(experiment_info)
 
 
         save(sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
-        delete(sprintf('extracted_ripples_events%s.mat',erase(stimulus_name{n},'Masa2tracks')))
+        save(sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
         save(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'ripples')
-
+        save(sprintf('behavioural_state%s.mat',erase(stimulus_name{n},'Masa2tracks')),'behavioural_state')
         %%%%%%%%%%%%%%%%%%
         % Ripple and candidate reactivation events detection
         %%%%%%%%%%%%%%%%%%
