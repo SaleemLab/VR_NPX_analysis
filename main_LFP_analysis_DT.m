@@ -9,7 +9,7 @@
 %% Set path
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% spatial cell
 
