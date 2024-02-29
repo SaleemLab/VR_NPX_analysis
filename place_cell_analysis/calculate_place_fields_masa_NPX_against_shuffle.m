@@ -125,7 +125,12 @@ tic
         first_second_corr = mean(mean(lap_correlation(1:2:end,2:2:end),'omitnan'),'omitnan'); % First half vs Second half
         odd_even_corr = mean(mean(lap_correlation(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan'); % Odd laps vs even laps
 
-        place_fields(track_id).within_track_correlation(iCluster,:,:) = lap_correlation;
+        place_fields(track_id).within_track_corr(iCluster,:,:) = lap_correlation;
+
+        lap_correlation = xcorr(normalize(place_fields(track_id).raw{iCluster}','range'),...
+            normalize(place_fields(track_id).raw{iCluster}','range')); % lap by lap correlation
+
+        place_fields(track_id).within_track_xcorr(iCluster,:,:) = lap_correlation;
         place_fields(track_id).first_second_corr(iCluster) = first_second_corr;
         place_fields(track_id).odd_even_corr(iCluster) = odd_even_corr;
 
@@ -133,11 +138,11 @@ tic
             peak_shuffled(nshuffle) = max(mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}));
             skaggs_info_shuffled(nshuffle) = place_fields_shuffled{nshuffle}(track_id).skaggs_info(iCluster);
 
-            lap_correlation = corr(normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'),...
+            lap_correlation_shuffled = corr(normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'),...
                 normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'));
 
-            first_second_corr_shuffled(nshuffle) = mean(mean(lap_correlation(1:2:end,2:2:end),'omitnan'),'omitnan');
-            odd_even_corr_shuffled(nshuffle) = mean(mean(lap_correlation(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan');
+            first_second_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:2:end,2:2:end),'omitnan'),'omitnan');
+            odd_even_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan');
         end
 
         place_fields(track_id).first_second_corr_shuffled(iCluster,:) = first_second_corr_shuffled;
