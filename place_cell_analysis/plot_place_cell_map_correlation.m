@@ -1,4 +1,4 @@
-function [normalised_raw_matrix PPvector shuffled_globalRemap_PPvector shuffled_rateRemap_PPvector] = plot_place_cell_map_correlation(clusters,place_fields,Task_info,Behaviour,options)
+function [normalised_raw_matrix PPvector shuffled_globalRemap_PPvector shuffled_rateRemap_PPvector] = plot_place_cell_map_correlation(place_fields_all,good_cell_index,Task_info,Behaviour,options)
 
 % Function to plot spatial cell activity
 % Plot 1 is each cell's spatial ratemap for each lap
@@ -20,40 +20,49 @@ end
 
 % probe_hemisphere_text = {'left','right'}
 % place_fields_all = calculate_spatial_cells(clusters,Task_info,Behaviour,[0 140],10);
-place_fields_all = place_fields;
+
 %Create linearised position matrix
 index_track = [];
 sorted_cells= [];
 normalised_raw_matrix = [];
-% good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99)...
-%     find(place_fields_all(2).peak_percentile>0.99)]);
-good_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
-    find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
-% good_cell_index = place_fields(1).all_good_cells_LIBERAL;
-% good_cell_index = 1:length(place_fields_all(1).raw);
+% 
+spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
+    find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
+% spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...
+%     find(place_fields_all(2).odd_even_stability>0.95)]);
+good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id,good_cell_index)));
+% good_cell_index = find(intersect(place_fields_all(1).cluster_id,good_cell_index));
 
 for type = 1:3
+    ratemap_matrix = [];
+    for track_id = 1:2
+        ratemap_matrix{track_id} = [place_fields_all(track_id).raw{good_cell_index}];
+        ratemap_matrix{track_id} = reshape(ratemap_matrix{track_id},size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+    end
+    %         ratemap_matrix = [place_fields_all(track_id).raw{place_fields(1).all_good_cells_LIBERAL}];
+    %         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(place_fields(1).all_good_cells_LIBERAL));%laps X position bins X cells
+
+    if type == 3 %even laps
+        average_maps{1}= squeeze(mean(ratemap_matrix{1},1));
+        average_maps{2} = squeeze(mean(ratemap_matrix{2},1));
+    elseif type == 1 %odd laps
+        average_maps{1}= squeeze(mean(ratemap_matrix{1}(1:2:end,:,:),1));
+        average_maps{2} = squeeze(mean(ratemap_matrix{2}(1:2:end,:,:),1));
+
+    elseif type == 2 %even laps
+        average_maps{1}= squeeze(mean(ratemap_matrix{1}(2:2:end,:,:),1));
+        average_maps{2} = squeeze(mean(ratemap_matrix{2}(2:2:end,:,:),1));
+    end
+
+    temp_map = normalize([average_maps{1}; average_maps{2}],'range');
+    average_maps{1} = temp_map(1:size(average_maps{1},1),:);
+    average_maps{2} = temp_map(1+size(average_maps{1},1):size(average_maps{1},1)+size(average_maps{2},1),:);
+
+    average_maps{1}(isnan(average_maps{1}))=0;
+    average_maps{2}(isnan(average_maps{2}))=0;
 
     for track_id = 1:2
-        ratemap_matrix = [place_fields_all(track_id).raw{good_cell_index}];
-        ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
-        
-%         ratemap_matrix = [place_fields_all(track_id).raw{place_fields(1).all_good_cells_LIBERAL}];
-%         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(place_fields(1).all_good_cells_LIBERAL));%laps X position bins X cells
-
-        if type == 3 %even laps
-            average_maps = normalize(squeeze(mean(ratemap_matrix,1)),'range');
-            average_maps(isnan(average_maps))=0;
-        elseif type == 1 %odd laps
-            average_maps = normalize(squeeze(mean(ratemap_matrix(1:2:end,:,:),1)),'range');
-            average_maps(isnan(average_maps))=0;
-        elseif type == 2 %even laps
-            average_maps = normalize(squeeze(mean(ratemap_matrix(2:2:end,:,:),1)),'range');
-            average_maps(isnan(average_maps))=0;
-        end
-
-
-        normalised_raw_matrix{type}{track_id} = average_maps';
+        normalised_raw_matrix{type}{track_id} = average_maps{track_id}';
 
         [~,index_track{type}(track_id,:)] = max(normalised_raw_matrix{type}{track_id},[],2);
         %     unsorted_cells(track_id,:) =
@@ -62,12 +71,75 @@ for type = 1:3
     end
 end
 
-laps_pairs = [1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2;1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2];
-track_pairs = [1 1;1 1;1 2;1 2;1 1;1 1;1 2;1 2;2 1;2 1;2 2;2 2;2 1;2 1;2 2;2 2];
+ncount= 1
+figure
+for ncell = 1:size( average_maps{1},2)
+
+    if ncount == 26
+        figure
+        ncount = 1
+    end
+    subplot(5,5,ncount)
+
+    plot(average_maps{1}(:,ncell))
+    hold on
+    plot(average_maps{2}(:,ncell))
+
+    ncount = 1 + ncount;
+end
+
+laps_pairs = [1 2;1 2;1 2;1 2];
+track_pairs = [1 1;1 2;2 1;2 2];
 laps_type_text = {'odd','even','all'};
 %plot heat map position
 fig = figure
-fig.Position = [500 70 1300 930];
+fig.Position = [500 70 650 490];
+
+
+if ischar(nprobe)
+    sgtitle(sprintf('%s %s %s cell map remapping probes %s',options.SUBJECT,options.SESSION,region,nprobe))
+    fig.Name = sprintf('%s %s %s cell map remapping probes %s',options.SUBJECT,options.SESSION,region,nprobe);
+else
+    sgtitle(sprintf('%s %s %s cell map remapping probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere}))
+    fig.Name = sprintf('%s %s %s cell map remapping probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere});
+end
+
+
+for nplot = 1:4
+    subplot(2,2,nplot)
+    ordered_matrix =  normalised_raw_matrix{laps_pairs(nplot,1)}{track_pairs(nplot,1)}(sorted_cells{laps_pairs(nplot,2)}(track_pairs(nplot,2),:),:);
+    imagesc(ordered_matrix);
+    xlabel('Position');
+    ylabel('Cell ID');
+    yt=sorted_cells{laps_pairs(nplot,2)}(track_pairs(nplot,2),:);
+    set(gca,'ytick',1:length(sorted_cells{laps_pairs(nplot,2)}(track_pairs(nplot,2),:)));
+    set(gca,'yticklabel',yt);
+    axis xy;
+    h = colorbar;
+    colormap(flip(gray))
+    set(get(h,'label'),'string','Normalised firing rate across tracks');
+    clim([0 1])
+
+    xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
+    xticklabels([30 50 70 90 110 140])
+    xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
+
+    title(sprintf('%s laps T%i sorted by %s laps T%i',...
+        laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+
+%         title(sprintf('%s %s Even vs Odd laps place cell maps probe %i',options.SUBJECT,options.SESSION,nprobe))
+
+
+laps_pairs = [1 2;2 1;1 2;2 1];
+track_pairs = [1 1;1 1;2 2;2 2];
+laps_type_text = {'odd','even','all'};
+%plot heat map position
+fig = figure
+fig.Position = [500 70 650 490];
+
 
 if isempty(region)
     if ischar(nprobe)
@@ -87,9 +159,9 @@ else
     end
 end
 
-for nplot = 1:16
-    subplot(4,4,nplot)
-    ordered_matrix =  normalised_raw_matrix{laps_pairs(nplot,1)}{track_pairs(nplot,1)}(sorted_cells{laps_pairs(nplot,2)}(track_pairs(nplot,2),:),:);
+for nplot = 1:4
+    subplot(2,2,nplot)
+    ordered_matrix =  normalize(normalised_raw_matrix{laps_pairs(nplot,1)}{track_pairs(nplot,1)}(sorted_cells{laps_pairs(nplot,2)}(track_pairs(nplot,2),:),:),2,'range');
     imagesc(ordered_matrix);
     xlabel('Position');
     ylabel('Cell ID');
@@ -98,8 +170,9 @@ for nplot = 1:16
     set(gca,'yticklabel',yt);
     axis xy;
     h = colorbar;
-    set(get(h,'label'),'string','Normalised firing rate');
-    clim([0.3 1])
+    colormap(flip(gray))
+    set(get(h,'label'),'string','Normalised firing rate within track');
+    clim([0 1])
 
     xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
     xticklabels([30 50 70 90 110 140])
@@ -107,8 +180,8 @@ for nplot = 1:16
 
     title(sprintf('%s laps T%i sorted by %s laps T%i',...
         laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
-set(gca,"TickDir","out",'box', 'off','Color','none')
 
 %         title(sprintf('%s %s Even vs Odd laps place cell maps probe %i',options.SUBJECT,options.SESSION,nprobe))
 
@@ -122,6 +195,7 @@ laps_pairs = [1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2;1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2]
 track_pairs = [1 1;1 1;1 2;1 2;1 1;1 1;1 2;1 2;2 1;2 1;2 2;2 2;2 1;2 1;2 2;2 2];
 PPvector = [];
 
+tic
 % Original raw rate map population vector correlation
 for i = 1 : length(laps_pairs)
     for j = 1 : size( normalised_raw_matrix{1}{track_id},2) % for each position bin
@@ -131,8 +205,12 @@ for i = 1 : length(laps_pairs)
         PPvector.pval(j,i) = Gpval;
     end
 end
+Gpv= cell(1,1000);
+Gpval= cell(1,1000);
+Rpv= cell(1,1000);
+Rpval= cell(1,1000);
 
-for nshuffle = 1 : 1000
+parfor nshuffle = 1 : 1000
     cellID_shuffled_matrix = []; rate_remap_matrix= [];
 
     % Create shuffled matrix for global remapping: shuffle cell ID & one for rate remapping: multiply each ratemap with a random num within 0.1 to 1.5
@@ -151,21 +229,48 @@ for nshuffle = 1 : 1000
         rate_remap_matrix{2}{track_id}  = normalised_raw_matrix{2}{track_id}.*rate_change; % multiply ratemaps by the correspondin random num
     end
 
-    curr_size = size(shuffled_rateRemap_PPvector.population_vector,1);
+    %     curr_size = size(shuffled_rateRemap_PPvector.population_vector,1);
+    %
+    %     for i = 1 : length(laps_pairs)
+    %         for j = 1 : size( normalised_raw_matrix{1}{track_id},2) % for each position bin
+    %             % Correlation to global remapping shuffle
+    %             [Grho,Gpval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), cellID_shuffled_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j)); %corr between position bins across cells
+    %             shuffled_globalRemap_PPvector.population_vector(curr_size+j,i) = Grho; %each column is a comparison, each row a position bin
+    %             shuffled_globalRemap_PPvector.pval(curr_size+j,i) = Gpval;
+    %             % Correlation to rate remapping shuffle
+    %             [Rrho,Rpval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), rate_remap_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j));
+    %             shuffled_rateRemap_PPvector.population_vector(curr_size+j,i) = Rrho; %each column is a comparison, each row a position bin
+    %             shuffled_rateRemap_PPvector.pval(curr_size+j,i) = Rpval;
+    %         end
+    %     end
 
     for i = 1 : length(laps_pairs)
         for j = 1 : size( normalised_raw_matrix{1}{track_id},2) % for each position bin
             % Correlation to global remapping shuffle
-            [Grho,Gpval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), cellID_shuffled_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j)); %corr between position bins across cells
-            shuffled_globalRemap_PPvector.population_vector(curr_size+j,i) = Grho; %each column is a comparison, each row a position bin
-            shuffled_globalRemap_PPvector.pval(curr_size+j,i) = Gpval;
+            [Grho,pval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), cellID_shuffled_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j)); %corr between position bins across cells
+            Gpv{nshuffle}(j,i) = Grho; %each column is a comparison, each row a position bin
+            Gpval{nshuffle}(j,i)  = pval;
             % Correlation to rate remapping shuffle
-            [Rrho,Rpval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), rate_remap_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j));
-            shuffled_rateRemap_PPvector.population_vector(curr_size+j,i) = Rrho; %each column is a comparison, each row a position bin
-            shuffled_rateRemap_PPvector.pval(curr_size+j,i) = Rpval;
+            [Rrho,pval] = corr(normalised_raw_matrix{laps_pairs(i,1)}{track_pairs(i,1)}(:,j), rate_remap_matrix{laps_pairs(i,2)}{track_pairs(i,2)}(:,j));
+            Rpv{nshuffle}(j,i) = Rrho; %each column is a comparison, each row a position bin
+            Rpval{nshuffle}(j,i)  = pval;
         end
     end
 end
+
+shuffled_globalRemap_PPvector.population_vector = [Gpv{:}]; 
+shuffled_globalRemap_PPvector.population_vector = reshape(shuffled_globalRemap_PPvector.population_vector,length(place_fields_all(1).x_bin_centres),length(laps_pairs),1000);
+
+shuffled_globalRemap_PPvector.pval = [Gpval{:}];
+shuffled_globalRemap_PPvector.pval = reshape(shuffled_globalRemap_PPvector.pval,length(place_fields_all(1).x_bin_centres),length(laps_pairs),1000);
+
+shuffled_rateRemap_PPvector.population_vector = [Rpv{:}]; 
+shuffled_rateRemap_PPvector.population_vector = reshape(shuffled_rateRemap_PPvector.population_vector,length(place_fields_all(1).x_bin_centres),length(laps_pairs),1000);
+
+shuffled_rateRemap_PPvector.pval = [Rpval{:}];
+shuffled_rateRemap_PPvector.pval = reshape(shuffled_rateRemap_PPvector.pval,length(place_fields_all(1).x_bin_centres),length(laps_pairs),1000);
+
+toc 
 
 %         % Run Kruskal-Wallis
 %         all_sig_diff_idx = []; sig_diff_idx= [];
@@ -216,6 +321,8 @@ end
 
 
 % Place cell stability and remapping
+laps_pairs = [1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2;1 1; 1 2;1 1;1 2;2 1;2 2;2 1;2 2];
+track_pairs = [1 1;1 1;1 2;1 2;1 1;1 1;1 2;1 2;2 1;2 1;2 2;2 2;2 1;2 1;2 2;2 2];
 fig = figure
 fig.Position = [500 70 1300 930];
 if isempty(region)
@@ -243,7 +350,8 @@ for nplot = 1:16
     subplot(4,4,nplot)
     hold on
     x = 1:length(place_fields_all(1).x_bin_centres);
-    CI_shuffle = prctile(reshape(shuffled_globalRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
+    CI_shuffle = prctile(shuffled_globalRemap_PPvector.population_vector(:,:,nplot),[1 99]);
+%     CI_shuffle = prctile(reshape(shuffled_globalRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
     x2 = [x, fliplr(x)];
@@ -294,7 +402,8 @@ for nplot = 1:16
     subplot(4,4,nplot)
     hold on
     x = 1:length(place_fields_all(1).x_bin_centres);
-    CI_shuffle = prctile(reshape(shuffled_rateRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
+%     CI_shuffle = prctile(reshape(shuffled_rateRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
+    CI_shuffle = prctile(shuffled_rateRemap_PPvector.population_vector(:,:,nplot),[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
     x2 = [x, fliplr(x)];

@@ -45,7 +45,7 @@ for iLap = 1:no_lap
 
 end
 sort_max_distance = sort(max_distance_extended);
-window = [0, floor(max(sort_max_distance(1:floor(length(sort_max_distance(~isnan(sort_max_distance)))*0.95)))/psthBinSize)*psthBinSize];
+window = [0, 140 + floor(max(sort_max_distance(1:floor(length(sort_max_distance(~isnan(sort_max_distance)))*0.95)))/psthBinSize)*psthBinSize];
 position_edges = window(1):psthBinSize:window(2);
 %   convert spikes time to corresponding postions
 spike_position = interp1(Behaviour.tvec,position_extended,spike_times,'nearest');
