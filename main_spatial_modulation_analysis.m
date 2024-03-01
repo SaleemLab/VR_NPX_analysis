@@ -126,7 +126,6 @@ for nsession =1:length(experiment_info)
                 'event_label',{'Track 1','Track 2'},'event_id',Task_info.track_ID_all);
 
             % ripple
-
             [sorted_events,event_index] = sort([ripples(2).T1_onset'; ripples(2).T2_onset']);
             event_id = [ones(length(ripples(2).T1_onset),1); 2*ones(length(ripples(2).T2_onset),1)];
             event_id = event_id(event_index);
@@ -138,42 +137,6 @@ for nsession =1:length(experiment_info)
 % plot_raster_both_track_extended(HPC_clusters.spike_times,HPC_clusters.merged_spike_id,Task_info,Behaviour,[3 1],[0 140],2,...
 %                 'unit_depth',HPC_clusters.peak_depth(ia),'unit_region',HPC_clusters.region(ia),'unit_id',C,'place_fields',place_fields);
         end
-
-
-        % plot spatial raster plot
-        if ~isempty(V1_clusters_L)
-            %             plot_raster_both_track(V1_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        if ~isempty(V1_clusters_R)
-            %             plot_raster_both_track(V1_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(V1_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        % HPC
-        if ~isempty(HPC_clusters_L)
-            %             plot_raster_both_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(HPC_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        if ~isempty(HPC_clusters_R)
-            %             plot_raster_both_track(HPC_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(HPC_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        %         plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-
-        if ~isempty(HPC_clusters_combined)
-
-        end
-
-        if ~isempty(V1_clusters_combined)
-            %             plot_raster_both_track_extended(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            plot_raster_both_track(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            %             plot_spatial_CCG(V1_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
 
 
 

@@ -127,22 +127,33 @@ tic
 
         place_fields(track_id).within_track_corr(iCluster,:,:) = lap_correlation;
 
-        lap_correlation = xcorr(normalize(place_fields(track_id).raw{iCluster}','range'),...
-            normalize(place_fields(track_id).raw{iCluster}','range')); % lap by lap correlation
+        normalised_ratemap = normalize(place_fields(track_id).raw{iCluster}','range');
+        
+%         place_fields(track_id).within_track_xcorr(iCluster,:,:) = zeros(size(lap_correlation,1),size(lap_correlation,2));
+        for i = 1:size(place_fields(track_id).raw{iCluster},1)
+            for j= 1:size(place_fields(track_id).raw{iCluster},1)
+                
+                [r,lags] = xcorr(normalised_ratemap(:,i),...
+                    normalised_ratemap(:,j)); % lap by lap xcorr
+                 place_fields(track_id).within_track_xcorr(iCluster,i,j) = ...
+                     max(r(lags>= -40/mean(diff(place_fields(track_id).x_bin_centres)) & lags<= 40/mean(diff(place_fields(track_id).x_bin_centres))));
+            end
+        end
 
-        place_fields(track_id).within_track_xcorr(iCluster,:,:) = lap_correlation;
         place_fields(track_id).first_second_corr(iCluster) = first_second_corr;
         place_fields(track_id).odd_even_corr(iCluster) = odd_even_corr;
 
         for nshuffle = 1:1000
-            peak_shuffled(nshuffle) = max(mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}));
+            % Range between min and max FR
+            peak_shuffled(nshuffle) = max(mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}))-min(mean(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}));
+
             skaggs_info_shuffled(nshuffle) = place_fields_shuffled{nshuffle}(track_id).skaggs_info(iCluster);
 
-            lap_correlation_shuffled = corr(normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'),...
-                normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range'));
+            lap_correlation_shuffled = corr(normalize(place_fields(track_id).raw{iCluster}','range'),...
+                normalize(place_fields_shuffled{nshuffle}(track_id).raw{iCluster}','range')); % original X shuffled correlation
 
-            first_second_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:2:end,2:2:end),'omitnan'),'omitnan');
-            odd_even_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan');
+            odd_even_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:2:end,2:2:end),'omitnan'),'omitnan'); % odd lap from 
+            first_second_corr_shuffled(nshuffle) = mean(mean(lap_correlation_shuffled(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan');
         end
 
         place_fields(track_id).first_second_corr_shuffled(iCluster,:) = first_second_corr_shuffled;
@@ -152,9 +163,23 @@ tic
         place_fields(track_id).odd_even_stability(iCluster) = sum(odd_even_corr > odd_even_corr_shuffled)/length(odd_even_corr_shuffled);
 
         place_fields(track_id).raw_peak(iCluster) = max(mean(place_fields(track_id).raw{iCluster})); % peak FR
-        place_fields(track_id).peak_percentile(iCluster) = sum(max(mean(place_fields(track_id).raw{iCluster}))>peak_shuffled)/length(peak_shuffled); % peak FR relative to peak of shuffled data
+        place_fields(track_id).peak_percentile(iCluster) = sum(max(mean(place_fields(track_id).raw{iCluster}))-min(mean(place_fields(track_id).raw{iCluster}))>...
+            peak_shuffled)/length(peak_shuffled); % max-min FR relative to max-min of shuffled data
 
         place_fields(track_id).skaggs_percentile(iCluster) = sum(place_fields(track_id).skaggs_info(iCluster)>skaggs_info_shuffled)/length(skaggs_info_shuffled);
+
+        for nshuffle = 1:1000
+            if track_id == 1
+                lap_correlation = corr(normalize(place_fields(track_id).raw{iCluster}','range'),...
+                    normalize(place_fields_shuffled{nshuffle}(track_id+1).raw{iCluster}','range'));% Original T1 vs shuffled T2
+            else
+                lap_correlation = corr(normalize(place_fields(track_id).raw{iCluster}','range'),...
+                    normalize(place_fields_shuffled{nshuffle}(track_id-1).raw{iCluster}','range'));% Original T2 vs shuffled T1
+            end
+
+            lap_correlation(lap_correlation==1) = nan;
+            t1_t2_corr_shuffled(track_id,nshuffle) = mean(mean(lap_correlation,'omitnan'),'omitnan');
+        end
     end
 
     % Remapping (correlation between track 1 and track 2)
@@ -163,22 +188,15 @@ tic
     lap_correlation(lap_correlation==1) = nan;
     t1_t2_corr = mean(mean(lap_correlation,'omitnan'),'omitnan');
 
-    place_fields(1).across_tracks_correlation(iCluster,:,:) = lap_correlation;
+    place_fields(1).across_tracks_correlation(iCluster,:,:) = lap_correlation;% T1 X T2
     place_fields(1).t1_t2_corr(iCluster) = t1_t2_corr;
-    place_fields(2).across_tracks_correlation(iCluster,:,:) = lap_correlation;
+    place_fields(2).across_tracks_correlation(iCluster,:,:) = lap_correlation';% T2 X T1
     place_fields(2).t1_t2_corr(iCluster) = t1_t2_corr;
 
-    for nshuffle = 1:1000
-        lap_correlation = corr(normalize(place_fields_shuffled{nshuffle}(1).raw{iCluster}','range'),...
-            normalize(place_fields_shuffled{nshuffle}(2).raw{iCluster}','range'));
-        lap_correlation(lap_correlation==1) = nan;
-        t1_t2_corr_shuffled(nshuffle) = mean(mean(lap_correlation,'omitnan'),'omitnan');
-    end
-
-    place_fields(1).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
-    place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
-    place_fields(2).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled;
-    place_fields(2).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled)/length(t1_t2_corr_shuffled);
+    place_fields(1).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled(track_id,:);
+    place_fields(1).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled(track_id,:))/length(t1_t2_corr_shuffled(track_id,:));
+    place_fields(2).t1_t2_corr_shuffled(iCluster,:) = t1_t2_corr_shuffled(track_id,:);
+    place_fields(2).t1_t2_remapping(iCluster) = sum(t1_t2_corr > t1_t2_corr_shuffled(track_id,:))/length(t1_t2_corr_shuffled(track_id,:));
 
     % Reliability/ explained variance (currently taking 80 seconds to run one cell)
 
@@ -212,8 +230,7 @@ for track_id = 1:max(Behaviour.track_ID)
 %         & place_fields(track_id).first_second_stability >= 0.99 ...
 %         & place_fields(track_id).peak_percentile >= 0.99 ...
 %         & place_fields(track_id).skaggs_percentile >= 0.99); % If peak FR, skaggs_info and 1st vs 2nd half stability are significantly better than shuffle distribution.
-    putative_place_cells = find(place_fields(track_id).raw_peak >= 1 ...
-        & place_fields(track_id).odd_even_stability >= 0.99 ...
+    putative_place_cells = find(place_fields(track_id).odd_even_stability >= 0.99 ...
         & place_fields(track_id).peak_percentile >= 0.99); % If peak FR, skaggs_info and 1st vs 2nd half stability are significantly better than shuffle distribution.
 
 %         & mean(place_fields(track_id).explained_variance,2,'omitnan')' > 0 ...
