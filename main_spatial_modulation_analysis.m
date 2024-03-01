@@ -12,7 +12,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession =1:length(experiment_info)
+for nsession =7
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -122,7 +122,6 @@ for nsession =1:length(experiment_info)
 
             % plot populational map and PV correlation
             %%%%%% HPC
-                        HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
             options.region = 'HPC';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
@@ -137,9 +136,14 @@ for nsession =1:length(experiment_info)
             % Unique merged cell id
             cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
 
-            [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
+            [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
+                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
+            if clusters(nprobe).probe_hemisphere == 1
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            elseif clusters(nprobe).probe_hemisphere == 2
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            end
 
             % plot populational map and PV correlation
             %%%%%% V1
@@ -159,7 +163,7 @@ for nsession =1:length(experiment_info)
             cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
 
             [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
+                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
             if clusters(nprobe).probe_hemisphere == 1
                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
@@ -167,57 +171,61 @@ for nsession =1:length(experiment_info)
                  save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             end
 
-
         end
 
         if length(session_info(n).probe) > 1
             % plot populational map and PV correlation
-            %%%%%% HPC both hemisphere
+            %%%%%% HPC
+            options.probe_combined = 1;
+
             options.region = 'HPC';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
-
-            if clusters(nprobe).probe_hemisphere == 1
-                metric_param.region = @(x) contains(x,'HPC_L');
-            elseif clusters(nprobe).probe_hemisphere == 2
-                metric_param.region = @(x) contains(x,'HPC_R');
-            end
+            metric_param.region = @(x) contains(x,'HPC');
             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
 
             % Unique merged cell id
             cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
 
-            [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
+            [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
+                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
+            if clusters(nprobe).probe_hemisphere == 1
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            elseif clusters(nprobe).probe_hemisphere == 2
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            end
 
             % plot populational map and PV correlation
             %%%%%% V1
             options.region = 'V1';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
+            metric_param.region = @(x) contains(x,'V1');
 
-            if clusters(nprobe).probe_hemisphere == 1
-                metric_param.region = @(x) contains(x,'V1_L');
-            elseif clusters(nprobe).probe_hemisphere == 2
-                metric_param.region = @(x) contains(x,'V1_R');
-            end
             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
 
             % Unique merged cell id
             cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
 
-            [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
-        end
+            [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
+                plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
+            if clusters(nprobe).probe_hemisphere == 1
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            elseif clusters(nprobe).probe_hemisphere == 2
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            end
+           
+        end
+        options = rmfield(options,'probe_combined');
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))== 0
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))
         end
 
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'),[])
         close all
-        options = rmfield(options,'probe_combined');
+
         %         %GLM analysis
         %         spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
         %
@@ -271,13 +279,24 @@ for nsession =1:length(experiment_info)
             %
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
-            metric_param.region = @(x) contains(x,'HPC_L');
-            [HPC_clusters_L,cluster_id] = select_clusters(clusters(nprobe),metric_param);
+            if clusters(nprobe).probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'HPC_L');
+                options.region = 'HPC Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'HPC_R');
+                options.region = 'HPC Right';
+            end
 
-            options.region = 'HPC Left';
-            [probability_ratio_RUN_lap_HPC_L,estimated_position_lap_CV_HPC_L.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_L,place_fields_HPC_L,Behaviour,Task_info,options);
-            %
-            save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
+            [selected_clusters,cluster_id] = select_clusters(clusters(nprobe),metric_param);
+            [probability_ratio_RUN_lap_HPC_L,estimated_position_lap_CV_HPC_L.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+            
+
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
+            end
+
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+
 
             options.region = 'HPC Right';
             [probability_ratio_RUN_lap_HPC_R,estimated_position_lap_CV_HPC_R.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_R,place_fields_HPC_R,Behaviour,Task_info,options);

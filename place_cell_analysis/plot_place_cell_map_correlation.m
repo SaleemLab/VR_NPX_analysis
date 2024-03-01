@@ -26,8 +26,8 @@ index_track = [];
 sorted_cells= [];
 normalised_raw_matrix = [];
 % 
-spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
-    find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
+spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
+    find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
 % spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...
 %     find(place_fields_all(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id,good_cell_index)));

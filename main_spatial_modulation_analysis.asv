@@ -139,7 +139,11 @@ for nsession =1:length(experiment_info)
 
             [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
-
+            if clusters(nprobe).probe_hemisphere == 1
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            elseif clusters(nprobe).probe_hemisphere == 2
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            end
 
             % plot populational map and PV correlation
             %%%%%% V1
@@ -162,11 +166,10 @@ for nsession =1:length(experiment_info)
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options) % Roughly 6-7 mins for shuffle and plotting
 
             if clusters(nprobe).probe_hemisphere == 1
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector')
+                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             elseif clusters(nprobe).probe_hemisphere == 2
-                save('population_vector_corr_V1_L')
+                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             end
-
 
         end
 
