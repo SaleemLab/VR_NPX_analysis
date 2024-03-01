@@ -707,11 +707,13 @@ if ~isempty(task_info.start_time_all)
                 on_track_t(1:last_position_index) = [];
                 [last_position last_position_index] = max(on_track_x);
             end
-
-            if ~isempty(ismember(task_info.reward_delivery_time,on_track_t'))
-                task_info.rewarded_lap_id(ismember(task_info.reward_delivery_time,on_track_t')') = nlap;
+            
+            if isfield(task_info,'reward_delivery_time')
+                if ~isempty(ismember(task_info.reward_delivery_time,on_track_t'))
+                    task_info.rewarded_lap_id(ismember(task_info.reward_delivery_time,on_track_t')') = nlap;
+                end
             end
-
+            
             if last_position >= 139 % sometimes last lap ends before 140cm
                 task_info.end_time_all(nlap) = on_track_t(last_position_index); % End time in terms of reaching end of track
                 task_info.complete_laps_id = [task_info.complete_laps_id nlap];% Lap id here is all laps (not track-specific id)
