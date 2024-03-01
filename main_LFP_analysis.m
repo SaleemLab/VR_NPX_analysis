@@ -92,7 +92,36 @@ for nsession =1:length(experiment_info)
         end
 
         save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP')
+    end
+end
 
+
+%% Detect ripples and reactivation event
+
+clear all
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'Masa2tracks';
+
+
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
+        end
 
         clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
 
@@ -111,9 +140,6 @@ for nsession =1:length(experiment_info)
             clusters_combined = merged_clusters;
         end
 
-        %%%%%%%%%%%%%%%%%%
-        % Ripple and candidate reactivation events detection
-        %%%%%%%%%%%%%%%%%%
 
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
@@ -144,7 +170,10 @@ for nsession =1:length(experiment_info)
             behavioural_state.REM = REM;
             behavioural_state.movement = movement;
 
-            % Detect CA1 populational bursting events (Candidate events)
+            %%%%%%%%%%%%%%%%%%
+            % Ripple and candidate reactivation events detection
+            %%%%%%%%%%%%%%%%%%
+
             zscore_min = 0;
             zscore_max = 3;
 
@@ -173,7 +202,7 @@ for nsession =1:length(experiment_info)
                     [CA1_clusters(nprobe).spike_id CA1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
             end
 
-
+            % Detect V1 populational bursting events (Candidate events)
             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
             %             merged_clusters.region
             sorting_option = 'spikeinterface';
@@ -233,32 +262,10 @@ for nsession =1:length(experiment_info)
         end
         clear lap_times
 
-        figure
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(2).spike_times, V1_reactivations(2).onset, [-1 1], 0.001);
-        subplot(2,2,1)
-        plot(rasterX,rasterY); hold on
-        subplot(2,2,3)
-        plot(bins,zscore(psth));
-        yyaxis right
-
-        %             figure
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters(1).spike_times, V1_reactivations(1).onset, [-1 1], 0.001);
-        subplot(2,2,2)
-        plot(rasterX,rasterY); hold on
-        subplot(2,2,4)
-        plot(bins,zscore(psth));
-        yyaxis right
-
-        %             close all
-
-
         save(sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
         save(sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
         save(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'ripples')
         save(sprintf('behavioural_state%s.mat',erase(stimulus_name{n},'Masa2tracks')),'behavioural_state')
-        %%%%%%%%%%%%%%%%%%
-        % Ripple and candidate reactivation events detection
-        %%%%%%%%%%%%%%%%%%
 
     end
 end
@@ -266,197 +273,85 @@ end
 
 
 
+%% Theta cyclea and phase extraction
 
-%% Ripple and Candidate event detection
 clear all
-addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-addpath(genpath('X:\ibn-vision\USERS\Masa\code\buzcode\externalPackages'))
-addpath(genpath('X:\ibn-vision\USERS\Masa\code\spikes'))
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'Masa2tracks';
 
 
-SUBJECTS = {'M23017','M23028','M23029'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS);
-Stimulus_type = 'RUN'; % extract LFP during RUN
-Stimulus_type = 'POST'; % extract LFP during RUN
-ROOTPATH = 'Z:\ibn-vision';
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
-Stimulus_types_all = {'RUN','POST'};
-% Stimulus_type = 'RUN'; % extract LFP during RUN
-% Stimulus_type = 'POST'; % extract LFP during RUN
-ROOTPATH = 'Z:\ibn-vision';
-c = 1;
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
 
-for epoch = 1:length(Stimulus_types_all)
-    Stimulus_type= Stimulus_types_all{epoch};
-
-    for nsession =1:length(experiment_info)
-        tic
-        session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        if isempty(session_info)
-            continue
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
-        gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
-        for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info(n).probe(1).SUBJECT,'ephys',session_info(n).probe(1).SESSION,'analysis'))
-            load best_channels
-            load extracted_PSD
-            load(sprintf('extracted_position%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            load(sprintf('bonsai_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            load('extracted_laps')
-            column = 1;
+        clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
 
-            raw_LFP = [];
-            for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
-                column = 1;
-                session_info(n).probe(nprobe).task_type = stimulus_name{n};
-                options = session_info(n).probe(nprobe);
-                options.importMode = 'LF';
-                probe_no = session_info(n).probe(nprobe).probe_id + 1;
-                options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-
-                if nprobe ~= 1
-                    session_info.probe(1).importMode = 'KS';
-
-                    [~, imecMeta, ~, ~] = extract_NPX_channel_config(session_info.probe(1),column);
-                    [raw_LFP{probe_no} tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column,'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp);
-                else
-                    [raw_LFP{probe_no} tvec SR chan_config sorted_config] = load_LFP_NPX1(options,column);
-                end
-
-                if ~isempty(tvec)
-                    LFP_tvec = tvec;
-                else
-                    LFP_tvec = [];
-                end
-            end
-
-
-            for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
-                options = session_info(n).probe(nprobe);
-                options.importMode = 'KS';
-                options.gFileNum = gFileNum(n);
-                probe_no = session_info(n).probe(nprobe).probe_id + 1;
-                options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-                options.ROOTPATH = ROOTPATH;
-                % Load all spike data sorted according to the channel position
-
-                if ~isempty(best_channels{probe_no}.CA1_channel)
-                    [CA1_clusters.probe(probe_no) chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'selected_channels',[best_channels{probe_no}.CA1_channel-10 best_channels{probe_no}.CA1_channel+10],'group','by region','cell_exporer','on');
-                    %                 CA1_place_fields.probe(nprobe) = calculate_place_fields_masa_NPX_against_shuffle(x_bins_width,position,CA1_clusters.probe(nprobe),[]);
-                end
-                % 'Whole' HPC from 100 micron above CA1 cell layer to 1000 micron
-                % below
-                [HPC_clusters.probe(probe_no) chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'selected_channels',[best_channels{probe_no}.CA1_channel-100 best_channels{probe_no}.CA1_channel+10],'group','by region','cell_exporer','on');
-                %             HPC_place_fields.probe(nprobe) = calculate_place_fields_masa_NPX_against_shuffle(x_bins_width,position,HPC_clusters.probe(nprobe),[]);
-                % all V1 spike data
-                if best_channels{probe_no}.first_in_brain_channel-100 > best_channels{probe_no}.CA1_channel+10
-                    [V1_clusters.probe(probe_no) chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'selected_channels',[best_channels{probe_no}.first_in_brain_channel-100 best_channels{probe_no}.first_in_brain_channel],'group','by region','cell_exporer','on');
-                else
-                    [V1_clusters.probe(probe_no) chan_config_KS sorted_config_KS] = load_KS_NPX1(options,column,'LFP_tvec',LFP_tvec,'selected_channels',[best_channels{probe_no}.CA1_channel+11 best_channels{probe_no}.first_in_brain_channel],'group','by region','cell_exporer','on');
-                end
-            end
-            save(sprintf('extracted_CA1_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')),'CA1_clusters');
-            save(sprintf('extracted_HPC_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')),'HPC_clusters');
-            save(sprintf('extracted_V1_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')),'V1_clusters');
-
-
-            clear replay reactivations ripples
-            %%%%%%%%%%%%%%%%%%
-            % Ripple and candidate events detection
-            %%%%%%%%%%%%%%%%%%
-            for nprobe = 1:length(session_info(n).probe)
-
-                probe_no = session_info(n).probe(nprobe).probe_id + 1;
-                options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-                %                 Behavioural state detection
-                speed_interp = interp1(Behaviour.tvec,Behaviour.speed,tvec','linear');
-                speedTreshold = 1;
-                if isfield(LFP(nprobe),'L4')
-                    cortex_LFP = LFP(nprobe).L4;
-                elseif isfield(LFP(nprobe),'L5')
-                    cortex_LFP = LFP(nprobe).L5;
-                elseif isfield(LFP(nprobe),'MEC')
-                end
-                if isfield(LFP(nprobe),'CA1')
-                    CA1_LFP = LFP(nprobe).CA1;
-                    cortex_channel = best_channels{nprobe}.L5_channel;
-                    CA1_channel = best_channels{nprobe}.CA1_channel;
-                    [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
-                        [tvec' cortex_LFP'],[tvec' CA1_LFP'],...
-                        [tvec' speed_interp],speedTreshold);
-                end
-                %             behavioural_state.freezing = freezing;
-                behavioural_state.quietWake = quietWake;
-                behavioural_state.SWS = SWS;
-                behavioural_state.REM = REM;
-                behavioural_state.movement = movement;
-
-
-                % Detect CA1 populational bursting events (Candidate events)
-                zscore_min = 0;
-                zscore_max = 3;
-
-                channel_to_use = find(sorted_config.Channel == best_channels{probe_no}.CA1_channel);
-                [replay.probe(probe_no),reactivations.probe(probe_no)] = detect_candidate_events_masa(tvec,raw_LFP{probe_no}(channel_to_use,:),...
-                    CA1_clusters.probe(probe_no).MUA_zscore,[CA1_clusters.probe(probe_no).spike_id CA1_clusters.probe(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
-
-                if length(reactivations.probe(probe_no).onset) < 50
-                    [replay.probe(probe_no),reactivations.probe(probe_no)] = detect_candidate_events_masa(tvec,raw_LFP{probe_no}(channel_to_use,:),...
-                        HPC_clusters.probe(probe_no).MUA_zscore,[HPC_clusters.probe(probe_no).spike_id HPC_clusters.probe(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
-                end
-
-                %
-                %             [reactivations.probe(nprobe).awake_offset,reactivations.probe(nprobe).awake_index] = RestrictInts(reactivations.probe(nprobe).offset,behavioural_state.quietWake);
-                %             reactivations.probe(nprobe).awake_onset = reactivations.probe(nprobe).onset(reactivations.probe(nprobe).awake_index);
-                %             reactivations.probe(nprobe).awake_peaktimes = reactivations.probe(nprobe).peaktimes(reactivations.awake_index);
-
-                % Detect CA1 ripple events
-                channel_to_use = find(sorted_config.Channel == best_channels{probe_no}.CA1_channel);
-                [ripples.probe(probe_no)] = FindRipples_masa(raw_LFP{probe_no}(channel_to_use,:)',tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',SR,...
-                    'noise',raw_LFP{probe_no}(2,:)','passband',[125 300],'thresholds',[3 5],'show','off')
-
-                close all
-
-            end
-
-            for nprobe = 1:length(session_info(n).probe)
-                probe_no = session_info(n).probe(nprobe).probe_id + 1;
-                options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-
-                for event = 1:length(ripples.probe(probe_no).onset)
-                    ripples.probe(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples.probe(probe_no).onset(event) & Behaviour.sglxTime <= ripples.probe(probe_no).offset(event))));
-                end
-
-                if contains(Stimulus_type,'RUN') % If reactivation events during lap running
-                    [reactivations.probe(probe_no).T1_offset,reactivations.probe(probe_no).T1_index] = RestrictInts(reactivations.probe(probe_no).offset',[lap_times(1).start' lap_times(1).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                    reactivations.probe(probe_no).T1_onset = reactivations.probe(probe_no).onset(reactivations.probe(probe_no).T1_index);
-                    reactivations.probe(probe_no).T1_midpoint = reactivations.probe(probe_no).midpoint(reactivations.probe(probe_no).T1_index);
-
-                    [reactivations.probe(probe_no).T2_offset,reactivations.probe(probe_no).T2_index] = RestrictInts(reactivations.probe(probe_no).offset',[lap_times(2).start' lap_times(2).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                    reactivations.probe(probe_no).T2_onset = reactivations.probe(probe_no).onset(reactivations.probe(probe_no).T2_index);
-                    reactivations.probe(probe_no).T2_midpoint = reactivations.probe(probe_no).midpoint(reactivations.probe(probe_no).T2_index);
-                end
-
-                if contains(Stimulus_type,'RUN') % If reactivation events during lap running
-                    [ripples.probe(probe_no).T1_offset,ripples.probe(probe_no).T1_index] = RestrictInts(ripples.probe(probe_no).offset',[lap_times(1).start' lap_times(1).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                    ripples.probe(probe_no).T1_onset = ripples.probe(probe_no).onset(ripples.probe(probe_no).T1_index);
-                    ripples.probe(probe_no).T1_peaktimes = ripples.probe(probe_no).peaktimes(ripples.probe(probe_no).T1_index);
-
-                    [ripples.probe(probe_no).T2_offset,ripples.probe(probe_no).T2_index] = RestrictInts(ripples.probe(probe_no).offset',[lap_times(2).start' lap_times(2).end']); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                    ripples.probe(probe_no).T2_onset = ripples.probe(probe_no).onset(ripples.probe(probe_no).T2_index);
-                    ripples.probe(probe_no).T2_peaktimes = ripples.probe(probe_no).peaktimes(ripples.probe(probe_no).T2_index);
-                end
-            end
-
-            save(sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
-
-            delete(sprintf('extracted_ripples_events%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            save(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'ripples')
+        if contains(stimulus_name{n},'Masa')
+            %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            %             merged_clusters = clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
         end
+
+        if length(merged_clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+
+
+        for nprobe = 1:length(session_info(n).probe)
+            options = session_info(n).probe(nprobe);
+            probe_no = session_info(n).probe(nprobe).probe_id + 1;
+            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+            %                 Behavioural state detection
+            speed_interp = interp1(Behaviour.tvec,Behaviour.speed,LFP(nprobe).tvec','linear');
+            speedTreshold = 1;
+
+            if isfield(LFP(nprobe),'L4')
+                cortex_LFP = LFP(nprobe).L4;
+            elseif isfield(LFP(nprobe),'L5')
+                cortex_LFP = LFP(nprobe).L5;
+            elseif isfield(LFP(nprobe),'MEC')
+
+            end
+
+            if isfield(LFP(nprobe),'CA1')
+                CA1_LFP = LFP(nprobe).CA1;
+            end
+
+
+            %%%%%%%%%%%%%%%%%%
+            % Theta phase
+            %%%%%%%%%%%%%%%%%%
+
+            %%%%%%%%%%%%%%%%%%
+            % Theta cycle detection
+            %%%%%%%%%%%%%%%%%%
+
+        end
+
     end
 end
+
 
 
 %% Just HPC decoding
