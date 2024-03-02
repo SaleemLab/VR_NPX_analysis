@@ -12,9 +12,12 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession =7
+for nsession = 1:4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    if isempty(stimulus_name)
+        continue
+    end
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
@@ -117,7 +120,7 @@ for nsession =7
         %         SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
         %         %         calculate_spatial_modulation_index(place_fields_V1_L);
 
-        for nprobe = 1:length(session_info(n).prob)
+        for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
 
             % plot populational map and PV correlation
@@ -242,7 +245,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession =1:length(experiment_info)
+for nsession = 1:4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -264,8 +267,20 @@ for nsession =1:length(experiment_info)
             sorting_option = 'old';
         end
 
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+
+        estimated_position_lap_CV_HPC= [];
+        probability_ratio_RUN_lap_HPC= [];
+        probability_ratio_RUN_lap_V1= [];
+        estimated_position_lap_CV_V1 = [];
 
         for nprobe = 1:length(clusters)
             options = session_info(n).probe(nprobe);
@@ -275,7 +290,7 @@ for nsession =1:length(experiment_info)
             if isempty(DIR)
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'))
             end
-            
+
             %
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
@@ -287,9 +302,9 @@ for nsession =1:length(experiment_info)
                 options.region = 'HPC Right';
             end
 
-            [selected_clusters,cluster_id] = select_clusters(clusters(nprobe),metric_param);
-            [probability_ratio_RUN_lap_HPC_L,estimated_position_lap_CV_HPC_L.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
-            
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+
 
             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))== 0
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
@@ -297,52 +312,59 @@ for nsession =1:length(experiment_info)
 
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
 
-
-            options.region = 'HPC Right';
-            [probability_ratio_RUN_lap_HPC_R,estimated_position_lap_CV_HPC_R.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_R,place_fields_HPC_R,Behaviour,Task_info,options);
-            save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
-
-            if ~isempty(HPC_clusters_combined)
-                options.region = 'HPC Combined';
-                [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation(HPC_clusters_combined,place_fields_HPC_combined,Behaviour,Task_info,options);
-                save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
-
-            else
-                probability_ratio_RUN_lap_HPC_combined = [];
-                estimated_position_lap_CV_HPC_combined = [];
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            if clusters(nprobe).probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'V1_L');
+                options.region = 'V1 Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'V1_R');
+                options.region = 'V1 Right';
             end
 
-            save('estimated_position_lap_CV_HPC.mat','estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC_L','estimated_position_lap_CV_HPC_R')
-            save('probability_ratio_RUN_lap_HPC.mat','probability_ratio_RUN_lap_HPC_combined',"probability_ratio_RUN_lap_HPC_L","probability_ratio_RUN_lap_HPC_R")
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [probability_ratio_RUN_lap_V1{nprobe},estimated_position_lap_CV_V1(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
 
-            if ~isempty(V1_clusters_combined)
-                options.region = 'V1 combined';
-                V1_clusters_combined = combine_clusters_from_multiple_probes(V1_clusters_L,V1_clusters_R);
-                [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_L,place_fields_V1_L,Behaviour,Task_info,options);
-                save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
-            else
-                probability_ratio_RUN_lap_V1_combined = [];
-                estimated_position_lap_CV_V1_combined = [];
-            end
-
-            options.region = 'V1 Right';
-            [probability_ratio_RUN_lap_V1_R,estimated_position_lap_CV_V1_R.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_R,place_fields_V1_R,Behaviour,Task_info,options);
-            save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
-
-            options.region = 'V1 Left';
-            [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(V1_clusters_combined,place_fields_V1_combined,Behaviour,Task_info,options);
-            save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding')),[])
-
-            save('estimated_position_lap_CV_V1.mat','estimated_position_lap_CV_V1_L',"estimated_position_lap_CV_V1_R","estimated_position_lap_CV_V1_combined")
-            save('probability_ratio_RUN_lap.mat','probability_ratio_RUN_lap_V1_L','probability_ratio_RUN_lap_V1_R',"probability_ratio_RUN_lap_V1_combined")
-
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
         end
 
+         if length(session_info(n).probe) > 1
+             options.region = 'HPC Combined';
+             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+             metric_param.unstable_ids = @(x) x==0;
+             metric_param.region = @(x) contains(x,'HPC');
 
+             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+             [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
 
+             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
 
+             options.region = 'V1 Combined';
+             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+             metric_param.unstable_ids = @(x) x==0;
+             metric_param.region = @(x) contains(x,'V1');
+
+             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+             [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+
+             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+
+         else
+             probability_ratio_RUN_lap_V1_combined = [];
+             estimated_position_lap_CV_V1_combined = [];
+
+             probability_ratio_RUN_lap_HPC_combined = [];
+             estimated_position_lap_CV_HPC_combined = [];
+         end
+
+         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC')
+         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+
+         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined")
+         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
 
     end
 end
+
 
 

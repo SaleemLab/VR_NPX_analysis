@@ -26,6 +26,8 @@ index_track = [];
 sorted_cells= [];
 normalised_raw_matrix = [];
 % 
+% spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
+%     find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
 spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & place_fields_all(1).odd_even_stability>0.99)...
     find(place_fields_all(2).peak_percentile>0.99 & place_fields_all(2).odd_even_stability>0.99)]);
 % spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...
@@ -70,23 +72,23 @@ for type = 1:3
         %     ordered_matrix = normalised_raw_matrix(new_order,:);
     end
 end
-
-ncount= 1
-figure
-for ncell = 1:size( average_maps{1},2)
-
-    if ncount == 26
-        figure
-        ncount = 1
-    end
-    subplot(5,5,ncount)
-
-    plot(average_maps{1}(:,ncell))
-    hold on
-    plot(average_maps{2}(:,ncell))
-
-    ncount = 1 + ncount;
-end
+% 
+% ncount= 1
+% figure
+% for ncell = 1:size( average_maps{1},2)
+% 
+%     if ncount == 26
+%         figure
+%         ncount = 1
+%     end
+%     subplot(5,5,ncount)
+% 
+%     plot(average_maps{1}(:,ncell))
+%     hold on
+%     plot(average_maps{2}(:,ncell))
+% 
+%     ncount = 1 + ncount;
+% end
 
 laps_pairs = [1 2;1 2;1 2;1 2];
 track_pairs = [1 1;1 2;2 1;2 2];
@@ -350,7 +352,7 @@ for nplot = 1:16
     subplot(4,4,nplot)
     hold on
     x = 1:length(place_fields_all(1).x_bin_centres);
-    CI_shuffle = prctile(shuffled_globalRemap_PPvector.population_vector(:,:,nplot),[1 99]);
+    CI_shuffle = prctile(squeeze(shuffled_globalRemap_PPvector.population_vector(:,nplot,:))',[1 99]);
 %     CI_shuffle = prctile(reshape(shuffled_globalRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
@@ -403,7 +405,7 @@ for nplot = 1:16
     hold on
     x = 1:length(place_fields_all(1).x_bin_centres);
 %     CI_shuffle = prctile(reshape(shuffled_rateRemap_PPvector.population_vector(:,nplot),length(place_fields_all(1).x_bin_centres),1000)',[1 99]);
-    CI_shuffle = prctile(shuffled_rateRemap_PPvector.population_vector(:,:,nplot),[1 99]);
+    CI_shuffle = prctile(squeeze(shuffled_rateRemap_PPvector.population_vector(:,nplot,:))',[1 99]);
     plot(x, CI_shuffle(2,:), 'k--', 'LineWidth', 1);
     plot(x, CI_shuffle(1,:), 'k--', 'LineWidth', 1);
     x2 = [x, fliplr(x)];

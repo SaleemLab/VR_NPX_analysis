@@ -98,6 +98,7 @@ spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.99 & pla
 % spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...
 %     find(place_fields_all(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id, clusters.cluster_id)));
+good_cell_index = find(ismember(place_fields_BAYESIAN(1).cluster_id,place_fields_all(1).cluster_id(good_cell_index)));
 
 % good_cell_index = unique([find(place_fields_all(1).peak_percentile>=0 )...
 %     find(place_fields_all(2).peak_percentile>=0)]);
@@ -196,7 +197,7 @@ for track_id = 1:2
 
     track_laps = ib;
 
-    for lap_id =3:2:38
+    for lap_id =round(linspace(1,length(track_laps),16))
 
 
         %             for lap_id = lap_times(track_id).completeLaps_id(6:2:40)
