@@ -298,8 +298,6 @@ for nsession = [1 2 3 4 9 10]
 
 
         probability_ratio_RUN_lap_HPC_combined= [];
-        probability_ratio_RUN_lap_V1= [];
-        probability_ratio_RUN_lap_HPC= [];
         probability_ratio_RUN_lap_V1_combined= [];
 
         estimated_position_lap_CV_HPC= [];
@@ -310,6 +308,9 @@ for nsession = [1 2 3 4 9 10]
         estimated_position_lap_CV_shuffled_V1_combined = [];
 
         for nprobe = 1:length(clusters)
+            probability_ratio_RUN_lap_V1{nprobe}= [];
+            probability_ratio_RUN_lap_HPC{nprobe}= [];
+
             options = session_info(n).probe(nprobe);
 
             % Bayesian decoding 10 fold cross validated
@@ -479,7 +480,10 @@ for nsession = [9 10 12 14]
 
                 decoded_position_HPC_combined{nsession}{track_id} = [];
                 decoded_error_HPC_combined{nsession}{track_id}{temp_track}  = [];
-                
+
+                decoded_position_HPC_combined_shuffled{nsession}{track_id} = [];
+                decoded_error_HPC_combined_shuffled{nsession}{track_id}{temp_track}  = [];
+
                 decoded_position_V1_combined{nsession}{track_id} = [];
                 decoded_error_V1_combined{nsession}{track_id}{temp_track}  = [];
 
@@ -489,6 +493,8 @@ for nsession = [9 10 12 14]
                     decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
                     decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [];
                     decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
+                    decoded_position_HPC_combined_shuffled{nsession}{track_id} = [];
+                    decoded_error_HPC_combined_shuffled{nsession}{track_id}{temp_track}  = [];
 
                 end
             end

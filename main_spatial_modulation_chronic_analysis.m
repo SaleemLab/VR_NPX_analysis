@@ -273,7 +273,7 @@ for nsession = [12 14]
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters = merged_clusters;
             sorting_option = 'spikeinterface';
@@ -292,8 +292,6 @@ for nsession = [12 14]
         end
 
         probability_ratio_RUN_lap_HPC_combined= [];
-        probability_ratio_RUN_lap_V1= [];
-        probability_ratio_RUN_lap_HPC= [];
         probability_ratio_RUN_lap_V1_combined= [];
 
         estimated_position_lap_CV_HPC= [];
@@ -304,6 +302,9 @@ for nsession = [12 14]
         estimated_position_lap_CV_shuffled_V1_combined = [];
 
         for nprobe = 1:length(clusters)
+            probability_ratio_RUN_lap_V1{nprobe}= [];
+            probability_ratio_RUN_lap_HPC{nprobe}= [];
+            
             options = session_info(n).probe(nprobe);
 
             % Bayesian decoding 10 fold cross validated
