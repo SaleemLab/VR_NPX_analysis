@@ -13,10 +13,6 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% spatial cell
 
-clear all
-SUBJECTS = {'M23087'};
-option = 'bilateral';
-
 SUBJECTS = {'M23034'};
 option = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
@@ -72,9 +68,11 @@ for nsession =1:length(experiment_info)
 
             elseif options.probe_MEC  == options.probe_id
                 %             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-                MEC_channels = determine_region_channels(best_channels{nprobe},options,'region','MEC_entry','group','by probe');
+                MEC_channels = determine_region_channels(best_channels{nprobe},options,'region','HVA','group','by probe');
+                HVA_channels = determine_region_channels(best_channels{nprobe},options,'region','HVA','group','by probe');
                 %             clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1';
                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,MEC_channels))) = 'MEC';
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HVA_channels))) = 'HVA';
             end
         end
 
@@ -112,88 +110,6 @@ for nsession =1:length(experiment_info)
         
         place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
-
-        % Plotting
-        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-        metric_param.unstable_ids = @(x) x==0;
-        for nprobe = 1:length(merged_clusters)
-
-            [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-
-            plot_raster_both_track(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
-                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
-
-            plot_raster_both_track_extended(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
-                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
-
-            plot_raster_end_of_track(merged_clusters(nprobe).spike_times,merged_clusters(nprobe).merged_spike_id,Task_info,Behaviour,[5 1],[0 3],2,...
-                'unit_depth',merged_clusters(nprobe).peak_depth(ia),'unit_region',merged_clusters(nprobe).region(ia),'unit_id',C);
-
-% plot_raster_both_track_extended(HPC_clusters.spike_times,HPC_clusters.merged_spike_id,Task_info,Behaviour,[3 1],[0 140],2,...
-%                 'unit_depth',HPC_clusters.peak_depth(ia),'unit_region',HPC_clusters.region(ia),'unit_id',C,'place_fields',place_fields);
-        end
-
-
-        % plot spatial raster plot
-        if ~isempty(V1_clusters_L)
-            %             plot_raster_both_track(V1_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(V1_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        if ~isempty(V1_clusters_R)
-            %             plot_raster_both_track(V1_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(V1_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        % HPC
-        if ~isempty(HPC_clusters_L)
-            %             plot_raster_both_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(HPC_clusters_L,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        if ~isempty(HPC_clusters_R)
-            %             plot_raster_both_track(HPC_clusters_R,Task_info,Behaviour,[5 1],[0 140],5);
-            %             plot_spatial_CCG(HPC_clusters_R,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-        %         plot_raster_single_track(HPC_clusters_L,Task_info,Behaviour,[5 1],[0 140],5);
-
-        if ~isempty(HPC_clusters_combined)
-
-        end
-
-        if ~isempty(V1_clusters_combined)
-            %             plot_raster_both_track_extended(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            plot_raster_both_track(HPC_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2);
-            %             plot_spatial_CCG(V1_clusters_combined,Task_info,Behaviour,[3 1],[0 140],2)
-        end
-
-
-
-
-        % Spatial modulation
-        x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
-        SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
-        SMI = calculate_spatial_modulation_index(V1_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_R,'subplot_xy',[3 1],'plot_option',1)
-
-
-        metric_param.region = @(x) contains(x,'HPC_L');
-        [HPC_clusters_L,cluster_id] = select_clusters(clusters(1),metric_param);
-
-        SMI = calculate_spatial_modulation_index(HPC_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_L,'subplot_xy',[3 1],'plot_option',1)
-        SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
-        %         calculate_spatial_modulation_index(place_fields_V1_L);
-
-        % plot population vector correlation
-        options.region = 'HPC';
-        [normalised_raw_matrix,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-            plot_place_cell_map_correlation(HPC_clusters_combined,place_fields_HPC_combined,...
-            Task_info,Behaviour,options);
-
-        save_all_figures((fullfile(options.ANALYSIS_DATAPATH,'PV correlation')),[])
-        options = rmfield(options,'probe_combined');
-        close all
-
 
         % Bayesian decoding 10 fold cross validated
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'));
@@ -418,36 +334,36 @@ for nsession =1:length(experiment_info)
         % Detect CA1 ripple events
         [ripples] = FindRipples_masa(CA1_LFP',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on')
-
-        subplot(2,4,1)
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
-        plot(rasterX,rasterY); hold on
-        subplot(2,4,5)
-        plot(bins,zscore(psth));
-        title('HPC')
-
-        subplot(2,4,2)
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_ripple_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
-        plot(rasterX,rasterY); hold on
-        subplot(2,4,6)
-        plot(bins,zscore(psth));
-        title('MEC ripple')
-
-        subplot(2,4,3)
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_non_ripple_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
-        plot(rasterX,rasterY); hold on
-        subplot(2,4,7)
-        plot(bins,zscore(psth));
-        title('MEC non ripple')
-
-        subplot(2,4,4)
-        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(V1_clusters.spike_times, reactivations.onset, [-0.2 0.5], 0.001);
-        plot(rasterX,rasterY); hold on
-        subplot(2,4,8)
-        plot(bins,zscore(psth));
-        title('V1')
-
-        close all
+% 
+%         subplot(2,4,1)
+%         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(CA1_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
+%         plot(rasterX,rasterY); hold on
+%         subplot(2,4,5)
+%         plot(bins,zscore(psth));
+%         title('HPC')
+% 
+%         subplot(2,4,2)
+%         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_ripple_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
+%         plot(rasterX,rasterY); hold on
+%         subplot(2,4,6)
+%         plot(bins,zscore(psth));
+%         title('MEC ripple')
+% 
+%         subplot(2,4,3)
+%         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(MEC_non_ripple_clusters.spike_times, ripples.onset, [-0.2 0.5], 0.001);
+%         plot(rasterX,rasterY); hold on
+%         subplot(2,4,7)
+%         plot(bins,zscore(psth));
+%         title('MEC non ripple')
+% 
+%         subplot(2,4,4)
+%         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(V1_clusters.spike_times, reactivations.onset, [-0.2 0.5], 0.001);
+%         plot(rasterX,rasterY); hold on
+%         subplot(2,4,8)
+%         plot(bins,zscore(psth));
+%         title('V1')
+% 
+%         close all
 
        
 
