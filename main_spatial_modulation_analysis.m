@@ -12,7 +12,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession = 1:4
+for nsession = [1 2 3 4 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -79,11 +79,25 @@ for nsession = 1:4
         metric_param.unstable_ids = @(x) x==0;
 
         place_field = struct();
+        clear merged_clusters
 
         for nprobe = 1:length(clusters)
             options = session_info(n).probe(nprobe);
 
-            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
+            if  exist(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
+            elseif exist(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))==2
+                load(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))
+                for i = 1:length(match_ids)
+                    unit_difference = size(match_ids{i},1)-length(clusters.cluster_id);
+                    if sum(ismember(clusters.cluster_id,match_ids{i}(:,1))) == length(clusters.cluster_id)
+                        match_ids = match_ids{i}; % find the session with the same unit id
+                        
+                        break
+                    end
+                end
+                match_ids = match_ids(:,1:3);
+            end
 
             %             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
             merged_cluster_temp  = merge_cluster(clusters(nprobe),match_ids);
@@ -104,8 +118,12 @@ for nsession = 1:4
             clusters_combined = merged_clusters;
         end
         
-        place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
-        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+        else
+            place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+        end
         %
         %         % Spatial modulation
         %         x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
@@ -219,9 +237,9 @@ for nsession = 1:4
             elseif clusters(nprobe).probe_hemisphere == 2
                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             end
-           
+            options = rmfield(options,'probe_combined');
         end
-        options = rmfield(options,'probe_combined');
+
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))== 0
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))
         end
@@ -244,8 +262,9 @@ SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
+% [1 2 3 4 9 10 12 14]
 
-for nsession = 1:4
+for nsession = [9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));

@@ -4,7 +4,7 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
 
-%% Spatial raster plot and spatial tuning curves & spatial modulation analysis
+%% Spatial tuning for chronic recording
 
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -12,7 +12,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession = [1 2 3 4 9 10 12 14]
+for nsession = [12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -92,11 +92,9 @@ for nsession = [1 2 3 4 9 10 12 14]
                     unit_difference = size(match_ids{i},1)-length(clusters.cluster_id);
                     if sum(ismember(clusters.cluster_id,match_ids{i}(:,1))) == length(clusters.cluster_id)
                         match_ids = match_ids{i}; % find the session with the same unit id
-                        
                         break
                     end
                 end
-                match_ids = match_ids(:,1:3);
             end
 
             %             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
@@ -106,9 +104,9 @@ for nsession = [1 2 3 4 9 10 12 14]
         
         % save merged cluster variables (useful more reactivation activity detection)
         if contains(stimulus_name{n},'Masa')
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'merged_clusters');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'merged_clusters');
         else
-            save(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
+            save(fullfile(options.ANALYSIS_DATAPATH,'across_session_merged_clusters.mat'))
         end
         %
 
@@ -118,11 +116,11 @@ for nsession = [1 2 3 4 9 10 12 14]
             clusters_combined = merged_clusters;
         end
         
-        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_across_session_place_fields.mat"))==2
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_across_session_place_fields.mat'),'place_fields')
         else
             place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_across_session_place_fields.mat'),'place_fields')
         end
         %
         %         % Spatial modulation
