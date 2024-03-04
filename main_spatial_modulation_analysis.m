@@ -2,8 +2,7 @@
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-
-
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 %% Spatial raster plot and spatial tuning curves & spatial modulation analysis
 
 clear all

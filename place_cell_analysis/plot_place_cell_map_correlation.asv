@@ -14,8 +14,6 @@ if isfield(options,'probe_combined') && options.probe_combined == 1
     nprobe = 'combined';
 elseif isfield(options,'probe_MEC') || isfield(options,'probe_V1')
     nprobe = options.probe_id+1;
-    probe_hemisphere = 1;
-    probe_hemisphere_text = options.text;
 else
     nprobe = options.probe_id+1;
     probe_hemisphere = options.probe_hemisphere;
