@@ -103,7 +103,7 @@ speed_range = 5:5:40;
 
 if isempty(good_cell_index)
 
-disp('No spatial cells')
+    disp('No spatial cells')
 else
     % good_cell_index = unique([find(place_fields_all(1).peak_percentile>=0 )...
     %     find(place_fields_all(2).peak_percentile>=0)]);
@@ -186,12 +186,19 @@ else
             end
 
             for nlap = 1:length(cv_groups{track_id}{groupIndex})
+                if length(cv_groups{track_id}{groupIndex})==1
+                    estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1) = temp_estimated_position(1);
+                    estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2) = temp_estimated_position(2);
 
-                estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1) = temp_estimated_position(1).laps(nlap);
-                estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2) = temp_estimated_position(2).laps(nlap);
+                    probability_ratio_RUN_lap{1}{track_id}{1}(cv_groups{track_id}{groupIndex}(nlap)) = temp_estimated_position(1).probability_ratio;
+                    probability_ratio_RUN_lap{1}{track_id}{2}(cv_groups{track_id}{groupIndex}(nlap)) =  temp_estimated_position(2).probability_ratio;
+                else
+                    estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1) = temp_estimated_position(1).laps(nlap);
+                    estimated_position_lap_CV(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2) = temp_estimated_position(2).laps(nlap);
 
-                probability_ratio_RUN_lap{1}{track_id}{1}(cv_groups{track_id}{groupIndex}(nlap)) = temp_estimated_position(1).laps(nlap).probability_ratio;
-                probability_ratio_RUN_lap{1}{track_id}{2}(cv_groups{track_id}{groupIndex}(nlap)) =  temp_estimated_position(2).laps(nlap).probability_ratio;
+                    probability_ratio_RUN_lap{1}{track_id}{1}(cv_groups{track_id}{groupIndex}(nlap)) = temp_estimated_position(1).laps(nlap).probability_ratio;
+                    probability_ratio_RUN_lap{1}{track_id}{2}(cv_groups{track_id}{groupIndex}(nlap)) =  temp_estimated_position(2).laps(nlap).probability_ratio;
+                end
             end
 
 
@@ -227,10 +234,17 @@ else
 
 
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
-                    estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run = temp_estimated_position(1).laps(nlap).run;
-                    estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run = temp_estimated_position(2).laps(nlap).run;
-                    estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run_error = temp_estimated_position(1).laps(nlap).run_error;
-                    estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run_error = temp_estimated_position(2).laps(nlap).run_error;
+                    if length(cv_groups{track_id}{groupIndex})==1
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run = temp_estimated_position(1).run;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run = temp_estimated_position(2).run;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run_error = temp_estimated_position(1).run_error;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run_error = temp_estimated_position(2).run_error;
+                    else
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run = temp_estimated_position(1).laps(nlap).run;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run = temp_estimated_position(2).laps(nlap).run;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(1).run_error = temp_estimated_position(1).laps(nlap).run_error;
+                        estimated_position_lap_CV_shuffled{nshuffle}(track_id).lap(cv_groups{track_id}{groupIndex}(nlap)).track(2).run_error = temp_estimated_position(2).laps(nlap).run_error;
+                    end
                 end
             end
 
