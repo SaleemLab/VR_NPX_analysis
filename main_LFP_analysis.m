@@ -108,7 +108,7 @@ Stimulus_type = 'RUN';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
-for nsession =[9 10 12 14]
+for nsession =[14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -195,10 +195,17 @@ for nsession =[9 10 12 14]
             %             metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
 
             CA1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
-            [replay(nprobe),reactivations(nprobe)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
-                [CA1_clusters(nprobe).spike_id CA1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
 
-            if length(reactivations(nprobe).onset) < 50
+            if ~isempty(CA1_clusters(nprobe).cluster_id)
+                [replay(nprobe),reactivations(nprobe)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
+                    [CA1_clusters(nprobe).spike_id CA1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
+                event_no = length(reactivations(nprobe).onset);
+            else
+                event_no = 0;
+            end
+
+
+            if event_no < 50
                 HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
                 %             merged_clusters.region
                 sorting_option = 'spikeinterface';
@@ -208,6 +215,7 @@ for nsession =[9 10 12 14]
                 CA1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
                 [replay(nprobe),reactivations(nprobe)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
                     [CA1_clusters(nprobe).spike_id CA1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
+                
             end
 
             % Detect V1 populational bursting events (Candidate events)
@@ -274,20 +282,20 @@ for nsession =[9 10 12 14]
         save(sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks')),'replay','reactivations')
         save(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'ripples')
         save(sprintf('behavioural_state%s.mat',erase(stimulus_name{n},'Masa2tracks')),'behavioural_state')
-
+        close all
     end
 end
 
 
 
 
-%% Theta cyclea and phase extraction
+%% Theta modulation, Theta phase percession and Theta cycle and phase extraction
 
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'RUN';
 
 
 for nsession =1:length(experiment_info)
@@ -346,7 +354,7 @@ for nsession =1:length(experiment_info)
                 CA1_LFP = LFP(nprobe).CA1;
             end
 
-
+            
             %%%%%%%%%%%%%%%%%%
             % Theta phase
             %%%%%%%%%%%%%%%%%%

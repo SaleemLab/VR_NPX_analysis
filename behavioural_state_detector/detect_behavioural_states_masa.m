@@ -161,6 +161,9 @@ k = kmeans(smoothedPower,2); % two clear groups, the distribution should be obvi
 
 if mean(smoothedPower(k==1))>mean(smoothedPower(k==2)), k=3-k; end % Make sure k=2 corresponds to the high spindlepower group
 highSpindles = tSpindles(FindInterval(k==2));
+if size(highSpindles,1)==2 & size(highSpindles,2)==1
+    highSpindles = highSpindles';
+end
 SWS = SubtractIntervals(highSpindles, movement); % Take only the overlap of high spindle power and no movement epoch
 SWS = ConsolidateIntervals(SWS,'epsilon',sleepMoveTolerance); %animals can move briefly during sleep
 SWS(diff(SWS,[],2)<minSleepLenght,:) = []; % sleep needs to be at least minSleepLenght long
