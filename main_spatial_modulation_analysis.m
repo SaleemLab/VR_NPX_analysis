@@ -264,6 +264,131 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
+for nsession = [1 2 3 4 9 10]
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = merged_clusters;
+            sorting_option = 'spikeinterface';
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = clusters_ks3;
+            sorting_option = 'spikeinterface';
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            sorting_option = 'old';
+        end
+
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+
+
+        probability_ratio_RUN_lap_HPC_combined= [];
+        probability_ratio_RUN_lap_V1= [];
+        probability_ratio_RUN_lap_HPC= [];
+        probability_ratio_RUN_lap_V1_combined= [];
+
+        estimated_position_lap_CV_HPC= [];
+        estimated_position_lap_CV_V1 = [];
+        estimated_position_lap_CV_shuffled_HPC = [];
+        estimated_position_lap_CV_shuffled_V1 = [];
+        estimated_position_lap_CV_shuffled_HPC_combined = [];
+        estimated_position_lap_CV_shuffled_V1_combined = [];
+
+        for nprobe = 1:length(clusters)
+            options = session_info(n).probe(nprobe);
+
+            % Bayesian decoding 10 fold cross validated
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'));
+            if isempty(DIR)
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'))
+            end
+
+            %
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            if clusters(nprobe).probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'HPC_L');
+                options.region = 'HPC Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'HPC_R');
+                options.region = 'HPC Right';
+            end
+
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+%             [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+            [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track,estimated_position_lap_CV_shuffled_HPC(nprobe)] = bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields,Behaviour,Task_info,options);
+
+
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            if clusters(nprobe).probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'V1_L');
+                options.region = 'V1 Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'V1_R');
+                options.region = 'V1 Right';
+            end
+
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [probability_ratio_RUN_lap_V1{nprobe},estimated_position_lap_CV_V1(nprobe).track,estimated_position_lap_CV_shuffled_V1(nprobe)] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+            
+        end
+
+         if length(session_info(n).probe) > 1
+             options.region = 'HPC Combined';
+             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+             metric_param.unstable_ids = @(x) x==0;
+             metric_param.region = @(x) contains(x,'HPC');
+
+             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+             [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track,estimated_position_lap_CV_shuffled_HPC_combined] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+
+             options.region = 'V1 Combined';
+             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+             metric_param.unstable_ids = @(x) x==0;
+             metric_param.region = @(x) contains(x,'V1');
+
+             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+             [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track,estimated_position_lap_CV_shuffled_V1_combined] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+            
+ 
+         end
+
+         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
+         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+
+         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined",'estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
+         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+
+    end
+end
+
+
+
+%% Decoding error and log odds for V1 and HPC
+lap_times = [];
+clear all
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'RUN';
+% [1 2 3 4 9 10 12 14]
+
 for nsession = [9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -296,43 +421,30 @@ for nsession = [9 10 12 14]
             clusters_combined = merged_clusters;
         end
 
-        estimated_position_lap_CV_HPC= [];
-        probability_ratio_RUN_lap_HPC= [];
-        probability_ratio_RUN_lap_V1= [];
-        estimated_position_lap_CV_V1 = [];
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC')
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
 
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined")
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+        
+
+        % plotting decoded run trajectory
         for nprobe = 1:length(clusters)
             options = session_info(n).probe(nprobe);
-
-            % Bayesian decoding 10 fold cross validated
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'));
-            if isempty(DIR)
-                mkdir(fullfile(options.ANALYSIS_DATAPATH,'RUN Bayesian decoding'))
-            end
-
-            %
-            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            metric_param.unstable_ids = @(x) x==0;
-            if clusters(nprobe).probe_hemisphere == 1
-                metric_param.region = @(x) contains(x,'HPC_L');
-                options.region = 'HPC Left';
-            elseif clusters(nprobe).probe_hemisphere == 2
-                metric_param.region = @(x) contains(x,'HPC_R');
-                options.region = 'HPC Right';
-            end
-
-            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-            [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
-
 
             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))== 0
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
             end
 
+            if clusters(nprobe).probe_hemisphere == 1
+                options.region = 'HPC Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                options.region = 'HPC Right';
+            end
+
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_HPC(nprobe).track,Task_info,options)
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
 
-            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            metric_param.unstable_ids = @(x) x==0;
             if clusters(nprobe).probe_hemisphere == 1
                 metric_param.region = @(x) contains(x,'V1_L');
                 options.region = 'V1 Left';
@@ -341,49 +453,140 @@ for nsession = [9 10 12 14]
                 options.region = 'V1 Right';
             end
 
-            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-            [probability_ratio_RUN_lap_V1{nprobe},estimated_position_lap_CV_V1(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
-
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_V1(nprobe).track,Task_info,options)
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
         end
 
-         if length(session_info(n).probe) > 1
-             options.region = 'HPC Combined';
-             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-             metric_param.unstable_ids = @(x) x==0;
-             metric_param.region = @(x) contains(x,'HPC');
+        if length(session_info(n).probe) > 1
+            options.region = 'HPC Combined';
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_HPC_combined.track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
 
-             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-             [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
+            options.region = 'V1 Combined';
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_V1_combined.track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+        end
 
-             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
 
-             options.region = 'V1 Combined';
-             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-             metric_param.unstable_ids = @(x) x==0;
-             metric_param.region = @(x) contains(x,'V1');
+        % initialise all variables
+        for track_id = 1:length(place_fields)
+            for temp_track = 1:length(place_fields)
+                actual_position{nsession}{track_id} = [];
+                actual_speed{nsession}{track_id} = [];
+                VR_speed{nsession}{track_id} = [];
+                decoded_position_lap_id{nsession}{track_id}  = [];
 
-             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-             [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
 
-             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+                decoded_position_HPC_combined{nsession}{track_id} = [];
+                decoded_error_HPC_combined{nsession}{track_id}{temp_track}  = [];
+                
+                decoded_position_V1_combined{nsession}{track_id} = [];
+                decoded_error_V1_combined{nsession}{track_id}{temp_track}  = [];
 
-         else
-             probability_ratio_RUN_lap_V1_combined = [];
-             estimated_position_lap_CV_V1_combined = [];
+                for nprobe = 1:length(session_info(n).probe)
+                    probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
+                    decoded_position_V1{probe_hemisphere}{nsession}{track_id} = [];
+                    decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
+                    decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [];
+                    decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
 
-             probability_ratio_RUN_lap_HPC_combined = [];
-             estimated_position_lap_CV_HPC_combined = [];
-         end
+                end
+            end
+        end
 
-         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC')
-         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+        % Position bins from both tracks
+        position_bin_across_tracks = estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position_bin_centres;
+        position_bin_across_tracks = [position_bin_across_tracks position_bin_across_tracks+1000];
 
-         save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined")
-         save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+        for track_id = 1:length(place_fields)
+            for temp_track = 1:length(place_fields)
+                for lap_id = 1:length(estimated_position_lap_CV_V1(nprobe).track(track_id).lap)
+
+                    if temp_track == 1 %Do not need to loop twice
+                        decoded_position_lap_id{nsession}{track_id} = [decoded_position_lap_id{nsession}{track_id} ...
+                            lap_id*ones(1,length(estimated_position_lap_CV_V1(1).track(track_id).lap(lap_id).track(track_id).run_actual_position))];
+                        actual_position{nsession}{track_id} = [actual_position{nsession}{track_id} ...
+                            estimated_position_lap_CV_V1(1).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                        actual_speed{nsession}{track_id} = [actual_speed{nsession}{track_id} ...
+                            estimated_position_lap_CV_V1(1).track(track_id).lap(lap_id).track(track_id).actual_run_speed];
+                        VR_speed{nsession}{track_id} = [VR_speed{nsession}{track_id} ...
+                            estimated_position_lap_CV_V1(1).track(track_id).lap(lap_id).track(track_id).run_speed];
+                    end
+
+                    if length(session_info(n).probe)==1
+                        decoded_error_HPC{nsession}{track_id}{temp_track} = [decoded_error_HPC{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_HPC.track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_HPC.track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                        if temp_track == 1 %Do not need to loop twice
+                            [~,index] = max([estimated_position_lap_CV_HPC.track(track_id).lap(lap_id).track(1).run; ...
+                                estimated_position_lap_CV_HPC.track(track_id).lap(lap_id).track(2).run]);
+                            decoded_position_HPC{nsession}{track_id} = [decoded_position_HPC{nsession}{track_id} index];
+                        end
+                    end
+
+                    for nprobe = 1:length(session_info(n).probe)
+                        probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
+
+                        decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+
+                        decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+
+                        if temp_track == 1 %Do not need to loop twice
+                            [~,index] = max([estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(1).run;...
+                                estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                            decoded_position_V1{probe_hemisphere}{nsession}{track_id} = [decoded_position_V1{probe_hemisphere}{nsession}{track_id} index];
+
+                            [~,index] = max([estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(1).run; ...
+                                estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                            decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC{probe_hemisphere}{nsession}{track_id} index];
+                        end
+                    end
+
+                    if length(session_info(n).probe)>1
+                        decoded_error_HPC_combined{nsession}{track_id}{temp_track} = [decoded_error_HPC_combined{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(track_id).run_actual_position];
+
+                        decoded_error_V1_combined{nsession}{track_id}{temp_track} = [decoded_error_V1_combined{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(track_id).run_actual_position];
+
+                        if temp_track == 1 %Do not need to loop twice
+                            [~,index] = max([estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(1).run;...
+                                estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(2).run]);
+                            decoded_position_HPC_combined{nsession}{track_id} = [decoded_position_HPC_combined{nsession}{track_id} index];
+
+                            [~,index] = max([estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(1).run;...
+                                estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(2).run]);
+                            decoded_position_V1_combined{nsession}{track_id} = [decoded_position_V1_combined{nsession}{track_id} index];
+                        end
+
+                    end
+                end
+            end
+        end
+
+
+        % Plotting decoding performance
+
+       
+        save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','spatial cells'),[])
 
     end
 end
 
 
 
+
+    decoded_position_V1{probe_hemisphere}{nsession}{track_id};
+
+    scatter(decoded_position_HPC{nsession}{2}(VR_speed{nsession}{2}>5)...
+        ,decoded_position_V1{1}{nsession}{2}(VR_speed{nsession}{2}>5),'blue','filled','MarkerFaceAlpha',0.05)
+
+    [N,Xedges,Yedges,binX,binY] = histcounts2(decoded_position_HPC{nsession}{2}(VR_speed{nsession}{2}>5),decoded_position_V1{1}{nsession}{2}(VR_speed{nsession}{2}>5),14);
+    imagesc(flip(N)/max(max(N)))
+   

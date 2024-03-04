@@ -245,10 +245,11 @@ if isfield(bayesian_spike_count,'run_time_edges')
         % Only calculate probability ratio when animal is moving through the track;
         speed_thresholded = estimated_position(track_id).run_speed > 5;
         if track_id == 1
-            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(1).run(speed_thresholded)))/sum(sum(estimated_position(2).run(speed_thresholded)));
+            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(1).run(:,speed_thresholded)))/sum(sum(estimated_position(2).run(:,speed_thresholded)));
         elseif track_id == 2
-            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(2).run(speed_thresholded)))/sum(sum(estimated_position(1).run(speed_thresholded)));
+            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(2).run(:,speed_thresholded)))/sum(sum(estimated_position(1).run(:,speed_thresholded)));
         end
+
     end
 end
 
@@ -274,20 +275,29 @@ if isfield(bayesian_spike_count,'laps')
         % Only calculate probability ratio when animal is moving through the track;
         speed_thresholded = estimated_position(track_id).run_speed > 5;
         if track_id == 1
-            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(1).run(speed_thresholded)))/sum(sum(estimated_position(2).run(speed_thresholded)));
+            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(1).run(:,speed_thresholded)))/sum(sum(estimated_position(2).run(:,speed_thresholded)));
         elseif track_id == 2
-            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(2).run(speed_thresholded)))/sum(sum(estimated_position(1).run(speed_thresholded)));
+            estimated_position(track_id).probability_ratio = sum(sum(estimated_position(2).run(:,speed_thresholded)))/sum(sum(estimated_position(1).run(:,speed_thresholded)));
         end
 
         for nlap = 1 : length(bayesian_spike_count.laps)
+            
             thisLap_indxs = find(bayesian_spike_count.lap_indices == nlap);
             estimated_position(track_id).laps(nlap).run = estimated_position(track_id).run(:,thisLap_indxs);
+            speed_thresholded = estimated_position(track_id).run_speed(thisLap_indxs) > 5;
 %             estimated_position(track_id).replay_events(nlap).replay_actual_position = interp1(position.t, estimated_position(track_id).discrete_position, estimated_position(track_id).replay_events(nlap).replay_time_centered, 'nearest');
             if track_id == 1
-                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(1).run(:,thisLap_indxs)))/sum(sum(estimated_position(2).run(:,thisLap_indxs)));
+                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(1).run(:,thisLap_indxs(speed_thresholded))))/sum(sum(estimated_position(2).run(:,thisLap_indxs(speed_thresholded))));
             elseif track_id == 2
-                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(2).run(:,thisLap_indxs)))/sum(sum(estimated_position(1).run(:,thisLap_indxs)));
+                estimated_position(track_id).laps(nlap).probability_ratio = sum(sum(estimated_position(2).run(:,thisLap_indxs(speed_thresholded))))/sum(sum(estimated_position(1).run(:,thisLap_indxs(speed_thresholded))));
             end
+            
+            estimated_position(track_id).laps(nlap).run_bias =    estimated_position(track_id).run_bias(thisLap_indxs);
+            estimated_position(track_id).laps(nlap).run_error =    estimated_position(track_id).run_error(thisLap_indxs);
+            estimated_position(track_id).laps(nlap).run_actual_position =    estimated_position(track_id).run_actual_position(thisLap_indxs);
+            estimated_position(track_id).laps(nlap).actual_run_speed =    estimated_position(track_id).actual_run_speed(thisLap_indxs);
+            estimated_position(track_id).laps(nlap).run_speed =    estimated_position(track_id).run_speed(thisLap_indxs);
+ 
         end
 
     end
