@@ -15,9 +15,9 @@ clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'RUN';
 
-for nsession =1:length(experiment_info)
+for nsession =[1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -29,6 +29,8 @@ for nsession =1:length(experiment_info)
         %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
         raw_LFP = [];
+        LFP = [];
+        
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             selected_channels = [];
@@ -102,10 +104,11 @@ clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'RUN';
 
-
-for nsession =1:length(experiment_info)
+% 1:length(experiment_info)
+% [1 2 3 4 6 7 8 9 10 12 14]
+for nsession =[9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -126,10 +129,15 @@ for nsession =1:length(experiment_info)
         clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
 
         if contains(stimulus_name{n},'Masa')
-%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-%             merged_clusters = clusters_ks3;
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            %             merged_clusters = clusters_ks3;
+            if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')))) == 2
+                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+            else exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')))) == 2
+                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_across_session_place_fields.mat'));
+            end
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
         end
@@ -149,10 +157,10 @@ for nsession =1:length(experiment_info)
             speed_interp = interp1(Behaviour.tvec,Behaviour.speed,LFP(nprobe).tvec','linear');
             speedTreshold = 1;
 
-            if isfield(LFP(nprobe),'L4')
-                cortex_LFP = LFP(nprobe).L4;
-            elseif isfield(LFP(nprobe),'L5')
+            if isfield(LFP(nprobe),'L5')
                 cortex_LFP = LFP(nprobe).L5;
+            elseif isfield(LFP(nprobe),'L4')
+                cortex_LFP = LFP(nprobe).L4;
             elseif isfield(LFP(nprobe),'MEC')
 
             end

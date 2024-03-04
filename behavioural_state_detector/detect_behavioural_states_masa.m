@@ -115,9 +115,9 @@ t = speed(:,1);
 t0 = [0; speed(:,1); rangeTime(2)];
 % Find intervals where speed data is missing
 noData = [];
-if any(diff(t0)>1)  
-    noData = t0(bsxfun(@plus,FindInterval(diff(t0)>1),[0 1])); % more than 1s without data
-end
+% if any(diff(t0)>1)  
+%     noData = t0(bsxfun(@plus,FindInterval(diff(t0)>1),[0 1])); % more than 1s without data
+% end
 immobility = t(FindInterval(speed(:,2)<speedTreshold));
 immobility(diff(immobility,[],2)<immobilityTolerance,:) = []; % pauses < immobilityTolerance don't count
 if size(immobility,2)==1, immobility = immobility'; end
