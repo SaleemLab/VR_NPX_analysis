@@ -99,7 +99,7 @@ spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & pla
 %     find(place_fields_all(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id, clusters.cluster_id)));
 good_cell_index = find(ismember(place_fields_BAYESIAN(1).cluster_id,place_fields_all(1).cluster_id(good_cell_index)));
-speed_range = 5:5:40;
+speed_range = 5:5:35;
 
 if isempty(good_cell_index)
 
@@ -212,7 +212,7 @@ else
             [N,edges,xbin_WHOLE] = histcounts(estimated_position_WHOLE{track_id}(track_id).run_actual_position,estimated_position_WHOLE{track_id}(track_id).position_bin_centres);
             [N,edges,speed_bin_WHOLE] = histcounts(estimated_position_WHOLE{track_id}(track_id).actual_run_speed,speed_range);
 
-            parfor nshuffle = 1:1000
+            parfor nshuffle = 1:100
                 bayesian_spike_count_RUN_shuffled = bayesian_spike_count_RUN;
                 temp_estimated_position = [];
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
@@ -226,7 +226,7 @@ else
                     for i = unique(xbin)
                         for j = unique(speed_bin(xbin==i))
                             s = RandStream('mrg32k3a','Seed',nlap*1000+1000*nshuffle+i*100+j*100); % Set random seed for resampling
-                            this_time_bin = find(xbin_WHOLE==i&speed_bin_WHOLE~=j);
+                            this_time_bin = find(xbin_WHOLE==i&speed_bin_WHOLE==j);% find spike count of the same position and speed
                             if isempty(this_time_bin)
                                 continue
                             end

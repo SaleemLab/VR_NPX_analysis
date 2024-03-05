@@ -296,6 +296,8 @@ for nsession = [12 14]
 
         estimated_position_lap_CV_shuffled_HPC_combined.track = [];
         estimated_position_lap_CV_shuffled_V1_combined.track = [];
+        estimated_position_lap_CV_HPC_combined.track = [];
+        estimated_position_lap_CV_V1_combined.track = [];
 
         for nprobe = 1:length(clusters)
             probability_ratio_RUN_lap_V1{nprobe}= [];
@@ -418,6 +420,8 @@ for nsession = [1 2 3 4 9 10]
 
         estimated_position_lap_CV_shuffled_HPC_combined.track = [];
         estimated_position_lap_CV_shuffled_V1_combined.track = [];
+        estimated_position_lap_CV_HPC_combined.track = [];
+        estimated_position_lap_CV_V1_combined.track = [];
 
         for nprobe = 1:length(clusters)
             probability_ratio_RUN_lap_V1{nprobe}= [];
