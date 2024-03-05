@@ -81,7 +81,7 @@ for nsession =[10]
             else
                 LFP(nprobe).probe_id = options.probe_id;
             end
-main_spatial_modulation_chronic_analysis
+
             LFP(nprobe).tvec = tvec;
             for nregion = 1:length(all_fields)
                 LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(channel_regions == nregion,:);
