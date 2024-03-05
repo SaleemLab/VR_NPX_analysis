@@ -93,7 +93,7 @@ for track = 1 : length(place_fields)
         % output of circ_corrcl is correlation coefficient and pval
         % needs input in radians
         if ~isempty(place_cell_times)
-            [TPP(track).circ_lin_corr(ncell),TPP(track).circ_lin_PVAL(ncell)] = ...
+            [TPP(track).circ_lin_corr_dir1(ncell),TPP(track).circ_lin_PVAL_dir1(ncell)] = ...
                 circ_corrcl(TPP(track).spike_phases{ncell},TPP(track).spike_positions{ncell});
         end
         
@@ -101,8 +101,9 @@ for track = 1 : length(place_fields)
     
 end
 
-% save('extracted_phase_precession_absolute_location','TPP','half_laps_times')
-% 
+save('extracted_phase_precession_absolute_location','TPP','half_laps_times')
+
+
 
 end
 
