@@ -603,7 +603,13 @@ for nsession = [9 10 12 14]
 
 
         % Plotting decoding performance
-
+        if length(session_info(n).probe)>1
+            decoding_performance = plot_within_session_decoded_error_HPC_V1(decoded_position_lap_id,VR_speed,actual_position,estimated_position_lap_CV_V1,decoded_position_V1,decoded_position_HPC,decoded_position_HPC_combined,decoded_position_V1_combined,...
+                decoded_error_V1,decoded_error_HPC,decoded_error_HPC_combined,decoded_error_V1_combined,place_fields,session_info(n),nsession)   
+        else
+          decoding_performance = plot_within_session_decoded_error_HPC_V1(VR_speed,actual_position,estimated_position_lap_CV_V1,decoded_position_V1,decoded_position_HPC,[],[],...
+                decoded_error_V1,decoded_error_HPC,[],[],place_fields,session_info(n),nsession)   
+        end
        
         save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','spatial cells'),[])
 

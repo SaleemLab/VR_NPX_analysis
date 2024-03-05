@@ -180,8 +180,14 @@ else
                 estimated_position_ratemap_shuffled = bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count_RUN,Behaviour,'ratemap shuffle',[],nshuffle,time_bin);
                 %         estimated_position_ratemap_shuffled = log_odds_bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,place_cell_index,timebin,[],'ratemap shuffle','','N');
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
-                    ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
-                    ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
+                    if length(cv_groups{track_id}{groupIndex})==1
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).probability_ratio;
+
+                    else
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
+                    end
                 end
             end
 
@@ -210,7 +216,11 @@ else
                 bayesian_spike_count_RUN_shuffled = bayesian_spike_count_RUN;
                 temp_estimated_position = [];
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
-                    lap_indcies = find(bayesian_spike_count_RUN.lap_indices==nlap);
+                    if length(cv_groups{track_id}{groupIndex})==1
+                        lap_indcies = 1:size(bayesian_spike_count_RUN.n.run,2);
+                    else
+                        lap_indcies = find(bayesian_spike_count_RUN.lap_indices==nlap);
+                    end
                     [N,edges,xbin] = histcounts(estimated_position_WHOLE{track_id}(track_id).laps(cv_groups{track_id}{groupIndex}(nlap)).run_actual_position,estimated_position_WHOLE{track_id}(1).position_bin_centres);
                     [N,edges,speed_bin] = histcounts(estimated_position_WHOLE{track_id}(track_id).laps(cv_groups{track_id}{groupIndex}(nlap)).actual_run_speed,speed_range);
                     for i = unique(xbin)
@@ -229,7 +239,7 @@ else
                         end
                     end
                 end
-
+                
                 temp_estimated_position = bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count_RUN_shuffled,Behaviour,[],[],[],time_bin);
 
 
