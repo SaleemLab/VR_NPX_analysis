@@ -11,7 +11,7 @@ position_bin = estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position
 
 nfigure = 1;
 fig = figure(nfigure)
-fig.Position = [300 150 1250 750];
+fig.Position = [300 150 1400 750];
 fig.Name = sprintf('%s %s CV decoding confusion matrix and decoding error',options.probe(1).SUBJECT,options.probe(1).SESSION);
 
 if length(options.probe)>1
@@ -227,6 +227,19 @@ if length(options.probe)>1
             %                 scatter(median_lap_decoding_error{track_id}{temp_track})
         end
     end
+    decoding_performance.decoding_error.HPC_combined = median_lap_decoding_error;
+
+    subplot(3,4,3)
+    data = [median_lap_decoding_error{1}{1} median_lap_decoding_error{1}{2} median_lap_decoding_error{2}{1} median_lap_decoding_error{2}{2}];
+    label = [10*ones(1,length(median_lap_decoding_error{1}{1})) 20*ones(1,length(median_lap_decoding_error{1}{2}))...
+        30*ones(1,length(median_lap_decoding_error{2}{1})) 40*ones(1,length(median_lap_decoding_error{2}{2}))];
+    beeswarm(label',data','sort_style','rand','overlay','sd'); hold on
+
+    xlim([0 50])
+    title('HPC combined decoding error')
+    xticks([10 20 30 40])
+    xticklabels(["Track 1 by T1 template","Track 1 by T2 template","Track 2 by T1 template","Track 2 by T2 template"])
+
 else
     probe_hemisphere = options.probe(1).probe_hemisphere;
     for track_id = 1:length(place_fields)
@@ -239,18 +252,9 @@ else
             %                 scatter(median_lap_decoding_error{track_id}{temp_track})
         end
     end
+    decoding_performance.decoding_error.HPC = median_lap_decoding_error;
 end
 
-subplot(4,4,5)
-data = [median_lap_decoding_error{1}{1} median_lap_decoding_error{1}{2} median_lap_decoding_error{2}{1} median_lap_decoding_error{2}{2}];
-label = [10*ones(1,length(median_lap_decoding_error{1}{1})) 20*ones(1,length(median_lap_decoding_error{1}{2}))...
-    30*ones(1,length(median_lap_decoding_error{2}{1})) 40*ones(1,length(median_lap_decoding_error{2}{2}))];
-beeswarm(label',data','sort_style','rand','overlay','sd'); hold on
-decoding_performance.decoding_error.HPC = median_lap_decoding_error;
-xlim([0 50])
-title('HPC decoding error')
-xticks([10 20 30 40])
-xticklabels(["Track 1 by T1 template","Track 1 by T2 template","Track 2 by T1 template","Track 2 by T2 template"])
 
 if length(options.probe)>1
     median_lap_decoding_error = [];
@@ -267,7 +271,7 @@ if length(options.probe)>1
         end
     end
 
-    subplot(4,4,6)
+    subplot(3,4,4)
     data = [median_lap_decoding_error{1}{1} median_lap_decoding_error{1}{2} median_lap_decoding_error{2}{1} median_lap_decoding_error{2}{2}];
     label = [10*ones(1,length(median_lap_decoding_error{1}{1})) 20*ones(1,length(median_lap_decoding_error{1}{2}))...
         30*ones(1,length(median_lap_decoding_error{2}{1})) 40*ones(1,length(median_lap_decoding_error{2}{2}))];
@@ -299,7 +303,7 @@ decoding_performance.decoding_error.V1 = median_lap_decoding_error;
 
 if ~isempty(median_lap_decoding_error{1})
 
-    subplot(4,4,7)
+    subplot(3,4,8)
     data = [median_lap_decoding_error{1}{1}{1} median_lap_decoding_error{1}{1}{2} median_lap_decoding_error{1}{2}{1} median_lap_decoding_error{1}{2}{2}];
     label = [10*ones(1,length(median_lap_decoding_error{1}{1}{1})) 20*ones(1,length(median_lap_decoding_error{1}{1}{2}))...
         30*ones(1,length(median_lap_decoding_error{1}{2}{1})) 40*ones(1,length(median_lap_decoding_error{1}{2}{2}))];
@@ -313,7 +317,7 @@ end
 
 if ~isempty(median_lap_decoding_error{2})
 
-    subplot(4,4,8)
+    subplot(3,4,12)
     data = [median_lap_decoding_error{2}{1}{1} median_lap_decoding_error{2}{1}{2} median_lap_decoding_error{2}{2}{1} median_lap_decoding_error{2}{2}{2}];
     label = [10*ones(1,length(median_lap_decoding_error{1}{1}{1})) 20*ones(1,length(median_lap_decoding_error{2}{1}{2}))...
         30*ones(1,length(median_lap_decoding_error{1}{2}{1})) 40*ones(1,length(median_lap_decoding_error{2}{2}{2}))];
@@ -324,6 +328,56 @@ if ~isempty(median_lap_decoding_error{2})
     xticklabels(["Track 1 by T1 template","Track 1 by T2 template","Track 2 by T1 template","Track 2 by T2 template"])
 
 end
+
+
+
+median_lap_decoding_error = [];
+for nprobe = 1:length(options.probe)
+    probe_hemisphere = options.probe(nprobe).probe_hemisphere;
+
+    for track_id = 1:length(place_fields)
+        for temp_track = 1:length(place_fields)
+            for lap_id = 1:length(estimated_position_lap_CV_V1(nprobe).track(track_id).lap)
+
+                median_lap_decoding_error{probe_hemisphere}{track_id}{temp_track}(lap_id) = nanmedian(decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track}...
+                    (decoded_position_lap_id{nsession}{track_id} == lap_id & VR_speed{nsession}{track_id}>5));
+            end
+
+            %                 scatter(median_lap_decoding_error{track_id}{temp_track})
+        end
+    end
+end
+decoding_performance.decoding_error.HPC = median_lap_decoding_error;
+
+if ~isempty(median_lap_decoding_error{1})
+
+    subplot(3,4,7)
+    data = [median_lap_decoding_error{1}{1}{1} median_lap_decoding_error{1}{1}{2} median_lap_decoding_error{1}{2}{1} median_lap_decoding_error{1}{2}{2}];
+    label = [10*ones(1,length(median_lap_decoding_error{1}{1}{1})) 20*ones(1,length(median_lap_decoding_error{1}{1}{2}))...
+        30*ones(1,length(median_lap_decoding_error{1}{2}{1})) 40*ones(1,length(median_lap_decoding_error{1}{2}{2}))];
+    beeswarm(label',data','sort_style','rand','overlay','sd'); hold on
+    xlim([0 50])
+    title('HPC left decoding error')
+    xticks([10 20 30 40])
+    xticklabels(["Track 1 by T1 template","Track 1 by T2 template","Track 2 by T1 template","Track 2 by T2 template"])
+
+end
+
+if ~isempty(median_lap_decoding_error{2})
+
+    subplot(3,4,11)
+    data = [median_lap_decoding_error{2}{1}{1} median_lap_decoding_error{2}{1}{2} median_lap_decoding_error{2}{2}{1} median_lap_decoding_error{2}{2}{2}];
+    label = [10*ones(1,length(median_lap_decoding_error{1}{1}{1})) 20*ones(1,length(median_lap_decoding_error{2}{1}{2}))...
+        30*ones(1,length(median_lap_decoding_error{1}{2}{1})) 40*ones(1,length(median_lap_decoding_error{2}{2}{2}))];
+    beeswarm(label',data','sort_style','rand','overlay','sd'); hold on
+    xlim([0 50])
+    title('HPC Right decoding error')
+    xticks([10 20 30 40])
+    xticklabels(["Track 1 by T1 template","Track 1 by T2 template","Track 2 by T1 template","Track 2 by T2 template"])
+
+end
+
+
 
 
 subplot(4,4,9)
