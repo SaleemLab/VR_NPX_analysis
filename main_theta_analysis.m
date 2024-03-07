@@ -81,14 +81,13 @@ for nsession = 10
 
 
             if options(nprobe).probe_hemisphere == 1
-                [theta_modulation_L, ~]= phase_precession_absolute_location(LFP(nprobe).tvec,CA1_LFP,place_fields,clusters_combined,Task_info,Behaviour,options);
+                [theta_modulation_L]= phase_precession_absolute_location(LFP(nprobe).tvec,CA1_LFP,place_fields,clusters_combined,Task_info,Behaviour,options);
             elseif options(nprobe).probe_hemisphere == 2
-                [theta_modulation_R, ~]= phase_precession_absolute_location(LFP(nprobe).tvec,CA1_LFP,place_fields,clusters_combined,Task_info,Behaviour,options);
+                [theta_modulation_R]= phase_precession_absolute_location(LFP(nprobe).tvec,CA1_LFP,place_fields,clusters_combined,Task_info,Behaviour,options);
             end
-
         end
 
-%             plot_perievent_spiketimes  
+%       plot_perievent_spiketimes  
         plot_theta_modulation(theta_modulation_L,theta_modulation_R);
             
     end

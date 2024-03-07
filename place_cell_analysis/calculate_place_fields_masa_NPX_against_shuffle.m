@@ -133,8 +133,8 @@ tic
         for i = 1:size(place_fields(track_id).raw{iCluster},1)
             for j= 1:size(place_fields(track_id).raw{iCluster},1)
                 
-                [r,lags] = xcorr(normalised_ratemap(:,i),...
-                    normalised_ratemap(:,j)); % lap by lap xcorr
+                [r,lags] = xcorr(normalised_ratemap(:,i)-mean(normalised_ratemap(:,i)),...
+                    normalised_ratemap(:,j)-mean(normalised_ratemap(:,j))); % lap by lap xcorr
                  place_fields(track_id).within_track_xcorr(iCluster,i,j) = ...
                      max(r(lags>= -40/mean(diff(place_fields(track_id).x_bin_centres)) & lags<= 40/mean(diff(place_fields(track_id).x_bin_centres))));
             end
