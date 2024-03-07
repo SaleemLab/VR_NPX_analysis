@@ -33,17 +33,17 @@ event_position = zeros(size(Task_info.start_time_all));
 
 position_bin_time = zeros(no_lap,(window(2)-window(1))/psthBinSize);
 for iLap = 1:no_lap
-    if iLap < no_lap
-        spike_times_lap_index = spike_times < Task_info.start_time_all(iLap+1)...
-            & spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
-        position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
-            & Behaviour.tvec <Task_info.start_time_all(iLap+1) & Behaviour.speed > 5 ),position_edges);
-    else
+%     if iLap < no_lap
+%         spike_times_lap_index = spike_times < Task_info.start_time_all(iLap+1)...
+%             & spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
+%         position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
+%             & Behaviour.tvec <Task_info.start_time_all(iLap+1) & Behaviour.speed > 5 ),position_edges);
+%     else
         spike_times_lap_index = spike_times <= Task_info.end_time_all(iLap)...
             & spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
         position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
             & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
-    end
+%     end
     spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
     event_position(iLap,1) = (iLap)*1000;
 
