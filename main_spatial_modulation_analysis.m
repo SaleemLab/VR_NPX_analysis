@@ -274,6 +274,9 @@ Stimulus_type = 'RUN';
 for nsession = [1 2 3 4 9 10]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    if isempty(stimulus_name)
+        continue
+    end
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
@@ -400,6 +403,9 @@ Stimulus_type = 'RUN';
 for nsession = [9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    if isempty(stimulus_name)
+        continue
+    end
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
