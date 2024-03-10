@@ -235,7 +235,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+for nsession = 10
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -293,11 +293,11 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);% Since it is LF
 
             shank_id_avaliable = ceil(best_channels{nprobe}.xcoord./250); % based on xcoord in best_channels
-%             if unique(shank_id_avaliable)>1 
+            if unique(shank_id_avaliable)>1 
                 normalisation = 0;
-%             else
-%                 normalisation = 1;
-%             end
+            else
+                normalisation = 1;
+            end
 
             x_col = find(shank_id_avaliable==1);
             x_col =x_col(1);

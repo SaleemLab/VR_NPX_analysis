@@ -115,6 +115,10 @@ for nsession = [1 2 3 4 9 10 12 14]
         end
         %
 
+        if contains(stimulus_name,'POST')
+            continue
+        end
+
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
         else
@@ -425,11 +429,11 @@ for nsession = [9 10 12 14]
             clusters_combined = merged_clusters;
         end
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC','estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined")
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
         
 
         % plotting decoded run trajectory
@@ -537,6 +541,10 @@ for nsession = [9 10 12 14]
 
                     for nprobe = 1:length(session_info(n).probe)
                         probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
+%                         decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} = [];
+%                         decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
+%                         decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} = [];
+%                         decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
 
                         decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} ...
                             estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
@@ -546,20 +554,19 @@ for nsession = [9 10 12 14]
                             estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
                             - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
-                        [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
-                        decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                            estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position_bin_centres(index)...
-                            - estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                        for nshuffle = 1:100
+                            [~,index] = max(estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
+                            decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
+                                estimated_position_lap_CV_shuffled_V1(1).track(1).lap(1).track(1).position_bin_centres(index)...
+                                - estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
-                        [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
-                        decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                            estimated_position_lap_CV_shuffled_V1(1).track(1).lap(1).track(1).position_bin_centres(index)...
-                            - estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                            [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
+                            decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
+                                estimated_position_lap_CV_shuffled_HPC(1).track(1).lap(1).track(1).position_bin_centres(index)...
+                                - estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                        end
+                        
 
-                        decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} = [];
-                        decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
-                        decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} = [];
-                        decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
 
                         if temp_track == 1 %Do not need to loop twice
                             [~,index] = max([estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(1).run;...
@@ -570,14 +577,16 @@ for nsession = [9 10 12 14]
                                 estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(2).run]);
                             decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC{probe_hemisphere}{nsession}{track_id} index];
 
+                            for nshuffle = 1:100
+                                [~,index] = max([estimated_position_lap_CV_shuffled_V1(nprobe).track{nshuffle}(track_id).lap(lap_id).track(1).run;...
+                                    estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                                decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} = [decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} index];
 
-                            [~,index] = max([estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(1).run;...
-                                estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(2).run]);
-                            decoded_position_V1{probe_hemisphere}{nsession}{track_id} = [decoded_position_V1{probe_hemisphere}{nsession}{track_id} index];
+                                [~,index] = max([estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(1).run; ...
+                                    estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                                decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} index];
+                            end
 
-                            [~,index] = max([estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(1).run; ...
-                                estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(2).run]);
-                            decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC{probe_hemisphere}{nsession}{track_id} index];
                         end
                     end
 
@@ -609,10 +618,10 @@ for nsession = [9 10 12 14]
         % Plotting decoding performance
         if length(session_info(n).probe)>1
             decoding_performance = plot_within_session_decoded_error_HPC_V1(decoded_position_lap_id,VR_speed,actual_position,estimated_position_lap_CV_V1,decoded_position_V1,decoded_position_HPC,decoded_position_HPC_combined,decoded_position_V1_combined,...
-                decoded_error_V1,decoded_error_HPC,decoded_error_HPC_combined,decoded_error_V1_combined,place_fields,session_info(n),nsession)   
+                decoded_error_V1,decoded_error_HPC,decoded_error_HPC_combined,decoded_error_V1_combined,place_fields,session_info(n),nsession)
         else
-          decoding_performance = plot_within_session_decoded_error_HPC_V1(VR_speed,actual_position,estimated_position_lap_CV_V1,decoded_position_V1,decoded_position_HPC,[],[],...
-                decoded_error_V1,decoded_error_HPC,[],[],place_fields,session_info(n),nsession)   
+            decoding_performance = plot_within_session_decoded_error_HPC_V1(VR_speed,actual_position,estimated_position_lap_CV_V1,decoded_position_V1,decoded_position_HPC,[],[],...
+                decoded_error_V1,decoded_error_HPC,[],[],place_fields,session_info(n),nsession)
         end
        
         save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','spatial cells'),[])

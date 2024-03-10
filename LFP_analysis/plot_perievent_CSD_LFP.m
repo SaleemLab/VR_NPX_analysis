@@ -18,19 +18,18 @@ end
 
 filter_type = lfpAvg.filter_type;
 
-if isfield(lfpAvg,'probe_no')
-    nprobe= lfpAvg.probe_no;
-else
-    nprobe = 1;
-end
+nprobe = options.probe_id+1;
 
 for type = 1:length(lfpAvg.filter_type)
     for event = 1:length(lfpAvg.event_group)
 
         fig = figure
         fig.Position = [334.7143 102.7143 1050 830]
-        fig.Name = sprintf('%s %s %s event (%s filtered) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
-
+        if isfield(options,'CSD_V1_CA1_normalisation')
+            fig.Name = sprintf('%s %s %s event (%s filtered CSD normalised) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
+        else
+            fig.Name = sprintf('%s %s %s event (%s filtered) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
+        end
         subplot(1,3,1);
         colour_line= {[177,0,38]/256,[213,62,79]/256,[252,141,89]/256,...
             [153,213,148]/256,[26,152,80]/256,[66,146,198]/256,[8,69,148]/256};
@@ -154,16 +153,47 @@ for type = 1:length(lfpAvg.filter_type)
 
         subplot(1,3,3);
         taxis = csd.(filter_type{type})(event).timestamps;
-        cmax = max(max(csd.(filter_type{type})(event).data(:,1:end)));
-        contourf(taxis,sorted_config.Ks_ycoord,[zeros(1,size(csd.(filter_type{type})(event).data,1)); csd.(filter_type{type})(event).data'; zeros(1,size(csd.(filter_type{type})(event).data,1))],40,'LineColor','none');hold on;
-        colormap jet; caxis([-cmax/2 cmax/2]);
-        xlabel('time (s)');title('CSD');
-        plot([0 0],[1 size(csd.(filter_type{type})(event).data,2)],'--k');hold on;
-        % set(gca,'YDir','reverse')
-        % yticks(1:length(sorted_config.Ks_ycoord))
-        % yticklabels(sorted_config.Ks_ycoord)
-        plot([0 0],ylim,'--r');hold on;
-        title(sprintf('CSD (%s filtered)',filter_type{type}))
+        if isfield(options,'CSD_V1_CA1_normalisation')
+            % Normalise CSD by V1 and CA1(and below)
+%             cmax = max(max(csd.(filter_type{type})(event).data(:,:)));
+%             csd.(filter_type{type})(event).data(:,:) = csd.(filter_type{type})(event).data(:,:)./cmax;
+
+            cortex_channels = find(sorted_config.Ks_ycoord>best_channels.CA1_depth-200 & sorted_config.Ks_ycoord<best_channels.surface_depth);
+            cmax = max(max(csd.(filter_type{type})(event).data(:,cortex_channels)));
+            csd.(filter_type{type})(event).data(:,cortex_channels) = csd.(filter_type{type})(event).data(:,cortex_channels)./cmax;
+
+            CA1_channels = find(sorted_config.Ks_ycoord>best_channels.CA1_depth-700 & sorted_config.Ks_ycoord<best_channels.CA1_depth-200);
+            cmax = max(max(csd.(filter_type{type})(event).data(:,CA1_channels)));
+            csd.(filter_type{type})(event).data(:,CA1_channels) = csd.(filter_type{type})(event).data(:,CA1_channels)./cmax;
+
+            other_channels = find(sorted_config.Ks_ycoord>=0 & sorted_config.Ks_ycoord<best_channels.CA1_depth-700);
+            cmax = max(max(csd.(filter_type{type})(event).data(:,other_channels)));
+            csd.(filter_type{type})(event).data(:,other_channels) = csd.(filter_type{type})(event).data(:,other_channels)./cmax;
+
+            cmax = max(max(csd.(filter_type{type})(event).data(:,1:end)));
+            contourf(taxis,sorted_config.Ks_ycoord,[zeros(1,size(csd.(filter_type{type})(event).data,1)); csd.(filter_type{type})(event).data'; zeros(1,size(csd.(filter_type{type})(event).data,1))],40,'LineColor','none');hold on;
+            colormap jet; caxis([-cmax/2 cmax/2]);
+            xlabel('time (s)');title('CSD');
+            plot([0 0],[1 size(csd.(filter_type{type})(event).data,2)],'--k');hold on;
+            % set(gca,'YDir','reverse')
+            % yticks(1:length(sorted_config.Ks_ycoord))
+            % yticklabels(sorted_config.Ks_ycoord)
+            plot([0 0],ylim,'--r');hold on;
+            title(sprintf('Normalised CSD (%s filtered)',filter_type{type}))
+        else
+            cmax = max(max(csd.(filter_type{type})(event).data(:,1:end)));
+            contourf(taxis,sorted_config.Ks_ycoord,[zeros(1,size(csd.(filter_type{type})(event).data,1)); csd.(filter_type{type})(event).data'; zeros(1,size(csd.(filter_type{type})(event).data,1))],40,'LineColor','none');hold on;
+            colormap jet; caxis([-cmax/2 cmax/2]);
+            xlabel('time (s)');title('CSD');
+            plot([0 0],[1 size(csd.(filter_type{type})(event).data,2)],'--k');hold on;
+            % set(gca,'YDir','reverse')
+            % yticks(1:length(sorted_config.Ks_ycoord))
+            % yticklabels(sorted_config.Ks_ycoord)
+            plot([0 0],ylim,'--r');hold on;
+            title(sprintf('CSD (%s filtered)',filter_type{type}))
+        end
+        %
+
         colorbar
         hold on
         plot([min(taxis) max(taxis)],[best_channels.surface_depth best_channels.surface_depth],'--k','LineWidth',2)

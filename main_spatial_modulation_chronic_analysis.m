@@ -57,7 +57,11 @@ for nsession = [12 14]
         %
         for nprobe = 1:length(clusters)
             clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
-            clusters(nprobe).region(:) = 'n.a';
+            if clusters(nprobe).probe_hemisphere == 1
+                clusters(nprobe).region(:) = 'n.a_L';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                clusters(nprobe).region(:) = 'n.a_R';
+            end
 
             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
             HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
@@ -111,6 +115,10 @@ for nsession = [12 14]
             save(fullfile(options.ANALYSIS_DATAPATH,'across_session_merged_clusters.mat'))
         end
         %
+        if contains(stimulus_name,'POST')
+            continue
+        end
+
 
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
