@@ -56,7 +56,11 @@ for nsession = [1 2 3 4 9 10 12 14]
         %
         for nprobe = 1:length(clusters)
             clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
-            clusters(nprobe).region(:) = 'n.a';
+             if clusters(nprobe).probe_hemisphere == 1
+                 clusters(nprobe).region(:) = 'n.a_L';
+             elseif clusters(nprobe).probe_hemisphere == 2
+                 clusters(nprobe).region(:) = 'n.a_R';
+             end
 
             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
             HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');

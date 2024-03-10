@@ -48,11 +48,10 @@ theta_phase_unwrap(LFP_speed<5) = nan; % speed filtered Theta LFP
 spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
     find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields(1).cluster_id,clusters.cluster_id)));
-good_cell_index = good_cell_index(1:5);
+% good_cell_index = good_cell_index(1:2);
 t_bin = mean(diff(Behaviour.tvec));
 sprintf('Theta modulation analysis for %i spatial cells',length(good_cell_index))
 
-count =1;
 for track = 1 : length(place_fields)
 
     track_times = Behaviour.tvec;
@@ -117,7 +116,7 @@ for track = 1 : length(place_fields)
         theta_modulation(track).peak_percentile(ncell) = place_fields(track).peak_percentile(good_cell_index(ncell));
         theta_modulation(track).odd_even_stability(ncell) = place_fields(track).odd_even_stability(good_cell_index(ncell));
         theta_modulation(track).t1_t2_remapping(ncell) = place_fields(track).t1_t2_remapping(good_cell_index(ncell));
-        
+
         place_cell_idx   = clusters.spike_id == place_fields(1).cluster_id(good_cell_index(ncell));  % find indices for this unit
         spike_times = clusters.spike_times(place_cell_idx);  % extract spike times for this place cell
 
@@ -156,7 +155,7 @@ for track = 1 : length(place_fields)
             temp_map = filtfilt(gaussianWindow,1,position_phase_map(:,nphase));
             %             clip_size = (length(temp_map)-size(position_phase_map,1))/2;
             theta_modulation(track).position_phase_map_1D_smoothed{ncell}(:,nphase) = temp_map;
-            [r,lags] = xcorr(temp_map-mean(temp_map)',average_map-mean(average_map)'); % zero mean for cross correlation
+            [r,lags] = xcorr(temp_map-mean(temp_map),average_map-mean(average_map)); % zero mean for cross correlation
 
 
             %         r(lags<=80 & lags>=-80)
@@ -180,29 +179,29 @@ for track = 1 : length(place_fields)
         amplitude = coeffs.a;
         phase_offset = coeffs.c;
 
-%         % Plot the original data and the fit
-%         figure;
-%         plot(bin_centres, peak_index, 'bo');
-%         hold on;
-%         fitted_values = coeffs.a*sin(coeffs.b*bin_centres + coeffs.c) + coeffs.d;
-%         plot(bin_centres, fitted_values, 'r-');
-%         xlabel('Theta Phase Bin');
-%         ylabel('Maximum Index');
-%         legend('Data', 'Sinusoidal Fit');
+        %         % Plot the original data and the fit
+        %         figure;
+        %         plot(bin_centres, peak_index, 'bo');
+        %         hold on;
+        %         fitted_values = coeffs.a*sin(coeffs.b*bin_centres + coeffs.c) + coeffs.d;
+        %         plot(bin_centres, fitted_values, 'r-');
+        %         xlabel('Theta Phase Bin');
+        %         ylabel('Maximum Index');
+        %         legend('Data', 'Sinusoidal Fit');
 
         % Save variables
         theta_modulation(track).spike_times_phase_position{ncell} = [spike_times(spike_position<=139.5),spike_phases(spike_position<=139.5),spike_position(spike_position<=139.5)];
         theta_modulation(track).sin_fit_phase_offset(ncell) = coeffs.c;
         theta_modulation(track).sin_fit_amplitude(ncell) = coeffs.a;
 
-        parfor nshuffle = 1:500
+       parfor nshuffle = 1:500
             s = RandStream('mrg32k3a','Seed',1000+nshuffle+ncell*100); % Set random seed for resampling
 
             if rand(s,1)>0.5
-                s = RandStream('mrg32k3a','Seed',2000+nshuffle+ncell*100)
+                s = RandStream('mrg32k3a','Seed',2000+nshuffle+ncell*100);
                 shift_dir = 6+10*rand(s,1);
             else
-                s = RandStream('mrg32k3a','Seed',2000+nshuffle+ncell*100)
+                s = RandStream('mrg32k3a','Seed',2000+nshuffle+ncell*100);
                 shift_dir = -6-10*rand(s,1);
             end
             spike_times_shuffled = spike_times + shift_dir;
@@ -220,11 +219,13 @@ for track = 1 : length(place_fields)
             position_phase_map_shuffled(isnan(position_phase_map_shuffled))=0;
 
             position_phase_xcorr_map_shuffled = [];
+
+            average_map =  filtfilt(gaussianWindow,1,mean(position_phase_map_shuffled,2));
             for nphase = 1:length(phase_edges)-1
 
                 temp_map = filtfilt(gaussianWindow,1,position_phase_map_shuffled(:,nphase));
                 %             clip_size = (length(temp_map)-size(position_phase_map,1))/2;
-                [r,lags] = xcorr(position_phase_map_shuffled(:,nphase),mean(position_phase_map_shuffled));
+                [r,lags] = xcorr(temp_map-mean(temp_map),average_map-mean(average_map));
                 %         r(lags<=80 & lags>=-80)
                 position_phase_xcorr_map_shuffled = [ position_phase_xcorr_map_shuffled r/max(r)];
             end
@@ -242,50 +243,11 @@ for track = 1 : length(place_fields)
             % Extract the amplitude and phase offset
             amplitude_shuffled(nshuffle) = coeffs.a;
             %             phase_offset_shuffled(nshuffle) = coeffs.c;
-        end
-
+       end
+       
         theta_modulation(track).phase_offset_percentile(ncell) = coeffs.c;
         theta_modulation(track).phase_amplitude_percentile(ncell) = sum(theta_modulation(track).sin_fit_amplitude(ncell)>amplitude_shuffled)/500;
         theta_modulation(track).theta_modulation_percentile(ncell) = sum(theta_modulation(track).theta_modulation_index(ncell)>theta_modulation_shuffled)/500;
-
-        
-                if count == 1
-                    fig = figure;
-                    fig.Position = [273 234 1040 720];
-                    %             fig.Name = [273 234 1040 720];
-        
-                elseif count == 3
-                    count = 1;
-                    fig = figure;
-                    fig.Position = [273 234 1040 720];
-                    %             fig.Name = [273 234 1040 720];
-        
-                end
-        
-                subplot(3,3,count)
-                imagesc(position_edges(1:end-1)+1,180/pi.*phase_edges(2:end),theta_modulation(track).position_phase_map{ncell}')
-                colorbar
-                colormap(flip(gray))
-                xticks(position_edges(1:10:end-1)+1)
-                yticks(180/pi.*phase_edges(2:3:end))
-                title(sprintf('Track %i cell %i %s',track,theta_modulation(1).cluster_id(good_cell_index(ncell)),clusters.region(clusters.cluster_id==place_fields(1).cluster_id(good_cell_index(ncell)))))
-                xlabel('Spatial location')
-                ylabel('Theta phase')
-        
-                subplot(3,3,count+3)
-                polarhistogram(theta_modulation(track).spike_times_phase_position{ncell}(:,2),0:2*pi/18:2*pi)
-        
-                subplot(3,3,count+6)
-                lags= -69:69;
-                imagesc(lags,180/pi.*phase_edges(2:end), theta_modulation(track).position_phase_xcorr_map{ncell}')
-                hold on;xline(0,'r')
-                colorbar
-                colormap(flip(gray))
-                xticks(lags(1:10:end-1)+1)
-                yticks(180/pi.*phase_edges(2:3:end))
-                xlabel('Spatial shift')
-                ylabel('Theta phase')
-                count = count + 1;
 
         %% phase precession vs location on track
 
