@@ -235,7 +235,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [2 3 4 6 7 8 9 10 12 14]
+for nsession = [3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -336,7 +336,7 @@ for nsession = [2 3 4 6 7 8 9 10 12 14]
             end
         
             if unique(shank_id_avaliable)==1
-                save(fullfile(options.ANALYSIS_DATAPATH,'ripple_LFP_response.mat',lfpAvg_L,lfpAvg_R,csd_L,csd_R));
+                save(fullfile(options.ANALYSIS_DATAPATH,'ripple_LFP_response.mat'),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
             end
 
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
@@ -379,7 +379,7 @@ for nsession = [2 3 4 6 7 8 9 10 12 14]
                     csd_R(3:4) = csd;
                 end
 
-                save(fullfile(options.ANALYSIS_DATAPATH,'ripple_LFP_response.mat',lfpAvg_L,lfpAvg_R,csd_L,csd_R));
+                save(fullfile(options.ANALYSIS_DATAPATH,'ripple_LFP_response.mat'),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
 
                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
                 close all
