@@ -1,4 +1,4 @@
-function save_all_figures(save_path,filename)
+function save_all_large_figures(save_path,filename)
 % Save figures in .fig and .png format
 
 figlist = findobj('type','figure');
@@ -26,13 +26,13 @@ for i = 1 : numel(figlist)
     if exist([save_path,'\figures'], 'dir')
         saveas(figlist(i),[save_path,'\figures\',name,'.fig']);
 %         saveas(figlist(i),[save_path,'\figures\png_figs\',name,'.png']);
-%         saveas(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf']);
+        saveas(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf']);
         exportgraphics(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf'],'ContentType','vector')
     else 
         disp('not saved in figures folder!')
         saveas(figlist(i),[save_path,'\',name,'.fig']);
 %         saveas(figlist(i),[save_path,'\',name,'.png']);
-%         saveas(figlist(i),[save_path,'\',name,'.pdf']);
+        saveas(figlist(i),[save_path,'\',name,'.pdf']);
         exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','vector')
     end
     close  
