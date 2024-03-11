@@ -393,7 +393,7 @@ end
 
 %%
 
-%% Peri ripple LFP and CSD
+%% Peri V1 populational events
 
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -434,7 +434,7 @@ for nsession = [2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidates_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
