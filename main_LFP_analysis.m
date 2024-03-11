@@ -112,7 +112,7 @@ Stimulus_type = 'POST';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
-for nsession =[1 2 3 4 6 7 8 9 10 12 14]
+for nsession =[2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -264,7 +264,11 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             for event = 1:length(ripples(probe_no).onset)
                 ripples(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples(probe_no).onset(event) & Behaviour.sglxTime <= ripples(probe_no).offset(event))));
             end
-            
+
+            if ~contains(Stimulus_type,'RUN') % If reactivation events during lap running
+                continue
+            end
+
             lap_times(1).start = Task_info.start_time_all(Task_info.track_ID_all==1);
             lap_times(1).end = Task_info.end_time_all(Task_info.track_ID_all==1)';
 
@@ -312,89 +316,9 @@ end
 
 
 
+%%
+%%
 
-%% Theta modulation, Theta phase percession and Theta cycle and phase extraction
-
-clear all
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'RUN';
-
-
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
-    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        options = session_info(n).probe(1);
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
-
-        if contains(stimulus_name{n},'Masa2tracks')
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-        else
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
-        end
-
-        clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
-
-        if contains(stimulus_name{n},'Masa')
-            %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            %             merged_clusters = clusters_ks3;
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
-        else
-            load(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
-        end
-
-        if length(merged_clusters) > 1
-            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
-        else
-            clusters_combined = merged_clusters;
-        end
-
-
-        for nprobe = 1:length(session_info(n).probe)
-            options = session_info(n).probe(nprobe);
-            probe_no = session_info(n).probe(nprobe).probe_id + 1;
-            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-            %                 Behavioural state detection
-            speed_interp = interp1(Behaviour.tvec,Behaviour.speed,LFP(nprobe).tvec','linear');
-            speedTreshold = 1;
-
-            if isfield(LFP(nprobe),'L4')
-                cortex_LFP = LFP(nprobe).L4;
-            elseif isfield(LFP(nprobe),'L5')
-                cortex_LFP = LFP(nprobe).L5;
-            elseif isfield(LFP(nprobe),'MEC')
-
-            end
-
-            if isfield(LFP(nprobe),'CA1')
-                CA1_LFP = LFP(nprobe).CA1;
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Theta modulation and theta phase percession
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-
-            %%%%%%%%%%%%%%%%%%
-            % Theta phase
-            %%%%%%%%%%%%%%%%%%
-
-            %%%%%%%%%%%%%%%%%%
-            % Theta cycle detection
-            %%%%%%%%%%%%%%%%%%
-
-        end
-
-    end
-end
 
 
 
