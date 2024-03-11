@@ -339,7 +339,7 @@ for nsession = [3 4 6 7 8 9 10 12 14]
                 save(fullfile(options.ANALYSIS_DATAPATH,'ripple_LFP_response.mat'),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
             end
 
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
+            save_all_large_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
             close all
 
 
@@ -473,17 +473,17 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 probe_hemisphere = session_info(n).probe(iprobe).probe_hemisphere;
 
                 if session_info(n).probe(iprobe).probe_hemisphere == 1
-                    [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('L Ripple T1',V1_reactivations(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
+                    [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('L V1 events T1',V1_reactivations(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
                         'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
 
-                    [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('L Ripple T2',ripples(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
+                    [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('L V1 events T2',V1_reactivations(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
                         'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
             
                 elseif session_info(n).probe(iprobe).probe_hemisphere == 2
-                    [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('R Ripple T1',ripples(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
+                    [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('R V1 events T1',V1_reactivations(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
                         'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
 
-                    [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('R Ripple T2',ripples(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
+                    [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('R V1 events T2',V1_reactivations(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
                         'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
                 end
 
@@ -498,16 +498,16 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 csd_R = csd;
             end
 
-            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'))== 0
-                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'))
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1_events'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1_events'))
             end
         
             if unique(shank_id_avaliable)==1
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('ripple_LFP_response%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('V1_events_LFP_response%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
 
             end
 
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
+            save_all_large_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1_events'),[])
             close all
 
 
@@ -520,22 +520,22 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 % Shank 3 peri ripple
                 for iprobe = 1:length(clusters)
                     probe_hemisphere = session_info(n).probe(iprobe).probe_hemisphere;
-
+                    
                     if session_info(n).probe(iprobe).probe_hemisphere == 1
-                        [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('L Ripple T1',ripples(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
-                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col);
-
-                        [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('L Ripple T2',ripples(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
-                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col);
-
+                        [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('L V1 events T1',V1_reactivations(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
+                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
+                        
+                        [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('L V1 events T2',V1_reactivations(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
+                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
+                        
                     elseif session_info(n).probe(iprobe).probe_hemisphere == 2
-                        [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('R Ripple T1',ripples(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
-                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col);
-
-                        [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('R Ripple T2',ripples(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
-                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col);
+                        [lfpAvg(iprobe).track(1),csd(iprobe).track(1)] = perievent_LFP_profile('R V1 events T1',V1_reactivations(iprobe).T1_onset,[-0.2 0.5],PSD,clusters,options,...
+                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
+                        
+                        [lfpAvg(iprobe).track(2),csd(iprobe).track(2)] = perievent_LFP_profile('R V1 events T2',V1_reactivations(iprobe).T2_onset,[-0.2 0.5],PSD,clusters,options,...
+                            'filter_freq',[0.5 3; 9 17; 125 300],'filter_type',{'SO','spindles','ripples'},'x_col',x_col,'CSD_V1_CA1_normalisation',normalisation);
                     end
-
+                    
                 end
 
                 if session_info(n).probe(nprobe).probe_hemisphere == 1
@@ -546,10 +546,11 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                     lfpAvg_R(3:4) = lfpAvg;
                     csd_R(3:4) = csd;
                 end
-
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('ripple_LFP_response%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
-
-                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripples'),[])
+                
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('V1_events_LFP_response%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'lfpAvg_L','lfpAvg_R','csd_L','csd_R');
+                
+                
+                save_all_large_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1_events'),[])
                 close all
             end
             
