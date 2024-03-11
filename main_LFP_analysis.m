@@ -234,7 +234,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             metric_param.cell_type = @(x) x==1;
             spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
                 find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
-            
+
             if nprobe ==1
                 this_probe_cluster_id = place_fields(1).cluster_id;
             else
@@ -261,7 +261,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
 
             % Detect CA1 ripple events
             [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on');
+                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
         end
 
         for nprobe = 1:length(session_info(n).probe)
@@ -272,7 +272,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 ripples(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples(probe_no).onset(event) & Behaviour.sglxTime <= ripples(probe_no).offset(event))));
             end
 
-            if ~contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if ~contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 continue
             end
 
@@ -282,7 +282,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             lap_times(2).start = Task_info.start_time_all(Task_info.track_ID_all==2);
             lap_times(2).end = Task_info.end_time_all(Task_info.track_ID_all==2)';
 
-            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
                 reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
                 reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
@@ -300,7 +300,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
             end
 
-            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 [ripples(probe_no).T1_offset,ripples(probe_no).T1_index] = RestrictInts(ripples(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
                 ripples(probe_no).T1_onset = ripples(probe_no).onset(ripples(probe_no).T1_index);
                 ripples(probe_no).T1_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T1_index);
