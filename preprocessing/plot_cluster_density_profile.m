@@ -27,7 +27,12 @@ end
 
 fig = figure
 fig.Position = [334.7143 102.7143 556 830]
-fig.Name = sprintf('%s %s cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord));
+
+if isfield(options,'spatial_cell_id')
+    fig.Name = sprintf('%s %s spatial cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord));
+else
+    fig.Name = sprintf('%s %s cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord));
+end
 
 subplot(1,2,1);
 colour_line= {[177,0,38]/256,[213,62,79]/256,[252,141,89]/256,...
@@ -99,10 +104,71 @@ if isfield(clusters,'isi_viol')
         & clusters.amplitude > 50);
 
 elseif isfield(clusters,'sliding_rp_violation')
-    good_unit_index = find(clusters.sliding_rp_violation < 0.1 ...
-        & clusters.amplitude_cutoff < 0.1 ...
-        & clusters.amplitude_median > 50 ...
-        & clusters.isi_violations_ratio < 0.1);
+
+    if isfield(clusters,'merged_spike_id')
+
+        clusters.cluster_id = unique(clusters.merged_cluster_id);
+        for ncell = 1:length(unique(clusters.merged_cluster_id))
+            tempt_peak_channel = clusters.peak_channel(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+            tempt_peak_depth = clusters.peak_depth(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+            tempt_peak_waveform = clusters.peak_channel_waveforms(clusters.merged_cluster_id == clusters.cluster_id(ncell),:);
+            tempt_cell_type = clusters.cell_type(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+            tempt_sliding_rp_violation = clusters.sliding_rp_violation(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+            tempt_amplitude = clusters.amplitude_median(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+            tempt_amplitude_cutoff = clusters.amplitude_cutoff(clusters.merged_cluster_id == clusters.cluster_id(ncell));
+
+           
+            if length(tempt_peak_depth)== 2
+                tempt_peak_channel = tempt_peak_channel(1);
+                tempt_peak_depth = tempt_peak_depth(1);
+                tempt_peak_waveform = tempt_peak_waveform(1,:);
+                tempt_cell_type = tempt_cell_type(1);
+                tempt_sliding_rp_violation = tempt_sliding_rp_violation(1);
+                tempt_amplitude = tempt_amplitude(1);
+                tempt_amplitude_cutoff = tempt_amplitude_cutoff(1);
+
+            else % find median peak depth assign that value to the unit
+                [~,index]= min(tempt_peak_depth - median(tempt_peak_depth));
+                tempt_peak_channel = tempt_peak_channel(index);
+                tempt_peak_depth = tempt_peak_depth(index);
+                tempt_peak_waveform = tempt_peak_waveform(index,:);
+                tempt_cell_type = tempt_cell_type(index);
+                tempt_sliding_rp_violation = tempt_sliding_rp_violation(index);
+                tempt_amplitude = tempt_amplitude(index);
+                tempt_amplitude_cutoff = tempt_amplitude_cutoff(index);
+            end
+
+            merged_peak_channel(ncell) = tempt_peak_channel;
+            merged_peak_depth(ncell) = tempt_peak_depth;
+            merged_peak_waveform(ncell,:) = tempt_peak_waveform;
+            merged_cell_type(ncell) = tempt_cell_type;
+            merged_sliding_rp_violation(ncell) = tempt_sliding_rp_violation;
+            merged_amplitude(ncell) = tempt_amplitude;
+            merged_amplitude_cutoff(ncell) = tempt_amplitude_cutoff;
+        end
+
+        clusters.peak_channel = merged_peak_channel;
+        clusters.peak_depth = merged_peak_depth;
+        clusters.peak_channel_waveforms = merged_peak_waveform;
+        clusters.cell_type = merged_cell_type;
+        clusters.sliding_rp_violation = merged_sliding_rp_violation;
+        clusters.amplitude_median = merged_amplitude;
+        clusters.amplitude_cutoff = merged_amplitude_cutoff;
+
+        clusters.spike_id = clusters.merged_spike_id;
+        clusters.cluster_id = unique(clusters.merged_cluster_id);
+    end
+
+
+
+    if isfield(options,'spatial_cell_id')
+        good_unit_index = options.spatial_cell_id;
+    else
+        good_unit_index = find(clusters.sliding_rp_violation < 0.1 ...
+            & clusters.amplitude_cutoff < 0.1 ...
+            & clusters.amplitude_median > 50);
+    end
+
 end
 
 bin_edge = sorted_config.Ks_ycoord(1)-(sorted_config.Ks_ycoord(2)-sorted_config.Ks_ycoord(1))/2:...
@@ -141,7 +207,7 @@ if isfield(best_channels,'L5_channel')
             plot([0 bin_max],[best_channels.L4_depth-60 best_channels.L4_depth-60],'--c','LineWidth',0.5)
         end
 
-        plot([0 1],[best_channels.L5_depth best_channels.L5_depth],'--c','LineWidth',2)
+        plot([0 bin_max],[best_channels.L5_depth best_channels.L5_depth],'--c','LineWidth',2)
 
     end
 end
