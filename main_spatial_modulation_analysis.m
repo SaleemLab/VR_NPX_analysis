@@ -391,6 +391,99 @@ for nsession = [1 2 3 4 9 10]
 end
 
 
+%% Decoding trajectory plotting
+lap_times = [];
+clear all
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'RUN';
+% [1 2 3 4 9 10 12 14]
+
+for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = merged_clusters;
+            sorting_option = 'spikeinterface';
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = clusters_ks3;
+            sorting_option = 'spikeinterface';
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            sorting_option = 'old';
+        end
+
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
+        
+
+        % plotting decoded run trajectory
+        for nprobe = 1:length(clusters)
+            options = session_info(n).probe(nprobe);
+
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
+            end
+
+            if clusters(nprobe).probe_hemisphere == 1
+                options.region = 'HPC Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                options.region = 'HPC Right';
+            end
+
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_HPC(nprobe).track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+
+            if clusters(nprobe).probe_hemisphere == 1
+                metric_param.region = @(x) contains(x,'V1_L');
+                options.region = 'V1 Left';
+            elseif clusters(nprobe).probe_hemisphere == 2
+                metric_param.region = @(x) contains(x,'V1_R');
+                options.region = 'V1 Right';
+            end
+
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_V1(nprobe).track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+        end
+
+        if length(session_info(n).probe) > 1
+            options.region = 'HPC Combined';
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_HPC_combined.track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+
+            options.region = 'V1 Combined';
+            plot_decoding_RUN_trajectory(estimated_position_lap_CV_V1_combined.track,Task_info,options)
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+        end
+    end
+end
+
+
 %% Decoding error and log odds for V1 and HPC
 lap_times = [];
 clear all
@@ -400,7 +493,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [9 10 12 14]
+for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
