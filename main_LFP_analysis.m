@@ -112,7 +112,7 @@ Stimulus_type = 'POST';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
-for nsession =[1 2 3 4 6 7 8 9 10]
+for nsession =[1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -232,7 +232,15 @@ for nsession =[1 2 3 4 6 7 8 9 10]
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.peak_channel = @(x) ismember(x,V1_channels);
             metric_param.cell_type = @(x) x==1;
-            %             metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
+            spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
+                find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
+            if sum(ismember(merged_clusters.merged_cluster_id,place_fields(nprobe).cluster_id(spatial_cell_index))) > 5
+                metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(spatial_cell_index));
+            else
+                disp('less than 5 spatially tuned V1 cells in this session. Using all V1 cells for candidate event detection')
+            end
+               
+%             metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
 
             V1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
 
