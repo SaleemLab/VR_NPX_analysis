@@ -115,7 +115,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         end
         %
 
-        if contains(stimulus_name,'POST')
+        if contains(stimulus_name{n},'POST')
             continue
         end
 
