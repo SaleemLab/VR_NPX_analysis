@@ -17,7 +17,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'POST';
 
-for nsession =[7 8 9 10]
+for nsession =[14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -112,7 +112,9 @@ Stimulus_type = 'Masa2tracks';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
-for nsession =[1 2 3 4 6 7 8 9 10 12 14]
+[1 2 3 4 6 7 8]
+
+for nsession =[14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -121,6 +123,10 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        if ~contains(stimulus_name{n},'RUN') & ~contains(stimulus_name{n},'POST')
+            continue
+        end
+        
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -180,10 +186,10 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     [LFP(nprobe).tvec' speed_interp],speedTreshold);
             end
             %             behavioural_state.freezing = freezing;
-            behavioural_state.quietWake = quietWake;
-            behavioural_state.SWS = SWS;
-            behavioural_state.REM = REM;
-            behavioural_state.movement = movement;
+            behavioural_state(nprobe).quietWake = quietWake;
+            behavioural_state(nprobe).SWS = SWS;
+            behavioural_state(nprobe).REM = REM;
+            behavioural_state(nprobe).movement = movement;
 
             %%%%%%%%%%%%%%%%%%
             % Ripple and candidate reactivation events detection
@@ -232,19 +238,29 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.peak_channel = @(x) ismember(x,V1_channels);
             metric_param.cell_type = @(x) x==1;
+
+            V1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
+
+            % Select spatially tuned cells (reliable visual response to the landmark)
             spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
                 find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
-            if nprob
-            this_probe_cluster_id = place_fields(nprobe).cluster_id;
-            if sum(ismember(merged_clusters(nprobe).merged_cluster_id,place_fields(nprobe).cluster_id(spatial_cell_index))) > 5
-                metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(spatial_cell_index));
+
+            if nprobe ==1
+                this_probe_cluster_id = place_fields(1).cluster_id;
+            else
+                this_probe_cluster_id = place_fields(1).cluster_id-10000;
+            end
+
+            % Select only if there are more than 5 spatial cells
+            if sum(ismember(V1_clusters(nprobe).merged_cluster_id,this_probe_cluster_id(spatial_cell_index))) > 5
+                metric_param.merged_cluster_id = @(x) ismember(x,this_probe_cluster_id(spatial_cell_index));
             else
                 disp('less than 5 spatially tuned V1 cells in this session. Using all V1 cells for candidate event detection')
             end
                
 %             metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
 
-            V1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
+            V1_clusters(nprobe) = select_clusters(V1_clusters(nprobe),metric_param);
 
             [V1_replay(nprobe),V1_reactivations(nprobe)] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
                 [V1_clusters(nprobe).spike_id V1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
@@ -256,7 +272,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
 
             % Detect CA1 ripple events
             [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','on');
+                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
         end
 
         for nprobe = 1:length(session_info(n).probe)
@@ -267,7 +283,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 ripples(probe_no).speed(event) = mean(Behaviour.speed(find(Behaviour.sglxTime >= ripples(probe_no).onset(event) & Behaviour.sglxTime <= ripples(probe_no).offset(event))));
             end
 
-            if ~contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if ~contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 continue
             end
 
@@ -277,7 +293,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             lap_times(2).start = Task_info.start_time_all(Task_info.track_ID_all==2);
             lap_times(2).end = Task_info.end_time_all(Task_info.track_ID_all==2)';
 
-            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
                 reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
                 reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
@@ -295,7 +311,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
             end
 
-            if contains(Stimulus_type,'RUN') % If reactivation events during lap running
+            if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
                 [ripples(probe_no).T1_offset,ripples(probe_no).T1_index] = RestrictInts(ripples(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
                 ripples(probe_no).T1_onset = ripples(probe_no).onset(ripples(probe_no).T1_index);
                 ripples(probe_no).T1_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T1_index);
