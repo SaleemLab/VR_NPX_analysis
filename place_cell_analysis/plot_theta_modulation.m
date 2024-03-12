@@ -25,6 +25,24 @@ bin_centres = 180*bin_centres'./pi;
 for ncell = 1 : length(good_cell_index)
     count = 1;
     %     for nprobe = 1:no_of_probes
+    modulated = 0;
+    
+    if ~isempty(theta_modulation_L)
+        cell_index = find(theta_modulation_L(1).cluster_id==place_fields(1).cluster_id(good_cell_index(ncell)));
+        modulated = modulated + theta_modulation_L(1).theta_modulation_percentile(cell_index)>0.95;
+        modulated = modulated + theta_modulation_L(2).theta_modulation_percentile(cell_index)>0.95;
+    end
+
+    if ~isempty(theta_modulation_R)
+        cell_index = find(theta_modulation_R(1).cluster_id==place_fields(1).cluster_id(good_cell_index(ncell)));
+        modulated = modulated + theta_modulation_R(1).theta_modulation_percentile(cell_index)>0.95;
+        modulated = modulated + theta_modulation_R(2).theta_modulation_percentile(cell_index)>0.95;
+    end
+
+    if modulated == 0 % only plot theta modulated cells
+        continue
+    end
+
     for track = 1 : length(place_fields)
         % For each good cell in the track
 
@@ -92,17 +110,45 @@ for ncell = 1 : length(good_cell_index)
             gaussianWindow = gaussianWindow/sum(gaussianWindow);
             average_map = filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}));
 
-            [peak_FR,peak_index]=max(average_map);
+            [pks,locs] = findpeaks(average_map);% Find local maxima and ignore peaks at start or end
+            TF = islocalmin(average_map);
+            if ~isempty(locs)
+                [~,index]=max(pks);
+                peak_index= locs(index);
+                TF = find(TF);
+                lower_min = TF(find(TF<peak_index));
+                if ~isempty(lower_min)
+                    lower_min = lower_min(end);
+                else
+                    lower_min = 1;
+                end
+
+                upper_min= TF(find(TF>peak_index));
+
+                if ~isempty(upper_min)
+                    upper_min = upper_min(1);
+                else
+                    upper_min = 70;
+                end
+            else
+                [~,peak_index]=max(average_map);
+            end
+
+            [peak_FR]=max(average_map);
             average_map = (average_map-min(average_map))/(peak_FR+min(average_map));
             average_map = average_map/max(average_map);
 
-            
+
             thresholded = find((average_map(peak_index+1:end)<0.3) == 1);
             if ~isempty(thresholded)
                 thresholded = thresholded(1);
                 upper_bound =  peak_index + thresholded;
             else
                 upper_bound = length(average_map);
+            end
+
+            if upper_bound>upper_min
+                upper_bound = upper_min;
             end
 
             thresholded = find((average_map(1:peak_index-1)<0.3) == 1);
@@ -112,39 +158,43 @@ for ncell = 1 : length(good_cell_index)
                 lower_bound = 0;
             end
 
-            spike_id = theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) > lower_bound*2 & theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) < upper_bound*2;
-
-            [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3));
-            theta_modulation_L(track).circ_corr(cell_index)=circ_corr;
-            theta_modulation_L(track).circ_corr_pval(cell_index)=pval;
-
-            scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.1)
-            xlabel('position')
-            ylabel('theta phase')
-            
-            hold on
-            scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.05)
-            xlabel('position')
-            ylabel('theta phase')
-            ylim([0 380])
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            plot(position_bins,average_map*380)
-            yyaxis right
-            ax = gca;
-            ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
-%             yylabel('FR')
-            ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
-            ylabel('FR')
-
-            if pval <=0.05
-                title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
-            else
-                title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+            if lower_bound<lower_min
+                lower_bound = lower_min;
             end
-            
+
+            spike_id = theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) > lower_bound*2 & theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) < upper_bound*2;
+            if sum(spike_id)>10
+                [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3));
+                theta_modulation_L(track).circ_corr(cell_index)=circ_corr;
+                theta_modulation_L(track).circ_corr_pval(cell_index)=pval;
+
+                scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.1)
+                xlabel('position')
+                ylabel('theta phase')
+
+                hold on
+                scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.05)
+                xlabel('position')
+                ylabel('theta phase')
+                ylim([0 380])
+                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+                plot(position_bins,average_map*380,'b')
+                yyaxis right
+                ax = gca;
+                ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'b';
+                %             yylabel('FR')
+                ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
+                ylabel('FR')
+
+                if pval <=0.05
+                    title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
+                else
+                    title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+                end
+            end
             count = count + 1;
         end
 
@@ -201,16 +251,51 @@ for ncell = 1 : length(good_cell_index)
             gaussianWindow = gaussianWindow/sum(gaussianWindow);
             average_map = filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}));
 
-            [peak_FR,peak_index]=max(average_map);
+            [pks,locs] = findpeaks(average_map);% Find local maxima and ignore peaks at start or end
+            TF = islocalmin(average_map);
+            if ~isempty(locs)
+                [~,index]=max(pks);
+                peak_index= locs(index);
+                TF = find(TF);
+                lower_min = TF(find(TF<peak_index));
+                if ~isempty(lower_min)
+                    lower_min = lower_min(end);
+                else
+                    lower_min = 1;
+                end
+
+                upper_min= TF(find(TF>peak_index));
+
+                if ~isempty(upper_min)
+                    upper_min = upper_min(1);
+                else
+                    upper_min = 70;
+                end
+            else
+                [~,peak_index]=max(average_map);
+
+                if peak_index < 15 % avoid first peak due to track onset
+                    [~,peak_index2]=max(average_map(15:end));
+                    
+                    peak_index = peak_index2+15;
+                end
+            end
+
+            [peak_FR]=max(average_map);
             average_map = (average_map-min(average_map))/(peak_FR+min(average_map));
             average_map = average_map/max(average_map);
 
+            
             thresholded = find((average_map(peak_index+1:end)<0.3) == 1);
             if ~isempty(thresholded)
                 thresholded = thresholded(1);
                 upper_bound =  peak_index + thresholded;
             else
                 upper_bound = length(average_map);
+            end
+
+            if upper_bound>upper_min
+                upper_bound = upper_min;
             end
 
             thresholded = find((average_map(1:peak_index-1)<0.3) == 1);
@@ -220,37 +305,43 @@ for ncell = 1 : length(good_cell_index)
                 lower_bound = 0;
             end
 
+            if lower_bound<lower_min
+                lower_bound = lower_min;
+            end
+
+
             spike_id = theta_modulation_R(track).spike_times_phase_position{cell_index}(:,3) > lower_bound*2 & theta_modulation_R(track).spike_times_phase_position{cell_index}(:,3) < upper_bound*2;
+            if sum(spike_id)>10
+                [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3));
+                theta_modulation_R(track).circ_corr(cell_index)=circ_corr;
+                theta_modulation_R(track).circ_corr_pval(cell_index)=pval;
 
-            [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3));
-            theta_modulation_R(track).circ_corr(cell_index)=circ_corr;
-            theta_modulation_R(track).circ_corr_pval(cell_index)=pval;
+                scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.05)
+                xlabel('position')
+                ylabel('theta phase')
 
-            scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.1)
-            xlabel('position')
-            ylabel('theta phase')
-            
-            hold on
-            scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.05)
-            xlabel('position')
-            ylabel('theta phase')
-            ylim([0 380])
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+                hold on
+                scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.01)
+                xlabel('position')
+                ylabel('theta phase')
+                ylim([0 380])
+                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-            plot(position_bins,average_map*380)
-            yyaxis right
-            ax = gca;
-            ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
-%             yylabel('FR')
-            ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
-            ylabel('FR')
+                plot(position_bins,average_map*380,'b')
+                yyaxis right
+                ax = gca;
+                ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'b';
+                %             yylabel('FR')
+                ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
+                ylabel('FR')
 
-            if pval <=0.05
-                title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
-            else
-                title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+                if pval <=0.05
+                    title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
+                else
+                    title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+                end
             end
                         count = count + 1;
         end

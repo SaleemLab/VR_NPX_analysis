@@ -247,14 +247,14 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'))
         end
 
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'),[])
+        save_acll_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'),[])
 
         % V1
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
         metric_param.unstable_ids = @(x) x==0;
         metric_param.region = @(x) contains(x,'V1');
 
-        [~,cluster_id] = select_clusters(clusters_combined,metric_param);
+        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
         plot_theta_modulation(clusters_combined,place_fields,theta_modulation_L,theta_modulation_R,session_info(n).probe);
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','V1'),[])
 
