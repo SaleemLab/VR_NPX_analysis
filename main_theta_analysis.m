@@ -170,6 +170,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','V1'))~=7
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','V1'))
         end
+        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','V1'),[])
 
         % other
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
@@ -181,6 +182,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','others'))~=7
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','others'))
         end
+        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','others'),[])
     end
 end
 
