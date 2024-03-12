@@ -235,40 +235,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,'theta_modulation.mat'),"theta_modulation_R","theta_modulation_L")
-        %       plot_perievent_spiketimes
         
-        % HPC
-        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-        metric_param.unstable_ids = @(x) x==0;
-        metric_param.region = @(x) contains(x,'HPC');
-
-        [HPC_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        plot_theta_modulation(HPC_clusters,place_fields,theta_modulation_L,theta_modulation_R,session_info(n).probe);
-
-        if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'))~=7
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'))
-        end
-
-        save_acll_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','HPC'),[])
-
-        % V1
-        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-        metric_param.unstable_ids = @(x) x==0;
-        metric_param.region = @(x) contains(x,'V1');
-
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        plot_theta_modulation(clusters_combined,place_fields,theta_modulation_L,theta_modulation_R,session_info(n).probe);
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','V1'),[])
-
-        % other
-        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-        metric_param.unstable_ids = @(x) x==0;
-        metric_param.region = @(x) contains(x,'n.a');
-
-        [~,cluster_id] = select_clusters(clusters_combined,metric_param);
-        plot_theta_modulation(clusters_combined,place_fields,theta_modulation_L,theta_modulation_R,session_info(n).probe);
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','theta','others'),[])
-
         
     end
 end
