@@ -30,8 +30,10 @@ fig.Position = [334.7143 102.7143 556 830]
 
 if isfield(options,'spatial_cell_id')
     fig.Name = sprintf('%s %s spatial cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord));
+    sgtitle(sprintf('%s %s spatial cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord)))
 else
     fig.Name = sprintf('%s %s cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord));
+    sgtitle(sprintf('%s %s cluster density probe %i X coord %i',options.SUBJECT,options.SESSION,nprobe,unique(sorted_config.Ks_xcoord)))
 end
 
 subplot(1,2,1);

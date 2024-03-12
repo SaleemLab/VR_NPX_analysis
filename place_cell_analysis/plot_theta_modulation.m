@@ -18,6 +18,10 @@ position_edges = 0:2:140;
 phase_edges = 0:20:360;
 phase_edges = pi/180.*phase_edges;
 
+position_bins = position_edges(1:end-1) + diff(position_edges)/2;
+bin_centres = phase_edges(1:end-1) + diff(phase_edges)/2;
+bin_centres = 180*bin_centres'./pi;
+
 for ncell = 1 : length(good_cell_index)
     count = 1;
     %     for nprobe = 1:no_of_probes
@@ -27,43 +31,228 @@ for ncell = 1 : length(good_cell_index)
 
         if count == 1
             fig = figure;
-            fig.Position = [273 234 1040 720];
-            fig.Name = [273 234 1040 720];
-
-        elseif count == 3
-            count = 1;
-            fig = figure;
-            fig.Position = [273 234 1040 720];
-            fig.Name = [273 234 1040 720];
+            fig.Position = [400 100 1350 880];
+            fig.Name = sprintf('%s %s theta modulation cell %i %s depth %i um',options(1).SUBJECT,options(1).SESSION,...
+                place_fields(1).cluster_id(good_cell_index(ncell)),clusters.region(clusters.cluster_id==place_fields(1).cluster_id(good_cell_index(ncell))),...
+                place_fields(1).peak_depth(good_cell_index(ncell)));
+            sgtitle(sprintf('theta modulation cell %i %s depth %i um',place_fields(1).cluster_id(good_cell_index(ncell)),...
+                clusters.region(clusters.cluster_id==place_fields(1).cluster_id(good_cell_index(ncell))),place_fields(1).peak_depth(good_cell_index(ncell))))
         end
 
         if ~isempty(theta_modulation_L)
             cell_index = find(theta_modulation_L(1).cluster_id==place_fields(1).cluster_id(good_cell_index(ncell)));
 
-            subplot(3,4,count)
+            ax1 = subplot(4,4,count);
             imagesc(position_edges(1:end-1)+1,180/pi.*phase_edges(2:end),theta_modulation_L(track).position_phase_map{cell_index}')
+            set(gca,'YDir','normal')
             colorbar
-            colormap(flip(gray))
+            colormap(ax1,flip(gray))
+%             colormap(summer)
             xticks(position_edges(1:10:end-1)+1)
             yticks(180/pi.*phase_edges(2:3:end))
-            title(sprintf('Track %i cell %i %s',track,theta_modulation_L(1).cluster_id(cell_index),clusters.region(clusters.cluster_id==place_fields(1).cluster_id(cell_index))))
+            title(sprintf('Track %i cell %i %s (L theta)',track,theta_modulation_L(1).cluster_id(cell_index),clusters.region(clusters.cluster_id==place_fields(1).cluster_id(cell_index))))
             xlabel('Spatial location')
             ylabel('Theta phase')
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-            subplot(3,3,count+3)
-            polarhistogram(theta_modulation_L(track).spike_times_phase_position{ncell}(:,2),0:2*pi/18:2*pi)
+            subplot(4,4,count+4)
+            plot(bin_centres,theta_modulation_L(track).theta_phase_map{cell_index})
+            xticks(0:45:360)
+            xlabel('theta phases')
+            ylabel('FR')
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-            subplot(3,3,count+6)
-            lags= -69:69;
+            if theta_modulation_L(track).theta_modulation_percentile(cell_index) > 0.95
+                title(sprintf('L Theta modulation index %.2f',theta_modulation_L(track).theta_modulation_index(cell_index)),Color='r')
+            else
+                title(sprintf('L Theta modulation index %.2f',theta_modulation_L(track).theta_modulation_index(cell_index)))
+            end
+
+            ax2 = subplot(4,4,count+8);
+            lags= -2*69:2:69*2;
             imagesc(lags,180/pi.*phase_edges(2:end), theta_modulation_L(track).position_phase_xcorr_map{cell_index}')
+            xlim([-30 30])
+            set(gca,'YDir','normal')
             hold on;xline(0,'r')
             colorbar
-            colormap(flip(gray))
-            xticks(lags(1:10:end-1)+1)
+            colormap(ax2,parula)
+            %             colormap(flip(gray))
+            xticks(lags(  find(lags==0)-30:4:find(lags==0)+30))
             yticks(180/pi.*phase_edges(2:3:end))
             xlabel('Spatial shift')
             ylabel('Theta phase')
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            title(sprintf('Sin fit phase %.2f (ampitude percentile %.2f)',theta_modulation_L(track).sin_fit_phase_offset(cell_index),theta_modulation_L(track).phase_amplitude_percentile(cell_index)));
+
+
+            subplot(4,4,count+12)
+            
+            gaussianWindow = gausswin(8/mean(diff(position_edges))*2.5*2+1);% 4 datapoint or 8cm position bin for one SD (alpha is fixed at 2.5)
+            gaussianWindow = gaussianWindow/sum(gaussianWindow);
+            average_map = filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}));
+
+            [peak_FR,peak_index]=max(average_map);
+            average_map = (average_map-min(average_map))/(peak_FR+min(average_map));
+            average_map = average_map/max(average_map);
+
+            
+            thresholded = find((average_map(peak_index+1:end)<0.3) == 1);
+            if ~isempty(thresholded)
+                thresholded = thresholded(1);
+                upper_bound =  peak_index + thresholded;
+            else
+                upper_bound = length(average_map);
+            end
+
+            thresholded = find((average_map(1:peak_index-1)<0.3) == 1);
+            if ~isempty(thresholded)
+                lower_bound =  thresholded(end);
+            else
+                lower_bound = 0;
+            end
+
+            spike_id = theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) > lower_bound*2 & theta_modulation_L(track).spike_times_phase_position{cell_index}(:,3) < upper_bound*2;
+
+            [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3));
+            theta_modulation_L(track).circ_corr(cell_index)=circ_corr;
+            theta_modulation_L(track).circ_corr_pval(cell_index)=pval;
+
+            scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.1)
+            xlabel('position')
+            ylabel('theta phase')
+            
+            hold on
+            scatter(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_L(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.05)
+            xlabel('position')
+            ylabel('theta phase')
+            ylim([0 380])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            plot(position_bins,average_map*380)
+            yyaxis right
+            ax = gca;
+            ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
+%             yylabel('FR')
+            ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
+            ylabel('FR')
+
+            if pval <=0.05
+                title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
+            else
+                title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+            end
+            
             count = count + 1;
+        end
+
+
+
+        if ~isempty(theta_modulation_R)
+            cell_index = find(theta_modulation_R(1).cluster_id==place_fields(1).cluster_id(good_cell_index(ncell)));
+
+            ax1 = subplot(4,4,count);
+            imagesc(position_edges(1:end-1)+1,180/pi.*phase_edges(2:end),theta_modulation_R(track).position_phase_map{cell_index}')
+            set(gca,'YDir','normal')
+            colorbar
+            colormap(ax1,flip(gray))
+            xticks(position_edges(1:10:end-1)+1)
+            yticks(180/pi.*phase_edges(2:3:end))
+            title(sprintf('Track %i cell %i %s (R theta)',track,theta_modulation_R(1).cluster_id(cell_index),clusters.region(clusters.cluster_id==place_fields(1).cluster_id(cell_index))))
+            xlabel('Spatial location')
+            ylabel('Theta phase')
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            subplot(4,4,count+4)
+            plot(bin_centres,theta_modulation_R(track).theta_phase_map{cell_index})
+            xticks(0:45:360)
+            xlabel('theta phases')
+            ylabel('FR')
+
+            if theta_modulation_R(track).theta_modulation_percentile(cell_index) > 0.95
+                title(sprintf('R Theta modulation index %.2f',theta_modulation_R(track).theta_modulation_index(cell_index)),Color='r')
+            else
+                title(sprintf('R Theta modulation index %.2f',theta_modulation_R(track).theta_modulation_index(cell_index)))
+            end
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            ax2 = subplot(4,4,count+8);
+            lags= -2*69:2:69*2;
+            imagesc(lags,180/pi.*phase_edges(2:end), theta_modulation_R(track).position_phase_xcorr_map{cell_index}')
+            set(gca,'YDir','normal')
+            xlim([-30 30])
+            colormap(ax2,parula)
+            hold on;xline(0,'r')
+            colorbar
+%             colormap(flip(gray))
+            xticks(lags(  find(lags==0)-30:4:find(lags==0)+30))
+            yticks(180/pi.*phase_edges(2:3:end))
+            xlabel('Spatial shift')
+            ylabel('Theta phase')
+
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            title(sprintf('Sin fit phase %.2f (ampitude percentile %.2f)',theta_modulation_R(track).sin_fit_phase_offset(cell_index),theta_modulation_R(track).phase_amplitude_percentile(cell_index)));
+
+
+            subplot(4,4,count+12)
+            gaussianWindow = gausswin(8/mean(diff(position_edges))*2.5*2+1);% 4 datapoint or 8cm position bin for one SD (alpha is fixed at 2.5)
+            gaussianWindow = gaussianWindow/sum(gaussianWindow);
+            average_map = filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}));
+
+            [peak_FR,peak_index]=max(average_map);
+            average_map = (average_map-min(average_map))/(peak_FR+min(average_map));
+            average_map = average_map/max(average_map);
+
+            thresholded = find((average_map(peak_index+1:end)<0.3) == 1);
+            if ~isempty(thresholded)
+                thresholded = thresholded(1);
+                upper_bound =  peak_index + thresholded;
+            else
+                upper_bound = length(average_map);
+            end
+
+            thresholded = find((average_map(1:peak_index-1)<0.3) == 1);
+            if ~isempty(thresholded)
+                lower_bound =  thresholded(end);
+            else
+                lower_bound = 0;
+            end
+
+            spike_id = theta_modulation_R(track).spike_times_phase_position{cell_index}(:,3) > lower_bound*2 & theta_modulation_R(track).spike_times_phase_position{cell_index}(:,3) < upper_bound*2;
+
+            [circ_corr,pval] = circ_corrcl(wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3));
+            theta_modulation_R(track).circ_corr(cell_index)=circ_corr;
+            theta_modulation_R(track).circ_corr_pval(cell_index)=pval;
+
+            scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(spike_id,2)),4,'r','filled','MarkerFaceAlpha',0.1)
+            xlabel('position')
+            ylabel('theta phase')
+            
+            hold on
+            scatter(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,3),180/pi*wrapTo2Pi(theta_modulation_R(track).spike_times_phase_position{cell_index}(~spike_id,2)),4,'k','filled','MarkerFaceAlpha',0.05)
+            xlabel('position')
+            ylabel('theta phase')
+            ylim([0 380])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            plot(position_bins,average_map*380)
+            yyaxis right
+            ax = gca;
+            ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
+%             yylabel('FR')
+            ylim([min(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)}))) max(filtfilt(gaussianWindow,1,mean(place_fields(track).raw{good_cell_index(ncell)})))])
+            ylabel('FR')
+
+            if pval <=0.05
+                title(sprintf('circ corr %.2f %.2f',circ_corr,pval),Color='r');
+            else
+                title(sprintf('circ corr %.2f %.2f',circ_corr,pval));
+            end
+                        count = count + 1;
         end
 
         %% phase precession vs location on track
@@ -73,10 +262,10 @@ for ncell = 1 : length(good_cell_index)
         % needs input in radians
         %         if ~isempty(place_cell_times) % only useful for hippocampal cell
         %             [TPP(track).circ_lin_corr(ncell),TPP(track).circ_lin_PVAL(ncell)] = ...
-        %                 circ_corrcl(TPP(track).spike_phases{ncell},TPP(track).spike_positions{ncell});
+        
         %         end
 
-        toc
+
     end
 
 end
@@ -85,7 +274,6 @@ end
 %
 end
 % end
-end
 
 
 
