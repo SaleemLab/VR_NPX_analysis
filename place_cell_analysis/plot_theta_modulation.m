@@ -132,14 +132,21 @@ for ncell = 1 : length(good_cell_index)
                 end
             else
                 [~,peak_index]=max(average_map);
+                upper_min = 70;
+                lower_min = 1;
             end
 
             [peak_FR]=max(average_map);
             average_map = (average_map-min(average_map))/(peak_FR+min(average_map));
             average_map = average_map/max(average_map);
 
+            local_averaged_map = average_map;
+            local_averaged_map(local_averaged_map>(local_averaged_map(peak_index))) = 0;
 
-            thresholded = find((average_map(peak_index+1:end)<0.3) == 1);
+            local_averaged_map = (local_averaged_map-min(local_averaged_map))/(max(local_averaged_map)+min(local_averaged_map));
+            local_averaged_map = local_averaged_map/max(local_averaged_map);
+
+            thresholded = find((local_averaged_map(peak_index+1:end)<0.3) == 1);
             if ~isempty(thresholded)
                 thresholded = thresholded(1);
                 upper_bound =  peak_index + thresholded;
@@ -151,12 +158,13 @@ for ncell = 1 : length(good_cell_index)
                 upper_bound = upper_min;
             end
 
-            thresholded = find((average_map(1:peak_index-1)<0.3) == 1);
+            thresholded = find((local_averaged_map(1:peak_index-1)<0.3) == 1);
             if ~isempty(thresholded)
                 lower_bound =  thresholded(end);
             else
                 lower_bound = 0;
             end
+
 
             if lower_bound<lower_min
                 lower_bound = lower_min;
