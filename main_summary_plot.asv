@@ -1,4 +1,4 @@
-%% Script for plotting key summary figures of the experiment 
+%% Script for plotting key summary figures of the experiment
 
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
@@ -39,13 +39,13 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             options.importMode = 'KS';
             [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(options,[]);
             xcoord = chan_config.Ks_xcoord;
-%             best_channels{nprobe}.xcoord
+            %             best_channels{nprobe}.xcoord
             xcoord_avaliable = best_channels{nprobe}.xcoord(~isnan(best_channels{nprobe}.surface_depth));
 
             power = [];
@@ -54,7 +54,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
                 ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
             end
-%             xcoord_avaliable = unique(xcoord);
+            %             xcoord_avaliable = unique(xcoord);
 
             % sort channel according to y coordinate
             [ycoord idx] = sort(ycoord,'ascend');
@@ -67,13 +67,14 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
 
             spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
                 find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
-             
+
             if nprobe == 1
                 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields(1).cluster_id,clusters(nprobe).merged_cluster_id)));
                 if isempty(good_cell_index)
                     continue
                 end
                 options.spatial_cell_id = place_fields(1).cluster_id(good_cell_index);
+
             elseif nprobe == 2
                 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields(1).cluster_id-10000,clusters(nprobe).merged_cluster_id)));
                 if isempty(good_cell_index)
@@ -91,7 +92,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','probe_depth_profile'),[])
-      
+
 
         %         %GLM analysis
         %         spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
@@ -135,11 +136,11 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             options.importMode = 'KS';
-            
+
         end
 
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))== 0
@@ -165,11 +166,58 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 6 7 8 9 10 12 14]
+theta_modulation_R = [];
+theta_modulation_L = [];
+ripple_modulation_R = [];
+ripple_modulation_L = [];
 
 place_fields_all = [];
-theta_modulation_L_all = [];
-theta_modulation_R_all = [];
+
+for track_id = 1:2
+    place_fields_all(track_id).session_id = [];
+    place_fields_all(track_id).session = [];
+    place_fields_all(track_id).subject = [];
+    place_fields_all(track_id).cluster_id = [];
+    place_fields_all(track_id).cell_type = [];
+    place_fields_all(track_id).region = [];
+%     place_fields_all(track_id).peak_channel_waveform = [];
+%     place_fields_all(track_id).dwell_map = [];
+    place_fields_all(track_id).relative_depth = [];
+
+
+    place_fields_all(track_id).x_bin_edges = [];
+    place_fields_all(track_id).x_bin_centres =[];
+    place_fields_all(track_id).average_map = [];
+    place_fields_all(track_id).raw = [];
+
+    place_fields_all(track_id).odd_even_corr = [];
+    place_fields_all(track_id).odd_even_stability = [];
+
+    place_fields_all(track_id).t1_t2_corr = [];
+    place_fields_all(track_id).t1_t2_remapping = [];
+
+    place_fields_all(track_id).ripple_spike_count = [];
+    place_fields_all(track_id).ripple_PSTH = [];
+    place_fields_all(track_id).ripple_modulation_percentile = [];
+    place_fields_all(track_id).pre_ripple_activation = [];
+    place_fields_all(track_id).pre_ripple_inhibition = [];
+    place_fields_all(track_id).post_ripple_activation = [];
+    place_fields_all(track_id).post_ripple_inhibition = [];
+
+    place_fields_all(track_id).theta_modulation_percentile = [];
+    place_fields_all(track_id).theta_phase_map = [];
+    place_fields_all(track_id).position_phase_xcorr_map = [];
+    place_fields_all(track_id).position_phase_map = [];
+
+    place_fields_all(track_id).spatial_cell_correlation = [];
+    place_fields_all(track_id).ripple_cell_correlation = [];
+end
+
+place_fields_all_L = place_fields_all;
+place_fields_all_R = place_fields_all;
+
 for nsession =[1 2 3 4 6 7 8 9 10 12 14]
+    tic
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -197,7 +245,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
         else
@@ -214,44 +262,351 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             % Currently support just merged cluster id
         end
 
-        cluster_id = place_fields(1).cluster_id(good_cell_index);
-
-        place_fields(1).within_track_corr(good_cell_index)
-
-        select_clusters
-        for nprobe = 1:length(session_info(n).probe) % ripple or theta
+        for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
-            options.importMode = 'KS';
-            place_fields(nprobe)
 
             if options.probe_hemisphere == 1
+                for track_id = 1:2
+                    place_fields_all_L(track_id).session_id = [place_fields_all_L(track_id).session_id nsession*ones(1,length(good_cell_index))];
+                    place_fields_all_L(track_id).subject{nsession} = [options.SUBJECT];
+                    place_fields_all_L(track_id).session{nsession} = [options.SESSION];
 
+                    ratemap_matrix = [place_fields(track_id).raw{good_cell_index}];
+                    ratemap_matrix = reshape(ratemap_matrix,size(place_fields(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+
+                    all_fields = fieldnames(place_fields_all_L);
+                    all_fields(strcmp(all_fields,'raw'))=[];
+
+                    pf_fields = fieldnames(place_fields);
+                    ripple_fields = fieldnames(ripple_modulation_L);
+                    theta_fields = fieldnames(theta_modulation_L);
+                    
+                    for iField = 1:length(all_fields)
+
+                        if sum(strcmp(ripple_fields,all_fields{iField})) == 1
+                            place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                ripple_modulation_L(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
+                            continue
+                        end
+
+                        if sum(strcmp(theta_fields,all_fields{iField})) == 1
+                            place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                theta_modulation_L(track_id).(theta_fields{strcmp(theta_fields,all_fields{iField})})];
+                            continue
+                        end
+
+                        if sum(strcmp(pf_fields,all_fields{iField})) == 1
+                            if contains(all_fields{iField},'x_bin')==1
+                                place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                    place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})];
+                            else
+                                if size(place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})}),1)~=1
+                                    temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(good_cell_index,:)';
+                                else
+                                    temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(:,good_cell_index);
+                                end
+
+                                place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                    temp];
+                            end
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'ripple_PSTH')
+                            PSTH_matrix = [ripple_modulation_L(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).ripple_PSTH = [place_fields_all_L(track_id).ripple_PSTH PSTH_matrix];
+                        end
+
+
+                        if strcmp(all_fields{iField},'ripple_spike_count')
+                            place_fields_all_L(track_id).ripple_spike_count = [place_fields_all_L(track_id).ripple_spike_count ripple_modulation_L(track_id).spike_count];
+                        end
+
+                    end
+
+                    % Relative distance from the surface for clusters from
+                    % different shanks (mainly for cortex)
+                    options.importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
+                    [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(options,[]);
+
+                    [Lia,Locb] = ismember(place_fields(track_id).peak_channel(good_cell_index),chan_config.Channel);
+                    
+                    shank_id_avaliable = ceil(best_channels{nprobe}.xcoord./250); % based on xcoord in best_channels
+                    shanks_avaliable = unique(shank_id_avaliable);
+
+                    for nshank = shanks_avaliable
+                        surface_depth(nshank) = median(best_channels{nprobe}.surface_depth(shank_id_avaliable == shanks_avaliable(nshank)),'omitnan');
+                    end
+
+                    place_fields_all_L(track_id).relative_depth = [place_fields_all_L(track_id).relative_depth  ...
+                        surface_depth(chan_config.Shank(Locb))'-ripple_modulation_L(track_id).peak_depth];
+
+                    ratemap_matrix = [place_fields(track_id).raw{good_cell_index}];
+                    ratemap_matrix = reshape(ratemap_matrix,size(place_fields(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+                    place_fields_all_L(track_id).raw = [place_fields_all_L(track_id).raw;place_fields(track_id).raw(good_cell_index)];
+                    place_fields_all_L(track_id).average_map = [place_fields_all_L(track_id).average_map squeeze(mean(ratemap_matrix,1))];
+
+                end
 
             elseif options.probe_hemisphere == 2
-                ripple_modulation_R
-                theta_modulation_R
+                for track_id = 1:2
+                    place_fields_all_R(track_id).session_id = [place_fields_all_R(track_id).session_id nsession*ones(1,length(good_cell_index))];
+                    place_fields_all_R(track_id).subject{nsession} = [options.SUBJECT];
+                    place_fields_all_R(track_id).session{nsession} = [options.SESSION];
+
+                    all_fields = fieldnames(place_fields_all_R);
+                    all_fields(strcmp(all_fields,'raw'))=[];
+
+                    pf_fields = fieldnames(place_fields);
+                    ripple_fields = fieldnames(ripple_modulation_R);
+                    theta_fields = fieldnames(theta_modulation_R);
+                    
+                    for iField = 1:length(all_fields)
+
+                        if sum(strcmp(ripple_fields,all_fields{iField})) == 1
+                            place_fields_all_R(track_id).(all_fields{iField}) = [place_fields_all_R(track_id).(all_fields{iField}) ...
+                                ripple_modulation_R(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
+                            continue
+                        end
+
+                        if sum(strcmp(theta_fields,all_fields{iField})) == 1
+                            place_fields_all_R(track_id).(all_fields{iField}) = [place_fields_all_R(track_id).(all_fields{iField}) ...
+                                theta_modulation_R(track_id).(theta_fields{strcmp(theta_fields,all_fields{iField})})];
+                            continue
+                        end
+
+                        if sum(strcmp(pf_fields,all_fields{iField})) == 1
+                            if contains(all_fields{iField},'x_bin')==1
+                                place_fields_all_R(track_id).(all_fields{iField}) = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})});
+                            else
+                                if size(place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})}),1)~=1
+                                    temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(good_cell_index,:)';
+                                else
+                                    temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(:,good_cell_index);
+                                end
+
+                                place_fields_all_R(track_id).(all_fields{iField}) = [place_fields_all_R(track_id).(all_fields{iField}) ...
+                                    temp];
+                            end
+
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'ripple_PSTH')
+                            PSTH_matrix = [ripple_modulation_R(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).ripple_PSTH = [place_fields_all_R(track_id).ripple_PSTH PSTH_matrix];
+                        end
+
+                        if strcmp(all_fields{iField},'ripple_spike_count')
+                            place_fields_all_R(track_id).ripple_spike_count = [place_fields_all_R(track_id).ripple_spike_count ripple_modulation_R(track_id).spike_count];
+                        end
+                    end
+                    
+                    % Relative distance from the surface for clusters from
+                    % different shanks (mainly for cortex)
+                    options.importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
+                    [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(options,[]);
+
+                    [Lia,Locb] = ismember(place_fields(track_id).peak_channel(good_cell_index),chan_config.Channel);
+                    
+                    shank_id_avaliable = ceil(best_channels{nprobe}.xcoord./250); % based on xcoord in best_channels
+                    shanks_avaliable = unique(shank_id_avaliable);
+
+                    for nshank = shanks_avaliable
+                        surface_depth(nshank) = median(best_channels{nprobe}.surface_depth(shank_id_avaliable == shanks_avaliable(nshank)),'omitnan');
+                    end
+
+                    place_fields_all_R(track_id).relative_depth = [place_fields_all_R(track_id).relative_depth  ...
+                        surface_depth(chan_config.Shank(Locb))'-ripple_modulation_R(track_id).peak_depth];
+
+
+                    ratemap_matrix = [place_fields(track_id).raw{good_cell_index}];
+                    ratemap_matrix = reshape(ratemap_matrix,size(place_fields(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+                    place_fields_all_R(track_id).raw = [place_fields_all_R(track_id).raw;place_fields(track_id).raw(good_cell_index)];
+                    place_fields_all_R(track_id).average_map = [place_fields_all_R(track_id).average_map squeeze(mean(ratemap_matrix,1))];
+
+                end
 
             end
 
         end
 
 
-        %         %GLM analysis
-        %         spatial_modulation_GLM_analysis(V1_clusters_L,[],Behaviour,Task_info);
-        %
-        %         spatial_modulation_GLM_analysis(V1_clusters_L,place_fields_V1_L(1).cluster_id(place_fields_V1_L(1).all_good_cells_LIBERAL),Behaviour,Task_info);
+        % Plot individual cells
+
+
+    end
+    toc
+end
+
+save(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'),'place_fields_all_L','place_fields_all_R')
+
+
+% 
+% save(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+% save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+
+%% plot population map or individual cell with all information
+
+% HPC
+selected_cells_R = [];
+selected_cells_L = [];
+
+selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & ...
+    place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
+    place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
+
+cluster_id = place_fields_all_L(1).cluster_id(selected_cells_L);
+session_id = place_fields_all_L(1).session_id(selected_cells_L);
+
+counter = 1;
+for ncell = 1:length(cluster_id)
+    if sum(place_fields_all_R(1).cluster_id==cluster_id(ncell)&place_fields_all_R(1).session_id==session_id(ncell))>0
+        selected_cells_R(counter) = find(place_fields_all_R(1).cluster_id==cluster_id(ncell)&place_fields_all_R(1).session_id==session_id(ncell))
+        counter = counter + 1;
     end
 end
 
 
-if exist(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))== 0
-    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+figure
+subplot(2,2,1)
+imagesc(normalize(place_fields_all_L(1).average_map(:,selected_cells_L),'range')');
+xlabel('position')
+subplot(2,2,2)
+imagesc(normalize(place_fields_all_L(2).average_map(:,selected_cells_L),'range')');
+xlabel('position')
+% title('L ripple')
+subplot(2,2,3)
+imagesc(normalize(place_fields_all_R(1).average_map(:,selected_cells_R),'range')');
+xlabel('position')
+subplot(2,2,4)
+imagesc(normalize(place_fields_all_R(2).average_map(:,selected_cells_R),'range')');
+xlabel('position')
+% title('R ripple')
+
+figure
+subplot(2,2,1)
+imagesc(normalize(place_fields_all_L(1).ripple_PSTH(:,selected_cells_L),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('L ripple T1')
+
+subplot(2,2,2)
+imagesc(normalize(place_fields_all_L(2).ripple_PSTH(:,selected_cells_L),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('L ripple T2')
+
+subplot(2,2,3)
+imagesc(normalize(place_fields_all_R(1).ripple_PSTH(:,selected_cells_R),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('R ripple T1')
+
+subplot(2,2,4)
+imagesc(normalize(place_fields_all_R(2).ripple_PSTH(:,selected_cells_R),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('R ripple T2')
+sgtitle('ripple PSTH')
+
+
+figure
+subplot(2,2,1)
+imagesc(normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('L theta T1')
+subplot(2,2,2)
+imagesc(normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('L theta T2')
+subplot(2,2,3)
+imagesc(normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('R theta T1')
+subplot(2,2,4)
+imagesc(normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('R theta T2')
+sgtitle('Theta')
+
+
+
+selected_cells_R = [];
+selected_cells_L = [];
+
+selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
+    place_fields_all_R(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
+    place_fields_all_R(2).ripple_modulation_percentile>0.95)]);
+
+cluster_id = place_fields_all_R(1).cluster_id(selected_cells_R);
+session_id = place_fields_all_R(1).session_id(selected_cells_R);
+
+counter = 1;
+for ncell = 1:length(cluster_id)
+    if sum(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))>0
+        selected_cells_L(counter) = find(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))
+        counter = counter + 1;
+    end
 end
 
-save(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
-save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+figure
+subplot(2,2,1)
+imagesc(normalize(place_fields_all_L(1).average_map(:,selected_cells_L),'range')');
+xlabel('position')
+subplot(2,2,2)
+imagesc(normalize(place_fields_all_L(2).average_map(:,selected_cells_L),'range')');
+xlabel('position')
+% title('L ripple')
+subplot(2,2,3)
+imagesc(normalize(place_fields_all_R(1).average_map(:,selected_cells_R),'range')');
+xlabel('position')
+subplot(2,2,4)
+imagesc(normalize(place_fields_all_R(2).average_map(:,selected_cells_R),'range')');
+xlabel('position')
+% title('R ripple')
 
-%%
+figure
+subplot(2,2,1)
+imagesc(normalize(place_fields_all_L(1).ripple_PSTH(:,selected_cells_L),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('L ripple T1')
+
+subplot(2,2,2)
+imagesc(normalize(place_fields_all_L(2).ripple_PSTH(:,selected_cells_L),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('L ripple T2')
+
+subplot(2,2,3)
+imagesc(normalize(place_fields_all_R(1).ripple_PSTH(:,selected_cells_R),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('R ripple T1')
+
+subplot(2,2,4)
+imagesc(normalize(place_fields_all_R(2).ripple_PSTH(:,selected_cells_R),'range')');
+xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
+title('R ripple T2')
+sgtitle('ripple PSTH')
+
+
+figure
+subplot(2,2,1)
+imagesc(normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('L theta T1')
+subplot(2,2,2)
+imagesc(normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('L theta T2')
+subplot(2,2,3)
+imagesc(normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('R theta T1')
+subplot(2,2,4)
+imagesc(normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+title('R theta T2')
+sgtitle('Theta')
+
+theta_phase_map = reshape([place_fields_all_R(1).theta_phase_map{1:2}],[],size(place_fields_all_R(1).theta_phase_map{1},2))
+
+plot_spatial_theta_ripple_individual_cell(selected_cluster_id,place_fields_all_L,place_fields_all_R)
+plot_spatial_theta_ripple_population(selected_cluster_id,place_fields_all_L,place_fields_all_R)
+
+% V1
+plot_spatial_theta_ripple_population(selected_cluster_id,place_fields_all_L,place_fields_all_R)
+
+%% Plot cell summary
 
 
 %%
@@ -285,7 +640,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        
+
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             options.importMode = 'KS';
@@ -293,7 +648,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             xcoord = chan_config.Ks_xcoord;
             best_channels{nprobe}.xcoord
             xcoord_avaliable = best_channels{nprobe}.xcoord(~isnan(best_channels{nprobe}.surface_depth));
-            
+
             plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(1),:),chan_config,chan_config(xcoord == xcoord_avaliable(1),:),best_channels{nprobe},clusters,options);
         end
 
@@ -302,8 +657,8 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
         end
 
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','probe_depth_profile'),[])
-        
-        
+
+
         % Plotting raster plot
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
         metric_param.unstable_ids = @(x) x==0;
