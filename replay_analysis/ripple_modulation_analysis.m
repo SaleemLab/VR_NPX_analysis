@@ -137,8 +137,32 @@ for iCell = 1:no_cluster
     ripple_modulation(1).ripple_modulation(iCell) = FR_modulation1;
     ripple_modulation(2).ripple_modulation(iCell) = FR_modulation2;
 
-    ripple_modulation(1).ripple_modulation_percentile(iCell) = sum(FR_modulation1>FR_difference_shuffled1)/length(FR_difference_shuffled1);
-    ripple_modulation(2).ripple_modulation_percentile(iCell) = sum(FR_modulation2>FR_difference_shuffled2)/length(FR_difference_shuffled2);
+    ripple_modulation(1).ripple_modulation_percentile(iCell) = sum(abs(FR_modulation1)>abs(FR_difference_shuffled1))/length(FR_difference_shuffled1); % abs FR change as a neuron can be activated or inhibited
+    ripple_modulation(2).ripple_modulation_percentile(iCell) = sum(abs(FR_modulation2)>abs(FR_difference_shuffled2))/length(FR_difference_shuffled2);
+
+    % PRE-ripple modulation
+    temp = psth_track1(bins<0 & bins>-0.25);
+    tmep_shuffled = PSTH_shuffled1(:,bins<0 & bins>-0.25);
+    ripple_modulation(1).pre_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
+    ripple_modulation(1).pre_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+
+    temp = psth_track2(bins<0 & bins>-0.25);
+    tmep_shuffled = PSTH_shuffled2(:,bins<0 & bins>-0.25);
+    ripple_modulation(2).pre_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
+    ripple_modulation(2).pre_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+
+    % POST-ripple modulation
+    temp = psth_track1(bins>0 & bins<0.25);
+    tmep_shuffled = PSTH_shuffled1(:,bins>0 & bins<0.25);
+    ripple_modulation(1).post_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
+    ripple_modulation(1).post_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+
+    temp = psth_track2(bins>0 & bins<0.25);
+    tmep_shuffled = PSTH_shuffled2(:,bins>0 & bins<0.25);
+    ripple_modulation(2).post_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
+    ripple_modulation(2).post_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+
+
 end
 toc
 end

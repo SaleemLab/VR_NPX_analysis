@@ -164,7 +164,8 @@ elseif isfield(clusters,'sliding_rp_violation')
 
 
     if isfield(options,'spatial_cell_id')
-        good_unit_index = options.spatial_cell_id;
+        good_unit_index = find(ismember(clusters(nprobe).cluster_id,options.spatial_cell_id));
+
     else
         good_unit_index = find(clusters.sliding_rp_violation < 0.1 ...
             & clusters.amplitude_cutoff < 0.1 ...
