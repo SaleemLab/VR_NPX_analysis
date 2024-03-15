@@ -63,16 +63,16 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
             
-            event_id = [ones(1,length(V1_reactivations(nprobe).T1_onset)) 2*ones(1,length(V1_reactivations(nprobe).T2_onset))];
-            [event_times,index] = sort([V1_reactivations(nprobe).T1_onset V1_reactivations(nprobe).T2_onset]);
+            event_id = [ones(1,length(V1_reactivations(nprobe).T1_onset)) 2*ones(1,length(ripples(nprobe).T2_onset))];
+            [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
 
             if options.probe_hemisphere == 1
-                [V1_event_modulation_L]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                [V1_event_modulation_L]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-0.3 0.3],0.02,...
                 'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
                 'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
 
             elseif options.probe_hemisphere == 2
-                [V1_event_modulation_R]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                [V1_event_modulation_R]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-0.3 0.3],0.02,...
                 'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
                 'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
 
