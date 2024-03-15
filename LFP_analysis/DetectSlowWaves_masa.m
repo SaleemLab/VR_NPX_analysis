@@ -134,8 +134,18 @@ if NOSPIKES
     spikes = 'NOSPIKES'; allspikes = 'NOSPIKES';
     numcells = nan;
 elseif ~isempty(spikes)
-    allspikes = sort(cat(1,spikes.times{:}));
-    numcells = length(spikes.UID);
+
+    if isfield(spikes,'merged_cluster_id')
+        allspikes = spikes.spike_times';
+        numcells = length(unique(spikes.merged_cluster_id));
+    elseif isfield(spikes,'cluster_id')
+        allspikes = clusters.spike_times';
+        numcells = length(unique(spikes.cluster_id));
+    else
+        allspikes = sort(cat(1,spikes.times{:}));
+        numcells = length(spikes.UID);
+    end
+
 elseif MUAspikes
     [ MUA ] = MUAfromDat( basePath,'usepeaks',true,'saveMat',true );
     spikes = MUA.peaks;
@@ -201,8 +211,8 @@ display('Filtering LFP')
 
 data = lfp;
 lfp = [];
-lfp.data = data;
-lfp.timestamps = time';
+lfp.data = data';
+lfp.timestamps = time;
 lfp.samplingRate = SR;
 
 deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
@@ -648,8 +658,27 @@ function [thresholds,threshfigs] = DetermineThresholds(deltaLFP,gammaLFP,spikes,
     nummagbins = 30;
     timebins = linspace(-win,win,numtimebins);
     
+    if isfield(spikes,'merged_cluster_id')
+        allspikes = spikes.spike_times';
+        numcells = length(unique(spikes.merged_cluster_id));
+    elseif isfield(spikes,'cluster_id')
+        allspikes = clusters.spike_times';
+        numcells = length(unique(spikes.cluster_id));
+    else
+        allspikes = sort(cat(1,spikes.times{:}));
+        numcells = length(spikes.UID);
+    end
+
     if strcmp(spikes,'NOSPIKES'); 
         NOSPIKES=true; allspikes = [];
+    elseif isfield(spikes,'merged_cluster_id')
+        allspikes = spikes.spike_times';
+        numcells = length(unique(spikes.merged_cluster_id));
+        NOSPIKES=false;
+    elseif isfield(spikes,'cluster_id')
+        allspikes = clusters.spike_times';
+        numcells = length(unique(spikes.cluster_id));
+        NOSPIKES=false;
     else
         numcells = length(spikes.times);
         allspikes = sort(cat(1,spikes.times{:}));

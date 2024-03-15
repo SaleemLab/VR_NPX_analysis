@@ -114,7 +114,7 @@ Stimulus_type = 'Masa2tracks';
 % [1 2 3 4 6 7 8 9 10 12 14]
 [1 2 3 4 6 7 8]
 
-for nsession =[14]
+for nsession =[1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -139,7 +139,7 @@ for nsession =[14]
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
 
-        clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
+        clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
 
         if contains(stimulus_name{n},'Masa')
             %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -273,6 +273,25 @@ for nsession =[14]
             % Detect CA1 ripple events
             [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                 'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
+
+            [ripples(nprobe)] = DetectSlowWaves_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
+
+            % detect Slow waves
+
+            options.region = 'HPC Combined';
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            metric_param.region = @(x) contains(x,'HPC');
+
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            
+            if isfield(LFP(nprobe),'L5')==1
+                slow_waves(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',LFP(nprobe).L5,'spikes',clusters);
+            else
+                slow_waves(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',LFP(nprobe).L4,'NREMInts',behavioural_state.SWS,'spikes',spikes);
+            end
+
         end
 
         for nprobe = 1:length(session_info(n).probe)

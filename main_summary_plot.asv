@@ -170,6 +170,8 @@ theta_modulation_R = [];
 theta_modulation_L = [];
 ripple_modulation_R = [];
 ripple_modulation_L = [];
+V1_event_modulation_L = [];
+V1_event_modulation_R = [];
 
 place_fields_all = [];
 
@@ -204,6 +206,14 @@ for track_id = 1:2
     place_fields_all(track_id).post_ripple_activation = [];
     place_fields_all(track_id).post_ripple_inhibition = [];
 
+    place_fields_all(track_id).V1_event_spike_count = [];
+    place_fields_all(track_id).V1_event_PSTH = [];
+    place_fields_all(track_id).V1_event_modulation_percentile = [];
+    place_fields_all(track_id).pre_V1_event_activation = [];
+    place_fields_all(track_id).pre_V1_event_inhibition = [];
+    place_fields_all(track_id).post_V1_event_activation = [];
+    place_fields_all(track_id).post_V1_event_inhibition = [];
+
     place_fields_all(track_id).theta_modulation_percentile = [];
     place_fields_all(track_id).theta_phase_map = [];
     place_fields_all(track_id).position_phase_xcorr_map = [];
@@ -233,6 +243,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'theta_modulation.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'V1_event_modulation.mat'));
             clusters = merged_clusters;
             sorting_option = 'spikeinterface';
         elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
@@ -280,6 +291,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     pf_fields = fieldnames(place_fields);
                     ripple_fields = fieldnames(ripple_modulation_L);
                     theta_fields = fieldnames(theta_modulation_L);
+                    V1_event_fields = fieldnames(V1_event_modulation_L);
                     
                     for iField = 1:length(all_fields)
 
@@ -292,6 +304,12 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                         if sum(strcmp(theta_fields,all_fields{iField})) == 1
                             place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
                                 theta_modulation_L(track_id).(theta_fields{strcmp(theta_fields,all_fields{iField})})];
+                            continue
+                        end
+
+                        if sum(strcmp(V1_event_fields,all_fields{iField})) == 1
+                            place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                V1_event_modulation_L(track_id).(V1_event_fields{strcmp(V1_event_fields,all_fields{iField})})];
                             continue
                         end
 
@@ -323,6 +341,16 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             place_fields_all_L(track_id).ripple_spike_count = [place_fields_all_L(track_id).ripple_spike_count ripple_modulation_L(track_id).spike_count];
                         end
 
+                        if strcmp(all_fields{iField},'V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_L(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).V1_event_PSTH = [place_fields_all_L(track_id).V1_event_PSTH PSTH_matrix];
+                        end
+
+
+                        if strcmp(all_fields{iField},'V1_event_spike_count')
+                            place_fields_all_L(track_id).V1_event_spike_count = [place_fields_all_L(track_id).V1_event_spike_count V1_event_modulation_L(track_id).spike_count];
+                        end
                     end
 
                     % Relative distance from the surface for clusters from
@@ -361,7 +389,8 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     pf_fields = fieldnames(place_fields);
                     ripple_fields = fieldnames(ripple_modulation_R);
                     theta_fields = fieldnames(theta_modulation_R);
-                    
+                    V1_event_fields = fieldnames(V1_event_modulation_R);
+
                     for iField = 1:length(all_fields)
 
                         if sum(strcmp(ripple_fields,all_fields{iField})) == 1
@@ -375,6 +404,13 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                                 theta_modulation_R(track_id).(theta_fields{strcmp(theta_fields,all_fields{iField})})];
                             continue
                         end
+
+                        if sum(strcmp(V1_event_fields,all_fields{iField})) == 1
+                            place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
+                                V1_event_modulation_R(track_id).(V1_event_fields{strcmp(V1_event_fields,all_fields{iField})})];
+                            continue
+                        end
+
 
                         if sum(strcmp(pf_fields,all_fields{iField})) == 1
                             if contains(all_fields{iField},'x_bin')==1
@@ -401,6 +437,17 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
 
                         if strcmp(all_fields{iField},'ripple_spike_count')
                             place_fields_all_R(track_id).ripple_spike_count = [place_fields_all_R(track_id).ripple_spike_count ripple_modulation_R(track_id).spike_count];
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_R(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).V1_event_PSTH = [place_fields_all_R(track_id).V1_event_PSTH PSTH_matrix];
+                        end
+
+
+                        if strcmp(all_fields{iField},'V1_event_spike_count')
+                            place_fields_all_R(track_id).V1_event_spike_count = [place_fields_all_R(track_id).V1_event_spike_count V1_event_modulation_R(track_id).spike_count];
                         end
                     end
                     
@@ -458,6 +505,14 @@ selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & 
     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
 
+average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);place_fields_all_L(2).average_map(:,selected_cells_L)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
+
+[~,index]=max(squeeze(average_map(:,:,1)'));
+[~,index]=sort(index);
+selected_cells_L = selected_cells_L(index);
+% selected_cells_L = find(contains(place_fields_all_L(1).region,'V1_R'));
+
 cluster_id = place_fields_all_L(1).cluster_id(selected_cells_L);
 session_id = place_fields_all_L(1).session_id(selected_cells_L);
 
@@ -471,57 +526,74 @@ end
 
 
 figure
+average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);place_fields_all_L(2).average_map(:,selected_cells_L)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
 subplot(2,2,1)
-imagesc(normalize(place_fields_all_L(1).average_map(:,selected_cells_L),'range')');
+imagesc(squeeze(average_map(:,:,1)));
 xlabel('position')
+title('Track Left')
+
 subplot(2,2,2)
-imagesc(normalize(place_fields_all_L(2).average_map(:,selected_cells_L),'range')');
+imagesc(squeeze(average_map(:,:,2)));
 xlabel('position')
-% title('L ripple')
+title('Track Right')
+
+average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
 subplot(2,2,3)
-imagesc(normalize(place_fields_all_R(1).average_map(:,selected_cells_R),'range')');
+imagesc(squeeze(average_map(:,:,1)));
 xlabel('position')
+title('Track Left')
+
 subplot(2,2,4)
-imagesc(normalize(place_fields_all_R(2).average_map(:,selected_cells_R),'range')');
+imagesc(squeeze(average_map(:,:,2)));
 xlabel('position')
-% title('R ripple')
+title('Track Right')
+
 
 figure
+rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)],'range')';
+rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L(1).ripple_PSTH,1),[]);
 subplot(2,2,1)
-imagesc(normalize(place_fields_all_L(1).ripple_PSTH(:,selected_cells_L),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('L ripple T1')
+imagesc(squeeze(rippple_PSTH(:,:,1)));
+xline(50)
+xlabel('Time')
+title('L ripple on Track Left')
 
 subplot(2,2,2)
-imagesc(normalize(place_fields_all_L(2).ripple_PSTH(:,selected_cells_L),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('L ripple T2')
+imagesc(squeeze(rippple_PSTH(:,:,2)));
+xline(50)
+xlabel('position')
+title('L ripple on Track Right')
 
+rippple_PSTH = normalize([place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)],'range')';
+rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_R(1).ripple_PSTH,1),[]);
 subplot(2,2,3)
-imagesc(normalize(place_fields_all_R(1).ripple_PSTH(:,selected_cells_R),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('R ripple T1')
+imagesc(squeeze(rippple_PSTH(:,:,1)));
+xline(50)
+xlabel('Time')
+title('R ripple on Track Left')
 
 subplot(2,2,4)
-imagesc(normalize(place_fields_all_R(2).ripple_PSTH(:,selected_cells_R),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('R ripple T2')
-sgtitle('ripple PSTH')
+imagesc(squeeze(rippple_PSTH(:,:,2)));
+xline(50)
+xlabel('position')
+title('R ripple on Track Right')
 
 
 figure
 subplot(2,2,1)
 imagesc(normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta T1')
+title('L theta on Track Left')
 subplot(2,2,2)
 imagesc(normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta T2')
+title('L theta on Track Right')
 subplot(2,2,3)
 imagesc(normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta T1')
+title('R theta on Track Left')
 subplot(2,2,4)
 imagesc(normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta T2')
+title('R theta on Track Right')
 sgtitle('Theta')
 
 
@@ -530,8 +602,15 @@ selected_cells_R = [];
 selected_cells_L = [];
 
 selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
-    place_fields_all_R(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
-    place_fields_all_R(2).ripple_modulation_percentile>0.95)]);
+    place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
+    place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
+
+average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
+
+[~,index]=max(squeeze(average_map(:,:,1)'));
+[~,index]=sort(index);
+selected_cells_L = selected_cells_L(index);
 
 cluster_id = place_fields_all_R(1).cluster_id(selected_cells_R);
 session_id = place_fields_all_R(1).session_id(selected_cells_R);
@@ -545,58 +624,76 @@ for ncell = 1:length(cluster_id)
 end
 
 figure
+average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);place_fields_all_L(2).average_map(:,selected_cells_L)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
 subplot(2,2,1)
-imagesc(normalize(place_fields_all_L(1).average_map(:,selected_cells_L),'range')');
+imagesc(squeeze(average_map(:,:,1)));
 xlabel('position')
+title('Track Left')
+
 subplot(2,2,2)
-imagesc(normalize(place_fields_all_L(2).average_map(:,selected_cells_L),'range')');
+imagesc(squeeze(average_map(:,:,2)));
 xlabel('position')
-% title('L ripple')
+title('Track Right')
+
+average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
 subplot(2,2,3)
-imagesc(normalize(place_fields_all_R(1).average_map(:,selected_cells_R),'range')');
+imagesc(squeeze(average_map(:,:,1)));
 xlabel('position')
+title('Track Left')
+
 subplot(2,2,4)
-imagesc(normalize(place_fields_all_R(2).average_map(:,selected_cells_R),'range')');
+imagesc(squeeze(average_map(:,:,2)));
 xlabel('position')
-% title('R ripple')
+title('Track Right')
+
 
 figure
+rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)],'range')';
+rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L(1).ripple_PSTH,1),[]);
 subplot(2,2,1)
-imagesc(normalize(place_fields_all_L(1).ripple_PSTH(:,selected_cells_L),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('L ripple T1')
+imagesc(squeeze(rippple_PSTH(:,:,1)));
+xline(50)
+xlabel('Time')
+title('L ripple on Track Left')
 
 subplot(2,2,2)
-imagesc(normalize(place_fields_all_L(2).ripple_PSTH(:,selected_cells_L),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('L ripple T2')
+imagesc(squeeze(rippple_PSTH(:,:,2)));
+xline(50)
+xlabel('position')
+title('L ripple on Track Right')
 
+rippple_PSTH = normalize([place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)],'range')';
+rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_R(1).ripple_PSTH,1),[]);
 subplot(2,2,3)
-imagesc(normalize(place_fields_all_R(1).ripple_PSTH(:,selected_cells_R),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('R ripple T1')
+imagesc(squeeze(rippple_PSTH(:,:,1)));
+xline(50)
+xlabel('Time')
+title('R ripple on Track Left')
 
 subplot(2,2,4)
-imagesc(normalize(place_fields_all_R(2).ripple_PSTH(:,selected_cells_R),'range')');
-xline(size(place_fields_all_L(1).ripple_PSTH,1)/2)
-title('R ripple T2')
-sgtitle('ripple PSTH')
+imagesc(squeeze(rippple_PSTH(:,:,2)));
+xline(50)
+xlabel('position')
+title('R ripple on Track Right')
 
 
 figure
 subplot(2,2,1)
 imagesc(normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta T1')
+title('L theta on Track Left')
 subplot(2,2,2)
 imagesc(normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta T2')
+title('L theta on Track Right')
 subplot(2,2,3)
 imagesc(normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta T1')
+title('R theta on Track Left')
 subplot(2,2,4)
 imagesc(normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta T2')
+title('R theta on Track Right')
 sgtitle('Theta')
+
 
 theta_phase_map = reshape([place_fields_all_R(1).theta_phase_map{1:2}],[],size(place_fields_all_R(1).theta_phase_map{1},2))
 

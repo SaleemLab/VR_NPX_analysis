@@ -114,7 +114,7 @@ Stimulus_type = 'Masa2tracks';
 % [1 2 3 4 6 7 8 9 10 12 14]
 [1 2 3 4 6 7 8]
 
-for nsession =[14]
+for nsession =[1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -139,7 +139,7 @@ for nsession =[14]
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
 
-        clear replay reactivations ripples raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
+        clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
 
         if contains(stimulus_name{n},'Masa')
             %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -241,6 +241,13 @@ for nsession =[14]
 
             V1_clusters(nprobe) = select_clusters(merged_clusters(nprobe),metric_param);
 
+%             % Slow wave detections
+%             if isfield(LFP(nprobe),'L5')==1
+%                 slow_waves(nprobe) = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',LFP(nprobe).L5,'spikes',V1_clusters(nprobe));
+%             else
+%                 slow_waves(nprobe) = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',LFP(nprobe).L4,'spikes',V1_clusters(nprobe));
+%             end
+
             % Select spatially tuned cells (reliable visual response to the landmark)
             spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
                 find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
@@ -273,6 +280,11 @@ for nsession =[14]
             % Detect CA1 ripple events
             [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                 'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
+
+            [ripples(nprobe)] = DetectSlowWaves_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
+
+
         end
 
         for nprobe = 1:length(session_info(n).probe)
