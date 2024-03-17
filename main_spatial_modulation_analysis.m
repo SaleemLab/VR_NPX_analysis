@@ -12,7 +12,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [1 2 3 4 9 10]
+for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -41,8 +41,9 @@ for nsession = [1 2 3 4 9 10]
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-        
-        calculate_spatial_modulation_index(place_fields,Task_info)
+
+        [place_fields] = spatial_modulation_calculation(place_fields,Task_info)
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields');
     end
 end
 
