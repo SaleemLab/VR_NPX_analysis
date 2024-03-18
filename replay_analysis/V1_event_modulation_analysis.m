@@ -63,6 +63,11 @@ no_cluster = length(unit_id);
 track1_ID = find(event_id == 1);
 track2_ID = find(event_id == 2);
 
+% whole session timevec variables
+timevec = Behaviour.tvec';
+timevec_edge = (timevec(1)-(psthBinSize)/2....
+    :psthBinSize:...
+    timevec(end)+(psthBinSize)/2)';
 
 % Define Gaussian window for smoothing
 gaussianWindow = gausswin(0.2*1/psthBinSize);
@@ -81,6 +86,10 @@ for iCell = 1:no_cluster
     V1_event_modulation(2).peak_depth(iCell) = unit_depth(iCell);
 
     cluster_spike_id{iCell} = spike_id == unit_id(iCell);
+
+    % Convolve spike count time series with Gaussian window
+    y = histcounts(spike_times_events(cluster_spike_id{iCell}), timevec_edge)';
+    y = conv(y, gaussianWindow, 'same')/psthBinSize;
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
