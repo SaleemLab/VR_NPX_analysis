@@ -18,8 +18,8 @@ for track_id = 1:2
 end
 
 
-w = gausswin(21);
-% w = gausswin(10);
+% w = gausswin(21);
+w = gausswin(11);
 w = w / sum(w);
 
 for i = 1:no_unit

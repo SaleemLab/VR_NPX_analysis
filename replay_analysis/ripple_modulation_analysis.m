@@ -133,6 +133,9 @@ for iCell = 1:no_cluster
     ripple_modulation(1).PSTH{iCell} = psth_track1;
     ripple_modulation(2).PSTH{iCell} = psth_track2;
 
+    ripple_modulation(1).PSTH_zscored{iCell} = psth_track1./PSTH_shuffled1;
+    ripple_modulation(2).PSTH_zscored{iCell} = psth_track2./PSTH_shuffled2;
+
     ripple_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     ripple_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;
 

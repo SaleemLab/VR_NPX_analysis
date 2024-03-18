@@ -137,6 +137,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         ripple_modulation_L = [];
         ripple_modulation_R = [];
+        ripple_modulation_combined = [];
 
         for nprobe = 1:length(clusters)
 
@@ -162,7 +163,24 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         end
 
-        save(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'),"ripple_modulation_L","ripple_modulation_R")
+        if length(session_info(n).probe) <= 1
+            if session_info(n).probe.probe_hemisphere == 1
+                ripple_modulation_combined = ripple_modulation_L;
+            elseif session_info(n).probe.probe_hemisphere == 2
+                ripple_modulation_combined = ripple_modulation_R;
+            end
+        else
+            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+
+            event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
+            [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
+
+            [ripple_modulation_combined]= ripple_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+                'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
+
+        end
+        save(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'),"ripple_modulation_L","ripple_modulation_R","ripple_modulation_combined")
 
     end
 end
