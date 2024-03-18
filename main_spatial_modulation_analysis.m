@@ -42,7 +42,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
 
-        [place_fields] = spatial_modulation_calculation(place_fields,Task_info)
+        [place_fields] = spatial_modulation_calculation(place_fields,Task_info);
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields');
     end
 end

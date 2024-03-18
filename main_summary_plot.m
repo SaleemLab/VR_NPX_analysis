@@ -323,6 +323,8 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             if contains(all_fields{iField},'x_bin')==1
                                 place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
                                     place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})];
+                            elseif contains(all_fields{iField},'within_block_SMI')==1
+                                temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(good_cell_index,:)';
                             else
                                 if size(place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})}),1)~=1
                                     temp = place_fields(track_id).(pf_fields{strcmp(pf_fields,all_fields{iField})})(good_cell_index,:)';

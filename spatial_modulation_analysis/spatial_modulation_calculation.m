@@ -19,15 +19,16 @@ end
 
 
 w = gausswin(21);
+% w = gausswin(10);
 w = w / sum(w);
 
 for i = 1:no_unit
     smooth_t1 = filtfilt(w,1,place_fields(1).raw{i}')';
     smooth_t2 = filtfilt(w,1,place_fields(2).raw{i}')';
-    odd_avg_resp(i,1,:) = mean(smooth_t1(odd_index{track_id},:),1);
-    odd_avg_resp(i,2,:) = mean(smooth_t2(odd_index{track_id},:),1);
-    even_avg_resp(i,1,:) = mean(smooth_t1(even_index{track_id},:),1);
-    even_avg_resp(i,2,:) = mean(smooth_t2(even_index{track_id},:),1);
+    odd_avg_resp(i,1,:) = mean(smooth_t1(odd_index{1},:),1);
+    odd_avg_resp(i,2,:) = mean(smooth_t2(odd_index{2},:),1);
+    even_avg_resp(i,1,:) = mean(smooth_t1(even_index{1},:),1);
+    even_avg_resp(i,2,:) = mean(smooth_t2(even_index{2},:),1);
 end
 [~,odd_peak_location] = max(odd_avg_resp(:,:,20:60),[],3);
 % odd_peak_location(odd_peak_location<=10) = nan;
@@ -56,12 +57,18 @@ SMI = (even_R_prefer - even_R_non_prefer)./(even_R_prefer + even_R_non_prefer);
 place_fields(1).SMI = SMI(:,1);
 place_fields(2).SMI = SMI(:,2);
 
-% Lap
+% Lap and within block laps
+first_lap_id = [];
+temp = ([1; find(abs(diff(Task_info.block_ID_all))>0)+1]);
+for track_id = 1:2
 
+    first_lap_id{track_id} = Task_info.lap_ID_all(temp(Task_info.track_ID_all(temp)==track_id));
+    if   first_lap_id{track_id}(end)+4 >   max(Task_info.lap_ID_all(Task_info.track_ID_all==track_id))
+        first_lap_id{track_id}(end)= [];
+    end
 
-Task_info.lap_ID_all(find(abs(diff(Task_info.block_ID_all))>0))
-Task_info.track_ID_all(find(abs(diff(Task_info.lap_ID_all))>1))
-Task_info.track_ID_all([1; find(abs(diff(Task_info.lap_ID_all))>1)])
+end
+
 
 for i = 1:no_unit
     for track_id = 1:2
@@ -80,15 +87,27 @@ for i = 1:no_unit
             R_non_prefer = max(resp(nlap,non_prefer_location(nlap)-5:non_prefer_location(nlap)+5));
             place_fields(track_id).lap_SMI(i,nlap) = (R_prefer - R_non_prefer)./(R_prefer + R_non_prefer);
         end
-        
 
 
+%         first_lap_id{track_id}(nblock)
+        for nlap = 1:5 % 1 to 5th laps for each block
+            temp_response = mean(resp(first_lap_id{track_id}+nlap-1,:));
+            place_fields(track_id).within_block_ratemap(i,nlap,:) = temp_response;
+
+            [~,peak_location] = max(temp_response(:,20:60),[],2);
+            % odd_peak_location(odd_peak_location<=10) = nan;
+            peak_location = peak_location+19;
+            peak_location_sym = peak_location - 80/bin_size;%make symmetrical location values - symmetry at 80cm
+            non_prefer_location = nan(size(peak_location_sym));
+            non_prefer_location(peak_location_sym<0) = peak_location_sym(peak_location_sym<0)+120/bin_size;
+            non_prefer_location(peak_location_sym>=0) = peak_location_sym(peak_location_sym>=0)+40/bin_size;
+            R_prefer = temp_response(peak_location);
+            R_non_prefer = max(temp_response(non_prefer_location-5:non_prefer_location+5));
+            place_fields(track_id).within_block_SMI(i,nlap) = (R_prefer - R_non_prefer)./(R_prefer + R_non_prefer);
+        end
 
     end
 end
-
-place_fields(1).lap_SMI = SMI(:,1);
-place_fields(2).lap_SMI = SMI(:,2);
 
 
 
