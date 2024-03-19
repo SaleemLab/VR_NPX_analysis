@@ -141,6 +141,9 @@ for iCell = 1:no_cluster
     V1_event_modulation(1).PSTH{iCell} = psth_track1;
     V1_event_modulation(2).PSTH{iCell} = psth_track2;
 
+    V1_event_modulation(1).PSTH_zscored{iCell} = (psth_track1-mean(y))/std(y);
+    V1_event_modulation(2).PSTH_zscored{iCell} = (psth_track2-mean(y))/std(y);
+    
     V1_event_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     V1_event_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;
 
