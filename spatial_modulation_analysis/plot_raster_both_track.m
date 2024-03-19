@@ -14,11 +14,16 @@ unit_depth = p.Results.unit_depth;
 unit_region = p.Results.unit_region;
 unit_id = p.Results.unit_id;
 
-if ~isempty(place_fields)
-    good_cell_index{1} = find(place_fields(1).peak_percentile>0.99 & place_fields(1).odd_even_stability>0.99);
-    good_cell_index{2} = find(place_fields(2).peak_percentile>0.99 & place_fields(2).odd_even_stability>0.99);
-end
+if ~isempty(place_fields) % if place fields, only select spatially tuned cells
+    spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
+        find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
+    good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields(1).cluster_id,unit_id)));
 
+    [Lia,Locb] = ismember(unit_id,place_fields(1).cluster_id(good_cell_index));
+    unit_depth = unit_depth(Lia);
+    unit_region = unit_region(Lia);
+    unit_id = unit_id(Lia);
+end
 no_subplot_x = subplot_xy(1); %no of subplot in one figure columns
 no_subplot_y = subplot_xy(2); %no of subplot in one figure rows
 
