@@ -1,4 +1,4 @@
-function plot_perievent_spiketimes(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
+function plot_periripple_spiketimes(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
 
 % Default values
 p = inputParser;
@@ -71,10 +71,14 @@ track2_ID = find(event_id == 2);
 
 % Define Gaussian window for smoothing
 gaussianWindow = gausswin(0.2*1/psthBinSize);
-
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
+
+% Define Gaussian window for spatial smoothing
+spatial_w = gausswin(11);
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+spatial_w = spatial_w / sum(spatial_w);
 
 colour_lines = {[145,191,219]/255,[69,117,180]/255,[215,48,39]/255,[252,141,89]/255};
 for iPlot = 1: ceil(no_cluster/(no_subplot))
@@ -99,75 +103,114 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         event1_rasterY = reshape(rasterY_reshaped(:,event1_raster_id),[1 sum(event1_raster_id)*3]);
         event2_rasterX = reshape(rasterX_reshaped(:,event2_raster_id),[1 sum(event2_raster_id)*3]);
         event2_rasterY = reshape(rasterY_reshaped(:,event2_raster_id),[1 sum(event2_raster_id)*3]);
-        plot(event1_rasterX,event1_rasterY,'LineWidth',0.5)
+        plot(event1_rasterX,event1_rasterY,'LineWidth',0.5,'Color',colour_lines{2})
         hold on;
-        plot(event2_rasterX,event2_rasterY,'LineWidth', 0.5)
+        plot(event2_rasterX,event2_rasterY,'LineWidth', 0.5,'Color',colour_lines{3})
 
         xline(0, 'LineWidth',1,'Color',[0.5 0.5 0.5])
         ylim([0 length(event_id)])
         xlim(window)
         ylabel('Event')
-        xlabel('Time')
+%         xlabel('Time')
         title(sprintf('%s unit %i at %i um',unit_region(iCluster+(iPlot-1)*no_subplot),unit_id(iCluster+(iPlot-1)*no_subplot),unit_depth(iCluster+(iPlot-1)*no_subplot)))
 
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-        subplot_scale = 3:4;
+        subplot_scale = 3;
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
 
 
         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_times(event_id==1), window, psthBinSize);
         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_times(event_id==2), window, psthBinSize);
+
         for nevent = 1:size(binnedArray1,1)
             psth_track1(nevent,:) = conv(binnedArray1(nevent,:)/psthBinSize,gaussianWindow,'same');
         end
-        
+
         for nevent = 1:size(binnedArray2,1)
             psth_track2(nevent,:) = conv(binnedArray2(nevent,:)/psthBinSize,gaussianWindow,'same');
         end
 
 
         average_map_track1 = mean(psth_track1,'omitnan');
-        average_map_track1_odd = mean(psth_track1(1:2:end,:),'omitnan');
-        average_map_track1_even = mean(psth_track1(2:2:end,:),'omitnan');
+%         average_map_track1_odd = conv(mean(psth_track1(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track1_even = conv(mean(psth_track1(2:2:end,:),'omitnan'), gaussianWindow, 'same');
 
         average_map_track2 = mean(psth_track2,'omitnan');
-        average_map_track2_odd = mean(psth_track2(1:2:end,:),'omitnan');
-        average_map_track2_even = mean(psth_track2(2:2:end,:),'omitnan');
+%         average_map_track2_odd = conv(mean(psth_track2(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track2_even = conv(mean(psth_track2(2:2:end,:),'omitnan'), gaussianWindow, 'same');
 
-        h(1)=plot(bins,average_map_track1_odd,'LineWidth',2,'Color',colour_lines{1});
-        map_error = std(psth_track1(1:2:end,:))./sqrt(size(psth_track1(1:2:end,:),1));
+
+        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
+        map_error = std(psth_track1)./sqrt(size(psth_track1,1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track1_odd+map_error fliplr(average_map_track1_odd-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
+        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
-        h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
-        map_error = std(psth_track1(2:2:end,:))./sqrt(size(psth_track1(2:2:end,:),1));
+%         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
+%         map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
+%         hold on
+%         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+%         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+
+        h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
+        map_error = std(psth_track2)./sqrt(length(psth_track2));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+        patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
 
-        h(3)=plot(bins,average_map_track2_odd,'LineWidth',2,'Color',colour_lines{3});
-        map_error = std(psth_track2(1:2:end,:))./sqrt(size(psth_track2(1:2:end,:),1));
-        hold on
-        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track2_odd+map_error fliplr(average_map_track2_odd-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
-
-        h(4)=plot(bins,average_map_track2_even,'LineWidth',2,'Color',colour_lines{4});
-        map_error = std(psth_track2(2:2:end,:))./sqrt(size(psth_track2(2:2:end,:),1));
-        hold on
-        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track2_even+map_error fliplr(average_map_track2_even-map_error)],colour_lines{4},'FaceAlpha','0.3','LineStyle','none');
-
-
+%         h(4)=plot(bins,average_map_track2_even,'LineWidth',2,'Color',colour_lines{4});
+%         map_error = std(average_map_track2_even)./sqrt(length(average_map_track2_even));
+%         hold on
+%         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+%         patch([bins fliplr(bins)],[average_map_track2_even+map_error fliplr(average_map_track2_even-map_error)],colour_lines{4},'FaceAlpha','0.3','LineStyle','none');
+% 
         xline([0],'LineWidth',1,'Color',[0.5 0.5 0.5])
         if iCluster == no_subplot
-            legend([h(1:4)],{'Track 1 odd','Track 1 even','Track 2 odd','Track 2 even'},'Color','none')
+            %             legend([h(1:4)],{'Track 1 odd','Track 1 even','Track 2 odd','Track 2 even'},'Color','none')
+            legend([h(1:2)],{'Track Left ripple','Track Right ripple'},'Color','none')
         end
         xlim(window)
         xlabel('Time')
-
+        ylabel('FR')
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
+        % spatial map
+        subplot_scale = 4;
+        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        ratemaps_track1 = place_fields(1).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
+        ratemaps_track2 = place_fields(2).raw{place_fields(2).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
+        bins = place_fields(1).x_bin_centres;
+
+
+        average_map_track1 = conv(mean(ratemaps_track1,'omitnan'), spatial_w, 'same');
+%         average_map_track1_odd = conv(mean(psth_track1(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track1_even = conv(mean(psth_track1(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+
+        average_map_track2 = conv(mean(ratemaps_track2,'omitnan'), spatial_w, 'same');
+%         average_map_track2_odd = conv(mean(psth_track2(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track2_even = conv(mean(psth_track2(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+
+
+        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
+        map_error = std(ratemaps_track1)./sqrt(size(ratemaps_track1,1));
+        hold on
+        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+
+%         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
+%         map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
+%         hold on
+%         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+%         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+
+        h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
+        map_error = std(ratemaps_track2)./sqrt(size(ratemaps_track2,1));
+        hold on
+        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+        patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
+        xlabel('Position')
+        ylabel('FR')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     end
 end

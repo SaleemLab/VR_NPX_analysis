@@ -81,107 +81,144 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 fig = figure
 fig.Position = [931 100 850 860]
-fig.Name = sprintf('All sessions spatial map (%s)',cell_selection)
+fig.Name = sprintf('All sessions ripple PSTH (%s)',cell_selection)
 sgtitle(sprintf('All sessions ripple PSTH (%s)',cell_selection))
 % rippple_PSTH = [place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)]';
-rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L);...
-    place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)],'range')';
+if length(selected_cells_L)==length(selected_cells_R)
+    rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L);...
+        place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L);...
+%         place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)]';
+else
+    rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L)]';
+    rippple_PSTH = [rippple_PSTH rippple_PSTH];
+end
 rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L(1).ripple_PSTH,1),[]);
 subplot(2,2,1)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,1)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,1)));
 hold on;xline(0,'r')
 xlabel('Time')
 title('L ripple on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% colorbar
+% clim([0 5])
 
 subplot(2,2,2)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,2)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,2)));
 hold on;xline(0,'r')
 xlabel('Time')
 title('L ripple on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% colorbar
+% clim([0 5])
 
 % rippple_PSTH = [place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)]';
 % rippple_PSTH = normalize([place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)],'range')';
 % rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_R(1).ripple_PSTH,1),[]);
+if length(selected_cells_L)==length(selected_cells_R)
+    % rippple_PSTH = [place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)]';
+    rippple_PSTH = normalize([place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L);...
+        place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).ripple_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH_zscored(:,selected_cells_L);...
+%         place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)]';
+else
+%     rippple_PSTH = normalize([place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)],'range')';
+    rippple_PSTH = [place_fields_all_R(1).ripple_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH_zscored(:,selected_cells_R)]';
+    rippple_PSTH = [rippple_PSTH rippple_PSTH];
+end
+rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L(1).ripple_PSTH,1),[]);
+
 subplot(2,2,3)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,1)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,3)));
 hold on;xline(0,'r')
 xlabel('Time')
 title('R ripple on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% colorbar
+% clim([0 5])
 
 subplot(2,2,4)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,2)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,4)));
 hold on;xline(0,'r')
 xlabel('Time')
 title('R ripple on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
+% colorbar
+% clim([0 5])
 
 fig = figure
 fig.Position = [931 100 850 860]
-fig.Name = sprintf('All sessions spatial map (%s)',cell_selection)
+fig.Name = sprintf('All sessions  V1 bursting events PSTH (%s)',cell_selection)
 sgtitle(sprintf('All sessions V1 bursting events PSTH (%s)',cell_selection))
 if length(selected_cells_L)==length(selected_cells_R)
     % rippple_PSTH = [place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)]';
-    rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L);...
-        place_fields_all_R(1).V1_event_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH_zscored(:,selected_cells_R)],'range')';
+    rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH(:,selected_cells_L);...
+        place_fields_all_R(1).V1_event_PSTH(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH(:,selected_cells_R)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L);...
+%         place_fields_all_R(1).V1_event_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH_zscored(:,selected_cells_R)]';
 else
-    rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L)],'range')';
+    rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH(:,selected_cells_L)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L)]';
+    rippple_PSTH = [rippple_PSTH rippple_PSTH];
 end
 rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L(1).ripple_PSTH,1),[]);
 subplot(2,2,1)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,1)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,1)));
 hold on;xline(0,'r')
 xlabel('Time')
-title('L ripple on Track Left')
+title('L V1 bursting events on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,2)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,2)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,2)));
 hold on;xline(0,'r')
 xlabel('Time')
-title('L ripple on Track Right')
+title('L V1 bursting events on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 if length(selected_cells_L)==length(selected_cells_R)
     % rippple_PSTH = [place_fields_all_L(1).ripple_PSTH(:,selected_cells_L);place_fields_all_L(2).ripple_PSTH(:,selected_cells_L)]';
-    rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L);...
-        place_fields_all_R(1).V1_event_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH_zscored(:,selected_cells_R)],'range')';
+        rippple_PSTH = normalize([place_fields_all_L(1).V1_event_PSTH(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH(:,selected_cells_L);...
+            place_fields_all_R(1).V1_event_PSTH(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH(:,selected_cells_R)],'range')';
+%     rippple_PSTH = [place_fields_all_L(1).V1_event_PSTH_zscored(:,selected_cells_L);place_fields_all_L(2).V1_event_PSTH_zscored(:,selected_cells_L);...
+%     place_fields_all_R(1).V1_event_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH_zscored(:,selected_cells_R)]';
 else
-    rippple_PSTH = normalize([place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)],'range')';
+    rippple_PSTH = normalize([place_fields_all_R(1).V1_event_PSTH(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH(:,selected_cells_R)],'range')';
+%     rippple_PSTH = [place_fields_all_R(1).V1_event_PSTH_zscored(:,selected_cells_R);place_fields_all_R(2).V1_event_PSTH_zscored(:,selected_cells_R)]';
+    rippple_PSTH = [rippple_PSTH rippple_PSTH];
 end
 % rippple_PSTH = [place_fields_all_R(1).ripple_PSTH(:,selected_cells_R);place_fields_all_R(2).ripple_PSTH(:,selected_cells_R)]';
 rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_R(1).ripple_PSTH,1),[]);
 subplot(2,2,3)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,1)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,3)));
 hold on;xline(0,'r')
 xlabel('Time')
-title('R ripple on Track Left')
+title('R V1 bursting events on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,4)
-imagesc(-2:0.02:2,[],squeeze(rippple_PSTH(:,:,2)));
+imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,4)));
 hold on;xline(0,'r')
 xlabel('Time')
-title('R ripple on Track Right')
+title('R V1 bursting events on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-
-fig = figure
-fig.Position = [931 100 850 860]
-fig.Name = sprintf('All sessions theta modulation (%s)',cell_selection)
-sgtitle(sprintf('All sessions theta modulation (%s)',cell_selection))
-subplot(2,2,1)
-imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta on Track Left')
-subplot(2,2,2)
-imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('L theta on Track Right')
-subplot(2,2,3)
-imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta on Track Left')
-subplot(2,2,4)
-imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
-title('R theta on Track Right')
-sgtitle('Theta')
+if isfield(place_fields_all_L,'theta_phase_map') & ~isempty(place_fields_all_L(1).theta_phase_map)
+    fig = figure
+    fig.Position = [931 100 850 860]
+    fig.Name = sprintf('All sessions theta modulation (%s)',cell_selection)
+    sgtitle(sprintf('All sessions theta modulation (%s)',cell_selection))
+    subplot(2,2,1)
+    imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    title('L theta on Track Left')
+    subplot(2,2,2)
+    imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    title('L theta on Track Right')
+    subplot(2,2,3)
+    imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    title('R theta on Track Left')
+    subplot(2,2,4)
+    imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    title('R theta on Track Right')
+    sgtitle('Theta')
+end

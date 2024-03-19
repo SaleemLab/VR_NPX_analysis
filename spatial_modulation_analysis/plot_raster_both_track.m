@@ -113,25 +113,33 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         if isempty(place_fields)
             [psth_track1,bins,binnedArray1] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track1_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==1,:));
             [psth_track2,bins,binnedArray2] = spatial_psth(spike_position(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),track2_event_position, window, psthBinSize,position_bin_time(Task_info.track_ID_all==2,:));
-            ratemaps_track1 = binnedArray1;
-            ratemaps_track2 = binnedArray2;
+            ratemaps_track1 = binnedArray1/psthBinSize;
+            ratemaps_track2 = binnedArray2/psthBinSize;
         else
             ratemaps_track1 = place_fields(1).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
             ratemaps_track2 = place_fields(2).raw{place_fields(2).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
             bins = place_fields(1).x_bin_centres;
         end
 
-        average_map_track1 = conv(mean(ratemaps_track1,'omitnan'), gaussianWindow, 'same');
-        average_map_track1_odd = conv(mean(ratemaps_track1(1:2:end,:),'omitnan'), gaussianWindow, 'same');
-        average_map_track1_even = conv(mean(ratemaps_track1(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+        for nevent = 1:size(ratemaps_track1,1)
+            ratemaps_track1(nevent,:) = conv(ratemaps_track1(nevent,:),gaussianWindow,'same');
+        end
 
-        average_map_track2 = conv(mean(ratemaps_track2,'omitnan'), gaussianWindow, 'same');
-        average_map_track2_odd = conv(mean(ratemaps_track2(1:2:end,:),'omitnan'), gaussianWindow, 'same');
-        average_map_track2_even = conv(mean(ratemaps_track2(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+        for nevent = 1:size(ratemaps_track2,1)
+            ratemaps_track2(nevent,:) = conv(ratemaps_track2(nevent,:),gaussianWindow,'same');
+        end
+
+        average_map_track1 = mean(ratemaps_track1,'omitnan');
+        average_map_track1_odd = mean(ratemaps_track1(1:2:end,:),'omitnan');
+        average_map_track1_even = mean(ratemaps_track1(2:2:end,:),'omitnan');
+
+        average_map_track2 = mean(ratemaps_track2,'omitnan');
+        average_map_track2_odd = mean(ratemaps_track2(1:2:end,:),'omitnan');
+        average_map_track2_even = mean(ratemaps_track2(2:2:end,:),'omitnan');
 
 
         h(1)=plot(bins,average_map_track1_odd,'LineWidth',2,'Color',colour_lines{1});
-        map_error = std(average_map_track1_odd)./sqrt(length(average_map_track1_odd));
+        map_error = std(psth_track1(1:2:end,:))./sqrt(size(psth_track1(1:2:end,:),1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track1_odd+map_error fliplr(average_map_track1_odd-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
@@ -166,13 +174,13 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         %         end
 
         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
-        map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
+        map_error = std(psth_track1(2:2:end,:))./sqrt(size(psth_track1(2:2:end,:),1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
         h(3)=plot(bins,average_map_track2_odd,'LineWidth',2,'Color',colour_lines{3});
-        map_error = std(average_map_track2_odd)./sqrt(length(average_map_track2_odd));
+        map_error = std(psth_track2(1:2:end,:))./sqrt(size(psth_track2(1:2:end,:),1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track2_odd+map_error fliplr(average_map_track2_odd-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
@@ -206,7 +214,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 %         end
 
         h(4)=plot(bins,average_map_track2_even,'LineWidth',2,'Color',colour_lines{4});
-        map_error = std(average_map_track2_even)./sqrt(length(average_map_track2_even));
+        map_error = std(psth_track2(2:2:end,:))./sqrt(size(psth_track2(2:2:end,:),1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track2_even+map_error fliplr(average_map_track2_even-map_error)],colour_lines{4},'FaceAlpha','0.3','LineStyle','none');

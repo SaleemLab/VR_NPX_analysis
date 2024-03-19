@@ -698,7 +698,122 @@ save(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'),'pl
 % 
 % save(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
 % save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+%% ripple
+counter = 1;
+ripple_no_L = [];
+ripple_no_R = [];
+for nsession = unique(place_fields_all_R(1).session_id)
+
+    for track_id = 1:2
+        ripple_no_L(counter,track_id) = nan;
+        ripple_no_R(counter,track_id) = nan;
+
+        if sum(place_fields_all_L(1).session_id==nsession)>0
+            this_session = find(place_fields_all_L(1).session_id==nsession);
+            this_session = this_session(1);
+            ripple_no_L(counter,track_id) = size(place_fields_all_L(track_id).ripple_spike_count{this_session},1);
+        end
+
+        if sum(place_fields_all_R(1).session_id==nsession)>0
+            this_session = find(place_fields_all_R(1).session_id==nsession);
+            this_session = this_session(1);
+            ripple_no_R(counter,track_id) = size(place_fields_all_R(track_id).ripple_spike_count{this_session},1);
+        end
+    end
+    counter = counter + 1;
+end
+
+subplot(2,2,1)
+scatter(ones(1,length(ripple_no_L(:,1))),ripple_no_L(:,1),'blue')
+hold on
+scatter(2*ones(1,length(ripple_no_L(:,2))),ripple_no_L(:,2),'red')
+
+for i = 1:length(ripple_no_L(:,1))
+    plot([ones(1,length(ripple_no_L(i,1))); 2*ones(1,length(ripple_no_L(i,2)))],[ripple_no_L(i,1)';ripple_no_L(i,2)'],'k')
+end
+
+scatter(3*ones(1,length(ripple_no_R(:,1))),ripple_no_R(:,1),'blue')
+
+scatter(4*ones(1,length(ripple_no_R(:,2))),ripple_no_R(:,2),'red')
+for i = 1:length(ripple_no_R(:,1))
+    plot([3*ones(1,length(ripple_no_R(i,1))); 4*ones(1,length(ripple_no_R(i,2)))],[ripple_no_R(i,1)';ripple_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left ripple Track Left','Left ripple Track Right','Right ripple Track Left','Right ripple Track Right'})
+ylabel('No of ripples')
+
+subplot(2,2,3)
+scatter(ones(1,length(ripple_no_L(:,1))),ripple_no_L(:,1),'blue')
+hold on
+scatter(3*ones(1,length(ripple_no_L(:,2))),ripple_no_L(:,2),'red')
+
+for i = 1:length(ripple_no_L(:,1))
+    plot([ones(1,length(ripple_no_L(i,1))); 2*ones(1,length(ripple_no_L(i,2)))],[ripple_no_L(i,1)';ripple_no_R(i,1)'],'k')
+end
+
+scatter(2*ones(1,length(ripple_no_R(:,1))),ripple_no_R(:,1),'blue')
+
+scatter(4*ones(1,length(ripple_no_R(:,2))),ripple_no_R(:,2),'red')
+for i = 1:length(ripple_no_R(:,1))
+    plot([3*ones(1,length(ripple_no_R(i,1))); 4*ones(1,length(ripple_no_R(i,2)))],[ripple_no_L(i,2)';ripple_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left ripple Track Left','Right ripple Track Left','Left ripple Track Right','Right ripple Track Right'})
+ylabel('No of ripples')
+
 %% ripple combined
+clear all
+load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
+% V1 L cells
+selected_cells_R = [];
+selected_cells_L = [];
+
+% selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
+
+selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_L'))]);
+
+
+x_edges = -2:0.02:2;
+x_bins = x_edges(2:end)-diff(x_edges)/2;
+
+sum_sqr_diff = sum(place_fields_all_combined(2).ripple_PSTH_zscored(x_bins>-0.5&x_bins<0.5,selected_cells_L)-place_fields_all_combined(1).ripple_PSTH_zscored(x_bins>-0.5&x_bins<0.5,selected_cells_L)).^2;
+[~,index] = sort(sum_sqr_diff);
+
+
+SMI = place_fields_all_combined(2).SMI(selected_cells_L);
+[~,index] = sort(SMI);
+selected_cells_L = selected_cells_L(index);
+selected_cells_R = selected_cells_L;
+
+
+plot_spatial_theta_ripple_population('All V1 L cells',selected_cells_L,selected_cells_R,place_fields_all_combined,place_fields_all_combined)
+
+
+%%%%%%%%% V1 R
+selected_cells_R = [];
+selected_cells_L = [];
+
+% selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
+selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_R'))]);
+
+
+x_edges = -2:0.02:2;
+x_bins = x_edges(2:end)-diff(x_edges)/2;
+
+sum_sqr_diff = sum(place_fields_all_combined(2).ripple_PSTH_zscored(x_bins>-0.5&x_bins<0.5,selected_cells_L)-place_fields_all_combined(1).ripple_PSTH_zscored(x_bins>-0.5&x_bins<0.5,selected_cells_L)).^2;
+[~,index] = sort(sum_sqr_diff);
+selected_cells_L = selected_cells_L(index);
+selected_cells_R = selected_cells_L;
+
+
+plot_spatial_theta_ripple_population('All V1 R cells',selected_cells_L,selected_cells_R,place_fields_all_combined,place_fields_all_combined)
+
+
+%% ripple by magnitude 
 clear all
 load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 % V1 L cells
@@ -716,7 +831,14 @@ x_edges = -2:0.02:2;
 x_bins = x_edges(2:end)-diff(x_edges)/2;
 
 sum_sqr_diff = sum(place_fields_all_L(2).ripple_PSTH_zscored(x_bins>-1&x_bins<1,selected_cells_L)-place_fields_all_L(1).ripple_PSTH_zscored(x_bins>-1&x_bins<1,selected_cells_L)).^2;
-[~,selected_cells_L] = sort(sum_sqr_diff);
+% [~,index] = sort(sum_sqr_diff);
+% selected_cells_L = selected_cells_L(index);
+
+SMI = place_fields_all_L(2).SMI(selected_cells_L);
+[~,index] = sort(SMI);
+selected_cells_L = selected_cells_L(index);
+
+
 
 cluster_id = place_fields_all_L(1).cluster_id(selected_cells_L);
 session_id = place_fields_all_L(1).session_id(selected_cells_L);
@@ -731,6 +853,44 @@ end
 
 
 plot_spatial_theta_ripple_population('All V1 L cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+
+
+%%%%%%%%% V1 R
+selected_cells_R = [];
+selected_cells_L = [];
+
+selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_R') & ...
+    place_fields_all_R(1).ripple_modulation_percentile>0.90) find(contains(place_fields_all_R(1).region,'V1_R') & ...
+    place_fields_all_R(2).ripple_modulation_percentile>0.90)]);
+
+selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L')& place_fields_all_R(1).session_id == 8)]);
+
+
+x_edges = -2:0.02:2;
+x_bins = x_edges(2:end)-diff(x_edges)/2;
+
+sum_sqr_diff = sum(place_fields_all_R(2).ripple_PSTH_zscored(x_bins>-1&x_bins<1,selected_cells_R)-place_fields_all_R(1).ripple_PSTH_zscored(x_bins>-1&x_bins<1,selected_cells_R)).^2;
+[~,index] = sort(sum_sqr_diff);
+selected_cells_R = selected_cells_R(index);
+% SMI = place_fields_all_R(1).SMI(selected_cells_R);
+% [~,index] = sort(SMI);
+% selected_cells_R = selected_cells_R(index);
+
+cluster_id = place_fields_all_R(1).cluster_id(selected_cells_R);
+session_id = place_fields_all_R(1).session_id(selected_cells_R);
+% 
+counter = 1;
+for ncell = 1:length(cluster_id)
+    if sum(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))>0
+        selected_cells_L(counter) = find(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))
+        counter = counter + 1;
+    end
+end
+
+
+
+plot_spatial_theta_ripple_population('All V1 R cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+plot_spatial_ripple_cells('All V1 R cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
 
 
 %% plot population map or individual cell with all information
@@ -902,8 +1062,8 @@ selected_cells_R = [];
 selected_cells_L = [];
 
 selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
-    place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
-    place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
+    place_fields_all_R(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
+    place_fields_all_R(2).ripple_modulation_percentile>0.95)]);
 % selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_R'))]);
 
 average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
@@ -972,8 +1132,8 @@ selected_cells_R = [];
 selected_cells_L = [];
 
 selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_R') & ...
-    place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_R') & ...
-    place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
+    place_fields_all_R(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_R(1).region,'V1_R') & ...
+    place_fields_all_R(2).ripple_modulation_percentile>0.95)]);
 % selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_R'))]);
 
 average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';

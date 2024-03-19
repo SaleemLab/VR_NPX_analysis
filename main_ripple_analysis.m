@@ -103,6 +103,123 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     end
 end
 
+%% Ripple spike time raster plot
+
+clear all
+SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+Stimulus_type = 'RUN';
+% [1 2 3 4 9 10 12 14]
+
+for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'));
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
+        end
+
+        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = merged_clusters;
+            sorting_option = 'spikeinterface';
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = clusters_ks3;
+            sorting_option = 'spikeinterface';
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            sorting_option = 'old';
+        end
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+        
+        % Plotting raster plot
+        metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+        metric_param.unstable_ids = @(x) x==0;
+        
+        for nprobe = 1:length(merged_clusters)
+            options = session_info(n).probe(nprobe);
+            probe_no = session_info(n).probe(nprobe).probe_id + 1;
+            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+%             clusters_combined.merged_cluster_id
+
+            event_id = [ones(1,length(ripples(nprobe).T1_onset)) 2*ones(1,length(ripples(nprobe).T2_onset))];
+            [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
+
+            if  options.probe_hemisphere == 1
+%                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+                    'event_id',Task_info.track_ID_all,'event_label','L ripple','place_fields',place_fields);
+
+            elseif  options.probe_hemisphere == 2
+%                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+                    'event_id',Task_info.track_ID_all,'event_label','R ripple','place_fields',place_fields);
+            end
+
+        end
+
+        if length(session_info(n).probe) <= 1
+
+        else
+            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+
+            event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
+            [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
+
+            plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+                'event_id',Task_info.track_ID_all,'event_label','combined ripple','place_fields',place_fields);
+
+        end
+%         for nprobe = 1:length(merged_clusters)
+%             options = session_info(n).probe(nprobe);
+%             probe_no = session_info(n).probe(nprobe).probe_id + 1;
+%             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+%             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+% 
+%             event_id = [ones(1,length(ripples(nprobe).T1_onset)) 2*ones(1,length(ripples(nprobe).T2_onset))];
+%             [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
+% 
+%             if  options.probe_hemisphere == 1
+%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+%                 plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+%                     'event_id',Task_info.track_ID_all,'event_label','L ripple','place_fields',place_fields);
+% 
+%             elseif  options.probe_hemisphere == 2
+%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+%                 plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+%                     'event_id',Task_info.track_ID_all,'event_label','R ripple','place_fields',place_fields);
+%             end
+% 
+%         end
+
+    end
+end
 
 %% Peri ripple LFP correlation
 
