@@ -112,6 +112,16 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
+load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
+
+selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1') & ...
+    place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1') & ...
+    place_fields_all_combined(2).ripple_modulation_percentile>0.95)]);
+
+place_fields_all_combined(1).session_id(selected_cells_L)
+% selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_L') & ...
+%     place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1_L') & ...
+%     place_fields_all_combined(2).ripple_modulation_percentile>0.95)]);
 for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -144,7 +154,9 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         end
 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+%         load(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
@@ -155,28 +167,72 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         % Plotting raster plot
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
         metric_param.unstable_ids = @(x) x==0;
-        
+
+
         for nprobe = 1:length(merged_clusters)
             options = session_info(n).probe(nprobe);
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-%             clusters_combined.merged_cluster_id
 
+            %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            %             metric_param.unstable_ids = @(x) x==0;
+            %             metric_param.region = @(x) contains(x,'V1');
+            %             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            %             clusters_combined.merged_cluster_id
             event_id = [ones(1,length(ripples(nprobe).T1_onset)) 2*ones(1,length(ripples(nprobe).T2_onset))];
             [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
 
             if  options.probe_hemisphere == 1
-%                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-                plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-                    'event_id',Task_info.track_ID_all,'event_label','L ripple','place_fields',place_fields);
+                ripple_cells = unique([find(place_fields_all_L(1).ripple_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
+                    find(place_fields_all_L(2).ripple_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
+                ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
+                [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                [Lia,Locb] = ismember(C,ripple_cells');
+                ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %             metric_param.region = @(x) contains(x,'V1');
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_periripple_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'))
+                end
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'),[])
 
             elseif  options.probe_hemisphere == 2
-%                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-                plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-                    'event_id',Task_info.track_ID_all,'event_label','R ripple','place_fields',place_fields);
+                ripple_cells = unique([find(place_fields_all_R(1).ripple_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
+                    find(place_fields_all_R(2).ripple_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
+                ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
+                [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                [Lia,Locb] = ismember(C,ripple_cells');
+                ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %                             metric_param.region = @(x) contains(x,'V1');
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_periripple_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','R ripple','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Right ripples'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Right ripples'))
+                end
+
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Right ripples'),[])
             end
 
         end
@@ -184,16 +240,35 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         if length(session_info(n).probe) <= 1
 
         else
+            ripple_cells = unique([find(place_fields_all_combined(1).ripple_modulation_percentile>0.95 & place_fields_all_combined(1).session_id == nsession),...
+                find(place_fields_all_combined(2).ripple_modulation_percentile>0.95&place_fields_all_combined(2).session_id == nsession)]);
+            ripple_cells = place_fields_all_combined(1).cluster_id(ripple_cells);
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+            [Lia,Locb] = ismember(C,ripple_cells');
+            ia = ia(Lia);
+
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            %             metric_param.region = @(x) contains(x,'V1');
+            metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
 
             event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
             [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
 
-            plot_periripple_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-                'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-                'event_id',Task_info.track_ID_all,'event_label','combined ripple','place_fields',place_fields);
+            plot_periripple_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                'event_id',event_id(index),'event_label','combined ripple','place_fields',place_fields);
+
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','combined'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','combined'))
+            end
+
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','combined'),[])
 
         end
+
 %         for nprobe = 1:length(merged_clusters)
 %             options = session_info(n).probe(nprobe);
 %             probe_no = session_info(n).probe(nprobe).probe_id + 1;
@@ -202,18 +277,18 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 % 
 %             event_id = [ones(1,length(ripples(nprobe).T1_onset)) 2*ones(1,length(ripples(nprobe).T2_onset))];
 %             [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
-% 
+%             
 %             if  options.probe_hemisphere == 1
 %                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
 %                 plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-%                     'event_id',Task_info.track_ID_all,'event_label','L ripple','place_fields',place_fields);
+%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+%                     'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields);
 % 
 %             elseif  options.probe_hemisphere == 2
 %                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
 %                 plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-%                     'event_id',Task_info.track_ID_all,'event_label','R ripple','place_fields',place_fields);
+%                     'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+%                     'event_id',event_id(index),'event_label','R ripple','place_fields',place_fields);
 %             end
 % 
 %         end
@@ -274,7 +349,7 @@ for nsession = 10
 
 
         % Distribution of ripples
-        hemisphere_text = {'Left','Right'};
+        hemisphere_text = {'Left ripples','Right ripples'};
         probe_color = {'b','r'};
         position_edges = 0:5:139.5;
         bin_centres = position_edges(1:end-1) + diff(position_edges)/2;
@@ -294,14 +369,14 @@ for nsession = 10
         end
         
         fig = figure;
-        fig.Position = [160 50 1300 950];
+        fig.Position = [160 70 1550 850];
         fig.Name = sprintf('Distribution of ripples on track')
         subplot(3,4,1)
         bar(bin_centres,T1_running_occupancy/max(T1_running_occupancy),'r','FaceAlpha',0.5)
         hold on;
         bar(bin_centres,T2_running_occupancy/max(T2_running_occupancy),'b','FaceAlpha',0.5)
 
-        legend('Track 1','Track 2')
+        legend('Track Left','Track Right','Color','none')
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
         title('Occupancy map when speed > 5')
 
@@ -309,7 +384,7 @@ for nsession = 10
         bar(bin_centres,T1_immob_occupancy/max(T1_immob_occupancy),'r','FaceAlpha',0.5)
         hold on;
         bar(bin_centres,T2_immob_occupancy/max(T2_immob_occupancy),'b','FaceAlpha',0.5)
-        legend('Track 1','Track 2')
+        legend('Track Left','Track Right','Color','none')
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
         title('Occupancy map when speed < 5')
 
@@ -317,28 +392,30 @@ for nsession = 10
         subplot(3,4,3)
         for nprobe = 1:length(clusters)
             options = session_info(n).probe(nprobe);
-            h(options.probe_hemisphere)= histogram(ripples_position{options.probe_hemisphere}(ripples_track_id{options.probe_hemisphere}==1),35,'FaceColor',probe_color{options.probe_hemisphere});hold on
+            h(options.probe_hemisphere)= histogram(ripples_position{options.probe_hemisphere}(ripples_track_id{options.probe_hemisphere}==1),35,'FaceColor',probe_color{options.probe_hemisphere},...
+                'Normalization','probability');hold on
         end
         if length(clusters) ==2
-            legend(h,hemisphere_text)
+            legend(h,hemisphere_text,'Color','none')
         else
-            legend(h,hemisphere_text(options.probe_hemisphere))
+            legend(h,hemisphere_text(options.probe_hemisphere),'Color','none')
         end
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-        title('Track 1 ripple distribution')
+        title('Track Left ripple distribution')
 
         subplot(3,4,4)
         for nprobe = 1:length(clusters)
             options = session_info(n).probe(nprobe);
-            h(options.probe_hemisphere)= histogram(ripples_position{options.probe_hemisphere}(ripples_track_id{options.probe_hemisphere}==2),35,'FaceColor',probe_color{options.probe_hemisphere});hold on
+            h(options.probe_hemisphere)= histogram(ripples_position{options.probe_hemisphere}(ripples_track_id{options.probe_hemisphere}==2),35,'FaceColor',probe_color{options.probe_hemisphere},...
+                'Normalization','probability');hold on
         end
         if length(clusters) ==2
-            legend(h,hemisphere_text)
+            legend(h,hemisphere_text,'Color','none')
         else
-            legend(h,hemisphere_text(options.probe_hemisphere))
+            legend(h,hemisphere_text(options.probe_hemisphere),'Color','none')
         end
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-        title('Track 2 ripple distribution')
+        title('Track Right ripple distribution')
 
         cortex_LFP = [];
         CA1_LFP = [];

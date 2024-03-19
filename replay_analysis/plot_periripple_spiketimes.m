@@ -83,7 +83,7 @@ spatial_w = spatial_w / sum(spatial_w);
 colour_lines = {[145,191,219]/255,[69,117,180]/255,[215,48,39]/255,[252,141,89]/255};
 for iPlot = 1: ceil(no_cluster/(no_subplot))
     fig = figure;
-    fig.Position = [109 77 1426 878];
+    fig.Position = [109 77 1700 878];
     fig.Name = sprintf('%s events raster plot %s %i',event_label,unit_region(1+(iPlot-1)*no_subplot),iPlot);
 
     for iCluster = 1:no_subplot

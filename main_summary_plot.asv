@@ -698,7 +698,7 @@ save(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'),'pl
 % 
 % save(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
 % save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
-%% ripple
+%% ripple number
 counter = 1;
 ripple_no_L = [];
 ripple_no_R = [];
@@ -723,15 +723,43 @@ for nsession = unique(place_fields_all_R(1).session_id)
     counter = counter + 1;
 end
 
-scatter(ones(1,length(ripple_no_L(:,1))),ripple_no_L(:,1))
+subplot(2,2,1)
+scatter(ones(1,length(ripple_no_L(:,1))),ripple_no_L(:,1),'blue')
 hold on
-scatter(2*ones(1,length(ripple_no_L(:,2))),ripple_no_L(:,2))
-plot(ripple_no_L(:,1),ripple_no_L(:,2))
+scatter(2*ones(1,length(ripple_no_L(:,2))),ripple_no_L(:,2),'red')
 
-scatter(3*ones(1,length(ripple_no_R(:,1))),ripple_no_R(:,1))
+for i = 1:length(ripple_no_L(:,1))
+    plot([ones(1,length(ripple_no_L(i,1))); 2*ones(1,length(ripple_no_L(i,2)))],[ripple_no_L(i,1)';ripple_no_L(i,2)'],'k')
+end
 
-scatter(4*ones(1,length(ripple_no_R(:,2))),ripple_no_R(:,2))
+scatter(3*ones(1,length(ripple_no_R(:,1))),ripple_no_R(:,1),'blue')
 
+scatter(4*ones(1,length(ripple_no_R(:,2))),ripple_no_R(:,2),'red')
+for i = 1:length(ripple_no_R(:,1))
+    plot([3*ones(1,length(ripple_no_R(i,1))); 4*ones(1,length(ripple_no_R(i,2)))],[ripple_no_R(i,1)';ripple_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left ripple Track Left','Left ripple Track Right','Right ripple Track Left','Right ripple Track Right'})
+ylabel('No of ripples')
+
+subplot(2,2,3)
+scatter(ones(1,length(ripple_no_L(:,1))),ripple_no_L(:,1),'blue')
+hold on
+scatter(3*ones(1,length(ripple_no_L(:,2))),ripple_no_L(:,2),'red')
+
+for i = 1:length(ripple_no_L(:,1))
+    plot([ones(1,length(ripple_no_L(i,1))); 2*ones(1,length(ripple_no_L(i,2)))],[ripple_no_L(i,1)';ripple_no_R(i,1)'],'k')
+end
+
+scatter(2*ones(1,length(ripple_no_R(:,1))),ripple_no_R(:,1),'blue')
+
+scatter(4*ones(1,length(ripple_no_R(:,2))),ripple_no_R(:,2),'red')
+for i = 1:length(ripple_no_R(:,1))
+    plot([3*ones(1,length(ripple_no_R(i,1))); 4*ones(1,length(ripple_no_R(i,2)))],[ripple_no_L(i,2)';ripple_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left ripple Track Left','Right ripple Track Left','Left ripple Track Right','Right ripple Track Right'})
+ylabel('No of ripples')
 
 %% ripple combined
 clear all
@@ -740,9 +768,50 @@ load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 selected_cells_R = [];
 selected_cells_L = [];
 
-% selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & ...
-%     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
-%     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
+selected_cells = unique([find(contains(place_fields_all_combined(1).region,'V1') & ...
+    place_fields_all_combined(1).ripple_modulation_percentile>0.99) find(contains(place_fields_all_combined(1).region,'V1') & ...
+    place_fields_all_combined(2).ripple_modulation_percentile>0.99)]);
+
+x_edges = -2:0.02:2;
+x_bins = x_edges(2:end)-diff(x_edges)/2;
+[coeff,score,latent,tsquared,explained]=pca(normalize(place_fields_all_combined(1).ripple_PSTH(x_bins>-1&x_bins<1,selected_cells),'range'));
+
+plot(cumsum(explained))
+xlabel('number of components')
+ylabel('cumulative explained variance')
+yline(90)
+min_components = find(cumsum(explained)>=90);
+min_components = min_components(1);
+
+PCA_data = coeff(:,1:min_components);
+max_clusters = min_components;
+co_clustering = cell(max_clusters, 1);
+total_prob = zeros(max_clusters, 1);
+
+for k = 1:max_clusters
+    co_clustering{k} = zeros(size(PCA_data, 1));
+    for iter = 1:1000
+        rng(iter+k*1000)
+        [idx,~,~,~] = kmeans(PCA_data,k);
+        for i = 1:size(PCA_data, 1)
+            for j = i+1:size(PCA_data, 1)
+                if idx(i) == idx(j)
+                    co_clustering{k}(i, j) = co_clustering{k}(i, j) + 1;
+                end
+            end
+        end
+    end
+    co_clustering{k} = co_clustering{k} / 100; % Convert to probability
+%     [~,index] = sort(co_clustering{k}(1,:));
+    total_prob(k) = sum(co_clustering{k}(:)); % Sum all probabilities
+    subplot(2,5,k)
+    imagesc(co_clustering{k}(:,index))
+end
+
+[~, optimal_clusters] = max(total_prob); % Find the number of clusters with the highest sum of probabilities
+
+
+
 
 selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_L'))]);
 
