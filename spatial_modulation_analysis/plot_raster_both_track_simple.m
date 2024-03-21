@@ -1,4 +1,4 @@
-function plot_raster_both_track(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
+function plot_raster_both_track_simple(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
 
 % Default values
 p = inputParser;
@@ -112,7 +112,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-        subplot_scale = 3;
+        subplot_scale = 3:4;
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
 
         if isempty(place_fields)
@@ -135,19 +135,19 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         end
 
         average_map_track1 = mean(ratemaps_track1,'omitnan');
-        average_map_track1_odd = mean(ratemaps_track1(1:2:end,:),'omitnan');
-        average_map_track1_even = mean(ratemaps_track1(2:2:end,:),'omitnan');
+%         average_map_track1_odd = mean(ratemaps_track1(1:2:end,:),'omitnan');
+%         average_map_track1_even = mean(ratemaps_track1(2:2:end,:),'omitnan');
 
         average_map_track2 = mean(ratemaps_track2,'omitnan');
-        average_map_track2_odd = mean(ratemaps_track2(1:2:end,:),'omitnan');
-        average_map_track2_even = mean(ratemaps_track2(2:2:end,:),'omitnan');
+%         average_map_track2_odd = mean(ratemaps_track2(1:2:end,:),'omitnan');
+%         average_map_track2_even = mean(ratemaps_track2(2:2:end,:),'omitnan');
 
 
-        h(1)=plot(bins,average_map_track1_odd,'LineWidth',2,'Color',colour_lines{1});
-        map_error = std(ratemaps_track1(1:2:end,:))./sqrt(size(ratemaps_track1(1:2:end,:),1));
+        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{1});
+        map_error = std(ratemaps_track1)./sqrt(size(ratemaps_track1,1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track1_odd+map_error fliplr(average_map_track1_odd-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
+        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
 
         [peak1,peak1_index] = max(average_map_track1(bins >= 46 & bins <= 86));
         [peak2,peak2_index] = max(average_map_track1(bins > 86 & bins <= 126));
@@ -178,14 +178,8 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         %             SMI(1,iCluster+(iPlot-1)*no_subplot)=nan;
         %         end
 
-        h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
-        map_error = std(ratemaps_track1(2:2:end,:))./sqrt(size(ratemaps_track1(2:2:end,:),1));
-        hold on
-        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
-
-        h(3)=plot(bins,average_map_track2_odd,'LineWidth',2,'Color',colour_lines{3});
-        map_error = std(ratemaps_track2(1:2:end,:))./sqrt(size(ratemaps_track2(1:2:end,:),1));
+        h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
+        map_error = std(ratemaps_track2)./sqrt(size(ratemaps_track2,1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track2_odd+map_error fliplr(average_map_track2_odd-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
@@ -218,12 +212,6 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 %             SMI(2,iCluster+(iPlot-1)*no_subplot)=nan;
 %         end
 
-        h(4)=plot(bins,average_map_track2_even,'LineWidth',2,'Color',colour_lines{4});
-        map_error = std(ratemaps_track2(2:2:end,:))./sqrt(size(ratemaps_track2(2:2:end,:),1));
-        hold on
-        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track2_even+map_error fliplr(average_map_track2_even-map_error)],colour_lines{4},'FaceAlpha','0.3','LineStyle','none');
-
 
         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
         if iCluster == no_subplot
@@ -235,25 +223,5 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         title(sprintf('SMI T1=%.3f T2=%.3f',SMI(1,iCluster+(iPlot-1)*no_subplot),SMI(2,iCluster+(iPlot-1)*no_subplot)))
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-
-        subplot_scale = 4;
-        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
-
-        % Compute autocorrelation of the firing rate time series
-        [track1_CCG, lags] = xcorr(average_map_track1,average_map_track1,'coeff');
-        [track2_CCG, lags] = xcorr(average_map_track2,average_map_track2,'coeff');
-
-        plot(lags*psthBinSize,track1_CCG,'LineWidth',2)
-        hold on;
-        plot(lags*psthBinSize,track2_CCG,'LineWidth',2)
-        %         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
-        %         if iCluster == no_subplot
-        %             legend(['track 1'],['track 2'],'bkgd','boxoff','Color','none')
-        %         end
-        xlim(window)
-        xlabel('position')
-
-        title('Spatial autocorrelation')
-        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     end
 end

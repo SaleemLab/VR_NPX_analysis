@@ -101,40 +101,49 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
 
-        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-1 2],0.02,...
-            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
-            'event_label','Lap start','event_id',Task_info.track_ID_all,'place_fields',place_fields);
+%         plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-1 2],0.02,...
+%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.start_time_all,...
+%             'event_label','Lap start','event_id',Task_info.track_ID_all,'place_fields',place_fields);
+% 
+%         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'))== 0
+%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'))
+%         end
+% 
+%         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'),[])
+% 
+% 
+% 
+%         plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-1 2],0.02,...
+%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.end_time_all',...
+%             'event_label','Lap end','event_id',Task_info.track_ID_all,'place_fields',place_fields);
+% 
+%         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'))== 0
+%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'))
+%         end
+% 
+%         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'),[])
+% 
+% 
+% 
+%         plot_raster_both_track(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
+% 
+%         
+%         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'))== 0
+%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'))
+%         end
+% 
+%         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
 
-        if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'))== 0
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'))
-        end
-
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap start PSTH'),[])
-
-
-
-        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[-1 2],0.02,...
-            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',Task_info.end_time_all,...
-            'event_label','Lap end','event_id',Task_info.track_ID_all,'place_fields',place_fields);
-
-        if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'))== 0
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'))
-        end
-
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','lap end PSTH'),[])
-
-
-
-        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+        plot_raster_both_track_simple(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
 
         
-        if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'))== 0
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'))
+        if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH simple'))== 0
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH simple'))
         end
 
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
-
+        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH simple'),[])
     end
 
 end
