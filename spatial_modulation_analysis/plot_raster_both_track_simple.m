@@ -165,8 +165,8 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
             SMI(1,iCluster+(iPlot-1)*no_subplot)=0;
         end
 
-        xline(bins(peak1_index),'LineWidth',2,'Color',colour_lines{1},'LineStyle','--')
-        xline(bins(peak2_index),'LineWidth',2,'Color',colour_lines{1},'LineStyle','--')
+        xline(bins(peak1_index),'LineWidth',2,'Color',colour_lines{2},'LineStyle','--')
+        xline(bins(peak2_index),'LineWidth',2,'Color',colour_lines{2},'LineStyle','--')
 
         %         if ismember(unit_id(iCluster+(iPlot-1)*no_subplot),good_cell{1})
         %             xline(place_fields(1).x_bin_centres(peak1_index),'LineWidth',2,'Color',colour_lines{1},'LineStyle','--')

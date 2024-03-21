@@ -1006,7 +1006,12 @@ plot_spatial_theta_ripple_population('All V1 R cells',selected_cells_L,selected_
 plot_spatial_ripple_cells('All V1 R cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
 
 
-%% plot population map or individual cell with all information
+%% V1 L
+
+clear all
+load(fullfile('P:\corticohippocampal_replay\summary','place_fields_all.mat'))
+
+
 
 % V1 L cells
 selected_cells_R = [];
@@ -1047,6 +1052,70 @@ selected_cells_L = [];
 % selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
 %     place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
 %     place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
+selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L'))]);
+
+average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
+
+[~,index]=max(squeeze(average_map(:,:,1)'));
+[~,index]=sort(index);
+selected_cells_R = selected_cells_R(index);
+
+cluster_id = place_fields_all_R(1).cluster_id(selected_cells_R);
+session_id = place_fields_all_R(1).session_id(selected_cells_R);
+
+counter = 1;
+for ncell = 1:length(cluster_id)
+    if sum(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))>0
+        selected_cells_L(counter) = find(place_fields_all_L(1).cluster_id==cluster_id(ncell)&place_fields_all_L(1).session_id==session_id(ncell))
+        counter = counter + 1;
+    end
+end
+plot_spatial_theta_ripple_population('All V1 L cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+
+
+
+
+%% V1 R
+% V1 R cells
+selected_cells_R = [];
+selected_cells_L = [];
+
+% selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
+%     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
+
+selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'V1_R'))]);
+
+average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);place_fields_all_L(2).average_map(:,selected_cells_L)],'range')';
+average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
+
+cluster_id = place_fields_all_L(1).cluster_id(selected_cells_L);
+session_id = place_fields_all_L(1).session_id(selected_cells_L);
+
+counter = 1;
+for ncell = 1:length(cluster_id)
+    if sum(place_fields_all_R(1).cluster_id==cluster_id(ncell)&place_fields_all_R(1).session_id==session_id(ncell))>0
+        selected_cells_R(counter) = find(place_fields_all_R(1).cluster_id==cluster_id(ncell)&place_fields_all_R(1).session_id==session_id(ncell))
+        counter = counter + 1;
+    end
+end
+[~,index]=max(squeeze(average_map(:,:,2)'));
+% [~,index]=max(squeeze(average_map(:,:,2)'));
+[~,index]=sort(index);
+selected_cells_R = selected_cells_R(index);
+selected_cells_L = selected_cells_L(index);
+
+plot_spatial_theta_ripple_population('All V1 R cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+
+
+
+selected_cells_R = [];
+selected_cells_L = [];
+
+% selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
+%     place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
+%     place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
 selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_R'))]);
 
 average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
@@ -1070,9 +1139,10 @@ plot_spatial_theta_ripple_population('All V1 R cells',selected_cells_L,selected_
 
 
 
+%% HPC R
 
 
-% HPC L cells
+% V1 R cells
 selected_cells_R = [];
 selected_cells_L = [];
 
@@ -1080,7 +1150,7 @@ selected_cells_L = [];
 %     place_fields_all_L(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_L(1).region,'V1_L') & ...
 %     place_fields_all_L(2).ripple_modulation_percentile>0.95)]);
 
-selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'HPC_L'))]);
+selected_cells_L = unique([find(contains(place_fields_all_L(1).region,'HPC'))]);
 
 average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);place_fields_all_L(2).average_map(:,selected_cells_L)],'range')';
 average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
@@ -1101,7 +1171,7 @@ end
 selected_cells_R = selected_cells_R(index);
 selected_cells_L = selected_cells_L(index);
 
-plot_spatial_theta_ripple_population('All HPC L cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+plot_spatial_theta_ripple_population('All HPC cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
 
 
 
@@ -1111,12 +1181,12 @@ selected_cells_L = [];
 % selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'V1_L') & ...
 %     place_fields_all_R(1).ripple_modulation_percentile<0.95) find(contains(place_fields_all_R(1).region,'V1_L') & ...
 %     place_fields_all_R(2).ripple_modulation_percentile<0.95)]);
-selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'HPC_R'))]);
+selected_cells_R = unique([find(contains(place_fields_all_R(1).region,'HPC'))]);
 
 average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);place_fields_all_R(2).average_map(:,selected_cells_R)],'range')';
 average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
 
-[~,index]=max(squeeze(average_map(:,:,1)'));
+[~,index]=max(squeeze(average_map(:,:,2)'));
 [~,index]=sort(index);
 selected_cells_R = selected_cells_R(index);
 
@@ -1130,7 +1200,10 @@ for ncell = 1:length(cluster_id)
         counter = counter + 1;
     end
 end
-plot_spatial_theta_ripple_population('All HPC R cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+plot_spatial_theta_ripple_population('All HPC cells',selected_cells_L,selected_cells_R,place_fields_all_L,place_fields_all_R)
+
+
+%%
 
 theta_phase_map = reshape([place_fields_all_R(1).theta_phase_map{1:2}],[],size(place_fields_all_R(1).theta_phase_map{1},2))
 

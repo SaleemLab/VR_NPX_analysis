@@ -12,12 +12,16 @@ average_map = normalize([place_fields_all_L(1).average_map(:,selected_cells_L);p
 average_map = reshape(average_map,size(average_map,1),size(place_fields_all_L(1).average_map,1),[]);
 subplot(2,2,1)
 imagesc(0:2:140,[],squeeze(average_map(:,:,1)));
+colormap(flip(gray))
+set(gca,'YDir','normal')
 xlabel('position')
 title('Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,2)
 imagesc(0:2:140,[],squeeze(average_map(:,:,2)));
+set(gca,'YDir','normal')
+colormap(flip(gray))
 xlabel('position')
 title('Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -26,15 +30,22 @@ average_map = normalize([place_fields_all_R(1).average_map(:,selected_cells_R);p
 average_map = reshape(average_map,size(average_map,1),size(place_fields_all_R(1).average_map,1),[]);
 subplot(2,2,3)
 imagesc(0:2:140,[],squeeze(average_map(:,:,1)));
+colormap(flip(gray))
+set(gca,'YDir','normal')
 xlabel('position')
 title('Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,4)
 imagesc(0:2:140,[],squeeze(average_map(:,:,2)));
+set(gca,'YDir','normal')
+colormap(flip(gray))
 xlabel('position')
 title('Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
 
 
 fig = figure
@@ -46,6 +57,7 @@ within_block_SMI = reshape(within_block_SMI,size(within_block_SMI,1),size(place_
 subplot(2,2,1)
 imagesc(squeeze(within_block_SMI(:,:,1)));
 colorbar
+set(gca,'YDir','normal')
 clim([0 1])
 xlabel('lap')
 title('Track Left')
@@ -54,6 +66,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(2,2,2)
 imagesc(squeeze(within_block_SMI(:,:,2)));
 colorbar
+set(gca,'YDir','normal')
 clim([0 1])
 xlabel('lap')
 title('Track Right')
@@ -64,6 +77,7 @@ within_block_SMI = reshape(within_block_SMI,size(within_block_SMI,1),size(place_
 subplot(2,2,3)
 imagesc(squeeze(within_block_SMI(:,:,1)));
 colorbar
+set(gca,'YDir','normal')
 clim([0 1])
 xlabel('lap')
 title('Track Left')
@@ -72,6 +86,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(2,2,4)
 imagesc(squeeze(within_block_SMI(:,:,2)));
 colorbar
+set(gca,'YDir','normal')
 clim([0 1])
 xlabel('lap')
 title('Track Right')
@@ -98,6 +113,7 @@ rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L
 subplot(2,2,1)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,1)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('L ripple on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -106,7 +122,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,2)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,2)));
-hold on;xline(0,'r')
+hold on;xline(0,'r')'
+set(gca,'YDir','normal')
 xlabel('Time')
 title('L ripple on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -132,6 +149,7 @@ rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L
 subplot(2,2,3)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,3)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('R ripple on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -141,6 +159,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(2,2,4)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,4)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('R ripple on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -166,6 +185,7 @@ rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_L
 subplot(2,2,1)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,1)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('L V1 bursting events on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -192,6 +212,7 @@ rippple_PSTH = reshape(rippple_PSTH,size(rippple_PSTH,1),size(place_fields_all_R
 subplot(2,2,3)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,3)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('R V1 bursting events on Track Left')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -199,6 +220,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(2,2,4)
 imagesc(-1.5:0.02:1.5,[],squeeze(rippple_PSTH(:,25:175,4)));
 hold on;xline(0,'r')
+set(gca,'YDir','normal')
 xlabel('Time')
 title('R V1 bursting events on Track Right')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -210,15 +232,19 @@ if isfield(place_fields_all_L,'theta_phase_map') & ~isempty(place_fields_all_L(1
     sgtitle(sprintf('All sessions theta modulation (%s)',cell_selection))
     subplot(2,2,1)
     imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(1).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    set(gca,'YDir','normal')
     title('L theta on Track Left')
     subplot(2,2,2)
     imagesc(0:20:360,[],normalize(reshape([place_fields_all_L(2).theta_phase_map{selected_cells_L}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    set(gca,'YDir','normal')
     title('L theta on Track Right')
     subplot(2,2,3)
     imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(1).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    set(gca,'YDir','normal')
     title('R theta on Track Left')
     subplot(2,2,4)
     imagesc(0:20:360,[],normalize(reshape([place_fields_all_R(2).theta_phase_map{selected_cells_R}],size(place_fields_all_R(1).theta_phase_map{1},2),[]),'range')');
+    set(gca,'YDir','normal')
     title('R theta on Track Right')
     sgtitle('Theta')
 end
