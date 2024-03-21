@@ -82,7 +82,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         if iCluster+(iPlot-1)*no_subplot > no_cluster
             break
         end
-        subplot_scale = 0:2;
+        subplot_scale = 0:3;
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
         cluster_spike_id{iCluster+(iPlot-1)*no_subplot} = spike_id == unit_id(iCluster+(iPlot-1)*no_subplot);
 
@@ -95,11 +95,9 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         track1_rasterY = reshape(rasterY_reshaped(:,track1_raster_id),[1 sum(track1_raster_id)*3]);
         track2_rasterX = reshape(rasterX_reshaped(:,track2_raster_id),[1 sum(track2_raster_id)*3]);
         track2_rasterY = reshape(rasterY_reshaped(:,track2_raster_id),[1 sum(track2_raster_id)*3]);
-        plot(track1_rasterX,track1_rasterY,'LineWidth',0.5)
-
-
+        plot(track1_rasterX,track1_rasterY,'LineWidth',0.5,'Color',colour_lines{2})
         hold on;
-        plot(track2_rasterX,track2_rasterY,'LineWidth', 0.5)
+        plot(track2_rasterX,track2_rasterY,'LineWidth', 0.5,'Color',colour_lines{3})
 
         yline((find(diff(Task_info.track_ID_all)==-1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
         yline((find(diff(Task_info.track_ID_all)==1))+1,'LineWidth',1,'Color',[0.5 0.5 0.5])
@@ -112,7 +110,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-        subplot_scale = 3:4;
+        subplot_scale = 4;
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
 
         if isempty(place_fields)
@@ -143,11 +141,11 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 %         average_map_track2_even = mean(ratemaps_track2(2:2:end,:),'omitnan');
 
 
-        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{1});
+        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
         map_error = std(ratemaps_track1)./sqrt(size(ratemaps_track1,1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{1},'FaceAlpha','0.3','LineStyle','none');
+        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
         [peak1,peak1_index] = max(average_map_track1(bins >= 46 & bins <= 86));
         [peak2,peak2_index] = max(average_map_track1(bins > 86 & bins <= 126));
@@ -182,7 +180,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         map_error = std(ratemaps_track2)./sqrt(size(ratemaps_track2,1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-        patch([bins fliplr(bins)],[average_map_track2_odd+map_error fliplr(average_map_track2_odd-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
+        patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
 
         [peak1,peak1_index] = max(average_map_track2(bins >= 46 & bins <= 86));
         [peak2,peak2_index] = max(average_map_track2(bins > 86 & bins <= 126));
@@ -215,7 +213,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
         if iCluster == no_subplot
-            legend([h(1:4)],{'Track 1 odd','Track 1 even','Track 2 odd','Track 2 even'},'Color','none')
+            legend([h(1:2)],{'Track Left','Track Right'},'Color','none')
         end
         xlim(window)
         xlabel('position')
