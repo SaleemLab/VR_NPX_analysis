@@ -698,6 +698,73 @@ save(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'),'pl
 % 
 % save(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
 % save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','..','figures','population_map'))
+
+%% V1 poulation bursting number
+clear all 
+load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'),'place_fields_all_L','place_fields_all_R','place_fields_all_combined')
+counter = 1;
+V1_events_no_L = [];
+V1_events_no_R = [];
+for nsession = unique(place_fields_all_R(1).session_id)
+
+    for track_id = 1:2
+        V1_events_no_L(counter,track_id) = nan;
+        V1_events_no_R(counter,track_id) = nan;
+
+        if sum(place_fields_all_L(1).session_id==nsession)>0
+            this_session = find(place_fields_all_L(1).session_id==nsession);
+            this_session = this_session(1);
+            V1_events_no_L(counter,track_id) = size(place_fields_all_L(track_id).V1_event_spike_count{this_session},1);
+        end
+
+        if sum(place_fields_all_R(1).session_id==nsession)>0
+            this_session = find(place_fields_all_R(1).session_id==nsession);
+            this_session = this_session(1);
+            V1_events_no_R(counter,track_id) = size(place_fields_all_R(track_id).V1_event_spike_count{this_session},1);
+        end
+    end
+    counter = counter + 1;
+end
+
+subplot(2,2,1)
+scatter(ones(1,length(V1_events_no_L(:,1))),V1_events_no_L(:,1),'blue')
+hold on
+scatter(2*ones(1,length(V1_events_no_L(:,2))),V1_events_no_L(:,2),'red')
+
+for i = 1:length(V1_events_no_L(:,1))
+    plot([ones(1,length(V1_events_no_L(i,1))); 2*ones(1,length(V1_events_no_L(i,2)))],[V1_events_no_L(i,1)';V1_events_no_L(i,2)'],'k')
+end
+
+scatter(3*ones(1,length(V1_events_no_R(:,1))),V1_events_no_R(:,1),'blue')
+
+scatter(4*ones(1,length(V1_events_no_R(:,2))),V1_events_no_R(:,2),'red')
+for i = 1:length(V1_events_no_R(:,1))
+    plot([3*ones(1,length(V1_events_no_R(i,1))); 4*ones(1,length(V1_events_no_R(i,2)))],[V1_events_no_R(i,1)';V1_events_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left V1 event Track Left','Left V1 event Track Right','Right V1 event Track Left','Right V1 event Track Right'})
+ylabel('No of V1 events')
+
+subplot(2,2,3)
+scatter(ones(1,length(V1_events_no_L(:,1))),V1_events_no_L(:,1),'blue')
+hold on
+scatter(3*ones(1,length(V1_events_no_L(:,2))),V1_events_no_L(:,2),'red')
+
+for i = 1:length(V1_events_no_L(:,1))
+    plot([ones(1,length(V1_events_no_L(i,1))); 2*ones(1,length(V1_events_no_L(i,2)))],[V1_events_no_L(i,1)';V1_events_no_R(i,1)'],'k')
+end
+
+scatter(2*ones(1,length(V1_events_no_R(:,1))),V1_events_no_R(:,1),'blue')
+
+scatter(4*ones(1,length(V1_events_no_R(:,2))),V1_events_no_R(:,2),'red')
+for i = 1:length(V1_events_no_R(:,1))
+    plot([3*ones(1,length(V1_events_no_R(i,1))); 4*ones(1,length(V1_events_no_R(i,2)))],[V1_events_no_L(i,2)';V1_events_no_R(i,2)'],'k')
+end
+xticks(1:4)
+xticklabels({'Left V1 event Track Left','Right V1 event Track Left','Left V1 event Track Right','Right V1 event Track Right'})
+ylabel('No of V1 events')
+
+
 %% ripple number
 counter = 1;
 ripple_no_L = [];
@@ -816,8 +883,6 @@ for k = 2:max_clusters
 end
 
 [~, optimal_clusters] = max(mean_prob); % Find the number of clusters with the highest sum of probabilities
-
-
 
 
 selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_L'))]);

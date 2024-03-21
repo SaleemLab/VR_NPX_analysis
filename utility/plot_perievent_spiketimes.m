@@ -76,11 +76,17 @@ gaussianWindow = gausswin(0.2*1/psthBinSize);
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
 
+% Define Gaussian window for spatial smoothing
+spatial_w = gausswin(11);
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+spatial_w = spatial_w / sum(spatial_w);
+
+
 colour_lines = {[145,191,219]/255,[69,117,180]/255,[215,48,39]/255,[252,141,89]/255};
 for iPlot = 1: ceil(no_cluster/(no_subplot))
     fig = figure;
     fig.Position = [109 77 1426 878];
-    fig.Name = sprintf('%s events raster plot %s %i',event_label,unit_region(1+(iPlot-1)*no_subplot),iPlot);
+    fig.Name = sprintf('%s raster plot %s %i',event_label,unit_region(1+(iPlot-1)*no_subplot),iPlot);
 
     for iCluster = 1:no_subplot
         if iCluster+(iPlot-1)*no_subplot > no_cluster
@@ -112,7 +118,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-        subplot_scale = 3:4;
+        subplot_scale = 3;
         subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
 
 
@@ -161,13 +167,51 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
 
         xline([0],'LineWidth',1,'Color',[0.5 0.5 0.5])
+        xlim(window)
+        xlabel('Time')
+        ylabel('FR')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
+
+        subplot_scale = 4;
+        subplot(no_subplot_y*5,no_subplot_x,iCluster+(floor((iCluster-1)/no_subplot_x)+subplot_scale)*no_subplot_x+floor((iCluster-1)/no_subplot_x)*no_subplot)
+        ratemaps_track1 = place_fields(1).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
+        ratemaps_track2 = place_fields(2).raw{place_fields(2).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)};
+        bins = place_fields(1).x_bin_centres;
+
+
+        average_map_track1 = conv(mean(ratemaps_track1,'omitnan'), spatial_w, 'same');
+%         average_map_track1_odd = conv(mean(psth_track1(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track1_even = conv(mean(psth_track1(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+
+        average_map_track2 = conv(mean(ratemaps_track2,'omitnan'), spatial_w, 'same');
+%         average_map_track2_odd = conv(mean(psth_track2(1:2:end,:),'omitnan'), gaussianWindow, 'same');
+%         average_map_track2_even = conv(mean(psth_track2(2:2:end,:),'omitnan'), gaussianWindow, 'same');
+
+
+        h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
+        map_error = std(ratemaps_track1)./sqrt(size(ratemaps_track1,1));
+        hold on
+        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+        patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+
+%         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
+%         map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
+%         hold on
+%         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+%         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+
+        h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
+        map_error = std(ratemaps_track2)./sqrt(size(ratemaps_track2,1));
+        hold on
+        % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+        patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
+        xlabel('Position')
+        ylabel('FR')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
         if iCluster == no_subplot
             legend([h(1:4)],{'Track 1 odd','Track 1 even','Track 2 odd','Track 2 even'},'Color','none')
         end
-        xlim(window)
-        xlabel('Time')
-
-        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
-
     end
 end
