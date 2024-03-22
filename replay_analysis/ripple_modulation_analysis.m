@@ -123,23 +123,36 @@ for iCell = 1:no_cluster
     yHat = [];
     for track_id = 1:2
         position_this_event = [];
-        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)}),spatial_w,'same');
 
         track_event_time = event_times_unchanged(event_id==track_id);
 
         for event = 1:length(track_event_time)
-            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
+            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(bins)
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
             else
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
             end
 
+            if contains(event_label,'Lap start')
+                position_this_event(event,bins<=0)=1;% Before lap start fix at location 1
+                position_this_event(event,bins<=0.1&position_this_event(event,:)>10)=1; % before lap start
+                position_this_event(isnan(position_this_event))=0;
+                position_jump = find([0 abs(diff(position_this_event(event,:)))]>5);
+                position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
+            elseif contains(event_label,'Lap end')
+                position_this_event(event,bins>=0)=place_fields(1).x_bin_edges(end)/x_bin_width;
+            end
+
             position_this_event(isnan(position_this_event))=0;
-            position_this_event(position_this_event==70)=0;
+            position_jump = find([0 abs(diff(position_this_event(event,:)))]>3);
+            position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
+
+            %                  position_this_event(position_this_event==70)=0;
             yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
         end
 
