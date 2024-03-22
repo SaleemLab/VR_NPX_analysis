@@ -123,7 +123,7 @@ for iCell = 1:no_cluster
     yHat = [];
     for track_id = 1:2
         position_this_event = [];
-        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)}),spatial_w,'same');
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
 
         track_event_time = event_times_unchanged(event_id==track_id);
 
