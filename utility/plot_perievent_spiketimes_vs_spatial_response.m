@@ -192,7 +192,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
                 end
 
                  position_this_event(isnan(position_this_event))=0;
-                 position_this_event(position_this_event==70)=0;
+%                  position_this_event(position_this_event==70)=0;
                 yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
             end
 
@@ -201,7 +201,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         end
 
         h(3)=plot(bins,average_resp_track{1},'LineWidth',2,'Color',colour_lines{1});
-        map_error = std(average_resp_track{1})./sqrt(size(average_resp_track{1},1));
+        map_error = std(yHat{1})./sqrt(size(yHat{1},1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_resp_track{1}+map_error fliplr(average_resp_track{1}-map_error)],colour_lines{1},'FaceAlpha','0.2','LineStyle','none');
@@ -213,7 +213,7 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         %         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
         h(4)=plot(bins,average_resp_track{2},'LineWidth',2,'Color',colour_lines{4});
-        map_error = std(average_resp_track{2})./sqrt(length(average_resp_track{2}));
+        map_error = std(yHat{2})./sqrt(size(yHat{2},1));
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_resp_track{2}+map_error fliplr(average_resp_track{2}-map_error)],colour_lines{4},'FaceAlpha','0.2','LineStyle','none');
