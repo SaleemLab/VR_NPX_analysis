@@ -91,6 +91,17 @@ for iCell = 1:no_cluster
     y = histcounts(spike_times_events(cluster_spike_id{iCell}), timevec_edge)';
     y = conv(y, gaussianWindow, 'same')/psthBinSize;
 
+    
+    % Calculate reliability on test data
+    %             trackTimeTest = trackTime;
+    %             trackTimeTest(cv.test(i)) = nan;
+    trackTimeTest = trackTime(testIndices);
+    y = histcounts(spikeTimesTest, trackTimeTest)./(diff(trackTimeTest));
+    yHat = interp1(1:length(responseProfile), responseProfile, trackPositionTest(1:end-1)/x_bin_width); % predicted firing rate
+    yHat(isnan(yHat))=0;
+    mu = mean(histcounts(spikeTimesTrain,  trackTime(trainIndices))./(diff(trackTime(trainIndices))),'omitnan'); % mean firing rate
+
+
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
 
