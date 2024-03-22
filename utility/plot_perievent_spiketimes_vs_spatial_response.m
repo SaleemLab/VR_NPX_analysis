@@ -190,8 +190,10 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
                 else
                     position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
                 end
-
-                 position_this_event(isnan(position_this_event))=0;
+                position_this_event(isnan(position_this_event))=0;
+                position_jump = find([0 abs(diff(position_this_event(event,:)))]>10);
+                
+                 position_this_event(event,position_jump) =  mean(position_this_event(bins > -0.02&bins < 0.02));
 %                  position_this_event(position_this_event==70)=0;
                 yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
             end
