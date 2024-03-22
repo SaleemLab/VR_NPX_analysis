@@ -1,4 +1,4 @@
-function plot_periripple_spiketimes(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
+function plot_perievent_spiketimes_vs_spatial_response(spike_times,spike_id,Task_info,Behaviour,subplot_xy,window,psthBinSize,varargin)
 
 % Default values
 p = inputParser;

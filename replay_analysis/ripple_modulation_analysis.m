@@ -32,6 +32,8 @@ if ~isempty(place_fields) % if place fields, only select spatially tuned cells
     unit_depth = unit_depth(Lia);
     unit_region = unit_region(Lia);
     unit_id = unit_id(Lia);
+
+    x_bin_width = mean(diff(place_fields(1).x_bin_centres));
 end
 
 t_bin = mean(diff(Behaviour.tvec));
@@ -39,6 +41,7 @@ no_events = size(event_times,1);
 time_edges = window(1):psthBinSize:window(2);
 % spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
 spike_times_events = spike_times;
+event_times_unchanged = event_times;
 
 for nevent = 1:no_events
     if nevent < no_events
@@ -49,7 +52,7 @@ for nevent = 1:no_events
     end
     spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
     event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
-
+    
 end
 
 if isempty(event_label)
@@ -71,9 +74,21 @@ timevec_edge = (timevec(1)-(psthBinSize)/2....
 
 % Define Gaussian window for smoothing
 gaussianWindow = gausswin(0.2*1/psthBinSize);
-
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
+
+% Define Gaussian window for spatial smoothing
+spatial_w = gausswin(11);
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+spatial_w = spatial_w / sum(spatial_w);
+
+% interpolated tvec and track position
+tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
+trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
+    Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
+
+
 tic
 for iCell = 1:no_cluster
 
@@ -95,11 +110,22 @@ for iCell = 1:no_cluster
     % Calculate reliability on test data
     %             trackTimeTest = trackTime;
     %             trackTimeTest(cv.test(i)) = nan;
-    trackTimeTest = trackTime(testIndices);
-    y = histcounts(spikeTimesTest, trackTimeTest)./(diff(trackTimeTest));
-    yHat = interp1(1:length(responseProfile), responseProfile, trackPositionTest(1:end-1)/x_bin_width); % predicted firing rate
-    yHat(isnan(yHat))=0;
-    mu = mean(histcounts(spikeTimesTrain,  trackTime(trainIndices))./(diff(trackTime(trainIndices))),'omitnan'); % mean firing rate
+    
+    yHat = [];
+
+    for track_id = 1:2
+        position_this_event = [];
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
+        
+        track_event_time = event_times_unchanged(event_id==track_id);
+
+        for event = 1:length(track_event_time)
+            position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
+        end
+
+        yHat{track_id}(isnan(yHat{track_id}))=0;
+    end
 
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
@@ -149,6 +175,12 @@ for iCell = 1:no_cluster
     
     ripple_modulation(1).spike_count{iCell} = binnedArray1;
     ripple_modulation(2).spike_count{iCell} = binnedArray2;
+
+    ripple_modulation(1).spatial_spike_count{iCell} = yHat{1};
+    ripple_modulation(2).spatial_spike_count{iCell} = yHat{2};
+
+    ripple_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
+    ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
 
     ripple_modulation(1).PSTH{iCell} = psth_track1;
     ripple_modulation(2).PSTH{iCell} = psth_track2;

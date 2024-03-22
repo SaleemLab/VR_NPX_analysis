@@ -122,9 +122,9 @@ else
         set(get(h,'label'),'string','Normalised firing rate across tracks');
         clim([0.3 1])
 
-        xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
+        xticks([30 50 70 90 110 140]/(place_fields_all(1).x_bin_centres(2)-place_fields_all(1).x_bin_centres(1)))
         xticklabels([30 50 70 90 110 140])
-        xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
+        xline(100/(place_fields_all(1).x_bin_centres(2)-place_fields_all(1).x_bin_centres(1)),'r')
 
         title(sprintf('%s laps T%i sorted by %s laps T%i',...
             laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
@@ -160,9 +160,9 @@ else
         set(get(h,'label'),'string','Normalised firing rate within track');
         clim([0.3 1])
 
-        xticks([30 50 70 90 110 140]/mean(diff(place_fields_all(1).x_bin_centres)))
+        xticks([30 50 70 90 110 140]/(place_fields_all(1).x_bin_centres(2)-place_fields_all(1).x_bin_centres(1)))
         xticklabels([30 50 70 90 110 140])
-        xline(100/mean(diff(place_fields_all(1).x_bin_centres)),'r')
+        xline(100/(place_fields_all(1).x_bin_centres(2)-place_fields_all(1).x_bin_centres(1)),'r')
 
         title(sprintf('%s laps T%i sorted by %s laps T%i',...
             laps_type_text{laps_pairs(nplot,1)},track_pairs(nplot,1),laps_type_text{laps_pairs(nplot,2)},track_pairs(nplot,2)))
