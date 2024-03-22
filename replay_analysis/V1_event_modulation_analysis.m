@@ -98,20 +98,33 @@ for iCell = 1:no_cluster
     y = histcounts(spike_times_events(cluster_spike_id{iCell}), timevec_edge)';
     y = conv(y, gaussianWindow, 'same')/psthBinSize;
 
+    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
+    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
+
+    psth_track1 = binnedArray1/psthBinSize;
+    psth_track1 = conv(mean(psth_track1,'omitnan'), gaussianWindow, 'same');
+    psth_track2 = binnedArray2/psthBinSize;
+    psth_track2 = conv(mean(psth_track2,'omitnan'), gaussianWindow, 'same');
+
+    shiftedArrays1 = zeros(1000,size(binnedArray1,1),size(binnedArray1,2));
+    shiftedArrays2 = zeros(1000,size(binnedArray2,1),size(binnedArray2,2));
+    PSTH_shuffled1 = zeros(1000,size(binnedArray2,2));
+    PSTH_shuffled2 = zeros(1000,size(binnedArray2,2));
+
     % expected activity due to spatial location (Visual feature)
     yHat = [];
     for track_id = 1:2
         position_this_event = [];
-        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)}),spatial_w,'same');
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
 
         track_event_time = event_times_unchanged(event_id==track_id);
 
         for event = 1:length(track_event_time)
-            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
             else
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
@@ -125,19 +138,6 @@ for iCell = 1:no_cluster
         yHat{track_id}(isnan(yHat{track_id}))=0;
         average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
     end
-
-    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
-    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
-
-    psth_track1 = binnedArray1/psthBinSize;
-    psth_track1 = conv(mean(psth_track1,'omitnan'), gaussianWindow, 'same');
-    psth_track2 = binnedArray2/psthBinSize;
-    psth_track2 = conv(mean(psth_track2,'omitnan'), gaussianWindow, 'same');
-
-    shiftedArrays1 = zeros(1000,size(binnedArray1,1),size(binnedArray1,2));
-    shiftedArrays2 = zeros(1000,size(binnedArray2,1),size(binnedArray2,2));
-    PSTH_shuffled1 = zeros(1000,size(binnedArray2,2));
-    PSTH_shuffled2 = zeros(1000,size(binnedArray2,2));
 
     parfor nshuffle = 1:1000
         %         shiftedArrays1(:,:,nshuffle) = zeros(size(binnedArray1,1),size(binnedArray1,2));
