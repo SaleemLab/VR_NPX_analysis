@@ -32,6 +32,7 @@ if ~isempty(place_fields) % if place fields, only select spatially tuned cells
     unit_depth = unit_depth(Lia);
     unit_region = unit_region(Lia);
     unit_id = unit_id(Lia);
+    x_bin_width = mean(diff(place_fields(1).x_bin_centres));
 end
 
 t_bin = mean(diff(Behaviour.tvec));
@@ -39,6 +40,7 @@ no_events = size(event_times,1);
 time_edges = window(1):psthBinSize:window(2);
 % spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
 spike_times_events = spike_times;
+event_times_unchanged = event_times;
 
 for nevent = 1:no_events
     if nevent < no_events
@@ -69,11 +71,16 @@ timevec_edge = (timevec(1)-(psthBinSize)/2....
     :psthBinSize:...
     timevec(end)+(psthBinSize)/2)';
 
-% Define Gaussian window for smoothing
-gaussianWindow = gausswin(0.2*1/psthBinSize);
-
+% Define Gaussian window for spatial smoothing
+spatial_w = gausswin(11);
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
-gaussianWindow = gaussianWindow / sum(gaussianWindow);
+spatial_w = spatial_w / sum(spatial_w);
+
+% interpolated tvec and track position
+tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
+trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
+    Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
+
 tic
 for iCell = 1:no_cluster
 
@@ -90,6 +97,34 @@ for iCell = 1:no_cluster
     % Convolve spike count time series with Gaussian window
     y = histcounts(spike_times_events(cluster_spike_id{iCell}), timevec_edge)';
     y = conv(y, gaussianWindow, 'same')/psthBinSize;
+
+    % expected activity due to spatial location (Visual feature)
+    yHat = [];
+    for track_id = 1:2
+        position_this_event = [];
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)}),spatial_w,'same');
+
+        track_event_time = event_times_unchanged(event_id==track_id);
+
+        for event = 1:length(track_event_time)
+            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            else
+                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            end
+
+            position_this_event(isnan(position_this_event))=0;
+            position_this_event(position_this_event==70)=0;
+            yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
+        end
+
+        yHat{track_id}(isnan(yHat{track_id}))=0;
+        average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
+    end
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
@@ -143,7 +178,13 @@ for iCell = 1:no_cluster
 
     V1_event_modulation(1).PSTH_zscored{iCell} = (psth_track1-mean(y))/std(y);
     V1_event_modulation(2).PSTH_zscored{iCell} = (psth_track2-mean(y))/std(y);
-    
+
+    V1_event_modulation(1).spatial_spike_count{iCell} = yHat{1};
+    V1_event_modulation(2).spatial_spike_count{iCell} = yHat{2};
+
+    V1_event_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
+    V1_event_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
+
     V1_event_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     V1_event_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;
 

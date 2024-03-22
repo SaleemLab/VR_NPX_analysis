@@ -107,24 +107,32 @@ for iCell = 1:no_cluster
     y = conv(y, gaussianWindow, 'same')/psthBinSize;
 
     
-    % Calculate reliability on test data
-    %             trackTimeTest = trackTime;
-    %             trackTimeTest(cv.test(i)) = nan;
-    
+    % expected activity due to spatial location (Visual feature)
     yHat = [];
-
     for track_id = 1:2
         position_this_event = [];
-        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
-        
+        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCluster+(iPlot-1)*no_subplot)}),spatial_w,'same');
+
         track_event_time = event_times_unchanged(event_id==track_id);
 
         for event = 1:length(track_event_time)
-            position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
+                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            else
+                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            end
+
+            position_this_event(isnan(position_this_event))=0;
+            position_this_event(position_this_event==70)=0;
             yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
         end
 
         yHat{track_id}(isnan(yHat{track_id}))=0;
+        average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
     end
 
 
@@ -176,17 +184,17 @@ for iCell = 1:no_cluster
     ripple_modulation(1).spike_count{iCell} = binnedArray1;
     ripple_modulation(2).spike_count{iCell} = binnedArray2;
 
-    ripple_modulation(1).spatial_spike_count{iCell} = yHat{1};
-    ripple_modulation(2).spatial_spike_count{iCell} = yHat{2};
-
-    ripple_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
-    ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
-
     ripple_modulation(1).PSTH{iCell} = psth_track1;
     ripple_modulation(2).PSTH{iCell} = psth_track2;
 
     ripple_modulation(1).PSTH_zscored{iCell} = (psth_track1-mean(y))/std(y);
     ripple_modulation(2).PSTH_zscored{iCell} = (psth_track2-mean(y))/std(y);
+
+    ripple_modulation(1).spatial_spike_count{iCell} = yHat{1};
+    ripple_modulation(2).spatial_spike_count{iCell} = yHat{2};
+
+    ripple_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
+    ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
 
     ripple_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     ripple_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;

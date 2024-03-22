@@ -181,14 +181,12 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
             track_event_time = event_times_unchanged(event_id==track_id);
 
             for event = 1:length(track_event_time)
-                if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
+                if trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2)) == length(average_map_track1)
                     position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-                elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(average_map_track1)
-                    position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-                elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
-                    position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+                elseif trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2)) == length(average_map_track1)
+                    position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
                 else
-                    position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+
                 end
 
                  position_this_event(isnan(position_this_event))=0;
