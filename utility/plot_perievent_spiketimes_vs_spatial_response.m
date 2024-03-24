@@ -187,6 +187,10 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
                     position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
                 elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(average_map_track1)
                     position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+                elseif track_event_time(event)+window(2)>max(tvec)
+                    temp = trackPosition(end);
+                    position_this_event(event,:) = [trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
+                        temp*ones(1,size(position_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
                 else
                     position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
                 end

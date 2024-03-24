@@ -133,6 +133,10 @@ for iCell = 1:no_cluster
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
             elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            elseif track_event_time(event)+window(2)>max(tvec)
+                temp = trackPosition(end);
+                position_this_event(event,:) = [trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
+                    temp*ones(1,size(position_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
             else
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
             end
