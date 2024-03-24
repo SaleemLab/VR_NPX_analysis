@@ -71,6 +71,13 @@ timevec_edge = (timevec(1)-(psthBinSize)/2....
     :psthBinSize:...
     timevec(end)+(psthBinSize)/2)';
 
+
+% Define Gaussian window for smoothing
+gaussianWindow = gausswin(0.2*1/psthBinSize);
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
+
 % Define Gaussian window for spatial smoothing
 spatial_w = gausswin(11);
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
