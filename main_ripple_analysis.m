@@ -112,7 +112,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
+load(fullfile('P:\corticohippocampal_replay\summary','place_fields_all.mat'))
 % 
 % selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1') & ...
 %     place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1') & ...

@@ -131,14 +131,22 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_times(event_id==1), window, psthBinSize);
         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),event_times(event_id==2), window, psthBinSize);
 
-        for nevent = 1:size(binnedArray1,1)
-            psth_track1(nevent,:) = conv(binnedArray1(nevent,:)/psthBinSize,gaussianWindow,'same');
+
+        if size(binnedArray1,1)==1
+            psth_track1 = conv(binnedArray1/psthBinSize,gaussianWindow,'same');
+        else
+            for nevent = 1:size(binnedArray1,1)
+                psth_track1(nevent,:) = conv(binnedArray1(nevent,:)/psthBinSize,gaussianWindow,'same');
+            end
         end
 
-        for nevent = 1:size(binnedArray2,1)
-            psth_track2(nevent,:) = conv(binnedArray2(nevent,:)/psthBinSize,gaussianWindow,'same');
+        if size(binnedArray2,1)==1
+            psth_track2 = conv(binnedArray2/psthBinSize,gaussianWindow,'same');
+        else
+            for nevent = 1:size(binnedArray2,1)
+                psth_track2(nevent,:) = conv(binnedArray2(nevent,:)/psthBinSize,gaussianWindow,'same');
+            end
         end
-
 
         average_map_track1 = mean(psth_track1,'omitnan');
 %         average_map_track1_odd = conv(mean(psth_track1(1:2:end,:),'omitnan'), gaussianWindow, 'same');

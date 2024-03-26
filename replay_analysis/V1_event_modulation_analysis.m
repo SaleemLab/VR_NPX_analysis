@@ -88,6 +88,9 @@ tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behav
 trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
 
+V1_event_modulation(1).event_zscore(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+V1_event_modulation(2).event_zscore(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+
 tic
 for iCell = 1:no_cluster
 
@@ -178,7 +181,8 @@ for iCell = 1:no_cluster
         %
     end
 
-    twin = bins>-1 & bins<1;
+    twin = bins>-0.5 & bins<0.5;
+
     parfor nshuffle = 1:1000
         FR_difference_shuffled1(nshuffle) = (max(PSTH_shuffled1(nshuffle,twin))-min(PSTH_shuffled1(nshuffle,twin)))/mean(PSTH_shuffled1(nshuffle,twin));
         FR_difference_shuffled2(nshuffle) = (max(PSTH_shuffled2(nshuffle,twin))-min(PSTH_shuffled2(nshuffle,twin)))/mean(PSTH_shuffled2(nshuffle,twin));
@@ -197,7 +201,7 @@ for iCell = 1:no_cluster
     V1_event_modulation(2).spatial_spike_count{iCell} = yHat{2};
 
     V1_event_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
-    V1_event_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
+    V1_event_modulation(2).spatial_PSTH{iCell} = mean(yHat{2});
 
     V1_event_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     V1_event_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;

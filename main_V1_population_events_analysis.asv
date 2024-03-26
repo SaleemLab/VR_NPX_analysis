@@ -13,7 +13,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+for nsession = [14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -117,15 +117,7 @@ Stimulus_type = 'RUN';
 
 load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 
-selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1') & ...
-    place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1') & ...
-    place_fields_all_combined(2).ripple_modulation_percentile>0.95)]);
-
-place_fields_all_combined(1).session_id(selected_cells_L)
-% selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1_L') & ...
-%     place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1_L') & ...
-%     place_fields_all_combined(2).ripple_modulation_percentile>0.95)]);
-for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+for nsession = [6 7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -173,182 +165,182 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         metric_param.unstable_ids = @(x) x==0;
 
 
-% 
-%         for nprobe = 1:length(merged_clusters)
-%             options = session_info(n).probe(nprobe);
-%             probe_no = session_info(n).probe(nprobe).probe_id + 1;
-%             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-% 
-%             %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%             %             metric_param.unstable_ids = @(x) x==0;
-%             %             metric_param.region = @(x) contains(x,'V1');
-%             %             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             %             clusters_combined.merged_cluster_id
-%             t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
-%             t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
-% 
-%             event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
-%             [event_times,index] = sort([t1_onset t2_onset]);
-% 
-%             if  options.probe_hemisphere == 1
-%                 %                 ripple_cells = unique([find(place_fields_all_L(1).V1_event_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
-%                 %                     find(place_fields_all_L(2).V1_event_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
-%                 %                 ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
-%                 %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-%                 %                 [Lia,Locb] = ismember(C,ripple_cells');
-%                 %                 ia = ia(Lia);
-% 
-%                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%                 metric_param.unstable_ids = @(x) x==0;
-%                 %                             metric_param.region = @(x) contains(x,'V1');
-%                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
-%                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
-% 
-%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-%                 plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-%                     'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
-% 
-%                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))== 0
-%                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))
-%                 end
-%                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'),[])
-% 
-%             elseif  options.probe_hemisphere == 2
-% %                 ripple_cells = unique([find(place_fields_all_R(1).V1_event_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
-% %                     find(place_fields_all_R(2).V1_event_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
-% %                 ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
-% %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-% %                 [Lia,Locb] = ismember(C,ripple_cells');
-% %                 ia = ia(Lia);
-% 
-%                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%                 metric_param.unstable_ids = @(x) x==0;
-%                 %                             metric_param.region = @(x) contains(x,'V1');
-%                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
-%                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
-% 
-% 
-%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-%                 plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-%                     'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
-% 
-%                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH ','Right V1 events'))== 0
-%                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Right V1 events'))
-%                 end
-% 
-%                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Right V1 events'),[])
-%             end
-% 
-%         end
-% 
-%         for nprobe = 1:length(merged_clusters)
-%             options = session_info(n).probe(nprobe);
-%             probe_no = session_info(n).probe(nprobe).probe_id + 1;
-%             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-% 
-%             %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%             %             metric_param.unstable_ids = @(x) x==0;
-%             %             metric_param.region = @(x) contains(x,'V1');
-%             %             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             %             clusters_combined.merged_cluster_id
-%             t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak<3)==2);
-%             t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak<3)==2);
-% 
-%             event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
-%             [event_times,index] = sort([t1_onset t2_onset]);
-% 
-%             if  options.probe_hemisphere == 1
-% %                 ripple_cells = unique([find(place_fields_all_L(1).V1_event_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
-% %                     find(place_fields_all_L(2).V1_event_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
-% %                 ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
-% %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-% %                 [Lia,Locb] = ismember(C,ripple_cells');
-% %                 ia = ia(Lia);
-% 
-%                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%                 metric_param.unstable_ids = @(x) x==0;
-%                 %             metric_param.region = @(x) contains(x,'V1');
-% %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
-%                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
-% 
-%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-%                 plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-%                     'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
-% 
-%                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))== 0
-%                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))
-%                 end
-%                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'),[])
-% 
-%             elseif  options.probe_hemisphere == 2
-% %                 ripple_cells = unique([find(place_fields_all_R(1).V1_event_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
-% %                     find(place_fields_all_R(2).V1_event_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
-% %                 ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
-% %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-% %                 [Lia,Locb] = ismember(C,ripple_cells');
-% %                 ia = ia(Lia);
-% 
-%                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%                 metric_param.unstable_ids = @(x) x==0;
-%                 %             metric_param.region = @(x) contains(x,'V1');
-% %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
-%                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
-% 
-%                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
-%                 plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-%                     'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
-% 
-%                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))== 0
-%                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))
-%                 end
-% 
-%                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'),[])
-%             end
-% 
-%         end
-% 
-%         if length(session_info(n).probe) <= 1
-% 
-%         else
-%             %             ripple_cells = unique([find(place_fields_all_combined(1).V1_event_modulation_percentile>0.95 & place_fields_all_combined(1).session_id == nsession),...
-%             %                 find(place_fields_all_combined(2).V1_event_modulation_percentile>0.95&place_fields_all_combined(2).session_id == nsession)]);
-%             %             ripple_cells = place_fields_all_combined(1).cluster_id(ripple_cells);
-%             %             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-%             %             [Lia,Locb] = ismember(C,ripple_cells');
-%             %             ia = ia(Lia);
-% 
-%             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%             metric_param.unstable_ids = @(x) x==0;
-%             %             metric_param.region = @(x) contains(x,'V1');
-%             %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
-% 
-%             t1_onset = V1_reactivations(2).onset((V1_reactivations(2).T1_index==1)' + (V1_reactivations(2).ripple_peak>3)==2);
-%             t2_onset = V1_reactivations(1).onset((V1_reactivations(1).T2_index==1)' + (V1_reactivations(1).ripple_peak>3)==2);
-% 
-% 
-%             event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
-%             [event_times,index] = sort([t1_onset t2_onset]);
-% 
-%             plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-%                 'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-%                 'event_id',event_id(index),'event_label','combined V1 events','place_fields',place_fields);
-% 
-%             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))== 0
-%                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))
-%             end
-% 
-%             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'),[])
-%         end
+
+        for nprobe = 1:length(merged_clusters)
+            options = session_info(n).probe(nprobe);
+            probe_no = session_info(n).probe(nprobe).probe_id + 1;
+            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+
+            %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            %             metric_param.unstable_ids = @(x) x==0;
+            %             metric_param.region = @(x) contains(x,'V1');
+            %             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            %             clusters_combined.merged_cluster_id
+            t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
+
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+            if  options.probe_hemisphere == 1
+                %                 ripple_cells = unique([find(place_fields_all_L(1).V1_event_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
+                %                     find(place_fields_all_L(2).V1_event_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
+                %                 ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
+                %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                %                 [Lia,Locb] = ismember(C,ripple_cells');
+                %                 ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %                             metric_param.region = @(x) contains(x,'V1');
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))
+                end
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'),[])
+
+            elseif  options.probe_hemisphere == 2
+                %                 ripple_cells = unique([find(place_fields_all_R(1).V1_event_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
+                %                     find(place_fields_all_R(2).V1_event_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
+                %                 ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
+                %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                %                 [Lia,Locb] = ismember(C,ripple_cells');
+                %                 ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %                             metric_param.region = @(x) contains(x,'V1');
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH ','Right V1 events'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Right V1 events'))
+                end
+
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Right V1 events'),[])
+            end
+
+        end
+
+        for nprobe = 1:length(merged_clusters)
+            options = session_info(n).probe(nprobe);
+            probe_no = session_info(n).probe(nprobe).probe_id + 1;
+            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+
+            %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            %             metric_param.unstable_ids = @(x) x==0;
+            %             metric_param.region = @(x) contains(x,'V1');
+            %             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            %             clusters_combined.merged_cluster_id
+            t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak<3)==2);
+            t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak<3)==2);
+
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+            if  options.probe_hemisphere == 1
+                %                 ripple_cells = unique([find(place_fields_all_L(1).V1_event_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
+                %                     find(place_fields_all_L(2).V1_event_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
+                %                 ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
+                %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                %                 [Lia,Locb] = ismember(C,ripple_cells');
+                %                 ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %             metric_param.region = @(x) contains(x,'V1');
+                %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))
+                end
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'),[])
+
+            elseif  options.probe_hemisphere == 2
+                %                 ripple_cells = unique([find(place_fields_all_R(1).V1_event_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
+                %                     find(place_fields_all_R(2).V1_event_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
+                %                 ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
+                %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                %                 [Lia,Locb] = ismember(C,ripple_cells');
+                %                 ia = ia(Lia);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.unstable_ids = @(x) x==0;
+                %             metric_param.region = @(x) contains(x,'V1');
+                %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+                [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+                %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
+                plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                    'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
+
+                if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))== 0
+                    mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))
+                end
+
+                save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'),[])
+            end
+
+        end
+
+        if length(session_info(n).probe) <= 1
+
+        else
+            %             ripple_cells = unique([find(place_fields_all_combined(1).V1_event_modulation_percentile>0.95 & place_fields_all_combined(1).session_id == nsession),...
+            %                 find(place_fields_all_combined(2).V1_event_modulation_percentile>0.95&place_fields_all_combined(2).session_id == nsession)]);
+            %             ripple_cells = place_fields_all_combined(1).cluster_id(ripple_cells);
+            %             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+            %             [Lia,Locb] = ismember(C,ripple_cells');
+            %             ia = ia(Lia);
+
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            %             metric_param.region = @(x) contains(x,'V1');
+            %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
+
+            t1_onset = V1_reactivations(2).onset((V1_reactivations(2).T1_index==1)' + (V1_reactivations(2).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(1).onset((V1_reactivations(1).T2_index==1)' + (V1_reactivations(1).ripple_peak>3)==2);
+
+
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+            plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+                'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+                'event_id',event_id(index),'event_label','combined V1 events','place_fields',place_fields);
+
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))
+            end
+
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'),[])
+        end
 
 
         if length(session_info(n).probe) <= 1
@@ -375,12 +367,12 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
             [event_times,index] = sort([t1_onset t2_onset]);
 
-            plot_V1_events_spiketimes(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+            plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                 'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                'event_id',event_id(index),'event_label','combined V1 events','place_fields',place_fields);
+                'event_id',event_id(index),'event_label','combined V1','place_fields',place_fields);
 
-            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))== 0
-                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))
+            if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','combined'))== 0
+                mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','combined'))
             end
 
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','combined'),[])

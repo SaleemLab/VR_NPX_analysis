@@ -117,7 +117,7 @@ Stimulus_type = 'RUN';
 
 load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 
-for nsession = [7 8 9 10 12 14]
+for nsession = [1 2 3 4 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));

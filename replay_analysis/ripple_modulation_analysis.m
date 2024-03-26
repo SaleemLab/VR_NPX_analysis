@@ -179,7 +179,7 @@ for iCell = 1:no_cluster
         %
     end
     
-    twin = bins>-1 & bins<1;
+    twin = bins>-0.5 & bins<0.5;
 
     for nshuffle = 1:1000
         FR_difference_shuffled1(nshuffle) = (max(PSTH_shuffled1(nshuffle,twin))-min(PSTH_shuffled1(nshuffle,twin)))/mean(PSTH_shuffled1(nshuffle,twin));
@@ -199,7 +199,7 @@ for iCell = 1:no_cluster
     ripple_modulation(2).spatial_spike_count{iCell} = yHat{2};
 
     ripple_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
-    ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{1});
+    ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{2});
 
     ripple_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
     ripple_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;
@@ -207,8 +207,8 @@ for iCell = 1:no_cluster
     ripple_modulation(1).max_min_difference(iCell) = max(psth_track1)-min(psth_track1);
     ripple_modulation(2).max_min_difference(iCell) = max(psth_track2)-min(psth_track2);
 
-    FR_modulation1= (max(psth_track1(bins>-1 & bins<1))-min(psth_track1(bins>-1 & bins<1)))/mean(psth_track1(bins>-1 & bins<1));
-    FR_modulation2 = (max(psth_track2(bins>-1 & bins<1))-min(psth_track2(bins>-1 & bins<1)))/mean(psth_track2(bins>-1 & bins<1));
+    FR_modulation1= (max(psth_track1(bins>-0.5 & bins<0.5))-min(psth_track1(bins>-1 & bins<1)))/mean(psth_track1(bins>-1 & bins<1));
+    FR_modulation2 = (max(psth_track2(bins>-0.5 & bins<0.5))-min(psth_track2(bins>-1 & bins<1)))/mean(psth_track2(bins>-1 & bins<1));
 
     ripple_modulation(1).ripple_modulation(iCell) = FR_modulation1;
     ripple_modulation(2).ripple_modulation(iCell) = FR_modulation2;
