@@ -88,6 +88,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 ripple_modulation_combined = ripple_modulation_R;
             end
         else
+% 
+%             event_times = sort([ripples(1).onset ripples(2).onset]);
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
 
             event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
@@ -96,7 +98,6 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             [ripple_modulation_combined]= ripple_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
                 'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
                 'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
-
         end
         save(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'),"ripple_modulation_L","ripple_modulation_R","ripple_modulation_combined")
 
@@ -112,7 +113,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-load(fullfile('P:\corticohippocampal_replay\summary','place_fields_all.mat'))
+load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 % 
 % selected_cells_L = unique([find(contains(place_fields_all_combined(1).region,'V1') & ...
 %     place_fields_all_combined(1).ripple_modulation_percentile>0.95) find(contains(place_fields_all_combined(1).region,'V1') & ...
@@ -183,24 +184,25 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             [event_times,index] = sort([ripples(nprobe).T1_onset ripples(nprobe).T2_onset]);
 
             if  options.probe_hemisphere == 1
-                ripple_cells = unique([find(place_fields_all_L(1).ripple_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
-                    find(place_fields_all_L(2).ripple_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
-                ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
-                [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-                [Lia,Locb] = ismember(C,ripple_cells');
-                ia = ia(Lia);
+                %                 ripple_cells = unique([find(place_fields_all_L(1).ripple_modulation_percentile>0.95 & place_fields_all_L(1).session_id == nsession),...
+                %                     find(place_fields_all_L(2).ripple_modulation_percentile>0.95&place_fields_all_L(2).session_id == nsession)]);
+                %                 ripple_cells = place_fields_all_L(1).cluster_id(ripple_cells);
+                %                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+                %                 [Lia,Locb] = ismember(C,ripple_cells');
+                %                 ia = ia(Lia);
 
                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
                 metric_param.unstable_ids = @(x) x==0;
                 %             metric_param.region = @(x) contains(x,'V1');
-                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                %                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
 
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'))
@@ -208,17 +210,18 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Left ripples'),[])
 
             elseif  options.probe_hemisphere == 2
-                ripple_cells = unique([find(place_fields_all_R(1).ripple_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
-                    find(place_fields_all_R(2).ripple_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
-                ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
-                [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-                [Lia,Locb] = ismember(C,ripple_cells');
-                ia = ia(Lia);
+%                 ripple_cells = unique([find(place_fields_all_R(1).ripple_modulation_percentile>0.95 & place_fields_all_R(1).session_id == nsession),...
+%                     find(place_fields_all_R(2).ripple_modulation_percentile>0.95&place_fields_all_R(2).session_id == nsession)]);
+%                 ripple_cells = place_fields_all_R(1).cluster_id(ripple_cells);
+%                 [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+%                 [Lia,Locb] = ismember(C,ripple_cells');
+%                 ia = ia(Lia);
 
                 metric_param = create_cluster_selection_params('sorting_option',sorting_option);
                 metric_param.unstable_ids = @(x) x==0;
                 %                             metric_param.region = @(x) contains(x,'V1');
-                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+%                 metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+                metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
                 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
                 [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
 
@@ -226,7 +229,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','R ripple','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','R ripple','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Right ripples'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','Right ripples'))
@@ -240,17 +243,18 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         if length(session_info(n).probe) <= 1
 
         else
-            ripple_cells = unique([find(place_fields_all_combined(1).ripple_modulation_percentile>0.95 & place_fields_all_combined(1).session_id == nsession),...
-                find(place_fields_all_combined(2).ripple_modulation_percentile>0.95&place_fields_all_combined(2).session_id == nsession)]);
-            ripple_cells = place_fields_all_combined(1).cluster_id(ripple_cells);
-            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-            [Lia,Locb] = ismember(C,ripple_cells');
-            ia = ia(Lia);
+%             ripple_cells = unique([find(place_fields_all_combined(1).ripple_modulation_percentile>0.95 & place_fields_all_combined(1).session_id == nsession),...
+%                 find(place_fields_all_combined(2).ripple_modulation_percentile>0.95&place_fields_all_combined(2).session_id == nsession)]);
+%             ripple_cells = place_fields_all_combined(1).cluster_id(ripple_cells);
+%             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+%             [Lia,Locb] = ismember(C,ripple_cells');
+%             ia = ia(Lia);
 
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             metric_param.unstable_ids = @(x) x==0;
             %             metric_param.region = @(x) contains(x,'V1');
-            metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
+            metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id);
+%             metric_param.merged_cluster_id = @(x) ismember(x,clusters_combined.merged_cluster_id(ia));
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             [C,ia,ic] = unique(selected_clusters.merged_cluster_id);
 
@@ -259,7 +263,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
             plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                 'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                'event_id',event_id(index),'event_label','combined ripple','place_fields',place_fields);
+                'event_id',event_id(index),'event_label','combined ripple','place_fields',place_fields,'speed_filtering',1);
 
             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','combined'))== 0
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','ripple PSTH','combined'))

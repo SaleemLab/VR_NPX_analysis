@@ -175,6 +175,9 @@ ripple_modulation_combined = [];
 V1_event_modulation_L = [];
 V1_event_modulation_R = [];
 V1_event_modulation_combined = [];
+V1_event_modulation_L_no_ripple = [];
+V1_event_modulation_R_no_ripple = [];
+V1_event_modulation_combined_no_ripple = [];
 
 place_fields_all = [];
 
@@ -221,6 +224,10 @@ for track_id = 1:2
     place_fields_all(track_id).post_V1_event_activation = [];
     place_fields_all(track_id).post_V1_event_inhibition = [];
 
+    place_fields_all(track_id).non_ripple_V1_event_spike_count = [];
+    place_fields_all(track_id).non_ripple_V1_event_PSTH = [];
+    place_fields_all(track_id).non_ripple_V1_event_PSTH_zscored = [];
+
     place_fields_all(track_id).theta_modulation_percentile = [];
     place_fields_all(track_id).theta_phase_map = [];
     place_fields_all(track_id).position_phase_xcorr_map = [];
@@ -256,6 +263,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             load(fullfile(options.ANALYSIS_DATAPATH,'theta_modulation.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'V1_event_modulation.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'V1_event_modulation_no_ripple.mat'));
             clusters = merged_clusters;
             sorting_option = 'spikeinterface';
         elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
@@ -302,12 +310,63 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             V1_event_fields = fieldnames(V1_event_modulation_combined);
 
             for iField = 1:length(all_fields)
-
-                if sum(strcmp(ripple_fields,all_fields{iField})) == 1
-                    place_fields_all_combined(track_id).(all_fields{iField}) = [place_fields_all_combined(track_id).(all_fields{iField}) ...
-                        ripple_modulation_combined(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
+                if strcmp(all_fields{iField},'ripple_PSTH')
+                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).ripple_PSTH = [place_fields_all_combined(track_id).ripple_PSTH PSTH_matrix];
                     continue
                 end
+
+                if strcmp(all_fields{iField},'ripple_PSTH_zscored')
+                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH_zscored{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).ripple_PSTH_zscored = [place_fields_all_combined(track_id).ripple_PSTH_zscored PSTH_matrix];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'ripple_spike_count')
+                    place_fields_all_combined(track_id).ripple_spike_count = [place_fields_all_combined(track_id).ripple_spike_count ripple_modulation_combined(track_id).spike_count];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'V1_event_PSTH')
+                    PSTH_matrix = [V1_event_modulation_combined(track_id).PSTH{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).V1_event_PSTH = [place_fields_all_combined(track_id).V1_event_PSTH PSTH_matrix];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'V1_PSTH_zscored')
+                    PSTH_matrix = [V1_event_modulation_combined(track_id).PSTH_zscored{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).V1_event_PSTH_zscored = [place_fields_all_combined(track_id).V1_event_PSTH_zscored PSTH_matrix];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'V1_event_spike_count')
+                    place_fields_all_combined(track_id).V1_event_spike_count = [place_fields_all_combined(track_id).V1_event_spike_count V1_event_modulation_combined(track_id).spike_count];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH')
+                    PSTH_matrix = [V1_event_modulation_combined_no_ripple(track_id).PSTH{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).non_ripple_V1_event_PSTH = [place_fields_all_combined(track_id).non_ripple_V1_event_PSTH PSTH_matrix];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                    PSTH_matrix = [V1_event_modulation_combined_no_ripple(track_id).PSTH_zscored{:}];
+                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                    place_fields_all_combined(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_combined(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                    continue
+                end
+
+                if strcmp(all_fields{iField},'non_ripple_V1_event_spike_count')
+                    place_fields_all_combined(track_id).non_ripple_V1_event_spike_count = [place_fields_all_combined(track_id).non_ripple_V1_event_spike_count V1_event_modulation_combined_no_ripple(track_id).spike_count];
+                    continue
+                end
+
 % 
 %                 if sum(strcmp(theta_fields,all_fields{iField})) == 1
 %                     place_fields_all_combined(track_id).(all_fields{iField}) = [place_fields_all_combined(track_id).(all_fields{iField}) ...
@@ -317,6 +376,12 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 if sum(strcmp(V1_event_fields,all_fields{iField})) == 1
                     place_fields_all_combined(track_id).(all_fields{iField}) = [place_fields_all_combined(track_id).(all_fields{iField}) ...
                         V1_event_modulation_combined(track_id).(V1_event_fields{strcmp(V1_event_fields,all_fields{iField})})];
+                    continue
+                end
+
+                if sum(strcmp(ripple_fields,all_fields{iField})) == 1
+                    place_fields_all_combined(track_id).(all_fields{iField}) = [place_fields_all_combined(track_id).(all_fields{iField}) ...
+                        ripple_modulation_combined(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
                     continue
                 end
 
@@ -343,37 +408,6 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     continue
                 end
 
-                if strcmp(all_fields{iField},'ripple_PSTH')
-                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH{:}];
-                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                    place_fields_all_combined(track_id).ripple_PSTH = [place_fields_all_combined(track_id).ripple_PSTH PSTH_matrix];
-                end
-
-                if strcmp(all_fields{iField},'ripple_PSTH_zscored')
-                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH_zscored{:}];
-                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                    place_fields_all_combined(track_id).ripple_PSTH_zscored = [place_fields_all_combined(track_id).ripple_PSTH_zscored PSTH_matrix];
-                end
-
-                if strcmp(all_fields{iField},'ripple_spike_count')
-                    place_fields_all_combined(track_id).ripple_spike_count = [place_fields_all_combined(track_id).ripple_spike_count ripple_modulation_combined(track_id).spike_count];
-                end
-
-                if strcmp(all_fields{iField},'V1_event_PSTH')
-                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH{:}];
-                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                    place_fields_all_combined(track_id).V1_event_PSTH = [place_fields_all_combined(track_id).V1_event_PSTH PSTH_matrix];
-                end
-
-                if strcmp(all_fields{iField},'V1_PSTH_zscored')
-                    PSTH_matrix = [ripple_modulation_combined(track_id).PSTH_zscored{:}];
-                    PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                    place_fields_all_combined(track_id).V1_event_PSTH_zscored = [place_fields_all_combined(track_id).V1_event_PSTH_zscored PSTH_matrix];
-                end
-
-                if strcmp(all_fields{iField},'V1_event_spike_count')
-                    place_fields_all_combined(track_id).V1_event_spike_count = [place_fields_all_combined(track_id).V1_event_spike_count ripple_modulation_combined(track_id).spike_count];
-                end
             end
 
             % Relative distance from the surface for clusters from
@@ -439,6 +473,63 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
 
                     for iField = 1:length(all_fields)
 
+                        if strcmp(all_fields{iField},'ripple_PSTH')
+                            PSTH_matrix = [ripple_modulation_L(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).ripple_PSTH = [place_fields_all_L(track_id).ripple_PSTH PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'ripple_PSTH_zscored')
+                            PSTH_matrix = [ripple_modulation_L(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).ripple_PSTH_zscored = [place_fields_all_L(track_id).ripple_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'ripple_spike_count')
+                            place_fields_all_L(track_id).ripple_spike_count = [place_fields_all_L(track_id).ripple_spike_count ripple_modulation_L(track_id).spike_count];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_L(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).V1_event_PSTH = [place_fields_all_L(track_id).V1_event_PSTH PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_PSTH_zscored')
+                            PSTH_matrix = [V1_event_modulation_L(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).V1_event_PSTH_zscored = [place_fields_all_L(track_id).V1_event_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_spike_count')
+                            place_fields_all_L(track_id).V1_event_spike_count = [place_fields_all_L(track_id).V1_event_spike_count V1_event_modulation_L(track_id).spike_count];
+                       continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_L_no_ripple(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).non_ripple_V1_event_PSTH = [place_fields_all_L(track_id).non_ripple_V1_event_PSTH PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                            PSTH_matrix = [V1_event_modulation_L_no_ripple(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_L(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_L(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_spike_count')
+                            place_fields_all_L(track_id).non_ripple_V1_event_spike_count = [place_fields_all_L(track_id).non_ripple_V1_event_spike_count V1_event_modulation_L_no_ripple(track_id).spike_count];
+                            continue
+                        end
+
                         if sum(strcmp(ripple_fields,all_fields{iField})) == 1
                             place_fields_all_L(track_id).(all_fields{iField}) = [place_fields_all_L(track_id).(all_fields{iField}) ...
                                 ripple_modulation_L(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
@@ -480,37 +571,6 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             continue
                         end
 
-                        if strcmp(all_fields{iField},'ripple_PSTH')
-                            PSTH_matrix = [ripple_modulation_L(track_id).PSTH{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_L(track_id).ripple_PSTH = [place_fields_all_L(track_id).ripple_PSTH PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'ripple_PSTH_zscored')
-                            PSTH_matrix = [ripple_modulation_L(track_id).PSTH_zscored{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_L(track_id).ripple_PSTH_zscored = [place_fields_all_L(track_id).ripple_PSTH_zscored PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'ripple_spike_count')
-                            place_fields_all_L(track_id).ripple_spike_count = [place_fields_all_L(track_id).ripple_spike_count ripple_modulation_L(track_id).spike_count];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_event_PSTH')
-                            PSTH_matrix = [V1_event_modulation_L(track_id).PSTH{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_L(track_id).V1_event_PSTH = [place_fields_all_L(track_id).V1_event_PSTH PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_PSTH_zscored')
-                            PSTH_matrix = [V1_event_modulation_L(track_id).PSTH_zscored{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_L(track_id).V1_event_PSTH_zscored = [place_fields_all_L(track_id).V1_event_PSTH_zscored PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_event_spike_count')
-                            place_fields_all_L(track_id).V1_event_spike_count = [place_fields_all_L(track_id).V1_event_spike_count V1_event_modulation_L(track_id).spike_count];
-                        end
                     end
 
                     % Relative distance from the surface for clusters from
@@ -568,7 +628,61 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     V1_event_fields = fieldnames(V1_event_modulation_R);
 
                     for iField = 1:length(all_fields)
+                        if strcmp(all_fields{iField},'ripple_PSTH')
+                            PSTH_matrix = [ripple_modulation_R(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).ripple_PSTH = [place_fields_all_R(track_id).ripple_PSTH PSTH_matrix];
+                            continue
+                        end
 
+                        if strcmp(all_fields{iField},'ripple_PSTH_zscored')
+                            PSTH_matrix = [ripple_modulation_R(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).ripple_PSTH_zscored = [place_fields_all_R(track_id).ripple_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+                        if strcmp(all_fields{iField},'ripple_spike_count')
+                            place_fields_all_R(track_id).ripple_spike_count = [place_fields_all_R(track_id).ripple_spike_count ripple_modulation_R(track_id).spike_count];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_R(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).V1_event_PSTH = [place_fields_all_R(track_id).V1_event_PSTH PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_PSTH_zscored')
+                            PSTH_matrix = [V1_event_modulation_R(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).V1_event_PSTH_zscored = [place_fields_all_R(track_id).V1_event_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'V1_event_spike_count')
+                            place_fields_all_R(track_id).V1_event_spike_count = [place_fields_all_R(track_id).V1_event_spike_count V1_event_modulation_R(track_id).spike_count];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH')
+                            PSTH_matrix = [V1_event_modulation_R_no_ripple(track_id).PSTH{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).non_ripple_V1_event_PSTH = [place_fields_all_R(track_id).non_ripple_V1_event_PSTH PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                            PSTH_matrix = [V1_event_modulation_R_no_ripple(track_id).PSTH_zscored{:}];
+                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
+                            place_fields_all_R(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_R(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                            continue
+                        end
+
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_spike_count')
+                            place_fields_all_R(track_id).non_ripple_V1_event_spike_count = [place_fields_all_R(track_id).non_ripple_V1_event_spike_count V1_event_modulation_R_no_ripple(track_id).spike_count];
+                            continue
+                        end
                         if sum(strcmp(ripple_fields,all_fields{iField})) == 1
                             place_fields_all_R(track_id).(all_fields{iField}) = [place_fields_all_R(track_id).(all_fields{iField}) ...
                                 ripple_modulation_R(track_id).(ripple_fields{strcmp(ripple_fields,all_fields{iField})})];
@@ -611,36 +725,6 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             continue
                         end
 
-                        if strcmp(all_fields{iField},'ripple_PSTH')
-                            PSTH_matrix = [ripple_modulation_R(track_id).PSTH{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_R(track_id).ripple_PSTH = [place_fields_all_R(track_id).ripple_PSTH PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'ripple_PSTH_zscored')
-                            PSTH_matrix = [ripple_modulation_R(track_id).PSTH_zscored{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_R(track_id).ripple_PSTH_zscored = [place_fields_all_R(track_id).ripple_PSTH_zscored PSTH_matrix];
-                        end
-                        if strcmp(all_fields{iField},'ripple_spike_count')
-                            place_fields_all_R(track_id).ripple_spike_count = [place_fields_all_R(track_id).ripple_spike_count ripple_modulation_R(track_id).spike_count];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_event_PSTH')
-                            PSTH_matrix = [V1_event_modulation_R(track_id).PSTH{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_R(track_id).V1_event_PSTH = [place_fields_all_R(track_id).V1_event_PSTH PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_event_PSTH_zscored')
-                            PSTH_matrix = [V1_event_modulation_R(track_id).PSTH_zscored{:}];
-                            PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_R(track_id).V1_event_PSTH_zscored = [place_fields_all_R(track_id).V1_event_PSTH_zscored PSTH_matrix];
-                        end
-
-                        if strcmp(all_fields{iField},'V1_event_spike_count')
-                            place_fields_all_R(track_id).V1_event_spike_count = [place_fields_all_R(track_id).V1_event_spike_count V1_event_modulation_R(track_id).spike_count];
-                        end
                     end
 
                     % Relative distance from the surface for clusters from

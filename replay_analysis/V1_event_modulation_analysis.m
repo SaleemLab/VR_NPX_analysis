@@ -87,9 +87,8 @@ spatial_w = spatial_w / sum(spatial_w);
 tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
 trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
-
-V1_event_modulation(1).event_zscore(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
-V1_event_modulation(2).event_zscore(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
+trackSpeed = interp1(Behaviour.tvec,Behaviour.speed,...
+    Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
 
 tic
 for iCell = 1:no_cluster
@@ -110,21 +109,12 @@ for iCell = 1:no_cluster
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
-
-    psth_track1 = binnedArray1/psthBinSize;
-    psth_track1 = conv(mean(psth_track1,'omitnan'), gaussianWindow, 'same');
-    psth_track2 = binnedArray2/psthBinSize;
-    psth_track2 = conv(mean(psth_track2,'omitnan'), gaussianWindow, 'same');
-
-    shiftedArrays1 = zeros(1000,size(binnedArray1,1),size(binnedArray1,2));
-    shiftedArrays2 = zeros(1000,size(binnedArray2,1),size(binnedArray2,2));
-    PSTH_shuffled1 = zeros(1000,size(binnedArray2,2));
-    PSTH_shuffled2 = zeros(1000,size(binnedArray2,2));
-
+    
     % expected activity due to spatial location (Visual feature)
     yHat = [];
     for track_id = 1:2
         position_this_event = [];
+        speed_this_event = [];
         responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
 
         track_event_time = event_times_unchanged(event_id==track_id);
@@ -132,16 +122,34 @@ for iCell = 1:no_cluster
         for event = 1:length(track_event_time)
             if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+                speed_this_event(event,:) = trackSpeed(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+
             elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
+                speed_this_event(event,:) = trackSpeed(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
             elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(bins)
                 position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+                speed_this_event(event,:) = trackSpeed(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
             elseif track_event_time(event)+window(2)>max(tvec)
                 temp = trackPosition(end);
                 position_this_event(event,:) = [trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
                     temp*ones(1,size(position_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
+                temp = trackSpeed(end);
+                speed_this_event(event,:) = [trackSpeed(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
+                    temp*ones(1,size(speed_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
             else
                 position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+                speed_this_event(event,:) = trackSpeed(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
+            end
+
+            if contains(event_label,'Lap start')
+                position_this_event(event,bins<=0)=1;% Before lap start fix at location 1
+                position_this_event(event,bins<=0.1&position_this_event(event,:)>10)=1; % before lap start
+                position_this_event(isnan(position_this_event))=0;
+                position_jump = find([0 abs(diff(position_this_event(event,:)))]>5);
+                position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
+            elseif contains(event_label,'Lap end')
+                position_this_event(event,bins>=0)=place_fields(1).x_bin_edges(end)/x_bin_width;
             end
 
             position_this_event(isnan(position_this_event))=0;
@@ -154,7 +162,38 @@ for iCell = 1:no_cluster
 
         yHat{track_id}(isnan(yHat{track_id}))=0;
         average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
+
+
+        if track_id == 1
+            binnedArray1(speed_this_event>5)=nan; % if animal is moving, remove the spikes
+        else
+            binnedArray2(speed_this_event>5)=nan; % if animal is moving, remove the spikes
+        end
     end
+
+    if size(binnedArray1,1)==1
+        psth_track1 = conv(binnedArray1/psthBinSize,gaussianWindow,'same');
+    else
+        for nevent = 1:size(binnedArray1,1)
+            psth_track1(nevent,:) = conv(binnedArray1(nevent,:)/psthBinSize,gaussianWindow,'same');
+        end
+        psth_track1 = mean(psth_track1,'omitnan');
+    end
+
+    if size(binnedArray2,1)==1
+        psth_track2 = conv(binnedArray2/psthBinSize,gaussianWindow,'same');
+    else
+        for nevent = 1:size(binnedArray2,1)
+            psth_track2(nevent,:) = conv(binnedArray2(nevent,:)/psthBinSize,gaussianWindow,'same');
+        end
+        psth_track2 = mean(psth_track2,'omitnan');
+    end
+
+
+    shiftedArrays1 = zeros(1000,size(binnedArray1,1),size(binnedArray1,2));
+    shiftedArrays2 = zeros(1000,size(binnedArray2,1),size(binnedArray2,2));
+    PSTH_shuffled1 = zeros(1000,size(binnedArray2,2));
+    PSTH_shuffled2 = zeros(1000,size(binnedArray2,2));
 
     parfor nshuffle = 1:1000
         %         shiftedArrays1(:,:,nshuffle) = zeros(size(binnedArray1,1),size(binnedArray1,2));
@@ -209,8 +248,8 @@ for iCell = 1:no_cluster
     V1_event_modulation(1).max_min_difference(iCell) = max(psth_track1)-min(psth_track1);
     V1_event_modulation(2).max_min_difference(iCell) = max(psth_track2)-min(psth_track2);
 
-    FR_modulation1= (max(psth_track1(bins>-1 & bins<1))-min(psth_track1(bins>-1 & bins<1)))/mean(psth_track1(bins>-1 & bins<1));
-    FR_modulation2 = (max(psth_track2(bins>-1 & bins<1))-min(psth_track2(bins>-1 & bins<1)))/mean(psth_track2(bins>-1 & bins<1));
+    FR_modulation1= (max(psth_track1(bins>-0.5 & bins<0.5))-min(psth_track1(bins>-0.5 & bins<0.5)))/mean(psth_track1(bins>-0.5 & bins<0.5));
+    FR_modulation2 = (max(psth_track2(bins>-0.5 & bins<0.5))-min(psth_track2(bins>-0.5 & bins<0.5)))/mean(psth_track2(bins>-0.5 & bins<0.5));
 
     V1_event_modulation(1).V1_event_modulation(iCell) = FR_modulation1;
     V1_event_modulation(2).V1_event_modulation(iCell) = FR_modulation2;
@@ -219,24 +258,24 @@ for iCell = 1:no_cluster
     V1_event_modulation(2).V1_event_modulation_percentile(iCell) = sum(abs(FR_modulation2)>abs(FR_difference_shuffled2))/length(FR_difference_shuffled2);
 
     % PRE-V1_event modulation
-    temp = psth_track1(bins<0 & bins>-1);
-    tmep_shuffled = PSTH_shuffled1(:,bins<0 & bins>-1);
+    temp = psth_track1(bins<0 & bins>-0.5);
+    tmep_shuffled = PSTH_shuffled1(:,bins<0 & bins>-0.5);
     V1_event_modulation(1).pre_V1_event_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
     V1_event_modulation(1).pre_V1_event_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
 
-    temp = psth_track2(bins<0 & bins>-1);
-    tmep_shuffled = PSTH_shuffled2(:,bins<0 & bins>-1);
+    temp = psth_track2(bins<0 & bins>-0.5);
+    tmep_shuffled = PSTH_shuffled2(:,bins<0 & bins>-0.5);
     V1_event_modulation(2).pre_V1_event_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
     V1_event_modulation(2).pre_V1_event_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
 
     % POST-V1_event modulation
-    temp = psth_track1(bins>0 & bins<1);
-    tmep_shuffled = PSTH_shuffled1(:,bins>0 & bins<1);
+    temp = psth_track1(bins>0 & bins<0.5);
+    tmep_shuffled = PSTH_shuffled1(:,bins>0 & bins<0.5);
     V1_event_modulation(1).post_V1_event_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
     V1_event_modulation(1).post_V1_event_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
 
-    temp = psth_track2(bins>0 & bins<1);
-    tmep_shuffled = PSTH_shuffled2(:,bins>0 & bins<1);
+    temp = psth_track2(bins>0 & bins<0.5);
+    tmep_shuffled = PSTH_shuffled2(:,bins>0 & bins<0.5);
     V1_event_modulation(2).post_V1_event_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
     V1_event_modulation(2).post_V1_event_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
 
