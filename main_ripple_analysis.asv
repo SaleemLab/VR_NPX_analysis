@@ -399,8 +399,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         all_spike_counts = [];
         %         event_id = [ones(1,size(ripple_modulation_combined(1).spike_count{ncell},1))  2*ones(1,size(ripple_modulation_combined(2).spike_count{ncell},1))];
-        %         ripple_cells = unique([find(ripple_modulation_combined(1).ripple_modulation_percentile>=0.95) find(ripple_modulation_combined(2).ripple_modulation_percentile>=0.95)]);
-        ripple_cells = 1:length(ripple_modulation_combined(1).ripple_modulation_percentile);
+                ripple_cells = unique([find(ripple_modulation_combined(1).ripple_modulation_percentile>=0.95) find(ripple_modulation_combined(2).ripple_modulation_percentile>=0.95)]);
+%         ripple_cells = 1:length(ripple_modulation_combined(1).ripple_modulation_percentile);
 
         for ncell = 1:length(ripple_cells)
 
@@ -454,36 +454,85 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         % The units of the arguments are with respect to the binning window used
         % to bin spikes.
-        argIn=[];
-        argIn.BinWidth = 1;     % 10ms
-        argIn.MaxDelay = 50;    % 500ms
-        argIn.TimeStep = 4;     % 40ms
-        argIn.WindowLength = 8; % 80ms
+        pairs = [1 2;3 1;3 2];
+        pair_name = {'V1 L - V1 R','V1 L - HPC','V1 R - HPC'};
+        argOut_all = []
+        for npair = 1:size(pairs,1)
+            argIn=[];
+            argIn.BinWidth = 2;     % 20ms
+            argIn.MaxDelay = 50;    % 500ms
+            argIn.TimeStep = 4;     % 40ms
+            argIn.WindowLength = 8; % 80ms
 
-        %argIn.NumWorkers = Inf; % Requires Parallel Processing Toolbox
+            %argIn.NumWorkers = Inf; % Requires Parallel Processing Toolbox
 
-        disp(argIn)
-        argOut = ComputeCorrMap({ripple_spike_count{3} ripple_spike_count{1}}, event_id, argIn);
+            disp(argIn)
+                        argOut = ComputeCorrMap({ripple_spike_count{pairs(npair,1)} ripple_spike_count{pairs(npair,2)}}, event_id, argIn);
+%             argOut = ComputeCorrMap({ripple_spike_count{2}(2:2:size(ripple_spike_count{2},1),:,:) ripple_spike_count{2}(1:2:size(ripple_spike_count{2},1),:,:)}, event_id, argIn);
 
-        %%%
-        CANONICAL_PAIR_IDX = 1;
-        mapDim = size(argOut.CorrMap, 2);
-        delays = (-argIn.MaxDelay:argIn.MaxDelay)*10; % Convert to ms
-        t = (-0.5*100:argIn.TimeStep:0.5*100)*10; % Convert to ms
+            %%%
+            CANONICAL_PAIR_IDX = 1;
+            mapDim = size(argOut.CorrMap, 2);
+            delays = (-argIn.MaxDelay:argIn.MaxDelay)*10; % Convert to ms
+            t = (-0.5*100:argIn.TimeStep:0.5*100)*10; % Convert to ms
 
-        figure(1);
+            figure(npair);
+            subplot(2,2,1)
 
-        imagesc( delays, t, argOut.CorrMap(:,:,CANONICAL_PAIR_IDX)' )
+            imagesc( delays, t, argOut.CorrMap(:,:,CANONICAL_PAIR_IDX)'-argOut.CorrMap(:,:,CANONICAL_PAIR_IDX)' )
 
-        ax = gca;
-        ax.YDir = 'Normal';
+            ax = gca;
+            ax.YDir = 'Normal';
 
-        xlabel('Delay')
-        ylabel('Time')
-        colorbar
-        clim([0.1 0.4])
-        colormap(flip(gray))
+            xlabel('Delay')
+            ylabel('Time')
+            colorbar
+            clim([0.2 0.4])
+            xlim([-200 200])
+            ylim([-500 500])
+%             colormap(flip(gray))
+            title(pair_name{npair})
 
+            subplot(2,2,2)
+
+            imagesc( delays, t, argOut.CorrMap(:,:,2)' )
+
+            ax = gca;
+            ax.YDir = 'Normal';
+
+            xlabel('Delay')
+            ylabel('Time')
+            colorbar
+            clim([0.2 0.4])
+            xlim([-200 200])
+            ylim([-500 500])
+%             colormap(flip(gray))
+            title('2nd axis')
+
+            subplot(2,2,3)
+
+            imagesc( delays, t, argOut.FrMap(:,:)' )
+
+            ax = gca;
+            ax.YDir = 'Normal';
+
+            xlabel('Delay')
+            ylabel('Time')
+            colorbar
+%             clim([0.2 0.4])
+            xlim([-200 200])
+            ylim([-500 500])
+            %             colormap(flip(gray))
+            title('geomertic mean FR')
+
+            subplot(2,2,2)
+
+            plot( delays,mean(argOut.CorrMap(:,t>=-40 & t<=40,CANONICAL_PAIR_IDX),2),'k')
+            hold on
+            plot( delays,mean(argOut.CorrMap(:,t<=150 & t>=50,CANONICAL_PAIR_IDX),2) ,'r')
+            plot( delays,mean(argOut.CorrMap(:,t>=-150 & t<=-50,CANONICAL_PAIR_IDX),2),'b' )
+            argOut_all{npair} = argOut;
+        end
         %%% Example computation of the interaction structure analysis
         % Fig. 6
 
@@ -514,8 +563,6 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         xlabel('Time Used For Correlation')
         ylabel('Time Used For Fitting')
 
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'),"ripple_modulation_L","ripple_modulation_R","ripple_modulation_combined")
 
     end
 end
