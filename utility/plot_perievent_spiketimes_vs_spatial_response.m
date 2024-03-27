@@ -237,8 +237,6 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 %         average_map_track2_odd = conv(mean(psth_track2(1:2:end,:),'omitnan'), gaussianWindow, 'same');
 %         average_map_track2_even = conv(mean(psth_track2(2:2:end,:),'omitnan'), gaussianWindow, 'same');
 
-        p = 
-
         h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
         map_error = std(psth_track1,'omitnan')/sqrt(sum(~isnan(psth_track1),1));
         hold on
