@@ -355,10 +355,10 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                     continue
                 end
 
-                if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH_zscored')
                     PSTH_matrix = [V1_event_modulation_combined_no_ripple(track_id).PSTH_zscored{:}];
                     PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                    place_fields_all_combined(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_combined(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                    place_fields_all_combined(track_id).non_ripple_V1_event_PSTH_zscored = [place_fields_all_combined(track_id).non_ripple_V1_event_PSTH_zscored PSTH_matrix];
                     continue
                 end
 
@@ -518,10 +518,10 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             continue
                         end
 
-                        if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH_zscored')
                             PSTH_matrix = [V1_event_modulation_L_no_ripple(track_id).PSTH_zscored{:}];
                             PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_L(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_L(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                            place_fields_all_L(track_id).non_ripple_V1_event_PSTH_zscored = [place_fields_all_L(track_id).non_ripple_V1_event_PSTH_zscored PSTH_matrix];
                             continue
                         end
 
@@ -672,10 +672,10 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                             continue
                         end
 
-                        if strcmp(all_fields{iField},'non_ripple_V1_PSTH_zscored')
+                        if strcmp(all_fields{iField},'non_ripple_V1_event_PSTH_zscored')
                             PSTH_matrix = [V1_event_modulation_R_no_ripple(track_id).PSTH_zscored{:}];
                             PSTH_matrix = reshape(PSTH_matrix,[],length(good_cell_index));
-                            place_fields_all_R(track_id).non_ripple_V1_PSTH_zscored = [place_fields_all_R(track_id).non_ripple_V1_PSTH_zscored PSTH_matrix];
+                            place_fields_all_R(track_id).non_ripple_V1_event_PSTH_zscored = [place_fields_all_R(track_id).non_ripple_V1_event_PSTH_zscored PSTH_matrix];
                             continue
                         end
 
