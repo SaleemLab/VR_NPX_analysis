@@ -300,7 +300,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     end
 end
 
-%% Populational level V1-HPC interaction during context-selective ripples
+%% Populational level V1-HPC interaction during context-selective ripples CCA
 
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -393,14 +393,17 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             probe_id(temp==nprobe) = probe_hemisphere(nprobe);
         end
 
-        [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
+%         [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
+        [event_times,index] = sort([Task_info.start_time_all]);
+        event_id = Task_info.track_ID_all;
+
         event_id = event_id(index);
         probe_id = probe_id(index);
 
         all_spike_counts = [];
         %         event_id = [ones(1,size(ripple_modulation_combined(1).spike_count{ncell},1))  2*ones(1,size(ripple_modulation_combined(2).spike_count{ncell},1))];
-                ripple_cells = unique([find(ripple_modulation_combined(1).ripple_modulation_percentile>=0.95) find(ripple_modulation_combined(2).ripple_modulation_percentile>=0.95)]);
-%         ripple_cells = 1:length(ripple_modulation_combined(1).ripple_modulation_percentile);
+%                 ripple_cells = unique([find(ripple_modulation_combined(1).ripple_modulation_percentile>=0.95) find(ripple_modulation_combined(2).ripple_modulation_percentile>=0.95)]);
+        ripple_cells = 1:length(ripple_modulation_combined(1).ripple_modulation_percentile);
 
         for ncell = 1:length(ripple_cells)
 
@@ -487,7 +490,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             xlabel('Delay')
             ylabel('Time')
             colorbar
-            clim([0.2 0.4])
+            clim([0.1 0.5])
             xlim([-200 200])
             ylim([-500 500])
 %             colormap(flip(gray))
@@ -503,7 +506,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             xlabel('Delay')
             ylabel('Time')
             colorbar
-            clim([0.2 0.4])
+            clim([0.1 0.5])
             xlim([-200 200])
             ylim([-500 500])
 %             colormap(flip(gray))
@@ -525,7 +528,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             %             colormap(flip(gray))
             title('geomertic mean FR')
 
-            subplot(2,2,2)
+            subplot(2,2,4)
 
             plot( delays,mean(argOut.CorrMap(:,t>=-40 & t<=40,CANONICAL_PAIR_IDX),2),'k')
             hold on
