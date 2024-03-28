@@ -300,7 +300,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
     end
 end
 
-%% Populational level V1-HPC interaction during context-selective ripples CCA
+%% CCA Populational level V1-HPC interaction during context-selective ripples 
 
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
