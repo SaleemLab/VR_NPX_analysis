@@ -123,7 +123,9 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
         
         if speed_filtering == 1
-            [~,~,rasterX,rasterY,~,~] = psthAndBA(spike_times_events(spike_speed(cluster_spike_id{iCluster+(iPlot-1)*no_subplot})>5),event_times, window, 0.001);
+            this_cell_spikes = intersect(spike_times_events(cluster_spike_id{iCluster+(iPlot-1)*no_subplot}),spike_times_events(spike_speed>5));
+
+            [~,~,rasterX,rasterY,~,~] = psthAndBA(this_cell_spikes,event_times, window, 0.001);
             rasterX_reshaped = reshape(rasterX,[3 length(rasterX)/3]);
             rasterY_reshaped = reshape(rasterY,[3 length(rasterY)/3]);
             event1_raster_id = ismember(rasterY_reshaped(1,:), find(event_id == 1));
@@ -202,7 +204,12 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
             end
 
             yHat{track_id}(isnan(yHat{track_id}))=0;
-            average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
+
+            if size(yHat{track_id},1)>1
+                average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
+            else
+                average_resp_track{track_id} = yHat{track_id};
+            end
 
             if speed_filtering==1
                 if track_id == 1
@@ -239,19 +246,23 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
 
         h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
-        map_error = std(psth_track1,'omitnan')/sqrt(sum(~isnan(psth_track1),1));
+        if size(binnedArray1,1)~=1
+            map_error = std(psth_track1,'omitnan')/sqrt(sum(~isnan(psth_track1),1));
+        end
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
-%         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
-%         map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
-%         hold on
-%         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
-%         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
+        %         h(2)=plot(bins,average_map_track1_even,'LineWidth',2,'Color',colour_lines{2});
+        %         map_error = std(average_map_track1_even)./sqrt(length(average_map_track1_even));
+        %         hold on
+        %         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
+        %         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
         h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
-        map_error = std(psth_track2,'omitnan')/sqrt(sum(~isnan(psth_track2),1));
+        if size(binnedArray2,1)~=1
+            map_error = std(psth_track2,'omitnan')/sqrt(sum(~isnan(psth_track2),1));
+        end
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
@@ -264,7 +275,9 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
 
 
         h(3)=plot(bins,average_resp_track{1},'LineWidth',2,'Color',colour_lines{1});
-        map_error = std(yHat{1})./sqrt(size(yHat{1},1));
+        if size(yHat{1},1)~=1
+            map_error = std(yHat{1})./sqrt(size(yHat{1},1));
+        end
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_resp_track{1}+map_error fliplr(average_resp_track{1}-map_error)],colour_lines{1},'FaceAlpha','0.2','LineStyle','none');
@@ -276,7 +289,9 @@ for iPlot = 1: ceil(no_cluster/(no_subplot))
         %         patch([bins fliplr(bins)],[average_map_track1_even+map_error fliplr(average_map_track1_even-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
         h(4)=plot(bins,average_resp_track{2},'LineWidth',2,'Color',colour_lines{4});
+        if size(yHat{2},1)~=1
         map_error = std(yHat{2})./sqrt(size(yHat{2},1));
+        end
         hold on
         % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
         patch([bins fliplr(bins)],[average_resp_track{2}+map_error fliplr(average_resp_track{2}-map_error)],colour_lines{4},'FaceAlpha','0.2','LineStyle','none');
