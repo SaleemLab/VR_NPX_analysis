@@ -178,8 +178,8 @@ ROOTPATH = 'Z:\ibn-vision';
 SUBJECT = 'M23087';
 SESSION = '20231212';
 
-SUBJECT = 'M23029';
-SESSION = '20230707';
+SUBJECT = 'M23028';
+SESSION = '20230704';
 options = 'bilateral';
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';

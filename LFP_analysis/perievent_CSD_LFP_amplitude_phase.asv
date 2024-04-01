@@ -88,8 +88,8 @@ if ~iscell(all_events) % just one event type
         [~,tidx0]=min(abs(timestamps-0));
         twin(1) = tidx0-twin(1);
         twin(2) = tidx0+twin(2);
-        if twin(2)>length(timestamps) & twin(2)<=length(timestamps)+1
-            twin(2)=length(timestamps);
+        if twin(2)>length(timestamps) & twin(2)=<length(timestamps)+1
+
         end
         timestamps = timestamps(twin(1):twin(2));
 
