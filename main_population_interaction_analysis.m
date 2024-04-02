@@ -4,7 +4,7 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\mDLAG\mDLAG'))
-
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\mDLAG\DLAG'))
 % addpath core_mdlag
 % addpath plotting
 % addpath simulation
@@ -58,6 +58,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 %         tic
 %         load(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'))
 %         toc
@@ -102,8 +103,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         %         [event_times,index] = sort([Task_info.start_time_all]);
         %         event_id = Task_info.track_ID_all;
 
-        event_id = event_id(index);
-        probe_id = probe_id(index);
+        event_id = event_id(index); % context id
+        probe_id = probe_id(index); % probe id 
 
         % whole session timevec variables
         timevec = Behaviour.tvec';
@@ -112,6 +113,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             timevec(end)+(psthBinSize)/2)';
 
         all_spike_counts = [];
+        
         %         event_id = [ones(1,size(ripple_modulation_combined(1).spike_count{ncell},1))  2*ones(1,size(ripple_modulation_combined(2).spike_count{ncell},1))];
         %                 ripple_cells = unique([find(ripple_modulation_combined(1).ripple_modulation_percentile>=0.95) find(ripple_modulation_combined(2).ripple_modulation_percentile>=0.95)]);
         ripple_cells = 1:length(ripple_modulation_combined(1).ripple_modulation_percentile);
@@ -128,51 +130,50 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
             spike_times = spike_times(spike_speed<5);
 
             [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times,...
-                event_times, [-0.5 0.5], psthBinSize);
+                event_times, [-0.1 0.5], psthBinSize);
             all_spike_counts(ncell,:,:) = binnedArray'; % ncell X time x events
         end
 
         eventSpikes = [];
+        yDims = [];
+        if length(session_info(n).probe)>1
+            yDims(1) = sum(contains(cell_regions,'V1_L'));
+            yDims(2) = sum(contains(cell_regions,'V1_R'));
+            yDims(3) = sum(contains(cell_regions,'HPC'));
+            selected_cell_id = [find(contains(cell_regions,'V1_L')) find(contains(cell_regions,'V1_R'))...
+                find(contains(cell_regions,'HPC'))];
+        elseif session_info(n).probe(1).probe_hemisphere==1
+            yDims(1) = sum(contains(cell_regions,'V1_L'));
+%             yDims(2) = sum(contains(cell_regions,'V1_R'));
+            yDims(2) = sum(contains(cell_regions,'HPC'));
+            selected_cell_id = [find(contains(cell_regions,'V1_L'))...
+                find(contains(cell_regions,'HPC'))];
+        elseif session_info(n).probe(1).probe_hemisphere==2
+%             yDims(1) = sum(contains(cell_regions,'V1_L'));
+            yDims(1) = sum(contains(cell_regions,'V1_R'));
+            yDims(2) = sum(contains(cell_regions,'HPC'));
+            selected_cell_id = [find(contains(cell_regions,'V1_R'))...
+                find(contains(cell_regions,'HPC'))];
+        end
+
         cell_regions = ripple_modulation_combined(1).region(ripple_cells);
         for nevent = 1:size(all_spike_counts,3)
             eventSpikes(nevent).trialId = nevent;% event id
             eventSpikes(nevent).probeID = probe_id(nevent);% event originated from probe 1 or 2 (1 = L and 2 = R)
-            eventSpikes(nevent).probeID = probe_id(nevent);% Track L and Track R event  (1 = L and 2 = R)
-
+            eventSpikes(nevent).trackID = event_id(nevent);% Track L and Track R event  (1 = L and 2 = R)
+            eventSpikes(nevent).reactivationID = event_id(nevent);% Track L and Track R event  (1 = L and 2 = R)
+            eventSpikes(nevent).yDims = yDims; % just to save region info. 
+            % Number of neurons per region: e.g. yDims(1)= 20 and yDims(2)=
+            % 30 mean region 1 there are 20 neruons and region 2 there are
+            % 30 neruons.
+            eventSpikes(nevent).T = size(all_spike_counts,2); % Number of timesteps
             eventSpikes(nevent).y= [] ;
-            eventSpikes(nevent).y = all_spike_counts(:,:,nevent);% all spike counts this event
-
-            % V1 L and V1 R
-            if session_info(n).probe(nprobe).probe_hemisphere == 1
-                eventSpikes(nevent).y = [eventSpikes(nevent).y; all_spike_counts(contains(cell_regions,'V1_L'),:,nevent)];
-            elseif session_info(n).probe(nprobe).probe_hemisphere == 2
-                eventSpikes(nevent).y = [eventSpikes(nevent).y; all_spike_counts(contains(cell_regions,'V1_R'),:,nevent)];
-            end
-
-            % HPC 
-            eventSpikes(nevent).y = [eventSpikes(nevent).y; all_spike_counts(contains(cell_regions,'HPC'),:,nevent)];
+            eventSpikes(nevent).y = all_spike_counts(selected_cell_id,:,nevent);% selected spike counts this event
         end
 
-        % V1 L and R
-        ripple_spike_count = [];
-
-
-        for nprobe = 1:length(probe_hemisphere)
-
-            if session_info(n).probe(nprobe).probe_hemisphere == 1
-                ripple_spike_count{1} = all_spike_counts(contains(cell_regions,'V1_L'),:,:);
-            elseif session_info(n).probe(nprobe).probe_hemisphere == 2
-                ripple_spike_count{2} = all_spike_counts(contains(cell_regions,'V1_R'),:,:);
-            end
-
-        end
-
-        % HPC
-        ripple_spike_count{3} = all_spike_counts(contains(cell_regions,'HPC'),:,:);
-
-
-        % 
-        mDLAG_analysis_pipeline(seqTrue,binWidth,yDims)
+        % all ripple event id
+        options.load_fitted_model=[];
+        [estParams,trackedParams,flags] = mDLAG_analysis_pipeline(eventSpikes,psthBinSize,yDims,options);
     end
 end
 
