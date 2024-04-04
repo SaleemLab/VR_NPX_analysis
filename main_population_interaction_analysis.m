@@ -211,8 +211,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         options.load_fitted_model = 3;
         options.groupNames= {'V1_L','V1_R','HPC_L','HPC_R'};
         options.eventname= 'Ripples';
-        %         [estParams,trackedParams,flags] = mDLAG_fitting(eventSpikes,psthBinSize,yDims,options);
-        [estParams,trackedParams,flags] = mDLAG_analysis_pipeline(eventSpikes,psthBinSize,yDims,options);
+                [estParams,trackedParams,flags] = mDLAG_fitting(eventSpikes,psthBinSize,yDims,options);
+%         [estParams,trackedParams,flags] = mDLAG_analysis_pipeline(eventSpikes,psthBinSize,yDims,options);
 
 
 
