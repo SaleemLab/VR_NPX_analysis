@@ -281,10 +281,35 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             [ripples(nprobe)] = FindRipples_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                 'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
 
-            [ripples(nprobe)] = DetectSlowWaves_masa(LFP(nprobe).CA1',LFP(nprobe).tvec','behaviour',Behaviour,'minDuration',20,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',LFP(nprobe).surface','passband',[125 300],'thresholds',[3 5],'show','off');
+        end
 
 
+        %%%%%%%%%%%%%%%%%%
+        % Candidate reactivation events detection (probe combined)
+        %%%%%%%%%%%%%%%%%%
+        reactivations_combined= [];
+        replay_combined = [];
+        CA1_clusters= [];
+        if length(session_info(n).probe)>1
+            zscore_min = 0;
+            zscore_max = 3;
+
+            for nprobe = 1: length(session_info(n).probe)
+
+                HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
+                %             merged_clusters.region
+                sorting_option = 'spikeinterface';
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param.peak_channel = @(x) ismember(x,HPC_channels);
+                metric_param.cell_type = @(x) x==1;
+                CA1_clusters(nprobe) = select_clusters(clusters_combined,metric_param);
+            end
+            spike_times = [CA1_clusters(1).spike_times CA1_clusters(2).spike_times];
+            spike_id=  [CA1_clusters(nprobe).spike_id ]
+            [spike_times,index]= sort(spike_times);
+            CA1_clusters(nprobe).spike_id
+            [replay_combined,reactivations_combined] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
+                [CA1_clusters(nprobe).spike_id CA1_clusters(nprobe).spike_times],Behaviour,zscore_min,zscore_max,options);
         end
 
         for nprobe = 1:length(session_info(n).probe)
@@ -333,6 +358,12 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
             end
         end
+
+        [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+        reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
+        reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
+
+
         clear lap_times
 
         save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'replay','reactivations')

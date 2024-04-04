@@ -86,7 +86,7 @@ seqTrueCut = cutTrials(seqTrue, 'segLength', segLength);
 if exist(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result'))==0
     mkdir(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result'))
 end
-DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result','*mDLAG*.mat'));
+DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('*mDLAG*_%s.mat',options.eventname)));
 all_files= [];
 run_num = [];
 if ~isempty(DIR)
@@ -101,10 +101,10 @@ else
 end
 
 % fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result'
-if sum(contains(all_files,'mDLAG_run1.mat'))==0
-    save(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result','mDLAG_run1.mat'),'estParams','trackedParams','flags');
+if sum(contains(all_files,'run1.mat'))==0
+    save(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('mDLAG_%s_run1.mat',options.eventname)),'estParams','trackedParams','flags');
 else
-    save(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('mDLAG_run%i.mat',max(run_num)+1)),'estParams','trackedParams','flags');
+    save(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('mDLAG_%s_run%i.mat',options.eventname,max(run_num)+1)),'estParams','trackedParams','flags');
 end
 
 else
@@ -125,7 +125,8 @@ else
     segLength = Inf;      % Optional speedup to cut trials into smaller segments during fitting
 
     run_id = options.load_fitted_model; % 1 means run1
-    load(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('mDLAG_run%i.mat',run_id)));
+    load(fullfile(options.ANALYSIS_DATAPATH,'mDLAG_result',sprintf('mDLAG_%s_run%i.mat',options.eventname,run_id)));
+    
 end
 %% ========================
 % 2b) Check fitting results
@@ -144,13 +145,16 @@ end
 % flags.xDimsRemoved         -- Number of latent dimensions removed (if 
 %                               pruneX is true) due to low variance in all 
 %                               groups.
-fprintf('\n');
-disp(flags)
-units = 'sec';%units of time of binWidth (for labels)
-plotFittingProgress(trackedParams, binWidth, ...
-                    'freqLB', freqLB, ...
-                    'freqParam', freqParam, ...
-                    'units', units);
+
+
+% fprintf('\n');
+% disp(flags)
+% units = 'sec';%units of time of binWidth (for labels)
+% plotFittingProgress(trackedParams, binWidth, ...
+%                     'freqLB', freqLB, ...
+%                     'freqParam', freqParam, ...
+%                     'units', units);
+
 %% ==============================================================
 % 3) Visualize recovery of the loading matrix and ARD parameters
 % ===============================================================
@@ -158,37 +162,43 @@ plotFittingProgress(trackedParams, binWidth, ...
 % Loadings matrices
 
 % Ground truth
-Ctrue = vertcat(paramsTrue.Cs{:});
-hinton(Ctrue);
+% Ctrue = vertcat(paramsTrue.Cs{:});
+% hinton(Ctrue);
 
 % Estimate
 % NOTE: In general, the columns of Cest are unordered, and will not match
 %       the order in Ctrue. Here, we can reorder and flip the sign of each
 %       dimension to facilitate comparison with the ground truth.
-reorder = [ 6  4  1  2  3  7  5];
-rescale = [-1 -1 -1  1  1  1  1];
-Cest = vertcat(estParams.C.means{:});
-hinton(Cest(:,reorder).*rescale);
+% reorder = [ 6  4  1  2  3  7  5];
+% rescale = [-1 -1 -1  1  1  1  1];
+% Cest = vertcat(estParams.C.means{:});
+% hinton(Cest(:,reorder).*rescale);
+% 
+% % Alpha parameters
+% % The following plots visualize the shared variance explained by each
+% % latent variable in each area.
+% 
+% % Ground truth
+% alpha_inv_true = 1./paramsTrue.alphas;
+% % Normalize by the shared variance in each area
+% alpha_inv_rel_true = alpha_inv_true ./ sum(alpha_inv_true,2);
+% 
+% figure;
+% hold on;
+% b = bar(alpha_inv_rel_true');
+% for groupIdx = 1:numGroups
+%     b(groupIdx).FaceColor = groupColors{groupIdx};
+% end
+% xlabel('Latent variable');
+% ylabel('Frac. shared var. exp.');
+% ylim([0 0.5]);
+% title('Ground truth')
 
-% Alpha parameters
-% The following plots visualize the shared variance explained by each
-% latent variable in each area.
 
-% Ground truth
-alpha_inv_true = 1./paramsTrue.alphas;
-% Normalize by the shared variance in each area
-alpha_inv_rel_true = alpha_inv_true ./ sum(alpha_inv_true,2);
-
-figure;
-hold on;
-b = bar(alpha_inv_rel_true');
-for groupIdx = 1:numGroups
-    b(groupIdx).FaceColor = groupColors{groupIdx};
-end
-xlabel('Latent variable');
-ylabel('Frac. shared var. exp.');
-ylim([0 0.5]);
-title('Ground truth')
+% Names for each group
+groupNames = options.groupNames;
+colour_lines = {[145,191,219]/255,[69,117,180]/255,[252,141,89]/255,[215,48,39]/255};
+numGroups = length(yDims);
 
 % Estimate
 % NOTE: In general, the columns of alpha_est are unordered, and will not
@@ -196,21 +206,74 @@ title('Ground truth')
 alpha_inv_est = 1./estParams.alpha.mean;
 % Normalize by the shared variance in each area
 alpha_inv_rel_est = alpha_inv_est ./ sum(alpha_inv_est,2);
-
+% alpha_inv_rel_est = alpha_inv_est;
 figure;
 hold on;
-b = bar(alpha_inv_rel_est(:,reorder)');
+b = bar(alpha_inv_rel_est(:,:)');
 for groupIdx = 1:numGroups
-    b(groupIdx).FaceColor = groupColors{groupIdx};
+    b(groupIdx).FaceColor = colour_lines{groupIdx};
 end
 xlabel('Latent variable');
 ylabel('Frac. shared var. exp.');
+% ylabel('shared var. exp.');
 ylim([0 0.5]);
-title('Estimate')
+
+% title('Estimate')
+fig = gcf;
+sgtitle(sprintf('%s %s %s fraction of shared variance explained by each latent variable',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s fraction of shared variance explained by each latent variable',options.SUBJECT,options.SESSION);
+fig.Position = [557   246   758   495];
+set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+legend(groupNames)
+
+
+alpha_inv_rel_est = alpha_inv_est;
+figure;
+hold on;
+b = bar(alpha_inv_rel_est(:,:)');
+for groupIdx = 1:numGroups
+    b(groupIdx).FaceColor = colour_lines{groupIdx};
+end
+xlabel('Latent variable');
+ylabel('shared var. exp.');
+ylim([0 sum(sum(alpha_inv_rel_est))]);
+
+% title('Estimate')
+fig = gcf;
+sgtitle(sprintf('%s %s %s shared variance explained by each latent variable',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s shared variance explained by each latent variable',options.SUBJECT,options.SESSION);
+fig.Position = [557   246   758   495];
+set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+legend(groupNames)
+
+% plot each neuron's weight (loading matrix for each latent variable)
+figure
+c_all = [];
+for n = 1:numGroups
+    c_all = [c_all; estParams.C.means{n}];
+end
+imagesc(1:size(c_all,2),1:size(c_all,1),c_all)
+set(gca,'YDir','normal')
+hold on
+cumsum_yDim = cumsum(yDims)
+for n = 1:numGroups
+    yline(cumsum_yDim(n)+0.5,'r')
+end
+colorbar
+colormap(flip(gray))
+fig = gcf;
+sgtitle(sprintf('%s %s %s mean loading matrix',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s mean loading matrix',options.SUBJECT,options.SESSION);
+fig.Position = [827   137   329   694];
+set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 %% ========================================================================
 % 4) Explore leave-group-out prediction performance and SNRs on train data
 % =========================================================================
+
 
 % Leave-group-out predictive performance
 [R2, MSE] = pred_mdlag(seqTrue, estParams);
@@ -230,28 +293,60 @@ cutoff_snr = 0.001;      % Minimum SNR that a group must have for latents to be 
 [dims,sigDims,varExp,dimTypes] = computeDimensionalities(estParams, ...
                                                          cutoff_sharedvar, ...
                                                          cutoff_snr);
-                                              
+
+% [R2, MSE] = evalDimThresh(seqTrue, estParams, cutoff_sharedvar, cutoff_snr)
+                                  
 % Visualize the number of each type of dimension
 plotDimensionalities(dims, dimTypes, ...
                      'groupNames', groupNames, ...
                      'plotZeroDim', false);
+fig = gcf;
+sgtitle(sprintf('%s %s %s number of dimension for each group type',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s %s number of dimension for each group type',options.SUBJECT,options.SESSION,options.eventname);
+fig.Position = [557   246   758   495];
+set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+% legend(groupNames)
 
 % Visualize the shared variance explained by each dimension type in each
-% group
+% group (population)
 plotVarExp(varExp, dimTypes, ...
            'groupNames', groupNames, ...
            'plotZeroDim', false);
+fig = gcf;
+sgtitle(sprintf('%s %s %s shared variance explained by each group type',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s %s shared variance explained by each group type',options.SUBJECT,options.SESSION,options.eventname);
+fig.Position = [557    68   811   871];
+% set(fig,'TickDir','out','box','off','Color','none','FontSize',12)
 
+allAxesInFigure = findall(fig,'type','axes');
+for naxis = 1:length(allAxesInFigure)
+    set(allAxesInFigure(naxis),'TickDir','out','box','off','Color','none','FontSize',10)
+end
+% legend(groupNames)
 %% ======================================
 % 6) Visualize recovery of GP parameters
 % =======================================
 
-% Ground truth
-plotGPparams_mdlag(paramsTrue,binWidth,'sigDims',sigDimsTrue,'units',units);
+% % Ground truth
+% plotGPparams_mdlag(paramsTrue,binWidth,'sigDims',sigDimsTrue,'units',units);
 
 % Estimate
+units = 'sec';%units of time of binWidth (for labels)
 plotGPparams_mdlag(estParams,binWidth,'sigDims',sigDims,'units',units);
 
+fig = gcf;
+sgtitle(sprintf('%s %s %s shared variance explained by each group type',options.SUBJECT,options.SESSION,options.eventname));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s %s shared variance explained by each group type',options.SUBJECT,options.SESSION,options.eventname);
+fig.Position = [557    68   811   871];
+% set(fig,'TickDir','out','box','off','Color','none','FontSize',12)
+
+allAxesInFigure = findall(fig,'type','axes');
+for naxis = 1:length(allAxesInFigure)
+    set(allAxesInFigure(naxis),'TickDir','out','box','off','Color','none','FontSize',10)
+end
 %% ============================================
 % 7) Visualize recovery of latent time courses
 % =============================================
@@ -259,20 +354,20 @@ plotGPparams_mdlag(estParams,binWidth,'sigDims',sigDims,'units',units);
 xspec = 'xve'; % 'xve' gives latent time courses scales by shared variance
                % 'xsm' gives latent time courses with normalized variances
                  
-% Ground truth
-[seqTrue, sortParams] = scaleByVarExp(seqTrue, paramsTrue, alpha_inv_rel_true, ...
-                                     'sortDims', false, ...
-                                     'sortGroup', 1, ...
-                                     'numDim', 10, ...
-                                     'indatafield', 'xsm', ...
-                                     'outdatafield', 'xve');
-plotDimsVsTime_mdlag(seqTrue, xspec, sortParams, binWidth, ...
-                     'nPlotMax', 1, ...
-                     'plotSingle', false, ...
-                     'plotMean', true, ...
-                     'units', units, ...
-                     'trialGroups', {}, ...
-                     'trialColors', {});
+% % Ground truth
+% [seqTrue, sortParams] = scaleByVarExp(seqTrue, paramsTrue, alpha_inv_rel_true, ...
+%                                      'sortDims', false, ...
+%                                      'sortGroup', 1, ...
+%                                      'numDim', 10, ...
+%                                      'indatafield', 'xsm', ...
+%                                      'outdatafield', 'xve');
+% plotDimsVsTime_mdlag(seqTrue, xspec, sortParams, binWidth, ...
+%                      'nPlotMax', 1, ...
+%                      'plotSingle', false, ...
+%                      'plotMean', true, ...
+%                      'units', units, ...
+%                      'trialGroups', {}, ...
+%                      'trialColors', {});
                  
 % Estimate
 [seqEst,~,~] = inferX(seqTrue, estParams);
@@ -284,24 +379,45 @@ plotDimsVsTime_mdlag(seqTrue, xspec, sortParams, binWidth, ...
                                      'numDim', 10, ...
                                      'indatafield', 'xsm', ...
                                      'outdatafield', 'xve');
-plotDimsVsTime_mdlag(seqEst, xspec, sortParams, binWidth, ...
-                     'nPlotMax', 1, ...
-                     'plotSingle', false, ...
+
+plotDimsVsTime_mdlag(seqEst([seqEst(:).trackID] ==1), xspec, sortParams, binWidth, ...
+                     'nPlotMax', 100, ...
+                     'plotSingle', true, ...
                      'plotMean', true, ...
                      'units', units, ...
                      'trialGroups', {}, ...
                      'trialColors', {});
-                 
-% Overlay estimate on ground truth, for an example trial                 
-trialIdx = 1;
-seqEst(trialIdx).xve = seqEst(trialIdx).xve([reorder reorder+estParams.xDim reorder+estParams.xDim*2],:) .* repmat(rescale, 1, 3)';                
-plotDimsVsTime_mdlag([seqTrue(trialIdx); seqEst(trialIdx)], xspec, paramsTrue, binWidth, ...
-                     'nPlotMax', 1, ...
-                     'plotSingle', false, ...
-                     'plotMean', true, ...
-                     'units', units, ...
-                     'trialGroups', {[1], [2]}, ...
-                     'trialColors', {'k', '#D35FBC'});
+fig = gcf;
+sgtitle(sprintf('%s %s mDLAG dimension time course Track Left',options.SUBJECT,options.SESSION));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s mDLAG dimension time course Track Left',options.SUBJECT,options.SESSION);
+fig.Position = [881   477   972   394];
+
+
+plotDimsVsTime_mdlag(seqEst([seqEst(:).trackID] ==2), xspec, sortParams, binWidth, ...
+    'nPlotMax', 100, ...
+    'plotSingle', true, ...
+    'plotMean', true, ...
+    'units', units, ...
+    'trialGroups', {}, ...
+    'trialColors', {});
+fig = gcf;
+sgtitle(sprintf('%s %s mDLAG dimension time course Track Right',options.SUBJECT,options.SESSION));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s mDLAG dimension time course Track Right',options.SUBJECT,options.SESSION);
+fig.Position = [881   477   972   394];
+% % Overlay estimate on ground truth, for an example trial                 
+% trialIdx = 5;
+% % seqEst(trialIdx).xve = seqEst(trialIdx).xve([reorder reorder+estParams.xDim reorder+estParams.xDim*2],:) .* repmat(rescale, 1, 3)'; 
+% seqEst(trialIdx).xve = seqEst(trialIdx).xve'; 
+% seqEst(trialIdx).xsm = seqEst(trialIdx).xsm'; 
+% plotDimsVsTime_mdlag([seqTrue(trialIdx); seqEst(trialIdx)], xspec, paramsTrue, binWidth, ...
+%                      'nPlotMax', 1, ...
+%                      'plotSingle', false, ...
+%                      'plotMean', true, ...
+%                      'units', units, ...
+%                      'trialGroups', {[1], [2]}, ...
+%                      'trialColors', {'k', '#D35FBC'});
 
 %% =============================================================
 % 8) Perform a pairwise analysis of interactions between groups
@@ -312,4 +428,17 @@ plotDimsVsTime_mdlag([seqTrue(trialIdx); seqEst(trialIdx)], xspec, paramsTrue, b
 
 % Visualize results
 plotDims_pairs(pairDims, pairs, numGroups, 'groupNames', groupNames);
+fig = gcf;
+sgtitle(sprintf('%s %s Dimensionality HPC-V1 interaction',options.SUBJECT,options.SESSION));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s Dimensionality HPC-V1 interaction',options.SUBJECT,options.SESSION);
+fig.Position = [881   477   972   394];
+
 plotVarExp_pairs(pairVarExp, pairs, numGroups, 'groupNames', groupNames);
+fig = gcf;
+sgtitle(sprintf('%s %s Shared variance explained by HPC-V1 interaction',options.SUBJECT,options.SESSION));
+% set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+fig.Name=sprintf('%s %s Shared variance explained by HPC-V1 interaction',options.SUBJECT,options.SESSION);
+fig.Position = [881   477   972   394];
+set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
