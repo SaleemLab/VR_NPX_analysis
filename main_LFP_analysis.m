@@ -113,7 +113,7 @@ Stimulus_type = 'Masa2tracks';
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =[1 2 3 4 6 7 8 9 10 12 14]
+for nsession =[7 8 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -138,7 +138,7 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
 
-        clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations
+        clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
 
         if contains(stimulus_name{n},'Masa')
             %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -306,8 +306,8 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 CA1_clusters(probe_no) = select_clusters(merged_clusters(probe_no),metric_param);
             end
 
-            spike_times = [CA1_clusters(1).spike_times CA1_clusters(2).spike_times];
-            spike_id=  [CA1_clusters(1).spike_id CA1_clusters(2).spike_id];
+            spike_times = [CA1_clusters(1).spike_times; CA1_clusters(2).spike_times];
+            spike_id=  [CA1_clusters(1).spike_id; CA1_clusters(2).spike_id];
             [spike_times,index]= sort(spike_times);
             spike_id = spike_id(index);
 
@@ -361,15 +361,18 @@ for nsession =[1 2 3 4 6 7 8 9 10 12 14]
                 ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
             end
         end
+        
+        if contains(stimulus_name{n},'RUN')
+            if length(session_info(n).probe)>1
+                [reactivations_combined.T1_offset,reactivations_combined.T1_index] = RestrictInts(reactivations_combined.offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                reactivations_combined.T1_onset = reactivations_combined.onset(reactivations_combined.T1_index);
+                reactivations_combined.T1_midpoint = reactivations_combined.midpoint(reactivations_combined.T1_index);
 
-        [reactivations_combined.T1_offset,reactivations_combined.T1_index] = RestrictInts(reactivations_combined.offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-        reactivations_combined.T1_onset = reactivations_combined.onset(reactivations_combined.T1_index);
-        reactivations_combined.T1_midpoint = reactivations_combined.midpoint(reactivations_combined.T1_index);
-
-        [reactivations_combined.T2_offset,reactivations_combined.T2_index] = RestrictInts(reactivations_combined.offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-        reactivations_combined.T2_onset = reactivations_combined.onset(reactivations_combined.T2_index);
-        reactivations_combined.T2_midpoint = reactivations_combined.midpoint(reactivations_combined.T2_index);
-
+                [reactivations_combined.T2_offset,reactivations_combined.T2_index] = RestrictInts(reactivations_combined.offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                reactivations_combined.T2_onset = reactivations_combined.onset(reactivations_combined.T2_index);
+                reactivations_combined.T2_midpoint = reactivations_combined.midpoint(reactivations_combined.T2_index);
+            end
+        end
 
         clear lap_times
 
