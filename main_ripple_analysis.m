@@ -531,7 +531,6 @@ for nsession = 10
     end
 end
 
->>>>>>> Stashed changes
 %% Peri ripple LFP and CSD
 
 clear all
