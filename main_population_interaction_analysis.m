@@ -137,7 +137,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         end
         % Remove neurons with low baseline FR during ripple
         cell_regions = ripple_modulation_combined(1).region(cell_id);
-        low_FR_id = mean(mean(all_spike_counts,3),2)./psthBinSize<0.1;%remove extremely low FR neurons
+        low_FR_id = mean(mean(all_spike_counts,3),2)./psthBinSize<0.5;%remove extremely low FR neurons
         cell_regions(low_FR_id)=[]; 
         all_spike_counts(low_FR_id,:,:)=[];
 
@@ -196,6 +196,9 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         eventSpikes1=eventSpikes(find([eventSpikes(:).trackID]==1));
         for nevent = 1:length(eventSpikes1)
             eventSpikes1(nevent).trialId = nevent;
+%             non_zero_id = find(sum(sum(all_spike_counts(selected_cell_id,:,find([eventSpikes(:).trackID]==1)),3),2)<=0);
+%             eventSpikes1(nevent).y = eventSpikes1(nevent).y(sum(sum(all_spike_counts(selected_cell_id,:,find([eventSpikes(:).trackID]==1)),3),2)>0,:);
+%             
         end
         [estParams,trackedParams,flags] = mDLAG_fitting(eventSpikes1,psthBinSize,yDims,options);
 
@@ -207,6 +210,7 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         eventSpikes2=eventSpikes(find([eventSpikes(:).trackID]==2));
         for nevent = 1:length(eventSpikes2)
             eventSpikes2(nevent).trialId = nevent;
+%             eventSpikes2(nevent).y = eventSpikes2(nevent).y(sum(sum(all_spike_counts(selected_cell_id,:,find([eventSpikes(:).trackID]==2)),3),2)>0,:);
         end
         options.groupNames= {'V1_L','V1_R','HPC_L','HPC_R'};
         options.eventname= 'Ripples';
