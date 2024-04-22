@@ -91,8 +91,9 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-% experiment_info = experiment_info(2)
-All_stimuli = {'Checkerboard'}
+% experiment_info = experiment_info(1)
+
+All_stimuli = {'Masa2tracks','SparseNoise_fullscreen','Checkerboard','StaticGratings'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
@@ -134,12 +135,12 @@ end
 
 
 %% PSD analysis and LFP profile
-ROOTPATH = 'Z:\ibn-vision';
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 clear all
+ROOTPATH = 'Z:\ibn-vision';
 % Single session
 SUBJECT = 'M23028';
-SESSION = '20230706';
+SESSION = '20230703';
 options = 'bilateral';
 Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'OpenField';
@@ -175,14 +176,13 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23087';
-SESSION = '20231212';
-
 SUBJECT = 'M23028';
-SESSION = '20230704';
+SESSION = '20230703';
 options = 'bilateral';
+
 % Stimulus_type = 'FullScreenFlash_2';
 Stimulus_type = 'Checkerboard';
+% Stimulus_type = 'RUN';
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
 
 for nprobe = 1:length(session_info.probe) % For each session, how many probes
