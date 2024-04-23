@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% V1 populational events modulation
-
+    
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
@@ -13,7 +13,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [14]
+for nsession = [5]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -53,6 +53,7 @@ for nsession = [14]
             clusters_combined = merged_clusters;
         end
 
+        % with ripple modulation
         V1_event_modulation_L = [];
         V1_event_modulation_R = [];
         V1_event_modulation_combined = [];
@@ -64,11 +65,14 @@ for nsession = [14]
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
             
-%            t1_onset = V1_reactivations.onset((V1_reactivations.T1_index==1)' + (V1_reactivations.ripple_peak>3)==2);
-%            t2_onset = V1_reactivations.onset((V1_reactivations.T2_index==1)' + (V1_reactivations.ripple_peak>3)==2);
+            t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
 
-            event_id = [ones(1,length(V1_reactivations(nprobe).T1_onset)) 2*ones(1,length(V1_reactivations(nprobe).T2_onset))];
-            [event_times,index] = sort([V1_reactivations(nprobe).T1_onset V1_reactivations(nprobe).T2_onset]);
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+%             event_id = [ones(1,length(V1_reactivations(nprobe).T1_onset)) 2*ones(1,length(V1_reactivations(nprobe).T2_onset))];
+%             [event_times,index] = sort([V1_reactivations(nprobe).T1_onset V1_reactivations(nprobe).T2_onset]);
 
             if options.probe_hemisphere == 1
                 [V1_event_modulation_L]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
@@ -92,15 +96,79 @@ for nsession = [14]
             end
         else
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+            t1_onset = V1_reactivations(2).onset((V1_reactivations(2).T1_index==1)' + (V1_reactivations(2).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(1).onset((V1_reactivations(1).T2_index==1)' + (V1_reactivations(1).ripple_peak>3)==2);
 
-            event_id = [ones(1,length(V1_reactivations(1).T1_onset)) ones(1,length(V1_reactivations(2).T1_onset)) 2*ones(1,length(V1_reactivations(1).T2_onset)) 2*ones(1,length(V1_reactivations(2).T2_onset))];
-            [event_times,index] = sort([V1_reactivations(1).T1_onset V1_reactivations(2).T1_onset V1_reactivations(1).T2_onset V1_reactivations(2).T2_onset]);
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+%             event_id = [ones(1,length(V1_reactivations(1).T1_onset)) ones(1,length(V1_reactivations(2).T1_onset)) 2*ones(1,length(V1_reactivations(1).T2_onset)) 2*ones(1,length(V1_reactivations(2).T2_onset))];
+%             [event_times,index] = sort([V1_reactivations(1).T1_onset V1_reactivations(2).T1_onset V1_reactivations(1).T2_onset V1_reactivations(2).T2_onset]);
 
             [V1_event_modulation_combined]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
                 'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
                 'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
         end
         save(fullfile(options.ANALYSIS_DATAPATH,'V1_event_modulation.mat'),"V1_event_modulation_L","V1_event_modulation_R",'V1_event_modulation_combined')
+
+
+        % without ripple modulation
+        V1_event_modulation_L_no_ripple = [];
+        V1_event_modulation_R_no_ripple = [];
+        V1_event_modulation_combined_no_ripple = [];
+
+        for nprobe = 1:length(clusters)
+
+            options = session_info(n).probe(nprobe);
+            probe_no = session_info(n).probe(nprobe).probe_id + 1;
+            options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+
+            t1_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T1_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(nprobe).onset((V1_reactivations(nprobe).T2_index==1)' + (V1_reactivations(nprobe).ripple_peak>3)==2);
+
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+            %             event_id = [ones(1,length(V1_reactivations(nprobe).T1_onset)) 2*ones(1,length(V1_reactivations(nprobe).T2_onset))];
+            %             [event_times,index] = sort([V1_reactivations(nprobe).T1_onset V1_reactivations(nprobe).T2_onset]);
+
+            if options.probe_hemisphere == 1
+                [V1_event_modulation_L_no_ripple]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
+
+            elseif options.probe_hemisphere == 2
+                [V1_event_modulation_R_no_ripple]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
+
+            end
+
+        end
+
+        if length(session_info(n).probe) <= 1
+            if session_info(n).probe.probe_hemisphere == 1
+                V1_event_modulation_combined_no_ripple = V1_event_modulation_L;
+            elseif session_info(n).probe.probe_hemisphere == 2
+                V1_event_modulation_combined_no_ripple = V1_event_modulation_R;
+            end
+        else
+            [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
+            t1_onset = V1_reactivations(2).onset((V1_reactivations(2).T1_index==1)' + (V1_reactivations(2).ripple_peak>3)==2);
+            t2_onset = V1_reactivations(1).onset((V1_reactivations(1).T2_index==1)' + (V1_reactivations(1).ripple_peak>3)==2);
+
+            event_id = [ones(1,length(t1_onset)) 2*ones(1,length(t2_onset))];
+            [event_times,index] = sort([t1_onset t2_onset]);
+
+            %             event_id = [ones(1,length(V1_reactivations(1).T1_onset)) ones(1,length(V1_reactivations(2).T1_onset)) 2*ones(1,length(V1_reactivations(1).T2_onset)) 2*ones(1,length(V1_reactivations(2).T2_onset))];
+            %             [event_times,index] = sort([V1_reactivations(1).T1_onset V1_reactivations(2).T1_onset V1_reactivations(1).T2_onset V1_reactivations(2).T2_onset]);
+
+            [V1_event_modulation_combined_no_ripple]= V1_event_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+                'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
+        end
+        save(fullfile(options.ANALYSIS_DATAPATH,'V1_event_modulation_no_ripple.mat'),"V1_event_modulation_L_no_ripple","V1_event_modulation_R_no_ripple",'V1_event_modulation_combined_no_ripple')
 
     end
 end
@@ -117,7 +185,7 @@ Stimulus_type = 'RUN';
 
 load(fullfile('D:\corticohippocampal_replay\summary','place_fields_all.mat'))
 
-for nsession = [6 7 8 9 10 12 14]
+for nsession = [1 2 3 4 9 10 12 14]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -200,7 +268,7 @@ for nsession = [6 7 8 9 10 12 14]
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Left V1 events'))
@@ -226,7 +294,7 @@ for nsession = [6 7 8 9 10 12 14]
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH ','Right V1 events'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','Right V1 events'))
@@ -271,7 +339,7 @@ for nsession = [6 7 8 9 10 12 14]
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','L V1 events','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Left V1 events'))
@@ -296,7 +364,7 @@ for nsession = [6 7 8 9 10 12 14]
                 %                 [C,ia,ic] = unique(merged_clusters(nprobe).merged_cluster_id);
                 plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                     'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields);
+                    'event_id',event_id(index),'event_label','R V1 events','place_fields',place_fields,'speed_filtering',1);
 
                 if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))== 0
                     mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','Right V1 events'))
@@ -333,7 +401,7 @@ for nsession = [6 7 8 9 10 12 14]
 
             plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                 'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                'event_id',event_id(index),'event_label','combined V1 events','place_fields',place_fields);
+                'event_id',event_id(index),'event_label','combined V1 events','place_fields',place_fields,'speed_filtering',1);
 
             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))== 0
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH','combined'))
@@ -369,7 +437,7 @@ for nsession = [6 7 8 9 10 12 14]
 
             plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
                 'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-                'event_id',event_id(index),'event_label','combined V1','place_fields',place_fields);
+                'event_id',event_id(index),'event_label','combined V1','place_fields',place_fields,'speed_filtering',1);
 
             if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','combined'))== 0
                 mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','V1 events PSTH no ripples','combined'))

@@ -154,6 +154,12 @@ for iCell = 1:no_cluster
 
             position_this_event(isnan(position_this_event))=0;
             position_jump = find([0 abs(diff(position_this_event(event,:)))]>3);
+            if sum(position_jump+2>length(position_this_event))>0 % where there is jump due to end of lap, nan it
+                position_this_event(event,length(position_this_event)-1:length(position_this_event)) =  ...
+                   nan;
+                position_jump(position_jump+2>length(position_this_event))=[];
+            end
+
             position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
 
             %                  position_this_event(position_this_event==70)=0;

@@ -108,7 +108,7 @@ clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'Masa2tracks';
+Stimulus_type = 'RUN';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
@@ -135,7 +135,7 @@ for nsession =[5]
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
         else
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
 
         clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
@@ -170,9 +170,20 @@ for nsession =[5]
             speedTreshold = 1;
 
             if isfield(LFP(probe_no),'L5')
-                cortex_LFP = LFP(probe_no).L5;
+                if ~isempty(LFP(probe_no).L5)
+                    cortex_LFP = LFP(probe_no).L5;
+                else
+                     cortex_LFP = LFP(probe_no).L4;
+                end
+
             elseif isfield(LFP(probe_no),'L4')
-                cortex_LFP = LFP(probe_no).L4;
+                if ~isempty(LFP(probe_no).L4)
+                    cortex_LFP = LFP(probe_no).L4;
+                else
+                     cortex_LFP = []; 
+                     disp('cortex LFP is missing')
+                end
+
             elseif isfield(LFP(probe_no),'MEC')
 
             end

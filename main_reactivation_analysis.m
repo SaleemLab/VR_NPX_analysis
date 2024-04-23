@@ -14,57 +14,51 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
-Stimulus_types_all = {'RUN','POST'};
+Stimulus_types_all = {'RUN'};
+% Stimulus_types_all = {'RUN','POST'};
 
 for epoch = 1:length(Stimulus_types_all)
     Stimulus_type= Stimulus_types_all{epoch};
 
-    for nsession =1:length(experiment_info)
-        tic
-        session_info = experiment_info(nsession).stimuli_type(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        if isempty(session_info)
-            continue
+      session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'));
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
         end
-        gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
-        for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info(n).probe(1).SUBJECT,'ephys',session_info(n).probe(1).SESSION,'analysis'))
-            load best_channels
-            load extracted_PSD
-            load(sprintf('extracted_position%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            load(sprintf('bonsai_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            load('extracted_laps')
-            column = 1;
+        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = merged_clusters;
+            sorting_option = 'spikeinterface';
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters = clusters_ks3;
+            sorting_option = 'spikeinterface';
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            sorting_option = 'old';
+        end
 
-            %             load(sprintf('extracted_CA1_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')),'CA1_clusters');
-            %             load(sprintf('extracted_HPC_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')));
-            %             save(sprintf('extracted_V1_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')),'V1_clusters');
-            load(sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-            load(sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')))
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-            % Reactivation decoding
-            if length(session_info(n).probe) > 1
-                %         load(sprintf('extracted_HPC_place_fields_combined%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-
-                load('extracted_HPC_place_fields_combined')
-                if exist(sprintf('extracted_HPC_clusters_combined%s.mat',erase(stimulus_name{n},'Masa2tracks'))) == 0
-                    HPC_clusters_combined = combine_clusters_from_multiple_probes(HPC_clusters);
-                    save(sprintf('extracted_HPC_clusters_combined%s.mat',erase(stimulus_name{n},'Masa2tracks')),'HPC_clusters_combined')
-                else
-                    load(sprintf('extracted_HPC_clusters_combined%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-                end
-                clusters = HPC_clusters_combined;
-                place_fields_BAYESIAN = HPC_place_fields_combined;
-            else
-                load('extracted_HPC_place_fields')
-                load(sprintf('extracted_HPC_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')))
-                probe_no = session_info(n).probe(1).probe_id + 1;
-
-                clusters = HPC_clusters.probe(probe_no);
-                place_fields_BAYESIAN = HPC_place_fields.probe(probe_no);
-            end
-
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+        else
+            clusters_combined = merged_clusters;
+        end
+        
             % HPC
             decoded_ripple_events_shuffled = [];
             decoded_ripple_events = [];
