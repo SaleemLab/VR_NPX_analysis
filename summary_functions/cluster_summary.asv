@@ -1,0 +1,588 @@
+function cluster_summary(clusters_all,cluster_ids,method,spatial_response,spatial_response_extended)
+%currently just feed the place_fields containing all the clusters from all
+%sessions
+
+% purpose of this is just to input cluster_ids that you want to make a
+% summary from and it should easily find them in place_fields to do it
+
+% first get the index of the cluster_ids
+ids_index = find(ismember(clusters_all.cluster_id,cluster_ids));
+session_count = clusters_all.session_count(ids_index);
+if nargin < 4
+unique_session_count = unique(session_count);
+delay = 0;
+spatial_response = cell(sum(overall_cluster_index),2);
+spatial_response_extended = cell(sum(overall_cluster_index),2);
+cluster_counter = 0;
+for iS = unique_session_count
+    clusters_this_session = clusters_all.session_count == iS & ids_index;
+    no_clusters_this_session = sum(clusters_this_session);
+    
+    tvec = clusters_all.tvec{iS};
+    start_time_all = clusters_all.start_time_all{iS};
+    end_time_all = clusters_all.end_time_all{iS};
+    track_ID_all = clusters_all.track_ID_all{iS};
+    position = clusters_all.position{iS};
+    speed = clusters_all.speed{iS};
+    spike_times_this_session = clusters_all.spike_times(clusters_this_session);
+    parfor iC = 1:no_clusters_this_session
+        spike_times = spike_times_this_session{iC};
+        spatial_response(cluster_counter+iC,:) = cluster_spatial_responses(spike_times,tvec,...
+            position,speed,track_ID_all,start_time_all,end_time_all,'within',delay);
+        spatial_response_extended(cluster_counter+iC,:) = cluster_spatial_responses(spike_times,tvec,...
+            position,speed,track_ID_all,start_time_all,end_time_all,'extension',delay);
+    end
+    cluster_counter = cluster_counter+no_clusters_this_session;
+end
+end
+
+
+no_clusters = length(cluster_ids);
+iC = 1;
+% Get the screen size
+screenSize = get(0, 'ScreenSize');
+
+% Calculate the position and size of the figure
+figureWidth = screenSize(3) * 0.9;
+figureHeight = screenSize(4) * 0.9;
+figureX = (screenSize(3) - figureWidth) / 2;
+figureY = (screenSize(4) - figureHeight) / 2;
+%% Create the figure with the specified position and size
+figureHandle = figure('Position', [figureX figureY figureWidth figureHeight]);
+while true
+    clf(figureHandle);
+    %this is where you get all the info for that cluster at a time
+    % so basically this is like a object-based programming
+    
+    %task information of this session that this cluster is from
+    c_tvec = clusters_all.tvec{session_count(iC)};
+    c_speed = clusters_all.speed{session_count(iC)};
+    c_position = clusters_all.position{session_count(iC)};
+    c_start_time_all = clusters_all.start_time_all{session_count(iC)};
+    c_end_time_all = clusters_all.end_time_all{session_count(iC)};
+    c_rewarded_laps = clusters_all.rewarded_lap_id{session_count(iC)};
+    c_track_ID_all = clusters_all.track_ID_all{session_count(iC)};
+    c_rewarded_laps_index = zeros(length(c_track_ID_all),1);
+    c_rewarded_laps_index(c_rewarded_laps) = 1;
+    c_rewarded_laps_index = logical(c_rewarded_laps_index);
+    c_t1_index = ones(sum(c_track_ID_all == 1),1);
+    c_t2_index = ones(sum(c_track_ID_all == 2),1);
+    c_rewarded_laps_t1 = c_t1_index & c_rewarded_laps_index(c_track_ID_all == 1);
+    c_rewarded_laps_t2 = c_t2_index & c_rewarded_laps_index(c_track_ID_all == 2);
+    c_reward_type = clusters_all.reward_type{session_count(iC)};
+    c_active_reward_laps_t1 = c_reward_type(ismember(c_rewarded_laps,find(c_rewarded_laps_t1))) == 10 ;
+    c_active_reward_laps_t2 = c_reward_type(ismember(c_rewarded_laps,find(c_rewarded_laps_t2))) == 10 ;
+    
+    %reponses
+    c_id = cluster_ids(iC);
+    c_raw_t1 = clusters_all.raw{ids_index(iC),1};
+    c_raw_t2 = clusters_all.raw{ids_index(iC),2};
+    c_spike_times = clusters_all.spike_times{ids_index(iC)};
+    c_spatial_response = spatial_response(iC,:);
+
+    c_spatial_response_extended = spatial_response_extended(iC,:);
+    c_waveform = clusters_all.peak_channel_waveforms(ids_index(iC),:);
+    c_speed_response = cluster_speed_tuning(c_spike_times,c_tvec,c_speed,...
+        c_track_ID_all,c_start_time_all,c_end_time_all);
+    
+    c_reward_type = clusters_all.reward_type{session_count(iC)};
+    c_reward_position = clusters_all.reward_position{session_count(iC)};
+    c_lick_position = clusters_all.lick_position{session_count(iC)};
+    
+    c_block_index_t1 = find_block_index(c_track_ID_all(c_rewarded_laps),'t1');
+    c_block_index_t2 = find_block_index(c_track_ID_all(c_rewarded_laps),'t2');
+    c_SMI = cluster_SMI(c_spatial_response{2},c_spatial_response{2});
+    
+    
+%% Plot subplots with inbuilt plotting functions - all start with cluster_xxx()
+    
+    %title gives information about the cluster properties
+    sgtitle(['Cluster ID: ' num2str(c_id), 'Depth ', num2str(clusters_all.peak_depth(ids_index(iC))),...
+        'Region',clusters_all.region(ids_index(iC))], 'FontSize', 8);
+    
+    %   T1: Context(X) - A - B - A - B
+    %   T2: Context(Y) - C - B - C - B - Context(E)
+    % Colors (RGB):
+    %       A: blue series: [146,197,222]/255 [67,147,195]/255
+    %       B: red series: [214,96,77]/255 [244,165,130]/255 (4 of them so backup [178,24,43]/255 [253,219,199]/255
+    %       C: green series: [166,219,160]/255 [90,174,97]/255
+    %       X: purple series: [194,165,207]/255 [153,112,171]/255
+    %       Y: orange series: [255,165,0]/255 [255,140,0]/255
+    
+    switch method
+        case 'within'
+            ax1 = subplot(8,6,[1:2,7:8]);
+            cluster_plot_lap(c_spatial_response{1}); %use normalized spatial response in lap plots
+            colormap(ax1, flip(gray(256)));
+            title('t1')
+            ylim_top = ylim()
+            track_label('t1',);
+            ax2 = subplot(8,6,[13:14,19:20]);
+            cluster_plot_lap(c_spatial_response{2});
+            colormap(ax2, flip(gray(256)));
+            title('t2')
+            track_label('t2');
+            subplot(8,6,[25:26,31:32]);
+            cluster_plot_both_psth(c_spatial_response{1},c_spatial_response{2});%use smoothed response in psth to represent the firing rate of this cluster
+            track_label('both');
+            
+        case 'extended'
+            subplot(4,3,1)
+            cluster_plot_lap_extended(c_spatial_response_extended{1},c_track_ID_all(c_rewarded_laps_t1))
+            subplot(4,3,4)
+            cluster_plot_lap_extended(c_spatial_response_extended{2},c_track_ID_all(c_rewarded_laps_t2))
+            subplot(4,3,7)
+            cluster_plot_both_extended_psth(c_spatial_response_extended{1},c_spatial_response_extended{2})
+    end
+    ax_cl1 = subplot(8,6,[3,9]);
+    landmark1_bin = [30:70; 70:110];
+    h = comapre_landmark_response(c_spatial_response{1},landmark1_bin);
+    title(['SMI_t1_l1=',num2str(c_SMI{1}(1,1))])
+    lgd = legend([h(1:4)],{'Odd r1','Even r1','Odd r2','Even r2'}, 'Location', 'best');
+    lgd.FontSize = 8; 
+    set(ax_cl1.XAxis, 'visible', 'off');
+    xline([0],'LineWidth',1.5,'Color',[146,197,222]/255)
+    text(0,ylim(2),'A','HorizontalAlignment','center','VerticalAlignment','bottom')
+    ax_cl2 = subplot(8,6,[4,10]);
+    landmark2_bin = [50:90; 90:130];
+    comapre_landmark_response(c_spatial_response{1},landmark2_bin);
+    title(['SMI_t1_l2=',num2str(c_SMI{1}(1,2))])
+    set(ax_cl2.XAxis, 'visible', 'off');
+    xline([0],'LineWidth',1.5,'Color',[214,96,77]/255)
+    text(0,ylim(2),'B','HorizontalAlignment','center','VerticalAlignment','bottom')
+    ax_cl3 = subplot(8,6,[15,21]);
+    landmark1_bin = [30:70; 70:110];
+    comapre_landmark_response(c_spatial_response{2},landmark1_bin);
+    title(['SMI_t2_l1=',num2str(c_SMI{2}(1,1))])
+    set(ax_cl3.XAxis, 'visible', 'off');
+    xline([0],'LineWidth',1.5,'Color',[166,219,160]/255)
+    text(0,ylim(2),'C','HorizontalAlignment','center','VerticalAlignment','bottom')
+    ax_cl4 = subplot(8,6,[16,22]);
+    landmark2_bin = [50:90; 90:130];
+    comapre_landmark_response(c_spatial_response{2},landmark2_bin);
+    title(['SMI_t2_l2=',num2str(c_SMI{2}(1,2))])
+    set(ax_cl4.XAxis, 'visible', 'off');
+    xline([0],'LineWidth',1.5,'Color',[214,96,77]/255)
+    text(0,ylim(2),'B','HorizontalAlignment','center','VerticalAlignment','bottom')
+    
+    subplot(8,6,[27,33])
+    landmark_contextual_bin = [10:50; 110:150];
+    c_spatial_response_extended_t2_contextual = zeros(length(c_spatial_response_extended{2}),160);
+    for iLap = 1:length(c_spatial_response_extended{2})
+        if length(c_spatial_response_extended{2}{iLap}) >= 160
+        c_spatial_response_extended_t2_contextual(iLap,:) = c_spatial_response_extended{2}{iLap}(1:160);
+        else
+            c_spatial_response_extended_t2_contextual(iLap,1:length(c_spatial_response_extended{2}{iLap})) = c_spatial_response_extended{2}{iLap}(1:end);
+        end
+    end
+    comapre_landmark_response(c_spatial_response_extended_t2_contextual,landmark_contextual_bin);
+    title(['SMI_t2_context=',num2str(c_SMI{2}(1,3))])
+    xline([0],'LineWidth',1.5,'Color',[255,165,0]/255)
+    text(0,ylim(2),'Y','HorizontalAlignment','center','VerticalAlignment','bottom')
+    subplot(8,6,[28,34])
+    compare_common_landmark_between_t1_and_t2(c_spatial_response{1},c_spatial_response{2});
+    xline([0],'LineWidth',1.5,'Color',[214,96,77]/255)
+    text(0,ylim(2),'B','HorizontalAlignment','center','VerticalAlignment','bottom')
+    %subplot(4,3,5)
+    %cluster_even_odd_psth(c_spatial_response{2})
+    %title('T2')
+    subplot(8,6,[5:6,11:12])
+    c_rewarded_laps_sort_t1 = [find(c_rewarded_laps_t1);find(~c_rewarded_laps_t1)];
+    cluster_plot_lap(c_spatial_response{1},c_rewarded_laps_sort_t1);
+    title('t1')
+    yline(sum(c_rewarded_laps_t1),'Color','r','LineWidth',1.5)
+    text(sum(c_rewarded_laps_t1),ylim(2),'A','HorizontalAlignment','center','VerticalAlignment','bottom')
+    %cluster_block_psth(c_spatial_response{1},c_block_index_t1) % psth of each block
+    subplot(8,6,[17:18,23:24])
+    c_rewarded_laps_sort_t2 = [find(c_rewarded_laps_t2);find(~c_rewarded_laps_t2)];
+    cluster_plot_lap(c_spatial_response{2},c_rewarded_laps_sort_t2);
+    title('t2')
+    yline(sum(c_rewarded_laps_t2),'Color','r','LineWidth',1.5)
+    text(sum(c_rewarded_laps_t2),ylim(2),'C','HorizontalAlignment','center','VerticalAlignment','bottom')
+    %cluster_block_psth(c_spatial_response{2},c_block_index_t2)
+    
+    subplot(8,6,[29:30,35:36])
+    h = cluster_plot_psth(c_spatial_response{1},c_active_reward_laps_t1);
+    legend([h(1:2)],{['active reward',num2str(sum(c_active_reward_laps_t1))],['passive',num2str(sum(~c_active_reward_laps_t1))]}, 'Location', 'northwest');
+    title('t1')
+    track_label('t1');
+    %cluster_block_dynamic(c_spatial_response{1},c_block_index_t1) % first, second, third, etc laps of each block
+    subplot(8,6,[41:42,47:48])
+    h = cluster_plot_psth(c_spatial_response{2},c_active_reward_laps_t2);
+    legend([h(1:2)],{['active reward',num2str(sum(c_active_reward_laps_t2))],['passive',num2str(sum(~c_active_reward_laps_t2))]}, 'Location', 'northwest');
+    title('t2')
+    track_label('t2');
+    %cluster_block_dynamic(c_spatial_response_t2,c_block_index_t2)
+    
+    subplot(8,6,[37:38,43:44])
+    plot(c_waveform,'LineWidth',3);
+    hold off;
+    title('peak channel waveform')
+    
+    subplot(8,6,[39:40,45:46])
+    plot_speed_response(c_speed_response);
+    title('speed response')
+    
+    % Wait for a key press
+    waitforbuttonpress;
+    key = get(gcf, 'CurrentCharacter');
+    
+    % If right arrow key is pressed
+    if double(key) == 29 && iC < no_clusters
+        iC = iC + 1;
+        % If left arrow key is pressed
+    elseif double(key) == 28 && iC > 1
+        iC = iC - 1;
+        % If 'q' is pressed
+    elseif lower(key) == 'q'
+        break;
+    end
+    
+    if ~ishandle(figureHandle)
+        break;
+    end
+
+end
+
+%% functions for plotting
+    function block_index = find_block_index(track_ID_all,track_ID)
+        track_number = str2double(track_ID(2));
+        lap_index = track_ID_all == track_number;
+        if lap_index(1) == 1
+            block_indices_start = [1; find(diff(lap_index) == 1)+1];
+            block_indices_end = find(diff(lap_index) == -1);
+        else
+            block_indices_start = [find(diff(lap_index) == 1)+1];
+            block_indices_end = find(diff(lap_index) == -1);
+        end
+        if lap_index(end) == 1
+            block_indices_end = [block_indices_end; length(lap_index)];
+        end
+        block_length = [1;(block_indices_end - block_indices_start)+1];
+        block_index = cumsum(block_length(1:end-1));
+    end
+    function cluster_plot_lap(spatial_response,lap_index)
+        % this function plots the spatial response of the clusters in the specified track (track_ID)
+        if nargin < 3
+            lap_index = ones(size(spatial_response,1),1);
+        end
+        spatial_response = spatial_response(lap_index,:);
+        imagesc(flip(spatial_response));
+        xlabel('position')
+        ylabel('lap')
+        try
+        clim([min(mean(spatial_response,'omitnan')),max(mean(spatial_response,'omitnan'))]);
+        catch
+        end
+        colorbar;
+        
+        % for i = 2:length(block_index)
+        %     yline(block_index(i),'Color','r','LineWidth',1.5)
+        % end
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        hold off
+    end
+
+    function cluster_plot_both_psth(spatial_response_t1,spatial_response_t2)
+        % this function plots the spatial response of the clusters in the specified track (track_ID)
+        no_bin_t1 = size(spatial_response_t1,2);
+        no_bin_t2 = size(spatial_response_t2,2);
+        spatial_response_t1_psth = mean(spatial_response_t1,1,'omitnan');
+        spatial_response_t2_psth = mean(spatial_response_t2,1,'omitnan');
+        h(1) = shade_psth(1:no_bin_t1,spatial_response_t1_psth,std(spatial_response_t1,[],1,'omitnan')./sqrt(size(spatial_response_t1,1)),'b');
+        hold on;
+        h(2) = shade_psth(1:no_bin_t2,spatial_response_t2_psth,std(spatial_response_t2,[],1,'omitnan')./sqrt(size(spatial_response_t2,1)),'r');
+        ylim([min([min(spatial_response_t2_psth),min(spatial_response_t1_psth)])-2,max([max(spatial_response_t2_psth),max(spatial_response_t1_psth)])+2])
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('position')
+        ylabel('firing rate')
+        xline([30 50 70 90 110 130],'LineWidth',1.5)
+        legend([h(1:2)],{'t1','t2'}, 'Location', 'northwest');
+    end
+
+    function h =  cluster_plot_psth(spatial_response,lap_index)
+        spatial_response_psth_lap = mean(spatial_response(lap_index,:), 1, 'omitnan');
+        spatial_response_psth_nonlap = mean(spatial_response(~lap_index,:), 1, 'omitnan');
+        spatial_response_std_lap = std(spatial_response(lap_index,:), [], 1, 'omitnan')./sqrt(sum(lap_index));
+        spatial_response_std_nonlap = std(spatial_response(~lap_index,:), [], 1, 'omitnan')./sqrt(sum(~lap_index));
+        h(1) = shade_psth(1:size(spatial_response, 2), spatial_response_psth_lap,spatial_response_std_lap , 'b');
+        hold on;
+        h(2) = shade_psth(1:size(spatial_response, 2), spatial_response_psth_nonlap,spatial_response_std_nonlap, 'r');
+        set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 12);
+        xlabel('position');
+        ylabel('firing rate');
+        xline([30 50 70 90 110 130],'LineWidth',1.5)
+    end
+    
+    function h = shade_psth(x,y,ysd,color)
+        patch([x fliplr(x)], [(y+ysd) fliplr((y-ysd))],color,'FaceAlpha',0.2,'EdgeColor','none');
+        hold on;
+        h = plot(x,y,'Color', color, 'LineWidth', 2);
+    end
+    function cluster_plot_lap_extended(spatial_response,block_index)
+        % this function plots the spatial response of the clusters in the specified track (track_ID)
+        no_lap = length(spatial_response);
+        for iL = 1:no_lap
+            no_bin = length(spatial_response{iL});
+            plot(1:no_bin,spatial_response{iL} + iL*ones(size(spatial_response{iL})))
+            hold on
+        end
+        xlabel('position')
+        ylabel('lap')
+        title(['track 1 normalized'])
+        for i = 2:length(block_index)
+            yline(block_index(i),'Color','r','LineWidth',1.5)
+        end
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+    end
+
+    function cluster_plot_both_extended_psth(spatial_response_t1,spatial_response_t2)
+        
+        no_lap_t1 = length(spatial_response_t1);
+        %for psth, only use the first 200cm - its misleading if only a few laps have long distance
+        spatial_response_t1_mat = zeros(no_lap_t1,200);
+        for iL = 1:no_lap
+            spatial_response_t1_mat(iL,:) = spatial_response_t1{iL}(1:200);
+        end
+        no_lap_t2 = length(spatial_response_t2);
+        spatial_response_t2_mat = zeros(no_lap,200);
+        for iL = 1:no_lap
+            spatial_response_t2_mat(iL,:) = spatial_response_t2{iL}(1:200);
+        end
+        spatial_response_t1_mat_psth = mean(spatial_response_t1_mat,1,'omitnan');
+        spatial_response_t2_mat_psth = mean(spatial_response_t2_mat,1,'omitnan');
+        shade_psth(1:200,spatial_response_t1_mat_psth,std(spatial_response_t1_mat,[],1,'omitnan'),'b');
+        hold on;
+        shade_psth(1:200,spatial_response_t2_mat_psth,std(spatial_response_t2_mat,[],1,'omitnan'),'r');
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('position')
+        ylabel('firing rate')
+        ylim([min([min(spatial_response_t2_mat_psth),min(spatial_response_t1_mat_psth)])-2,max([max(spatial_response_t2_mat_psth),max(spatial_response_t1_mat_psth)])+2])
+    end
+
+    function h = comapre_landmark_response(spatial_response,landmark_bin)
+        no_lap = size(spatial_response,1);
+        all_laps = 1:no_lap;
+        even_laps = all_laps(mod(all_laps, 2) == 0);
+        odd_laps = all_laps(mod(all_laps, 2) == 1);
+        spatial_response = squeeze(spatial_response);
+        spatial_response_psth_odd = mean(spatial_response(odd_laps,:),1,'omitnan');
+        spatial_response_psth_even = mean(spatial_response(even_laps,:),1,'omitnan');
+        spatial_response_std_odd = std(spatial_response(odd_laps,:),[],1,'omitnan')./sqrt(length(odd_laps));
+        spatial_response_std_even = std(spatial_response(even_laps,:),[],1,'omitnan')./sqrt(length(even_laps));
+        h(1) = plot(-20:20,spatial_response_psth_odd(landmark_bin(1,:)),'Color',[214,96,77]/255,'LineWidth',2);
+        %h(1) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_odd(landmark_bin(1,:)),spatial_response_std_odd(landmark_bin(1,:)),[214,96,77]/255);
+        hold on;
+        h(2) = plot(-20:20,spatial_response_psth_even(landmark_bin(1,:)),'Color',[244,165,130]/255,'LineWidth',2);
+        h(3) = plot(-20:20,spatial_response_psth_odd(landmark_bin(2,:)),'Color',[67,147,195]/255,'LineWidth',2);
+        h(4) = plot(-20:20,spatial_response_psth_even(landmark_bin(2,:)),'Color',[146,197,222]/255,'LineWidth',2);
+        %h(2) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_even(landmark_bin(1,:)),spatial_response_std_even(landmark_bin(1,:)),[244,165,130]/255);
+        %h(3) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_odd(landmark_bin(2,:)),spatial_response_std_odd(landmark_bin(2,:)),[67,147,195]/255);
+        %h(4) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_even(landmark_bin(2,:)),spatial_response_std_even(landmark_bin(2,:)),[146,197,222]/255);
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xline([-10,10],'k','LineWidth',1.5,'LineStyle','--','FaceAlpha',0.5)
+        ylabel('firing rate')
+        
+    end
+
+    function h = compare_common_landmark_between_t1_and_t2(spatial_response_t1,spatial_response_t2)
+        landmark_bin = [50:90; 90:130];
+        spatial_response_psth_t1 = mean(spatial_response_t1,1,'omitnan');
+        spatial_response_std_t1 = std(spatial_response_t1,[],1,'omitnan')./sqrt(size(spatial_response_t1,1));
+        spatial_response_psth_t2 = mean(spatial_response_t2,1,'omitnan');
+        spatial_response_std_t2 = std(spatial_response_t2,[],1,'omitnan')./sqrt(size(spatial_response_t2,1));
+        %h(1) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_t1(landmark_bin(1,:)),spatial_response_std_t1(landmark_bin(1,:)),[214,96,77]/255);
+        h(1) = plot(-20:20,spatial_response_psth_t1(landmark_bin(1,:)),'Color',[67,147,195]/255,'LineWidth',2);
+        hold on;
+        h(2) = plot(-20:20,spatial_response_psth_t1(landmark_bin(2,:)),'Color',[146,197,222]/255,'LineWidth',2);
+        h(3) = plot(-20:20,spatial_response_psth_t2(landmark_bin(1,:)),'Color',[214,96,77]/255,'LineWidth',2);
+        h(4) = plot(-20:20,spatial_response_psth_t2(landmark_bin(2,:)),'Color',[244,165,130]/255,'LineWidth',2);
+        %{
+ h(2) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_t1(landmark_bin(2,:)),spatial_response_std_t1(landmark_bin(2,:)),[244,165,130]/255);
+    h(3) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_t2(landmark_bin(1,:)),spatial_response_std_t2(landmark_bin(1,:)),[67,147,195]/255);
+    h(4) = shade_psth(1:size(landmark_bin,2),spatial_response_psth_t2(landmark_bin(2,:)),spatial_response_std_t2(landmark_bin(2,:)),[146,197,222]/255);
+     
+        %}
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xline([-10,10],'k','LineWidth',1.5,'LineStyle','--','FaceAlpha',0.5)
+        
+        ylabel('firing rate')
+        lgd = legend([h(1:4)],{'t1 r1','t1 r2','t2 r1','t2 r2'}, 'Location', 'best');
+        lgd.FontSize = 8;
+        
+        
+    end
+
+    function cluster_even_odd_psth(spatial_response)
+        % this function plots the spatial response of the clusters in the specified track (track_ID)
+        no_lap = size(spatial_response,1);
+        no_bin = size(spatial_response,2);
+        all_laps = 1:no_lap;
+        even_laps = all_laps(mod(all_laps, 2) == 0);
+        odd_laps = all_laps(mod(all_laps, 2) == 1);
+        h(1) = shade_psth(1:no_bin,mean(spatial_response(even_laps,:),1,'omitnan'),std(spatial_response(even_laps,:),[],1,'omitnan')./sqrt(length(even_laps)),'b');
+        hold on;
+        h(2) = shade_psth(1:no_bin,mean(spatial_response(odd_laps,:),1,'omitnan'),std(spatial_response(odd_laps,:),[],1,'omitnan')./sqrt(length(odd_laps)),'r');
+        legend([h(1:2)],{'even','odd'})
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('position')
+        ylabel('firing rate')
+        ylim([min(mean(spatial_response,'omitnan'))-5,max(mean(spatial_response,'omitnan'))+5])
+        
+    end
+
+    function cluster_block_psth(spatial_response,block_index)
+        no_block = length(block_index);
+        block_psth = zeros(no_block,size(spatial_response,2));
+        block_std = zeros(no_block,size(spatial_response,2));
+        color = sky(no_block);
+        for iB = 1:no_block-1
+            block_psth(iB,:) = mean(spatial_response(block_index(iB):block_index(iB+1),:),1,'omitnan');
+            block_std(iB,:) = std(spatial_response(block_index(iB):block_index(iB+1),:),[],1,'omitnan');
+        end
+        block_psth(no_block,:) = mean(spatial_response(block_index(end):end,:),1,'omitnan');
+        block_psth(no_block,:) = std(spatial_response(block_index(end):end,:),1,'omitnan');
+        for iB = 1:no_block-1
+            hold on;
+            %h(iB) = shade_psth(1:size(spatial_response,2),block_psth(iB,:),block_std(iB,:)./sqrt(block_index(iB+1)-block_index(iB)),color(iB,:));
+            legend_names{iB} = ['block ',num2str(iB)];
+            h(iB) = plot(1:size(spatial_response,2),block_psth(iB,:),'Color',color(iB,:));
+            
+        end
+        hold on;
+        %h(no_block) = shade_psth(1:size(spatial_response,2),block_psth(no_block,:),block_std(no_block,:)./sqrt(size(spatial_response,1)-block_index(end)),color(no_block,:));
+        h(no_block) = plot(1:size(spatial_response,2),block_psth(no_block,:),'Color',color(no_block,:));
+        legend_names{no_block} = ['block ',num2str(no_block)];
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('position')
+        ylabel('firing rate')
+        legend([h(1:no_block)],legend_names);
+        ylim([min(mean(spatial_response,'omitnan'))-5,max(mean(spatial_response,'omitnan'))+5])
+        title('psth of each block')
+    end
+
+    function cluster_block_dynamic(spatial_response,block_index)
+        no_block = length(block_index);
+        max_lap = 6;
+        lap_resp = zeros(max_lap,no_block,size(spatial_response,2));
+        color = sky(max_lap);
+        for iB = 1:no_block
+            for iL = 1:max_lap
+                if block_index(iB)+iL-1 <= size(spatial_response,1)
+                    lap_resp(iL,iB,:) = spatial_response(block_index(iB)+iL-1,:);
+                end
+            end
+        end
+        lap_psth = squeeze(mean(lap_resp,2,'omitnan'));
+        %lap_std =squeeze(std(lap_resp,[],2,'omitnan'));
+        
+        
+        for iL = 1:max_lap
+            h(iL) = plot(1:size(spatial_response,2),lap_psth(iL,:),'Color',color(iL,:));
+            hold on;
+            lgend_names{iL} = ['lap ',num2str(iL)];
+        end
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('position')
+        ylabel('firing rate')
+        title('lap psth')
+        ylim([min(mean(spatial_response,'omitnan'))-5,max(mean(spatial_response,'omitnan'))+5])
+        legend([h(1:max_lap)],lgend_names);
+    end
+
+    function plot_speed_response(speed_response)
+        plot(1:2:49,speed_response{1},'LineWidth',2);
+        hold on;
+        plot(1:2:49,speed_response{2},'LineWidth',2);
+        plot(1:2:49,speed_response{3},'LineWidth',2);
+        legend('t1','t2','non-track')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        xlabel('speed')
+        ylabel('firing rate')
+        
+    end
+
+    function SMI = cluster_SMI(spatial_response_t1,spatial_response_t2)
+        % caluculate the spatial modulation index of the cluster by even vs odd averages
+        SMI = cell(1,2); % cell 1 for track 1 and cell 2 for track 2
+        SMI_t1 = nan([1,2]);
+        SMI_t2 = nan([1,3]);
+        no_lap = size(spatial_response_t1,1);
+        all_laps = 1:no_lap;
+        even_laps = all_laps(mod(all_laps, 2) == 0);
+        odd_laps = all_laps(mod(all_laps, 2) == 1);
+        odd_avg = mean(spatial_response_t1(odd_laps,:),1,'omitnan');
+        even_avg = mean(spatial_response_t1(even_laps,:),1,'omitnan');
+        landmark_position = [41:60, 81:100; 61:80, 101:120];
+        [~,odd_peak_location_l1] = max(odd_avg(landmark_position(1,:)),[],'omitnan');
+        [~,odd_peak_location_l2] = max(odd_avg(landmark_position(2,:)),[],'omitnan');
+        non_prefer_location_l1(odd_peak_location_l1 > 20) = odd_peak_location_l1 - 20;
+        non_prefer_location_l1(odd_peak_location_l1 <= 20) = odd_peak_location_l1 + 20;
+        non_prefer_location_l2(odd_peak_location_l2 > 20) = odd_peak_location_l2 - 20;
+        non_prefer_location_l2(odd_peak_location_l2 <= 20) = odd_peak_location_l2 + 20;
+        SMI_t1(1,1) = SMI_calculator(even_avg(landmark_position(1,odd_peak_location_l1)),even_avg(landmark_position(1,non_prefer_location_l1)));
+        SMI_t1(1,2) = SMI_calculator(even_avg(landmark_position(2,odd_peak_location_l2)),even_avg(landmark_position(2,non_prefer_location_l2)));
+        SMI{1,1} = SMI_t1;
+        no_lap = size(spatial_response_t2,1);
+        all_laps = 1:no_lap;
+        even_laps = all_laps(mod(all_laps, 2) == 0);
+        odd_laps = all_laps(mod(all_laps, 2) == 1);
+        odd_avg = mean(spatial_response_t2(odd_laps,:),1,'omitnan');
+        even_avg = mean(spatial_response_t2(even_laps,:),1,'omitnan');
+        landmark_position = [41:60, 81:100; 61:80, 101:120; 21:40, 121:140];
+        [~,odd_peak_location_l1] = max(odd_avg(landmark_position(1,:)),[],'omitnan');
+        [~,odd_peak_location_l2] = max(odd_avg(landmark_position(2,:)),[],'omitnan');
+        [~,odd_peak_location_l3] = max(odd_avg(landmark_position(3,:)),[],'omitnan');
+        non_prefer_location_l1(odd_peak_location_l1 > 20) = odd_peak_location_l1 - 20;
+        non_prefer_location_l1(odd_peak_location_l1 <= 20) = odd_peak_location_l1 + 20;
+        non_prefer_location_l2(odd_peak_location_l2 > 20) = odd_peak_location_l2 - 20;
+        non_prefer_location_l2(odd_peak_location_l2 <= 20) = odd_peak_location_l2 + 20;
+        non_prefer_location_l3(odd_peak_location_l3 > 20) = odd_peak_location_l3 - 20;
+        non_prefer_location_l3(odd_peak_location_l3 <= 20) = odd_peak_location_l3 + 20;
+        SMI_t2(1,1) = SMI_calculator(even_avg(landmark_position(1,odd_peak_location_l1)),even_avg(landmark_position(1,non_prefer_location_l1)));
+        SMI_t2(1,2) = SMI_calculator(even_avg(landmark_position(2,odd_peak_location_l2)),even_avg(landmark_position(2,non_prefer_location_l2)));
+        SMI_t2(1,3) = SMI_calculator(even_avg(landmark_position(3,odd_peak_location_l3)),even_avg(landmark_position(3,non_prefer_location_l3)));
+        SMI{1,2} = SMI_t2;
+        
+        function SMI = SMI_calculator(even_prefer,even_non_prefer)
+            SMI = (even_prefer - even_non_prefer)/(even_prefer + even_non_prefer);
+        end
+    end
+
+    function track_label(track_ID,y_lim)
+        switch track_ID
+            case 't1'
+                xline(30,'LineWidth',1.5)
+                text(30, y_lim, 'X', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([50 90],'LineWidth',1.5,'Color',[146,197,222]/255)
+                text(50, y_lim, 'A', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(90, y_lim, 'A', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([70 110],'LineWidth',1.5,'Color',[214,96,77]/255)
+                text(70, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(110, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+            case 't2'
+                xline(30,'LineWidth',1.5)
+                text(30, y_lim, 'Y', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([50 90],'LineWidth',1.5,'Color',[166,219,160]/255)
+                text(50, y_lim, 'C', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(90, y_lim, 'C', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([70 110],'LineWidth',1.5,'Color',[214,96,77]/255)
+                text(70, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(110, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline(130,'LineWidth',1.5)
+                text(130, y_lim, 'E', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+            case 'both'
+                xline(30,'LineWidth',1.5)
+                text(30, y_lim, 'X-Y', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([50 90],'LineWidth',1.5,'Color',[146,197,222]/255)
+                text(50, y_lim, 'A-C', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(90, y_lim, 'A-C', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline([70 110],'LineWidth',1.5,'Color',[214,96,77]/255)
+                text(70, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                text(110, y_lim, 'B', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+                xline(130,'LineWidth',1.5,'LineStyle','--')
+                text(130, y_lim, 'Y', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+
+        end
+    end
+end
