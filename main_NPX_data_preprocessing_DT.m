@@ -25,7 +25,7 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-all_SUBJECTS = {'M23031','M23032','M23034','M23037','M23038'};
+all_SUBJECTS = {'M23031'};
 
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
@@ -99,9 +99,8 @@ end
 %%%%%% Option 2 go to specific animal folder to do specific session(s) you
 %%%%%% want to process.
 % SUBJECTS = {'M23017'}
-SUBJECT = ['M23031'];
-
-SESSION = {['20230714']};
+SUBJECT = ['M23032'];
+SESSION = {['20230718']};
 
 for iMouse = 1
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
@@ -120,8 +119,8 @@ ROOTPATH = 'Z:\ibn-vision';
 
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 % Single session
-SUBJECT = ['M23037'];
-SESSION = {['20230810';'20230811';'20230812';'20230813']};
+SUBJECT = ['M23031'];
+SESSION = {['20230712';'20230713';'20230714']};
 % SUBJECT = ['M23032';'M23034';'M23038'];
 % 
 % SESSION = {['20230718';'20230719';'20230720';'20230721';'20230722'];
@@ -130,7 +129,7 @@ SESSION = {['20230810';'20230811';'20230812';'20230813']};
 options = 'bilateral';
 Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'OpenField';
-for iMouse = 1:3
+for iMouse = 1
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
     for iSession = 1:size(SESSION{iMouse},1)
 if contains(Stimulus_type,'Masa2tracks')
@@ -163,20 +162,17 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = ['M23037';'M23038'];
-
-SESSION = {
-    
-    ['20230812';'20230813'];
-    ['20230816';'20230817']};
-
+SUBJECT = ['M23031'];
+SESSION = {['20230714']};
+% SUBJECT = ['M23032'];
+% SESSION = {['20230718']};
 Stimulus_type = 'Checkerboard';
 for iMouse = 1:4
     
     for iSession = 1:size(SESSION{iMouse},1)
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),Stimulus_type,'session_info.mat'))
 
-        for nprobe = 2:length(session_info.probe) % For each session, how many probes
+        for nprobe = 1 %:length(session_info.probe) % For each session, how many probes
             options= session_info.probe(nprobe);
             %             options.ROOTPATH = ROOTPATH;
             options.importMode = 'KS';
@@ -223,3 +219,6 @@ Stimulus_type = 'Checkerboard';
 calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 
 {'surface','L4','L5','CA1'}
+{'surface','HVA','MEC_entry','MEC_theta','MEC_ripple'}
+
+

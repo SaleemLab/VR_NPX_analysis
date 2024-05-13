@@ -77,6 +77,7 @@ for nprobe = 1:length(session_info.probe)
     if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
         [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
         [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+        [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
     elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
         [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','off','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
     end%     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
@@ -94,6 +95,8 @@ if contains(Stimulus_type,'Masa2tracks')
             sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks2')
         save(fullfile(options.ANALYSIS_DATAPATH,...
             sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks3')
+        save(fullfile(options.ANALYSIS_DATAPATH,...
+            sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name,Stimulus_type))),'clusters_ks4')
     elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
         save(fullfile(options.ANALYSIS_DATAPATH,...
             sprintf('extracted_clusters%s.mat',erase(stimulus_name,Stimulus_type))),'clusters')
@@ -104,6 +107,7 @@ else
     if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4')
     elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
         save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
     end

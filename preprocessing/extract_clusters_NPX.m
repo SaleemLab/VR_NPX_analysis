@@ -50,6 +50,8 @@ if ~contains(sorter,'off') % if not default ks
         sorter_folder = 'kilosort2_5';
     elseif contains(sorter,'KS3')
         sorter_folder = 'kilosort3';
+    elseif contains(sorter,'KS4')
+        sorter_folder = 'kilosort4';
     end
 end
 
@@ -100,7 +102,7 @@ if contains(sorter,'off') % Load cluster table and find good units based on qual
         good_unit = ones(size(cluster_metrics,1),1);
     end
 
-        mean_waveforms = readNPY([options.KS_DATAPATH,'/mean_waveforms.npy']); % Information about mean waveform (for all clusters)
+    mean_waveforms = readNPY([options.KS_DATAPATH,'/mean_waveforms.npy']); % Information about mean waveform (for all clusters)
     %     cluster_ContamPct = tdfread(fullfile(options.KS_DATAPATH,'cluster_ContamPct.tsv'));% contamination percentage
 
     % Load spike time data and quality metrics
@@ -276,7 +278,7 @@ else % if KS2 and KS3
             fit_params_out = [];
             fit_params_out = fit_ACG(ccg,false);% fit_ACG and isToolboxInstalled function from cell explorer repo
             tau_rise(id) = fit_params_out.acg_tau_rise;
-            good_unit_all(id) = good_unit(id); 
+            good_unit_all(id) = good_unit(id);
         end
     end
     toc
@@ -311,7 +313,7 @@ else % if KS2 and KS3
 
     for nchannel = selected_channels(1):selected_channels(2)
         index = find(peak_channel == nchannel); % ID for post-processed clusters
-%         [~,index,]= intersect(cluster_id,clusters_this_channel);
+        %         [~,index,]= intersect(cluster_id,clusters_this_channel);
 
         good_units_index = index(find(good_unit_all(index)==1)); % sometimes the unit may not fire during a short recording
         %             good_units_this_channel = clusters_this_channel(find(nominal_KSLabel(index)=='good')); % ID for all clusters
@@ -364,7 +366,7 @@ else % if KS2 and KS3
     clusters.cell_type = SUA_cell_type';
     clusters.probe_id = options.probe_id'; % 0 is probe 1 and 1 is probe 2.
     clusters.sorter = sorter; % what sorter is used for spike sorting and clustering
-%     clusters.CCGs = CCGs;
+    %     clusters.CCGs = CCGs;
 
     if isfield(options,'probe_hemisphere')
         clusters.probe_hemisphere = options.probe_hemisphere; % 1 is left and 2 is right;

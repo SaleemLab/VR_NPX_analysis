@@ -37,13 +37,13 @@ SUBJECTS = {'M23028','M23087','M23153'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
-% Stimulus_type = 'Track';
+ Stimulus_type = 'Track';
 Stimulus_type = 'Masa2tracks';
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 
-for nsession =11:length(experiment_info)
+for nsession = 2%11:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
