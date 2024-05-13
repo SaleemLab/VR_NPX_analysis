@@ -43,9 +43,9 @@ switch(loadflag)
             peripherals.Sync = table2array(thisTable(:,2));
             peripherals.Photodiode = table2array(thisTable(:,3));
             if size(thisTable,2)>3
-                peripherals.CameraSync = table2array(thisTable(:,4));
+                peripherals.VideoSync = table2array(thisTable(:,4));
             else
-                peripherals.CameraSync = [];
+                peripherals.VideoSync = [];
             end
         end
 
