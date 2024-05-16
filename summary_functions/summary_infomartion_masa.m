@@ -1,22 +1,21 @@
 %%merge all sessions
-addpath(genpath('/Users/atom/Documents/GitHub/V1_MEC_acute_MAT'))
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis\'))
 % Load clusters_all_all from base_folder
-base_folder = fullfile('/Users/atom/Library/CloudStorage/OneDrive-UniversityCollegeLondon/data');
+base_folder = fullfile('Z:\ibn-vision\USERS\Masa');
 load(fullfile(base_folder, 'clusters_all.mat'));
-load(fullfile(base_folder,'spatial_responses_V1_HVA.mat'))
+load(fullfile(base_folder,'spatial_responses_V1.mat'))
 
 % select clusters you want to plot for population analysis e.g. only plot neurons from V1
 V1_index = (clusters_all.region == "V1");
-HVA_index =  clusters_all.region =='HVA';
 spatially_tuned_neurons = clusters_all.odd_even_stability >=0.95 ...
     & clusters_all.peak_percentile >=0.95;
-overall_cluster_index = V1_index & spatially_tuned_neurons(:,1) | HVA_index;
+overall_cluster_index = V1_index & spatially_tuned_neurons(:,1);
 cluster_id = clusters_all.cluster_id(overall_cluster_index);
 % Call population_spatial_summary function with cluster_id
 % population_spatial_summary(clusters_all, cluster_id, spatial_response,spatial_response_extended);
 clusters_all.raw_peak(isnan(clusters_all.raw_peak)) = 0;
 ids_index = zeros(size(cluster_id));
-ids_to_check = 568:631;
+ids_to_check = 92:288;
 ids_index(ids_to_check) = 1;
 mean_spatial_response = cellfun(@(x) mean(x,'omitnan'), spatial_response, 'UniformOutput', false);
 peak_spatial_response = cell2mat(cellfun(@(x) max(x,[],2,'omitnan'), mean_spatial_response,'UniformOutput', false));

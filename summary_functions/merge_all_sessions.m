@@ -369,7 +369,7 @@ HVA_index =  clusters_all.region =='HVA';
 spatially_tuned_neurons = clusters_all.odd_even_stability >=0.95 ...
     & clusters_all.peak_percentile >=0.95;
 overall_cluster_index = V1_index & spatially_tuned_neurons(:,1) | HVA_index;
-delay = 0.08;
+delay = 0.3;
 spatial_response = cell(sum(overall_cluster_index),2);
 spatial_response_extended = cell(sum(overall_cluster_index),2);
 cluster_counter = 0;
