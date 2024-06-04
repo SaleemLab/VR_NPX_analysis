@@ -21,7 +21,7 @@ end
 SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'sorters',options.sorter_folder,'sorter_output');
 gfileNum = str2num(cell2mat(extractBetween(options.EPHYS_DATAPATH,'_g','\')));% g file number
 folder_names = cell2mat(extractBetween(options.EPHYS_DATAPATH,['_g',num2str(gfileNum),'\'],'_imec'));% to search for the session (e.g. 'M24010_20240231_1_g0')
-segment_frames = readtable(options.segment_frames);% corresponding start and end sample point after concatenation via spike interface
+segment_frames = readtable(options.segment_frames,"Delimiter",",");% corresponding start and end sample point after concatenation via spike interface
 
 %%%%%%%
 % Get KS spike times

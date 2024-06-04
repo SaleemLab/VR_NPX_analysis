@@ -172,7 +172,7 @@ for nsubject = 1:length(SUBJECTS)
             if isnan(all_session_id_this_date{nstimuli})
                 EPHYS_DATAPATH_temp =fullfile(DATAPATH,SUBJECTS{nsubject},'ephys',num2str(all_dates_this_animal(nsession)));
             else
-                EPHYS_DATAPATH_temp =fullfile(DATAPATH,SUBJECTS{nsubject},'ephys',[num2str(all_dates_this_animal(nsession)),'_',all_session_id_this_date{nstimuli}]);
+                EPHYS_DATAPATH_temp =fullfile(DATAPATH,SUBJECTS{nsubject},'ephys',num2str(all_dates_this_animal(nsession)),[num2str(all_dates_this_animal(nsession)),'_',all_session_id_this_date{nstimuli}]);
             end
 
             for nprobe = 1:length(probe_id)

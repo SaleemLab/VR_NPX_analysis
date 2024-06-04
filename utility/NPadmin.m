@@ -158,7 +158,7 @@ classdef NPadmin
                     kcoords.ycoords(n,1) = row * 20;
                 end
                 
-            elseif config.type == 24
+            elseif config.type == 24 | config.type == 2013 | config.type == 2014
                 % mapping based on NP1.0 kilosort standard and adjust using
                 %     Fig 1 of https://www.biorxiv.org/content/10.1101/2020.10.27.358291v1.full.pdf:
                 %
@@ -207,7 +207,7 @@ classdef NPadmin
             IMROcell = split(IMRO,')(');
             % Get the header
             header = split(IMROcell{1,1},',');
-            if str2double(header{1,1}) == 24
+            if str2double(header{1,1}) == 24 | str2double(header{1,1}) == 2013 | str2double(header{1,1}) == 2014
                 IMROcell = IMROcell(2:end,1);
                 for n = 1:size(IMROcell,1)
                     currRow = str2num(IMROcell{n,1})+1; % Index from 1

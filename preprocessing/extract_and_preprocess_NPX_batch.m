@@ -20,9 +20,16 @@ for nsession =1:length(experiment_info)
     
     for n = 1:length(session_info) % just in case there might be multiple recording for the same stimulus type (e.g. PRE RUN POST Masa2tracks)
 
-        % Part 1 Align two NPX probes if there are two probes
-        if length(session_info(n).probe) >1
-            align_probes_NX1(session_info(n).probe);
+        
+        if str2num(session_info(n).probe(1).SESSION) < 20240401
+            % Old Part 1 Align two NPX probes if there are two probes
+            if length(session_info(n).probe) >1
+                align_probes_NX1(session_info(n).probe);
+            end
+        else % New Part 1 Extract Nidq sync pulse and event times and ephys sync pulse
+            % Currently not using CatGT and Tprime
+            options = session_info(n).probe(1);
+            extract_and_align_nidq_signals(options);
         end
 
         % Part 2 Import and align bonsai data to Spikeglx time (always to probe 1)
@@ -39,12 +46,24 @@ for nsession =1:length(experiment_info)
                 [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
             elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track') 
                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
+
+                if str2num(options(1).SESSION) < 20240401 % if session before 2024/04/01
+                    [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
+                else
+                    [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai_MatrixRig(stimulus_name{n},options);
+                end
+                
             elseif contains(Stimulus_type,'Diao')
 
             elseif contains(Stimulus_type,'Edd')
 
             else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
-                [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai(stimulus_name{n},options);
+
+                if str2num(options(1).SESSION) < 20240401 % if session before 2024/04/01
+                    [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai(stimulus_name{n},options);
+                else
+                    [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai_MatrixRig(stimulus_name{n},options);
+                end
             end
 
             if exist(options.ANALYSIS_DATAPATH) == 0

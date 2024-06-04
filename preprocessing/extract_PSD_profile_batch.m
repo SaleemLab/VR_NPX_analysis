@@ -31,9 +31,9 @@ for nsession =1:length(experiment_info)
         else
             [raw_LFP tvec SR chan_config ~] = load_LFP_NPX(options,[]);
         end
-        
+
         [PSD{nprobe} power{nprobe}] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,'plot_option',1);
-%         [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
+        %         [PSD{nprobe} power{nprobe} best_channels{nprobe}] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,'plot_option',1)
 
         %         title(sprintf('%s %s PSD profile probe %i',options.SUBJECT,options.SESSION,nprobe))
         %         filename = sprintf('%s %s PSD profile probe %i.pdf',options.SUBJECT,options.SESSION,nprobe)
@@ -41,9 +41,13 @@ for nsession =1:length(experiment_info)
         %         filename = sprintf('%s %s PSD profile probe %i.fig',options.SUBJECT,options.SESSION,nprobe)
         %         saveas(gcf,filename)
     end
-    
+
     save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..'),[])
-%     save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
-    save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
+    if contains(Stimulus_type,'Checkerboard_sh') %if shank specific map
+        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('extracted_PSD%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'PSD','power');
+    else
+        save(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD','power')
+    end
     close all
 end

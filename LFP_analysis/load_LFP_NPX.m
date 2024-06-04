@@ -113,7 +113,7 @@ end
 
 new_SR = imecMeta.imSampRate/downSampleRate;
 
-if probe_no == 2
+if probe_no == 2 & str2double(options.SESSION)<20240401
     probe_1_tvec = (start_samp:nClipSamps*nClips+start_samp-1)/imecMeta.imSampRate;
 
     %     If downsized to 1250 Hz, then 1-2ms drift is not an issue (for now record the probe 2 tvec in terms of probe 1 times)
