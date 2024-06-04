@@ -47,7 +47,7 @@ if contains(options.sorter_folder,'kilosort')
     idx = spike_times > sampleStart & spike_times <= sampleEnd;
     spike_times = double(spike_times(idx)) - sampleStart;
 
-    if options.probe_id ~= 0 % if probe 2 convert to probe 1 based time
+    if options.probe_id ~= 0% if probe 2 convert to probe 1 based time
         [~,fname] = fileparts(options.EPHYS_DATAPATH);
         if exist(fullfile(options.EPHYS_DATAPATH,[fname,'_aligned_AP_sample_number.mat'])) ~= 0
             load(fullfile(options.EPHYS_DATAPATH,[fname,'_aligned_AP_sample_number.mat'])); % For some sessions, this is not generated due to probe brokage
@@ -73,11 +73,20 @@ if contains(options.sorter_folder,'kilosort')
 %     templates= readNPY(fullfile(SORTER_DATAPATH,'templates.npy'));
     templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'templates_average.npy')); % Information about template waveform (for postprocessed clusters);
 
-    for nchannel = 1:size(cluster_coordiantes,1)
-        % for these good channels used for spike sorting, what is the actual channel number 
-        all_good_channels(nchannel) = chan_config.Channel(chan_config.Ks_xcoord == cluster_coordiantes(nchannel,1)+11 & chan_config.Ks_ycoord == cluster_coordiantes(nchannel,2));
+
+
+    if contains(imecMeta.imDatPrb_pn,'NP2013') %
+        for nchannel = 1:size(cluster_coordiantes,1)
+            % for these good channels used for spike sorting, what is the actual channel number
+            all_good_channels(nchannel) = chan_config.Channel(chan_config.Ks_xcoord == cluster_coordiantes(nchannel,1)+27 & chan_config.Ks_ycoord == cluster_coordiantes(nchannel,2)+15);
+        end
+    else
+        for nchannel = 1:size(cluster_coordiantes,1)
+            % for these good channels used for spike sorting, what is the actual channel number
+            all_good_channels(nchannel) = chan_config.Channel(chan_config.Ks_xcoord == cluster_coordiantes(nchannel,1)+11 & chan_config.Ks_ycoord == cluster_coordiantes(nchannel,2));
+        end
     end
-    
+
     [~,peak_channel] = max(squeeze(mean(abs(templates),2)),[],2); % channel index providing the maximum of the mean of the absolute
    
     % For each unit present in (entire) recording [for consistency - ie, some

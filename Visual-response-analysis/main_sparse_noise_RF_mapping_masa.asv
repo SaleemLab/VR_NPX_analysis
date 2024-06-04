@@ -150,12 +150,12 @@ end
 %% plotting SparseNoise
 
 SUBJECTS = {'M24017'};
-Dates = {'20240531'};
 nsession = 1;
-% experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-% session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
-% options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_ks4.mat'),'RF')
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
+options = session_info(nsession).probe(1);
+load(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
+
 
 for nprobe = 1:2
     fig = figure

@@ -42,10 +42,10 @@ for nsession =1:length(experiment_info)
 %         DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         if isempty(DIR)
-            if contains(Stimulus_type,'OpenField')
+            if contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
                 [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
             elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track') 
-                [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
+%                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
 
                 if str2num(options(1).SESSION) < 20240401 % if session before 2024/04/01
                     [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
@@ -104,6 +104,12 @@ for nsession =1:length(experiment_info)
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
                 [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                
+                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                if ~isempty(temp)
+                    [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                end
+
             elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
                 [clusters(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','off','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
             end
@@ -122,6 +128,12 @@ for nsession =1:length(experiment_info)
                     sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks2')
                 save(fullfile(options.ANALYSIS_DATAPATH,...
                     sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks3')
+                
+                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                if ~isempty(temp)
+                    save(fullfile(options.ANALYSIS_DATAPATH,...
+                        sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks4')
+                end
             elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
                 save(fullfile(options.ANALYSIS_DATAPATH,...
                     sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters')
@@ -132,6 +144,12 @@ for nsession =1:length(experiment_info)
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
+                
+                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                if ~isempty(temp)
+                    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4')
+                end
+
              elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
             end

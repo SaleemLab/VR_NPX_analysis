@@ -139,7 +139,7 @@ else
     end
 end
 
-blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per second so a block size should be quite large
+blocks_ind = find(block_length>200); % sample rate of photodiode is 3000 per second so a block size should be quite large
 
 %    plot(photodiode.Photodiode_smoothed); hold on; scatter(pd_OFF(blocks_ind),50);
 photodiodeData = [];
