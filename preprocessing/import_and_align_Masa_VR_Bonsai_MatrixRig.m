@@ -1,26 +1,28 @@
 % function [stimulusData,eyeData,wheelData,photodiodeData,stimTimes] = importAndAlignBonsaiLogs(EPHYS_DATAPATH,TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH,EYEDATA_DATAPATH)
 % 
 % Program to import bonsai logs and eye data and align to ePhys data
+% (relative to probe 1 spikeglx time) during spatial VR tasks (linear tracks)
+% and then align the data based on the delay between quad and photodioide signal
+% Everything is resampled to 60Hz
 % 
-% inputs : EPHYS_DATAPATH, TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH, EYEDATA_DATAPATH
+% inputs
+% - StimulusName: stimulus name such as 'Masa2tracks' or 'Track' and so on
+% - options: usually 'session_info' strtcure which contains all the information about
+% data path, stimulus type, g file number and so on
+
 % outputs: stimulusData,eyeData,wheelData,photodiodeData (photdiode data derived from the
 %               peripherals dataset)
 %
-% History:  SGS 24/2/2022 ported from import_process_BonsaiData
-%           SGS 28/2/2022 added stimulus data parsing
-%           SGS 04/4/2022 shifted imec extract to here and allowed function to either call precomputed
-%                           asyncpulse times or load anew from LF (long) or AP (very long) imec data
-%           SGS 14/4/2022 moved to using toolbox from Jennifer Collonel
-%                       (SpikeGLX_Datafile_Tools) to read the async pulse from the ephys file
-%           FR 09/06/2022 changed how PD was being read due to stimuli
-%           adjustment issues
+% History: 
+
 % Dependencies:
 %   import_bonsai_peripherals
 %   import_bonsai_eyedata
 %   import_BonVisionParams
 %   import_processWheelEphys
 %   alignBonsaiAndEphysData
-%
+%   import_bonsai_photodiode
+
 %   Uses the following libraries, which are included in the folder
 %   https://billkarsh.github.io/SpikeGLX/ - SpikeGLX_Datafile_Tools
 %   
@@ -615,6 +617,30 @@ if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path
     %         trial_info(1,:) =  [];
     %     end
     DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(trial_path)]));
+
+    % Start Time eyeframe count
+    start_time_all = table2array(trial_info(:,"Var2"));
+    for n = 1:length(start_time_all)
+        start_index = find(start_time_all(n) == peripherals.Time);
+
+        if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+            for count = 1:10
+                start_index = find(start_time_all(n)+count == peripherals.Time);
+                if ~isempty(start_index)
+                    break
+                end
+            end
+        end
+
+        if  isempty(find(start_time_all(n) >= peripherals.Time(end),1))==1 % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+            break
+        end
+
+        task_info.start_time_all_original(n,1) = peripherals.corrected_sglxTime(start_index);
+        % Reward time basewd on resampled 60Hz timestamp
+        task_info.start_time_all(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.start_time_all_original(n,1),'nearest');
+    end
+
     % Track ID of each lap 
     task_info.track_ID_all = table2cell(trial_info(:,"Var1"));
     task_info.track_ID_all = cellfun(@(x) x(2:end), task_info.track_ID_all, 'UniformOutput',false);
@@ -638,28 +664,14 @@ if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path
         task_info.trial_type = cellfun(@str2double,task_info.trial_type); % 1 is active only and 2 is hybrid
     end
 
+    if length(task_info.start_time_all)<length(task_info.lap_ID_all) 
+        task_info.trial_type(end)=[];
+        task_info.lap_ID_all(end)=[];
+        task_info.block_ID_all(end)=[];
+        task_info.track_ID_all(end)=[];
+    end
 %     if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
-        %% Start Time eyeframe count
-        start_time_all = table2array(trial_info(:,"Var2"));
-        for n = 1:length(start_time_all)
-            start_index = find(start_time_all(n) == peripherals.Time);
 
-            if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
-                for count = 1:10
-                    start_index = find(start_time_all(n)+count == peripherals.Time);
-                    if ~isempty(start_index)
-                        break
-                    end
-                end
-                if  isempty(find(start_time_all(n) >= peripherals.Time,1))==1
-                    return
-                end
-            end
-
-            task_info.start_time_all_original(n,1) = peripherals.corrected_sglxTime(start_index);
-            % Reward time basewd on resampled 60Hz timestamp
-            task_info.start_time_all(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.start_time_all_original(n,1),'nearest');
-        end
 
 %     else
 %         task_info.start_time_all = table2array(trial_info(:,"Var2"));
@@ -699,9 +711,26 @@ if ~isempty(task_info.start_time_all)
         if length(current_lap_x) > 1 && length(current_lap_x(~isnan(current_lap_x))) >1% Only if getting more than 1 datapoint (maybe noise)
             on_track_x = current_lap_x(~isnan(current_lap_x));
             on_track_t = current_lap_t(~isnan(current_lap_x));
-    
-            on_track_x = on_track_x(~diff(on_track_x(1:30))>5);
-            on_track_t = on_track_t(~diff(on_track_x(1:30))>5);
+
+
+            if ~isempty(find(diff(on_track_x(1:30))>5)) % if big jump in position initially due to lag
+                jump_index = find(diff(on_track_x(1:30))>5);
+                jump_index = jump_index(end);
+                on_track_t(1:jump_index)=[];
+                on_track_x(1:jump_index)=[];
+            end
+
+
+            if ~isempty(find(diff(on_track_x(1:30))<-5)) % if big jump in position initially due to lag
+                jump_index = find(diff(on_track_x(1:30))<-5);
+                jump_index = jump_index(end);
+                on_track_t(1:jump_index)=[];
+                on_track_x(1:jump_index)=[];
+            end
+
+%             on_track_t = on_track_t(~diff(on_track_x(1:30))>5);
+%             on_track_x = on_track_x(~diff(on_track_x(1:30))>5);
+%             on_track_t = on_track_t(~diff(on_track_x(1:30))>5);
 
             if sum(on_track_x==0)>0
                 start_position = find(on_track_x == 0);
@@ -750,6 +779,7 @@ if ~isempty(task_info.start_time_all)
         end
     end
 end
+
 
 
 % if isfield(options,'photodiode_failure')
