@@ -40,11 +40,14 @@ switch(loadflag)
             peripherals = rmfield(peripherals,'SyncPulse');
             peripherals.Photodiode = table2array(thisTable(:,end));% Last column is photodiode
         elseif isfield(peripherals,'Position') % If VR position
-            peripherals.Sync = table2array(thisTable(:,2));
-            peripherals.Photodiode = table2array(thisTable(:,3));
-            if size(thisTable,2)>3
-                peripherals.VideoSync = table2array(thisTable(:,4));
+
+            if size(thisTable,2)==20
+                peripherals.Sync = table2array(thisTable(:,end-2));
+                peripherals.Photodiode = table2array(thisTable(:,end-1));
+                peripherals.VideoSync = table2array(thisTable(:,end));
             else
+                peripherals.Sync = table2array(thisTable(:,end-1));
+                peripherals.Photodiode = table2array(thisTable(:,end));
                 peripherals.VideoSync = [];
             end
         end

@@ -47,27 +47,37 @@ FACEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_n
 
 BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 
-
-DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
-if ~isempty(DIR) % everything sync to probe 1
-    load(fullfile(options(1).EPHYS_DATAPATH,DIR.name))
-    syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+Nidq = [];
+td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*NidqTimes*'));
+if ~isempty(td)
+    load(fullfile(options(1).EPHYS_DATAPATH,'..',td(1).name),'Nidq');
+    syncTimes_ephys = Nidq.bonsai_sync_on;% use upswings currently
 else
-    [AP_FILE,LF_FILE] = findImecBinFile(options(1).EPHYS_DATAPATH);
-    %     FILE_TO_USE = AP_FILE;
-    binpath = fullfile(options(1).EPHYS_DATAPATH,AP_FILE);
-    %     binpath = fullfile(options(1).EPHYS_DATAPATH,LF_FILE);
-    syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
-    parseDate = date;
-    [~,fname] = fileparts(options(1).EPHYS_DATAPATH);
-    save(fullfile(options(1).EPHYS_DATAPATH,[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate');
-    syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+    error('nidq and ephys sync pulse extraction and alignment not done!')
+    return
 end
+
+% DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
+% if ~isempty(DIR) % everything sync to probe 1
+%     load(fullfile(options(1).EPHYS_DATAPATH,DIR.name))
+%     syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+% else
+%     [AP_FILE,LF_FILE] = findImecBinFile(options(1).EPHYS_DATAPATH);
+%     %     FILE_TO_USE = AP_FILE;
+%     binpath = fullfile(options(1).EPHYS_DATAPATH,AP_FILE);
+%     %     binpath = fullfile(options(1).EPHYS_DATAPATH,LF_FILE);
+%     syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
+%     parseDate = date;
+%     [~,fname] = fileparts(options(1).EPHYS_DATAPATH);
+%     save(fullfile(options(1).EPHYS_DATAPATH,[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate');
+%     syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+% end
 
 
 % Import wheel data, eye data, position data and photodiodide data 
 % and synchronise them to async pulse 
 peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
+% peripherals.Time = peripherals.FrameTime*1000;
 [peripherals] = alignBonsaiToEphysSyncTimes(peripherals,syncTimes_ephys);
 
 % eyeData = import_bonsai_eyedata(fullfile([BONSAI_DATAPATH,'\',char(EYEDATA_DATAPATH)]));
@@ -77,6 +87,7 @@ eyeData = [];
 if exist('photodiode_path','var') && ~isempty(photodiode_path)
     [photodiode, photodiode_sync] = import_bonsai_photodiode(fullfile([BONSAI_DATAPATH,'\',char(photodiode_path)]));
     photodiode.Sync = photodiode.S;
+    %     photodiode.Time = photodiode.FrameTime*1000;
     photodiode.Time = photodiode.T;
     photodiode.Photodiode = photodiode.P;
     photodiode = rmfield(photodiode,{'T','S','P'});
@@ -97,8 +108,8 @@ end
 
 %% Correct sglxtime based on photodiode and quadstate
 
-photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',10);
-pd_ON_OFF = photodiode.Photodiode_smoothed >= 80; % find ON and OFF
+photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',5);
+pd_ON_OFF = photodiode.Photodiode >=50; % find ON and OFF
 pd_ON = find(diff(pd_ON_OFF) == 1)+1; % Find ON
 pd_OFF = find(diff(pd_ON_OFF) == -1)+1; % Find OFF
 
@@ -113,7 +124,7 @@ else
         block_length(i) = abs(pd_ON(i) - pd_OFF(i));
     end
 end
-blocks_ind = find(block_length>80);% sample rate of photodiode is 3000 per second, 50 samples per frame (60 frame per second), 
+blocks_ind = find(block_length>5);% sample rate of photodiode is 3000 per second, 50 samples per frame (60 frame per second), 
 % photodiode.binary_pd = zeros(length(photodiode.Photodiode),1);
 % for nblock = 1:length(blocks_ind)
 %     photodiode.binary_pd(pd_ON(blocks_ind(nblock)):pd_OFF(blocks_ind(nblock))) = 1;
@@ -639,6 +650,9 @@ if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path
                     if ~isempty(start_index)
                         break
                     end
+                end
+                if  isempty(find(start_time_all(n) >= peripherals.Time,1))==1
+                    return
                 end
             end
 
