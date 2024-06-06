@@ -94,7 +94,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-% experiment_info = experiment_info(1)
+% experiment_info = experiment_info(4)
 
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','StaticGratings'};
 for n = 1:length(All_stimuli)

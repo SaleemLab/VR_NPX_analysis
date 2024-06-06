@@ -109,9 +109,11 @@ end
 
 
 %% Correct sglxtime based on photodiode and quadstate
-
+% Nidq.Photodiode_smoothed = smoothdata(Nidq.photodiode,'movmedian',5);
 photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',5);
-pd_ON_OFF = photodiode.Photodiode >=50; % find ON and OFF
+pd_ON_OFF = photodiode.Photodiode >=mean(photodiode.Photodiode); % find ON and OFF
+% pd_ON_OFF = Nidq.Photodiode_smoothed >=mean(Nidq.Photodiode_smoothed); % find ON and OFF
+
 pd_ON = find(diff(pd_ON_OFF) == 1)+1; % Find ON
 pd_OFF = find(diff(pd_ON_OFF) == -1)+1; % Find OFF
 
@@ -126,7 +128,9 @@ else
         block_length(i) = abs(pd_ON(i) - pd_OFF(i));
     end
 end
-blocks_ind = find(block_length>5);% sample rate of photodiode is 3000 per second, 50 samples per frame (60 frame per second), 
+blocks_ind = find(block_length>1/mean(diff(photodiode.sglxTime))*0.005);% sample rate of photodiode is 3000 per second, 50 samples per frame (60 frame per second), 
+% blocks_ind = find(block_length>mean(1./diff(Nidq.sglxTime))*0.005);% sample rate of photodiode is 3000 per second, 50 samples per frame (60 frame per second), 
+
 % photodiode.binary_pd = zeros(length(photodiode.Photodiode),1);
 % for nblock = 1:length(blocks_ind)
 %     photodiode.binary_pd(pd_ON(blocks_ind(nblock)):pd_OFF(blocks_ind(nblock))) = 1;
@@ -140,10 +144,11 @@ temp_tbl.start_time = peripherals.sglxTime(idx_trial_start);
 temp_tbl.end_time = peripherals.sglxTime(idx_trial_end);
 nTrials = length(temp_tbl.start_time);
 
-% peripherals.sglxTime(idx_trial_start);
-% peripherals.sglxTime(idx_trial_end);
-% photodiode.sglxTime(pd_ON(blocks_ind));
-% photodiode.sglxTime(pd_OFF(blocks_ind));
+% idx_trial_start(temp_tbl.start_time<=0)=[];
+% idx_trial_end(temp_tbl.start_time<=0)=[];
+% temp_tbl.end_time(temp_tbl.start_time<=0)=[];
+% temp_tbl.start_time(temp_tbl.start_time<=0)=[];
+
 
 % if difference between photodiode and quadstate is less than 10%, it is probably more or less acruate
 if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    0.1
@@ -158,10 +163,13 @@ if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    
     for itrial =1:length(idx_trial_start)
         waitbar(itrial/length(idx_trial_start),H)
         % find frame where Bonsai asked to change quad
-        frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
+%         frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
 
         % find next index where the photodiode detected a quad change
-        temp_idx = find(pd_ON(blocks_ind) > frameidx_start,1,'first');
+%         temp_idx = find(pd_ON(blocks_ind) >= frameidx_start,1,'first');
+%         idx_start = pd_ON(blocks_ind(temp_idx))-1;
+
+        temp_idx = find(photodiode.sglxTime(pd_ON(blocks_ind)) >= temp_tbl.start_time(itrial),1,'first');
         idx_start = pd_ON(blocks_ind(temp_idx))-1;
         %
         %     % find frame where Bonsai asked to change quad
@@ -178,6 +186,7 @@ if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    
 
         % convert to spike GLX time
         if ~isempty(idx_start)
+%             pdstart(itrial) = Nidq.sglxTime(idx_start);
             pdstart(itrial) = photodiode.sglxTime(idx_start);
         else
             pdstart(itrial) = nan;
@@ -192,12 +201,14 @@ if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    
         waitbar(itrial/length(idx_trial_end),H)
 
         % find frame where Bonsai asked to change quad
-        frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
+        %         frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
 
         % find next index where the photodiode detected a quad change
-        temp_idx = find(pd_OFF(blocks_ind) > frameidx_end,1,'first');
-        idx_end = pd_OFF(blocks_ind(temp_idx))-1;
+        %         temp_idx = find(pd_OFF(blocks_ind) > frameidx_end,1,'first');
+        %         idx_end = pd_OFF(blocks_ind(temp_idx))-1;
 
+        temp_idx = find(photodiode.sglxTime(pd_OFF(blocks_ind)) >= temp_tbl.end_time(itrial),1,'first');
+        idx_end = pd_ON(blocks_ind(temp_idx))-1;
         %     % find frame where Bonsai asked to change quad
         %     frameidx_end = photodiode_index(photodiode.FrameNumber <= frame_trial_end(itrial));
         %     frameidx_end = frameidx_end(end);
@@ -214,12 +225,18 @@ if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    
         % convert to spike GLX time
         if ~isempty(idx_end)
             pdend(itrial) = photodiode.sglxTime(idx_end);
+%             pdend(itrial) = Nidq.sglxTime(idx_end);
         else
             pdend(itrial) = nan;
         end
     end
     toc
 
+%     photodiodeData.stim_on.sglxTime=Nidq.sglxTime(pd_ON(blocks_ind))';
+%     photodiodeData.stim_off.sglxTime=Nidq.sglxTime(pd_OFF(blocks_ind))';
+%     photodiodeData.stim_on.sglxTime=photodiode.sglxTime(pd_ON(blocks_ind))';
+%     photodiodeData.stim_off.sglxTime=photodiode.sglxTime(pd_OFF(blocks_ind))';
+%     
     photodiodeData.stim_on.sglxTime = pdstart';
     photodiodeData.stim_off.sglxTime = pdend';
 else
@@ -304,12 +321,17 @@ else
     end
 end
 
-% figure;
+% % figure;
 % plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
 % hold on
-% plot(peripherals.corrected_sglxTime(1:300),peripherals.QuadState(1:300)*100)
-% plot(photodiode.sglxTime(1:20000),photodiode.binary_pd(1:20000)*120)
-
+% plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
+% scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
+% % plot(photodiode.sglxTime(1:20000),photodiode.binary_pd(1:20000)*120)
+% 
+% plot(photodiode.sglxTime(1:end),photodiode.Photodiode_smoothed(1:end))
+% hold on
+% plot(peripherals.corrected_sglxTime(1:end),peripherals.QuadState(1:end)*200)
+% scatter(photodiode.sglxTime(pd_ON(1:end)),100*ones(1,length(pd_ON)))
 
 % raw_LFP(nchannel,:) = interp1(peripherals.sglxTime,raw_LFP(nchannel,:),probe_1_tvec(1:2:end),'linear'); %probe 1 LFP time to match probe 2 LFP time
 if ~isempty(DLC_EYEDATA_DATAPATH)
@@ -462,6 +484,11 @@ if contains(StimulusName,'RUN') | contains(StimulusName,'Track')
                             end
                         end
                     end
+
+                    if  reward_delivery_time(n) >= peripherals.Time(end) % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+                        break
+                    end
+
                     % Original reward time
                     task_info.reward_delivery_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
                     % Reward time basewd on resampled 60Hz timestamp
@@ -544,6 +571,10 @@ if contains(StimulusName,'RUN') | contains(StimulusName,'Track')
                                 break
                             end
                         end
+                    end
+
+                    if  lick_time(n) >= peripherals.Time(end) % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+                        break
                     end
 
                     task_info.lick_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
@@ -632,7 +663,7 @@ if  (~isempty(trial_path) & contains(StimulusName,'RUN')) | (~isempty(trial_path
             end
         end
 
-        if  isempty(find(start_time_all(n) >= peripherals.Time(end),1))==1 % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+        if  start_time_all(n) >= peripherals.Time(end) % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
             break
         end
 

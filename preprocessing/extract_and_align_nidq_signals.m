@@ -113,13 +113,11 @@ Nidq.bonsai_sync_off = Nidq.sglxTime(vec_idx+1);
 
 %%% Photodiode (bonsai and Nidq)
 % Find upswings in sync pulse
-vec_idx = find(diff(Nidq.photodiode)>=mean(Nidq.photodiode));
-% add 1 to vec_idx to compensate for diff and convert from samples to s 
-Nidq.photodiode_on = Nidq.sglxTime(vec_idx+1); 
+vec_idx = find(Nidq.photodiode>=mean(Nidq.photodiode));
+Nidq.photodiode_on = Nidq.sglxTime(vec_idx); 
 % Find downswings in sync pulse
-vec_idx = find(diff(Nidq.photodiode)<=-mean(Nidq.photodiode)); 
-% add 1 to vec_idx to compensate for diff and convert from samples to s 
-Nidq.photodiode_off = Nidq.sglxTime(vec_idx+1); 
+vec_idx = find(Nidq.photodiode<=mean(Nidq.photodiode)); 
+Nidq.photodiode_off = Nidq.sglxTime(vec_idx); 
 parseDate = date;
 % [~,fname] = fileparts(options.EPHYS_DATAPATH);
 
