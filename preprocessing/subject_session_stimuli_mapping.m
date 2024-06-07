@@ -196,7 +196,11 @@ for nsubject = 1:length(SUBJECTS)
                 folderName = findGFolder(EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli));
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).EPHYS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,folderName,[folderName,'_imec',num2str(probe_id(nprobe))]);
 
-                SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,['probe',num2str(probe_id(nprobe))]); % NEW spikeinterface sorter datapath
+                if isnan(all_session_id_this_date{nstimuli})
+                    SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,['probe',num2str(probe_id(nprobe))]); % NEW spikeinterface sorter datapath
+                else
+                    SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,'..',['probe',num2str(probe_id(nprobe))]); % if multiple sessions in one day, spike interface folder still in date folder
+                end
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).SORTER_DATAPATH = SORTER_DATAPATH;
 
                 if ~exist(fullfile(EPHYS_DATAPATH_temp,'kilosort'), 'dir') % Old KS datapath

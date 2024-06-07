@@ -743,22 +743,26 @@ if ~isempty(task_info.start_time_all)
             on_track_x = current_lap_x(~isnan(current_lap_x));
             on_track_t = current_lap_t(~isnan(current_lap_x));
 
+            if length(on_track_x)>30
+                end_frame = 30;
 
-            if ~isempty(find(diff(on_track_x(1:30))>5)) % if big jump in position initially due to lag
-                jump_index = find(diff(on_track_x(1:30))>5);
-                jump_index = jump_index(end);
-                on_track_t(1:jump_index)=[];
-                on_track_x(1:jump_index)=[];
+                if ~isempty(find(diff(on_track_x(1:end_frame))>5)) % if big jump in position initially due to lag
+                    jump_index = find(diff(on_track_x(1:end_frame))>5);
+                    jump_index = jump_index(end);
+                    on_track_t(1:jump_index)=[];
+                    on_track_x(1:jump_index)=[];
+                end
+
+
+                if length(on_track_x)>1
+                    if ~isempty(find(diff(on_track_x(1:end_frame))<-5)) % if big jump in position initially due to lag
+                        jump_index = find(diff(on_track_x(1:end_frame))<-5);
+                        jump_index = jump_index(end);
+                        on_track_t(1:jump_index)=[];
+                        on_track_x(1:jump_index)=[];
+                    end
+                end
             end
-
-
-            if ~isempty(find(diff(on_track_x(1:30))<-5)) % if big jump in position initially due to lag
-                jump_index = find(diff(on_track_x(1:30))<-5);
-                jump_index = jump_index(end);
-                on_track_t(1:jump_index)=[];
-                on_track_x(1:jump_index)=[];
-            end
-
 %             on_track_t = on_track_t(~diff(on_track_x(1:30))>5);
 %             on_track_x = on_track_x(~diff(on_track_x(1:30))>5);
 %             on_track_t = on_track_t(~diff(on_track_x(1:30))>5);
