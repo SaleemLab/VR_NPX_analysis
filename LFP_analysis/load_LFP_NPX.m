@@ -59,6 +59,8 @@ samples_to_pass = 0;
 
 % imecMeta.selected_channels = selected_channels;
 
+d1 = designfilt('lowpassiir','FilterOrder',12, ...
+    'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate',imecMeta.imSampRate);
 
 % % 
 % raw_LFP = [];
@@ -106,6 +108,8 @@ for clip = 1:nClips
     end
     % % Downsample the data
     temp_LFP = temp_LFP-mean(temp_LFP,1);% common average referencing
+    temp_LFP = filtfilt(d1,temp_LFP')';% low pass filter
+    
     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
     %     time_to_pass = time_to_pass + clipDur;
     samples_to_pass = samples_to_pass + nClipSamps;

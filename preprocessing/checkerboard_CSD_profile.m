@@ -23,7 +23,11 @@ end
 clusters = [];
 DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
 if ~isempty(DIR)
-    if sum(contains({DIR.name},'ks3')) > 0
+    if sum(contains({DIR.name},'ks4')) > 0
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'))
+        clusters = clusters_ks4;
+        
+    elseif sum(contains({DIR.name},'ks3')) > 0
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'))
         clusters = clusters_ks3;
     else
@@ -33,9 +37,14 @@ else
     clusters{nprobe} = [];
 end
 
-load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
+DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
 
-
+if ~isempty(DIR)
+    load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('extracted_PSD%s.mat',extractAfter(options.Stimulus_type,"Checkerboard"))));
+else
+    load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
+    %     load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'))
+end
 
 column = 1;
 options.importMode = 'KS';

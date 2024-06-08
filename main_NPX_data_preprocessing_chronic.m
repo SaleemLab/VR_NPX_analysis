@@ -94,7 +94,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-% experiment_info = experiment_info(8);
+% experiment_info = experiment_info(6);
 
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard'};
 for n = 2:length(All_stimuli)
@@ -169,7 +169,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 SUBJECTS = {'M24017'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-% experiment_info = experiment_info(1);
+% experiment_info = experiment_info(6);
 Stimulus_type= 'Checkerboard_sh1'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 Stimulus_type= 'Checkerboard_sh2'; 
@@ -188,12 +188,15 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23017';
-SESSION = '20230605';
+SUBJECT = 'M24017';
+SESSION = '20240605';
 options = 'bilateral';
 
 % Stimulus_type = 'FullScreenFlash_2';
-Stimulus_type = 'Checkerboard';
+Stimulus_type = 'Checkerboard_sh1';
+% Stimulus_type = 'Checkerboard_sh2';
+% Stimulus_type = 'Checkerboard_sh3';
+% Stimulus_type = 'Checkerboard_sh4';
 % Stimulus_type = 'RUN';
 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
 
@@ -202,7 +205,8 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     %             options.ROOTPATH = ROOTPATH;
     options.importMode = 'KS';
     options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-    
+    options.Stimulus_type = Stimulus_type;
+
 %     DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"))
 % 
 %     if ~isempty(DIR)
@@ -213,8 +217,12 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
     close all
-
-    save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+    
+    if contains(Stimulus_type,'sh')
+        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD_sh%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'lfpAvg','csd');
+    else
+        save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+    end
 
     [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);

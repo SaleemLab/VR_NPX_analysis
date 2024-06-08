@@ -104,9 +104,16 @@ end
 % Only resampled at 60Hz would be saved
 behaviour = [];
 
-all_fields = fieldnames(peripherals);
-temp = peripherals.sglxTime;
 
+if length(peripherals.sglxTime) > length(unique(peripherals.sglxTime))
+    [C,ia,ic] = unique(peripherals.sglxTime);
+    unique_id = find(diff(ic)==0);
+    peripherals.sglxTime(unique_id+1)=nan;% make repeated values -> nan
+end
+
+all_fields = fieldnames(peripherals);
+
+temp = peripherals.sglxTime;
 for i = 1:length(all_fields)
     if length(peripherals.(all_fields{i})) == length(temp)
         peripherals.(all_fields{i})(isnan(temp))=[];
