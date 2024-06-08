@@ -104,6 +104,28 @@ end
 % Only resampled at 60Hz would be saved
 behaviour = [];
 
+all_fields = fieldnames(peripherals);
+temp = peripherals.sglxTime;
+
+for i = 1:length(all_fields)
+    if length(peripherals.(all_fields{i})) == length(temp)
+        peripherals.(all_fields{i})(isnan(temp))=[];
+    end
+end
+
+
+all_fields = fieldnames(eyeData);
+temp = eyeData.sglxTime;
+
+for i = 1:length(all_fields)
+    if length(eyeData.(all_fields{i})) == length(temp)
+        eyeData.(all_fields{i})(isnan(temp))=[];
+    end
+end
+
+
+
+
 %% wheel frame
 % behaviour.wheel_frame_count = resample(peripherals.FrameNumber,peripherals.sglxTime,60)';
 behaviour.wheel_frame_count = interp1(peripherals.sglxTime,peripherals.RenderFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');

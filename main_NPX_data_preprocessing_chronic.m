@@ -94,10 +94,10 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-% experiment_info = experiment_info(6);
+% experiment_info = experiment_info(8);
 
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard'};
-for n = 1:length(All_stimuli)
+for n = 2:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
 
@@ -164,8 +164,10 @@ Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23028'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M23017','M23028','M23029','M23087'};
-SUBJECTS = {'M23087'};
+% SUBJECTS = {'M23017','M23028','M23029','M23087'};
+
+
+SUBJECTS = {'M24017'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % experiment_info = experiment_info(1);
 Stimulus_type= 'Checkerboard_sh1'; 
@@ -186,8 +188,8 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M23028';
-SESSION = '20230703';
+SUBJECT = 'M23017';
+SESSION = '20230605';
 options = 'bilateral';
 
 % Stimulus_type = 'FullScreenFlash_2';

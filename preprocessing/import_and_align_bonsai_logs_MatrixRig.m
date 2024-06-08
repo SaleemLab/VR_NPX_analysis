@@ -143,7 +143,7 @@ blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per seco
 
 %    plot(photodiode.Photodiode_smoothed); hold on; scatter(pd_OFF(blocks_ind),50);
 photodiodeData = [];
-photodiodeData.stim_on.sglxTime = photodiode.sglxTime (pd_ON(blocks_ind)');
+photodiodeData.stim_on.sglxTime = photodiode.sglxTime(pd_ON(blocks_ind)');
 photodiodeData.stim_off.sglxTime = photodiode.sglxTime(pd_OFF(blocks_ind)');
 
 % Step 5: process wheel data (skipping this just save all peripheral data)
@@ -157,6 +157,17 @@ switch(lower(StimulusName))
     case {'sparsenoise','sparsenoise_fullscreen','checkerboard'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend');
         %         fprintf('\n\tUsing both photodiode upward and downward transitions as timestamps for stimulus timing')
+        if contains(StimulusName,'SparseNoise')
+            
+            average_stim_duration = (stimTimes(end)-stimTimes(1))/size(stimData,1);
+            stim_id = (find(diff(stimTimes)>average_stim_duration*2));
+
+            if length(stim_id) == 1 % if happended once we can remove all the stimuli stime between these two points (happens rarely)
+                stimData(stim_id:stim_id+size(stimData,1)-length(stimTimes)-1,:)=[];
+            end
+
+        end
+
     case {'staticgratings','staticgratings_short','staticgratings_long'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend');
     case 'grey'

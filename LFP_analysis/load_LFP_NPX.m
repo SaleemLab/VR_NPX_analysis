@@ -105,6 +105,7 @@ for clip = 1:nClips
         %     temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
     end
     % % Downsample the data
+    temp_LFP = temp_LFP-mean(temp_LFP,1);% common average referencing
     raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
     %     time_to_pass = time_to_pass + clipDur;
     samples_to_pass = samples_to_pass + nClipSamps;
