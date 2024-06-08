@@ -32,10 +32,19 @@ updated_channels.xcoord =columns_avaliable;
 for col = columns_to_process
     nshank = unique(chan_config.Shank( chan_config.Ks_xcoord  ==  columns_avaliable(col)));
     sprintf('This is Shank %i column %i (X coord %i micron)',nshank,col,columns_avaliable(col))
-    openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
-     datacursormode('on');
-     openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s cluster density probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
-     datacursormode('on');
+
+    if isfield(options,'Stimulus_type')
+        openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,columns_avaliable(col))))
+        datacursormode('on');
+%         openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s cluster density probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
+%         datacursormode('on');
+    else
+%         lfpAvg(col).event_group = {'Checkerboard'};
+        openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,columns_avaliable(col))))
+        datacursormode('on');
+        openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s cluster density probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
+        datacursormode('on');
+    end
 
     channel_this_column = find(chan_config.Ks_xcoord == columns_avaliable(col));
     updated_channels.xcoord(col) =columns_avaliable(col);

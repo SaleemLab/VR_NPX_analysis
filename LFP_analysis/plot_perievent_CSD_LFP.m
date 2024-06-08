@@ -82,8 +82,9 @@ for type = 1:length(lfpAvg.filter_type)
         % legend('1-3','4-12','30-60','60-100','125-300')
         ylabel('probe depth (um)')
         legend([pl(selected_frequency)],{freq_legends{selected_frequency}},'Location','southeast','Color','none');
-%         ylim([0 max(chan_config.Ks_ycoord)*1.2])
-        ylim([min(chan_config.Ks_ycoord)*0.8 max(chan_config.Ks_ycoord)*1.2])
+        %         ylim([0 max(chan_config.Ks_ycoord)*1.2])
+        %         ylim([min(chan_config.Ks_ycoord)*0.8 max(chan_config.Ks_ycoord)*1.2])
+        ylim([min(chan_config.Ks_ycoord)*0.95 max(chan_config.Ks_ycoord)*1.05])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
@@ -94,10 +95,10 @@ for type = 1:length(lfpAvg.filter_type)
         for ch=1:size(lfpAvg.(filter_type{type})(event).filtered,2)
 
             %         sh_tmp = 1e0*(500000*lfpAvg.SO(event).raw(:,ch)) + sorted_config.Ks_ycoord(ch);
-            if size(size(lfpAvg.(filter_type{type})(event).filtered,2))<190
+            if size(lfpAvg.(filter_type{type})(event).filtered,2)<150
                 sh_tmp = 1e0*(500000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
-            else
-                sh_tmp = 1e0*(500*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
+            else % for NP2 whole shank LFP
+                sh_tmp = 1e0*(10000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
             end
             plot(taxis,sh_tmp,'k','LineWidth',1.5); hold on;
             clear sh_tmp
@@ -148,13 +149,13 @@ for type = 1:length(lfpAvg.filter_type)
         end
 
 %         ylim([0 max(sorted_config.Ks_ycoord)*1.2])
-        ylim([min(chan_config.Ks_ycoord)*0.8 max(chan_config.Ks_ycoord)*1.2])
+        ylim([min(chan_config.Ks_ycoord)*0.95 max(chan_config.Ks_ycoord)*1.05])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
         yyaxis right
         ax = gca;
         ax.YAxis(1).Color = 'k'; ax.YAxis(2).Color = 'r';
-        ylim([min(chan_config.Ks_ycoord)*0.8-best_channels.surface_depth max(chan_config.Ks_ycoord)*1.2-best_channels.surface_depth])
+        ylim([min(chan_config.Ks_ycoord)*0.95-best_channels.surface_depth max(chan_config.Ks_ycoord)*1.05-best_channels.surface_depth])
 
 
         subplot(1,3,3);
@@ -238,7 +239,8 @@ for type = 1:length(lfpAvg.filter_type)
             end
         end
         %         ylim([0 max(chan_config.Ks_ycoord)*1.2])
-        ylim([min(chan_config.Ks_ycoord)*0.8 max(chan_config.Ks_ycoord)*1.2])
+%         ylim([min(chan_config.Ks_ycoord)*0.8 max(chan_config.Ks_ycoord)*1.2])
+        ylim([min(chan_config.Ks_ycoord)*0.95 max(chan_config.Ks_ycoord)*1.05])
 
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 

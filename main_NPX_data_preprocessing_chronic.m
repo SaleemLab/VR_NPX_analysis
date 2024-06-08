@@ -189,7 +189,7 @@ clear all
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
 SUBJECT = 'M24017';
-SESSION = '20240605';
+SESSION = '20240530';
 options = 'bilateral';
 
 % Stimulus_type = 'FullScreenFlash_2';
@@ -227,7 +227,11 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
 
-    save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+    if contains(Stimulus_type,'_sh')
+        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+    else
+        save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+    end
 
     %     power = [];
     %     xcoord = [];
@@ -254,14 +258,33 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
 
-% Checkerboard CSD batch
-% SUBJECTS = {'M23017','M23028','M23029'};
-SUBJECTS = {'M23087'};
-options = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-Stimulus_type = 'Checkerboard';
-% determine_best_channels
-calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
+
+Stimulus_type = 'Checkerboard_sh1';
+if contains(Stimulus_type,'_sh')
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    options= session_info.probe(1);
+
+    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+
+    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));
+    
+    fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh1.mat')
+    best_channels_sh1 = best_channels;
+    best_channels_sh2 = best_channels;
+    best_channels_sh3 = best_channels;
+    best_channels_sh4 = best_channels;
+
+end
+
+% 
+% % Checkerboard CSD batch
+% % SUBJECTS = {'M23017','M23028','M23029'};
+% SUBJECTS = {'M23087'};
+% options = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+% Stimulus_type = 'Checkerboard';
+% % determine_best_channels
+% calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 
 
 %% Visual tuning based on Static Gratings
