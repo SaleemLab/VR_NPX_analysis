@@ -67,14 +67,14 @@ clusters_all.non_ripple_V1_event_modulation_percentile = [];
 
 session_count =0;
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
-Stimulus_type = 'RUN1';
-
+Stimulus_type = 'Masa2tracks';
+stimulus = 'RUN1';
 for iMouse = 1:4
     for iDate = 1:size(date{iMouse,1},1)
         session_count = session_count+1;
-        session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECTS{iMouse},'analysis',date{iMouse}(iDate,:),Stimulus_type,'session_info*.mat'));
+        session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECTS{iMouse},'analysis',date{iMouse}(iDate,:),'Masa2tracks','session_info*.mat'));
         for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
-            if contains(session_files(n).name,'RUN')
+            if contains(session_files(n).name,stimulus)
                 load(fullfile(session_files(n).folder, session_files(n).name))
             end
         end
@@ -86,19 +86,20 @@ for iMouse = 1:4
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'PSD');
 
-
-%         DIR = dir(session_folder);
-%         stimulus_list = {DIR(3:6).name};
-        stimulus = 'RUN';
-        contents = {'extracted_behaviour','extracted_peripherals','merged_clusters','extracted_task_info','extracted_ripple_events'};
+        
+        %         DIR = dir(session_folder);
+        %         stimulus_list = {DIR(3:6).name};
+        stimulus = 'RUN1';
+        %         contents = {'extracted_behaviour','extracted_peripherals','merged_clusters','extracted_task_info','extracted_ripple_events'};
+        contents = {'extracted_behaviour','extracted_peripherals','merged_clusters','extracted_task_info'};
         for iF = 1:length(contents)
-            content_file = dir(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,[contents{iF},'*RUN*.mat']));
+            content_file = dir(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,[contents{iF},sprintf('*%s*.mat',erase(Stimulus_type,'Masa2tracks'))]));
             load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,content_file.name));
         end
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(Stimulus_type,'Masa2tracks'))))
-%                     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
-
-%         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'ripple_modulation.mat'))
+        %                     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
+        
+        %         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'ripple_modulation.mat'))
 %         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'V1_event_modulation.mat'))
 %         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'V1_event_modulation_no_ripple.mat'))
 
