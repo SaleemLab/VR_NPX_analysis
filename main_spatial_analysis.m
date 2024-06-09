@@ -68,8 +68,8 @@ for nsession = [3]
                  clusters(nprobe).region(:) = 'n.a_R';
              end
 
-            V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-            HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
+            V1_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','V1','group','by probe');
+            HPC_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','HPC','group','by probe');
 
             if clusters(nprobe).probe_hemisphere == 1
                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
@@ -85,34 +85,37 @@ for nsession = [3]
         %%%%%%%%%%%%%%%%%%%% load match id
 
         metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-        metric_param.unstable_ids = @(x) x==0;
+        %         metric_param.unstable_ids = @(x) x==0;
 
         place_field = struct();
         clear merged_clusters
-
+        %
+        %         for nprobe = 1:length(clusters)
+        %             options = session_info(n).probe(nprobe);
+        %
+        %             if  exist(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
+        %                 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
+        %             elseif exist(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))==2
+        %                 load(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))
+        %                 for i = 1:length(match_ids)
+        %                     unit_difference = size(match_ids{i},1)-length(clusters.cluster_id);
+        %                     if sum(ismember(clusters.cluster_id,match_ids{i}(:,1))) == length(clusters.cluster_id)
+        %                         match_ids = match_ids{i}; % find the session with the same unit id
+        %
+        %                         break
+        %                     end
+        %                 end
+        %                 match_ids = match_ids(:,1:3);
+        %             end
+        %
+        %             %             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
+        %             merged_cluster_temp  = merge_cluster(clusters(nprobe),match_ids);
+        %             merged_clusters(nprobe) = select_clusters(merged_cluster_temp,metric_param);
+        %         end
         for nprobe = 1:length(clusters)
-            options = session_info(n).probe(nprobe);
-
-            if  exist(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
-                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('probe%ium_merge_suggestion.mat',options.probe_id)))
-            elseif exist(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))==2
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','..','all_unit_match.mat'))
-                for i = 1:length(match_ids)
-                    unit_difference = size(match_ids{i},1)-length(clusters.cluster_id);
-                    if sum(ismember(clusters.cluster_id,match_ids{i}(:,1))) == length(clusters.cluster_id)
-                        match_ids = match_ids{i}; % find the session with the same unit id
-                        
-                        break
-                    end
-                end
-                match_ids = match_ids(:,1:3);
-            end
-
-            %             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
-            merged_cluster_temp  = merge_cluster(clusters(nprobe),match_ids);
-            merged_clusters(nprobe) = select_clusters(merged_cluster_temp,metric_param);
+            merged_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
         end
-        
+
         % save merged cluster variables (useful more reactivation activity detection)
         if contains(stimulus_name{n},'Masa')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'merged_clusters');
@@ -131,12 +134,30 @@ for nsession = [3]
             clusters_combined = merged_clusters;
         end
         
-        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
+        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN1.mat"))==2
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN1.mat'),'place_fields')
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN2.mat"))==2
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN1.mat'),'place_fields')
+        elseif exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+
+        elseif contains(stimulus_name{n},'RUN1')  |contains(stimulus_name{n},'RUN2') 
+            place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
+
         else
             place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+            
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
         end
+
+        [C,ia,ic] = unique(clusters_combined.cluster_id);
+        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
+
+        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
+
+
         %
         %         % Spatial modulation
         %         x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
@@ -168,7 +189,7 @@ for nsession = [3]
             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
             
             % Unique merged cell id
-            cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
+            cluster_id = unique(clusters_combined.cluster_id(cluster_id));
 
             [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
@@ -183,7 +204,7 @@ for nsession = [3]
             %%%%%% V1
             options.region = 'V1';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            metric_param.unstable_ids = @(x) x==0;
+%             metric_param.unstable_ids = @(x) x==0;
 
             if clusters(nprobe).probe_hemisphere == 1
                 metric_param.region = @(x) contains(x,'V1_L');
@@ -194,7 +215,7 @@ for nsession = [3]
             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
 
             % Unique merged cell id
-            cluster_id = unique(clusters_combined.merged_cluster_id(cluster_id));
+            cluster_id = unique(clusters_combined.cluster_id(cluster_id));
 
             [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
@@ -214,7 +235,7 @@ for nsession = [3]
 
             options.region = 'HPC';
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            metric_param.unstable_ids = @(x) x==0;
+%             metric_param.unstable_ids = @(x) x==0;
             metric_param.region = @(x) contains(x,'HPC');
             [~,cluster_id] = select_clusters(clusters_combined,metric_param);
 
