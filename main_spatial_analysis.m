@@ -12,7 +12,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession = [3]
+for nsession = [4]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
@@ -61,6 +61,7 @@ for nsession = [3]
         %         end
         %
         for nprobe = 1:length(clusters)
+            options = session_info(n).probe(nprobe);
             clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
              if clusters(nprobe).probe_hemisphere == 1
                  clusters(nprobe).region(:) = 'n.a_L';
@@ -76,8 +77,8 @@ for nsession = [3]
 %              yline(best_channels{nprobe}.CA1_depth+800,'r')
 %              yline(best_channels{nprobe}.CA1_depth-800,'r')
 % 
-%             V1_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','V1','group','by probe');
-%             HPC_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','HPC','group','by probe');
+            V1_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','V1','group','by probe');
+            HPC_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','HPC','group','by probe');
 
             if clusters(nprobe).probe_hemisphere == 1
                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
@@ -142,28 +143,34 @@ for nsession = [3]
             clusters_combined = merged_clusters;
         end
         
-        if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN1.mat"))==2
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN1.mat'),'place_fields')
-        elseif exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN2.mat"))==2
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN1.mat'),'place_fields')
-        elseif exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
-
-        elseif contains(stimulus_name{n},'RUN1')  |contains(stimulus_name{n},'RUN2') 
-            place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
-
+        if contains(stimulus_name{n},'RUN1')
+            if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN1.mat"))==2
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN1.mat'),'place_fields')
+            else
+                place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
+            end
+        elseif contains(stimulus_name{n},'RUN2') 
+            if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields_RUN2.mat"))==2
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields_RUN2.mat'),'place_fields')
+            else
+                place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
+            end
         else
-            place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
-            
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+            if exist(fullfile(options.ANALYSIS_DATAPATH,"extracted_place_fields.mat"))==2
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+            else
+                place_fields = calculate_place_fields_masa_NPX_against_shuffle(clusters_combined,Task_info,Behaviour,[0 140],2,[]);
+                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'),'place_fields')
+            end
         end
 
-        [C,ia,ic] = unique(clusters_combined.cluster_id);
-        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
-            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
-
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
+%         [C,ia,ic] = unique(clusters_combined.cluster_id);
+%         plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
+% 
+%         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
 
 
         %
@@ -203,9 +210,17 @@ for nsession = [3]
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
             if clusters(nprobe).probe_hemisphere == 1
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_HPC_L%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                else
+                    save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                end
             elseif clusters(nprobe).probe_hemisphere == 2
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_HPC_R%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                else
+                    save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                end
             end
 
             % plot populational map and PV correlation
@@ -229,9 +244,17 @@ for nsession = [3]
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
             if clusters(nprobe).probe_hemisphere == 1
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_V1_L%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                else
+                    save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_L.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                end
             elseif clusters(nprobe).probe_hemisphere == 2
-                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_V1_R%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                else
+                    save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_R.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+                end
             end
 
         end
@@ -253,9 +276,9 @@ for nsession = [3]
             [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
-            if clusters(nprobe).probe_hemisphere == 1
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
-            elseif clusters(nprobe).probe_hemisphere == 2
+            if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_HPC_combined%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            else
                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_HPC_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             end
 
@@ -274,9 +297,9 @@ for nsession = [3]
             [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
                 plot_place_cell_map_correlation(place_fields,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
-            if clusters(nprobe).probe_hemisphere == 1
-                save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
-            elseif clusters(nprobe).probe_hemisphere == 2
+            if contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('population_vector_corr_V1_combined%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
+            else
                 save(fullfile(options.ANALYSIS_DATAPATH,'population_vector_corr_V1_combined.mat'),'PPvector','shuffled_globalRemap_PPvector','shuffled_rateRemap_PPvector');
             end
             options = rmfield(options,'probe_combined');
@@ -285,8 +308,14 @@ for nsession = [3]
         if exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))== 0
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'))
         end
+        
+        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+        else
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'),[])
+        end
 
-        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'),[])
         close all
 
         %         %GLM analysis
