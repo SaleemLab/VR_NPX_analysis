@@ -40,15 +40,33 @@ spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & pla
 %     find(place_fields_all(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id,good_cell_index)));
 % good_cell_index = find(intersect(place_fields_all(1).cluster_id,good_cell_index));
+
+% Define Gaussian window for smoothing
+gaussianWindow = gausswin(5);
+
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
+
 if isempty(good_cell_index)
     disp('No spatial cells')
 else
     for type = 1:3
         ratemap_matrix = [];
         for track_id = 1:2
+%             ratemap_matrix{track_id} = [conv(place_fields_all(track_id).raw{good_cell_index}gaussianWindow,'same')];
             ratemap_matrix{track_id} = [place_fields_all(track_id).raw{good_cell_index}];
+%             ratemaps_track1(nevent,:) = conv(ratemaps_track1(nevent,:),gaussianWindow,'same');
             ratemap_matrix{track_id} = reshape(ratemap_matrix{track_id},size(place_fields_all(track_id).raw{1},1),[],length(good_cell_index));%laps X position bins X cells
+            
+            for ncell = 1:size(ratemap_matrix{track_id},3)
+                for nlap = 1:size(ratemap_matrix{track_id},1)
+                    ratemap_matrix{track_id}(nlap,:,ncell) = conv(squeeze(ratemap_matrix{track_id}(nlap,:,ncell)),gaussianWindow,'same');
+                end
+            end
         end
+
+
         %         ratemap_matrix = [place_fields_all(track_id).raw{place_fields(1).all_good_cells_LIBERAL}];
         %         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(place_fields(1).all_good_cells_LIBERAL));%laps X position bins X cells
 
@@ -103,7 +121,7 @@ else
     laps_type_text = {'odd','even','all'};
     %plot heat map position
     fig = figure
-    fig.Position = [500 70 650 490];
+    fig.Position = [500 70 830 600];
 
 
     if ischar(nprobe)
@@ -148,7 +166,7 @@ else
     laps_type_text = {'odd','even','all'};
     %plot heat map position
     fig = figure
-    fig.Position = [500 70 650 490];
+    fig.Position = [500 70 830 600];
 
 
     if isempty(region)

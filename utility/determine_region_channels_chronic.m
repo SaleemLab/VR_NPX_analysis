@@ -137,7 +137,7 @@ elseif contains(region,'V1')
             channels_this_shank = ones(length(chan_config.Shank),1);
         end
 
-        all_channels_this_shank = chan_config.Channel(chan_config.Ks_ycoord>depth_this_shank-1500 ...
+        all_channels_this_shank = chan_config.Channel(chan_config.Ks_ycoord>depth_this_shank-1800 ...
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
@@ -175,8 +175,8 @@ elseif contains(region,'HPC')
             channels_this_shank = ones(length(chan_config.Shank),1);
         end
 
-        all_channels_this_shank = chan_config.Channel(chan_config.Ks_ycoord>depth_this_shank-400 ...
-            & chan_config.Ks_ycoord<depth_this_shank+400 ...
+        all_channels_this_shank = chan_config.Channel(chan_config.Ks_ycoord>depth_this_shank-800 ...
+            & chan_config.Ks_ycoord<depth_this_shank+800 ...
             & channels_this_shank);
 
         region_channels = [region_channels; all_channels_this_shank];
