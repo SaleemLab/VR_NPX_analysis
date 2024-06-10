@@ -228,45 +228,43 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
 
     if contains(Stimulus_type,'_sh')
-        load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('extracted_PSD%s.mat',extractAfter(options.Stimulus_type,"Checkerboard"))));
-        save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
     else
         save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
     end
 
-    %     power = [];
-    %     xcoord = [];
-    %     ycoord = [];
-    %
-    %     for nchannel = 1:size(PSD{options.probe_no},2)
-    %         power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
-    %         xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
-    %         ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
-    %     end
-    %
-    %     % sort channel according to y coordinate
-    %     [ycoord idx] = sort(ycoord,'ascend');
-    %     xcoord = xcoord(idx);
-    %     power = power(idx,:);
-    %     chan_config = chan_config(idx,:);
-    %
-    %     % Replot based on updated channels
-    %     for col = 1:length(lfpAvg(options.probe_no).column)
-    %         xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
-    %         plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
-    %     end
+
     checkerboard_CSD_profile(options);
     save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
 
-% Checkerboard CSD batch
-% SUBJECTS = {'M23017','M23028','M23029'};
-SUBJECTS = {'M23087'};
-options = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-Stimulus_type = 'Checkerboard';
-% determine_best_channels
-calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
+
+Stimulus_type = 'Checkerboard_sh1';
+if contains(Stimulus_type,'_sh')
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    options= session_info.probe(1);
+
+    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+
+    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));
+
+    fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh1.mat')
+    best_channels_sh1 = best_channels;
+    best_channels_sh2 = best_channels;
+    best_channels_sh3 = best_channels;
+    best_channels_sh4 = best_channels;
+
+end
+
+% 
+% % Checkerboard CSD batch
+% % SUBJECTS = {'M23017','M23028','M23029'};
+% SUBJECTS = {'M23087'};
+% options = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+% Stimulus_type = 'Checkerboard';
+% % determine_best_channels
+% calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 
 
 %% Visual tuning based on Static Gratings

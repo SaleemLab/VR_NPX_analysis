@@ -198,66 +198,49 @@ Stimulus_type = 'Checkerboard_sh1';
 % Stimulus_type = 'Checkerboard_sh3';
 % Stimulus_type = 'Checkerboard_sh4';
 % Stimulus_type = 'RUN';
-load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
 
-for nprobe = 1:length(session_info.probe) % For each session, how many probes
-    options= session_info.probe(nprobe);
-    %             options.ROOTPATH = ROOTPATH;
-    options.importMode = 'KS';
-    options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-    options.Stimulus_type = Stimulus_type;
+for nstimuli = 2:4
+    Stimulus_typ= sprintf('Checkerboard_sh%i',nstimuli)
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    clear lfpAvg csd best_channels
 
-%     DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"))
-% 
-%     if ~isempty(DIR)
-%         load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
-%     end
+    for nprobe = 1:length(session_info.probe) % For each session, how many probes
+        options= session_info.probe(nprobe);
+        %             options.ROOTPATH = ROOTPATH;
+        options.importMode = 'KS';
+        options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+        options.Stimulus_type = Stimulus_type;
 
-    [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
-    
-    save_all_figures(options.ANALYSIS_DATAPATH,[]);
-    close all
-    
-    if contains(Stimulus_type,'sh')
-        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD_sh%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'lfpAvg','csd');
-    else
-        save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+        %     DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"))
+        %
+        %     if ~isempty(DIR)
+        %         load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+        %     end
+
+        [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
+
+        save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        close all
+
+        if contains(Stimulus_type,'sh')
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'lfpAvg','csd');
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+        end
+
+        %     [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+        %     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+        %
+        %     if contains(Stimulus_type,'_sh')
+        %         save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+        %     else
+        %         save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        %     end
+        %
+        %     checkerboard_CSD_profile(options);
+        %     save_all_figures(options.ANALYSIS_DATAPATH,[]);
     end
-
-    [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-    [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-
-    if contains(Stimulus_type,'_sh')
-        save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-    else
-        save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-    end
-
-    %     power = [];
-    %     xcoord = [];
-    %     ycoord = [];
-    %
-    %     for nchannel = 1:size(PSD{options.probe_no},2)
-    %         power(nchannel,:) = PSD{options.probe_no}(nchannel).mean_power;
-    %         xcoord(nchannel) = PSD{options.probe_no}(nchannel).xcoord;
-    %         ycoord(nchannel) = PSD{options.probe_no}(nchannel).ycoord;
-    %     end
-    %
-    %     % sort channel according to y coordinate
-    %     [ycoord idx] = sort(ycoord,'ascend');
-    %     xcoord = xcoord(idx);
-    %     power = power(idx,:);
-    %     chan_config = chan_config(idx,:);
-    %
-    %     % Replot based on updated channels
-    %     for col = 1:length(lfpAvg(options.probe_no).column)
-    %         xcoord_avaliable = lfpAvg(options.probe_no).column(col).xcoord;
-    %         plot_perievent_CSD_LFP(lfpAvg(options.probe_no).column(col),csd(options.probe_no).column(col),power(xcoord == xcoord_avaliable,:),chan_config,chan_config(xcoord == xcoord_avaliable,:),best_channels{options.probe_no},options)
-    %     end
-    checkerboard_CSD_profile(options);
-    save_all_figures(options.ANALYSIS_DATAPATH,[]);
 end
-
 
 Stimulus_type = 'Checkerboard_sh1';
 if contains(Stimulus_type,'_sh')
@@ -267,7 +250,7 @@ if contains(Stimulus_type,'_sh')
     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
 
     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));
-    
+
     fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh1.mat')
     best_channels_sh1 = best_channels;
     best_channels_sh2 = best_channels;
