@@ -43,7 +43,11 @@ for nsession =1:length(experiment_info)
 
         if isempty(DIR)
             if contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
-                [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
+                if contains(Stimulus_type,'Sleep')
+                    [Behaviour] = import_and_align_Bonsai_Sleep(stimulus_name{n},session_info(n).probe);
+                else
+                    [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
+                end
             elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track') 
 %                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
 

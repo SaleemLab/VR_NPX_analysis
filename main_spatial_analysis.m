@@ -12,7 +12,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 
-for nsession = [4]
+for nsession = [3]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
@@ -71,11 +71,11 @@ for nsession = [4]
 
              session_info(n).probe(nprobe).importMode = 'KS';
              [file_to_use imecMeta chan_config ~] = extract_NPX_channel_config(session_info(n).probe(nprobe),[]);% Since it is LF
-%              figure
-%              scatter(chan_config.Ks_xcoord(:),chan_config.Ks_ycoord(:));hold on;
-%              yline(best_channels{nprobe}.surface_depth-1800)
-%              yline(best_channels{nprobe}.CA1_depth+800,'r')
-%              yline(best_channels{nprobe}.CA1_depth-800,'r')
+             figure
+             scatter(chan_config.Ks_xcoord(:),chan_config.Ks_ycoord(:));hold on;
+             yline(best_channels{nprobe}.surface_depth-1800)
+             yline(best_channels{nprobe}.CA1_depth+800,'r')
+             yline(best_channels{nprobe}.CA1_depth-800,'r')
 % 
             V1_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','V1','group','by probe');
             HPC_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','HPC','group','by probe');
@@ -89,6 +89,8 @@ for nsession = [4]
                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC_R';
             end
         end
+        
+
 
         %%%%%%%%%%%%%%%%%% place holder for merging units
         %%%%%%%%%%%%%%%%%%%% load match id
@@ -124,6 +126,20 @@ for nsession = [4]
         for nprobe = 1:length(clusters)
             merged_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
         end
+
+%         subplot(2,2,1)
+%         histogram(merged_clusters(1).peak_depth(contains(merged_clusters(1).region,'HPC_L')),'Normalization','cumcount');hold on
+%         histogram(merged_clusters(1).peak_depth(contains(merged_clusters(1).region,'V1_L')),'Normalization','cumcount')
+%         legend('HPC clusters','V1 clusters')
+%         title('Left Hemisphere')
+%         ylabel('cum count')
+% 
+%         subplot(2,2,2)
+%         histogram(merged_clusters(2).peak_depth(contains(merged_clusters(2).region,'HPC_R')),'Normalization','cumcount');hold on
+%         histogram(merged_clusters(2).peak_depth(contains(merged_clusters(2).region,'V1_R')),'Normalization','cumcount')
+%         legend('HPC clusters','V1 clusters')
+%         title('Right Hemisphere')
+%         ylabel('cum count')
 
         % save merged cluster variables (useful more reactivation activity detection)
         if contains(stimulus_name{n},'Masa')
@@ -166,10 +182,19 @@ for nsession = [4]
             end
         end
 
-%         [C,ia,ic] = unique(clusters_combined.cluster_id);
-%         plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+        [C,ia,ic] = unique(clusters_combined.cluster_id);
+%         place_fields=struct();
+%         Behaviour.tvec =Behaviour.sglxTime_uncorrected ;% check if photodiode correction is causing this issue...
+        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C);
+%    plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
 %             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
-% 
+        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+        else
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
+        end
 %         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
 
 

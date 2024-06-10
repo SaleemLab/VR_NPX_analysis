@@ -79,7 +79,7 @@ else
     end
     syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
     parseDate = date;
-    save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
+    save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
 end
 
 
@@ -165,7 +165,7 @@ Nidq.reward_right_off = Nidq.sglxTime(vec_idx+1);
 parseDate = date;
 % [~,fname] = fileparts(options.EPHYS_DATAPATH);
 
-save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_NidqTimes.mat']),'Nidq','parseDate');
+save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_NidqTimes.mat']),'Nidq','parseDate','-v7.3');
 
 
 
