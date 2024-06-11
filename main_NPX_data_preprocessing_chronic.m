@@ -201,7 +201,7 @@ Stimulus_type = 'Checkerboard_sh1';
 % Stimulus_type = 'Checkerboard_sh4';
 % Stimulus_type = 'RUN';
 
-for nstimuli = 2:4
+for nstimuli = 1:4
     Stimulus_typ= sprintf('Checkerboard_sh%i',nstimuli)
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     clear lfpAvg csd best_channels

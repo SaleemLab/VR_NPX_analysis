@@ -16,6 +16,7 @@ SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
+Stimulus_type = 'SleepChronic';
 
 for nsession =[5]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -29,7 +30,7 @@ for nsession =[5]
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
         raw_LFP = [];

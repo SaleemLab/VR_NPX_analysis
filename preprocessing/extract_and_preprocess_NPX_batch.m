@@ -82,7 +82,7 @@ for nsession =1:length(experiment_info)
                     sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},Stimulus_type))),'Task_info')
                 save(fullfile(options.ANALYSIS_DATAPATH,...
                     sprintf('extracted_peripherals%s.mat',erase(stimulus_name{n},Stimulus_type))),'Peripherals')
-            elseif contains(Stimulus_type,'OpenField')
+            elseif contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
 %                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
             else

@@ -19,21 +19,15 @@ if length(peripheral_path)>1 % possibly DLC related csv
 end
 
 BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
-DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
-
-if ~isempty(DIR) % everything sync to probe 1
-    load(fullfile(options(1).EPHYS_DATAPATH,DIR.name))
-%     syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+% DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
+Nidq = [];
+td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*NidqTimes*'));
+if ~isempty(td)
+    load(fullfile(options(1).EPHYS_DATAPATH,'..',td(1).name),'Nidq');
+    syncTimes_ephys = Nidq.bonsai_sync_on;% use upswings currently
 else
-    [AP_FILE,LF_FILE] = findImecBinFile(options(1).EPHYS_DATAPATH);
-    %     FILE_TO_USE = AP_FILE;
-    binpath = fullfile(options(1).EPHYS_DATAPATH,AP_FILE);
-    %     binpath = fullfile(options(1).EPHYS_DATAPATH,LF_FILE);
-    syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
-    parseDate = date;
-    [~,fname] = fileparts(options(1).EPHYS_DATAPATH);
-    save(fullfile(options(1).EPHYS_DATAPATH,[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate');
-%     syncTimes_ephys = syncTimes_ephys.on; % use upswings currently
+    error('nidq and ephys sync pulse extraction and alignment not done!')
+    return
 end
 
 
@@ -51,15 +45,30 @@ behaviour.X_original = table2array(this_table(:,1))';
 behaviour.Y_original = table2array(this_table(:,3))';
 
 % peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-photodiode = table2array(this_table(:,4)); %
+Sync_pulse = table2array(this_table(:,4)); %
 
 % photodiode_smoothed = smoothdata(table2array(this_table(:,4)),'movmedian',5); %
 peripherals = [];
-peripherals.Sync = kmeans(photodiode-movmean(photodiode,90),2)-1;
+peripherals.Sync = kmeans(Sync_pulse-movmean(Sync_pulse,120),2)-1;
 peripherals.Time =  behaviour.computer_time_original*1000;
-% idx_trial_start = peripherals.Time(find(diff(peripherals.Sync)==1) + 1);
-% idx_trial_end = peripherals.Time(find(diff(peripherals.Sync)==-1) + 1);
-[peripherals] = alignBonsaiToEphysSyncTimes(peripherals,syncTimes_ephys.on); % use upswings currently
+idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
+idx_trial_end = find(diff(peripherals.Sync)==-1) + 1;
+
+if length(idx_trial_start)==length(idx_trial_end)+1
+    idx_trial_start(end)=[];
+end
+
+false_index = find(abs(peripherals.Time(idx_trial_end)-peripherals.Time(idx_trial_start))<0.4*1000); %if the pulse was less than 0.3 second
+for n = 1:length(false_index)
+    peripherals.Sync(idx_trial_start(false_index(n))-1:idx_trial_end(false_index(n))+1)=0; % makes it zero
+end
+
+if length(Nidq.bonsai_sync_on) == length(Nidq.bonsai_sync_off)+1
+    Nidq.bonsai_sync_on(end)=[];
+end
+
+% [peripherals] = alignBonsaiToNidqSyncTimes(peripherals,sort([Nidq.bonsai_sync_on Nidq.bonsai_sync_off])); % use upswings currently
+[peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.bonsai_sync_on); % use upswings currently
 behaviour.sglxTime_original = peripherals.sglxTime;
 
 behaviour.sglxTime = resample(behaviour.sglxTime_original,behaviour.sglxTime_original,60);
@@ -68,10 +77,13 @@ behaviour.tvec = behaviour.sglxTime;
 behaviour.mobility = resample(behaviour.mobility_original,behaviour.sglxTime_original,60);
 behaviour.X = resample(behaviour.X_original,behaviour.sglxTime_original,60);
 behaviour.Y = resample(behaviour.Y_original,behaviour.sglxTime_original,60);
+behaviour.Sync_pulse = resample(Sync_pulse',behaviour.sglxTime_original,60);
 
 % tvec = resample(Behaviour.tvec,Behaviour.tvec,60);
 
-% plot(peripherals.sglxTime,peripherals.Sync*20000+100000);hold on;plot(0:1/30000:(length(syncTimes_ephys.Sync)-1)/30000,syncTimes_ephys.Sync*20000+110000)
+% plot(peripherals.sglxTime(1:300000),peripherals.Sync(1:300000)*2000+10000);hold on;plot(Nidq.sglxTime(1:3000000),Nidq.bonsai_sync(1:3000000))
+% plot(behaviour.sglxTime(1:300000),behaviour.Sync_pulse(1:300000)-mean(behaviour.Sync_pulse));hold on;plot(Nidq.sglxTime(1:3000000),Nidq.bonsai_sync(1:3000000)-mean(Nidq.bonsai_sync))
+
 
 
 end
