@@ -202,7 +202,7 @@ Stimulus_type = 'Checkerboard_sh1';
 % Stimulus_type = 'RUN';
 
 for nstimuli = 1:4
-    Stimulus_typ= sprintf('Checkerboard_sh%i',nstimuli)
+    Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     clear lfpAvg csd best_channels
 
@@ -230,17 +230,17 @@ for nstimuli = 1:4
             save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
         end
 
-        %     [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-        %     [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-        %
-        %     if contains(Stimulus_type,'_sh')
-        %         save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-        %     else
-        %         save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-        %     end
-        %
-        %     checkerboard_CSD_profile(options);
-        %     save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+        [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+
+        if contains(Stimulus_type,'_sh')
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        end
+
+        checkerboard_CSD_profile(options);
+        save_all_figures(options.ANALYSIS_DATAPATH,[]);
     end
 end
 
@@ -249,18 +249,28 @@ if contains(Stimulus_type,'_sh')
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     options= session_info.probe(1);
 
-    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+    %     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
 
     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));
+    load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(1).name))
+    all_fields = fieldnames(best_channels{1});
+    all_best_channels=best_channels;
 
-    fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh1.mat')
-    best_channels_sh1 = best_channels;
-    best_channels_sh2 = best_channels;
-    best_channels_sh3 = best_channels;
-    best_channels_sh4 = best_channels;
-
+    for nshank = 2:length(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
+        all_fields = fieldnames(best_channels{1});
+        for nprobe = 1:length(best_channels)
+            for nfield = 1:length(all_fields)
+                if ~contains(all_fields{nfield},'channel')
+                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})]
+                end
+            end
+        end
+    end
 end
 
+best_channels = all_best_channels;
+save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
 % 
 % % Checkerboard CSD batch
 % % SUBJECTS = {'M23017','M23028','M23029'};
