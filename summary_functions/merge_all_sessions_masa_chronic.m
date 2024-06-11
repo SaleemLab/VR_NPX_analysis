@@ -13,7 +13,7 @@ clear all
 %     };
 SUBJECTS = {'M24017'};
 mouse = {'M24017'};
-date = {['20240601']};
+date = {['20240603']};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN1';
@@ -69,7 +69,7 @@ session_count =0;
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 Stimulus_type = 'Masa2tracks';
 stimulus = 'RUN1';
-for iMouse = 1:4
+for iMouse = 1:1
     for iDate = 1:size(date{iMouse,1},1)
         session_count = session_count+1;
         session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECTS{iMouse},'analysis',date{iMouse}(iDate,:),'Masa2tracks','session_info*.mat'));
@@ -93,10 +93,10 @@ for iMouse = 1:4
         %         contents = {'extracted_behaviour','extracted_peripherals','merged_clusters','extracted_task_info','extracted_ripple_events'};
         contents = {'extracted_behaviour','extracted_peripherals','merged_clusters','extracted_task_info'};
         for iF = 1:length(contents)
-            content_file = dir(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,[contents{iF},sprintf('*%s*.mat',erase(Stimulus_type,'Masa2tracks'))]));
+            content_file = dir(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,[contents{iF},sprintf('*%s*.mat',stimulus)]));
             load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,content_file.name));
         end
-        load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(Stimulus_type,'Masa2tracks'))))
+        load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,sprintf('extracted_place_fields_%s.mat',stimulus)))
         %                     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_place_fields%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'place_fields');
         
         %         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'ripple_modulation.mat'))
@@ -110,8 +110,8 @@ for iMouse = 1:4
         if isempty(session_info.probe(2).SUBJECT) % if only one probe
             options = session_info.probe(1);
 
-            V1_channels = determine_region_channels(best_channels{1},options,'region','V1','group','by probe');
-            HPC_channels = determine_region_channels(best_channels{1},options,'region','HPC','group','by probe');
+            V1_channels = determine_region_channels_chronic(best_channels{1},options,'region','V1','group','by probe');
+            HPC_channels = determine_region_channels_chronic(best_channels{1},options,'region','HPC','group','by probe');
             %add 10000 to cluster ids so V1 probe always has 10000 added
 
             %combine the merged clusters
@@ -135,7 +135,7 @@ for iMouse = 1:4
             single_cluster_spike_id = cell(length(unique_cluster_ids),1);
             single_cluster_spike_times = cell(length(unique_cluster_ids),1);
             clear metric_param
-            metric_param.merged_cluster_id = @(x) ismember(find(x), first_index);
+            metric_param.cluster_id = @(x) ismember(find(x), first_index);
             clusters_combined = select_clusters(clusters_combined,metric_param);
             clusters_combined.spike_id = clusters_combined.spike_id + iDate* 10^6 + str2double(mouse{iMouse}(2:end))*10^8;
             clusters_combined.cluster_id = clusters_combined.cluster_id + iDate* 10^6 + str2double(mouse{iMouse}(2:end))*10^8;
@@ -275,9 +275,10 @@ for iMouse = 1:4
                 elseif merged_clusters(nprobe).probe_hemisphere == 2
                     merged_clusters(nprobe).region(:) = 'n.a_R';
                 end
-
-                V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-                HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
+                options = session_info.probe(nprobe);
+                
+                V1_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','V1','group','by probe');
+                HPC_channels = determine_region_channels_chronic(best_channels{nprobe},options,'region','HPC','group','by probe');
 
                 if merged_clusters(nprobe).probe_hemisphere == 1
                     merged_clusters(nprobe).region(find(ismember(merged_clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
@@ -295,11 +296,11 @@ for iMouse = 1:4
             single_cluster_spike_id = cell(length(unique_cluster_ids),1);
             single_cluster_spike_times = cell(length(unique_cluster_ids),1);
             clear metric_param
-            metric_param.merged_cluster_id = @(x) ismember(find(x), first_index);
+            metric_param.cluster_id = @(x) ismember(find(x), first_index);
             clusters_combined = select_clusters(clusters_combined,metric_param);
             clusters_combined.spike_id = clusters_combined.spike_id + iDate* 10^6 + str2double(mouse{iMouse}(2:end))*10^8;
             clusters_combined.cluster_id = clusters_combined.cluster_id + iDate* 10^6 + str2double(mouse{iMouse}(2:end))*10^8;
-            [unique_cluster_ids,first_index] = unique(clusters_combined.merged_cluster_id);
+            [unique_cluster_ids,first_index] = unique(clusters_combined.cluster_id);
             for ncell =1:length(unique_cluster_ids)
                 single_cluster_spike_id{ncell} = clusters_combined.spike_id(clusters_combined.spike_id == unique_cluster_ids(ncell));
                 single_cluster_spike_times{ncell} = clusters_combined.spike_times(clusters_combined.spike_id == unique_cluster_ids(ncell));
@@ -308,7 +309,7 @@ for iMouse = 1:4
             
 
             
-            clusters_all.cluster_id = [clusters_all.cluster_id;clusters_combined.merged_cluster_id];
+            clusters_all.cluster_id = [clusters_all.cluster_id;clusters_combined.cluster_id];
             clusters_all.cluster_spike_id = [clusters_all.cluster_spike_id;single_cluster_spike_id];
             clusters_all.spike_times = [clusters_all.spike_times;single_cluster_spike_times];
             cluster_fields = fieldnames(clusters_combined);
@@ -399,16 +400,11 @@ for iMouse = 1:4
             place_fields_all_t1{session_count}.spatial_response_extended_norm = spatial_response_extended_norm{1};
             place_fields_all_t2{session_count}.spatial_response_extended_norm = spatial_response_extended_norm{2}; 
 %}
-
-
-
-
-
         end
 
     end
 end
-save(fullfile('Z:\ibn-vision\DATA\SUBJECTS\M24017\analysis\20240601','clusters_all'),"clusters_all",'-v7.3')
+save(fullfile('Z:\ibn-vision\DATA\SUBJECTS\M24017\analysis\20240603','clusters_all_RUN1'),"clusters_all",'-v7.3')
 
 
 
@@ -416,11 +412,11 @@ save(fullfile('Z:\ibn-vision\DATA\SUBJECTS\M24017\analysis\20240601','clusters_a
 % save(fullfile('Z:\ibn-vision\USERS\Masa','clusters_all'),"clusters_all",'-v7.3')
 %% pre-compute the spatial response
 % for V1 and HVA, a delay factor is added to the spike times and it's 0.06s now
-
+base_folder=[];
 % select clusters you want to plot for population analysis e.g. only plot neurons from V1
-V1_index = (clusters_all.region == "V1");
-spatially_tuned_neurons = clusters_all.odd_even_stability >=0.95 ...
-    & clusters_all.peak_percentile >=0.95;
+V1_index = contains(clusters_all.region,"V1");
+spatially_tuned_neurons = clusters_all.odd_even_stability >=0.90 ...
+    & clusters_all.peak_percentile >=0.90;
 overall_cluster_index = V1_index & spatially_tuned_neurons(:,1);
 delay = 0.2;
 spatial_response = cell(sum(overall_cluster_index),2);
@@ -446,16 +442,16 @@ for iS = 1:max(clusters_all.session_count)
     end
     cluster_counter = cluster_counter+no_clusters_this_session;
 end
-save(fullfile('Z:\ibn-vision\USERS\Masa', 'spatial_responses_V1.mat'),'spatial_response_extended','spatial_response','-v7.3')
+% save(fullfile('Z:\ibn-vision\USERS\Masa', 'spatial_responses_V1.mat'),'spatial_response_extended','spatial_response','-v7.3')
+save(fullfile('Z:\ibn-vision\DATA\SUBJECTS\M24017\analysis\20240603','spatial_responses_V1_RUN1'),'spatial_response_extended','spatial_response','-v7.3')
 
 
 % for V1 and HVA, a delay factor is added to the spike times and it's 0.06s now
 %for MEC no delay is added
 % select clusters you want to plot for population analysis e.g. only plot neurons from V1
-HPC_index = (clusters_all.region == "HPC");
-
-spatially_tuned_neurons = clusters_all.odd_even_stability >=0.95 ...
-    & clusters_all.peak_percentile >=0.95;
+HPC_index = contains(clusters_all.region,"HPC");
+spatially_tuned_neurons = clusters_all.odd_even_stability >=0.90 ...
+    & clusters_all.peak_percentile >=0.90;
 overall_cluster_index = HPC_index & spatially_tuned_neurons(:,1) ;
 delay = 0;
 spatial_response = cell(sum(overall_cluster_index),2);
@@ -482,7 +478,8 @@ for iS = 1:max(clusters_all.session_count)
     cluster_counter = cluster_counter+no_clusters_this_session;
 
 end
-save(fullfile(base_folder, 'spatial_responses_HPC.mat'),'spatial_response_extended','spatial_response','-v7.3')
+% save(fullfile(base_folder, 'spatial_responses_HPC.mat'),'spatial_response_extended','spatial_response','-v7.3')
+save(fullfile('Z:\ibn-vision\DATA\SUBJECTS\M24017\analysis\20240603','spatial_responses_HPC_RUN1'),'spatial_response_extended','spatial_response','-v7.3')
 
 
 

@@ -52,9 +52,9 @@ classdef cluster_spatial_info
             obj.session_count = clusters_all.session_count(ids_index);
             obj.tvec = clusters_all.tvec{obj.session_count};
             obj.speed = clusters_all.speed{obj.session_count};
-            obj.face_motion_SVD = clusters_all.face_motion_SVD{obj.session_count};
-            obj.pupil_size = clusters_all.pupil_size{obj.session_count};
-            obj.pupil_angle = clusters_all.pupil_movement_angle{obj.session_count};
+%             obj.face_motion_SVD = clusters_all.face_motion_SVD{obj.session_count};
+%             obj.pupil_size = clusters_all.pupil_size{obj.session_count};
+%             obj.pupil_angle = clusters_all.pupil_movement_angle{obj.session_count};
             obj.position = clusters_all.position{obj.session_count};
             obj.start_time_all = clusters_all.start_time_all{obj.session_count};
             obj.end_time_all = clusters_all.end_time_all{obj.session_count};
