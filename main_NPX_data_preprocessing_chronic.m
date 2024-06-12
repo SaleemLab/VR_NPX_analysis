@@ -249,8 +249,26 @@ if contains(Stimulus_type,'_sh')
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     options= session_info.probe(1);
 
-    %     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+    DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+    load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(1).name))
+    all_fields = fieldnames(best_channels{1});
+    all_best_channels=best_channels;
 
+    for nshank = 2:length(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
+        all_fields = fieldnames(best_channels{1});
+        for nprobe = 1:length(best_channels)
+            for nfield = 1:length(all_fields)
+                if contains(all_fields{nfield},'depth')
+                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
+                elseif contains(all_fields{nfield},'xcoord')
+                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}); best_channels{nprobe}.(all_fields{nfield})];
+                end
+            end
+        end
+    end
+
+    
     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));
     load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(1).name))
     all_fields = fieldnames(best_channels{1});
@@ -261,8 +279,10 @@ if contains(Stimulus_type,'_sh')
         all_fields = fieldnames(best_channels{1});
         for nprobe = 1:length(best_channels)
             for nfield = 1:length(all_fields)
-                if ~contains(all_fields{nfield},'channel')
-                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})]
+                if contains(all_fields{nfield},'depth')
+                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
+                elseif contains(all_fields{nfield},'xcoord')
+                    all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}); best_channels{nprobe}.(all_fields{nfield})];
                 end
             end
         end
@@ -270,6 +290,8 @@ if contains(Stimulus_type,'_sh')
 end
 
 best_channels = all_best_channels;
+best_channels{1}.xcoord=best_channels{1}.xcoord';
+best_channels{2}.xcoord=best_channels{2}.xcoord';
 save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels')
 % 
 % % Checkerboard CSD batch
