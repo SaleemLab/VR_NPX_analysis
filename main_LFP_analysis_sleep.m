@@ -95,7 +95,7 @@ for nsession = [4 1 2 3 5 6 7 8 9 10]
             end
         end
 
-        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP','-v7.3','-nocompression')
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP','-v7.3')
     end
 end
 
