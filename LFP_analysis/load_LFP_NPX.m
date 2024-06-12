@@ -108,9 +108,10 @@ for clip = 1:nClips
     end
     % % Downsample the data
     temp_LFP = temp_LFP-mean(temp_LFP,1);% common average referencing
+    temp_LFP=temp_LFP(selected_channels,:);
     temp_LFP = filtfilt(d1,temp_LFP')';% low pass filter
     
-    raw_LFP = [raw_LFP downsample(temp_LFP(selected_channels,:)',downSampleRate)'];
+    raw_LFP = [raw_LFP downsample(temp_LFP',downSampleRate)'];
     %     time_to_pass = time_to_pass + clipDur;
     samples_to_pass = samples_to_pass + nClipSamps;
     toc
