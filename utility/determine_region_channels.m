@@ -187,7 +187,11 @@ end
 for nShank = 1:length(shanks_avaliable)
     channels_this_shank = find(chan_config.Shank == shanks_avaliable(nShank));
     [minValue,idx] = min(abs(best_depths_all_shanks_avaliable(nShank)-  chan_config.Ks_ycoord(channels_this_shank)));
-    best_channels_all_shanks_avaliable(nShank) = channels_this_shank(idx);
+    if minValue<200 % if more than 200 micron apart from the best channel (CA1,L4 or L5) for this shank (ignore that shank)
+        best_channels_all_shanks_avaliable(nShank) = channels_this_shank(idx);
+    else
+        best_channels_all_shanks_avaliable(nShank) = nan;
+    end
 end
 
 end

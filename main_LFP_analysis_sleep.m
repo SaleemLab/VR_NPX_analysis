@@ -20,7 +20,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Stimulus_type = 'RUN';
 Stimulus_type = 'SleepChronic';
 
-for nsession =[4]
+for nsession = [4 1 2 3 5 6 7 8 9 10]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -35,7 +35,7 @@ for nsession =[4]
 %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
+%         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
         raw_LFP = [];
         LFP = [];
         
@@ -56,6 +56,7 @@ for nsession =[4]
                 channel_regions = [channel_regions nregion*ones(1,length(channels_temp))];
                 shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
             end
+
             channel_regions(isnan(selected_channels)) = []; % remove nan channel (Missing best channels for some shanks e.g. only 3 shanks with CA1)
             shank_id(isnan(selected_channels)) = [];
             selected_channels(isnan(selected_channels)) = [];
@@ -67,18 +68,11 @@ for nsession =[4]
 %             scatter(selected_channels(4),power{1}(selected_channels(4),5))
 
             %     column = 1;
-            if nprobe ~= 1
-                % Information about AP band probe 1 sample size to align probe
-                % 2 LFP traces.
-                session_info(n).probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
-                [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info(n).probe(1),[]);
-                [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'probe_no',nprobe,'probe_1_total_sample',imecMeta.nFileSamp,'selected_channels',selected_channels);
-            else
-                %         session_info.probe(1).importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
-                %         [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(session_info.probe(1),[]);
-                [raw_LFP{nprobe} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels);
-                %                 [raw_LFP{2} tvec SR chan_config ~] = load_LFP_NPX(options,[],'selected_channels',selected_channels,'duration_sec',10);
-            end
+            [raw_LFP{nprobe},tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',selected_channels);
+            
+            selected_chan_config = chan_config(selected_channels,:);
+            [PSD{nprobe},power{nprobe}] = calculate_channel_PSD(raw_LFP{nprobe},SR,selected_chan_config,options,'plot_option',0);
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
 
             % Save downsampled LFP from key channels
             options.importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
@@ -96,12 +90,12 @@ for nsession =[4]
                 LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = shank_id(channel_regions == nregion); % only avaliable shanks
                 LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = selected_channels(channel_regions == nregion);
                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
-                LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(selected_channels(channel_regions == nregion),:);
+                LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(channel_regions == nregion,:);
                 %                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
             end
         end
 
-        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP')
+        save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP','-v7.3')
     end
 end
 
@@ -126,7 +120,7 @@ for nsession =[5]
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        if ~contains(stimulus_name{n},'RUN') & ~contains(stimulus_name{n},'POST')
+        if ~contains(stimulus_name{n},'sleep')
             continue
         end
         
