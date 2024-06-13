@@ -67,7 +67,7 @@ for nsession = [10]
 %             xline(selected_channels(4))
 %             scatter(selected_channels(4),power{1}(selected_channels(4),5))
 
-            %     column = 1;
+%                 column = 1;
             [raw_LFP{nprobe},tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',selected_channels);
             
             selected_chan_config = chan_config(selected_channels,:);
@@ -86,11 +86,19 @@ for nsession = [10]
 
             LFP(nprobe).tvec = tvec;
             for nregion = 1:length(all_fields)
-                LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(channel_regions == nregion,:);
-                LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = shank_id(channel_regions == nregion); % only avaliable shanks
-                LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = selected_channels(channel_regions == nregion);
-                LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
-                LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(channel_regions == nregion,:);
+                if sum(channel_regions == nregion)>0
+                    LFP(nprobe).(all_fields{nregion}) = raw_LFP{nprobe}(channel_regions == nregion,:);
+                    LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = shank_id(channel_regions == nregion); % only avaliable shanks
+                    LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = selected_channels(channel_regions == nregion);
+                    LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
+                    LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(channel_regions == nregion,:);
+                else
+                    LFP(nprobe).(all_fields{nregion}) = [];
+                    LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = []; % only avaliable shanks
+                    LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = [];
+                    LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = [];
+                    LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = [];
+                end
                 %                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
             end
         end
