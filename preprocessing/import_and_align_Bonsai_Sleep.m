@@ -71,13 +71,14 @@ end
 [peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.bonsai_sync_on); % use upswings currently
 behaviour.sglxTime_original = peripherals.sglxTime;
 
-behaviour.sglxTime = resample(behaviour.sglxTime_original,behaviour.sglxTime_original,60);
+behaviour.sglxTime = interp1(behaviour.sglxTime_original,behaviour.sglxTime_original,behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+            
 behaviour.tvec = behaviour.sglxTime;
 
-behaviour.mobility = resample(behaviour.mobility_original,behaviour.sglxTime_original,60);
-behaviour.X = resample(behaviour.X_original,behaviour.sglxTime_original,60);
-behaviour.Y = resample(behaviour.Y_original,behaviour.sglxTime_original,60);
-behaviour.Sync_pulse = resample(Sync_pulse',behaviour.sglxTime_original,60);
+behaviour.mobility = interp1(behaviour.sglxTime_original,behaviour.mobility_original,behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+behaviour.X = interp1(behaviour.sglxTime_original,behaviour.mobility_original,behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+behaviour.Y = interp1(behaviour.sglxTime_original,behaviour.mobility_original,behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+behaviour.Sync_pulse = interp1(behaviour.sglxTime_original,Sync_pulse',behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
 
 % tvec = resample(Behaviour.tvec,Behaviour.tvec,60);
 
