@@ -58,6 +58,10 @@ if length(idx_trial_start)==length(idx_trial_end)+1
     idx_trial_start(end)=[];
 end
 
+if idx_trial_end(1)<idx_trial_start(1)
+    idx_trial_end(1)= [];
+end
+
 false_index = find(abs(peripherals.Time(idx_trial_end)-peripherals.Time(idx_trial_start))<0.4*1000); %if the pulse was less than 0.3 second
 for n = 1:length(false_index)
     peripherals.Sync(idx_trial_start(false_index(n))-1:idx_trial_end(false_index(n))+1)=0; % makes it zero
