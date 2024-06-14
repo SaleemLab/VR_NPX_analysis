@@ -128,6 +128,8 @@ for nsubject = 1:length(SUBJECTS)
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '_*.csv']));
                 elseif contains(this_stimulus,'Masa2tracks')
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*','Masa2tracks', '*.csv']));
+%                 elseif contains(this_stimulus,'Sleep')
+%                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*','Sleep', '*.csv']));
                 else
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '*.csv']));
                 end
@@ -263,6 +265,8 @@ function [output,nameCountMap] = assignNumbersBasedOnCount(names)
         currentName = names{i};
         if contains(currentName,'Masa2tracks')% if it is Masa2tracks
             currentName = 'Masa2tracks';
+%         elseif contains(currentName,'SleepChronic')
+%             currentName = 'SleepChronic';
         end
 
         % Check if the stimulus is already in the map

@@ -48,7 +48,7 @@ start_samp = round(start_sec*imecMeta.imSampRate);
 nSamp     = round(duration_sec*imecMeta.imSampRate);
 chanTypes = str2double(strsplit(imecMeta.acqApLfSy, ','));
 nEPhysChan = chanTypes(1);
-downSampleRate = fix(imecMeta.imSampRate*BinWidth); % Donwsample rate
+downSampleRate = round(imecMeta.imSampRate*BinWidth); % Donwsample rate
 
 % Read the data
 % cd(options.ANALYSIS_DATAPATH)
@@ -145,6 +145,6 @@ if probe_no == 2 & str2double(options.SESSION)<20240401
 
 end
 
-tvec = start_samp/imecMeta.imSampRate:1/new_SR:start_sec+(length(raw_LFP(1,:))-1)/new_SR;
+tvec = start_samp/imecMeta.imSampRate:1/new_SR:start_sec+(length(raw_LFP(1,:)))/new_SR;
 end
 

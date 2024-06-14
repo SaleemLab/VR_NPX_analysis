@@ -111,15 +111,16 @@ end
 %% Detect ripples and reactivation event
 
 clear all
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24017'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-Stimulus_type = 'RUN';
+Stimulus_type = 'Sleep';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =[5]
+for nsession =[4]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -133,33 +134,23 @@ for nsession =[5]
         end
         
         options = session_info(n).probe(1);
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
-
-        if contains(stimulus_name{n},'Masa2tracks')
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-        else
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
-        end
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP')
 
         clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
 
-        if contains(stimulus_name{n},'Masa')
-            %             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            %             merged_clusters = clusters_ks3;
-            if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')))) == 2
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
-            else exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks')))) == 2
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('across_session_merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_across_session_place_fields.mat'));
-            end
-        else
-            load(fullfile(options.ANALYSIS_DATAPATH,'merged_clusters.mat'))
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_place_fields_RUN1.mat'))
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_place_fields_RUN1.mat'));
         end
 
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        merged_clusters = clusters_ks4;
+%         load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_clusters_ks4_RUN1.mat'));
         if length(merged_clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
         else
@@ -173,22 +164,34 @@ for nsession =[5]
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             %                 Behavioural state detection
 
-            abs(Behaviour.mobility-movmean(Behaviour.mobility,60*60))
             speed_interp = interp1(Behaviour.tvec,Behaviour.mobility,LFP(probe_no).tvec','linear');
-%             mobility = movmean(Behaviour.mobility,120);
-            mobility = abs([0 diff(movmean(Behaviour.mobility,30))])>1000;
+            %             mobility = movmean(Behaviour.mobility,120);
+            mobility = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;
+
+            mob_index = find(mobility==1);
+            for nindex = 1:length(mob_index)
+                if nindex<length(mob_index)
+                    if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<5 % if immobility less than 5 seconds
+                        mobility(mob_index(nindex):mob_index(nindex+1))=1;
+                    end
+                end
+            end
+
             speedTreshold = 1;
 
             if isfield(LFP(probe_no),'L5')
                 if ~isempty(LFP(probe_no).L5)
-                    cortex_LFP = LFP(probe_no).L5;
+                    [~,best_channel]=max(LFP(probe_no).L5_power(:,7));
+                    cortex_LFP = LFP(probe_no).L5(best_channel,:);
                 else
-                     cortex_LFP = LFP(probe_no).L4;
+                    [~,best_channel]=max(LFP(probe_no).L4_power(:,7));
+                    cortex_LFP = LFP(probe_no).L4(best_channel,:);
                 end
 
             elseif isfield(LFP(probe_no),'L4')
                 if ~isempty(LFP(probe_no).L4)
-                    cortex_LFP = LFP(probe_no).L4;
+                    [~,best_channel]=max(LFP(probe_no).L4_power(:,7));
+                    cortex_LFP = LFP(probe_no).L4(best_channel,:);
                 else
                      cortex_LFP = []; 
                      disp('cortex LFP is missing')
@@ -199,7 +202,9 @@ for nsession =[5]
             end
 
             if isfield(LFP(probe_no),'CA1')
-                CA1_LFP = LFP(probe_no).CA1;
+                [~,best_channel]=max(LFP(probe_no).CA1_power(:,6));
+                CA1_LFP = LFP(probe_no).CA1(best_channel,:);
+
                 %                 CA1_LFP = raw_LFP{nprobe}(229,:);
                 [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
                     [LFP(probe_no).tvec' cortex_LFP'],[LFP(probe_no).tvec' CA1_LFP'],...
