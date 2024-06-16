@@ -30,7 +30,8 @@ for nsession =1:length(experiment_info)
             % Currently not using CatGT and Tprime
             options = session_info(n).probe(1);
             extract_and_align_nidq_signals(options);
-            preprocess_and_save_LFP(cd(fullfile(options.EPHYS_DATAPATH,'..','..')), options)
+            EPHYS_parent_folder = cd(fullfile(options.EPHYS_DATAPATH,'..','..'));
+            preprocess_and_save_LFP(EPHYS_parent_folder, options)
 
             for nprobe = 1:length(session_info(n).probe)
                 DIR = dir(fullfile(session_info(n).probe(nprobe).EPHYS_DATAPATH,'*tcat*.meta'));
