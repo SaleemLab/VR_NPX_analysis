@@ -94,11 +94,15 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-% experiment_info = experiment_info(4);
+experiment_info = experiment_info(13:14);
 
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 
+<<<<<<< Updated upstream
 % All_stimuli = {'SleepChronic'};
+=======
+All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
+>>>>>>> Stashed changes
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
