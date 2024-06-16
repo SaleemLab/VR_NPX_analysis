@@ -38,7 +38,7 @@ else
     gNum = str2double(EphysPath(gNum_index(end)+2));
 end
 
-gNamesTemp = dir(fullfile(EphysPath,['*','_g','*']));  % this gets all files with a '_g' in their name.
+gNamesTemp = dir(fullfile(EphysPath,['*','_g',gNum,'*']));  % this gets all files with a '_g' in their name.
 
 % get run name (basename of session, without gindices, e.g. M22030_20220615, older sessions may also have _h0 for example.)
 runName_temp = strsplit(gNamesTemp(1).name,'_');
