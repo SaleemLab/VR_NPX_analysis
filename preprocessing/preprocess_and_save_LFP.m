@@ -1,4 +1,4 @@
-function [systemString, runName, firstG] = preprocess_and_save_LFP(EphysPath, options)
+function [systemString, runName, firstG] = preprocess_and_save_LFP(options)
 
 % This function generates and run the necessary command string to run CatGT
 % and Tprime for data syncrhonisation
@@ -13,9 +13,7 @@ if ~isempty(DIR)
     return
 end
 
-if nargin < 2 % no options struct included, use default settings...
-    options = [];
-end
+EphysPath = cd(fullfile(options.EPHYS_DATAPATH,'..','..'));
 
 %% get g numbers of individual recordings for this session (e.g g0-g5)
 DIR = dir('C:/Users/masah/Documents/GitHub/VR_NPX_analysis/preprocessing/CatGT-win');
