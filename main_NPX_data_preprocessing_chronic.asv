@@ -96,9 +96,9 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % experiment_info = experiment_info(4);
 
-All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
+All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard'};
 
-% All_stimuli = {'SleepChronic'};
+All_stimuli = {'SleepChronic'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end

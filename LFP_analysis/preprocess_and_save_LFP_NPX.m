@@ -1,4 +1,4 @@
-function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX(options,column,varargin)
+function preprocess_and_save_LFP_NPX(options,column,varargin)
 
 
 options.importMode = 'KS';
@@ -16,7 +16,7 @@ end
 p = inputParser;
 addParameter(p,'selected_channels',[chan_config.Channel],@isnumeric) % Select channels to load for LFP
 addParameter(p,'start_sec',[1],@isnumeric) % Start timepoint in seconds (default is [1])
-addParameter(p,'duration_sec',[imecMeta.fileTimeSecs-2],@isnumeric) % Duration of recording to load (default is whole session - 2 seconds)
+addParameter(p,'duration_sec',imecMeta.fileTimeSecs,@isnumeric) % Duration of recording to load (default is whole session - 2 seconds)
 addParameter(p,'desired_SR',[1250],@isnumeric) % Desired SR for downsampling. By default, it is 1250 Hz
 addParameter(p,'probe_no',[1],@isnumeric) % Probe 1 or 2
 addParameter(p,'probe_1_total_sample',[],@isnumeric) % total number of LF band sample
@@ -108,7 +108,6 @@ for clip = 1:nClips
     end
     % % Downsample the data
     temp_LFP = temp_LFP-mean(temp_LFP,1);% common average referencing
-    
     temp_LFP=temp_LFP(selected_channels,:);
     temp_LFP = filtfilt(d1,temp_LFP')';% low pass filter
     
