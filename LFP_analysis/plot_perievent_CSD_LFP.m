@@ -98,7 +98,7 @@ for type = 1:length(lfpAvg.filter_type)
             if size(lfpAvg.(filter_type{type})(event).filtered,2)<150
                 sh_tmp = 1e0*(500000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
             else % for NP2 whole shank LFP
-                sh_tmp = 1e0*(10000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
+                sh_tmp = 1e0*(500000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
             end
             plot(taxis,sh_tmp,'k','LineWidth',1.5); hold on;
             clear sh_tmp

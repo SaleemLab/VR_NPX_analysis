@@ -27,7 +27,8 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
-all_SUBJECTS = {'M24017'};
+% all_SUBJECTS = {'M24017'};
+all_SUBJECTS = {'M24016'};
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
     SUBJECTS = {all_SUBJECTS{n}};
@@ -84,7 +85,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 %%%%%% want to process. 
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
-SUBJECTS = {'M24017'};
+SUBJECTS = {'M24016'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -94,14 +95,11 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-experiment_info = experiment_info(13:14);
-
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 
-% All_stimuli = {'SleepChronic'};
-
-All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-
+All_stimuli = {'SleepChronic'};
+All_stimuli = {'SparseNoise','Checkerboard'};
+% All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
@@ -174,7 +172,7 @@ ROOTPATH = 'Z:\ibn-vision';
 % SUBJECTS = {'M23017','M23028','M23029','M23087'};
 
 
-SUBJECTS = {'M24017'};
+SUBJECTS = {'M24016'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % experiment_info = experiment_info(6);
 Stimulus_type= 'Checkerboard_sh1'; 
@@ -195,8 +193,11 @@ clear all
 
 % Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-SUBJECT = 'M24017';
-SESSION = '20240530';
+% SUBJECT = 'M24017';
+% SESSION = '20240530';
+% options = 'bilateral';
+SUBJECT = 'M24016';
+SESSION = '20240620';
 options = 'bilateral';
 
 % Stimulus_type = 'FullScreenFlash_2';
@@ -234,18 +235,18 @@ for nstimuli = 1:4
         else
             save(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
         end
-
-        [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-        [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-
-        if contains(Stimulus_type,'_sh')
-            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-        else
-            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-        end
-
-        checkerboard_CSD_profile(options);
-        save_all_figures(options.ANALYSIS_DATAPATH,[]);
+% 
+%         [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+%         [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+% 
+%         if contains(Stimulus_type,'_sh')
+%             save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+%         else
+%             save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+%         end
+% 
+%         checkerboard_CSD_profile(options);
+%         save_all_figures(options.ANALYSIS_DATAPATH,[]);
     end
 end
 

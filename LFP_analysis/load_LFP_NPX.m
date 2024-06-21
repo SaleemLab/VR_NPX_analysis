@@ -8,8 +8,19 @@ if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and 
     options.importMode = 'LF';
     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
+    disp('Using lf.bin for NP1')
 else
-    probe_type = 2;
+
+    DIR = dir(fullfile(options.EPHYS_DATAPATH,'*lf*'));
+    if ~isempty(DIR)
+        options.importMode = 'LF';
+        [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+        probe_type = 1;
+        disp('Using preprocessed lf.bin for NP2')
+    else
+        probe_type = 2;
+        disp('Using preprocessed ap.bin for NP2. Will take longer time to process')
+    end
 end
 
 % Default values
@@ -90,6 +101,11 @@ end
 channel_map_filename = fullfile(DIR.folder,DIR.name);
 
 imec = Neuropixel.ImecDataset(options.EPHYS_DATAPATH,'ChannelMap',channel_map_filename);
+
+% if contains(imecMeta.acqApLfSy,'384,0') & probe_type == 1
+%     imec.hasLF=true;
+% end
+
 samples_to_pass = 0;
 raw_LFP = [];
 
@@ -110,7 +126,10 @@ for clip = 1:nClips
     temp_LFP = temp_LFP-mean(temp_LFP,1);% common average referencing
     
     temp_LFP=temp_LFP(selected_channels,:);
-    temp_LFP = filtfilt(d1,temp_LFP')';% low pass filter
+
+    if ~(contains(imecMeta.acqApLfSy,'384,0') & probe_type == 1) % if NP2 data but contains lf.bin, it is a preprocessed lf with low pass filter already applied
+        temp_LFP = filtfilt(d1,temp_LFP')';% low pass filter
+    end
     
     raw_LFP = [raw_LFP downsample(temp_LFP',downSampleRate)'];
     %     time_to_pass = time_to_pass + clipDur;

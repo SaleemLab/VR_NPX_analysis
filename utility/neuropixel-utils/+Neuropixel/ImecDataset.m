@@ -1703,7 +1703,12 @@ classdef ImecDataset < handle
             if isnan(imec.fileImecNumber)
                 fileLF = [imec.fileStem '.imec.lf.bin'];
             else
-                fileLF = [imec.fileStem, sprintf('.imec%d.', imec.fileImecNumber), 'lf.bin'];
+                DIR = dir(fullfile(imec.pathRoot,'*tcat*.*lf.bin*'));
+                if ~isempty(DIR)
+                    fileLF = DIR(1).name;
+                else
+                    fileLF = [imec.fileStem, sprintf('.imec%d.', imec.fileImecNumber), 'lf.bin'];
+                end
             end
         end
 
@@ -1711,7 +1716,12 @@ classdef ImecDataset < handle
             if isnan(imec.fileImecNumber)
                 fileLFMeta = [imec.fileStem '.imec.lf.meta'];
             else
-                fileLFMeta = [imec.fileStem, sprintf('.imec%d.lf.meta', imec.fileImecNumber)];
+                DIR = dir(fullfile(imec.pathRoot,'*tcat*.*lf.meta*'));
+                if ~isempty(DIR)
+                    fileLFMeta = DIR(1).name;
+                else
+                    fileLFMeta = [imec.fileStem, sprintf('.imec%d.lf.meta', imec.fileImecNumber)];
+                end
             end
         end
 

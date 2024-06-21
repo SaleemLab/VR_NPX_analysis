@@ -10,7 +10,7 @@ function [APgain,LFgain] = ChanGainsIM(meta)
     else
         probeType = 0;
     end
-    if (probeType == 21) || (probeType == 24)
+    if (probeType == 21) || (probeType == 24)||(probeType == 2013) % NP2 alpha and NP2 commerical
         [AP,LF,~] = ChannelCountsIM(meta);
         % NP 2.0; APgain = 80 for all channels
         APgain = zeros(AP,1,'double');

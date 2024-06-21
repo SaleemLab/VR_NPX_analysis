@@ -54,8 +54,19 @@ if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and 
     options.importMode = 'LF';
     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
+    disp('Using lf.bin for NP1')
 else
-    probe_type = 2;
+
+    DIR = dir(fullfile(options.EPHYS_DATAPATH,'*lf*'));
+    if ~isempty(DIR)
+        options.importMode = 'LF';
+        [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+        probe_type = 1;
+        disp('Using preprocessed lf.bin for NP2')
+    else
+        probe_type = 2;
+        disp('Using preprocessed ap.bin for NP2. Will take longer time to process')
+    end
 end
 
 
@@ -78,7 +89,7 @@ imecMeta = ReadMeta(fullfile(options.EPHYS_DATAPATH,file_to_use));
 nSamp = fix(SampRate(imecMeta)*range(AnalysisTimeWindow));
 chanTypes = str2double(strsplit(imecMeta.acqApLfSy, ','));
 nEPhysChan = chanTypes(1);
-downSampleRate = fix(SampRate(imecMeta)*BinWidth); % the rate at which we downsample depends on the acquisition rate and target binwidth
+downSampleRate = round(SampRate(imecMeta)*BinWidth); % the rate at which we downsample depends on the acquisition rate and target binwidth
 % Design low pass filter (with corner frequency determined by the
 % desired output binwidth)
 d1 = designfilt('lowpassiir','FilterOrder',12, ...
@@ -125,8 +136,12 @@ for thisTrial = 1:length(stimTimes)
 
     % Zero-mean the data ...
     tresps = tresps-repmat(mean(tresps,2),1,size(tresps,2));
-    % ... and lowpass filter ...
-    tresps = filtfilt(d1,double(tresps)')';
+
+    if ~(contains(imecMeta.acqApLfSy,'384,0') & probe_type == 1) % if NP2 data but contains lf.bin, it is a preprocessed lf with low pass filter already applied
+        % ... and lowpass filter ...
+        tresps = filtfilt(d1,double(tresps)')';
+    end
+
     % ... then downsample that data
     ttresps = downsample(tresps',downSampleRate)';
     % ... and save
