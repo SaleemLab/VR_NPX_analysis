@@ -9,15 +9,20 @@ nprobe = options.probe_id+1; % probe_no is [1,2] based on options.probe_id (0 an
 power = [];
 
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'))
-DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
-if ~isempty(DIR)
-    load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
+DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
+DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels*.mat"))
 
-    if nprobe > 1 & length(best_channels) < nprobe
-        best_channels{nprobe} = [];
+if ~isempty(DIR)|~isempty(DIR1)
+    if isfield(options,'Stimulus_type')
+        Stimulus_type= options.Stimulus_type;
+    else
+        Stimulus_type=[];
     end
-else
-    best_channels{nprobe} = [];
+    if contains(Stimulus_type,'sh')
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
+    else
+        load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
+    end
 end
 
 clusters = [];
