@@ -15,6 +15,7 @@
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis')
 % addpath('Z:\ibn-vision\USERS\Masa\code\Masa_utility')
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\NPXAnalysis\NPXAnalysis2022'));
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\visual_analysis'));

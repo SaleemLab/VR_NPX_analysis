@@ -66,6 +66,24 @@ for nsubject = 1:length(SUBJECTS)
         all_sessions_this_animal(:) = {nan};
     end
 
+    if contains('Trial_type',stimuli_info.Properties.VariableNames) % if session trial type is specified (since chronic recording Novel or Familar or something)
+        all_trial_types_this_animal = stimuli_info.Trial_type; % this only works if there is at least something in Trial_type column
+
+        if ~iscell(all_trial_types_this_animal) % if not in cell structure, convert to cell
+            all_trial_types_this_animal = num2cell(all_trial_types_this_animal);
+        end
+
+        for nsession = 1:length(all_trial_types_this_animal)
+            if ismissing(all_trial_types_this_animal{nsession}) % if missing, becomes nan
+                all_trial_types_this_animal{nsession} = nan;
+            elseif ~isstring(all_trial_types_this_animal{nsession}) % if not string, becomes string
+                all_trial_types_this_animal{nsession} = num2str(all_trial_types_this_animal{nsession});
+            end
+        end
+    else
+        all_trial_types_this_animal = cell(length(stimuli_info.date),1);
+        all_trial_types_this_animal(:) = {nan};
+    end
 
     if ~iscell(stimuli_info.probe_number)
         stimuli_info.probe_number = cellstr(num2str(stimuli_info.probe_number));
@@ -107,6 +125,7 @@ for nsubject = 1:length(SUBJECTS)
 
         [stimulus_counter,nameCountMap] = assignNumbersBasedOnCount(StimulusName);
         all_session_id_this_date = all_sessions_this_animal(stimuli_info.date == all_dates_this_animal(nsession)); %The session id of each stimulus (in caase many recordings of the same stimuli)
+        all_trial_types_this_date = all_trial_types_this_animal(stimuli_info.date == all_dates_this_animal(nsession)); %The session id of each stimulus (in caase many recordings of the same stimuli)
 
         if contains(options,'bilateral')
             experiment_info(nexperiment).probe_hemisphere = stimuli_info.probe_hemisphere(stimuli_info.date == all_dates_this_animal(nsession));
@@ -239,6 +258,10 @@ for nsubject = 1:length(SUBJECTS)
 
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).BONSAI_DATAPATH = experiment_info(nexperiment).BONSAI_DATAPATH;
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).bonsai_files_names = {bonsai_files.name};
+                
+                if ~isnan(all_trial_types_this_date{nstimuli}) % if trial type is specified (like familar or novel etc)
+                    experiment_info(nexperiment).session(nstimuli).probe(nprobe).trial_type = all_trial_types_this_date{nstimuli};
+                end
 
             end
         end

@@ -54,6 +54,10 @@ peripherals.Time =  behaviour.computer_time_original*1000;
 idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
 idx_trial_end = find(diff(peripherals.Sync)==-1) + 1;
 
+if idx_trial_end(1)<idx_trial_start(1)
+    idx_trial_end(1)= [];
+end
+
 if length(idx_trial_start)==length(idx_trial_end)
     if sum(idx_trial_end-idx_trial_start<0)>length(idx_trial_end)
         idx_trial_start1=idx_trial_start;
@@ -67,10 +71,19 @@ if length(idx_trial_start)==length(idx_trial_end)+1
     idx_trial_start(end)=[];
 end
 
-if idx_trial_end(1)<idx_trial_start(1)
-    idx_trial_end(1)= [];
-end
+if length(idx_trial_start)==length(idx_trial_end)
+    if sum(idx_trial_end-idx_trial_start<0)>length(idx_trial_end)
+        idx_trial_start1=idx_trial_start;
+        idx_trial_start=idx_trial_end;
+        idx_trial_end=idx_trial_start1;
+        idx_trial_start1 = [];
+    end
 
+    idx_to_remove = find(idx_trial_end-idx_trial_start<10);
+    
+    idx_trial_end(idx_to_remove)=[];
+    idx_trial_start(idx_to_remove)=[];
+end
 
 false_index = find(abs(peripherals.Time(idx_trial_end)-peripherals.Time(idx_trial_start))<0.4*1000); %if the pulse was less than 0.3 second
 for n = 1:length(false_index)
