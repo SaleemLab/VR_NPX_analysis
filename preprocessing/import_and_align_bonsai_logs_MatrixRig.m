@@ -56,7 +56,7 @@ end
 % Wheel data
 peripherals= [];
 thisTable = readtable(PERIPHERALS_DATAPATH,'Delimiter',{',','=','{','}','(',')'});
-thisTable = rmmissing(thisTable,2); % Remove nan due to delimiter
+thisTable = rmmissing(thisTable,1); % Remove nan due to delimiter
 
 for n = thisTable.Properties.VariableNames
     peripherals.(thisTable.Properties.VariableNames{n}) = thisTable.(thisTable.Properties.VariableNames{n});
@@ -66,7 +66,7 @@ end
 % Video data
 eyeData= [];
 thisTable = readtable(EYEDATA_DATAPATH,'Delimiter',{',','=','{','}','(',')'});
-thisTable = rmmissing(thisTable,2); % Remove nan due to delimiter
+thisTable = rmmissing(thisTable,1); % Remove nan due to delimiter
 
 for n = thisTable.Properties.VariableNames
     eyeData.(thisTable.Properties.VariableNames{n}) = thisTable.(thisTable.Properties.VariableNames{n});
@@ -75,7 +75,7 @@ end
 % Photodiode
 if exist('PHOTODIODE_DATAPATH','var') && ~isempty(PHOTODIODE_DATAPATH)
     thisTable = readtable(PHOTODIODE_DATAPATH,'Delimiter',{',','=','{','}','(',')'});
-    thisTable = rmmissing(thisTable,2); % Remove nan due to delimiter
+    thisTable = rmmissing(thisTable,1); % Remove nan due to delimiter
 
     for n = thisTable.Properties.VariableNames
         photodiode.(thisTable.Properties.VariableNames{n}) = thisTable.(thisTable.Properties.VariableNames{n});

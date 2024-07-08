@@ -15,7 +15,9 @@
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
-addpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis')
+addpath(genpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
 % addpath('Z:\ibn-vision\USERS\Masa\code\Masa_utility')
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\NPXAnalysis\NPXAnalysis2022'));
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code\visual_analysis'));
@@ -29,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24017'};
-all_SUBJECTS = {'M24016'};
+all_SUBJECTS = {'M24018'};
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
     SUBJECTS = {all_SUBJECTS{n}};
