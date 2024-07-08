@@ -120,6 +120,11 @@ for i = 1:length(all_fields)
     end
 end
 
+if length(eyeData.sglxTime) > length(unique(eyeData.sglxTime))
+    [C,ia,ic] = unique(eyeData.sglxTime);
+    unique_id = find(diff(ic)==0);
+    eyeData.sglxTime(unique_id+1)=nan;% make repeated values -> nan
+end
 
 all_fields = fieldnames(eyeData);
 temp = eyeData.sglxTime;
