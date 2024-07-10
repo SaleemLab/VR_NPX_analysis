@@ -32,8 +32,8 @@ if isfield(options,'gFileNum')
 %     gNum = options.gFileNum;
     gNum= num2str(options.gFileNum);
 else
-    gNum_index = strfind(EphysPath, '_g'); % find indices with _g
-    gNum = str2double(EphysPath(gNum_index(end)+2));
+    gNum_index = strfind(options.EPHYS_DATAPATH, '_g'); % find indices with _g
+    gNum = options.EPHYS_DATAPATH(gNum_index(end)+2);
 end
 
 gNamesTemp = dir(fullfile(EphysPath,['*','_g',gNum,'*']));  % this gets all files with a '_g' in their name.
