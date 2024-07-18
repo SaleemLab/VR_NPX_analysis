@@ -31,7 +31,14 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24017'};
-all_SUBJECTS = {'M24018'};
+all_SUBJECTS = {'M24016','M24017','M24018'};
+Error_session_stimuli = [];
+Error_session_date=[];
+Error_session_subject=[];
+Error_session_stimuli1 = [];
+Error_session_date1=[];
+Error_session_subject1=[];
+
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
     SUBJECTS = {all_SUBJECTS{n}};
@@ -45,6 +52,8 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
+
+
         for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
 %             for nprobe = 1:length(experiment_info(nsession).stimuli_type(nstimuli).probe)
@@ -52,6 +61,33 @@ for n = 1:length(all_SUBJECTS)
 %             end
 
             session_info = experiment_info(nsession).session(nstimuli);
+
+            bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,'*.ap.bin'));
+            meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,bin_DIR.name));
+
+            if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
+                    + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
+                    + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(9))~=0
+                sprintf('Session with non-zero imErrFlags0...')
+                Error_session_stimuli = [Error_session_stimuli experiment_info(nsession).StimulusName(nstimuli)];
+                Error_session_date = [Error_session_date experiment_info(nsession).date];
+                Error_session_subject = [Error_session_subject; experiment_info(nsession).subject];
+                %                 Error_session_date
+                experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
+            end
+
+            if length(experiment_info(nsession).session(nstimuli).probe)==2
+                if str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(3))...
+                        + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(7)) ...
+                        + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(9))~=0
+                    sprintf('Session with non-zero imErrFlags1...')
+                    Error_session_stimuli1 = [Error_session_stimuli1 experiment_info(nsession).StimulusName(nstimuli)];
+                    Error_session_date1 = [Error_session_date1 experiment_info(nsession).date];
+                    Error_session_subject1 = [Error_session_subject1; experiment_info(nsession).subject];
+                    %                     Error_session_date
+                    experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+                end
+            end
 
             if exist(session_info.probe(1).ANALYSIS_DATAPATH) == 0
                 mkdir(session_info.probe(1).ANALYSIS_DATAPATH)
@@ -78,6 +114,7 @@ for n = 1:length(all_SUBJECTS)
         end
     end
 end
+
 
 %% import and align and store Bonsai and cluster spike data
 

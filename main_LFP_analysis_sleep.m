@@ -13,7 +13,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 %% Extract and save LFP from noise channel, cortical L5 channel
 clear all
 SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24017'};
+SUBJECTS={'M24016'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info = experiment_info(4);
