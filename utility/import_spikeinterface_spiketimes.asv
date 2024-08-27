@@ -27,15 +27,17 @@ segment_frames = readtable(options.segment_frames,"Delimiter",",");% correspondi
 % Get KS spike times
 if contains(options.sorter_folder,'kilosort')
     spikes = readmatrix(fullfile(SORTER_DATAPATH,'spikes.csv'));
+
     spike_times = spikes(:,3);
     spike_clusters = spikes(:,1);
     original_cluster_id = unique(spike_clusters);
+    %     cluster_group= tdfread(fullfile(SORTER_DATAPATH,'cluster_group.tsv')); % KS output cluster ID (before postprocessing)
     cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
-    cluster_id = table2array(cluster_group(:,1));% 0 based original cluster id
+    new_cluster_id = table2array(cluster_group(:,1));% 0 based original cluster id
     spike_clusters_temp = spike_clusters;
     for iC = 1:length(cluster_id)
         spikes_this_cluster = spike_clusters == original_cluster_id(iC);
-        spike_clusters_temp(spikes_this_cluster) = cluster_id(iC);
+        spike_clusters_temp(spikes_this_cluster) = new_cluster_id(iC);
     end
     spike_clusters = spike_clusters_temp;
 
