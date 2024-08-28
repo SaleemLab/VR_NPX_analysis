@@ -330,13 +330,14 @@ else % if KS2 and KS3
                     %                         SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{good_units_index(unit)},time_bins_edges));
                     %                         SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
 
-                    SUA_peak_channel(count) = nchannel;
-                    SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
-
-                    SUA_good_unit(count) = good_units_index(unit);
-                    %                         good_clusters_all(count) = good_unit_all(good_units_index(unit));
-                    SUA_peak_channel_waveforms(count,:) = peak_channel_waveforms(good_units_index(unit),:);
-                    SUA_cell_type(count) = cell_type_all(good_units_index(unit));
+                    %this part below has a different way of indexing than cluster_id, hence wrong 
+%                     SUA_peak_channel(count) = nchannel;
+%                     SUA_peak_depth(count) = chan_config.Ks_ycoord(chan_config.Channel == nchannel);
+% 
+%                     SUA_good_unit(count) = good_units_index(unit);
+%                     %                         good_clusters_all(count) = good_unit_all(good_units_index(unit));
+%                     SUA_peak_channel_waveforms(count,:) = peak_channel_waveforms(good_units_index(unit),:);
+%                     SUA_cell_type(count) = cell_type_all(good_units_index(unit));
 
                     count = count + 1;
                 end
@@ -361,10 +362,10 @@ else % if KS2 and KS3
     [~,index] = sort(SUA_spike_time); % Sort spike time from start to end
     clusters.spike_id = SUA_spike_id(index);
     clusters.spike_times = SUA_spike_time(index);
-    clusters.peak_channel = SUA_peak_channel';
-    clusters.peak_depth = SUA_peak_depth';
-    clusters.peak_channel_waveforms = SUA_peak_channel_waveforms;
-    clusters.cell_type = SUA_cell_type';
+    clusters.peak_channel = peak_channel';
+    clusters.peak_depth = peak_depth;
+    clusters.peak_channel_waveforms = peak_channel_waveforms;
+    clusters.cell_type = cell_type_all';
     clusters.probe_id = options.probe_id'; % 0 is probe 1 and 1 is probe 2.
     clusters.sorter = sorter; % what sorter is used for spike sorting and clustering
     %     clusters.CCGs = CCGs;

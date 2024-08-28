@@ -105,20 +105,22 @@ end
 %     ['20230804';'20230805';'20230806';'20230807'];
 %     };
 SUBJECT = ['M23031';'M23032';'M23034';'M23037';'M23038'];
-SESSION = {['20230713';'20230714'];
+SESSION = {['20230711';'20230712';'20230713';'20230714'];
     ['20230718';'20230719';'20230720';'20230721';'20230722'];
-    ['20230807'];
+    ['20230804';'20230805';'20230806';'20230807'];
     ['20230810';'20230811';'20230812';'20230813'];
     ['20230816';'20230817']};
 
-for iMouse = 3:5
+for iMouse = 1:5
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
     for iSession = 1:size(SESSION{iMouse},1)
         Stimulus_type = experiment_info(iSession).StimulusName;
         for iStim = 1:length(Stimulus_type)
             if ~contains(Stimulus_type{iStim},'StaticGrating')
+                if ~(contains(SUBJECT(iMouse,:),'M23031') && sum(ismember([1,2,3],iSession))>0 && contains(Stimulus_type{iStim},'SparseNoise_fullscreen'))
                 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),Stimulus_type{iStim},'session_info.mat'))
                 extract_and_preprocess_NPX(session_info,Stimulus_type{iStim})
+                end
             end
         end
     end
@@ -234,19 +236,19 @@ calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
 %% Receptive Field From Sparse Noise
 
 SUBJECT = ['M23031';'M23032';'M23034';'M23037';'M23038'];
-SESSION = {['20230713';'20230714'];
-    ['20230718';'20230719';'20230720';'20230721';'20230722'];
-    ['20230807'];
+SESSION = {['20230714'];
+    ['20230719';'20230720';'20230721';'20230722'];
+    ['20230804';'20230805';'20230806';'20230807'];
     ['20230810';'20230811';'20230812';'20230813'];
     ['20230816';'20230817']};
 stimulus_name = 'SparseNoise_fullscreen';
-for iMouse = 3:5
+for iMouse = 2:5
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
     for iSession = 1:size(SESSION{iMouse},1)
-                load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),stimulus_name,'session_info.mat'))
+        load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),stimulus_name,'session_info.mat'))
         load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),stimulus_name,'extracted_clusters_ks3.mat'))
         load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),stimulus_name,'extracted_task_info.mat'))
-        receptive_field = cell(length(session.probe),1);
+        receptive_field = cell(length(session_info.probe),1);
         for nprobe = 1:length(session_info.probe)
 
             options = session_info.probe(nprobe);
@@ -269,7 +271,7 @@ for iMouse = 3:5
             no_units = length(clusters_ks3(nprobe).cluster_id);
             cluster_id = clusters_ks3(nprobe).cluster_id;
             resps = zeros(no_units,7,size(Task_info.stim_matrix,1));
-            for unit_id = 1:no_units
+            parfor unit_id = 1:no_units
                 spikes_this_cell = clusters_ks3(nprobe).spike_times(clusters_ks3(nprobe).spike_id==cluster_id(unit_id));
 
                 [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
@@ -298,11 +300,10 @@ for iMouse = 3:5
             contrast_response = [];
 
             unit_no = 0;
-            for unit_id = 1:size(resps,1)
+            initMap =cell(size(resps,1),1);
+            parfor unit_id = 1:size(resps,1)
 
-                                if unit_id >200
-                                    sn_options.plotflag = 1;
-                                end
+                               
                 SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
                 initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
                 initMap{unit_id,1} = initMap_temp;
@@ -310,7 +311,7 @@ for iMouse = 3:5
             end
 
             receptive_field{nprobe} = initMap;
-            initMap = [];
+            
         end
     save(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),stimulus_name,'receptiveFields_ks3.mat'),'receptive_field')
     end

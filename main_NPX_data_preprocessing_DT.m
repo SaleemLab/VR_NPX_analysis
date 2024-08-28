@@ -111,14 +111,16 @@ SESSION = {['20230711';'20230712';'20230713';'20230714'];
     ['20230810';'20230811';'20230812';'20230813'];
     ['20230816';'20230817']};
 
-for iMouse = 2:5
+for iMouse = 1:5
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis','experiment_info.mat'))
     for iSession = 1:size(SESSION{iMouse},1)
         Stimulus_type = experiment_info(iSession).StimulusName;
         for iStim = 1:length(Stimulus_type)
             if ~contains(Stimulus_type{iStim},'StaticGrating')
+                if ~(contains(SUBJECT(iMouse,:),'M23031') && sum(ismember([1,2,3],iSession))>0 && contains(Stimulus_type{iStim},'SparseNoise_fullscreen'))
                 load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT(iMouse,:),'analysis',SESSION{iMouse}(iSession,:),Stimulus_type{iStim},'session_info.mat'))
                 extract_and_preprocess_NPX(session_info,Stimulus_type{iStim})
+                end
             end
         end
     end
