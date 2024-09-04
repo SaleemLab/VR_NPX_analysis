@@ -28,8 +28,8 @@ nexperiment = 1;
 for nsubject = 1:length(SUBJECTS)
     if contains(options,'bilateral')
         
-        stimuli_info = readtable('C:\Users\masah\Documents\GitHub\VR_NPX_analysis\session_stimuli_table','Sheet',SUBJECTS{nsubject});
-        %         stimuli_info = readtable('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',SUBJECTS{nsubject});
+%         stimuli_info = readtable('C:\Users\masah\Documents\GitHub\VR_NPX_analysis\session_stimuli_table','Sheet',SUBJECTS{nsubject});
+stimuli_info = readtable('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',SUBJECTS{nsubject});
         % stimuli_info = readtable('C:\Users\masah\Documents\GitHub\VR_NPX_analysis\session_stimuli_table','Sheet',SUBJECTS{nsubject});
         % dataCell = readcell('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',SUBJECTS{nsubject}); % this can create missing object when session id is missing.
         dataCell = readcell('C:\Users\masah\Documents\GitHub\VR_NPX_analysis\session_stimuli_table','Sheet',SUBJECTS{nsubject});
