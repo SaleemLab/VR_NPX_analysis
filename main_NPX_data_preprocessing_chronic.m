@@ -44,6 +44,10 @@ for n = 1:length(all_SUBJECTS)
     SUBJECTS = {all_SUBJECTS{n}};
     experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 
+    stimuli_info = readtable('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',all_SUBJECTS{n});
+    stimuli_info.imErrFlags0=strings(size(stimuli_info,1),1);
+    stimuli_info.imErrFlags1=strings(size(stimuli_info,1),1);
+
     if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis')) == 0
         mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis'))
     end
@@ -52,7 +56,7 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
-
+        
 
         for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
@@ -64,6 +68,11 @@ for n = 1:length(all_SUBJECTS)
 
             bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,'*.ap.bin'));
             meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,bin_DIR.name));
+            stimuli_info.imErrFlags0(find(contains(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                stimuli_info.date == experiment_info(nsession).date))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
+
+            stimuli_info.imErrFlags1(find(contains(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                stimuli_info.date == experiment_info(nsession).date))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
 
             if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
                     + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
@@ -71,9 +80,11 @@ for n = 1:length(all_SUBJECTS)
                 sprintf('Session with non-zero imErrFlags0...')
                 Error_session_stimuli = [Error_session_stimuli experiment_info(nsession).StimulusName(nstimuli)];
                 Error_session_date = [Error_session_date experiment_info(nsession).date];
-                Error_session_subject = [Error_session_subject; experiment_info(nsession).subject];
+                Error_session_subject = [Error_session_subject; {experiment_info(nsession).subject}];
                 %                 Error_session_date
                 experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
+                
+                
             end
 
             if length(experiment_info(nsession).session(nstimuli).probe)==2
@@ -83,9 +94,10 @@ for n = 1:length(all_SUBJECTS)
                     sprintf('Session with non-zero imErrFlags1...')
                     Error_session_stimuli1 = [Error_session_stimuli1 experiment_info(nsession).StimulusName(nstimuli)];
                     Error_session_date1 = [Error_session_date1 experiment_info(nsession).date];
-                    Error_session_subject1 = [Error_session_subject1; experiment_info(nsession).subject];
+                    Error_session_subject1 = [Error_session_subject1; {experiment_info(nsession).subject}];
                     %                     Error_session_date
                     experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+
                 end
             end
 
@@ -113,9 +125,29 @@ for n = 1:length(all_SUBJECTS)
 
         end
     end
+
+    writetable(stimuli_info,'Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table.xlsx','Sheet',all_SUBJECTS{n});
+
 end
 
+Error_sessions(1).subject=Error_session_subject;
+Error_sessions(1).stimuli=Error_session_stimuli';
+Error_sessions(1).date=Error_session_date';
 
+Error_sessions(2).subject=Error_session_subject1;
+Error_sessions(2).stimuli=Error_session_stimuli1';
+Error_sessions(2).date=Error_session_date1';
+Error_summary = [];
+for nprobe = 1:2
+    all_subjects = unique(Error_sessions(nprobe).subject);
+    for nsubject = 1:length(all_subjects)
+        nsession = contains(Error_sessions(nprobe).subject,all_subjects{nsubject});
+        Error_summary.subject(nsubject) = all_subjects{nsubject};
+
+        Error_sessions(nprobe).date(nsession)
+        Error_summary.(all_subjects{nsubject}) = [];
+    end
+end
 %% import and align and store Bonsai and cluster spike data
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
