@@ -13,7 +13,7 @@
 
 %% Set the data folders and processing parameters
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -68,11 +68,9 @@ for n = 1:length(all_SUBJECTS)
 
             bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,'*.ap.bin'));
             meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,bin_DIR.name));
-            stimuli_info.imErrFlags0(find(contains(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
-                stimuli_info.date == experiment_info(nsession).date))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
-
-            stimuli_info.imErrFlags1(find(contains(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
-                stimuli_info.date == experiment_info(nsession).date))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+            stimuli_info.imErrFlags0(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                stimuli_info.date == experiment_info(nsession).date&...
+                stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
 
             if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
                     + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
@@ -87,7 +85,15 @@ for n = 1:length(all_SUBJECTS)
                 
             end
 
+
             if length(experiment_info(nsession).session(nstimuli).probe)==2
+                bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,'*.ap.bin'));
+                meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,bin_DIR.name));
+
+                stimuli_info.imErrFlags1(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                    stimuli_info.date == experiment_info(nsession).date&...
+                    stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+
                 if str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(3))...
                         + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(7)) ...
                         + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(9))~=0
@@ -130,24 +136,6 @@ for n = 1:length(all_SUBJECTS)
 
 end
 
-Error_sessions(1).subject=Error_session_subject;
-Error_sessions(1).stimuli=Error_session_stimuli';
-Error_sessions(1).date=Error_session_date';
-
-Error_sessions(2).subject=Error_session_subject1;
-Error_sessions(2).stimuli=Error_session_stimuli1';
-Error_sessions(2).date=Error_session_date1';
-Error_summary = [];
-for nprobe = 1:2
-    all_subjects = unique(Error_sessions(nprobe).subject);
-    for nsubject = 1:length(all_subjects)
-        nsession = contains(Error_sessions(nprobe).subject,all_subjects{nsubject});
-        Error_summary.subject(nsubject) = all_subjects{nsubject};
-
-        Error_sessions(nprobe).date(nsession)
-        Error_summary.(all_subjects{nsubject}) = [];
-    end
-end
 %% import and align and store Bonsai and cluster spike data
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
