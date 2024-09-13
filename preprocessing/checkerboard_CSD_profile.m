@@ -23,6 +23,8 @@ if ~isempty(DIR)|~isempty(DIR1)
     else
         load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
     end
+else
+    best_channels{nprobe}=[];
 end
 
 clusters = [];
@@ -42,7 +44,7 @@ if ~isempty(DIR)
 %     clusters = [];
 end
 
-DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('extracted_PSD%s.mat',extractAfter(options.Stimulus_type,"Checkerboard"))));
 
 if ~isempty(DIR)
     load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('extracted_PSD%s.mat',extractAfter(options.Stimulus_type,"Checkerboard"))));
