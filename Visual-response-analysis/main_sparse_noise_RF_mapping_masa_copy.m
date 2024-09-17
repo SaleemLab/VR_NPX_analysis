@@ -88,11 +88,11 @@ for nsession =1:length(experiment_info)
                 metric_param = create_cluster_selection_params('sorting_option','masa');
                 %             metric_param.unstable_ids = @(x) x==0;
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
-                good_unit = unique(clusters(nprobe).spike_id);
+                good_unit = unique(selected_clusters(nprobe).spike_id);
 
                 %         num_cell = length(unique(spike_data(:,1)));
                 for unit_id = 1:length(good_unit)
-                    spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
+                    spikes_this_cell = selected_clusters(nprobe).spike_times(selected_clusters(nprobe).spike_id==good_unit(unit_id));
 
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
                     resps(unit_id,:,:) = binnedArray';
@@ -146,14 +146,13 @@ for nsession =1:length(experiment_info)
                     %                     sn_options.plotflag = 1;
                     %                 end
                     SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
-                    total_spikes(unit_id) = sum(sum(SUA_data));
                     initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
                     initMap{unit_id,1} = initMap_temp;
 
                 end
 
                 RF.probe(options.probe_no).cluster_id = good_unit;
-                RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel;
+                RF.probe(options.probe_no).peak_channel = selected_clusters(options.probe_no).peak_channel;
                 RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
                 RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
 

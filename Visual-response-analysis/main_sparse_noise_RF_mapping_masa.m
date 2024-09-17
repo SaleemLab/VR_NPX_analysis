@@ -88,11 +88,11 @@ for nsession =1:length(experiment_info)
                 metric_param = create_cluster_selection_params('sorting_option','masa');
                 %             metric_param.unstable_ids = @(x) x==0;
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
-                good_unit = unique(clusters(nprobe).spike_id);
+                good_unit = unique(selected_clusters(nprobe).spike_id);
 
                 %         num_cell = length(unique(spike_data(:,1)));
                 for unit_id = 1:length(good_unit)
-                    spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
+                    spikes_this_cell = selected_clusters(nprobe).spike_times(selected_clusters(nprobe).spike_id==good_unit(unit_id));
 
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
                     resps(unit_id,:,:) = binnedArray';
@@ -152,7 +152,7 @@ for nsession =1:length(experiment_info)
                 end
 
                 RF.probe(options.probe_no).cluster_id = good_unit;
-                RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel;
+                RF.probe(options.probe_no).peak_channel = selected_clusters(options.probe_no).peak_channel;
                 RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
                 RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
 
@@ -177,14 +177,14 @@ end
 % load(fullfile(EPHYS_DATAPATH,'analysis','receptiveFields.mat'))
 
 %% plotting SparseNoise
-
-SUBJECTS = {'M24017'};
-Dates = {'20240531'};
+clear all
+SUBJECTS = {'M24018'};
+Dates = {'20240715'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_ks4.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_ks3.mat'),'RF')
 
 for nprobe = 1:2
     fig = figure
