@@ -55,93 +55,125 @@ for nsession =1:length(experiment_info)
 
             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour.mat"))
             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_task_info.mat"))
-%             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
-            load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
-            sorting_option = 'spikeinterface';
-            % currently hard-coded
-            %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
-            %                 &clusters.isi_viol <= 0.1...
-            %                 &clusters.amplitude >=50);
-            %             good_unit = clusters.cluster_id(good_unit_index);
 
-            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            %             metric_param.unstable_ids = @(x) x==0;
-            clusters(nprobe) = select_clusters(clusters_ks4(nprobe),metric_param);
-            good_unit = unique(clusters(nprobe).spike_id);
+            DIR_KS4 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"));
+            DIR_KS3 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"));
 
-            %         num_cell = length(unique(spike_data(:,1)));
-            for unit_id = 1:length(good_unit)
-                spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
-
-                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
-                resps(unit_id,:,:) = binnedArray';
+            sorters = [0 0];
+            if ~isempty(DIR_KS3)
+                sorters(1) = 1;
             end
 
-            % Calculate sparsenoise RFs
-            stim_matrix = cat(3,Task_info.stim_matrix{:}); % N rows x M cols x nFrames
-
-            sn_options.grid_size = [size(stim_matrix,1) size(stim_matrix,2)];
-            sn_options.mapSampleRate = 60; % Hz
-            sn_options.mapsToShow = {'linear','black','white','contrast'};
-            sn_options.mapMethod = 'fitlm'; % fitlm mean
-            sn_options.framesToShow = 1:7;  % at 60 Hz would be 8 ms, 40, 72 etc
-            sn_options.plotflag = 0; % 1 if you want to see details of the receptive fields
-
-            horizontalAngles = -30:(30+90)/8:90;
-            verticalAngles = -120:240/16:120;
-
-            SUA_data = [];
-            On_response = [];
-            Off_response = [];
-            average_On = [];
-            average_Off = [];
-            average_contrast = [];
-            contrast_response = [];
-            %         On_grid_distribution = zeros(size(stim_matrix,[1 2]));
-            %         Off_grid_distribution = zeros(size(stim_matrix,[1 2]));
-            %
-            %         % x 240 degree [-120 120]
-            %         % y 120 degree [-30 90]
-            %         for x = 1:size(stim_matrix,1)
-            %                             for y = 1:size(stim_matrix,2)
-            %                                 this_location = squeeze(stim_matrix(x,y,:));
-            %                                 On_trials = find(this_location==1); % find white quad
-            %                                 On_grid_distribution(x,y) = sum(this_location == 1);
-            %                                 Off_grid_distribution(x,y) = sum(this_location == -1);
-            %
-            %                             end
-            %         end
-            %         Overall_grid_distribution = On_grid_distribution + Off_grid_distribution;
-            %         % check on distribution of stimuli on the grid
-            %         figure;
-            %         subplot(3,1,1);imagesc(On_grid_distribution');colorbar;caxis([0 max(max(On_grid_distribution))])
-            %         subplot(3,1,2);imagesc(Off_grid_distribution');colorbar;caxis([0 max(max(Off_grid_distribution))])
-            %         subplot(3,1,3);imagesc(Overall_grid_distribution');colorbar;caxis([0 max(max(Overall_grid_distribution))])
-
-            unit_no = 0;
-            for unit_id = 1:size(resps,1)
-
-                %                 if unit_id> 300 || unit_id <600
-                %                     sn_options.plotflag = 1;
-                %                 end
-                SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
-                initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
-                initMap{unit_id,1} = initMap_temp;
-
+            if ~isempty(DIR_KS4)
+                sorters(2) = 1;
             end
 
-            RF.probe(options.probe_no).cluster_id = good_unit;
-            RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel;
-            RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
-            RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
+            for nsorter = sorters
+                clear clusters clusters_ks3 clusters_ks4
+                if ~isempty(DIR_KS3) & sorters(nsorter)==1
+                    load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
+                    clusters = clusters_ks3;
+                end
 
-            RF.probe(options.probe_no).RF_map = initMap;
-            initMap = [];
+                if ~isempty(DIR_KS4) & sorters(nsorter)==2
+                    load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
+                    clusters = clusters_ks4;
+                end
+                %             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
+                load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
+                sorting_option = 'spikeinterface';
+                % currently hard-coded
+                %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
+                %                 &clusters.isi_viol <= 0.1...
+                %                 &clusters.amplitude >=50);
+                %             good_unit = clusters.cluster_id(good_unit_index);
+
+                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                %             metric_param.unstable_ids = @(x) x==0;
+                clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
+                good_unit = unique(clusters(nprobe).spike_id);
+
+                %         num_cell = length(unique(spike_data(:,1)));
+                for unit_id = 1:length(good_unit)
+                    spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
+
+                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
+                    resps(unit_id,:,:) = binnedArray';
+                end
+
+                % Calculate sparsenoise RFs
+                stim_matrix = cat(3,Task_info.stim_matrix{:}); % N rows x M cols x nFrames
+
+                sn_options.grid_size = [size(stim_matrix,1) size(stim_matrix,2)];
+                sn_options.mapSampleRate = 60; % Hz
+                sn_options.mapsToShow = {'linear','black','white','contrast'};
+                sn_options.mapMethod = 'fitlm'; % fitlm mean
+                sn_options.framesToShow = 1:7;  % at 60 Hz would be 8 ms, 40, 72 etc
+                sn_options.plotflag = 0; % 1 if you want to see details of the receptive fields
+
+                horizontalAngles = -30:(30+90)/8:90;
+                verticalAngles = -120:240/16:120;
+
+                SUA_data = [];
+                On_response = [];
+                Off_response = [];
+                average_On = [];
+                average_Off = [];
+                average_contrast = [];
+                contrast_response = [];
+                %         On_grid_distribution = zeros(size(stim_matrix,[1 2]));
+                %         Off_grid_distribution = zeros(size(stim_matrix,[1 2]));
+                %
+                %         % x 240 degree [-120 120]
+                %         % y 120 degree [-30 90]
+                %         for x = 1:size(stim_matrix,1)
+                %                             for y = 1:size(stim_matrix,2)
+                %                                 this_location = squeeze(stim_matrix(x,y,:));
+                %                                 On_trials = find(this_location==1); % find white quad
+                %                                 On_grid_distribution(x,y) = sum(this_location == 1);
+                %                                 Off_grid_distribution(x,y) = sum(this_location == -1);
+                %
+                %                             end
+                %         end
+                %         Overall_grid_distribution = On_grid_distribution + Off_grid_distribution;
+                %         % check on distribution of stimuli on the grid
+                %         figure;
+                %         subplot(3,1,1);imagesc(On_grid_distribution');colorbar;caxis([0 max(max(On_grid_distribution))])
+                %         subplot(3,1,2);imagesc(Off_grid_distribution');colorbar;caxis([0 max(max(Off_grid_distribution))])
+                %         subplot(3,1,3);imagesc(Overall_grid_distribution');colorbar;caxis([0 max(max(Overall_grid_distribution))])
+
+                unit_no = 0;
+                for unit_id = 1:size(resps,1)
+
+                    %                 if unit_id> 300 || unit_id <600
+                    %                     sn_options.plotflag = 1;
+                    %                 end
+                    SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
+                    initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
+                    initMap{unit_id,1} = initMap_temp;
+
+                end
+
+                RF.probe(options.probe_no).cluster_id = good_unit;
+                RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel;
+                RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
+                RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
+
+                RF.probe(options.probe_no).RF_map = initMap;
+                initMap = [];
+            end
+
+            if ~isempty(DIR_KS3) & sorters(nsorter)==1
+                save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
+            end
+
+            if ~isempty(DIR_KS4) & sorters(nsorter)==2
+                save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks4.mat'),'RF')
+            end
+
+            %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
+            %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
         end
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
-%         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
-        %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
     end
 end
 
