@@ -315,7 +315,7 @@ else % if KS2 and KS3
     % SUA_spike_count_smoothed = [];
     % SUA_zscore = [];
     % good_clusters_all= [];
-    SUA_good_unit = [];
+    % SUA_good_unit = [];
 
     for nchannel = selected_channels(1):selected_channels(2)
         index = find(peak_channel == nchannel); % ID for post-processed clusters
@@ -351,8 +351,7 @@ else % if KS2 and KS3
     end
 
     %     [~,~,index] = intersect(SUA_good_unit-1,table2array(cluster_metrics(:,1)));
-    index = sort(SUA_good_unit);
-    clusters = table2struct(cluster_metrics(index,:),"ToScalar",true);
+    clusters = table2struct(cluster_metrics,"ToScalar",true);
     clusters.cluster_id = clusters.Var1+1; %1 based
 
     % Continuous spike data (retired)
@@ -365,8 +364,8 @@ else % if KS2 and KS3
     %         clusters.good_clusters = good_clusters_all;
     % Spike time and spike id
     [~,index] = sort(SUA_spike_time); % Sort spike time from start to end
-    clusters.spike_id = SUA_spike_id(index);
-    clusters.spike_times = SUA_spike_time(index);
+    clusters.spike_id = SUA_spike_id;
+    clusters.spike_times = SUA_spike_time;
     clusters.peak_channel = peak_channel';
     clusters.peak_depth = peak_depth;
     clusters.peak_channel_waveforms = peak_channel_waveforms;
