@@ -14,7 +14,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24017'};
+SUBJECTS = {'M24018'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
@@ -81,16 +81,15 @@ for nsession =1:length(experiment_info)
                 end
                 %             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
                 load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
-                sorting_option = 'spikeinterface';
                 % currently hard-coded
                 %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
                 %                 &clusters.isi_viol <= 0.1...
                 %                 &clusters.amplitude >=50);
                 %             good_unit = clusters.cluster_id(good_unit_index);
 
-                metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+                metric_param = create_cluster_selection_params('sorting_option','masa');
                 %             metric_param.unstable_ids = @(x) x==0;
-                clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
+                selected_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
                 good_unit = unique(clusters(nprobe).spike_id);
 
                 %         num_cell = length(unique(spike_data(:,1)));
