@@ -164,6 +164,9 @@ switch(lower(StimulusName))
 
             if length(stim_id) == 1 % if happended once we can remove all the stimuli stime between these two points (happens rarely)
                 stimData(stim_id:stim_id+size(stimData,1)-length(stimTimes)-1,:)=[];
+            elseif length(stim_id) <4 % if happended few times we can remove all the stimuli stime between these two points (happens rarely)
+                stimData(stim_id(1):end,:)=[];
+                stimTimes(stim_id:end)=[];
             end
 
         end

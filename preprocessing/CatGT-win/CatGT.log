@@ -363,3 +363,6 @@
 [Thd 14972 CPU 4 9/11/24 19:42:31.350] Creating lf stream for probe 0.
 [Thd 14972 CPU 4 9/11/24 20:32:30.233] Creating lf stream for probe 1.
 [Thd 14972 CPU 2 9/11/24 21:33:11.906] 
+[Thd 22064 CPU 0 9/17/24 15:53:16.476] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240626/20240626_0 -run=M24016_20240626_0 -g=4 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 18684 CPU 2 9/17/24 17:09:48.085] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240626/20240626_0 -run=M24016_20240626_0 -g=4 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 8600 CPU 2 9/17/24 17:10:38.022] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240626/20240626_0 -run=M24016_20240626_0 -g=4 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar

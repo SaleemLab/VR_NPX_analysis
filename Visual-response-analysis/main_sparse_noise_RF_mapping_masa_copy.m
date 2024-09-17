@@ -14,7 +14,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24018'};
+SUBJECTS = {'M24016'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
@@ -146,6 +146,7 @@ for nsession =1:length(experiment_info)
                     %                     sn_options.plotflag = 1;
                     %                 end
                     SUA_data = squeeze(resps(unit_id,:,:))'; % returns 1 x N time bins x nFrames;
+                    total_spikes(unit_id) = sum(sum(SUA_data));
                     initMap_temp = sparseNoiseAnalysis(stim_matrix,SUA_data,[],[],sn_options);
                     initMap{unit_id,1} = initMap_temp;
 
