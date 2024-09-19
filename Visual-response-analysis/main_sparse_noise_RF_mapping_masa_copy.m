@@ -68,14 +68,14 @@ for nsession =1:length(experiment_info)
                 sorters(2) = 1;
             end
 
-            for nsorter = sorters
+            for nsorter = 1:length(sorters)
                 clear clusters clusters_ks3 clusters_ks4
                 if ~isempty(DIR_KS3) & sorters(nsorter)==1
                     load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
                     clusters = clusters_ks3;
                 end
 
-                if ~isempty(DIR_KS4) & sorters(nsorter)==2
+                if ~isempty(DIR_KS4) & sorters(nsorter)==1
                     load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
                     clusters = clusters_ks4;
                 end
@@ -88,8 +88,8 @@ for nsession =1:length(experiment_info)
                 metric_param = create_cluster_selection_params('sorting_option','masa');
                 %             metric_param.unstable_ids = @(x) x==0;
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
-                good_unit = unique(selected_clusters(nprobe).spike_id);
-
+                good_unit = selected_clusters(nprobe).cluster_id;
+                
                 %         num_cell = length(unique(spike_data(:,1)));
                 for unit_id = 1:length(good_unit)
                     spikes_this_cell = selected_clusters(nprobe).spike_times(selected_clusters(nprobe).spike_id==good_unit(unit_id));
@@ -164,7 +164,7 @@ for nsession =1:length(experiment_info)
                 save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
             end
 
-            if ~isempty(DIR_KS4) & sorters(nsorter)==2
+            if ~isempty(DIR_KS4) & sorters(nsorter)==1
                 save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks4.mat'),'RF')
             end
 
@@ -173,20 +173,20 @@ for nsession =1:length(experiment_info)
         end
     end
 end
-
 % load(fullfile(EPHYS_DATAPATH,'analysis','receptiveFields.mat'))
 
 %% plotting SparseNoise
 
-SUBJECTS = {'M24017'};
-Dates = {'20240531'};
+SUBJECTS = {'M24016'};
+Dates = {'20240626'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_ks4.mat'),'RF')
-
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_ks3.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','session_info.mat'))
 for nprobe = 1:2
+    options = session_info.probe(nprobe);
     fig = figure
     fig.Position = [300 150 1000 620]
     fig.Name = sprintf('%s %s Averaged V1 Receptive field',options.SUBJECT,options.SESSION);
@@ -213,7 +213,18 @@ for nprobe = 1:2
         subplot(2,2,nshank)
         scal_f = 10; % scale image by this before...
         sigma = 3; % ...filtering by this
-        V1_cell_id = find(RF.probe(nprobe).shank == nshank);
+
+        % due to channel allocation (we have clusters of channels around 
+        % cortex and HPC that are more or less well-separated, so it 
+        % putatively works as a visualiation before channel mapping)
+        kClusters=kmeans(RF.probe(nprobe).peak_location,2);
+        if mean(RF.probe(nprobe).peak_location(kClusters==1))>mean(RF.probe(nprobe).peak_location(kClusters==2))
+            % if mean ocation of cluster one is above cluster two, it is
+            % Cortex.
+            V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
+        else
+            V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
+        end
 
         thisMap_s = squeeze(nanmean(RF_map(V1_cell_id,:,:)));
 
