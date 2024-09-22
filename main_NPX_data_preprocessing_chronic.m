@@ -247,7 +247,13 @@ Stimulus_type= 'Checkerboard_sh4';
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 
-
+clear all
+ROOTPATH = 'Z:\ibn-vision';
+% Single session
+SUBJECT = 'M24016';
+SESSION = '20240626';
+options = 'bilateral';
+% Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
     Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
