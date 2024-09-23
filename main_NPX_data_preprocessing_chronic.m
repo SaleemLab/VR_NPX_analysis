@@ -250,8 +250,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24016';
-SESSION = '20240626';
+SUBJECT = 'M24018';
+SESSION = '20240712';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
@@ -275,7 +275,9 @@ for nstimuli = 1:4
             else
                 load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
             end
-        else
+        end
+        
+        if nprobe == 2 & length(lfpAvg)<2 | ~exist('lfpAvg','var')
             [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
 
             save_all_figures(options.ANALYSIS_DATAPATH,[]);
@@ -291,20 +293,21 @@ for nstimuli = 1:4
         % %%%%%%%%%% Comment out this sections when quantifying checkerboard
         % %%%%%%%%%% CSD and plotting channel maps. Then use this section for
         % %%%%%%%%%% manual channel map updates
-        % [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-        % [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-        % 
-        % if contains(Stimulus_type,'_sh')
-        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-        % else
-        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-        % end
-        % 
-        % checkerboard_CSD_profile(options);
-        % save_all_figures(options.ANALYSIS_DATAPATH,[]);
-        % %%%%%%%%%%
+        [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+        [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+
+        if contains(Stimulus_type,'_sh')
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        end
+
+        checkerboard_CSD_profile(options);
+        save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        %%%%%%%%%%
     end
 end
+
 
 Stimulus_type = 'Checkerboard_sh1';
 if contains(Stimulus_type,'_sh')

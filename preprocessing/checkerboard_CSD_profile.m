@@ -173,6 +173,10 @@ power{nprobe} = power{nprobe}(idx,:);
 chan_config = chan_config(idx,:);
 resps = resps(idx,:,:);
 
+if length(best_channels)<nprobe
+    best_channels{nprobe}=[];
+end
+
 if isempty(best_channels{nprobe})
     [~,ycoord_max] = max(ycoord);
     best_channels{nprobe}.surface_channel = ycoord_max;
