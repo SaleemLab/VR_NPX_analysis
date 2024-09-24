@@ -272,8 +272,10 @@ for nstimuli = 1:4
         if ~isempty(DIR)|~isempty(DIR1)
             if contains(Stimulus_type,'sh')
                 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'lfpAvg','csd');
+                
             else
                 load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
             end
         end
         
@@ -293,6 +295,17 @@ for nstimuli = 1:4
         % %%%%%%%%%% Comment out this sections when quantifying checkerboard
         % %%%%%%%%%% CSD and plotting channel maps. Then use this section for
         % %%%%%%%%%% manual channel map updates
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
+
+        if ~isempty(DIR)|~isempty(DIR1)
+            if contains(Stimulus_type,'sh')
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
+            else
+                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
+            end  
+        end
+
         [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
         [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
 
@@ -348,7 +361,7 @@ if contains(Stimulus_type,'_sh')
         all_fields = fieldnames(best_channels{1});
         for nprobe = 1:length(best_channels)
             for nfield = 1:length(all_fields)
-                if contains(all_fields{nfield},'depth')
+                if contains(all_fields{nfield},'depth') | contains(all_fields{nfield},'channel')
                     if isfield(best_channels{nprobe},(all_fields{nfield}))
                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
                     else
