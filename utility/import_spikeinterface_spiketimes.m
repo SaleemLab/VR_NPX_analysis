@@ -45,6 +45,10 @@ if contains(options.sorter_folder,'kilosort')
     % (ie. already parsed) or not
     if sum(contains(segment_frames.Properties.VariableNames,'segment_info')) > 0
         this_segment = strcmp(segment_frames.segment_info,folder_names);
+        if sum(this_segment)==0
+            % if no segment (maybe error session)
+            return
+        end
         sampleStart = segment_frames.segmentStartFrame(this_segment);
         sampleEnd = segment_frames.segmentEndFrame(this_segment);
     end
