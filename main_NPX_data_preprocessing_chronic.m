@@ -250,8 +250,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24018';
-SESSION = '20240712';
+SUBJECT = 'M24017';
+SESSION = '20240605';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
@@ -292,9 +292,9 @@ for nstimuli = 1:4
             end
         end
 
-        % %%%%%%%%%% Comment out this sections when quantifying checkerboard
-        % %%%%%%%%%% CSD and plotting channel maps. Then use this section for
-        % %%%%%%%%%% manual channel map updates
+        %%%%%%%%%% Comment out this sections when quantifying checkerboard
+        %%%%%%%%%% CSD and plotting channel maps. Then use this section for
+        %%%%%%%%%% manual channel map updates
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
         DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
 
@@ -358,8 +358,8 @@ if contains(Stimulus_type,'_sh')
 
     for nshank = 2:length(DIR)
         load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
-        all_fields = fieldnames(best_channels{1});
         for nprobe = 1:length(best_channels)
+            all_fields = fieldnames(best_channels{nprobe});
             for nfield = 1:length(all_fields)
                 if contains(all_fields{nfield},'depth') | contains(all_fields{nfield},'channel')
                     if isfield(best_channels{nprobe},(all_fields{nfield}))
