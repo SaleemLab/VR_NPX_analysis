@@ -159,7 +159,7 @@ experiment_info=experiment_info(4:5);
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 
-% All_stimuli = {'SleepChronic'};
+All_stimuli = {'SleepChronic'};
 % All_stimuli = {'SparseNoise','Checkerboard'};
 % All_stimuli = {'Masa2tracks'};
 for n = 1:length(All_stimuli)

@@ -49,9 +49,10 @@ for nsession =1:length(experiment_info)
         else
             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
         end
-%         DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         if isempty(DIR)
+            disp('process and extract behavioural data')
             if contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
                 if contains(Stimulus_type,'Sleep')
                     [Behaviour] = import_and_align_Bonsai_Sleep(stimulus_name{n},session_info(n).probe);
@@ -104,7 +105,7 @@ for nsession =1:length(experiment_info)
 % 
         % Part 3 extract spike data
         options = session_info(n).probe(1);
-        if contains(Stimulus_type,'Masa2tracks') | contains(Stimulus_type,'Sleep') 
+        if contains(Stimulus_type,'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,...
                 sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},Stimulus_type))))
         else
@@ -140,7 +141,7 @@ for nsession =1:length(experiment_info)
 %         clusters = rmfield(clusters,fields_to_remove);
 % 
 
-        if contains(Stimulus_type,'Masa2tracks')  | contains(Stimulus_type,'Sleep') 
+        if contains(Stimulus_type,'Masa2tracks') 
             % If Masa2tracks, PRE, RUN and/or POST saved in one folder
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
                 temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
