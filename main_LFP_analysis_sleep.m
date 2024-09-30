@@ -20,10 +20,10 @@ experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
-all_stimulus_type={'RUN'};
-% all_stimulus_type={'SleepChronic','RUN'};
+% all_stimulus_type={'RUN'};
+all_stimulus_type={'SleepChronic','RUN'};
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 8:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         if isempty(stimulus_name)
@@ -35,7 +35,11 @@ for nstimuli = 1:length(all_stimulus_type)
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
             options = session_info(n).probe(1);
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            if contains(stimulus_name{n},'Masa2tracks')
+                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            else
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            end
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
             %         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
@@ -106,11 +110,11 @@ for nstimuli = 1:length(all_stimulus_type)
                 end
             end
 
-            if contains(stimulus_name{n},'SleepChronic')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'SleepChronic'))),'LFP','-v7.3')
-            elseif contains(stimulus_name{n},'Masa2tracks')
+            if contains(stimulus_name{n},'Masa2tracks')
                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
-                % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP','-v7.3')
+            else
+                % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
+                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
             end
         end
     end
