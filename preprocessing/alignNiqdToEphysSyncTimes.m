@@ -8,7 +8,7 @@ syncTimes_nidq = Nidq_data.nidq_sync_on;
 % measurements. This can make xcorr less reliable as there are a large
 % number of potential correspondences
 % We therefore first attempt to align the overall sync pulse traces ...
-[r, lags] = xcorr(diff(syncTimes_nidq), diff(syncTimes_ephys));
+[r, lags] = xcorr(normalize(diff(syncTimes_nidq)), normalize(diff(syncTimes_ephys)));
 [~, joint_idx] = max(r);
 best_lag = lags(joint_idx);
 % ...then remove the syncpulses from bonsai trace that occur before the
@@ -17,7 +17,7 @@ if best_lag > 0
     syncTimes_nidq = syncTimes_nidq(syncTimes_nidq>syncTimes_nidq(best_lag));
 end
 % ...and rerun the xcorr
-[r, lags] = xcorr(diff(syncTimes_nidq), diff(syncTimes_ephys));
+[r, lags] = xcorr(normalize(diff(syncTimes_nidq)), normalize(diff(syncTimes_ephys)));
 [~, joint_idx] = max(r);
 best_lag = lags(joint_idx);
 

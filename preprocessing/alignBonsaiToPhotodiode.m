@@ -69,7 +69,7 @@ else
     % measurements. This can make xcorr less reliable as there are a large
     % number of potential correspondences
     % We therefore first attempt to align the overall sync pulse traces ...
-    [r, lags] = xcorr(diff(syncTimes_Quad), diff(syncTimes_Photodiode));
+    [r, lags] = xcorr(normalize(diff(syncTimes_Quad)), normalize(diff(syncTimes_Photodiode)));
     [~, joint_idx] = max(r);
     best_lag = lags(joint_idx);
     % ...then remove the syncpulses from bonsai trace that occur before the
@@ -78,9 +78,10 @@ else
         syncTimes_Quad = syncTimes_Quad(syncTimes_Quad>syncTimes_Quad(best_lag));
     end
     % ...and rerun the xcorr
-    [r, lags] = xcorr(diff(syncTimes_Quad), diff(syncTimes_Photodiode));
+    [r, lags] = xcorr(normalize(diff(syncTimes_Quad)), normalize(diff(syncTimes_Photodiode)));
     [~, joint_idx] = max(r);
     best_lag = lags(joint_idx);
+%     bonsai_data.corrected_sglxTime_best_lag = bonsai_data.sglxTime-best_lag*mean(diff(bonsai_data.sglxTime));
     % check which async pulse sequence is available first (ie. which was turned
     % on first)
     if best_lag < 0

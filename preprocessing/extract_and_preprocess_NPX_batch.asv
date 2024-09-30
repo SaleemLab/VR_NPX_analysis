@@ -49,7 +49,7 @@ for nsession =1:length(experiment_info)
         else
             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
         end
-%         DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         if isempty(DIR)
             disp('process and extract behavioural data')
@@ -112,12 +112,10 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
         end
 
-
-        DIR_SORTER = dir(options.SORTER_DATAPATH);
-        DIR_KS = dir(options.KS_DATAPATH);
-
-        if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
-              continue
+        
+        if 
+            disp('Session without sipike sorting is skipped due to imFlagError')
+            continue
         end
 
         segment_frames = readtable(options.segment_frames);

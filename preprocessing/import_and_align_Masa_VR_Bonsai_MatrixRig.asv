@@ -339,17 +339,22 @@ best_lag = lags(joint_idx);
 peripherals.corrected_sglxTime_best_lag = peripherals.sglxTime-best_lag*(1/60);
 
 
-% 
-% figure;
-% plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
-% hold on
-% plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
-% plot(peripherals.corrected_sglxTime_best_lag(1:2000),peripherals.QuadState(1:2000)*210)
-% 
-% plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
-% scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
-% scatter(photodiode.sglxTime(pd_OFF(1:300)),190*ones(1,300))
 
+figure;
+plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
+hold on
+plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
+plot(peripherals.corrected_sglxTime_best_lag(1:2000),peripherals.QuadState(1:2000)*210)
+
+plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
+scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
+scatter(photodiode.sglxTime(pd_OFF(1:300)),190*ones(1,300))
+% plot(photodiode.sglxTime(1:20000),photodiode.binary_pd(1:20000)*120)
+
+plot(photodiode.sglxTime(1:end),photodiode.Photodiode_smoothed(1:end))
+hold on
+plot(peripherals.corrected_sglxTime(1:end),peripherals.QuadState(1:end)*200)
+scatter(photodiode.sglxTime(pd_ON(1:end)),100*ones(1,length(pd_ON)))
 
 % raw_LFP(nchannel,:) = interp1(peripherals.sglxTime,raw_LFP(nchannel,:),probe_1_tvec(1:2:end),'linear'); %probe 1 LFP time to match probe 2 LFP time
 if ~isempty(DLC_EYEDATA_DATAPATH)
