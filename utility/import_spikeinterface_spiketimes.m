@@ -47,6 +47,12 @@ if contains(options.sorter_folder,'kilosort')
         this_segment = strcmp(segment_frames.segment_info,folder_names);
         if sum(this_segment)==0
             % if no segment (maybe error session)
+            these_spike_times=[];
+            cluster_id=[];
+            peak_channel=[];
+            peak_depth=[];
+            peak_channel_waveforms=[];
+            disp('This session is not being spike sorted! probably due to imErrFlags')
             return
         end
         sampleStart = segment_frames.segmentStartFrame(this_segment);

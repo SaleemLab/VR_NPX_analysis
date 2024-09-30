@@ -112,11 +112,23 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
         end
 
+        segment_frames = readtable(options.segment_frames);
+        session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
+        session_id=str2num(session_id(1));
+
+        if sum(table2array(segment_frames(:,3))==session_id)==0
+            disp('Session without sipike sorting is skipped due to imFlagError')
+            continue
+        end
+
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             DIR_SORTER = dir(options.SORTER_DATAPATH);
             DIR_KS = dir(options.KS_DATAPATH);
+            
+            
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
+
                 temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
                 if ~isempty(temp)
                     [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
@@ -136,11 +148,10 @@ for nsession =1:length(experiment_info)
             %     [all_clusters chan_config sorted_config] = extract_clusters_NPX(options,'group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
         end
 
-%         spikes = clusters;
-%         fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
-%         clusters = rmfield(clusters,fields_to_remove);
-% 
-
+        %         spikes = clusters;
+        %         fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
+        %         clusters = rmfield(clusters,fields_to_remove);
+        %
         if contains(Stimulus_type,'Masa2tracks') 
             % If Masa2tracks, PRE, RUN and/or POST saved in one folder
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present

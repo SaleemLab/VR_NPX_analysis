@@ -259,7 +259,12 @@ else % if KS2 and KS3
 
     % Load spike time data and quality metrics
     options.sorter_folder = sorter_folder;
+
     [these_spike_times,cluster_id,peak_channel,peak_depth,peak_channel_waveforms] = import_spikeinterface_spiketimes(options,imecMeta.imSampRate);% Only clusters after spike interface post processing
+    if isempty(cluster_id)
+        clusters=[];
+        return
+    end
     cluster_id = cluster_id + 1; % Cluster ID transformed from 0-based to 1-based
 
     % scatter3(cluster_metrics.amplitude_cutoff,cluster_metrics.isi_viol,cluster_metrics.presence_ratio)
