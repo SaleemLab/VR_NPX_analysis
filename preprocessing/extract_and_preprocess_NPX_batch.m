@@ -49,7 +49,7 @@ for nsession =1:length(experiment_info)
         else
             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
         end
-%         DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         if isempty(DIR)
             disp('process and extract behavioural data')
@@ -116,7 +116,7 @@ for nsession =1:length(experiment_info)
         DIR_SORTER = dir(options.SORTER_DATAPATH);
         DIR_KS = dir(options.KS_DATAPATH);
 
-        if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
+        if isempty(DIR_SORTER) % if spike interface sorter folder is not present, skip
               continue
         end
 
