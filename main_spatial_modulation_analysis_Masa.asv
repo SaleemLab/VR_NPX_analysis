@@ -28,7 +28,7 @@ for nsession = 1:length(experiment_info)
 
     session_folder = fullfile(base_folder,SUBJECTS{iSub},'analysis',session_info.probe(1).SESSION);
 
-    for n = 1:length(session_info) % should just be 1 stimulus type normally (RUN1)
+    for n = 1:length(session_info) % should just be 1 stimulus type normally
         % change/update analysis folder depending on the pc used
         ANALYSIS_DATAPATH = session_info(n).probe(1).ANALYSIS_DATAPATH;
         ANALYSIS_DATAPATH = strrep(ANALYSIS_DATAPATH, 'Z:\ibn-vision\DATA\SUBJECTS', base_folder);
@@ -50,7 +50,7 @@ for nsession = 1:length(experiment_info)
 
         clusters = clusters_ks3;
         sorting_option = 'masa';
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
+        load(fullfile(options.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
         receptive_field_file =fullfile(session_folder,'SparseNoise_fullscreen','receptiveFields_ks3.mat');
         if exist(receptive_field_file,"file")
             load(receptive_field_file);

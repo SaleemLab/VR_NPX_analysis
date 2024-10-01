@@ -124,15 +124,16 @@ end
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24017'};
+SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
 Stimulus_type = 'Sleep';
 
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =[4]
+for nsession =[7]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -141,7 +142,7 @@ for nsession =[4]
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        if ~contains(stimulus_name{n},'sleep')
+        if ~contains(stimulus_name{n},'Sleep')
             continue
         end
         
@@ -151,7 +152,7 @@ for nsession =[4]
         %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_sleep.mat'),'LFP')
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
 
         clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
 
@@ -160,15 +161,8 @@ for nsession =[4]
             load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_place_fields_RUN1.mat'));
         end
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
         merged_clusters = clusters_ks4;
-%         load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_clusters_ks4_RUN1.mat'));
-        if length(merged_clusters) > 1
-            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
-        else
-            clusters_combined = merged_clusters;
-        end
-
 
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);

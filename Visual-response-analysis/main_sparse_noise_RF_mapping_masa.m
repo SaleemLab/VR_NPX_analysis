@@ -14,10 +14,11 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24018'};
-
-% SUBJECTS = {'M23153'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
 % Stimulus_type = 'Masa2tracks';
 ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'SparseNoise_fullscreen';
@@ -65,7 +66,7 @@ for nsession =1:length(experiment_info)
             end
 
             if ~isempty(DIR_KS4)
-                sorters(2) = 1;
+                sorters(2) = 2;
             end
 
             for nsorter = 1:length(sorters)
@@ -73,11 +74,11 @@ for nsession =1:length(experiment_info)
                 if ~isempty(DIR_KS3) & sorters(nsorter)==1
                     load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
                     clusters = clusters_ks3;
-                end
-
-                if ~isempty(DIR_KS4) & sorters(nsorter)==1
+                elseif ~isempty(DIR_KS4) & sorters(nsorter)==2
                     load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
                     clusters = clusters_ks4;
+                else
+                    continue
                 end
                 % currently hard-coded
                 %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
@@ -164,7 +165,7 @@ for nsession =1:length(experiment_info)
                 save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
             end
 
-            if ~isempty(DIR_KS4) & sorters(nsorter)==1
+            if ~isempty(DIR_KS4) & sorters(nsorter)==2
                 save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks4.mat'),'RF')
             end
 
