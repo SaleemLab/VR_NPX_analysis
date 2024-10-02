@@ -26,9 +26,9 @@ for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
-    session_folder = fullfile(base_folder,SUBJECTS{iSub},'analysis',session_info.probe(1).SESSION);
+    session_folder = fullfile(base_folder,session_info.probe(1).SUBJECT,'analysis',session_info.probe(1).SESSION);
 
-    for n = 1:length(session_info) % should just be 1 stimulus type normally
+    for n = 1:length(session_info) % should just be 1 stimulus type normally (RUN1)
         % change/update analysis folder depending on the pc used
         ANALYSIS_DATAPATH = session_info(n).probe(1).ANALYSIS_DATAPATH;
         ANALYSIS_DATAPATH = strrep(ANALYSIS_DATAPATH, 'Z:\ibn-vision\DATA\SUBJECTS', base_folder);
@@ -50,10 +50,11 @@ for nsession = 1:length(experiment_info)
 
         clusters = clusters_ks3;
         sorting_option = 'masa';
-        load(fullfile(options.probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
         receptive_field_file =fullfile(session_folder,'SparseNoise_fullscreen','receptiveFields_ks3.mat');
         if exist(receptive_field_file,"file")
             load(receptive_field_file);
+            receptive_field=RF;
         else
             receptive_field_file =fullfile(session_folder,'SparseNoise','receptiveFields_ks3.mat');
             if exist(receptive_field_file,"file")
@@ -84,26 +85,46 @@ for nsession = 1:length(experiment_info)
                 session_clusters.eye_coordinates = {Behaviour.face_motion_SVD(:,10)};
             end
         end
-        clusters = rmfield(clusters,'sorter');
-        clusters = rmfield(clusters,'probe_id');
+
+        if isfield(clusters,'sorter')
+            clusters = rmfield(clusters,'sorter');
+        end
+
+        if isfield(clusters,'probe_id')
+            clusters = rmfield(clusters,'probe_id');
+        end
 
         for nprobe = 1:length(clusters)
             clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
             clusters(nprobe).region(:) = 'n.a';
             options = session_info.probe(nprobe);
-            if options.probe_id == options.probe_V1
-                V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-                HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1';
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC';
+            if clusters(nprobe).probe_hemisphere == 1
+%                                 V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by shank');
+%                                 HPC_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by shank');
 
-            elseif options.probe_id == options.probe_MEC
+                kClusters=kmeans(clusters(nprobe).peak_depth,2);
+                if mean(clusters(nprobe).peak_depth(kClusters==1))>mean(clusters(nprobe).peak_depth(kClusters==2))
+                    % if mean ocation of cluster one is above cluster two, it is
+                    % Cortex.
+                    % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
+                    V1_cell_id = find(kClusters==1);
+                    V1_cell_id = find(kClusters==1);
+                else
+                    % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
+                    V1_cell_id = find(kClusters==2);
+                    V1_cell_id = find(kClusters==1);
+                end
+
+%                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1_L';
+%                 clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HPC_channels))) = 'HPC_L';
+
+            elseif clusters(nprobe).probe_hemisphere == 2
                 %             V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
-                MEC_channels = determine_region_channels(best_channels{nprobe},options,'region','MEC_entry','group','by probe');
-                HVA_channels = determine_region_channels(best_channels{nprobe},options,'region','HVA','group','by probe');
+                MEC_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by probe');
+                HVA_channels = determine_region_channels(best_channels{nprobe},options,'region','HPC','group','by probe');
                 %             clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,V1_channels))) = 'V1';
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,MEC_channels))) = 'MEC';
-                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HVA_channels))) = 'HVA';
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,MEC_channels))) = 'V1_R';
+                clusters(nprobe).region(find(ismember(clusters(nprobe).peak_channel,HVA_channels))) = 'V1_R';
             end
         end
         field_names = fieldnames(clusters);

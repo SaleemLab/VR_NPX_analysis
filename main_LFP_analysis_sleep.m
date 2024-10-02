@@ -133,7 +133,7 @@ Stimulus_type = 'Sleep';
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =[7]
+for nsession =1
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -142,9 +142,9 @@ for nsession =[7]
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        if ~contains(stimulus_name{n},'Sleep')
-            continue
-        end
+%         if ~contains(stimulus_name{n},'Sleep')
+%             continue
+%         end
         
         options = session_info(n).probe(1);
 %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -155,25 +155,50 @@ for nsession =[7]
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
 
         clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
-
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_place_fields_RUN1.mat'))
+        
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+        
+        DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        
+        session_clusters_RUN=[];
+        session_clusters_RUN1=[];
+        session_clusters_RUN2=[];
+        
         if ~isempty(DIR)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','extracted_place_fields_RUN1.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
         end
 
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN1=session_clusters;
+        end
+
+        if ~isempty(DIR2)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+            session_clusters_RUN2=session_clusters;
+        end
+        
+        session_clusters=[];
+        if ~isempty(DIR3)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        end
+        
+
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-        merged_clusters = clusters_ks4;
 
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
             options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
             %                 Behavioural state detection
-
-            speed_interp = interp1(Behaviour.tvec,Behaviour.mobility,LFP(probe_no).tvec','linear');
+        
+            
             %             mobility = movmean(Behaviour.mobility,120);
             mobility = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;
-
+            
             mob_index = find(mobility==1);
             for nindex = 1:length(mob_index)
                 if nindex<length(mob_index)
@@ -182,7 +207,9 @@ for nsession =[7]
                     end
                 end
             end
-
+%             plot(Behaviour.tvec,Behaviour.mobility);hold on;plot(Behaviour.tvec,mobility*500000)
+            mobility = interp1(Behaviour.tvec,double(mobility),LFP(probe_no).tvec,'linear');
+                
             speedTreshold = 1;
 
             if isfield(LFP(probe_no),'L5')
