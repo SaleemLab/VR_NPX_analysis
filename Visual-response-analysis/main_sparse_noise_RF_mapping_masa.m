@@ -35,65 +35,64 @@ for nsession =1:length(experiment_info)
 %     load(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"))
 
     for n = 1:length(session_info)
-        for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
-            options = session_info(n).probe(nprobe);
-            bin_size = 1/60;
-            AnalysisTimeWindow = [0 1/60*7];
+        options = session_info(n).probe(1);
+        bin_size = 1/60;
+        AnalysisTimeWindow = [0 1/60*7];
 
+        options.importMode = 'KS'; % LF or MUA or KS
+        % options.importMode = 'LF'; % LF or MUA or KS
+        options.BinWidth = 1/60; % resolution (in s) of output resps (e.g. 1/60)
+        options.stim_dur = 0.1;
+        options.AnalysisTimeWindow = [0 1/60*7];% two-element vector specifying time window around stim-on (e.g. [-0.25 1.25])
+        options.ks_unitType = 'good'; % 'mua', 'good' or ''
+        options.PD_FLAG = 1;
+        options.paradigm = 'masa';
+        %         options.gFileNum = gFileNum;
+        
 
-            options.importMode = 'KS'; % LF or MUA or KS
-            % options.importMode = 'LF'; % LF or MUA or KS
-            options.BinWidth = 1/60; % resolution (in s) of output resps (e.g. 1/60)
-            options.stim_dur = 0.1;
-            options.AnalysisTimeWindow = [0 1/60*7];% two-element vector specifying time window around stim-on (e.g. [-0.25 1.25])
-            options.ks_unitType = 'good'; % 'mua', 'good' or ''
-            options.PD_FLAG = 1;
-            options.paradigm = 'masa';
-            %         options.gFileNum = gFileNum;
-            options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
+        [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
 
-            [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
+        load(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour.mat"))
+        load(fullfile(options.ANALYSIS_DATAPATH,"extracted_task_info.mat"))
 
-            load(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour.mat"))
-            load(fullfile(options.ANALYSIS_DATAPATH,"extracted_task_info.mat"))
+        DIR_KS4 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"));
+        DIR_KS3 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"));
 
-            DIR_KS4 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"));
-            DIR_KS3 = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"));
+        sorters = [0 0];
+        if ~isempty(DIR_KS3)
+            sorters(1) = 1;
+        end
 
-            sorters = [0 0];
-            if ~isempty(DIR_KS3)
-                sorters(1) = 1;
+        if ~isempty(DIR_KS4)
+            sorters(2) = 2;
+        end
+
+        for nsorter = 1:length(sorters)
+            clear clusters clusters_ks3 clusters_ks4 selected_clusters
+            if ~isempty(DIR_KS3) & sorters(nsorter)==1
+                load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
+                clusters = clusters_ks3;
+            elseif ~isempty(DIR_KS4) & sorters(nsorter)==2
+                load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
+                clusters = clusters_ks4;
+            else
+                continue
             end
 
-            if ~isempty(DIR_KS4)
-                sorters(2) = 2;
-            end
+            for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
+                options = session_info(n).probe(nprobe);
+                options.probe_no = options.probe_id+1; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
-            for nsorter = 1:length(sorters)
-                clear clusters clusters_ks3 clusters_ks4
-                if ~isempty(DIR_KS3) & sorters(nsorter)==1
-                    load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
-                    clusters = clusters_ks3;
-                elseif ~isempty(DIR_KS4) & sorters(nsorter)==2
-                    load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
-                    clusters = clusters_ks4;
-                else
-                    continue
-                end
-                % currently hard-coded
-                %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
-                %                 &clusters.isi_viol <= 0.1...
-                %                 &clusters.amplitude >=50);
-                %             good_unit = clusters.cluster_id(good_unit_index);
-
+                %%%% selected_clusters currently not used
                 metric_param = create_cluster_selection_params('sorting_option','masa');
                 %             metric_param.unstable_ids = @(x) x==0;
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),metric_param);
-                good_unit = selected_clusters(nprobe).cluster_id;
-
+                good_unit = clusters(nprobe).cluster_id;
+                
+                clear resps
                 %         num_cell = length(unique(spike_data(:,1)));
                 for unit_id = 1:length(good_unit)
-                    spikes_this_cell = selected_clusters(nprobe).spike_times(selected_clusters(nprobe).spike_id==good_unit(unit_id));
+                    spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
 
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, Task_info.stim_onset, AnalysisTimeWindow, bin_size);
                     resps(unit_id,:,:) = binnedArray';
@@ -153,7 +152,7 @@ for nsession =1:length(experiment_info)
                 end
 
                 RF.probe(options.probe_no).cluster_id = good_unit;
-                RF.probe(options.probe_no).peak_channel = selected_clusters(options.probe_no).peak_channel;
+                RF.probe(options.probe_no).peak_channel = clusters(options.probe_no).peak_channel;
                 RF.probe(options.probe_no).peak_location = chan_config.Ks_ycoord(RF.probe(options.probe_no).peak_channel);
                 RF.probe(options.probe_no).shank = chan_config.Shank(RF.probe(options.probe_no).peak_channel);
 
