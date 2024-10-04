@@ -184,6 +184,7 @@ for nsession = 1:length(experiment_info)
         spatial_response = cell(no_clusters_this_session,2);
         delay = 0;
         within_track_corr = cell(no_clusters_this_session,2);
+        across_track_corr = cell(no_clusters_this_session,2);
         first_second_stability = zeros(no_clusters_this_session,2);
         odd_even_stability = zeros(no_clusters_this_session,2);
         peak_percentile = zeros(no_clusters_this_session,2);
@@ -234,6 +235,11 @@ for nsession = 1:length(experiment_info)
             clear all_spike_times_batch cluster_id_batch all_spike_id_batch
 
             for iCluster = clusters_index_batch(iBatch)+1:clusters_index_batch(iBatch+1)
+                if max(track_ID)==2
+                    across_track_corr{iCluster} = corr(normalize(spatial_response{iCluster,1}','range'),...
+                        normalize(spatial_response{iCluster,2}','range')); % lap by lap correlation;
+                end
+
                 tic
                 % Stability
                 for track_id = 1:max(track_ID)
@@ -281,6 +287,9 @@ for nsession = 1:length(experiment_info)
             end
         end
         clear spatial_response_shuffled
+        if max(track_ID)==2
+            session_clusters.across_track_corr = across_track_corr;
+        end
         session_clusters.within_track_corr = within_track_corr;
         session_clusters.first_second_stability = first_second_stability;
         session_clusters.odd_even_stability = odd_even_stability;
