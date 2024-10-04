@@ -72,7 +72,7 @@ for nsession = 1:length(experiment_info)
                 if iscell(receptive_field)
                     clusters(nprobe).receptive_field = receptive_field{nprobe};
                 else
-                    clusters(nprobe).receptive_field = receptive_field.probe(nprobe);
+                    clusters(nprobe).receptive_field = receptive_field.probe(nprobe).RF_map;
                 end
             end
         end
