@@ -69,7 +69,11 @@ for nsession = 1:length(experiment_info)
             if isempty(receptive_field)
                 clusters(nprobe).receptive_field = cell(size(clusters(nprobe).cluster_id));
             else
-                clusters(nprobe).receptive_field = receptive_field{nprobe};
+                if iscell(receptive_field)
+                    clusters(nprobe).receptive_field = receptive_field{nprobe};
+                else
+                    clusters(nprobe).receptive_field = receptive_field.probe(nprobe);
+                end
             end
         end
 
