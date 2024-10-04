@@ -153,7 +153,8 @@ for nsession =1
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
-
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+        clusters=clusters_ks3;
         clear replay reactivations ripples slow_waves raw_LFP CA1_clusters V1_clusters V1_replay V1_reactivations replay_combined replay_combined
         
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
@@ -185,10 +186,26 @@ for nsession =1
         if ~isempty(DIR3)
             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
         end
+
+        params = create_cluster_selection_params('sorting_option','masa');
+        clear selected_clusters
+        for nprobe = 1:length(clusters)
+            selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
+        end
+
+        for nprobe = 1:length(clusters)
+            if session_info(n).probe(nprobe).probe_hemisphere==1
+                selected_clusters(nprobe).region = session_clusters_RUN1.region(contains(session_clusters_RUN1.region,'L'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN1.spatial_response(contains(session_clusters_RUN1.region,'L'));
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN1.peak_percentile(contains(session_clusters_RUN1.region,'L'));
+            elseif session_info(n).probe(nprobe).probe_hemisphere==2
+                selected_clusters(nprobe).region = session_clusters_RUN1.region(contains(session_clusters_RUN1.region,'R'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN1.spatial_response(contains(session_clusters_RUN1.region,'R'));
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN1.odd_even_stability(contains(session_clusters_RUN1.region,'R'));
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN1.peak_percentile(contains(session_clusters_RUN1.region,'R'));
+            end
+        end
         
-
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             probe_no = session_info(n).probe(nprobe).probe_id + 1;
@@ -210,7 +227,7 @@ for nsession =1
 %             plot(Behaviour.tvec,Behaviour.mobility);hold on;plot(Behaviour.tvec,mobility*500000)
             mobility = interp1(Behaviour.tvec,double(mobility),LFP(probe_no).tvec,'linear');
                 
-            speedTreshold = 1;
+            
 
             if isfield(LFP(probe_no),'L5')
                 if ~isempty(LFP(probe_no).L5)
@@ -237,11 +254,12 @@ for nsession =1
             if isfield(LFP(probe_no),'CA1')
                 [~,best_channel]=max(LFP(probe_no).CA1_power(:,6));
                 CA1_LFP = LFP(probe_no).CA1(best_channel,:);
-
+                
+                speedTreshold = 1;
                 %                 CA1_LFP = raw_LFP{nprobe}(229,:);
                 [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
                     [LFP(probe_no).tvec' cortex_LFP'],[LFP(probe_no).tvec' CA1_LFP'],...
-                    [LFP(probe_no).tvec' speed_interp],speedTreshold);
+                    [LFP(probe_no).tvec' mobility'],speedTreshold);
             end
             %             behavioural_state.freezing = freezing;
             behavioural_state(probe_no).quietWake = quietWake;
@@ -256,15 +274,7 @@ for nsession =1
             zscore_min = 0;
             zscore_max = 3;
 
-            HPC_channels = determine_region_channels(best_channels{probe_no},options,'region','CA1','group','by probe');
-            %             merged_clusters.region
-            sorting_option = 'spikeinterface';
-            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            metric_param.peak_channel = @(x) ismember(x,HPC_channels);
-            %             metric_param.cell_type = @(x) x==1;
-            %             merged_clusters(nprobe).region
-            %             metric_param.merged_cluster_id = @(x) ismember(x,place_fields(nprobe).cluster_id(place_fields(nprobe).all_good_cells_LIBERAL));
-
+            
             CA1_clusters(probe_no) = select_clusters(merged_clusters(probe_no),metric_param);
 
             if ~isempty(CA1_clusters(probe_no).cluster_id)

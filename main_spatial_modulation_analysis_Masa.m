@@ -296,6 +296,10 @@ for nsession = 1:length(experiment_info)
         end
     end
 end
+
+%% Peri event raster plots
+
+
 %% Peri event raster plots
 
 for nsession =[1 2 3 4 6 7 8 9 10 12 14]
