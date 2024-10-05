@@ -14,7 +14,7 @@ SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
-Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
+Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
 % Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
 base_folder='Z:\ibn-vision\DATA\SUBJECTS';
 % for iSub = 1:length(SUBJECTS)
@@ -26,7 +26,7 @@ for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
-    session_folder = fullfile(base_folder,session_info(1).probe(1).SUBJECT,'analysis',session_info(1).probe(1).SESSION);
+    session_folder = fullfile(base_folder,session_info.probe(1).SUBJECT,'analysis',session_info.probe(1).SESSION);
 
     for n = 1:length(session_info) % should just be 1 stimulus type normally (RUN1)
         % change/update analysis folder depending on the pc used
@@ -101,7 +101,7 @@ for nsession = 1:length(experiment_info)
 
         for nprobe = 1:length(clusters)
             clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
-            options = session_info(n).probe(nprobe);
+            options = session_info.probe(nprobe);
             if clusters(nprobe).probe_hemisphere == 1
                 clusters(nprobe).region(:) = 'n.a_L';
 %                                 V1_channels = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by shank');
@@ -151,7 +151,7 @@ for nsession = 1:length(experiment_info)
         field_names = fieldnames(clusters);
 
         for nprobe = 1:length(clusters)
-            options = session_info(n).probe(nprobe);
+            options = session_info.probe(nprobe);
             clusters_probe = select_clusters(clusters(nprobe),params); %only look at good clusters
             single_cluster_spike_id = cell(size(clusters_probe.cluster_id));
             single_cluster_spike_times = cell(size(clusters_probe.cluster_id));
@@ -196,13 +196,13 @@ for nsession = 1:length(experiment_info)
         odd_even_corr_shuffled = cell(no_clusters_this_session,2);
         first_second_corr_shuffled = cell(no_clusters_this_session,2);
 
-        % within_track_corr_raw = cell(no_clusters_this_session,2);
-        % across_track_corr_raw = cell(no_clusters_this_session,1);
-        % first_second_stability_raw = zeros(no_clusters_this_session,2);
-        % odd_even_stability_raw = zeros(no_clusters_this_session,2);
-        % peak_percentile_raw = zeros(no_clusters_this_session,2);
-        % odd_even_corr_shuffled_raw = cell(no_clusters_this_session,2);
-        % first_second_corr_shuffled_raw = cell(no_clusters_this_session,2);
+        within_track_corr_raw = cell(no_clusters_this_session,2);
+        across_track_corr_raw = cell(no_clusters_this_session,1);
+        first_second_stability_raw = zeros(no_clusters_this_session,2);
+        odd_even_stability_raw = zeros(no_clusters_this_session,2);
+        peak_percentile_raw = zeros(no_clusters_this_session,2);
+        odd_even_corr_shuffled_raw = cell(no_clusters_this_session,2);
+        first_second_corr_shuffled_raw = cell(no_clusters_this_session,2);
 
         clear Behaviour Task_info
 
@@ -242,13 +242,17 @@ for nsession = 1:length(experiment_info)
             cluster_id_batch = session_clusters.cluster_id(clusters_index_batch(iBatch)+1:clusters_index_batch(iBatch+1));
             all_spike_id_batch = vertcat(session_clusters.spike_id{clusters_index_batch(iBatch)+1:clusters_index_batch(iBatch+1)});
             spatial_response_shuffled = cell(clusters_index_batch(iBatch+1)-clusters_index_batch(iBatch),2,1000); %pre-set shuffled response profiles
-
+            spatial_response_shuffled_raw=spatial_response_shuffled;
             parfor nshuffle = 1: 1000
                 disp(sprintf('Shuffle %i',nshuffle))
                 spatial_response_shuffled(:,:,nshuffle) = fast_spatial_response(all_spike_id_batch,cluster_id_batch,all_spike_times_batch,tvec...
                     ,position_shuffled{nshuffle},speed,track_ID_all,start_time_all,end_time_all);
             end
-
+            parfor nshuffle = 1: 1000
+                disp(sprintf('Shuffle %i',nshuffle))
+                spatial_response_shuffled_raw(:,:,nshuffle) = calculate_raw_spatial_response(all_spike_id_batch,cluster_id_batch,all_spike_times_batch,tvec...
+                    ,position_shuffled{nshuffle},speed,track_ID_all,start_time_all,end_time_all,bin_size);
+            end
             clear all_spike_times_batch cluster_id_batch all_spike_id_batch
 
             for iCluster = clusters_index_batch(iBatch)+1:clusters_index_batch(iBatch+1)
@@ -257,6 +261,10 @@ for nsession = 1:length(experiment_info)
                         normalize(spatial_response{iCluster,2}','range')); % lap by lap correlation;
                 end
 
+                if max(track_ID)==2
+                    across_track_corr_raw{iCluster} = corr(normalize(spatial_response_raw{iCluster,1}','range'),...
+                        normalize(spatial_response_raw{iCluster,2}','range')); % lap by lap correlation;
+                end
                 tic
 
                 % Stability
@@ -302,11 +310,53 @@ for nsession = 1:length(experiment_info)
 
                 end
 
+                % Stability
+                for track_id = 1:max(track_ID)
+                    start_times = start_time_all(track_ID_all == track_id);
+
+                    lap_correlation = corr(normalize(spatial_response_raw{iCluster,track_id}','range'),...
+                        normalize(spatial_response_raw{iCluster,track_id}','range')); % lap by lap correlation
+
+                    odd_even_corr_raw = mean(mean(lap_correlation(1:2:end,2:2:end),'omitnan'),'omitnan'); % First half vs Second half
+                    first_second_corr_raw = mean(mean(lap_correlation(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan'); % Odd laps vs even laps
+
+                    within_track_corr_raw{iCluster,track_id} = lap_correlation;
+
+                    normalised_ratemap = normalize(spatial_response_raw{iCluster,track_id}','range');
+
+                    peak_shuffled = zeros(1000,1);
+                    odd_even_corr_shuffled_temp = zeros(1000,1);
+                    first_second_corr_shuffled_temp = zeros(1000,1);
+                    sr_shuffled_temp = spatial_response_shuffled_raw(iCluster-clusters_index_batch(iBatch),track_id,:);
+                    parfor nshuffle = 1:1000
+                        % Range between min and max FR
+                        peak_shuffled(nshuffle,1) = max(mean(sr_shuffled_temp{1,1,nshuffle}))-min(mean(sr_shuffled_temp{1,1,nshuffle}));
+
+                        lap_correlation_shuffled = corr(normalised_ratemap,...
+                            normalize(sr_shuffled_temp{1,1,nshuffle}','range')); % original X shuffled correlation
+
+                        odd_even_corr_shuffled_temp(nshuffle) = mean(mean(lap_correlation_shuffled(1:2:end,2:2:end),'omitnan'),'omitnan'); % odd lap from
+                        first_second_corr_shuffled_temp(nshuffle) = mean(mean(lap_correlation_shuffled(1:round(length(start_times)/2),round(length(start_times)/2)+1:end),'omitnan'),'omitnan');
+                    end
+                    clear lap_correlation_shuffled
+                    first_second_stability_raw(iCluster,track_id) = sum(first_second_corr_raw > first_second_corr_shuffled_temp)/length(first_second_corr_shuffled_temp);
+                    first_second_corr_shuffled_raw{iCluster,track_id} = first_second_corr_shuffled_temp;
+
+                    odd_even_stability_raw(iCluster,track_id) = sum(odd_even_corr_raw > odd_even_corr_shuffled_temp)/length(odd_even_corr_shuffled_temp);
+                    odd_even_corr_shuffled_raw{iCluster,track_id} = odd_even_corr_shuffled_temp;
+
+
+
+                    peak_percentile_raw(iCluster,track_id) = sum(max(mean(spatial_response_raw{iCluster,track_id}))-min(mean(spatial_response_raw{iCluster,track_id}))>...
+                        peak_shuffled)/length(peak_shuffled); % max-min FR relative to max-min of shuffled data
+
+
+                end
                 toc
             end
         end
 
-        clear spatial_response_shuffled
+        clear spatial_response_shuffled spatial_response_shuffled_raw
         if max(track_ID)==2
             session_clusters.across_track_corr = across_track_corr;
         end
@@ -319,6 +369,13 @@ for nsession = 1:length(experiment_info)
         session_clusters.first_second_corr_shuffled = first_second_corr_shuffled;
         session_clusters.spatial_response = spatial_response;
 
+        session_clusters.within_track_corr_raw = within_track_corr_raw;
+        session_clusters.first_second_stability_raw = first_second_stability_raw;
+        session_clusters.odd_even_stability_raw = odd_even_stability_raw;
+        session_clusters.peak_percentile_raw = peak_percentile_raw;
+        session_clusters.reliablity_raw = reliablity;
+        session_clusters.odd_even_corr_shuffled_raw = odd_even_corr_shuffled_raw;
+        session_clusters.first_second_corr_shuffled_raw = first_second_corr_shuffled_raw;
         session_clusters.spatial_response_raw = spatial_response_raw;
 
         % add task info for each session
@@ -326,6 +383,45 @@ for nsession = 1:length(experiment_info)
             save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'session_clusters');
         end
 
+        clusters_combined= session_clusters;
+        clusters_combined.spike_id=vertcat(session_clusters.spike_id{:});
+        clusters_combined.spike_times=vertcat(session_clusters.spike_times{:});
+        [clusters_combined.spike_times,index] =sort(clusters_combined.spike_times);
+        clusters_combined.spike_id=clusters_combined.spike_id(index);
+
+        % Cell with spatial tuning
+        ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)<0.95) ...
+            | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)<0.95));
+
+        % Cell with spatial tuning
+        ia = find((clusters_combined.peak_percentile_raw(:,1)>0.95&clusters_combined.odd_even_stability_raw(:,1)>0.95) ...
+            | (clusters_combined.peak_percentile_raw(:,2)>0.95&clusters_combined.odd_even_stability_raw(:,2)>0.95));
+        %         [C,ia,ic] = unique(clusters_combined.cluster_id);
+        C = clusters_combined.cluster_id(ia);
+        clusters_combined.odd_even_stability
+
+        clear place_fields
+        x_bin_size =2;
+        spatial_response = calculate_raw_spatial_response(clusters_combined.spike_id,clusters_combined.cluster_id,clusters_combined.spike_times,clusters_combined.tvec{1},...
+            clusters_combined.position{1},clusters_combined.speed{1},clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_bin_size);
+        for track_id = 1:max(session_clusters.track_ID_all{1})
+            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
+            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+            place_fields(track_id).raw = spatial_response(:,track_id);
+        end
+
+
+        Task_info.start_time_all = clusters_combined.start_time_all{1};
+        Task_info.end_time_all = clusters_combined.end_time_all{1};
+        Task_info.track_ID_all = clusters_combined.track_ID_all{1};
+
+        Behaviour.tvec = clusters_combined.tvec{1};
+        Behaviour.position = clusters_combined.position{1};
+        Behaviour.speed = clusters_combined.speed{1};
+        %         place_fields=struct();
+        %         Behaviour.tvec =Behaviour.sglxTime_uncorrected ;% check if photodiode correction is causing this issue...
+        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C);
     end
 end
 

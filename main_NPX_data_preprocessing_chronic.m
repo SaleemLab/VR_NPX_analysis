@@ -153,8 +153,8 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
-experiment_info=experiment_info(4:5);
+experiment_info=experiment_info([22 38]);
+% experiment_info=experiment_info(4:5);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
