@@ -51,6 +51,8 @@ for iField = 1:size(all_cluster_fields,1)
         selected_clusters.probe_hemisphere = clusters.probe_hemisphere;
     elseif contains(all_cluster_fields{iField},'params')
         
+    elseif iscell(clusters.(all_cluster_fields{iField})) %ignore if it is a cell structure
+
     else
         temp_cluster_field = clusters.(all_cluster_fields{iField});
         selected_clusters.(all_cluster_fields{iField}) = temp_cluster_field(cluster_filter_index,:);
