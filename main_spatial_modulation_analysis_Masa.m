@@ -13,7 +13,9 @@ session_count = 0;
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+selected_sessions=[6 9 14 21 22 27 35 38 40];
+experiment_info=experiment_info(selected_sessions);
+
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
 % Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
 base_folder='Z:\ibn-vision\DATA\SUBJECTS';
@@ -22,10 +24,12 @@ base_folder='Z:\ibn-vision\DATA\SUBJECTS';
 %     Stimulus_type = 'Track';
 for nsession = 1:length(experiment_info)
     session_clusters = struct();
-    iDate = nsession;
+
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
     session_folder = fullfile(base_folder,session_info(1).probe(1).SUBJECT,'analysis',session_info(1).probe(1).SESSION);
 
     for n = 1:length(session_info) % should just be 1 stimulus type normally (RUN1)
