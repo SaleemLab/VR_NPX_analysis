@@ -52,8 +52,15 @@ for iField = 1:size(all_cluster_fields,1)
     elseif contains(all_cluster_fields{iField},'params')
         
     elseif iscell(clusters.(all_cluster_fields{iField})) % if it is a cell structure (Usually for RF which is cell structure)
-        temp_cluster_field = clusters.(all_cluster_fields{iField});
-        selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index}}';
+
+        if size(clusters.(all_cluster_fields{iField}),2)>1 & size(clusters.(all_cluster_fields{iField}),1)>1
+            temp_cluster_field = clusters.(all_cluster_fields{iField});
+            selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index,:}};
+             selected_clusters.(all_cluster_fields{iField})=reshape(selected_clusters.(all_cluster_fields{iField}),[sum(cluster_filter_index) size(temp_cluster_field,2)]);
+        else
+            temp_cluster_field = clusters.(all_cluster_fields{iField});
+            selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index}}';
+        end
     else
         temp_cluster_field = clusters.(all_cluster_fields{iField});
         selected_clusters.(all_cluster_fields{iField}) = temp_cluster_field(cluster_filter_index,:);

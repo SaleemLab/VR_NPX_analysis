@@ -519,7 +519,115 @@ for nsession =1:length(experiment_info)
     end
 end
 
-%% Bayeisan log odds analysis
+%% UP DOWN state and ripple and spindle analysis
+
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+%         if ~contains(stimulus_name{n},'Sleep')
+%             continue
+%         end
+        
+        options = session_info(n).probe(1);
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks3;
+        elseif contains(stimulus_name{n},'Sleep')
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            clusters=clusters_ks3;
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            clusters=clusters_ks3;
+        end
+        clear CA1_clusters V1_clusters 
+        
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+        
+        DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        
+        session_clusters_RUN=[];
+        session_clusters_RUN1=[];
+        session_clusters_RUN2=[];
+        
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN1=session_clusters;
+            session_clusters_RUN=session_clusters_RUN1;
+        end
+
+        if ~isempty(DIR2)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+            session_clusters_RUN2=session_clusters;
+        end
+        
+        session_clusters=[];
+        if ~isempty(DIR3)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        end
+
+        params = create_cluster_selection_params('sorting_option','masa');
+        clear selected_clusters
+        for nprobe = 1:length(clusters)
+            selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
+        end
+
+        for nprobe = 1:length(clusters)
+            % Convert to unique spike/cluster id
+            selected_clusters(nprobe).spike_id = selected_clusters(nprobe).spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+            selected_clusters(nprobe).cluster_id = selected_clusters(nprobe).cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+            if session_info(n).probe(nprobe).probe_hemisphere==1
+                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'));
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'));
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'));
+            elseif session_info(n).probe(nprobe).probe_hemisphere==2
+                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'));
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'));
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'));
+            end
+        end
+        
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+
+
+    end
+
+end
+
 
 
 %% Reactivation strength analysis 

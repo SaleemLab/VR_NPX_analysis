@@ -17,125 +17,212 @@ Stimulus_type = 'RUN';
 Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
-for epoch = 1:length(Stimulus_types_all)
-    Stimulus_type= Stimulus_types_all{epoch};
 
-      session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+for nsession = [1]
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'));
 
         if contains(stimulus_name{n},'Masa2tracks')
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-        else
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
-        end
-
-        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters = merged_clusters;
-            sorting_option = 'spikeinterface';
-        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters = clusters_ks3;
-            sorting_option = 'spikeinterface';
+            clusters=clusters_ks3;
+        elseif contains(stimulus_name{n},'Sleep')
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            clusters=clusters_ks3;
         else
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            sorting_option = 'old';
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            clusters=clusters_ks3;
+        end
+        clear CA1_clusters V1_clusters
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+
+        DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+
+        session_clusters_RUN=[];
+        session_clusters_RUN1=[];
+        session_clusters_RUN2=[];
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
         end
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN1=session_clusters;
+            session_clusters_RUN=session_clusters_RUN1;
+        end
+
+        if ~isempty(DIR2)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+            session_clusters_RUN2=session_clusters;
+        end
+
+        session_clusters=[];
+        if ~isempty(DIR3)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        end
+
+        params = create_cluster_selection_params('sorting_option','masa');
+        clear selected_clusters
+        for nprobe = 1:length(clusters)
+            selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
+        end
+
+        for nprobe = 1:length(clusters)
+            % Convert to unique spike/cluster id
+            selected_clusters(nprobe).spike_id = selected_clusters(nprobe).spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+            selected_clusters(nprobe).cluster_id = selected_clusters(nprobe).cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+            if session_info(n).probe(nprobe).probe_hemisphere==1
+                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'),:);
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'),:);
+            elseif session_info(n).probe(nprobe).probe_hemisphere==2
+                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'),:);
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'),:);
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
+            end
+        end
+
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
 
         if length(clusters) > 1
-            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
+            clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
         else
-            clusters_combined = merged_clusters;
+            clusters_combined = selected_clusters;
         end
-        
-            % HPC
-            decoded_ripple_events_shuffled = [];
-            decoded_ripple_events = [];
-            timebin = 0.05;
-            tic
-            % Reactivation log odds decoding
-            for mprobe = 1:length(session_info(n).probe)
-                % probe for ripples
-                ripple_probe_no = session_info(n).probe(mprobe).probe_id + 1;
-                %                 ripple_probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
 
-                replay = ripples.probe(ripple_probe_no);
-                %                 replay.offset = replay.onset(event) + 0.1;
+        % HPC
+        decoded_ripple_events_shuffled = [];
+        decoded_ripple_events = [];
+        timebin = 0.02;
+        tic
+        % Reactivation log odds decoding
+        for mprobe = 1:length(session_info(n).probe)
+            % probe for ripples
+            ripple_probe_no = session_info(n).probe(mprobe).probe_id + 1;
+            %                 ripple_probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
 
-                %                     [place_fields_BAYESIAN,decoded_events,probability_ratio_original] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay,position,[],stimulus_name{n},timebin);
+            replay = ripples.probe(ripple_probe_no);
+            %                 replay.offset = replay.onset(event) + 0.1;
 
-                for event = 1:length(replay.onset)
-                    replay1.offset = replay.onset(event) + 0.6;
-                    replay1.onset = replay.onset(event) - 0.6;
-                    [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay1,position,[],stimulus_name{n},timebin);
+            %                     [place_fields_BAYESIAN,decoded_events,probability_ratio_original] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay,position,[],stimulus_name{n},timebin);
 
-                    decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
-                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
+            for event = 1:length(replay.onset)
+                replay1.offset = replay.onset(event) + 0.6;
+                replay1.onset = replay.onset(event) - 0.6;
+                [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay1,position,[],stimulus_name{n},timebin);
 
-                    decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
-                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
 
-                    decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
-                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
 
-                    decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
-                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
 
-                    for nshuffle = 1:1000
-                        decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
-                        decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
-                    end
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
 
+                for nshuffle = 1:1000
+                    decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
+                    decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
                 end
 
-
-                for event = 1:length(replay.onset)
-                    replay1.offset = replay.onset(event) + 0.6;
-                    replay1.onset = replay.onset(event) - 0.6;
-                    [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay1,position,[],stimulus_name{n},timebin);
-
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
-
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
-
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
-
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
-                    decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
-
-                    for nshuffle = 1:1000
-                        decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
-                        decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
-                    end
-
-                end
             end
-            toc
 
 
-            save(sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events');
-            save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
-            save(sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled');
-            save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
-            clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped decoded_ripple_events decoded_ripple_events_shuffled
+            for event = 1:length(replay.onset)
+                replay1.offset = replay.onset(event) + 0.6;
+                replay1.onset = replay.onset(event) - 0.6;
+                [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay1,position,[],stimulus_name{n},timebin);
+
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
+
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
+
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
+
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
+                decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
+
+                for nshuffle = 1:1000
+                    decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
+                    decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
+                end
+
+            end
         end
+        toc
+
+
+        save(sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events');
+        save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
+        save(sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled');
+        save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
+        clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped decoded_ripple_events decoded_ripple_events_shuffled
+        
+
+
+        % Reactivation strength analysis
+        
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'HPC');
+        HPC_clusters = select_clusters(clusters_combined,metric_param);
+%         
+%         if options.probe_hemisphere==1
+%             
+%             
+%         elseif options.probe_hemisphere==2
+%             metric_param.region = @(x) contains(x,'V1_R');
+%             V1_clusters(probe_no) = select_clusters(selected_clusters(nprobe),metric_param);
+%         end
+SpikeCount
+        for nCell = spatial_cell_index
+            
+        end
+
+        [AssemblyTemplates,AssemblyIDs,time_projection,ASSEMBLYPROJECTOR] = assembly_patterns(SpikeCount, varargin)
+
+        [strength,dN] = ReactivationStrength(spikes,templates,varargin)
+
 
     end
+
 end
+
 
 %% V1 reactivation
 clear all
