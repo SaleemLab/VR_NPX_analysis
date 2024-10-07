@@ -78,10 +78,11 @@ function [spindles] = FindSpindles_masa(lfp,timevec,varargin)
 % https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7363445/
 % https://www.pnas.org/doi/10.1073/pnas.1103612108
 
+% Based on Tingley and Buzsáki 2020
 
 % Default values
 p = inputParser;
-addParameter(p,'thresholds',[1.25 3],@isnumeric)
+addParameter(p,'thresholds',[1 3],@isnumeric)
 addParameter(p,'durations',[500 3000],@isnumeric)
 addParameter(p,'restrict',[],@isnumeric)
 addParameter(p,'frequency',1000,@isnumeric)
@@ -93,6 +94,7 @@ addParameter(p,'EMGThresh',.9,@isnumeric);
 addParameter(p,'saveMat',false,@islogical);
 addParameter(p,'plotType',1,@isnumeric)
 addParameter(p,'savepath',[],@isstr)
+addParameter(p,'behaviour',[],@isstruct)
 
 lfp; 
 timevec;
@@ -114,6 +116,7 @@ plotType = p.Results.plotType;
 passband = p.Results.passband;
 EMGThresh = p.Results.EMGThresh;
 savepath = p.Results.savepath;
+behaviour = p.Results.behaviour;
 
 filter_type  = 'bandpass';
 filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
@@ -128,8 +131,31 @@ zscored_spindle = zscore(envelope(signal,round(frequency/5),'rms'));
 zscored_spindle = smoothdata(zscored_spindle,'gaussian',round(frequency/5));
 % lowThresholdFactor = 1.5;
 
-% Detect spindle periods by thresholding zscored ripple power
+if isfield(behaviour,'mobility_zscore')
+    speed_threshold = 3; % zscore of three in terms of movement
+    behaviour.speed=behaviour.mobility_zscore;
+else
+    speed_threshold = 5; %cm
+end
+
+speed = interp1(behaviour.sglxTime,behaviour.speed,timevec,'nearest');
+speed_thresholded = speed<speed_threshold; % find events with speed below 5
+
+if size(speed_thresholded,1)<size(speed_thresholded,2)
+    speed_thresholded=speed_thresholded';
+end
+
+if size(zscored_spindle,1)<size(zscored_spindle,2)
+    zscored_spindle=zscored_spindle';
+end
+
+% speed_thresholded
 thresholded = zscored_spindle > lowThresholdFactor;
+thresholded = thresholded + speed_thresholded;
+thresholded = thresholded-1;
+thresholded(thresholded ~= 1) = 0;
+
+% Detect spindle periods by thresholding zscored ripple power
 start = find(diff(thresholded)>0);
 stop = find(diff(thresholded)<0);
 % Exclude last spindle if it is incomplete
@@ -248,7 +274,7 @@ if strcmp(show,'on')
 
         figure
         spindle_first = round(size(spindles,1)/2);
-        spindle_last = round(size(spindles,1)/2)+4;
+        spindle_last = round(size(spindles,1)/2)+5;
 
         subplot(3,1,1)
         time_index = find(timevec>=spindles(spindle_first,1)-1 &timevec<=spindles(spindle_last,1)+1);
@@ -263,17 +289,26 @@ if strcmp(show,'on')
         plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
         title('spindle filtered RMS zscore (9 - 17Hz)')
 
-        subplot(3,1,3)
         for j=spindle_first:spindle_last
             hold on
-            plot([spindles(j,1) spindles(j,1)],[0 spindles(j,4)],'g-');
+            plot([spindles(j,1) spindles(j,1)],[min(zscored_spindle(time_index)) spindles(j,4)],'g-');
             plot([spindles(j,2) spindles(j,2)],[spindles(j,4) spindles(j,4)],'k-');
             plot([spindles(j,1) spindles(j,3)],[spindles(j,4) spindles(j,4)],'k-');
-            plot([spindles(j,3) spindles(j,3)],[0 spindles(j,4)],'r-');
+            plot([spindles(j,3) spindles(j,3)],[min(zscored_spindle(time_index)) spindles(j,4)],'r-');
         end
+        
+        subplot(3,1,3)
+        plot(timevec(time_index),speed(time_index))
+        title('Movement (pixel change zscored)')
         hold on
-        plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
-        plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
+%         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+        for j=spindle_first:spindle_last
+            hold on
+            plot([spindles(j,1) spindles(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
+            plot([spindles(j,2) spindles(j,2)],[lowThresholdFactor lowThresholdFactor],'k-');
+            plot([spindles(j,1) spindles(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
+            plot([spindles(j,3) spindles(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
+        end
 
     end
 end

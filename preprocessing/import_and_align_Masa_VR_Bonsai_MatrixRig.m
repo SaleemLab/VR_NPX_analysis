@@ -149,178 +149,197 @@ nTrials = length(temp_tbl.start_time);
 % temp_tbl.end_time(temp_tbl.start_time<=0)=[];
 % temp_tbl.start_time(temp_tbl.start_time<=0)=[];
 
-
+% % Additional steps??: Check if quad happened 'later' than Photodiode. In rare
+% % cases, quad is logged later than photodiode. In this case, correct based
+% % on best lag only!
+% [~ index]=unique(photodiode.sglxTime);
+% interp_photodiode = interp1(photodiode.sglxTime(index),photodiode.Photodiode(index),peripherals.sglxTime(1):1/1000:peripherals.sglxTime(end));
+% interp_quadstate = interp1(peripherals.sglxTime,peripherals.QuadState,peripherals.sglxTime(1):1/1000:peripherals.sglxTime(end),'previous');
+% % plot(interp_photodiode);hold on;plot(100*interp_quadstate+10)
+% plot(photodiode.sglxTime,photodiode.Photodiode);hold on;plot(peripherals.sglxTime,100*peripherals.QuadState+10)
+% 
+% [r, lags] = xcorr(normalize(interp_quadstate), normalize(interp_photodiode));
+% [~, joint_idx] = max(r);
+% best_lag = lags(joint_idx);
+% % plot(lags,r)
+% 
+% if best_lag>1
+%     best_lag_correction = 1;
+% else
+   best_lag_correction = 0;
+% end
 % if difference between photodiode and quadstate is less than 10%, it is probably more or less acruate
-if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    0.1
+if best_lag_correction ==0
+    if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    0.1
 
-    disp('Aligning bonsai timestamp based on the delay between photodiode and quad state (may take 10 mins)')
-    pdstart = [];
-    tic
-    % photodiode_index = 1:length(photodiode.FrameNumber);
-    % blocks_index = 1:length(blocks_ind);
-    H = waitbar(0,'Finding photodiode ON edges');
+        disp('Aligning bonsai timestamp based on the delay between photodiode and quad state (may take 10 mins)')
+        pdstart = [];
+        tic
+        % photodiode_index = 1:length(photodiode.FrameNumber);
+        % blocks_index = 1:length(blocks_ind);
+        H = waitbar(0,'Finding photodiode ON edges');
 
-    for itrial =1:length(idx_trial_start)
-        waitbar(itrial/length(idx_trial_start),H)
-        % find frame where Bonsai asked to change quad
-%         frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
+        for itrial =1:length(idx_trial_start)
+            waitbar(itrial/length(idx_trial_start),H)
+            % find frame where Bonsai asked to change quad
+            %         frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
 
-        % find next index where the photodiode detected a quad change
-%         temp_idx = find(pd_ON(blocks_ind) >= frameidx_start,1,'first');
-%         idx_start = pd_ON(blocks_ind(temp_idx))-1;
+            % find next index where the photodiode detected a quad change
+            %         temp_idx = find(pd_ON(blocks_ind) >= frameidx_start,1,'first');
+            %         idx_start = pd_ON(blocks_ind(temp_idx))-1;
 
-        temp_idx = find(photodiode.sglxTime(pd_ON(blocks_ind)) >= temp_tbl.start_time(itrial),1,'first');
-        idx_start = pd_ON(blocks_ind(temp_idx))-1;
-        %
-        %     % find frame where Bonsai asked to change quad
-        %     frameidx_start = photodiode_index(photodiode.FrameNumber <= frame_trial_start(itrial));
-        %     frameidx_start = frameidx_start(end);
-        %
-        %     % find next index where the photodiode detected a quad change
-        %     temp_idx = blocks_index(pd_ON(blocks_ind) > frameidx_start);
-        %
-        %     if ~isempty(temp_idx)
-        %         temp_idx = temp_idx(1);
-        %     end
-        %     idx_start = pd_ON(blocks_ind(temp_idx))-1;
+            temp_idx = find(photodiode.sglxTime(pd_ON(blocks_ind)) >= temp_tbl.start_time(itrial),1,'first');
+            idx_start = pd_ON(blocks_ind(temp_idx))-1;
+            %
+            %     % find frame where Bonsai asked to change quad
+            %     frameidx_start = photodiode_index(photodiode.FrameNumber <= frame_trial_start(itrial));
+            %     frameidx_start = frameidx_start(end);
+            %
+            %     % find next index where the photodiode detected a quad change
+            %     temp_idx = blocks_index(pd_ON(blocks_ind) > frameidx_start);
+            %
+            %     if ~isempty(temp_idx)
+            %         temp_idx = temp_idx(1);
+            %     end
+            %     idx_start = pd_ON(blocks_ind(temp_idx))-1;
 
-        % convert to spike GLX time
-        if ~isempty(idx_start)
-%             pdstart(itrial) = Nidq.sglxTime(idx_start);
-            pdstart(itrial) = photodiode.sglxTime(idx_start);
-        else
-            pdstart(itrial) = nan;
+            % convert to spike GLX time
+            if ~isempty(idx_start)
+                %             pdstart(itrial) = Nidq.sglxTime(idx_start);
+                pdstart(itrial) = photodiode.sglxTime(idx_start);
+            else
+                pdstart(itrial) = nan;
+            end
         end
-    end
-    toc
+        toc
 
-    pdend = []
-    tic
-    H = waitbar(0,'Finding photodiode OFF edges');
-    for itrial =1:length(idx_trial_end)
-        waitbar(itrial/length(idx_trial_end),H)
+        pdend = []
+        tic
+        H = waitbar(0,'Finding photodiode OFF edges');
+        for itrial =1:length(idx_trial_end)
+            waitbar(itrial/length(idx_trial_end),H)
 
-        % find frame where Bonsai asked to change quad
-        %         frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
+            % find frame where Bonsai asked to change quad
+            %         frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
 
-        % find next index where the photodiode detected a quad change
-        %         temp_idx = find(pd_OFF(blocks_ind) > frameidx_end,1,'first');
-        %         idx_end = pd_OFF(blocks_ind(temp_idx))-1;
+            % find next index where the photodiode detected a quad change
+            %         temp_idx = find(pd_OFF(blocks_ind) > frameidx_end,1,'first');
+            %         idx_end = pd_OFF(blocks_ind(temp_idx))-1;
 
-        temp_idx = find(photodiode.sglxTime(pd_OFF(blocks_ind)) >= temp_tbl.end_time(itrial),1,'first');
-        idx_end = pd_ON(blocks_ind(temp_idx))-1;
-        %     % find frame where Bonsai asked to change quad
-        %     frameidx_end = photodiode_index(photodiode.FrameNumber <= frame_trial_end(itrial));
-        %     frameidx_end = frameidx_end(end);
-        %
-        %     % find next index where the photodiode detected a quad change
-        %     temp_idx = blocks_index(pd_ON(blocks_ind) > frameidx_end);
-        %
-        %     if ~isempty(temp_idx)
-        %         temp_idx = temp_idx(1);
-        %     end
-        %
-        %     idx_end = pd_ON(blocks_ind(temp_idx))-1;
+            temp_idx = find(photodiode.sglxTime(pd_OFF(blocks_ind)) >= temp_tbl.end_time(itrial),1,'first');
+            idx_end = pd_ON(blocks_ind(temp_idx))-1;
+            %     % find frame where Bonsai asked to change quad
+            %     frameidx_end = photodiode_index(photodiode.FrameNumber <= frame_trial_end(itrial));
+            %     frameidx_end = frameidx_end(end);
+            %
+            %     % find next index where the photodiode detected a quad change
+            %     temp_idx = blocks_index(pd_ON(blocks_ind) > frameidx_end);
+            %
+            %     if ~isempty(temp_idx)
+            %         temp_idx = temp_idx(1);
+            %     end
+            %
+            %     idx_end = pd_ON(blocks_ind(temp_idx))-1;
 
-        % convert to spike GLX time
-        if ~isempty(idx_end)
-            pdend(itrial) = photodiode.sglxTime(idx_end);
-%             pdend(itrial) = Nidq.sglxTime(idx_end);
-        else
-            pdend(itrial) = nan;
+            % convert to spike GLX time
+            if ~isempty(idx_end)
+                pdend(itrial) = photodiode.sglxTime(idx_end);
+                %             pdend(itrial) = Nidq.sglxTime(idx_end);
+            else
+                pdend(itrial) = nan;
+            end
         end
-    end
-    toc
+        toc
 
-%     photodiodeData.stim_on.sglxTime=Nidq.sglxTime(pd_ON(blocks_ind))';
-%     photodiodeData.stim_off.sglxTime=Nidq.sglxTime(pd_OFF(blocks_ind))';
-%     photodiodeData.stim_on.sglxTime=photodiode.sglxTime(pd_ON(blocks_ind))';
-%     photodiodeData.stim_off.sglxTime=photodiode.sglxTime(pd_OFF(blocks_ind))';
-%     
-    photodiodeData.stim_on.sglxTime = pdstart';
-    photodiodeData.stim_off.sglxTime = pdend';
-else
+        %     photodiodeData.stim_on.sglxTime=Nidq.sglxTime(pd_ON(blocks_ind))';
+        %     photodiodeData.stim_off.sglxTime=Nidq.sglxTime(pd_OFF(blocks_ind))';
+        %     photodiodeData.stim_on.sglxTime=photodiode.sglxTime(pd_ON(blocks_ind))';
+        %     photodiodeData.stim_off.sglxTime=photodiode.sglxTime(pd_OFF(blocks_ind))';
+        %
+        photodiodeData.stim_on.sglxTime = pdstart';
+        photodiodeData.stim_off.sglxTime = pdend';
+    else
 
-    pdstart = [];
-    tic
-    % photodiode_index = 1:length(photodiode.FrameNumber);
-    % blocks_index = 1:length(blocks_ind);
-    H = waitbar(0,'Finding photodiode mean delay');
+        pdstart = [];
+        tic
+        % photodiode_index = 1:length(photodiode.FrameNumber);
+        % blocks_index = 1:length(blocks_ind);
+        H = waitbar(0,'Finding photodiode mean delay');
 
-    for itrial =1:length(idx_trial_start)
-        waitbar(itrial/length(idx_trial_start),H)
-        % find frame where Bonsai asked to change quad
-        frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
+        for itrial =1:length(idx_trial_start)
+            waitbar(itrial/length(idx_trial_start),H)
+            % find frame where Bonsai asked to change quad
+            frameidx_start = find(photodiode.FrameNumber <= frame_trial_start(itrial),1,'last');
 
-        % find next index where the photodiode detected a quad change
-        temp_idx = find(pd_ON > frameidx_start,1,'first');
-        idx_start = pd_ON(temp_idx)-1;
+            % find next index where the photodiode detected a quad change
+            temp_idx = find(pd_ON > frameidx_start,1,'first');
+            idx_start = pd_ON(temp_idx)-1;
 
-        % convert to spike GLX time
-        if ~isempty(idx_start)
-            pdstart(itrial) = photodiode.sglxTime(idx_start);
-        else
-            pdstart(itrial) = nan;
+            % convert to spike GLX time
+            if ~isempty(idx_start)
+                pdstart(itrial) = photodiode.sglxTime(idx_start);
+            else
+                pdstart(itrial) = nan;
+            end
         end
-    end
-    toc
+        toc
 
-    pdend = []
-    tic
+        pdend = []
+        tic
 
-    for itrial =1:length(idx_trial_end)
+        for itrial =1:length(idx_trial_end)
 
-        % find frame where Bonsai asked to change quad
-        frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
+            % find frame where Bonsai asked to change quad
+            frameidx_end = find(photodiode.FrameNumber <= frame_trial_end(itrial),1,'last');
 
-        % find next index where the photodiode detected a quad change
-        temp_idx = find(pd_OFF > frameidx_end,1,'first');
-        idx_end = pd_OFF(temp_idx)-1;
+            % find next index where the photodiode detected a quad change
+            temp_idx = find(pd_OFF > frameidx_end,1,'first');
+            idx_end = pd_OFF(temp_idx)-1;
 
-        % convert to spike GLX time
-        if ~isempty(idx_end)
-            pdend(itrial) = photodiode.sglxTime(idx_end);
-        else
-            pdend(itrial) = nan;
+            % convert to spike GLX time
+            if ~isempty(idx_end)
+                pdend(itrial) = photodiode.sglxTime(idx_end);
+            else
+                pdend(itrial) = nan;
+            end
         end
+        toc
+        photodiodeData.stim_on.sglxTime = pdstart';
+        photodiodeData.stim_off.sglxTime = pdend';
+
+        options(1).photodiode_failure = 1;
     end
-    toc
-    photodiodeData.stim_on.sglxTime = pdstart';
-    photodiodeData.stim_off.sglxTime = pdend';
-
-    options(1).photodiode_failure = 1;
-end
 
 
-if contains(StimulusName,'Masa2tracks')
-    StimulusType = 'Masa2tracks';
-else
-     StimulusType = 'Track';
-end
+    if contains(StimulusName,'Masa2tracks')
+        StimulusType = 'Masa2tracks';
+    else
+        StimulusType = 'Track';
+    end
 
-if isfield(options,'photodiode_failure') 
-%      peripherals.corrected_sglxTime = peripherals.sglxTime;
-     disp('photodiode signal noisy. Bonsai data still corrected. Use corrected timestamp with caution')
-        
-     if isempty(pdstart) | isempty (pdend)
-         peripherals.corrected_sglxTime = peripherals.sglxTime;
-     else
-         [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
-     end
+    if isfield(options,'photodiode_failure')
+        %      peripherals.corrected_sglxTime = peripherals.sglxTime;
+        disp('photodiode signal noisy. Bonsai data still corrected. Use corrected timestamp with caution')
 
-     
-%      [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'mean delay');
-else
-    switch StimulusType
-        case 'replay_Masa2tracks'
-            [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'replay');
-        case 'Masa2tracks' % For now, just subtract from the average delay (the variance is quite small (e.g. 0.5s to 0.6s))
+        if isempty(pdstart) | isempty (pdend)
+            peripherals.corrected_sglxTime = peripherals.sglxTime;
+        else
             [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
-        case 'Track'
-            [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+        end
+
+
+        %      [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'mean delay');
+    else
+        switch StimulusType
+            case 'replay_Masa2tracks'
+                [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'replay');
+            case 'Masa2tracks' % For now, just subtract from the average delay (the variance is quite small (e.g. 0.5s to 0.6s))
+                [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+            case 'Track'
+                [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+        end
     end
 end
-
 
 bonsai_tvec_60 = interp1(peripherals.sglxTime,peripherals.sglxTime,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
 quad_60 = interp1(peripherals.sglxTime,peripherals.QuadState,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
@@ -340,13 +359,13 @@ peripherals.corrected_sglxTime_best_lag = peripherals.sglxTime-best_lag*(1/60);
 
 
 % 
-% figure;
-% plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
-% hold on
-% plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
+figure;
+plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
+hold on
+plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
 % plot(peripherals.corrected_sglxTime_best_lag(1:2000),peripherals.QuadState(1:2000)*210)
 % 
-% plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
+plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
 % scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
 % scatter(photodiode.sglxTime(pd_OFF(1:300)),190*ones(1,300))
 

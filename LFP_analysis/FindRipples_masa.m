@@ -73,6 +73,7 @@ function [ripples] = FindRipples_masa(lfp,timevec,varargin)
 % the Free Software Foundation; either version 3 of the License, or
 % (at your option) any later version.
 
+% Based on Tingley and Buzsáki 2020
 warning('this function is under development and may not work... yet')
 
 % Default values
@@ -151,9 +152,27 @@ zscored_ripple = zscore(abs(hilbert(signal)));
 
 
 % Detect ripple periods by thresholding zscored ripple power
+if isfield(behaviour,'mobility_zscore')
+    speed_threshold = 3; % zscore of three in terms of movement
+    behaviour.speed=behaviour.mobility_zscore;
+else
+    speed_threshold = 5; %cm
+end
 
 speed = interp1(behaviour.sglxTime,behaviour.speed,timevec,'nearest');
-speed_thresholded = speed<1; % find events with speed below 5
+speed_thresholded = speed<speed_threshold; % find events with speed below 5
+if size(speed_thresholded,1)>size(speed_thresholded,2)
+    speed_thresholded=speed_thresholded';
+end
+
+if size(speed_thresholded,1)<size(speed_thresholded,2)
+    speed_thresholded=speed_thresholded';
+end
+
+if size(zscored_ripple,1)<size(zscored_ripple,2)
+    zscored_ripple=zscored_ripple';
+end
+
 % speed_thresholded
 thresholded = zscored_ripple > lowThresholdFactor;
 thresholded = thresholded + speed_thresholded;
@@ -300,7 +319,7 @@ if strcmp(show,'on')
 
         figure
         ripple_first = round(size(ripples,1)/2);
-        ripple_last = round(size(ripples,1)/2)+4;
+        ripple_last = round(size(ripples,1)/2)+5;
 
         subplot(3,1,1)
         time_index = find(timevec>=ripples(ripple_first,1)-1 &timevec<=ripples(ripple_last,1)+1);
@@ -314,19 +333,30 @@ if strcmp(show,'on')
         plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
         title('z-scored Ripple power (125-300Hz)')
 
-        subplot(3,1,3)
         for j=ripple_first:ripple_last
             hold on
-            plot([ripples(j,1) ripples(j,1)],[0 ripples(j,4)],'g-');
+            plot([ripples(j,1) ripples(j,1)],[min(zscored_ripple(time_index)) ripples(j,4)],'g-');
             plot([ripples(j,2) ripples(j,2)],[ripples(j,4) ripples(j,4)],'k-');
             plot([ripples(j,1) ripples(j,3)],[ripples(j,4) ripples(j,4)],'k-');
-            plot([ripples(j,3) ripples(j,3)],[0 ripples(j,4)],'r-');
+            plot([ripples(j,3) ripples(j,3)],[min(zscored_ripple(time_index)) ripples(j,4)],'r-');
         end
         hold on
         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
         plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
 
-
+        subplot(3,1,3)
+        plot(timevec(time_index),speed(time_index))
+        title('Movement (pixel change zscored)')
+        hold on
+%         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+        for j=ripple_first:ripple_last
+            hold on
+            plot([ripples(j,1) ripples(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
+            plot([ripples(j,2) ripples(j,2)],[lowThresholdFactor lowThresholdFactor],'k-');
+            plot([ripples(j,1) ripples(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
+            plot([ripples(j,3) ripples(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
+        end
+  
         % Check ripples
 %         fig = figure;
 % 
@@ -352,10 +382,13 @@ end
 %% BUZCODE Struct Output
 temp = ripples; clear ripples
 
-ripples.onset = temp(:,1)';
-ripples.offset = temp(:,3)';
-ripples.peaktimes = temp(:,2)';            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
-ripples.peak_zscore = temp(:,4)';  %amplitudes?
+ripples.onset = temp(:,1);
+ripples.offset = temp(:,3);
+ripples.peaktimes = temp(:,2);            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
+ripples.peak_zscore = temp(:,4);  %amplitudes?
+
+
+
 % ripples.stdev = sd;
 % if ~isempty(bad)
 %     ripples.noise.times = bad(:,[1 3]);
