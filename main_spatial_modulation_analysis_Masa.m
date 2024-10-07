@@ -200,6 +200,7 @@ for nsession = 1:length(experiment_info)
         odd_even_corr_shuffled = cell(no_clusters_this_session,2);
         first_second_corr_shuffled = cell(no_clusters_this_session,2);
 
+        spatial_response_raw = spatial_response;
         % within_track_corr_raw = cell(no_clusters_this_session,2);
         % across_track_corr_raw = cell(no_clusters_this_session,1);
         % first_second_stability_raw = zeros(no_clusters_this_session,2);
