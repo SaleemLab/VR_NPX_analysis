@@ -1,4 +1,4 @@
-function [PSD power best_channels] = calculate_channel_PSD(raw_LFP,SR,sorted_config,options,varargin)
+function [PSD power] = calculate_channel_PSD(raw_LFP,SR,chan_config,options,varargin)
 
 % Default values
 p = inputParser;
@@ -21,9 +21,14 @@ nfft = 2^(nextpow2(SR*nfft_seconds));
 win  = hanning(nfft);
 % F  = [0.5 3;4 12;9 17;30 60;60 100;125 300];
 
-for nchannel = 1:size(sorted_config,1)
+for nchannel = 1:size(chan_config,1)
 
     [pxx,fxx] = pwelch(raw_LFP(nchannel,:),win,[],nfft,SR);
+    PSD(nchannel).channel = chan_config.Channel(nchannel);
+    PSD(nchannel).shank = chan_config.Shank(nchannel);
+    PSD(nchannel).xcoord = chan_config.Ks_xcoord(nchannel);
+    PSD(nchannel).ycoord = chan_config.Ks_ycoord(nchannel);
+
     PSD(nchannel).power = pxx;
     PSD(nchannel).powerdB = 10*log10(pxx);
     PSD(nchannel).frequency = fxx;
@@ -43,95 +48,91 @@ for nchannel = 1:size(sorted_config,1)
 end
 
 power = [];
-for nchannel = 1:size(sorted_config,1)
+for nchannel = 1:size(chan_config,1)
     power(nchannel,:) = PSD(nchannel).mean_power;
+    xcoord(nchannel) = PSD(nchannel).xcoord;
+    ycoord(nchannel) = PSD(nchannel).ycoord;
 end
-
-
-% Find peak channel for each oscillation band (currently hard-coded)
-normalised_high_frequency = power(:,7)/max(power(:,7));  %power normalized by max power across channel
-normalised_ripple = power(:,6)/max(power(:,6)); 
-normalised_theta = power(:,2)/max(power(:,2)); 
-normalised_slow_wave = power(:,1)./max(power(:,1));
-normalised_spindle = power(:,3)./max(power(:,3));
-
-% Find first peak that suddenly increases in power as the probe enters the
-% brain
-high_frequency_power_differnece = [0; diff(normalised_high_frequency)];
-theta_power_differnece = [0; diff(normalised_theta)]; 
-ripple_power_differnece = [0; diff(normalised_ripple)]; 
-candidate_index = [];
-[~,candidate_index{1}] = findpeaks(high_frequency_power_differnece,'MinPeakHeight',0.05);
-[~,candidate_index{2}] = findpeaks(theta_power_differnece,'MinPeakHeight',0.05);
-[~,candidate_index{3}] = findpeaks(ripple_power_differnece,'MinPeakHeight',0.05);
-
-first_in_brain_channel = min([candidate_index{1}; candidate_index{2}; candidate_index{3}]);
-best_channels.first_in_brain_channel = sorted_config.Channel(first_in_brain_channel);
-
-% Find channels with normalised high-frequency power bigger than 0.1 (above 1500 micron below the brain)
-candidate_index = [];
-[value, candidate_index] = findpeaks(normalised_high_frequency(1:first_in_brain_channel+40),'MinPeakHeight',0.1); 
-[~,index]  = max(normalised_high_frequency(candidate_index));  %find channel with maximum high-frequency-power
-best_high_frequency_channel_this_column = candidate_index(index);
-best_L5_channel = sorted_config.Channel(best_high_frequency_channel_this_column);
-
-% Find CA1 channels below layer 5 and above theta-peaked channel
-% Find channel with max theta power (putative dentate region)
-[value, peak_theta_channel_this_column] = max(normalised_theta); 
-channel_ranges = best_high_frequency_channel_this_column:peak_theta_channel_this_column;
-[value, candidate_index] = findpeaks(normalised_ripple(best_high_frequency_channel_this_column:peak_theta_channel_this_column),'MinPeakHeight',0.1); 
-[~,index]  = max(normalised_ripple(channel_ranges(candidate_index))-normalised_theta(channel_ranges(candidate_index)));  %find channel with maximum difference between theta and ripple power
-best_ripple_channel_this_column = channel_ranges(candidate_index(index)); % First peak to pass that threshold is usually CA1
-best_CA1_ripple_channel = sorted_config.Channel(best_ripple_channel_this_column);
-
-
- % Find channels with normalised high-frequency power bigger than 0.4 ( more than 120 micron above layer 5)
-channel_ranges = first_in_brain_channel:best_high_frequency_channel_this_column-3;
-[value, candidate_index] = findpeaks(normalised_high_frequency(channel_ranges),'MinPeakHeight',0.1); % should be at least 120 micron (Distance between each channel in one column is 40 micron)
-[~,index]  = max(normalised_high_frequency(channel_ranges(candidate_index))-normalised_high_frequency(channel_ranges(candidate_index)-1));  %find channel with biggest high-frequency-power gain (compared to the channel above)
-best_high_frequency_channel_this_column = channel_ranges(candidate_index(index));
-best_L4_channel = sorted_config.Channel(best_high_frequency_channel_this_column);
-
-
-best_channels.L4_channel = best_L4_channel;
-best_channels.L5_channel = best_L5_channel;
-best_channels.CA1_channel = best_CA1_ripple_channel;
-
+xcoord_avaliable = unique(xcoord);
+% sort channel according to y coordinate
+[ycoord idx] = sort(ycoord,'ascend');
+xcoord = xcoord(idx);
+sorted_power = power(idx,:);
 
 if plot_option == 1
-    % Quick plotting of PSD
-%     colour_line= {'k','r','m','b','c','g','y'};
-    colour_line= {[177,0,38]/256,[213,62,79]/256,[252,141,89]/256,...
-        [153,213,148]/256,[26,152,80]/256,[66,146,198]/256,[8,69,148]/256};
+
+
+    stimulus_name = extractAfter(options.ANALYSIS_DATAPATH,[fullfile('analysis',options.SESSION),'\']);
+
+    fig = figure;
+    fig.Position = [260,50,1140,900]
+    fig.Name = sprintf('%s %s %s PSD profile heatmap probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
+
     freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
-    selected_frequency = [2 6 7];
-    figure
-%     subplot(1,4,2)
+    % Loop over the frequency ranges
+    for nfreq = 1:size(sorted_power, 2)
+        % Create a subplot for this frequency range
+        subplot(ceil(size(sorted_power, 2) / 2), 2, nfreq);
 
-    for n = selected_frequency
-        pl(n) = plot(power(:,n)./max(power(:,n)),sorted_config.Ks_ycoord','Color',colour_line{n})
+        % Create a scatter plot for this frequency range
+        for col = 1:length(xcoord_avaliable)
+            scatter(xcoord(xcoord == xcoord_avaliable(col)), ycoord(xcoord == xcoord_avaliable(col)), 24, sorted_power(xcoord == xcoord_avaliable(col),nfreq)/max(sorted_power(xcoord == xcoord_avaliable(col),nfreq)), 'filled'); hold on
+        end
+        xlim([0 1.25*max(xcoord)])
+        ylim([0 1.25*max(ycoord)])
+        % Add a colorbar
+        colorbar;
+        colormap(flip(gray))
 
-        %     p(n) = plot(power_differnece,1:96,colour_line{n})
+        % Set the title
+        title(['Frequency range ',freq_legends{nfreq}]);
+
+        % Set the axis labels
+        xlabel('X coordinate (micron)');
+        ylabel('Y coordinate (micron)');
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+    sgtitle(sprintf('%s %s %s PSD profile heatmap probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1),'Interpreter', 'none')
+
+    fig = figure;
+    fig.Position = [260,50,1140,900]
+    fig.Name = sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1);
+    freq_legends = {'0.5 -3 Hz','4-12 Hz','9 - 17 Hz','30-60 Hz','60-100 Hz','125-300 Hz','300-600 Hz'};
+    
+
+    scaling_factor = ceil(max(xcoord_avaliable)/length(xcoord_avaliable)/10)*10;
+
+    % Loop over the frequency ranges
+    for nfreq = 1:size(sorted_power, 2)
+        % Create a subplot for this frequency range
+        subplot(ceil(size(sorted_power, 2) / 2), 2, nfreq);
+
         hold on
-    end
-    hold on
-    plot([0 1],[sorted_config.Ks_ycoord(first_in_brain_channel) sorted_config.Ks_ycoord(first_in_brain_channel)],'--k','LineWidth',2)
+        Xticks = [];
+        for col = 1:length(xcoord_avaliable)
+            if col < length(xcoord_avaliable)
+                plot(xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+scaling_factor*sorted_power(xcoord == xcoord_avaliable(col),nfreq)/max(sorted_power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
 
-    if ~isempty(best_L4_channel)
-        plot([0 1],[sorted_config.Ks_ycoord(find(sorted_config.Channel == best_L4_channel)) sorted_config.Ks_ycoord(find(sorted_config.Channel == best_L4_channel))],'--b','LineWidth',2)
-    end
+                Xticks = [Xticks xcoord_avaliable(col)+(xcoord_avaliable(col+1)-xcoord_avaliable(col))/2+scaling_factor/2];
+            else
+                plot(1.1*xcoord_avaliable(col)+scaling_factor*sorted_power(xcoord == xcoord_avaliable(col),nfreq)/max(sorted_power(xcoord == xcoord_avaliable(col),nfreq)),ycoord(xcoord == xcoord_avaliable(col)))
+                Xticks = [Xticks 1.1*xcoord_avaliable(col)+scaling_factor/2];
+            end
+        end
 
-    if ~isempty(best_L5_channel)
-        plot([0 1],[sorted_config.Ks_ycoord(find(sorted_config.Channel == best_L5_channel)) sorted_config.Ks_ycoord(find(sorted_config.Channel == best_L5_channel))],'--c','LineWidth',2)
-    end
+        xticks(Xticks)
+        xticklabels(xcoord_avaliable)
+        xlim([0 1.25*(scaling_factor+max(xcoord_avaliable(end)))])
+        ylim([0 1.25*max(ycoord)])
+        % Set the title
+        title(['Frequency range ',freq_legends{nfreq}]);
 
-    if ~isempty(best_CA1_ripple_channel)
-        plot([0 1],[sorted_config.Ks_ycoord(find(sorted_config.Channel == best_CA1_ripple_channel)) sorted_config.Ks_ycoord(find(sorted_config.Channel == best_CA1_ripple_channel))],'--r','LineWidth',2)
+        % Set the axis labels
+        xlabel('X coordinate (micron)');
+        ylabel('Y coordinate (micron)');
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
-
-    % legend('1-3','4-12','30-60','60-100','125-300')
-    legend([pl(selected_frequency)],{freq_legends{selected_frequency}});
-    ylim([0 4000])
+    sgtitle(sprintf('%s %s %s PSD profile probe %i',options.SUBJECT,options.SESSION,stimulus_name,options.probe_id+1),'Interpreter', 'none')
 end
 
 

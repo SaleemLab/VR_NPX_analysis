@@ -1,11 +1,19 @@
 function [raw_LFP tvec new_SR chan_config sorted_config] = load_LFP_NPX1(options,column,varargin)
 
+options.importMode = 'KS';
+[file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
 
-[LF_FILE imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and LF
+    options.importMode = 'LF';
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+    probe_type = 1;
+else
+    probe_type = 2;
+end
 
 % Default values
 p = inputParser;
-addParameter(p,'selected_channels',[sorted_config.Channel],@isnumeric) % Select channels to load for LFP
+addParameter(p,'selected_channels',[chan_config.Channel],@isnumeric) % Select channels to load for LFP
 addParameter(p,'start_sec',[1],@isnumeric) % Start timepoint in seconds (default is [1])
 addParameter(p,'duration_sec',[imecMeta.fileTimeSecs-2],@isnumeric) % Duration of recording to load (default is whole session - 2 seconds)
 addParameter(p,'desired_SR',[1250],@isnumeric) % Desired SR for downsampling. By default, it is 1250 Hz
@@ -53,7 +61,7 @@ raw_LFP = [];
 for clip = 1:nClips
     tic
     disp(sprintf('loading clip %i',clip))
-    temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, LF_FILE, options.EPHYS_DATAPATH);
+    temp_LFP = ReadNPXBin(start_samp+samples_to_pass, nClipSamps, imecMeta, file_to_use, options.EPHYS_DATAPATH);
     temp_LFP(nEPhysChan+1:end,:) = []; % Get rid of sync channel
     temp_LFP = GainCorrectIM(temp_LFP, 1:nEPhysChan, imecMeta);
 
@@ -93,6 +101,6 @@ if probe_no == 2
 
 end
 
-    tvec = start_samp/imecMeta.imSampRate:1/new_SR:start_sec+(length(raw_LFP(1,:))-1)/new_SR;
+tvec = start_samp/imecMeta.imSampRate:1/new_SR:start_sec+(length(raw_LFP(1,:))-1)/new_SR;
 end
 

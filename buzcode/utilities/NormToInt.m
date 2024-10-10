@@ -31,7 +31,7 @@ else
 end
 %%
 if ~exist('int','var') || isempty(int)
-    int = [1 size(data,1)];
+    int = [1 size(data,1)/sf];
 end
 
 if isa(int,'intervalSet')

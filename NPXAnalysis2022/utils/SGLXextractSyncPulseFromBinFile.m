@@ -2,10 +2,11 @@
 %   This function supercedes extractSyncPulseFromAPFile, which used the
 %   Neuropixels memmap style, and instead uses Jennifer Collonel's toolbox
 % Input - path to binary file
-% Output - times of onset and offset of the sync pulse in a structure
+% Output - times of onset and offset of the sync pulse as well as the full pulse waveform data in a structure
 %
 % History: SGS 14th April 2022 Wrote it
-%
+% MT Oct 2023 modified to save raw sync pulse data for later alignment (across two probes)
+
 function syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath)
 
 % Extract path and filename
@@ -46,4 +47,6 @@ syncTimes_ephys.on = (vec_idx+1)./SampRate(meta);
 vec_idx = find(diff(tsync)<=-0.5); 
 % add 1 to vec_idx to compensate for diff and convert from samples to s 
 syncTimes_ephys.off = (vec_idx+1)./SampRate(meta); 
+
+% Async Pulse data saved for later alignment purposes
 syncTimes_ephys.Sync = tsync;

@@ -11,7 +11,7 @@ function [ csd, lfpAvg ] = perievent_CSD_LFP_amplitude_phase (lfp, timestamps,al
 %% Parse inputs
 
 p = inputParser;
-addParameter(p,'channels',[1 384],@isvector);
+addParameter(p,'channels',[1:size(lfp,2)],@isvector);
 addParameter(p,'samplingRate',1250,@isnumeric);
 addParameter(p,'twin',[0.1 0.1],@isnumeric);
 addParameter(p,'spat_sm',11,@isnumeric);
@@ -54,7 +54,9 @@ elseif isnumeric(lfp)
         b_filter = fir1(filter_order, norm_freq_range,filter_type);
 
         for nchannel = 1:size(channels,2)
-            data(:,nchannel) = filtfilt(b_filter,1,data(:,nchannel));
+            for event = 1:size(data,3)
+                data(:,nchannel,event) = filtfilt(b_filter,1,data(:,nchannel,event));
+            end
         end
     end
     %     timestamps = [1:length(lfp)]'./samplingRate;
@@ -82,18 +84,28 @@ if ~iscell(all_events) % just one event type
             lfp_power(:,:,e) = zscore(abs(hilbert(lfp_temp(:,:,e))),0,1);
             lfp_phase(:,:,e) = angle(hilbert(lfp_temp(:,:,e)));
         end
-    else % If already in trial format
-        lfp_temp = nan(size(lfp,1),size(lfp,2),size(lfp,3));
-        lfp_raw = nan(size(lfp,1),size(lfp,2),size(lfp,3));
-        lfp_power = nan(size(lfp,1),size(lfp,2),size(lfp,3));
-        lfp_phase = nan(size(lfp,1),size(lfp,2),size(lfp,3));
+    else %%%% If already in trial format (usually this is the option to go!)
+        [~,tidx0]=min(abs(timestamps-0));
+        twin(1) = tidx0-twin(1);
+        twin(2) = tidx0+twin(2);
+        if twin(2)>length(timestamps) & twin(2)<=length(timestamps)+1
+            twin(2)=length(timestamps);
+        end
+        timestamps = timestamps(twin(1):twin(2));
 
+        lfp_temp = nan(size(timestamps,2),size(lfp,2),size(lfp,3));
+        lfp_raw = nan(size(timestamps,2),size(lfp,2),size(lfp,3));
+        lfp_power = nan(size(timestamps,2),size(lfp,2),size(lfp,3));
+        lfp_phase = nan(size(timestamps,2),size(lfp,2),size(lfp,3));
+       
         for e = 1:size(lfp,3)
-            lfp_temp(:,:,e) = data(:,:,e);
-            lfp_raw(:,:,e) = lfp(:,:,e);
+            lfp_temp(:,:,e) = data(twin(1):twin(2),:,e);
+            lfp_raw(:,:,e) = lfp(twin(1):twin(2),:,e);
             lfp_power(:,:,e) = zscore(abs(hilbert(lfp_temp(:,:,e))),0,1);
             lfp_phase(:,:,e) = angle(hilbert(lfp_temp(:,:,e)));
         end
+
+        
     end
 
     % lfp_avg = nanmean(lfp_temp,3);
@@ -276,11 +288,11 @@ if plotLFP
 
        
 elseif plotCSD  
-    
+    taxis = lfpAvg.timestamps;
      cmax = max(max(CSD)); 
    
      figure;
-     contourf(taxis,1:size(CSD,2),CSD',40,'LineColor','none');hold on;
+     contourf(taxis(2:end-1),1:size(CSD,2),CSD',40,'LineColor','none');hold on;
      colormap jet; caxis([-cmax cmax]);
      set(gca,'YDir','reverse','YTickLabel',[]);ylim([-1000 offset+1000]);xlim([taxis(1) taxis(end)]);
      plot([0 0],[1 size(CSD,2)],'--k');hold on;
