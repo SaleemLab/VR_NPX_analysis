@@ -13,7 +13,7 @@ session_count = 0;
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-selected_sessions=[6 9 14 21 22 27 35 38 40];
+selected_sessions=[6 9 14 19 21 22 27 35 38 40];
 experiment_info=experiment_info(selected_sessions);
 
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 

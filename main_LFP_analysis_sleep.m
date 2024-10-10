@@ -16,7 +16,7 @@ clear all
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -121,16 +121,16 @@ for nstimuli = 1:length(all_stimulus_type)
     end
 end
 
-%% Detect ripples and reactivation event
+%% Detect UP/DOWN and spindles ripples and reactivation event
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 Stimulus_type = 'Sleep';
-
+experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
@@ -385,8 +385,15 @@ for nsession =1:length(experiment_info)
 
         for nprobe = 1:length(behavioural_state)
             if contains(stimulus_name{n},'Sleep')
-                [reactivations(nprobe).awake_offset,reactivations(nprobe).awake_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
-                reactivations(nprobe).awake_onset = reactivations(nprobe).onset(reactivations(nprobe).awake_index)';
+                if ~isempty(reactivations(nprobe).onset)
+                    [reactivations(nprobe).awake_offset,reactivations(nprobe).awake_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
+                    reactivations(nprobe).awake_onset = reactivations(nprobe).onset(reactivations(nprobe).awake_index)';
+                end
+
+                if ~isempty(V1_reactivations(nprobe).onset)
+                    [V1_reactivations(nprobe).awake_offset,V1_reactivations(nprobe).awake_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
+                    V1_reactivations(nprobe).awake_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).awake_index)';
+                end
 
                 [ripples(nprobe).awake_offset,ripples(nprobe).awake_index] = RestrictInts(ripples(nprobe).offset,behavioural_state(nprobe).quietWake);
                 ripples(nprobe).awake_onset = ripples(nprobe).onset(ripples(nprobe).awake_index);
@@ -398,8 +405,10 @@ for nsession =1:length(experiment_info)
                 %                 reactivations(nprobe).awake_peaktimes = reactivations(nprobe).peaktimes(reactivations.awake_index);
 
                 if ~isempty(behavioural_state(nprobe).SWS)
-                    [reactivations(nprobe).SWS_offset,reactivations(nprobe).SWS_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
-                    reactivations(nprobe).SWS_onset = reactivations(nprobe).onset(reactivations(nprobe).SWS_index)';
+                    if ~isempty(reactivations(nprobe).onset)
+                        [reactivations(nprobe).SWS_offset,reactivations(nprobe).SWS_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
+                        reactivations(nprobe).SWS_onset = reactivations(nprobe).onset(reactivations(nprobe).SWS_index)';
+                    end
 
                     [ripples(nprobe).SWS_offset,ripples(nprobe).SWS_index] = RestrictInts(ripples(nprobe).offset,behavioural_state(nprobe).SWS);
                     ripples(nprobe).SWS_onset = ripples(nprobe).onset(ripples(nprobe).SWS_index);
@@ -473,22 +482,25 @@ for nsession =1:length(experiment_info)
             lap_times(2).end = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)';
 
             if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
-                if reactivations(probe_no)
-                [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
-                reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
+                if ~isempty(reactivations(probe_no).onset)
+                    [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                    reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
+                    reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
 
-                [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
-                reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
+                    [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                    reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
+                    reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
+                end
 
-                [V1_reactivations(probe_no).T1_offset,V1_reactivations(probe_no).T1_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                V1_reactivations(probe_no).T1_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T1_index);
-                V1_reactivations(probe_no).T1_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T1_index);
+                if ~isempty(V1_reactivations(probe_no).onset)
+                    [V1_reactivations(probe_no).T1_offset,V1_reactivations(probe_no).T1_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                    V1_reactivations(probe_no).T1_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T1_index);
+                    V1_reactivations(probe_no).T1_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T1_index);
 
-                [V1_reactivations(probe_no).T2_offset,V1_reactivations(probe_no).T2_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                V1_reactivations(probe_no).T2_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T2_index);
-                V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
+                    [V1_reactivations(probe_no).T2_offset,V1_reactivations(probe_no).T2_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                    V1_reactivations(probe_no).T2_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T2_index);
+                    V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
+                end
             end
 
             if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
