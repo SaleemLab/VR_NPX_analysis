@@ -151,7 +151,7 @@ for nsession =1:length(experiment_info)
 %         end
         
         options = session_info(n).probe(1);
-
+        clear clusters
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
@@ -233,12 +233,17 @@ for nsession =1:length(experiment_info)
             end
         end
         
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+        % spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+        %     | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+        
 
+        % As long as stable firing durng track running. It doesn't have to
+        % be single-peaked place cell like cells
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
         clear replay reactivations ripples spindles slow_waves raw_LFP CA1_clusters V1_clusters
-        clear V1_replay V1_reactivations replay_combined replay_combined behavioural_state
+        clear V1_replay V1_reactivations replay_combined replay_combined behavioural_state 
         for nprobe = 1:length(session_info(n).probe)
             clear cortex_LFP CA1_LFP
             options = session_info(n).probe(nprobe);
@@ -320,10 +325,14 @@ for nsession =1:length(experiment_info)
                 metric_param.region = @(x) contains(x,'HPC_R');
                 CA1_clusters(probe_no) = select_clusters(selected_clusters(nprobe),metric_param);
             end
-
-            [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(probe_no).tvec,CA1_LFP,...
-                [CA1_clusters(probe_no).spike_id CA1_clusters(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
-
+            
+            if ~isempty(CA1_clusters(probe_no).cluster_id)
+                if length(CA1_clusters(probe_no).cluster_id)>10
+                    [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(probe_no).tvec,CA1_LFP,...
+                        [CA1_clusters(probe_no).spike_id CA1_clusters(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
+                end
+            end
+            
             % Detect V1 populational bursting events (Candidate events)
             metric_param =[];
             %             metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
@@ -358,9 +367,12 @@ for nsession =1:length(experiment_info)
                 V1_clusters(probe_no) = select_clusters(selected_clusters(nprobe),metric_param);
             end
 
-            [V1_replay(probe_no),V1_reactivations(probe_no)] = detect_candidate_events_masa(LFP(probe_no).tvec,CA1_LFP,...
-                [V1_clusters(probe_no).spike_id V1_clusters(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
-
+            if ~isempty(V1_clusters(probe_no).cluster_id)
+                if length(V1_clusters(probe_no).cluster_id)>10
+                    [V1_replay(probe_no),V1_reactivations(probe_no)] = detect_candidate_events_masa(LFP(probe_no).tvec,CA1_LFP,...
+                        [V1_clusters(probe_no).spike_id V1_clusters(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
+                end
+            end
 
             % Detect V1 spindle events
             [spindles(probe_no)] = FindSpindles_masa(cortex_LFP,LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
@@ -461,6 +473,7 @@ for nsession =1:length(experiment_info)
             lap_times(2).end = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)';
 
             if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
+                if reactivations(probe_no)
                 [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
                 reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
                 reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);

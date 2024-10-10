@@ -41,6 +41,10 @@ for nsession = 1
         % Cell with spatial tuning
         ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+
+        % ib = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+        %     | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        % ia = find(contains(clusters_combined.region,'HPC'))
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         C = clusters_combined.cluster_id(ia);
         
