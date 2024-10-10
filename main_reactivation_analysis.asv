@@ -122,6 +122,9 @@ for nsession = 1:length(experiment_info)
             end
         end
 
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
         else
@@ -133,14 +136,6 @@ for nsession = 1:length(experiment_info)
         decoded_ripple_events = [];
         timebin = 0.02;
         tic
-
-        %         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-        %             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-
-        % For now just needed the cell to have reliable firing on the track
-        % (more so than randomly shuffled spiking)
-        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
         % grab HPC spikes during Sleep
         metric_param =[];
@@ -302,10 +297,17 @@ for nsession = 1:length(experiment_info)
             :time_bin_size:...
             timevec(end)+(time_bin_size)/2)';
 
-        time_bin_size=0.05;
-        timevec_edge_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));
-        speed_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.speed{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));        
-        timevec_edge_RUN(speed_RUN<1)=[];
+        time_bin_size=0.1;
+        timevec_edge_RUN = (HPC_clusters_RUN.spike_times(1)-(time_bin_size)/2....
+            :time_bin_size:...
+            HPC_clusters_RUN.spike_times(end)+(time_bin_size)/2)';
+
+        
+        session_clusters_RUN.timevec(1,:)
+        session_clusters_RUN.timevec(1,session_clusters_RUN.speed{1}<1)
+        
+
+        timevec_edge_RUN=
 
 %         % Define Gaussian window for smoothing
 %         gaussianWindow = gausswin(0.2*1/time_bin_size);
@@ -343,26 +345,14 @@ for nsession = 1:length(experiment_info)
       clear reactivation_strength
       for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
 
-          bins=[];control_bins=[];
+          bins=[];
           this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
           this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
           samples = Restrict(timevec_edge_RUN',[this_track_start_time this_track_end_time']);
           bins(:,1)=samples;
           bins(:,2)=samples+time_bin_size;
-          %
-          %           samples = Restrict(timevec_edge_RUN',[session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)...
-          %               session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)']);
-
-          % 2 seconds before start of all laps as control correlation (grey screen running)
-          samples = Restrict(timevec_edge_RUN',[session_clusters_RUN.start_time_all{1}-2 session_clusters_RUN.start_time_all{1}]);
-%           samples = Restrict(timevec_edge_RUN',[this_track_start_time-2 this_track_start_time]);
-          control_bins(:,1)=samples;
-          control_bins(:,2)=samples+time_bin_size;
-
           [templates,correlations,projection,weights,variance] = ActivityTemplates(spikes_template,'bins',bins,'controlbins',control_bins);
             
-%           relative_weights = (weights-min(weights))./(max(weights)-min(weights));
-       
           assembly_templates(ntrack).templates=templates;
           assembly_templates(ntrack).correlations=correlations;
           assembly_templates(ntrack).projection=projection;
@@ -675,15 +665,15 @@ end
       scatter(mean_FR_T1,mean_FR_T2)
       plot([0 20],[0 20],'k--')
 
-        for n = 1:6
-            figure(1)
-            subplot(2,3,n)
-            imagesc(templates(:,:,n))
-
+%         for n = 1:6
+%             figure(1)
+%             subplot(2,3,n)
+%             imagesc(templates(:,:,n))
+% 
 %             figure(2)
 %             subplot(2,3,n)
 %             imagesc(ASSEMBLYPROJECTOR(:,:,n))
-        end
+%         end
 
 
 

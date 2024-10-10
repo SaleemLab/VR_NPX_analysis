@@ -12,7 +12,7 @@ function [place_fields_BAYESIAN decoded_replay_events,probability_ratio_original
 % REPLAY EVENTS STRUCTURE
 %replay_events is an empty template for replay event analysis.
 %Each track will create its own field
-place_cell_index = place_fields_BAYESIAN.good_place_cells_LIBERAL;
+place_cell_index = place_fields_BAYESIAN(1).all_good_place_cells_LIBERAL;
 
 replay_events = struct('replay_id',{},...%the id of the candidate replay events in chronological order
     'spikes',{});%column 1 is spike id, column 2 is spike time
@@ -73,7 +73,7 @@ if length(replay_events) > 1
 end
 
 % Save all replay events all tracks
-for j = 1:length(place_fields_BAYESIAN.track)
+for j = 1:length(place_fields_BAYESIAN)
     decoded_replay_events(j).replay_events = replay_events;
 end
 
@@ -89,18 +89,18 @@ if strcmp(modify,'global_remapped')
 
         for track_id = 1:2
             s = RandStream('mrg32k3a','Seed',track_id+100*event); % Set random seed for resampling
-            global_remapped_place_fields{track_id} = place_fields_BAYESIAN.track(track_id).raw;
+            global_remapped_place_fields{track_id} = place_fields_BAYESIAN(track_id).raw;
 
-            random_cell_index = randperm(s,length(place_fields_BAYESIAN.track(track_id).sorted_good_cells_LIBERAL));
-            random_cell = place_fields_BAYESIAN.track(track_id).sorted_good_cells_LIBERAL(random_cell_index);
+            random_cell_index = randperm(s,length(place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL));
+            random_cell = place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL(random_cell_index);
             %                         place_fields_BAYESIAN.track(track_id).random_cell = random_cell;
-            original_cell = place_fields_BAYESIAN.track(track_id).sorted_good_cells_LIBERAL;
+            original_cell = place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL;
 
             for j=1:length(random_cell) %only swap good cells
-                global_remapped_place_fields{track_id}{original_cell(j)}=place_fields_BAYESIAN.track(track_id).raw{random_cell(j)};
+                global_remapped_place_fields{track_id}{original_cell(j)}=place_fields_BAYESIAN(track_id).raw{random_cell(j)};
             end
 
-            place_fields_BAYESIAN.track(track_id).global_remapped{event} = global_remapped_place_fields{track_id};
+            place_fields_BAYESIAN(track_id).global_remapped{event} = global_remapped_place_fields{track_id};
 
             % Also save the shuffled place cell id for subsequent spearsman
             % analysis
@@ -109,7 +109,12 @@ if strcmp(modify,'global_remapped')
         end
 
     end
-    save(sprintf('global_remapped_place_fields_id%s.mat',erase(stimulus_name,'Masa2tracks')),'global_remapped_place_fields_id');
+
+%     if contains(stimulus_name,'Masa2tracks')
+%         save(sprintf('global_remapped_place_fields_id%s.mat',erase(stimulus_name,'Masa2tracks')),'global_remapped_place_fields_id');
+%     else
+%         save('global_remapped_place_fields_id.mat','global_remapped_place_fields_id');
+%     end
 end
 
 
@@ -130,15 +135,16 @@ replayEvents_bayesian_spike_count = create_spike_count_masa(place_fields_BAYESIA
 fprintf('Decoding %s...\n',modify)
 
 bayesian_spike_count = replayEvents_bayesian_spike_count;
-if contains(stimulus_name,'RUN')
+if contains(stimulus_name,'RUN')|contains(stimulus_name,'Track')
     estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
 else
     estimated_position = bayesian_decoding_POST(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
+%      estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
 end
 % Save in structure
 
 for i = 1 : num_replay_events
-    for j = 1:length(place_fields_BAYESIAN.track)
+    for j = 1:length(place_fields_BAYESIAN)
         decoded_replay_events(j).replay_events(i).replay = estimated_position(j).replay_events(i).replay;
 %         decoded_replay_events(j).replay_bias = estimated_position(j).replay_bias;
         decoded_replay_events(j).replay_events(i).timebins_edges = estimated_position(j).replay_events(i).replay_time_edges;

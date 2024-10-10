@@ -39,8 +39,8 @@ for iField = 1:size(all_cluster_fields,1)
     elseif strcmp(all_cluster_fields{iField},'spike_id')
         spike_id_selected = ismember(clusters.spike_id,clusters.cluster_id(cluster_filter_index));
         selected_clusters.spike_id = clusters.spike_id(spike_id_selected);
-%     elseif contains(all_cluster_fields{iField},'unstable_ids')
-%         selected_clusters.unstable_ids = clusters.unstable_ids;
+        %     elseif contains(all_cluster_fields{iField},'unstable_ids')
+        %         selected_clusters.unstable_ids = clusters.unstable_ids;
     elseif contains(all_cluster_fields{iField},'spike_times')
         selected_clusters.spike_times = clusters.spike_times(spike_id_selected);
     elseif contains(all_cluster_fields{iField},'probe_id')
@@ -50,16 +50,20 @@ for iField = 1:size(all_cluster_fields,1)
     elseif contains(all_cluster_fields{iField},'probe_hemisphere')
         selected_clusters.probe_hemisphere = clusters.probe_hemisphere;
     elseif contains(all_cluster_fields{iField},'params')
-        
+
     elseif iscell(clusters.(all_cluster_fields{iField})) % if it is a cell structure (Usually for RF which is cell structure)
 
         if size(clusters.(all_cluster_fields{iField}),2)>1 & size(clusters.(all_cluster_fields{iField}),1)>1
             temp_cluster_field = clusters.(all_cluster_fields{iField});
             selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index,:}};
-             selected_clusters.(all_cluster_fields{iField})=reshape(selected_clusters.(all_cluster_fields{iField}),[sum(cluster_filter_index) size(temp_cluster_field,2)]);
+            selected_clusters.(all_cluster_fields{iField})=reshape(selected_clusters.(all_cluster_fields{iField}),[sum(cluster_filter_index) size(temp_cluster_field,2)]);
         else
             temp_cluster_field = clusters.(all_cluster_fields{iField});
-            selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index}}';
+            if length(temp_cluster_field)==length(cluster_filter_index)
+                selected_clusters.(all_cluster_fields{iField}) = {temp_cluster_field{cluster_filter_index}}';
+            else
+                selected_clusters.(all_cluster_fields{iField})=temp_cluster_field;
+            end
         end
     else
         temp_cluster_field = clusters.(all_cluster_fields{iField});
