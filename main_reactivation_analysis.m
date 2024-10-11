@@ -156,8 +156,7 @@ for nsession = 1:length(experiment_info)
         metric_param.region = @(x) contains(x,'HPC');
         HPC_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
         
-
-        % recalculate place field for hippocampal neurons for Bayesian
+        % recalculate light-weight version of 'place fields' structure for hippocampal neurons for Bayesian
         % decoding
         clear place_fields_BAYESIAN
         x_bin_size =10;
@@ -169,8 +168,10 @@ for nsession = 1:length(experiment_info)
             place_fields_BAYESIAN(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
             place_fields_BAYESIAN(track_id).raw = spatial_response(:,track_id);
             place_fields_BAYESIAN(track_id).cluster_id = HPC_clusters.cluster_id;
+%             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
+%                 find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
-                find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
+                find(HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
             
             ratemap_matrix = [place_fields_BAYESIAN(track_id).raw{:}];
             ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
@@ -284,11 +285,15 @@ for nsession = 1:length(experiment_info)
         end
         toc
         
-
-        save(sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events');
-%         save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
-        save(sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled');
-%         save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
+        if contains(stimulus_name{n},'Masa2tracks')
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events_shuffled','-v7.3');
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events','-v7.3');
+            %         save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'),'decoded_ripple_events_shuffled','-v7.3');
+            %         save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
+        end
         clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped decoded_ripple_events decoded_ripple_events_shuffled
         
 
@@ -302,7 +307,7 @@ for nsession = 1:length(experiment_info)
             :time_bin_size:...
             timevec(end)+(time_bin_size)/2)';
 
-        time_bin_size=0.05;
+        time_bin_size=0.1;
         timevec_edge_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));
         speed_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.speed{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));        
         timevec_edge_RUN(speed_RUN<1)=[];
@@ -340,7 +345,7 @@ for nsession = 1:length(experiment_info)
           spikes_sleep(spikes_sleep(:,2)== HPC_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
       end
 
-      clear reactivation_strength
+      clear reactivation_strength assembly_templates
       for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
 
           bins=[];control_bins=[];
@@ -360,17 +365,28 @@ for nsession = 1:length(experiment_info)
           control_bins(:,2)=samples+time_bin_size;
 
           [templates,correlations,projection,weights,variance] = ActivityTemplates(spikes_template,'bins',bins,'controlbins',control_bins);
-            
-%           relative_weights = (weights-min(weights))./(max(weights)-min(weights));
-       
+
+          relative_weights = (weights-min(weights))./(max(weights)-min(weights));
+
+%           figure
+%           scaled_place_fields=[];
+%           for nComponent = 1:length(variance)
+%               scaled_place_fields(:,:,nComponent) = zscore(place_fields_BAYESIAN(track_id).template,[],2).*relative_weights(:,nComponent);
+%               subplot(3,3,nComponent)
+% %               imagesc( scaled_place_fields(:,:,nComponent))
+%              plot(sum(scaled_place_fields(:,:,nComponent)))
+%           end
+
           assembly_templates(ntrack).templates=templates;
           assembly_templates(ntrack).correlations=correlations;
           assembly_templates(ntrack).projection=projection;
           assembly_templates(ntrack).weights=weights;
+          assembly_templates(ntrack).relative_weights=relative_weights;
           assembly_templates(ntrack).variance=variance;
 
           time_bin_size=0.02;
           for nprobe = 1:length(ripples)
+              disp('Reactivation strength for original data')
               bins=[];
               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
               ripples_time_edges=[];
@@ -422,9 +438,9 @@ for nsession = 1:length(experiment_info)
       end
 
       if contains(stimulus_name{n},'Masa2tracks')
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength');
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
       else
-          save(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'),'reactivation_strength','assembly_templates');
+          save(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'),'reactivation_strength','assembly_templates','-v7.3');
       end
     end
 end
@@ -557,6 +573,7 @@ for nsession = 1:length(experiment_info)
     end
 end
 
+%%
       dual_track_events = find(reactivation_strength(1).track(2).strength_percentile>0.95 &...
       reactivation_strength(1).track(1).strength_percentile>0.95);
 
@@ -578,33 +595,101 @@ end
       %       scatter(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T2_events)),1,'b','filled','AlphaData',0.2);
       %
 
-      cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-          | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+%       cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+%           | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
       %       spatial_cell_index = find( (session_clusters_RUN.peak_percentile(:,1)>0.95) ...
       %           | (session_clusters_RUN.peak_percentile(:,2)>0.95));
 
 
-      metric_param =[];
-%       metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(cell_index));
-      metric_param.region = @(x) contains(x,'V1_L');
-%       metric_param.cell_type = @(x) x==1;
-      V1_clusters(1) = select_clusters(clusters_combined,metric_param);
-      metric_param.region = @(x) contains(x,'V1_R');
-%       metric_param.cell_type = @(x) x==1;
-      V1_clusters(2) = select_clusters(clusters_combined,metric_param);
+      x_bin_size =2;
+      spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
+          session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
+
+      for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+          place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
+          place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+          place_fields(track_id).raw = spatial_response(:,track_id);
+          place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
+      end
+      % Track 1 selective V1 neurons
+      ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+          & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
+      C = clusters_combined.cluster_id(ia);
+
+      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+          'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+
+
+      % Track 2 selective V1 neurons
+      ia = find(session_clusters_RUN.odd_even_stability(:,1)<0.95 ...
+          & session_clusters_RUN.odd_even_stability(:,2)>0.95 & contains(session_clusters_RUN.region,'V1'));
+
+      ia = find(contains(session_clusters_RUN.region,'V1'));
+      C = clusters_combined.cluster_id(ia);
+
+%       event_id = ones(1,length(ripples(nprobe).SWS_onset));
+%       event_times = ripples(nprobe).SWS_onset;
+
+      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+          'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+
+      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
+          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times(index),...
+          'event_id',event_id(index),'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+
+
 
       clear V1_SpikeCount
-      for mprobe = 1
-          samples = reactivation_strength(nprobe).track(ntrack).ripples_time_edges;
-          for nprobe = 1:length(V1_clusters)
-              for iCell = 1:length(V1_clusters(nprobe).cluster_id)
-                  y = histcounts(V1_clusters(nprobe).spike_times(V1_clusters(nprobe).spike_id == V1_clusters(nprobe).cluster_id(iCell)), samples)';
-                  y(find(abs(diff(samples))>2*time_bin_size))=nan; % remove spikes that happended in-between laps
+      for nprobe = 1
+          T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+              reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
 
-                  V1_SpikeCount{mprobe}{nprobe}(iCell,:) = y;
-                  %             SpikeCount(iCell,:) = conv(y, gaussianWindow, 'same');
-              end
-          end
+          T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+              reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
+
+%           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+%           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
+
+%           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
+%               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+% 
+%           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
+%               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+
+          event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+          event_times = [T1_events; T2_events];
+          [~,index]=sort(event_times);
+          
+          plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
+              'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
+              'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields,'speed_filtering',1);
+
+%           bins=[];
+%           samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
+%           ripples_time_edges=[];
+%           ripples_id=[];
+%           for i = 1: length(ripples(nprobe).onset)
+%               event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
+%               num_bins = floor(event_duration / time_bin_size);
+%               timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
+%               ripples_time_edges = [ripples_time_edges timebins_edges];
+%               ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
+%           end
+% 
+%           bins(:,1)=ripples_time_edges;
+%           bins(:,2)=ripples_time_edges+time_bin_size;
+%           
+%           for nprobe = 1:length(V1_clusters)
+%               for iCell = 1:length(V1_clusters(nprobe).cluster_id)
+%                   y = histcounts(V1_clusters(nprobe).spike_times(V1_clusters(nprobe).spike_id == V1_clusters(nprobe).cluster_id(iCell)), samples)';
+%                   y(find(abs(diff(samples))>2*time_bin_size))=nan; % remove spikes that happended in-between laps
+% 
+%                   V1_SpikeCount{mprobe}{nprobe}(iCell,:) = y;
+%                   %             SpikeCount(iCell,:) = conv(y, gaussianWindow, 'same');
+%               end
+%           end
       end
 %       figure;
 %       hold on;

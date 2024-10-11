@@ -176,13 +176,15 @@ if ~isempty(controlBins)
     end
     
     n0 = zscore(n0);
-    controlCorrelations = (1/(size(controlBins,1)-1))*(n0'*n0);
+    controlCorrelations = (1/(length(controlBins)-1))*(n0'*n0);
+    controlCorrelations(logical(eye(size(controlCorrelations))))=1;
 end
 
 %% Create correlation matrix
 n = zscore(n);
 correlations = (1/(nBins-1))*(n'*n);
-
+correlations(logical(eye(size(correlations))))=1;
+% 
 % figure;subplot(2,2,1);
 % imagesc(correlations);colorbar
 % subplot(2,2,2);
