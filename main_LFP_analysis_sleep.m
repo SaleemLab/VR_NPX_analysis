@@ -23,7 +23,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % all_stimulus_type={'RUN'};
 all_stimulus_type={'SleepChronic','RUN'};
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 8:length(experiment_info)
+    for nsession = 1:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         if isempty(stimulus_name)
@@ -130,7 +130,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 Stimulus_type = 'Sleep';
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
@@ -399,13 +399,13 @@ for nsession =1:length(experiment_info)
                 ripples(nprobe).awake_onset = ripples(nprobe).onset(ripples(nprobe).awake_index);
                 ripples(nprobe).awake_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).awake_index);
 
-                [spindles(nprobe).awake_offset,spindles(nprobe).awake_index] = RestrictInts(spindles(nprobe).offset,behavioural_state(nprobe).SWS);
+                [spindles(nprobe).awake_offset,spindles(nprobe).awake_index] = RestrictInts(spindles(nprobe).offset,behavioural_state(nprobe).quietWake);
                 spindles(nprobe).awake_onset = spindles(nprobe).onset(spindles(nprobe).awake_index);
                 spindles(nprobe).awake_peaktimes = spindles(nprobe).peaktimes(spindles(nprobe).awake_index);
                 %                 reactivations(nprobe).awake_peaktimes = reactivations(nprobe).peaktimes(reactivations.awake_index);
 
                 if ~isempty(behavioural_state(nprobe).SWS)
-                    if ~isempty(reactivations(nprobe).onset)
+                    if length(CA1_clusters(probe_no).cluster_id)>10
                         [reactivations(nprobe).SWS_offset,reactivations(nprobe).SWS_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
                         reactivations(nprobe).SWS_onset = reactivations(nprobe).onset(reactivations(nprobe).SWS_index)';
                     end
