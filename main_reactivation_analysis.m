@@ -16,7 +16,7 @@ clear all
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
@@ -24,7 +24,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 1:length(experiment_info)
+for nsession = 5:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -259,6 +259,7 @@ for nsession = 1:length(experiment_info)
                     + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
             end
+
 %             % Shuffled log odds
 %             for event = 1:length(replay.onset)
 %                 replay1.offset = replay.onset(event)+0.5;
@@ -413,11 +414,12 @@ for nsession = 1:length(experiment_info)
               parfor nshuffle =1:1000
                   
                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
-                  p = randperm(s,length(unique(spikes_sleep(:,2))));
+                  unique_cell_id = unique(spikes_sleep(:,2));
+                  p = randperm(s,length(unique_cell_id));
                   cell_id_shuffled_spikes=spikes_sleep;
 
-                  for iCell = 1:length(HPC_clusters_RUN.cluster_id)
-                      cell_id_shuffled_spikes(spikes_sleep(:,2)==iCell,2)=p(iCell);% swap cell id
+                  for iCell = 1:length(unique_cell_id)
+                      cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
                   end
 
                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
@@ -560,10 +562,9 @@ for nsession = 1:length(experiment_info)
                 selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
             end
         end
-
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
+        
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
         else

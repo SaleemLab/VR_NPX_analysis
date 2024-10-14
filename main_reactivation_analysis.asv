@@ -24,7 +24,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 1:length(experiment_info)
+for nsession = 3:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -259,6 +259,7 @@ for nsession = 1:length(experiment_info)
                     + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
             end
+
 %             % Shuffled log odds
 %             for event = 1:length(replay.onset)
 %                 replay1.offset = replay.onset(event)+0.5;
@@ -413,11 +414,12 @@ for nsession = 1:length(experiment_info)
               parfor nshuffle =1:1000
                   
                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
-                  p = randperm(s,length(unique(spikes_sleep(:,2))));
+                  unique_cell_id = unique(spikes_sleep(:,2));
+                  p = randperm(s,length(unique_cell_id));
                   cell_id_shuffled_spikes=spikes_sleep;
 
-                  for iCell = 1:length(HPC_clusters_RUN.cluster_id)
-                      cell_id_shuffled_spikes(spikes_sleep(:,2)==iCell,2)=p(iCell);% swap cell id
+                  for iCell = 1:length(unique_cell_id)
+                      cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
                   end
 
                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
@@ -560,10 +562,9 @@ for nsession = 1:length(experiment_info)
                 selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
             end
         end
-
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
+        
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
         else
@@ -643,13 +644,14 @@ end
 
       clear V1_SpikeCount
       for nprobe = 1
-          T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.95 &...
-              reactivation_strength(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+          T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+              reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
 
-          T2_events = ripples(nprobe).SWS_onset();
+          T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+              reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
 
-          T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1),ripples(nprobe).SWS_onset));
-          T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>-1),ripples(nprobe).SWS_onset));
+%           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+%           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
 
 %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
 %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
@@ -664,6 +666,7 @@ end
           plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
               'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
               'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields,'speed_filtering',1);
+
 %           bins=[];
 %           samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
 %           ripples_time_edges=[];

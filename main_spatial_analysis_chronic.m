@@ -215,7 +215,7 @@ clear all
 option = 'bilateral';
 SUBJECTS={'M24016','M24017','M24018'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
@@ -248,14 +248,39 @@ for nsession = 1
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         C = clusters_combined.cluster_id(ia);
 
-        clear place_fields
+       clear place_fields_BAYESIAN
         x_bin_size =5;
-        spatial_response = calculate_raw_spatial_response(clusters_combined.spike_id,clusters_combined.cluster_id,clusters_combined.spike_times,clusters_combined.tvec{1},...
-            clusters_combined.position{1},clusters_combined.speed{1},clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_bin_size);
-        for track_id = 1:max(session_clusters.track_ID_all{1})
-            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
-            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
-            place_fields(track_id).raw = spatial_response(:,track_id);
+        spatial_response = calculate_raw_spatial_response(HPC_clusters_RUN.spike_id,HPC_clusters_RUN.cluster_id,HPC_clusters_RUN.spike_times,HPC_clusters_RUN.tvec{1},...
+            HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_bin_size);
+        
+        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+            place_fields_BAYESIAN(track_id).x_bin_edges = 0:x_bin_size:140;
+            place_fields_BAYESIAN(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+            place_fields_BAYESIAN(track_id).raw = spatial_response(:,track_id);
+            place_fields_BAYESIAN(track_id).cluster_id = HPC_clusters.cluster_id;
+%             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
+%                 find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
+            place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
+                find(HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
+            
+            ratemap_matrix = [place_fields_BAYESIAN(track_id).raw{:}];
+            ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
+            average_maps= squeeze(mean(ratemap_matrix,1));
+            place_fields_BAYESIAN(track_id).template=average_maps';% need ncell X nposition
+%             for iCell = 1:length(place_fields_BAYESIAN(track_id).raw)
+%                 place_fields_BAYESIAN(track_id).template{iCell}=average_maps(:,iCell);% average map for decoding
+%             end
+
+            % Good cell this track
+            ratemap_matrix = [HPC_clusters_RUN.spatial_response{:,track_id}];
+            ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
+            average_maps= normalize(squeeze(mean(ratemap_matrix,1)));
+
+            [~,peak_locations] = max(average_maps(:,place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL));
+            %     unsorted_cells(track_id,:) =
+            [~,sort_id] = sort(peak_locations);
+
+            place_fields_BAYESIAN(track_id).sorted_good_place_cells_LIBERAL=place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL(sort_id);
         end
 
         probability_ratio_RUN_lap_HPC_combined= [];
