@@ -157,7 +157,10 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3*')));
+            if isempty(DIR)
+                continue
+            end
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters=clusters_ks3;
         elseif contains(stimulus_name{n},'Sleep')
@@ -165,7 +168,12 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            
+
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3*')));
+            if isempty(DIR)
+                continue
+            end
+
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         else
@@ -385,9 +393,11 @@ for nsession =1:length(experiment_info)
 
         for nprobe = 1:length(behavioural_state)
             if contains(stimulus_name{n},'Sleep')
-                if ~isempty(reactivations(nprobe).onset)
-                    [reactivations(nprobe).awake_offset,reactivations(nprobe).awake_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
-                    reactivations(nprobe).awake_onset = reactivations(nprobe).onset(reactivations(nprobe).awake_index)';
+                if ~isempty(CA1_clusters(probe_no).cluster_id)
+                    if length(CA1_clusters(probe_no).cluster_id)>10
+                        [reactivations(nprobe).awake_offset,reactivations(nprobe).awake_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
+                        reactivations(nprobe).awake_onset = reactivations(nprobe).onset(reactivations(nprobe).awake_index)';
+                    end
                 end
 
                 if ~isempty(V1_reactivations(nprobe).onset)
