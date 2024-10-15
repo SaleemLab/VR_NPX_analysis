@@ -564,6 +564,20 @@ end
 
 %% UP DOWN state and ripple and spindle analysis
 
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+Stimulus_type = 'Sleep';
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% 1:length(experiment_info)
+% [1 2 3 4 6 7 8 9 10 12 14]
+
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -597,6 +611,9 @@ for nsession =1:length(experiment_info)
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         else
@@ -664,9 +681,52 @@ for nsession =1:length(experiment_info)
             end
         end
         
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+%         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+%             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
+
+        x_bin_size =2;
+        spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
+            session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
+
+        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
+            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+            place_fields(track_id).raw = spatial_response(:,track_id);
+            place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
+        end
+
+        for nprobe = 1
+            T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
+
+            T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
+
+            %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+            %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
+
+            %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
+            %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+            %
+            %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
+            %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+
+            event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+            event_times = [T1_events; T2_events];
+            [~,index]=sort(event_times);
+        end
+        
+        % Track 1 selective V1 neurons
+        ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
+        C = clusters_combined.cluster_id(ia);
+
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
 
     end
 

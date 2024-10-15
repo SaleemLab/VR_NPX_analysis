@@ -496,6 +496,8 @@ for nsession = 1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
+            
+            load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -566,163 +568,64 @@ for nsession = 1:length(experiment_info)
                 selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
             end
         end
-        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
-        
+
         if length(clusters) > 1
             clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
         else
             clusters_combined = selected_clusters;
         end
 
+
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
+
+
+        x_bin_size =2;
+        spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
+            session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
+
+        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
+            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+            place_fields(track_id).raw = spatial_response(:,track_id);
+            place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
+        end
+
+        for nprobe = 1
+            T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
+
+            T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
+
+            %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+            %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
+
+            %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
+            %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+            %
+            %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
+            %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+
+            event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+            event_times = [T1_events; T2_events];
+            [~,index]=sort(event_times);
+        end
+
+        % Track 1 selective V1 neurons
+        ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
+        C = clusters_combined.cluster_id(ia);
+
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+
     end
 end
 
+
 %%
-      dual_track_events = find(reactivation_strength(1).track(2).strength_percentile>0.95 &...
-      reactivation_strength(1).track(1).strength_percentile>0.95);
-
-      T2_events = find(reactivation_strength(1).track(2).strength_percentile>0.95 &...
-      reactivation_strength(1).track(1).strength_percentile<0.95);
-
-      T1_events = find(reactivation_strength(1).track(2).strength_percentile<0.95 &...
-          reactivation_strength(1).track(1).strength_percentile>0.95);
-
-      non_events = find(reactivation_strength(1).track(2).strength_percentile<0.95 &...
-          reactivation_strength(1).track(1).strength_percentile<0.95);
-
-      %         figure
-      %       scatter(reactivation_strength(1).track(1).ripples_time_edges,mean(reactivation_strength(1).track(1).strength,2));hold on;
-      %       scatter(reactivation_strength(1).track(2).ripples_time_edges,-mean(reactivation_strength(1).track(2).strength,2));
-      %
-      %       scatter(reactivation_strength(1).track(1).ripples_time_edges,mean(reactivation_strength(1).track(1).strength,2)-mean(reactivation_strength(1).track(2).strength,2),5,'k','filled','AlphaData',0.1);hold on;
-      %       scatter(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T1_events)),-1,'r','filled','AlphaData',0.2);
-      %       scatter(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T2_events)),1,'b','filled','AlphaData',0.2);
-      %
-
-%       cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-%           | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-      %       spatial_cell_index = find( (session_clusters_RUN.peak_percentile(:,1)>0.95) ...
-      %           | (session_clusters_RUN.peak_percentile(:,2)>0.95));
-
-
-      x_bin_size =2;
-      spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
-          session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
-
-      for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
-          place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
-          place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
-          place_fields(track_id).raw = spatial_response(:,track_id);
-          place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
-      end
-      % Track 1 selective V1 neurons
-      ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-          & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
-      C = clusters_combined.cluster_id(ia);
-
-      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
-          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-          'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
-
-
-      % Track 2 selective V1 neurons
-      ia = find(session_clusters_RUN.odd_even_stability(:,1)<0.95 ...
-          & session_clusters_RUN.odd_even_stability(:,2)>0.95 & contains(session_clusters_RUN.region,'V1'));
-
-      ia = find(contains(session_clusters_RUN.region,'V1'));
-      C = clusters_combined.cluster_id(ia);
-
-%       event_id = ones(1,length(ripples(nprobe).SWS_onset));
-%       event_times = ripples(nprobe).SWS_onset;
-
-      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
-          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-          'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
-
-      plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
-          'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times(index),...
-          'event_id',event_id(index),'event_label','ripple','place_fields',place_fields,'plot_option','by time');
-
-
-
-      clear V1_SpikeCount
-      for nprobe = 1
-          T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
-              reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
-
-          T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
-              reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
-
-%           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
-%           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
-
-%           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
-%               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-% 
-%           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
-%               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-
-          event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
-          event_times = [T1_events; T2_events];
-          [~,index]=sort(event_times);
-          
-          plot_perievent_spiketimes_vs_spatial_response(selected_clusters.spike_times,selected_clusters.merged_spike_id,Task_info,Behaviour,[5 1],[-2 2],0.02,...
-              'unit_depth',selected_clusters.peak_depth(ia),'unit_region',selected_clusters.region(ia),'unit_id',C,'event_times',event_times',...
-              'event_id',event_id(index),'event_label','L ripple','place_fields',place_fields,'speed_filtering',1);
-
-%           bins=[];
-%           samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
-%           ripples_time_edges=[];
-%           ripples_id=[];
-%           for i = 1: length(ripples(nprobe).onset)
-%               event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
-%               num_bins = floor(event_duration / time_bin_size);
-%               timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
-%               ripples_time_edges = [ripples_time_edges timebins_edges];
-%               ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
-%           end
-% 
-%           bins(:,1)=ripples_time_edges;
-%           bins(:,2)=ripples_time_edges+time_bin_size;
-%           
-%           for nprobe = 1:length(V1_clusters)
-%               for iCell = 1:length(V1_clusters(nprobe).cluster_id)
-%                   y = histcounts(V1_clusters(nprobe).spike_times(V1_clusters(nprobe).spike_id == V1_clusters(nprobe).cluster_id(iCell)), samples)';
-%                   y(find(abs(diff(samples))>2*time_bin_size))=nan; % remove spikes that happended in-between laps
-% 
-%                   V1_SpikeCount{mprobe}{nprobe}(iCell,:) = y;
-%                   %             SpikeCount(iCell,:) = conv(y, gaussianWindow, 'same');
-%               end
-%           end
-      end
-%       figure;
-%       hold on;
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T1_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(1).ripple_id,T1_events))),'omitnan')/...
-%           sum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(1).ripple_id,T1_events))),'omitnan'),'r');
-% 
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(2).ripple_id,T2_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(1).ripple_id,T2_events))),'omitnan')/...
-%           sum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(2).ripple_id,T2_events))),'omitnan'),'b');
-% %       
-%       figure;
-%       hold on;
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T1_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{2}(:,ismember(reactivation_strength(1).track(1).ripple_id,T1_events))),'omitnan')/...
-%           sum(sum(V1_SpikeCount{1}{2}(:,ismember(reactivation_strength(1).track(1).ripple_id,T1_events))),'omitnan'),'r');
-% 
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(2).ripple_id,T2_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{2}(:,ismember(reactivation_strength(1).track(2).ripple_id,T2_events))),'omitnan')/...
-%           sum(sum(V1_SpikeCount{1}{2}(:,ismember(reactivation_strength(1).track(2).ripple_id,T2_events))),'omitnan'),'b');
-% 
-%       figure;
-%       hold on;
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T1_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(1).ripple_id,T1_events))),'omitnan'),'r');
-%       plot(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T2_events)),...
-%           cumsum(sum(V1_SpikeCount{1}{1}(:,ismember(reactivation_strength(1).track(1).ripple_id,T2_events))),'omitnan'),'b');
-
       scatter(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T1_events)),-1,'r','filled','AlphaData',0.2);
       scatter(reactivation_strength(1).track(1).ripples_time_edges(ismember(reactivation_strength(1).track(1).ripple_id,T2_events)),1,'b','filled','AlphaData',0.2);
 

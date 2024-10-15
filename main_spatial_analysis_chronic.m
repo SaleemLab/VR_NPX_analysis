@@ -13,7 +13,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([6 9 14 21 22 27 35 38 40]);
 Stimulus_type = 'RUN1';
 
-for nsession = 1
+for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
@@ -39,9 +39,10 @@ for nsession = 1
         clusters_combined.spike_id=clusters_combined.spike_id(index);
             
         % Cell with spatial tuning
-        ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
-            | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
-
+%         ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+%             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined.odd_even_stability(:,2)>0.95);
         % ib = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
         %     | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         % ia = find(contains(clusters_combined.region,'HPC'))
@@ -219,7 +220,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = 1
+for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
