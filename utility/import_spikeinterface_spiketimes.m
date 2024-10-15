@@ -35,7 +35,14 @@ if contains(options.sorter_folder,'kilosort')
     spike_times = spikes(:,3);
     spike_clusters = spikes(:,1);
     original_cluster_id = unique(spike_clusters);
-    cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+    if isfield(options,'sorter_type')
+        if contains(options.sorter_type,'original')
+            cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+        end
+
+    else
+        cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+    end
     cluster_id = table2array(cluster_group(:,1));% 0 based original cluster id
     spike_clusters_temp = spike_clusters;
     for iC = 1:length(cluster_id)
@@ -92,8 +99,14 @@ if contains(options.sorter_folder,'kilosort')
     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
     cluster_coordiantes = readNPY(fullfile(options.SORTER_DATAPATH,'sorters',options.sorter_folder,'sorter_output','channel_positions.npy')); % load all good channels (not noise channels) coordinate used for spike sorting
 %     templates= readNPY(fullfile(SORTER_DATAPATH,'templates.npy'));
-    templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
-
+    if isfield(options,'sorter_type')
+        if contains(options.sorter_type,'original')
+            templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
+        end
+    else
+        templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
+       
+    end
 
 
     if contains(imecMeta.imDatPrb_pn,'NP2013') %

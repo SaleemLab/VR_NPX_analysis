@@ -235,6 +235,7 @@ elseif contains(sorter,'other sorter')  % place holder for other sorters
 
 
 else % if KS2 and KS3
+    
     if contains(sorter_folder,'original')
         sorter_folder = erase( sorter_folder , '_original' );
         quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','quality_metrics','metrics.csv'));
