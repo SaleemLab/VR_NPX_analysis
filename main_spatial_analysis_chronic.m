@@ -244,25 +244,27 @@ for nsession = 1:length(experiment_info)
         clusters_combined.spike_id=clusters_combined.spike_id(index);
 
         % Cell with spatial tuning
-        ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
-            | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined.odd_even_stability(:,2)>0.95);
+%                 ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+%             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         C = clusters_combined.cluster_id(ia);
-
+        
        clear place_fields_BAYESIAN
         x_bin_size =5;
-        spatial_response = calculate_raw_spatial_response(HPC_clusters_RUN.spike_id,HPC_clusters_RUN.cluster_id,HPC_clusters_RUN.spike_times,HPC_clusters_RUN.tvec{1},...
-            HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_bin_size);
+        spatial_response = calculate_raw_spatial_response(clusters_combined.spike_id,clusters_combined.cluster_id,clusters_combined.spike_times,clusters_combined.tvec{1},...
+            clusters_combined.position{1},clusters_combined.speed{1},clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_bin_size);
         
-        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+        for track_id = 1:max(clusters_combined.track_ID_all{1})
             place_fields_BAYESIAN(track_id).x_bin_edges = 0:x_bin_size:140;
             place_fields_BAYESIAN(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
             place_fields_BAYESIAN(track_id).raw = spatial_response(:,track_id);
-            place_fields_BAYESIAN(track_id).cluster_id = HPC_clusters.cluster_id;
+            place_fields_BAYESIAN(track_id).cluster_id = clusters_combined.cluster_id;
 %             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
 %                 find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
-                find(HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
+                find(clusters_combined.odd_even_stability(:,track_id)>0.95);
             
             ratemap_matrix = [place_fields_BAYESIAN(track_id).raw{:}];
             ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
@@ -273,7 +275,7 @@ for nsession = 1:length(experiment_info)
 %             end
 
             % Good cell this track
-            ratemap_matrix = [HPC_clusters_RUN.spatial_response{:,track_id}];
+            ratemap_matrix = [clusters_combined.spatial_response{:,track_id}];
             ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
             average_maps= normalize(squeeze(mean(ratemap_matrix,1)));
 
@@ -320,7 +322,7 @@ for nsession = 1:length(experiment_info)
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             %             [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
             [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track,estimated_position_lap_CV_shuffled_HPC(nprobe).track] =...
-                bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields,Behaviour,Task_info,options);
+                bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
 
 
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);

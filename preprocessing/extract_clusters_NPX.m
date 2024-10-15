@@ -48,11 +48,8 @@ if ~contains(sorter,'off') % if not default ks
     sorter_folder = [];
     if contains(sorter,'KS2')
         sorter_folder = 'kilosort2_5';
-%     elseif contains(sorter,'KS3_merged')
-%         sorter_folder = 'kilosort3_merged';
-%     elseif contains(sorter,'KS4_merged')
-%         sorter_folder = 'kilosort4_merged';
-
+    elseif contains(sorter,'KS3_original')
+        sorter_folder = 'kilosort3_original';
     elseif contains(sorter,'KS3')
         sorter_folder = 'kilosort3';
     elseif contains(sorter,'KS4')
@@ -238,12 +235,18 @@ elseif contains(sorter,'other sorter')  % place holder for other sorters
 
 
 else % if KS2 and KS3
-    quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv'));
-    template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','template_metrics','metrics.csv'));
-
-
-    CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','bins.npy'));
-    CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','CCGs.npy'));
+    if contains(sorter_folder,'original')
+        sorter_folder = erase( sorter_folder , '_original' );
+        quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','quality_metrics','metrics.csv'));
+        template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','template_metrics','metrics.csv'));
+        CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','bins.npy'));
+        CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','CCGs.npy'));
+    else
+       quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv'));
+        template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','template_metrics','metrics.csv'));
+        CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','bins.npy'));
+        CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','CCGs.npy'));
+    end
 
     cluster_metrics = join(quality_metrics,template_metrics);
 
