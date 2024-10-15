@@ -241,6 +241,7 @@ else % if KS2 and KS3
         template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','template_metrics','metrics.csv'));
         CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','bins.npy'));
         CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','CCGs.npy'));
+        options.sorter_type = 'original';
     else
        quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv'));
         template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','template_metrics','metrics.csv'));

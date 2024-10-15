@@ -17,8 +17,13 @@ function [these_spike_times,cluster_id,peak_channel,peak_depth,peak_channel_wave
 if ~exist('SampleRate','var') || isempty(SampleRate)
     SampleRate = 30000;
 end
-
-SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'sorting');
+if isfield(options,'sorter_type')
+    if contains(options.sorter_type,'original')
+        SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'sorting');
+    end
+else
+    SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'sorting');
+end
 gfileNum = str2num(cell2mat(extractBetween(options.EPHYS_DATAPATH,'_g','\')));% g file number
 folder_names = cell2mat(extractBetween(options.EPHYS_DATAPATH,['_g',num2str(gfileNum),'\'],'_imec'));% to search for the session (e.g. 'M24010_20240231_1_g0')
 segment_frames = readtable(options.segment_frames,"Delimiter",",");% corresponding start and end sample point after concatenation via spike interface
