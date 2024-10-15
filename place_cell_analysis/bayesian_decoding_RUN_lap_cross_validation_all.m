@@ -92,7 +92,7 @@ if isfield(clusters,'merged_spike_id')
 end
 place_fields_BAYESIAN = calculate_spatial_cells(clusters,Task_info,Behaviour,[0 140],10); % use 10 cm bin for Bayesian decoding
 
-
+place_fields_BAYESIAN = place_fields_all;
 spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
     find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
 % spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...

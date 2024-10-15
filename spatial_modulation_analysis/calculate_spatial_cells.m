@@ -1,41 +1,42 @@
-function place_fields = calculate_spatial_cells(clusters,Task_info,Behaviour,x_window,x_bin_width)
+function place_fields = calculate_spatial_cells(clusters,tvec,position,speed,track_ID_all,start_time_all,end_time_all,x_window,x_bin_width)
+% Mainly for Masa 2 track place fields structures for Bayesian deocidng
 
-t_bin = mean(diff(Behaviour.tvec));
+t_bin = mean(diff(tvec));
 position_edges = x_window(1):x_bin_width:x_window(2);
 %   convert spikes time to corresponding postions
-spike_position = interp1(Behaviour.tvec,Behaviour.position,clusters.spike_times,'nearest');
-spike_speed = interp1(Behaviour.tvec,Behaviour.speed,clusters.spike_times,'nearest');
+spike_position = interp1(tvec,position,clusters.spike_times,'nearest');
+spike_speed = interp1(tvec,speed,clusters.spike_times,'nearest');
 
 % spike_position_original = interp1(Behaviour.tvec,Behaviour.position,clusters.spike_times,'nearest');
 % spike_position_original(spike_speed<=5)=nan;
 % spike_track_original = interp1(Behaviour.tvec,Behaviour.track_ID,clusters.spike_times,'nearest');
 
-no_lap = size(Task_info.start_time_all,1);
-event_position = zeros(size(Task_info.start_time_all));
+no_lap = size(start_time_all,1);
+event_position = zeros(size(start_time_all));
 
 position_bin_time = zeros(no_lap,(x_window(2)-x_window(1))/x_bin_width);
 for iLap = 1:no_lap
-    spike_times_lap_index = clusters.spike_times <= Task_info.end_time_all(iLap)...
-        & clusters.spike_times >= Task_info.start_time_all(iLap) & spike_speed > 5;
+    spike_times_lap_index = clusters.spike_times <= end_time_all(iLap)...
+        & clusters.spike_times >= start_time_all(iLap) & spike_speed > 5;
 
     spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
     event_position(iLap,1) = (iLap)*1000;
-    position_bin_time(iLap,:) = t_bin.*histcounts(Behaviour.position(Behaviour.tvec>=Task_info.start_time_all(iLap) ...
-        & Behaviour.tvec <=Task_info.end_time_all(iLap) & Behaviour.speed > 5 ),position_edges);
+    position_bin_time(iLap,:) = t_bin.*histcounts(position(tvec>=start_time_all(iLap) ...
+        & tvec <=end_time_all(iLap) & speed > 5 ),position_edges);
 end
 
-track1_event_position = event_position(Task_info.track_ID_all==1);
-track2_event_position = event_position(Task_info.track_ID_all==2);
+track1_event_position = event_position(track_ID_all==1);
+track2_event_position = event_position(track_ID_all==2);
 
 
 cluster_spike_id = cell(size(clusters.cluster_id));
 no_cluster = length(clusters.cluster_id);
 
-track1_ID = find(Task_info.track_ID_all == 1);
-track2_ID = find(Task_info.track_ID_all == 2);
+track1_ID = find(track_ID_all == 1);
+track2_ID = find(track_ID_all == 2);
 
 place_fields = [];
-for track_id = 1:max(Behaviour.track_ID)
+for track_id = 1:max(track_ID_all)
     place_fields(track_id).x_bin_edges = position_edges;
     place_fields(track_id).x_bin_centres = [(position_edges(2)-x_bin_width/2):x_bin_width:(position_edges(end-1)+x_bin_width/2)];
 
@@ -47,13 +48,13 @@ for track_id = 1:max(Behaviour.track_ID)
     place_fields(track_id).peak_channel = clusters.peak_channel;
     place_fields(track_id).cell_type = clusters.cell_type;
     place_fields(track_id).peak_channel_waveforms = clusters.peak_channel_waveforms;
-    place_fields(track_id).probe_id = clusters.probe_id;
+%     place_fields(track_id).probe_id = clusters.probe_id;
 
     if isfield(clusters,'probe_hemisphere')
         place_fields(track_id).probe_hemisphere = clusters.probe_hemisphere;
     end
     
-    place_fields(track_id).dwell_map = position_bin_time(Task_info.track_ID_all==1,:);
+    place_fields(track_id).dwell_map = position_bin_time(track_ID_all==1,:);
 
 end
 
@@ -80,7 +81,7 @@ w = w./sum(w); %make sure smoothing filter sums to 1
 parfor iCluster = 1:no_cluster
     cluster_spike_id = clusters.spike_id == clusters.cluster_id(iCluster);
 
-    [psth_track1,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track1_event_position, x_window, x_bin_width,position_bin_time(Task_info.track_ID_all==1,:));
+    [psth_track1,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track1_event_position, x_window, x_bin_width,position_bin_time(track_ID_all==1,:));
     binnedArray(isnan(binnedArray)) = 0;
     raw1{iCluster} = binnedArray;
     %     raw1{iCluster} = binnedArray;
@@ -101,7 +102,7 @@ parfor iCluster = 1:no_cluster
     log_norm= log2(norm_rate);
     skaggs_info1(iCluster)= nansum(prob_x.*norm_rate.*log_norm);
 
-    [psth_track2,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track2_event_position, x_window, x_bin_width,position_bin_time(Task_info.track_ID_all==2,:));
+    [psth_track2,bins,binnedArray] = spatial_psth(spike_position(cluster_spike_id),track2_event_position, x_window, x_bin_width,position_bin_time(track_ID_all==2,:));
     binnedArray(isnan(binnedArray)) = 0;
     raw2{iCluster} = binnedArray;
     %     raw2{iCluster} = binnedArray;
@@ -135,3 +136,36 @@ place_fields(1).spatial_xcorr = spatial_xcorr1;
 place_fields(2).spatial_xcorr = spatial_xcorr2;
 place_fields(1).skaggs_info = skaggs_info1;
 place_fields(2).skaggs_info = skaggs_info2;
+
+
+
+for track_id = 1:max(track_ID_all)
+    %             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
+    %                 find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
+
+    ratemap_matrix = [place_fields(track_id).raw{:}];
+    ratemap_matrix = reshape(ratemap_matrix,size(place_fields(track_id).raw{1},1),[],length(place_fields(track_id).raw));%laps X position bins X cells
+    average_maps= squeeze(mean(ratemap_matrix,1));
+    place_fields(track_id).template=average_maps';% need ncell X nposition
+
+    if isfield(clusters,'odd_even_stability')
+        place_fields(track_id).good_place_cells_LIBERAL= ...
+            find(clusters.odd_even_stability(:,track_id)>0.95);
+
+        [~,peak_locations] = max(average_maps(:,place_fields(track_id).good_place_cells_LIBERAL));
+        %     unsorted_cells(track_id,:) =
+        [~,sort_id] = sort(peak_locations);
+        place_fields(track_id).sorted_good_place_cells_LIBERAL=place_fields(track_id).good_place_cells_LIBERAL(sort_id);
+    end
+
+    %             for iCell = 1:length(place_fields_BAYESIAN(track_id).raw)
+    %                 place_fields_BAYESIAN(track_id).template{iCell}=average_maps(:,iCell);% average map for decoding
+    %             end
+
+
+end
+
+if isfield(clusters,'odd_even_stability')
+    place_fields(1).all_good_place_cells_LIBERAL = unique([place_fields(1).good_place_cells_LIBERAL; place_fields(2).good_place_cells_LIBERAL]);
+    place_fields(2).all_good_place_cells_LIBERAL = unique([place_fields(1).good_place_cells_LIBERAL; place_fields(2).good_place_cells_LIBERAL]);
+end

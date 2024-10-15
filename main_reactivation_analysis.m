@@ -151,8 +151,8 @@ for nsession = [4 10]
         metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
         metric_param.region = @(x) contains(x,'HPC');
         HPC_clusters = select_clusters(clusters_combined,metric_param);
-        HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
-        HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
+%         HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
+%         HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
 
         % grab HPC spikes during RUN
         metric_param =[];
@@ -163,42 +163,14 @@ for nsession = [4 10]
         % recalculate light-weight version of 'place fields' structure for hippocampal neurons for Bayesian
         % decoding
         clear place_fields_BAYESIAN
-        x_bin_size =10;
-        spatial_response = calculate_raw_spatial_response(HPC_clusters_RUN.spike_id,HPC_clusters_RUN.cluster_id,HPC_clusters_RUN.spike_times,HPC_clusters_RUN.tvec{1},...
-            HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_bin_size);
-        
-        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
-            place_fields_BAYESIAN(track_id).x_bin_edges = 0:x_bin_size:140;
-            place_fields_BAYESIAN(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
-            place_fields_BAYESIAN(track_id).raw = spatial_response(:,track_id);
-            place_fields_BAYESIAN(track_id).cluster_id = HPC_clusters.cluster_id;
-%             place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
-%                 find(HPC_clusters_RUN.peak_percentile(:,track_id)>0.95&HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
-            place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL= ...
-                find(HPC_clusters_RUN.odd_even_stability(:,track_id)>0.95);
-            
-            ratemap_matrix = [place_fields_BAYESIAN(track_id).raw{:}];
-            ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
-            average_maps= squeeze(mean(ratemap_matrix,1));
-            place_fields_BAYESIAN(track_id).template=average_maps';% need ncell X nposition
-%             for iCell = 1:length(place_fields_BAYESIAN(track_id).raw)
-%                 place_fields_BAYESIAN(track_id).template{iCell}=average_maps(:,iCell);% average map for decoding
-%             end
+        x_bin_width =10;
+        x_window = [0 140];
 
-            % Good cell this track
-            ratemap_matrix = [HPC_clusters_RUN.spatial_response{:,track_id}];
-            ratemap_matrix = reshape(ratemap_matrix,size(place_fields_BAYESIAN(track_id).raw{1},1),[],length(place_fields_BAYESIAN(track_id).raw));%laps X position bins X cells
-            average_maps= normalize(squeeze(mean(ratemap_matrix,1)));
-
-            [~,peak_locations] = max(average_maps(:,place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL));
-            %     unsorted_cells(track_id,:) =
-            [~,sort_id] = sort(peak_locations);
-
-            place_fields_BAYESIAN(track_id).sorted_good_place_cells_LIBERAL=place_fields_BAYESIAN(track_id).good_place_cells_LIBERAL(sort_id);
-        end
-
-        place_fields_BAYESIAN(1).all_good_place_cells_LIBERAL = unique([place_fields_BAYESIAN(1).good_place_cells_LIBERAL; place_fields_BAYESIAN(2).good_place_cells_LIBERAL]);
-        place_fields_BAYESIAN(2).all_good_place_cells_LIBERAL = unique([place_fields_BAYESIAN(1).good_place_cells_LIBERAL; place_fields_BAYESIAN(2).good_place_cells_LIBERAL]);
+        place_fields_BAYESIAN = calculate_spatial_cells(HPC_clusters_RUN,HPC_clusters_RUN.tvec{1},...
+            HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_window,x_bin_width);
+% 
+%         spatial_response = calculate_raw_spatial_response(HPC_clusters_RUN.spike_id,HPC_clusters_RUN.cluster_id,HPC_clusters_RUN.spike_times,HPC_clusters_RUN.tvec{1},...
+%             HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_bin_size);
 
         clear decoded_ripple_events decoded_ripple_events_shuffled
         cd(options.ANALYSIS_DATAPATH)

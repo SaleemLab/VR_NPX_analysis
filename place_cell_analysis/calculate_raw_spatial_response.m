@@ -38,5 +38,3 @@ for track_id = 1:max(track_ID_all)
         spatial_response{iCluster,track_id} = binnedArray;
     end
 end
-
-

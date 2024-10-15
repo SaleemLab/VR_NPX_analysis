@@ -24,7 +24,8 @@ sorted_spikes(:,1) = clusters.spike_id;
 sorted_spikes(:,2) = clusters.spike_times;
 all_units = unique(clusters.spike_id);
 
-non_good = setdiff(all_units,clusters.id_conversion(place_cell_index,2));% Find cells that are not good place cells
+
+non_good = setdiff(all_units,place_fields_BAYESIAN(1).cluster_id(place_cell_index));% Find cells that are not good place cells
 
 for i = 1 : length(non_good)
     non_good_indices = find(sorted_spikes(:,1)== non_good(i));
