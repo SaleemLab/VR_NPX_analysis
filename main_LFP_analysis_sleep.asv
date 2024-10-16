@@ -80,8 +80,6 @@ for nstimuli = 1:length(all_stimulus_type)
                 selected_chan_config = chan_config(selected_channels,:);
                 [PSD{nprobe},power{nprobe}] = calculate_channel_PSD(raw_LFP{nprobe},SR,selected_chan_config,options,'plot_option',0);
 
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
-
                 % Save downsampled LFP from key channels
                 options.importMode = 'KS'; % need total sample number at AP band for later probe aligned LFP
                 [~, imecMeta, chan_config, ~] = extract_NPX_channel_config(options,[]);
@@ -112,8 +110,10 @@ for nstimuli = 1:length(all_stimulus_type)
             end
 
             if contains(stimulus_name{n},'Masa2tracks')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PSD')
                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
             else
+                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
                 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
             end
@@ -136,7 +136,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 
 all_stimulus_type={'SleepChronic','RUN'};
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 8:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
 
@@ -162,7 +162,7 @@ for nstimuli = 1:length(all_stimulus_type)
 
             clear clusters
             if contains(stimulus_name{n},'Masa2tracks')
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -265,23 +265,32 @@ for nstimuli = 1:length(all_stimulus_type)
 
 
                 %             mobility = movmean(Behaviour.mobility,120);
-                mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
 
-                mob_index = find(mobility_thresholded==1);
-                for nindex = 1:length(mob_index)
-                    if nindex<length(mob_index)
-                        if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<1 % if immobility less than 1 second, treats that as movement period
-                            mobility_thresholded(mob_index(nindex):mob_index(nindex+1))=1;
+                if contains(stimulus_name{n},'Sleep')
+                    mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
+
+                    mob_index = find(mobility_thresholded==1);
+                    for nindex = 1:length(mob_index)
+                        if nindex<length(mob_index)
+                            if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<1 % if immobility less than 1 second, treats that as movement period
+                                mobility_thresholded(mob_index(nindex):mob_index(nindex+1))=1;
+                            end
                         end
                     end
+                    %             plot(Behaviour.tvec,Behaviour.mobility);hold on;
+                    %             plot(Behaviour.tvec,mobility*500000);plot(Behaviour.tvec,abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]))
+                    %             plot(Behaviour.mobility_zscore)
+                    mobility_thresholded = interp1(Behaviour.tvec,double(mobility_thresholded),LFP(probe_no).tvec,'linear');
+                    Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
+                    Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
+                    Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
+
+                    speed = mobility_thresholded;
+
+                else
+                    speed = Behaviour.speed;
+                    speed = interp1(Behaviour.tvec,speed,LFP(probe_no).tvec,'linear');
                 end
-                %             plot(Behaviour.tvec,Behaviour.mobility);hold on;
-                %             plot(Behaviour.tvec,mobility*500000);plot(Behaviour.tvec,abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]))
-                %             plot(Behaviour.mobility_zscore)
-                mobility_thresholded = interp1(Behaviour.tvec,double(mobility_thresholded),LFP(probe_no).tvec,'linear');
-                Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
-                Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
-                Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
 
                 if isfield(LFP(probe_no),'L5')
                     if ~isempty(LFP(probe_no).L5)
@@ -313,7 +322,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     %                 CA1_LFP = raw_LFP{nprobe}(229,:);
                     [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
                         [LFP(probe_no).tvec' cortex_LFP'],[LFP(probe_no).tvec' CA1_LFP'],...
-                        [LFP(probe_no).tvec' mobility_thresholded'],speedTreshold);
+                        [LFP(probe_no).tvec' speed'],speedTreshold);
                 end
                 %             behavioural_state.freezing = freezing;
                 behavioural_state(probe_no).quietWake = quietWake;
@@ -364,7 +373,11 @@ for nstimuli = 1:length(all_stimulus_type)
                 elseif isfield(LFP(nprobe),'L4')==1 & ~isempty(behavioural_state(probe_no).SWS)
                     slow_waves(nprobe) = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',cortex_LFP,'spikes',V1_clusters(nprobe),'NREMInts',behavioural_state(probe_no).SWS);
                 else
-                    slow_waves(nprobe) = struct();
+                    if nprobe == length(session_info(n).probe)
+                        if exist('slow_waves')==0
+                            slow_waves(nprobe) = struct();
+                        end
+                    end
                 end
 
                 %%%%%% Populational burtsting events
@@ -544,9 +557,9 @@ for nstimuli = 1:length(all_stimulus_type)
             if contains(stimulus_name{n},'Masa2tracks')
                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'replay','reactivations','replay_combined','reactivations_combined')
                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'V1_replay','V1_reactivations')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spindles')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spindles')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples')
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'behavioural_state')
             else
@@ -563,6 +576,20 @@ for nstimuli = 1:length(all_stimulus_type)
 end
 
 %% UP DOWN state and ripple and spindle analysis
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+Stimulus_type = 'Sleep';
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% 1:length(experiment_info)
+% [1 2 3 4 6 7 8 9 10 12 14]
 
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -597,6 +624,9 @@ for nsession =1:length(experiment_info)
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         else
@@ -664,9 +694,52 @@ for nsession =1:length(experiment_info)
             end
         end
         
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+%         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+%             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
+
+        x_bin_size =2;
+        spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
+            session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
+
+        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
+            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
+            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
+            place_fields(track_id).raw = spatial_response(:,track_id);
+            place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
+        end
+
+        for nprobe = 1
+            T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
+
+            T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+                reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
+
+            %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+            %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
+
+            %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
+            %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+            %
+            %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
+            %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+
+            event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+            event_times = [T1_events; T2_events];
+            [~,index]=sort(event_times);
+        end
+        
+        % Track 1 selective V1 neurons
+        ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
+        C = clusters_combined.cluster_id(ia);
+
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
 
     end
 

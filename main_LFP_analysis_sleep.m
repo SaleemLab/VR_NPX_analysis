@@ -136,7 +136,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 
 all_stimulus_type={'SleepChronic','RUN'};
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 8:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
 
@@ -163,6 +163,8 @@ for nstimuli = 1:length(all_stimulus_type)
             clear clusters
             if contains(stimulus_name{n},'Masa2tracks')
                 % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
@@ -265,23 +267,32 @@ for nstimuli = 1:length(all_stimulus_type)
 
 
                 %             mobility = movmean(Behaviour.mobility,120);
-                mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
 
-                mob_index = find(mobility_thresholded==1);
-                for nindex = 1:length(mob_index)
-                    if nindex<length(mob_index)
-                        if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<1 % if immobility less than 1 second, treats that as movement period
-                            mobility_thresholded(mob_index(nindex):mob_index(nindex+1))=1;
+                if contains(stimulus_name{n},'Sleep')
+                    mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
+
+                    mob_index = find(mobility_thresholded==1);
+                    for nindex = 1:length(mob_index)
+                        if nindex<length(mob_index)
+                            if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<1 % if immobility less than 1 second, treats that as movement period
+                                mobility_thresholded(mob_index(nindex):mob_index(nindex+1))=1;
+                            end
                         end
                     end
+                    %             plot(Behaviour.tvec,Behaviour.mobility);hold on;
+                    %             plot(Behaviour.tvec,mobility*500000);plot(Behaviour.tvec,abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]))
+                    %             plot(Behaviour.mobility_zscore)
+                    mobility_thresholded = interp1(Behaviour.tvec,double(mobility_thresholded),LFP(probe_no).tvec,'linear');
+                    Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
+                    Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
+                    Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
+
+                    speed = mobility_thresholded;
+
+                else
+                    speed = Behaviour.speed;
+                    speed = interp1(Behaviour.tvec,speed,LFP(probe_no).tvec,'linear');
                 end
-                %             plot(Behaviour.tvec,Behaviour.mobility);hold on;
-                %             plot(Behaviour.tvec,mobility*500000);plot(Behaviour.tvec,abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]))
-                %             plot(Behaviour.mobility_zscore)
-                mobility_thresholded = interp1(Behaviour.tvec,double(mobility_thresholded),LFP(probe_no).tvec,'linear');
-                Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
-                Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
-                Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
 
                 if isfield(LFP(probe_no),'L5')
                     if ~isempty(LFP(probe_no).L5)
@@ -313,7 +324,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     %                 CA1_LFP = raw_LFP{nprobe}(229,:);
                     [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
                         [LFP(probe_no).tvec' cortex_LFP'],[LFP(probe_no).tvec' CA1_LFP'],...
-                        [LFP(probe_no).tvec' mobility_thresholded'],speedTreshold);
+                        [LFP(probe_no).tvec' speed'],speedTreshold);
                 end
                 %             behavioural_state.freezing = freezing;
                 behavioural_state(probe_no).quietWake = quietWake;
@@ -364,7 +375,11 @@ for nstimuli = 1:length(all_stimulus_type)
                 elseif isfield(LFP(nprobe),'L4')==1 & ~isempty(behavioural_state(probe_no).SWS)
                     slow_waves(nprobe) = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',cortex_LFP,'spikes',V1_clusters(nprobe),'NREMInts',behavioural_state(probe_no).SWS);
                 else
-                    slow_waves(nprobe) = struct();
+                    if nprobe == length(session_info(n).probe)
+                        if exist('slow_waves')==0
+                            slow_waves(nprobe) = struct();
+                        end
+                    end
                 end
 
                 %%%%%% Populational burtsting events
@@ -444,7 +459,7 @@ for nstimuli = 1:length(all_stimulus_type)
             %%%%%%%%%%%%%%%%%%
             reactivations_combined= [];
             replay_combined = [];
-            clear CA1_clusters
+            clear CA1_clusters_combined
 
             if length(session_info(n).probe)>1
                 zscore_min = 0;
@@ -454,10 +469,10 @@ for nstimuli = 1:length(all_stimulus_type)
                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
                 metric_param.region = @(x) contains(x,'HPC');
                 clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2))
-                CA1_clusters = select_clusters(clusters_combined,metric_param);
+                CA1_clusters_combined = select_clusters(clusters_combined,metric_param);
 
                 [replay_combined,reactivations_combined] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
-                    [CA1_clusters.spike_id CA1_clusters.spike_times],Behaviour,zscore_min,zscore_max,options);
+                    [CA1_clusters_combined.spike_id CA1_clusters_combined.spike_times],Behaviour,zscore_min,zscore_max,options);
             end
 
             for nprobe = 1:length(session_info(n).probe)
@@ -496,24 +511,28 @@ for nstimuli = 1:length(all_stimulus_type)
                 lap_times(2).end = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)';
 
                 if contains(stimulus_name{n},'RUN') % If reactivation events during lap running
-                    if ~isempty(reactivations(probe_no).onset)
-                        [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                        reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
-                        reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
+                    if length(CA1_clusters(probe_no).cluster_id)>10
+                        if ~isempty(reactivations(probe_no).onset)
+                            [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                            reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
+                            reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
 
-                        [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                        reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
-                        reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
+                            [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                            reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
+                            reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
+                        end
                     end
 
-                    if ~isempty(V1_reactivations(probe_no).onset)
-                        [V1_reactivations(probe_no).T1_offset,V1_reactivations(probe_no).T1_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                        V1_reactivations(probe_no).T1_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T1_index);
-                        V1_reactivations(probe_no).T1_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T1_index);
+                    if length(V1_clusters(probe_no).cluster_id)>10
+                        if ~isempty(V1_reactivations(probe_no).onset)
+                            [V1_reactivations(probe_no).T1_offset,V1_reactivations(probe_no).T1_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                            V1_reactivations(probe_no).T1_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T1_index);
+                            V1_reactivations(probe_no).T1_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T1_index);
 
-                        [V1_reactivations(probe_no).T2_offset,V1_reactivations(probe_no).T2_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
-                        V1_reactivations(probe_no).T2_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T2_index);
-                        V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
+                            [V1_reactivations(probe_no).T2_offset,V1_reactivations(probe_no).T2_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
+                            V1_reactivations(probe_no).T2_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T2_index);
+                            V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
+                        end
                     end
                 end
 
