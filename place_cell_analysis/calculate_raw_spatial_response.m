@@ -11,8 +11,7 @@ spike_speed = interp1(tvec,speed,spike_times,'nearest');
 
 no_lap = size(start_time_all,1);
 event_position = zeros(size(start_time_all));
-    w = gausswin(9);
-    w = w / sum(w);
+
 position_bin_time = zeros(no_lap,length(position_centres));
 for iLap = 1:no_lap
     spike_times_lap_index = spike_times <= end_time_all(iLap)...

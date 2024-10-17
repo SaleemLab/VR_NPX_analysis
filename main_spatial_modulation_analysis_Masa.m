@@ -185,6 +185,12 @@ for nsession = 1:length(experiment_info)
         track_ID =Behaviour.track_ID;
         position = Behaviour.position;
         speed = Behaviour.speed;
+
+        w = gausswin(10);
+        w = w / sum(w);
+        speed(isnan(speed))=0;
+        speed=filtfilt(w,1,speed')';
+
         track_ID_all = Task_info.track_ID_all;
         start_time_all = Task_info.start_time_all;
         end_time_all = Task_info.end_time_all;

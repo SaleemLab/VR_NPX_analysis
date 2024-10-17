@@ -14,7 +14,7 @@ event_position = zeros(size(start_time_all));
 position_bin_time = zeros(no_lap,140);
 for iLap = 1:no_lap
     spike_times_lap_index = spike_times <= end_time_all(iLap)...
-        & spike_times >= start_time_all(iLap) & spike_speed > 1;
+        & spike_times >= start_time_all(iLap) & spike_speed > 5;
 
     spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
     event_position(iLap,1) = (iLap)*1000;
