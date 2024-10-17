@@ -51,6 +51,8 @@ for track_id = 1:max(track_ID_all)
     place_fields(track_id).odd_even_stability = clusters.odd_even_stability(:,track_id);
     place_fields(track_id).first_second_stability = clusters.odd_even_stability(:,track_id);
     place_fields(track_id).peak_percentile = clusters.peak_percentile(:,track_id);
+    place_fields(track_id).within_track_corr = clusters.within_track_corr(:,track_id);
+    place_fields(track_id).across_track_corr = clusters.across_track_corr;
     
 %     place_fields(track_id).probe_id = clusters.probe_id;
 
@@ -62,6 +64,7 @@ for track_id = 1:max(track_ID_all)
 
 end
 
+place_fields(track_id).across_track_corr = clusters.across_track_corr;
 
 raw1 = cell(size(clusters.cluster_id));
 raw2 = cell(size(clusters.cluster_id));

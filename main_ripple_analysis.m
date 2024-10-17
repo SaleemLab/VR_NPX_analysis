@@ -156,21 +156,21 @@ for nsession = [1]
                 ripple_modulation_combined = ripple_modulation_R;
             end
         else
-% 
-%             event_times = sort([ripples(1).onset ripples(2).onset]);
+            %
+            %             event_times = sort([ripples(1).onset ripples(2).onset]);
             [C,ia,ic] = unique(clusters_combined.merged_cluster_id);
-        if contains(Stimulus_name{n},'RUN')
-            event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
-            [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
+            if contains(Stimulus_name{n},'RUN')
+                event_id = [ones(1,length(ripples(1).T1_onset)) ones(1,length(ripples(2).T1_onset)) 2*ones(1,length(ripples(1).T2_onset)) 2*ones(1,length(ripples(2).T2_onset))];
+                [event_times,index] = sort([ripples(1).T1_onset ripples(2).T1_onset ripples(1).T2_onset ripples(2).T2_onset]);
 
-            [ripple_modulation_combined]= ripple_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
-                'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
-                'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
-        else
+                [ripple_modulation_combined]= ripple_modulation_analysis(clusters_combined.spike_times,clusters_combined.merged_spike_id,Task_info,Behaviour,[-2 2],0.02,...
+                    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times',...
+                    'event_label',{'Track 1','Track 2'},'event_id',event_id(index)','place_fields',place_fields);
+            else
 
+            end
         end
         save(fullfile(options.ANALYSIS_DATAPATH,'ripple_modulation.mat'),"ripple_modulation_L","ripple_modulation_R","ripple_modulation_combined")
-
     end
 end
 
