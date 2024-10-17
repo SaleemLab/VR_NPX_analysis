@@ -630,9 +630,15 @@ for nsession =1:length(experiment_info)
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state.mat'));
+
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         else
@@ -677,6 +683,12 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
         end
 
+        % From cell structure back to spike times and spike id
+        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
+        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
+        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
+        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
+
         params = create_cluster_selection_params('sorting_option','masa');
         clear selected_clusters
         for nprobe = 1:length(clusters)
@@ -689,71 +701,359 @@ for nsession =1:length(experiment_info)
             selected_clusters(nprobe).cluster_id = selected_clusters(nprobe).cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
             if session_info(n).probe(nprobe).probe_hemisphere==1
                 selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
-                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'));
-                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'));
-                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'),:);
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'),:);
             elseif session_info(n).probe(nprobe).probe_hemisphere==2
                 selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
-                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'));
-                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'));
-                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'));
+                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'),:);
+                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'),:);
+                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
             end
         end
-        
+
+        if length(clusters) > 1
+            clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
+        else
+            clusters_combined = selected_clusters;
+        end
+        clear selected_clusters
 %         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
 %             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
         spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
             | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
-
-        x_bin_size =2;
-        spatial_response = calculate_raw_spatial_response(session_clusters_RUN.spike_id,session_clusters_RUN.cluster_id,session_clusters_RUN.spike_times,session_clusters_RUN.tvec{1},...
-            session_clusters_RUN.position{1},session_clusters_RUN.speed{1},session_clusters_RUN.track_ID_all{1},session_clusters_RUN.start_time_all{1},session_clusters_RUN.end_time_all{1},x_bin_size);
-
-        for track_id = 1:max(session_clusters_RUN.track_ID_all{1})
-            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
-            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
-            place_fields(track_id).raw = spatial_response(:,track_id);
-            place_fields(track_id).cluster_id = session_clusters_RUN.cluster_id
-        end
-
-        for nprobe = 1
-            T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
-                reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
-
-            T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
-                reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
-
-            %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
-            %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
-
-            %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
-            %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-            %
-            %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
-            %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-
-            event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
-            event_times = [T1_events; T2_events];
-            [~,index]=sort(event_times);
-        end
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        [selected_clusters,cluster_id] = select_clusters(session_clusters_RUN,metric_param);
         
-        % Track 1 selective V1 neurons
-        ia = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            & session_clusters_RUN.odd_even_stability(:,2)<0.95 & contains(session_clusters_RUN.region,'V1'));
+        x_window = [0 140];
+        x_bin_width = 2;
+        place_fields = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
+            selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+
+
+        for nprobe = 1:2
+            if ~isempty(behavioural_state(nprobe).SWS)
+                [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
+                V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+            end
+        end
+
+        nprobe = 1
+        T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
+            reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
+
+        T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
+            reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
+
+        %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
+        %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
+
+        %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
+        %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+        %
+        %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
+        %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
+
+        event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+        event_times = [T1_events; T2_events];
+        [~,index]=sort(event_times);
+        
+        
+        for nprobe = 1:2
+            if ~isempty(behavioural_state(nprobe).SWS)
+                [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
+                V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+            end
+        end
+
+        [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
+        reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
+
+
+        ia = find((session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+            | session_clusters_RUN.odd_even_stability(:,2)>0.95) & contains(session_clusters_RUN.region,'V1'));
+
+%         ia = find(contains(session_clusters_RUN.region,'V1'))
+%         ia = find((session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+%             | session_clusters_RUN.odd_even_stability(:,2)>0.95));
         C = clusters_combined.cluster_id(ia);
 
-        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-2 2],0.02,...
+%         event_id = [ones(1,length(slow_waves(1).ints.UP(:,1)))];
+%         event_times = [slow_waves(1).ints.UP(:,1)];
+        event_id = [ones(1,length(ripples(2).SWS_peaktimes))];
+        event_times = [ripples(2).SWS_peaktimes];
+%         [~,index]=sort(event_times);
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by track');
 
+        plot(ripples(2).SWS_peaktimes,cumsum(ones(1,length(ripples(2).SWS_peaktimes)))); hold on;
+        plot(ripples(1).SWS_peaktimes,cumsum(ones(1,length(ripples(1).SWS_peaktimes))))
+        xline(ripples(1).SWS_peaktimes(900))
+
+
+        event_id = [ones(1,301)];
+        event_times = [ripples(1).SWS_peaktimes(900:1200)];
+        %         [~,index]=sort(event_times);
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by track');
+
+
+        figure
+        nexttile
+%         plot_perievent_event_histogram(ripples(2).SWS_peaktimes,ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right ripple')
+        time_wondows = [-2 2];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes,ripples(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+        title('Ripple from Left HPC relative to ripple from Right HPC')
+
+        nexttile
+%         plot_perievent_event_histogram(slow_waves(2).ints.UP(:,1),slow_waves(1).ints.UP(:,1),'twin',[-1 1],'event_name','Right UP events')
+        time_wondows = [-2 2];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(slow_waves(1).ints.UP(:,1),slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+        title('Up state from Left V1 relative to Up state from Right V1')
+
+        nexttile
+%         plot_perievent_event_histogram(spindles(2).SWS_peaktimes,spindles(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right spindles events')
+        time_wondows = [-3 3];
+        time_bin = 0.05;
+        probabilities = calculate_event_probability(spindles(1).SWS_peaktimes,spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+        title('Spindles from Left V1 relative to Spindles from Right V1')
+
+        nexttile
+%         plot_perievent_event_histogram(V1_reactivations(2).SWS_onset,V1_reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right V1 populational burtsting events')
+        time_wondows = [-2 2];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(V1_reactivations(1).SWS_onset,V1_reactivations(2).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+        title('V1 population events from Left relative to population events from Right')
+
+        nexttile
+%         plot_perievent_event_histogram(reactivations(2).SWS_onset,reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right HPC populational burtsting events')
+        time_wondows = [-2 2];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(reactivations(2).SWS_onset,reactivations(1).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+        title('HPC bursting events from left relative to HPC bursting events from right')
+
+        sgtitle('Left and Right events Synchronisation')
+
+
+        detect_candidate_events_masa
+
+        figure
+        nexttile
+        plot_perievent_event_histogram(slow_waves(1).ints.UP(:,1),ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','UP states')
+        title('Ripple from ripples relative to V1 UP states')
+
+        figure
+        nexttile
+        plot_perievent_event_histogram(spindles(1).SWS_peaktimes,ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','V1 spindles')
+        title('Ripple from ripples relative to V1 spindles')
+
+        figure
+        nexttile
+        plot_perievent_event_histogram(reactivations(1).SWS_onset,V1_reactivations(1).SWS_onset,'twin',[-1 1],'event_name','HPC bursting')
+        title('V1 bursting relative to HPC bursting')
+
+        nexttile
+        plot_perievent_event_histogram(reactivations(1).SWS_onset,V1_reactivations(2).SWS_onset,'twin',[-1 1],'event_name','HPC bursting')
+        title('V1 bursting relative to HPC bursting')
+
+        nexttile
+        plot_perievent_event_histogram(V1_reactivations(1).SWS_onset,ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','V1 bursting')
+        title('Ripple from ripples relative to V1 bursting')
+
+        event1 = ripples(1).SWS_peaktimes(1);
+        event2 = V1_reactivations(1).SWS_onset(1);
+
+
+        time_wondows = [-2 2];
+        time_bin = 0.1;
+        probabilities = calculate_event_probability(slow_waves(1).ints.UP(:,1), slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,1))
+        title('probability of Left UP states relative to Right UP states')
+
+
+        time_wondows = [-2 2];
+        time_bin = 0.1;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, ripples(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,1))
+        title('probability of Left ripples relative to Right ripples')
+
+        
+        figure
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Left ripples relative to UP states')
+        
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Left ripples relative to DOWN states')
+
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Right ripples relative to UP states')
+        
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Right ripples relative to DOWN states')
+        sgtitle('Left V1')
+
+        figure
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Left ripples relative to UP states')
+        
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Left ripples relative to DOWN states')
+
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Right ripples relative to UP states')
+        
+        nexttile
+        time_wondows = [-1 1];
+        time_bin = 0.02;
+        probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+        plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+        title('probability of Right ripples relative to DOWN states')
+        sgtitle('Right V1')
+
+
+        nexttile
+        time_bin = 0.05;
+        probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [-1:time_bin:1])
+        plot([-1+time_bin/2:time_bin:0.5-time_bin/2],probabilities)
+        sgtitle('Left V1 and HPC interaction')
+
+
+
+        % Spike relative to events
+
+        spatial_cell_index = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined.odd_even_stability(:,2)>0.95);
+
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1_L');
+        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+        all_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
+
+        metric_param.region = @(x) contains(x,'V1_R');
+        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+        all_spikes{2}=[selected_clusters.spike_id selected_clusters.spike_times];
+
+        metric_param.region = @(x) contains(x,'HPC');
+        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+        all_spikes{3}=[selected_clusters.spike_id selected_clusters.spike_times];
+
+
+        group_name = {'V1_L','V1_R','HPC'};
+        [ripples.DOWN_UP_transition,index] = RestrictInts(ripples(1).peaktimes,[slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,1)+0.2]);
+        plot_perievent_spiketime_histogram(all_spikes,ripples(1).DOWN_UP_transition,'group','by cell zscore','group_name',group_name,'event_name','DOWN-UP transition ripples','twin',[-0.5 0.5])
+        
+        [ripples.DOWN_UP_transition,index] = RestrictInts(ripples(1).peaktimes,[slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,1)+0.2]);
+        plot_perievent_spiketime_histogram(all_spikes,ripples(1).DOWN_UP_transition,'group','by region','group_name',group_name,'event_name','DOWN-UP transition ripples','twin',[-0.5 0.5])
+
+
+        plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by region','group_name',group_name,'event_name','UP States','twin',[-0.5 0.5])
+        plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by cell zscore','group_name',group_name,'event_name','UP States','twin',[-0.5 0.5])
+
+        plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.DOWN(:,1),'group','by region','group_name',group_name,'event_name','DOWN States','twin',[-0.5 0.5])
+        plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.DOWN(:,1),'group','by cell zscore','group_name',group_name,'event_name','DOWN States','twin',[-0.5 0.5])
+
+        figure
+        plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Ripples','twin',[-0.5 0.5])
+
+        figure
+        plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Ripples','twin',[-1 1])
     end
 
 end
 
+zero_meaned_log_odds = [decoded_ripple_events(1).track(1).replay_events(:).z_log_odds] - mean([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
+histogram(zero_meaned_log_odds,100)
+
+find(zero_meaned_log_odds<-0.5)
+find(zero_meaned_log_odds>0.5)
+
+T2_events = find(zero_meaned_log_odds<-0.5);
+figure
+for event = 1:length(T2_events)
+    subplot(5,5,event)
+    T1_data = decoded_ripple_events(1).track(1).replay_events(T2_events(event));
+    T2_data = decoded_ripple_events(1).track(2).replay_events(T2_events(event));
+
+    timebins = T1_data.timebins_edges(1:end-1);
+    imagesc(timebins,...
+        [1:2*size(T2_data.replay,1)],...
+        [T1_data.replay; T2_data.replay])
+    hold on
+    colormap(flipud(gray))
+    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/10)
+    yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
+    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
+    
+    
+    [b,index]=min(abs(T1_data.onset-timebins));
+    xline(timebins(index)-mean(diff(timebins)/2))
+    [b,index]=min(abs(T1_data.offset-timebins));
+    xline(timebins(index)-mean(diff(timebins)/2))
+end
 
 
-%% Reactivation strength analysis 
+T1_events = find(zero_meaned_log_odds>0.2);
+figure
+for event = 1:length(T1_events)
+    subplot(5,5,event)
+    T1_data = decoded_ripple_events(1).track(1).replay_events(T1_events(event));
+    T2_data = decoded_ripple_events(1).track(2).replay_events(T1_events(event));
+
+    timebins = T1_data.timebins_edges(1:end-1);
+    imagesc(timebins,...
+        [1:2*size(size(T2_data.replay,1))],...
+        [T1_data.replay; T2_data.replay])
+    colormap(flipud(gray))
+    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/10)
+    yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
+    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
+
+    hold on
+    [b,index]=min(abs(T1_data.onset-timebins));
+    xline(timebins(index)-mean(diff(timebins)/2))
+    [b,index]=min(abs(T1_data.offset-timebins));
+    xline(timebins(index)-mean(diff(timebins)/2))
+end
 
 
 
