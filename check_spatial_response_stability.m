@@ -6,7 +6,7 @@ SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-Stimulus_type = 'RUN2';
+Stimulus_type = 'RUN1';
 
 for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -21,12 +21,13 @@ for nsession = 1:length(experiment_info)
         options = session_info(n).probe(1);
 
         if contains(stimulus_name{n},'Masa2tracks')
-%             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'))
             session_clusters_RUN1 = session_clusters;
             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'))
             session_clusters_RUN2 = session_clusters;
-%             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_original%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
         end
 
         % reconstruct cluster structure and place field structure from
@@ -44,7 +45,7 @@ for nsession = 1:length(experiment_info)
         clusters_combined2.spike_times=vertcat(session_clusters_RUN2.spike_times{:});
         [clusters_combined2.spike_times,index] =sort(clusters_combined2.spike_times);
         clusters_combined2.spike_id=clusters_combined2.spike_id(index);
-        
+
 
         % Cell with spatial tuning
         % ib = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
@@ -53,8 +54,8 @@ for nsession = 1:length(experiment_info)
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         ia = find(clusters_combined1.odd_even_stability(:,1)>0.95 ...
             | clusters_combined1.odd_even_stability(:,2)>0.95);
-%         ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
-%             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'HPC'));
+        %         ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
+        %             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'HPC'));
         C = clusters_combined1.cluster_id(ia);
 
 
@@ -77,111 +78,23 @@ for nsession = 1:length(experiment_info)
         %             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'V1_L'));
         %         plot_place_cell_map_correlation(place_fields_all,ia,[],[],options)
 
-        ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
-            | clusters_combined1.odd_even_stability(:,2)>0.95));
-        ratemap_matrix=[];
-        average_maps=[];
-        lap_correlation_pv=[];
-        within_track_corr=[];
-        lap_correlation=[];
-        pv_corr=[];
-        for track_id = 1:2
-            %             ratemap_matrix{track_id} = [conv(place_fields_all(track_id).raw{good_cell_index}gaussianWindow,'same')];
-            ratemap_matrix{track_id} = [place_fields_all(track_id).raw{ia}];
-            ratemap_matrix{track_id} = reshape( ratemap_matrix{track_id},size(place_fields_all(track_id).within_track_corr{1},1),[],length(ia));%laps X position bins X cells
+        %         ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
+        %             | clusters_combined1.odd_even_stability(:,2)>0.95));
 
+        %         colorbar
+        ia = find(clusters_combined1.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined1.odd_even_stability(:,2)>0.95);
+%         ia=1:length(clusters_combined1.region);
+        cluster_id= intersect(ia,find(contains(clusters_combined1.region,'HPC')));
+        [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
+            plot_place_cell_map_correlation(place_fields_all,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
-            within_track_corr{track_id} = [place_fields_all(track_id).within_track_corr{ia}];
-            %             ratemaps_track1(nevent,:) = conv(ratemaps_track1(nevent,:),gaussianWindow,'same');
-            within_track_corr{track_id} = reshape( within_track_corr{track_id},size(place_fields_all(track_id).within_track_corr{1},1),size(place_fields_all(track_id).within_track_corr{1},1),[]);
-            lap_correlation{track_id}= squeeze(nanmean(within_track_corr{track_id},3));
-
-            for nlap = 1:size(place_fields_all(track_id).raw{1},1)
-                for mlap = 1:size(place_fields_all(track_id).raw{1},1)
-                    map1 = zscore(squeeze(ratemap_matrix{track_id}(nlap,:,:)));
-                    map2 = zscore(squeeze(ratemap_matrix{track_id}(mlap,:,:)));
-                    temp = corr(map1',map2');
-                    x_bins = 1:size(map1,1);
-                   
-                    lap_correlation_pv{track_id}(nlap,mlap) = nanmean(diag(temp));
-%                     lap_correlation_pv{track_id}(nlap,mlap) = nanmean(nanmean(corr(map1,map2)));
-                end
-            end
-
-            for nlap = 1:size(place_fields_all(track_id).raw{1},1)
-                map1 = zscore(squeeze(ratemap_matrix{track_id}(nlap,:,:)));
-                map2 = zscore(squeeze(nanmean(ratemap_matrix{track_id}(:,:,:))));
-                temp = corr(map1',map2');
-                x_bins = 1:size(map1,1);
-                
-                pv_corr(track_id,nlap) = nanmean(diag(temp));
-            end
-            %
-            %
-            %
-            %             for ncell = 1:length(ia)
-            %                 for nlap = 1:size(place_fields_all(track_id).raw{1},1)
-            %                     all_cells_corr(ncell,nlap) = corr(zscore(place_fields_all(track_id).raw{ia(ncell)}(nlap,:))',average_maps{track_id}(:,ncell));
-            %                 end
-            %             end
-        end
-
-        fig = figure
-        fig.Position = [500 70 830 600];
-        sgtitle(sprintf('%s %s %s cell map remapping probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere}))
-        fig.Name = sprintf('%s %s %s cell map remapping probe %s',options.SUBJECT,options.SESSION,region,probe_hemisphere_text{probe_hemisphere});
-
-        subplot(3,2,1)
-        percentile_95 = prctile(reshape(lap_correlation{1},1,[]),95);
-        imagesc(lap_correlation{1}')
-        clim([0 percentile_95])
-        title('Track 1 mean lap by lap single cell corr')
-        colorbar
-
-        subplot(3,2,2)
-        percentile_95 = prctile(reshape(lap_correlation{2},1,[]),95);
-        imagesc(lap_correlation{2}')
-        clim([0 percentile_95])
-        colorbar
-        title('Track 2 mean lap by lap single cell corr')
-
-        
-        subplot(3,2,3)
-        percentile_95 = prctile(reshape(lap_correlation_pv{1},1,[]),95);
-        imagesc(lap_correlation_pv{1}')
-        clim([0 percentile_95])
-        title('Track 1 mean lap to lap PV corr')
-        colorbar
-        
-        subplot(3,2,4)
-        percentile_95 = prctile(reshape(lap_correlation_pv{2},1,[]),95);
-        imagesc(lap_correlation_pv{2}')
-        clim([0 percentile_95])
-        colorbar
-        title('Track 2 mean lap to lap PV corr')
-
-        subplot(3,2,5)
-%         percentile_95 = prctile(reshape(pv_corr{1},1,[]),95);
-        plot(movmedian(pv_corr(1,:)',3))
-%       ylim([-percentile_95 percentile_95])
-        title('Track 1 mean lap to template PV corr')
-        box off
-%         colorbar
-
-        subplot(3,2,6)
-%         percentile_95 = prctile(reshape(pv_corr(2,:),1,[]),95);
-        plot(movmedian(pv_corr(2,:)',3))
-%         ylim([-percentile_95 percentile_95])
-        title('Track 2 mean lap to template PV corr')
-        box off
-%         colorbar
-
-        
+        plot_spatial_map_stability(place_fields_all); 
         if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','spatial_map_stability',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','spatial_map_stability',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
         else
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','populational_map'),[])
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','spatial_map_stability'),[])
         end
 
         close all
