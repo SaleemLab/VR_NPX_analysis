@@ -1,4 +1,4 @@
-%% Spatial raster plot and spatial tuning curves & spatial modulation analysis
+%% Check spatial response stability
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -57,46 +57,114 @@ for nsession = 1:length(experiment_info)
 %             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'HPC'));
         C = clusters_combined1.cluster_id(ia);
 
+
+        ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'V1_L'));
+
+        speed = clusters_combined.speed{1};
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+        lick_speed = interp1(clusters_combined.sglxTime_uncorrected{1},speed,clusters_combined.lick_time{1},'nearest');
+
         x_window = [0 140];
         x_bin_size =2;
         place_fields_all = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
             clusters_combined.position{1},clusters_combined.speed{1},clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_size);
+        %
+        %         ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
+        %             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'V1_L'));
+        %         plot_place_cell_map_correlation(place_fields_all,ia,[],[],options)
 
-        plot_place_cell_map_correlation(place_fields_all,ia,[],[],options)
-
-       
+        ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined1.odd_even_stability(:,2)>0.95));
         ratemap_matrix=[];
         average_maps=[];
         lap_correlation_pv=[];
+        within_track_corr=[];
+        lap_correlation=[];
+        pv_corr=[];
         for track_id = 1:2
             %             ratemap_matrix{track_id} = [conv(place_fields_all(track_id).raw{good_cell_index}gaussianWindow,'same')];
             ratemap_matrix{track_id} = [place_fields_all(track_id).raw{ia}];
+            ratemap_matrix{track_id} = reshape( ratemap_matrix{track_id},size(place_fields_all(track_id).within_track_corr{1},1),[],length(ia));%laps X position bins X cells
+
 
             within_track_corr{track_id} = [place_fields_all(track_id).within_track_corr{ia}];
             %             ratemaps_track1(nevent,:) = conv(ratemaps_track1(nevent,:),gaussianWindow,'same');
-            within_track_corr{track_id} = reshape( within_track_corr{track_id},size(place_fields_all(track_id).within_track_corr{1},1),[],[]);%laps X position bins X cells
-            average_maps{track_id}= squeeze(nanmean(within_track_corr{track_id},1));
+            within_track_corr{track_id} = reshape( within_track_corr{track_id},size(place_fields_all(track_id).within_track_corr{1},1),size(place_fields_all(track_id).within_track_corr{1},1),[]);
+            lap_correlation{track_id}= squeeze(nanmean(within_track_corr{track_id},3));
 
-%             for nlap = 1:size(place_fields_all(track_id).raw{1},1)
-%                 for mlap = 1:size(place_fields_all(track_id).raw{1},1)
-%                     lap_correlation_pv(track_id,nlap,mlap) = nanmean(nanmean(corr(squeeze(ratemap_matrix{track_id}(nlap,:,:)),squeeze(ratemap_matrix{track_id}(mlap,:,:)))));
-%                 end
-%             end
-% 
-% 
-% 
-%             for ncell = 1:length(ia)
-%                 for nlap = 1:size(place_fields_all(track_id).raw{1},1)
-%                     all_cells_corr(ncell,nlap) = corr(zscore(place_fields_all(track_id).raw{ia(ncell)}(nlap,:))',average_maps{track_id}(:,ncell));
-%                 end
-%             end
+            for nlap = 1:size(place_fields_all(track_id).raw{1},1)
+                for mlap = 1:size(place_fields_all(track_id).raw{1},1)
+                    map1 = zscore(squeeze(ratemap_matrix{track_id}(nlap,:,:)));
+                    map2 = zscore(squeeze(ratemap_matrix{track_id}(mlap,:,:)));
+                    lap_correlation_pv{track_id}(nlap,mlap) = nanmean(nanmean(corr(map1,map2)));
+                end
+            end
+
+            for nlap = 1:size(place_fields_all(track_id).raw{1},1)
+                map1 = zscore(squeeze(ratemap_matrix{track_id}(nlap,:,:)));
+                map2 = zscore(squeeze(nanmean(ratemap_matrix{track_id}(:,:,:))));
+                pv_corr(track_id,nlap) = nanmean(nanmean(corr(map1,map2)));
+            end
+            %
+            %
+            %
+            %             for ncell = 1:length(ia)
+            %                 for nlap = 1:size(place_fields_all(track_id).raw{1},1)
+            %                     all_cells_corr(ncell,nlap) = corr(zscore(place_fields_all(track_id).raw{ia(ncell)}(nlap,:))',average_maps{track_id}(:,ncell));
+            %                 end
+            %             end
         end
 
-        imagesc(average_maps{1}')
-        imagesc(average_maps{2}')
-        imagesc(squeeze(lap_correlation_pv(1,:,:)))
-        imagesc(squeeze(lap_correlation_pv(2,:,:)))
+        figure
+        subplot(3,2,1)
+        percentile_95 = prctile(reshape(lap_correlation{1},1,[]),95);
+        imagesc(lap_correlation{1}')
+        clim([0 percentile_95])
+        title('Track 1 mean lap by lap single cell corr')
+        colorbar
+
+        subplot(3,2,2)
+        percentile_95 = prctile(reshape(lap_correlation{2},1,[]),95);
+        imagesc(lap_correlation{2}')
+        clim([0 percentile_95])
+        colorbar
+        title('Track 2 mean lap by lap single cell corr')
+
         
+        subplot(3,2,3)
+        percentile_95 = prctile(reshape(lap_correlation_pv{1},1,[]),95);
+        imagesc(lap_correlation_pv{1}')
+        clim([0 percentile_95])
+        title('Track 1 mean lap by lap  PV corr')
+        colorbar
+        
+        subplot(3,2,4)
+        percentile_95 = prctile(reshape(lap_correlation_pv{2},1,[]),95);
+        imagesc(lap_correlation_pv{2}')
+        clim([0 percentile_95])
+        colorbar
+        title('Track 2 mean lap by lap PV corr')
+
+        subplot(3,2,5)
+%         percentile_95 = prctile(reshape(pv_corr{1},1,[]),95);
+        plot(movmedian(pv_corr(1,:)',3))
+%       ylim([-percentile_95 percentile_95])
+        title('Track 1 mean PV corr')
+        box off
+%         colorbar
+
+        subplot(3,2,6)
+%         percentile_95 = prctile(reshape(pv_corr(2,:),1,[]),95);
+        plot(movmedian(pv_corr(2,:)'))
+%         ylim([-percentile_95 percentile_95])
+        title('Track 2 mean PV corr')
+        box off
+%         colorbar
+
         mean([place_fields_all(track_id).with_track_corr{ia}])
         %         ratemap_matrix = [place_fields_all(track_id).raw{place_fields(1).all_good_cells_LIBERAL}];
         %         ratemap_matrix = reshape(ratemap_matrix,size(place_fields_all(track_id).raw{1},1),[],length(place_fields(1).all_good_cells_LIBERAL));%laps X position bins X cells

@@ -50,14 +50,15 @@ for nsession = 1:length(experiment_info)
         C = clusters_combined.cluster_id(ia);
         
         clear place_fields
-        x_bin_size =2;
-        spatial_response = calculate_raw_spatial_response(clusters_combined.spike_id,clusters_combined.cluster_id,clusters_combined.spike_times,clusters_combined.tvec{1},...
-            clusters_combined.position{1},clusters_combined.speed{1},clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_bin_size);
-        for track_id = 1:max(session_clusters.track_ID_all{1})
-            place_fields(track_id).x_bin_edges = 0:x_bin_size:140;
-            place_fields(track_id).x_bin_centres = x_bin_size/2:x_bin_size:140-x_bin_size/2;
-            place_fields(track_id).raw = spatial_response(:,track_id);
-        end
+        speed = clusters_combined.speed{1};
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+        x_window = [0 140];
+        x_bin_width =2;
+        place_fields = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
+            clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_width);
 
 
         Task_info.start_time_all = clusters_combined.start_time_all{1};
@@ -254,8 +255,6 @@ for nsession = 1:length(experiment_info)
         C = clusters_combined.cluster_id(ia);
         
         clear place_fields_BAYESIAN
-        x_bin_width =5;
-        x_window = [0 140];
         
 
         probability_ratio_RUN_lap_HPC_combined= [];
@@ -293,8 +292,16 @@ for nsession = 1:length(experiment_info)
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
 
+            speed = clusters_combined.speed{1};
+            speed(isnan(speed))=0;
+            w = gausswin(9);
+            w = w / sum(w);
+            speed = filtfilt(w,1,speed')';
+            x_window = [0 140];
+            x_bin_width =5;
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-                selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+                selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+
             %             [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track] = bayesian_decoding_RUN_lap_cross_validation(selected_clusters,place_fields,Behaviour,Task_info,options);
             [probability_ratio_RUN_lap_HPC{nprobe},estimated_position_lap_CV_HPC(nprobe).track,estimated_position_lap_CV_shuffled_HPC(nprobe).track] =...
                 bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
@@ -311,7 +318,7 @@ for nsession = 1:length(experiment_info)
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-                selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+                selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
 
             [probability_ratio_RUN_lap_V1{nprobe},estimated_position_lap_CV_V1(nprobe).track,estimated_position_lap_CV_shuffled_V1(nprobe).track] =...
                 bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
@@ -325,7 +332,7 @@ for nsession = 1:length(experiment_info)
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-                selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+                selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
             [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track,estimated_position_lap_CV_shuffled_HPC_combined.track] = ...
                 bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
             clear place_fields_BAYESIAN
@@ -336,7 +343,7 @@ for nsession = 1:length(experiment_info)
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-                selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
+                selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
             [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track,estimated_position_lap_CV_shuffled_V1_combined.track] =...
                 bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
             clear place_fields_BAYESIAN

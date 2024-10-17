@@ -291,6 +291,11 @@ for nstimuli = 1:length(all_stimulus_type)
 
                 else
                     speed = Behaviour.speed;
+                    speed(isnan(speed))=0;
+                    w = gausswin(9);
+                    w = w / sum(w);
+                    speed = filtfilt(w,1,speed')';
+                    
                     speed = interp1(Behaviour.tvec,speed,LFP(probe_no).tvec,'linear');
                 end
 

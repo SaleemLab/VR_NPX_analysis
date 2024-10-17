@@ -17,12 +17,12 @@ event_position = zeros(size(start_time_all));
 position_bin_time = zeros(no_lap,(x_window(2)-x_window(1))/x_bin_width);
 for iLap = 1:no_lap
     spike_times_lap_index = clusters.spike_times <= end_time_all(iLap)...
-        & clusters.spike_times >= start_time_all(iLap) & spike_speed > 5;
+        & clusters.spike_times >= start_time_all(iLap) & spike_speed > 1;
 
     spike_position(spike_times_lap_index) = spike_position(spike_times_lap_index)+1000*(iLap);
     event_position(iLap,1) = (iLap)*1000;
     position_bin_time(iLap,:) = t_bin.*histcounts(position(tvec>=start_time_all(iLap) ...
-        & tvec <=end_time_all(iLap) & speed > 5 ),position_edges);
+        & tvec <=end_time_all(iLap) & speed > 1 ),position_edges);
 end
 
 track1_event_position = event_position(track_ID_all==1);

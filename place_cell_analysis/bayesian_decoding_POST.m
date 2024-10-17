@@ -1,4 +1,4 @@
-function estimated_position = bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,Behaviour,option,modify,nseed,varargin)
+function estimated_position = bayesian_decoding_POST(place_fields_BAYESIAN,bayesian_spike_count,Behaviour,option,modify,nseed,varargin)
 % INPUTS:
    % place fields: matrix or []. Place fields that want to be used as a template in the decoding. If empty, it will load place fields for the whole session (extracted_place_fields_BAYESIAN.mat)
    % Save_option: enter 'Y' for saving. Else, won't save.
