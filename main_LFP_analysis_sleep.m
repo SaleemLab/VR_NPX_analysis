@@ -136,7 +136,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 
 all_stimulus_type={'SleepChronic','RUN'};
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 8:length(experiment_info)
+    for nsession = 1:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
 
@@ -295,7 +295,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     w = gausswin(9);
                     w = w / sum(w);
                     speed = filtfilt(w,1,speed')';
-                    
+
                     speed = interp1(Behaviour.tvec,speed,LFP(probe_no).tvec,'linear');
                 end
 

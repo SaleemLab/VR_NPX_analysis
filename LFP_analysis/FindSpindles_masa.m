@@ -339,8 +339,8 @@ detectorinfo.detectionintervals = restrict;
 detectorinfo.detectionparms = p.Results;
 detectorinfo.detectionparms = rmfield(detectorinfo.detectionparms,'noise');
 
-%Put it into the ripples structure
-ripples.detectorinfo = detectorinfo;
+%Put it into the spindle structure
+spindles.detectorinfo = detectorinfo;
 
 %Save
 if p.Results.saveMat
