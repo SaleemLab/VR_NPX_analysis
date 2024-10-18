@@ -173,6 +173,10 @@ if start(1) > stop(1)
 end
 firstPass = [start,stop];
 if isempty(firstPass)
+    spindles.onset =[];
+    spindles.offset =[];
+    spindles.peak_zscore =[];
+    spindles.peaktimes = [];
 	disp('Detection by thresholding failed');
 	return
 else
@@ -192,7 +196,11 @@ for i = 1:size(firstPass,1)
     end
 end
 
-if isempty(secondPass),
+if isempty(secondPass)
+    spindles.onset =[];
+    spindles.offset =[];
+    spindles.peak_zscore =[];
+    spindles.peaktimes = [];
     disp('Peak thresholding failed.');
     return
 else

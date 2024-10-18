@@ -197,6 +197,10 @@ if start(1) > stop(1)
 end
 firstPass = [start,stop];
 if isempty(firstPass)
+    ripples.onset =[];
+    ripples.offset =[];
+    ripples.peak_zscore =[];
+    ripples.peaktimes = [];
 	disp('Detection by thresholding failed');
 	return
 else
@@ -219,6 +223,10 @@ end
 
 secondPass = [secondPass ; ripple];
 if isempty(secondPass)
+    ripples.onset =[];
+    ripples.offset =[];
+    ripples.peak_zscore =[];
+    ripples.peaktimes = [];
 	disp('Ripple merge failed');
 	return
 else
