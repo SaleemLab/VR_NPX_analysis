@@ -135,8 +135,8 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % [1 2 3 4 6 7 8 9 10 12 14]
 
 all_stimulus_type={'SleepChronic','RUN'};
-for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+for nstimuli = 2:length(all_stimulus_type)
+    for nsession = 6:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
 
@@ -163,7 +163,7 @@ for nstimuli = 1:length(all_stimulus_type)
             clear clusters
             if contains(stimulus_name{n},'Masa2tracks')
                 % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+%                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
 
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));

@@ -48,6 +48,7 @@ for track_id = 1:max(track_ID_all)
     place_fields(track_id).peak_channel = clusters.peak_channel;
     place_fields(track_id).cell_type = clusters.cell_type;
     place_fields(track_id).peak_channel_waveforms = clusters.peak_channel_waveforms;
+    place_fields(track_id).region = clusters.region;
     place_fields(track_id).odd_even_stability = clusters.odd_even_stability(:,track_id);
     place_fields(track_id).first_second_stability = clusters.odd_even_stability(:,track_id);
     place_fields(track_id).peak_percentile = clusters.peak_percentile(:,track_id);

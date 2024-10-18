@@ -79,6 +79,7 @@ for nsession = 1:length(experiment_info)
         x_bin_size =2;
         place_fields_all = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
             clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_size);
+        plot_spatial_map_stability(place_fields_all,options);
         %
         %         ia = find((clusters_combined1.odd_even_stability(:,1)>0.95 ...
         %             | clusters_combined1.odd_even_stability(:,2)>0.95)&contains(clusters_combined1.region,'V1_L'));
@@ -90,12 +91,30 @@ for nsession = 1:length(experiment_info)
         %         colorbar
         ia = find(clusters_combined1.odd_even_stability(:,1)>0.95 ...
             | clusters_combined1.odd_even_stability(:,2)>0.95);
+                plot_spatial_map_stability(place_fields_all,options);
 %         ia=1:length(clusters_combined1.region);
         cluster_id= intersect(ia,find(contains(clusters_combined1.region,'HPC')));
         [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
             plot_place_cell_map_correlation(place_fields_all,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
-        plot_spatial_map_stability(place_fields_all); 
+        place_fields_all = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
+            clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_size);
+        %
+
+
+        % RUN2
+        speed = clusters_combined2.speed{1};
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+        lick_speed = interp1(clusters_combined2.sglxTime_uncorrected{1},speed,clusters_combined2.lick_time{1},'nearest');
+        place_fields_all = calculate_spatial_cells(clusters_combined2,clusters_combined2.tvec{1},...
+            clusters_combined2.position{1},speed,clusters_combined2.track_ID_all{1},clusters_combined2.start_time_all{1},clusters_combined2.end_time_all{1},x_window,x_bin_size);
+        %
+        plot_spatial_map_stability(place_fields_all,options);
+
+
         if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','spatial_map_stability',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','spatial_map_stability',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
