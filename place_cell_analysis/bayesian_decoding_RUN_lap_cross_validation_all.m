@@ -181,12 +181,12 @@ else
                 %         estimated_position_ratemap_shuffled = log_odds_bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,place_cell_index,timebin,[],'ratemap shuffle','','N');
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
                     if length(cv_groups{track_id}{groupIndex})==1
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).probability_ratio;
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).probability_ratio;
 
                     else
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
                     end
                 end
             end
