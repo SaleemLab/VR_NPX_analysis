@@ -364,9 +364,12 @@ end
 %% Decoding trajectory plotting
 lap_times = [];
 clear all
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 

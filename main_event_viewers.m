@@ -385,6 +385,252 @@ for event = 1:length(T1_events)
     count = count + 1;
 end
 
+%% 
+figure
+nexttile
+%         plot_perievent_event_histogram(ripples(2).SWS_peaktimes,ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right ripple')
+time_wondows = [-2 2];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes,ripples(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+title('Probability of Left ripple during Right HPC')
+ylabel('probability')
+xlabel('Time(s)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+nexttile
+%         plot_perievent_event_histogram(slow_waves(2).ints.UP(:,1),slow_waves(1).ints.UP(:,1),'twin',[-1 1],'event_name','Right UP events')
+time_wondows = [-2 2];
+time_bin = 0.02;
+probabilities = calculate_event_probability(slow_waves(1).ints.UP(:,1),slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+title('Probability of UP state from Left V1 during Right V1 Upstates')
+title('Up state from Left V1 relative to Up state from Right V1')
+ylabel('probability')
+xlabel('Time(s)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+%         plot_perievent_event_histogram(spindles(2).SWS_peaktimes,spindles(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right spindles events')
+time_wondows = [-2 2];
+time_bin = 0.05;
+probabilities = calculate_event_probability(spindles(1).SWS_peaktimes,spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+title('Probability of left spindles during right spindles')
+title('Spindles from Left V1 relative to Spindles from Right V1')
+ylabel('probability')
+xlabel('Time(s)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+%         plot_perievent_event_histogram(V1_reactivations(2).SWS_onset,V1_reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right V1 populational burtsting events')
+time_wondows = [-2 2];
+time_bin = 0.02;
+probabilities = calculate_event_probability(V1_reactivations(1).SWS_onset,V1_reactivations(2).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+title('Probability of left V1 bursting during right V1 bursting')
+ylabel('probability')
+xlabel('Time(s)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+%         plot_perievent_event_histogram(reactivations(2).SWS_onset,reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right HPC populational burtsting events')
+time_wondows = [-2 2];
+time_bin = 0.02;
+probabilities = calculate_event_probability(reactivations(2).SWS_onset,reactivations(1).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
+title('Probability of left HPC bursting during right HPC bursting')
+ylabel('probability')
+xlabel('Time(s)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+sgtitle('Left and Right events Synchronisation')
+
+
+figure
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples during UP states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples during DOWN states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples during UP states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples relative to DOWN states')
+sgtitle('Left V1')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+sgtitle('Left V1 slow waves and HPC interaction')
+
+figure
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples relative to UP states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples relative to DOWN states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples relative to UP states')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples relative to DOWN states')
+sgtitle('Right V1')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+sgtitle('Right V1 slow waves and HPC interaction')
+
+
+figure
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, spindles(1).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples during Left spindles')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, spindles(1).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples during Left spindles')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Left ripples during Right spindles')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+time_wondows = [-1 1];
+time_bin = 0.02;
+probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
+plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
+title('probability of Right ripples during Right spindles')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+sgtitle('V1 spindles and HPC interaction')
+
+% Spike relative to events
+
+spatial_cell_index = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+    | clusters_combined.odd_even_stability(:,2)>0.95);
+
+metric_param =[];
+metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+metric_param.region = @(x) contains(x,'V1_L');
+[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+all_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
+
+metric_param.region = @(x) contains(x,'V1_R');
+[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+all_spikes{2}=[selected_clusters.spike_id selected_clusters.spike_times];
+
+metric_param.region = @(x) contains(x,'HPC');
+[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+all_spikes{3}=[selected_clusters.spike_id selected_clusters.spike_times];
+group_name = {'V1_L','V1_R','HPC'};
+
+% UP
+plot_perievent_spiketime_histogram(all_spikes,slow_waves(1).ints.UP(:,1),'group','by cell zscore','group_name',group_name,'event_name','left UP onset','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,slow_waves(1).ints.UP(:,1),'group','by region','group_name',group_name,'event_name','left UP onset','twin',[-1 1])
+
+plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by cell zscore','group_name',group_name,'event_name','right UP onset','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by region','group_name',group_name,'event_name','right UP onset','twin',[-1 1])
+
+% Ripples
+plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
+
+
+plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+
+% Ripples
+metric_param =[];
+metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+metric_param.region = @(x) contains(x,'V1');
+[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+
+ia = find(cluster_id);
+C = clusters_combined.cluster_id(ia)
+event_id = [ones(1,length(ripples(1).SWS_peaktimes))];
+event_times = [ripples(1).SWS_peaktimes];
+plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
+    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+    'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
+
+%
+
+V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+
+zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
+
+T2_events = ripples(2).peaktimes(find(zero_meaned_log_odds<-1));
+[T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
+
+T1_events = ripples(2).peaktimes(find(zero_meaned_log_odds>1));
+[T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
+%         T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
+plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+
+
+metric_param =[];
+metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+metric_param.region = @(x) contains(x,'HPC');
+[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+ia = find(cluster_id);
+%         ia = ia((41:60));
+C = clusters_combined.cluster_id(ia);
+
+event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
+event_times = [T1_events; T2_events];
+[event_times,index] = sort(event_times);
+event_id=event_id(index);
+
+plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
+    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+    'event_id',event_id,'event_label','ripple T1','place_fields',place_fields,'plot_option','by time');
 
 
