@@ -160,7 +160,7 @@ for nstimuli = 1:length(all_stimulus_type)
                 continue
             end
 
-            clear clusters LFP
+            clear clusters
             if contains(stimulus_name{n},'Masa2tracks')
                 % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 %                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
@@ -307,7 +307,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;% ignore channels if the mean power is 3 x the rest of channels (possibly will be nosiy)
-                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L5(good_channels(best_channel),:);
                     else
@@ -317,7 +317,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;
-                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     end
@@ -330,7 +330,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;
-                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     else
@@ -473,12 +473,10 @@ for nstimuli = 1:length(all_stimulus_type)
                             [reactivations(nprobe).SWS_offset,reactivations(nprobe).SWS_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
                             reactivations(nprobe).SWS_onset = reactivations(nprobe).onset(reactivations(nprobe).SWS_index)';
                         end
-
-                        if ~isempty(V1_reactivations(nprobe).onset)
-                            [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
-                            V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
-                        end
-
+                    if ~isempty(V1_reactivations(nprobe).onset)
+                        [V1_reactivations(nprobe).awake_offset,V1_reactivations(nprobe).awake_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).quietWake);
+                        V1_reactivations(nprobe).awake_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).awake_index)';
+                    end
                         [ripples(nprobe).SWS_offset,ripples(nprobe).SWS_index] = RestrictInts(ripples(nprobe).offset,behavioural_state(nprobe).SWS);
                         ripples(nprobe).SWS_onset = ripples(nprobe).onset(ripples(nprobe).SWS_index);
                         ripples(nprobe).SWS_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).SWS_index);
@@ -513,17 +511,6 @@ for nstimuli = 1:length(all_stimulus_type)
 
                 [replay_combined,reactivations_combined] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
                     [CA1_clusters_combined.spike_id CA1_clusters_combined.spike_times],Behaviour,zscore_min,zscore_max,options);
-
-                if contains(stimulus_name{n},'Sleep')
-                    if length(CA1_clusters_combined.cluster_id)>10
-                        [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
-                        reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
-
-                        [reactivations_combined.awake_offset,reactivations_combined.awake_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).quietWake);
-                        reactivations_combined.awake_onset = reactivations_combined.onset(reactivations_combined.awake_index)';
-                    end
-                end
-       
             end
 
             for nprobe = 1:length(session_info(n).probe)
