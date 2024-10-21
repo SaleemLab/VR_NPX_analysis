@@ -135,8 +135,8 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % [1 2 3 4 6 7 8 9 10 12 14]
 
 all_stimulus_type={'SleepChronic','RUN'};
-for nstimuli = 2:length(all_stimulus_type)
-    for nsession = 6:length(experiment_info)
+for nstimuli = 1:length(all_stimulus_type)
+    for nsession = 1:length(experiment_info)
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
 
@@ -301,17 +301,38 @@ for nstimuli = 2:length(all_stimulus_type)
 
                 if isfield(LFP(probe_no),'L5')
                     if ~isempty(LFP(probe_no).L5)
-                        [~,best_channel]=max(LFP(probe_no).L5_power(:,7));
-                        cortex_LFP = LFP(probe_no).L5(best_channel,:);
+                        bad_channels=[];
+                        all_shanks = 1:size(LFP(probe_no).L5_power,1);
+                        for nshank = 1:size(LFP(probe_no).L5_power,1)
+                            bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
+                        end
+                        bad_channels = sum(bad_channels,2)>4;% ignore channels if the mean power is 3 x the rest of channels (possibly will be nosiy)
+                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
+                        good_channels = find(~bad_channels);
+                        cortex_LFP = LFP(probe_no).L5(good_channels(best_channel),:);
                     else
-                        [~,best_channel]=max(LFP(probe_no).L4_power(:,7));
-                        cortex_LFP = LFP(probe_no).L4(best_channel,:);
+                        bad_channels=[];
+                        all_shanks = 1:size(LFP(probe_no).L4_power,1);
+                        for nshank = 1:size(LFP(probe_no).L4_power,1)
+                            bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
+                        end
+                        bad_channels = sum(bad_channels,2)>4;
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
+                        good_channels = find(~bad_channels);
+                        cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     end
 
                 elseif isfield(LFP(probe_no),'L4')
                     if ~isempty(LFP(probe_no).L4)
-                        [~,best_channel]=max(LFP(probe_no).L4_power(:,7));
-                        cortex_LFP = LFP(probe_no).L4(best_channel,:);
+                        bad_channels=[];
+                        all_shanks = 1:size(LFP(probe_no).L4_power,1);
+                        for nshank = 1:size(LFP(probe_no).L4_power,1)
+                            bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
+                        end
+                        bad_channels = sum(bad_channels,2)>4;
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
+                        good_channels = find(~bad_channels);
+                        cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     else
                         cortex_LFP = [];
                         disp('cortex LFP is missing')
@@ -322,8 +343,17 @@ for nstimuli = 2:length(all_stimulus_type)
                 end
 
                 if isfield(LFP(probe_no),'CA1')
-                    [~,best_channel]=max(LFP(probe_no).CA1_power(:,6));
-                    CA1_LFP = LFP(probe_no).CA1(best_channel,:);
+                    bad_channels=[];
+                    all_shanks = 1:size(LFP(probe_no).CA1_power,1);
+                    for nshank = 1:size(LFP(probe_no).CA1_power,1)
+                        bad_channels(nshank,:) = LFP(probe_no).CA1_power(nshank,:)>3*mean(LFP(probe_no).CA1_power(all_shanks~=nshank,:));
+                    end
+                    bad_channels = sum(bad_channels,2)>4;
+
+                    [~,best_channel]=max(LFP(probe_no).CA1_power(~bad_channels,6));
+                    good_channels = find(~bad_channels);
+
+                    CA1_LFP = LFP(probe_no).CA1(good_channels(best_channel),:);
 
                     speedTreshold = 1;
                     %                 CA1_LFP = raw_LFP{nprobe}(229,:);
@@ -344,7 +374,7 @@ for nstimuli = 2:length(all_stimulus_type)
                 zscore_min = 0;
                 zscore_max = 3;
                 metric_param =[];
-                metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+%                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
                 if options.probe_hemisphere==1
                     metric_param.region = @(x) contains(x,'HPC_L');
@@ -389,7 +419,7 @@ for nstimuli = 2:length(all_stimulus_type)
 
                 %%%%%% Populational burtsting events
                 metric_param =[];
-                metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+%                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
                 if options.probe_hemisphere==1
                     metric_param.region = @(x) contains(x,'V1_L');
@@ -737,34 +767,6 @@ for nsession =1:length(experiment_info)
         place_fields = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
             selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
 
-
-        for nprobe = 1:2
-            if ~isempty(behavioural_state(nprobe).SWS)
-                [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
-                V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
-            end
-        end
-
-        nprobe = 1
-        T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(1).strength_percentile>0.90 &...
-            reactivation_strength(nprobe).track(2).strength_percentile<0.90))));
-
-        T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.90 &...
-            reactivation_strength(nprobe).track(1).strength_percentile<0.90))));
-
-        %           T1_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])>1)));
-        %           T2_events=ripples(nprobe).SWS_onset(ismember(ripples(nprobe).SWS_onset,ripples(nprobe).onset(zscore([decoded_ripple_events(nprobe).track(1).replay_events(:).z_log_odds])<-1)));
-
-        %           T1_events= ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(decoded_ripple_events(nprobe).track(1).z_logs_odd>0.95 &...
-        %               decoded_ripple_events(nprobe).track(2).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-        %
-        %           T2_events = ripples(nprobe).SWS_onset(ismember(ripples(nprobe).onset(find(reactivation_strength(nprobe).track(2).strength_percentile>0.95 &...
-        %               reactivation_strength(nprobe).track(1).strength_percentile<0.95)),ripples(nprobe).SWS_onset));
-
-        event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
-        event_times = [T1_events; T2_events];
-        [~,index]=sort(event_times);
-        
         
         for nprobe = 1:2
             if ~isempty(behavioural_state(nprobe).SWS)
@@ -775,36 +777,6 @@ for nsession =1:length(experiment_info)
 
         [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
         reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
-
-
-        ia = find((session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            | session_clusters_RUN.odd_even_stability(:,2)>0.95) & contains(session_clusters_RUN.region,'V1'));
-
-%         ia = find(contains(session_clusters_RUN.region,'V1'))
-%         ia = find((session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-%             | session_clusters_RUN.odd_even_stability(:,2)>0.95));
-        C = clusters_combined.cluster_id(ia);
-
-%         event_id = [ones(1,length(slow_waves(1).ints.UP(:,1)))];
-%         event_times = [slow_waves(1).ints.UP(:,1)];
-        event_id = [ones(1,length(ripples(2).SWS_peaktimes))];
-        event_times = [ripples(2).SWS_peaktimes];
-%         [~,index]=sort(event_times);
-        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
-            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by track');
-
-        plot(ripples(2).SWS_peaktimes,cumsum(ones(1,length(ripples(2).SWS_peaktimes)))); hold on;
-        plot(ripples(1).SWS_peaktimes,cumsum(ones(1,length(ripples(1).SWS_peaktimes))))
-        xline(ripples(1).SWS_peaktimes(900))
-
-
-        event_id = [ones(1,301)];
-        event_times = [ripples(1).SWS_peaktimes(900:1200)];
-        %         [~,index]=sort(event_times);
-        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
-            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-            'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by track');
 
 
         figure
@@ -969,11 +941,19 @@ for nsession =1:length(experiment_info)
         % Ripples
         plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
         plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
+        plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
+        plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
         
+
         plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
         plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
 
         % Ripples
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+
         ia = find(cluster_id);
         C = clusters_combined.cluster_id(ia)
         event_id = [ones(1,length(ripples(1).SWS_peaktimes))];
@@ -988,10 +968,10 @@ for nsession =1:length(experiment_info)
 
         zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
         
-        T2_events = ripples(1).peaktimes(find(zero_meaned_log_odds<-1));
+        T2_events = ripples(2).peaktimes(find(zero_meaned_log_odds<-1));
         [T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
 
-        T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>1));
+        T1_events = ripples(2).peaktimes(find(zero_meaned_log_odds>1));
         [T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
 %         T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
         plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
@@ -1000,7 +980,7 @@ for nsession =1:length(experiment_info)
 
         metric_param =[];
         metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-        metric_param.region = @(x) contains(x,'V1_R');
+        metric_param.region = @(x) contains(x,'HPC');
         [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
         ia = find(cluster_id);
 %         ia = ia((41:60));
