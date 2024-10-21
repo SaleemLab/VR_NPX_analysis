@@ -986,12 +986,12 @@ for nsession =1:length(experiment_info)
         
         V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
 
-        zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
+        zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds);
         
-        T2_events = ripples(1).peaktimes(find(zero_meaned_log_odds<-1));
+        T2_events = ripples(1).peaktimes(find(zero_meaned_log_odds<-0.5));
         [T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
 
-        T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>1));
+        T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
         [T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
 %         T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
         plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
@@ -1000,17 +1000,20 @@ for nsession =1:length(experiment_info)
 
         metric_param =[];
         metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-        metric_param.region = @(x) contains(x,'V1_R');
+        metric_param.region = @(x) contains(x,'V1_L');
         [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
         ia = find(cluster_id);
-%         ia = ia((41:60));
+        ia = ia((1:20));
+
         C = clusters_combined.cluster_id(ia);
+        event_id = [ones(1,length(T2_events))];
+        event_times = [T2_events];
+        plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
+            'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
+            'event_id',event_id,'event_label','ripple T2','place_fields',place_fields,'plot_option','by time');
 
-        event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
-        event_times = [T1_events; T2_events];
-        [event_times,index] = sort(event_times);
-        event_id=event_id(index);
-
+        event_id = [ones(1,length(T1_events))];
+        event_times = [T1_events];
         plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
             'event_id',event_id,'event_label','ripple T1','place_fields',place_fields,'plot_option','by time');
@@ -1027,13 +1030,10 @@ histogram(zero_meaned_log_odds,100)
 find(zero_meaned_log_odds<-1)
 find(zero_meaned_log_odds>1)
 
-zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
 T2_events = find(zero_meaned_log_odds<-1);
 figure
-count=1;
-for event = 1:5:length(T2_events)
-
-    subplot(5,5,count)
+for event = 1:length(T2_events)
+    subplot(5,5,event)
     T1_data = decoded_ripple_events(1).track(1).replay_events(T2_events(event));
     T2_data = decoded_ripple_events(1).track(2).replay_events(T2_events(event));
 
@@ -1046,21 +1046,19 @@ for event = 1:5:length(T2_events)
     yticks([30 50 70 90 110 140 170 190 210 230 250 280]/5)
     yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
     yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
-
-
+    
+    
     [b,index]=min(abs(T1_data.onset-timebins));
     xline(timebins(index)-mean(diff(timebins)/2))
     [b,index]=min(abs(T1_data.offset-timebins));
     xline(timebins(index)-mean(diff(timebins)/2))
-    count = count + 1;
 end
 
 
 T1_events = find(zero_meaned_log_odds>1);
 figure
-count = 1;
 for event = 1:length(T1_events)
-    subplot(5,5,count)
+    subplot(5,5,event)
     T1_data = decoded_ripple_events(1).track(1).replay_events(T1_events(event));
     T2_data = decoded_ripple_events(1).track(2).replay_events(T1_events(event));
 
@@ -1078,7 +1076,6 @@ for event = 1:length(T1_events)
     xline(timebins(index)-mean(diff(timebins)/2))
     [b,index]=min(abs(T1_data.offset-timebins));
     xline(timebins(index)-mean(diff(timebins)/2))
-    count = count + 1;
 end
 
 

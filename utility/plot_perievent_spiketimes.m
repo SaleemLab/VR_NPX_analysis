@@ -43,32 +43,32 @@ no_events = size(event_times,1);
 % time_edges = window(1):psthBinSize:window(2);
 % spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
 spike_times_events = spike_times;
-
+% 
 if isempty(event_label)
     event_label = 'event';
     event_id = ones(length(event_times),1);
 end
-
-for nevent = 1:no_events
-    if nevent < no_events
-        spike_times_event_index = spike_times < event_times(nevent+1)+window(1) ...
-            & spike_times >=  (event_times(nevent)+window(1));
-    else
-        spike_times_event_index = spike_times >=  (event_times(nevent)+window(1));
-    end
-
-    if max(event_id) == 2
-        if contains(plot_option,'by track')
-            spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
-            event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
-        end
-    end
-    
-    if contains(plot_option,'by time')
-        spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
-        event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
-    end
-end
+% 
+% for nevent = 1:no_events
+%     if nevent < no_events
+%         spike_times_event_index = spike_times < event_times(nevent+1)+window(1) ...
+%             & spike_times >=  (event_times(nevent)+window(1));
+%     else
+%         spike_times_event_index = spike_times >=  (event_times(nevent)+window(1));
+%     end
+% 
+%     if max(event_id) == 2
+%         if contains(plot_option,'by track')
+%             spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000000*(nevent);
+%             event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000000;
+%         end
+%     end
+% 
+%     if contains(plot_option,'by time')
+%         spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000000*(nevent);
+%         event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000000;
+%     end
+% end
 
 
 
@@ -81,7 +81,7 @@ track2_ID = find(event_id == 2);
 
 
 % Define Gaussian window for smoothing
-gaussianWindow = gausswin(0.2*1/psthBinSize);
+gaussianWindow = gausswin(0.1*1/psthBinSize);
 
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);

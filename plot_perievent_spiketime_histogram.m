@@ -2,28 +2,28 @@ function PSTH = plot_perievent_spiketime_histogram(all_spike_data,events,varargi
 
 %INPUTS
 %   all_spike_data      spike
-%               
+%
 %   (options)
 %   'lfp'               -A buzcode-style lfp structure... if you would
 %                        rather just input the lfp instead of loading from
 %                        basepath
 %                           Default: load from basePath with bz_GetLFP
-%   'spikes'            -A buzcode-style spike structure 
+%   'spikes'            -A buzcode-style spike structure
 %                           Default: load from basePath with bz_GetSpikes
-%   'NREMInts'          -Interval of times for NREM (seconds) 
-%                        (Default: loaded from SleepState.states.mat, 
+%   'NREMInts'          -Interval of times for NREM (seconds)
+%                        (Default: loaded from SleepState.states.mat,
 %                                   run SleepScoreMaster if not exist)
 %                        use [0 Inf] to detect over all time points
-%   'DetectionChannel'  -Channel with the most robust Slow Waves. (0-Indexing a la neuroscope). 
+%   'DetectionChannel'  -Channel with the most robust Slow Waves. (0-Indexing a la neuroscope).
 %                        (Default: 'autoselect')
-%                        'useold' to use channel from existing SlowWaves.events.mat 
+%                        'useold' to use channel from existing SlowWaves.events.mat
 %                        If providing lfp via the 'lfp' input, make sure to
 %                        give a detection channel here.
 %   'noSpikes'          -true/false - set to true to not use spike information
 %                        (default: false)
-%   'MUAspikes'       -true/false - use MUA peaks (500-5000Hz) extracted 
+%   'MUAspikes'       -true/false - use MUA peaks (500-5000Hz) extracted
 %                        from the .dat file instead of spikes
-%   'CTXChans'          -LFP channels that are in the cortex...  
+%   'CTXChans'          -LFP channels that are in the cortex...
 %                        default: region 'CTX' from baseName.sessionInfo.mat or xml
 %   'sensitivity'       -sensititivity (0-1) for determining LFP thresholds
 %                        sensitivity for setting gamma/delta thresholds.
@@ -57,7 +57,7 @@ function PSTH = plot_perievent_spiketime_histogram(all_spike_data,events,varargi
 
 % Default values
 p = inputParser;
-addParameter(p,'group','by region',@isstr) % 
+addParameter(p,'group','by region',@isstr) %
 addParameter(p,'mode',1,@isnumeric) % Hanning window for pwelch analysis in seconds
 addParameter(p,'group_name',{},@iscell) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
 addParameter(p,'event_name','event',@isstr) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
@@ -84,15 +84,20 @@ bin_size = p.Results.bin_size;
 plot_option = p.Results.plot_option;
 smooth_option = p.Results.smooth_option;
 
-MUA_filter_length = 30;
-SD_alpha = 3; %2 std width
-MUA_filter_alpha = (MUA_filter_length-1)/SD_alpha;
-w=gausswin(MUA_filter_length,MUA_filter_alpha); %41,4
-w=w./sum(w);  %gaussian kernel 10 ms STD, 2 std width
+% MUA_filter_length = 30;
+% SD_alpha = 3; %2 std width
+% MUA_filter_alpha = (MUA_filter_length-1)/SD_alpha;
+% w=gausswin(MUA_filter_length,MUA_filter_alpha); %41,4
+% w=w./sum(w);  %gaussian kernel 10 ms STD, 2 std width
+% Define Gaussian window for smoothing
+w = gausswin(0.1*1/bin_size);
+
+% Normalize to have an area of 1 (i.e., to be a probability distribution)
+w = w / sum(w);
 
 PSTH = [];
 if plot_option == 1
-    fig = figure(1)
+    fig = figure()
     fig.Position = [661 431 1000 650];
 end
 
@@ -100,13 +105,13 @@ if iscell(all_spike_data)
     switch group
         case 'by region'
             no_of_groups = length(all_spike_data);
-            
+
             count = 1;
             for n = 1:size(all_spike_data,2)
                 spike_data = all_spike_data{n};
                 num_cell = length(unique(spike_data(:,1)));
                 [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_data(:,2), events, twin, bin_size);
-                
+
                 if smooth_option == 1
                     psth = filtfilt(w,1,mean(binnedArray./num_cell./bin_size)); % normalize to Hz
                     psth_se = filtfilt(w,1,std(binnedArray./num_cell./bin_size)./sqrt(length(events)));
@@ -141,6 +146,7 @@ if iscell(all_spike_data)
                     xlabel('Spike time relative to event onset')
                     count = count + 1;
                     sgtitle(event_name)
+                    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
                 end
             end
             PSTH = [];
@@ -160,7 +166,7 @@ if iscell(all_spike_data)
                     PSTH(n).event_name = [];
                     PSTH(n).peak_latency = [];
                     PSTH(n).mean_FR = [];
-                    
+
                     continue
                 else
                     cell_id = unique(spike_data(:,1));
@@ -168,9 +174,9 @@ if iscell(all_spike_data)
 
                 switch sort_option
                     case 'sorted'
-                    cell_id = sorted_cell_id{n};
+                        cell_id = sorted_cell_id{n};
                     otherwise
-                    cell_id = unique(spike_data(:,1));
+                        cell_id = unique(spike_data(:,1));
                 end
 
                 cell_psth= [];
@@ -187,19 +193,29 @@ if iscell(all_spike_data)
                         [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikes_this_cell, events, twin, bin_size);
 
                         cell_spike_counts(cell,:,:) = binnedArray; % cell x trial x timebin
-                        
+
+
+
                         if size(binnedArray,1) ~= 1 % if multiple perievent spike trains
                             if smooth_option == 1
-                                psth = filtfilt(w,1,mean(binnedArray./bin_size)); % normalize to Hz
+                                for nevent = 1:size(binnedArray,1)
+                                    binnedArray(nevent,:) = conv(binnedArray(nevent,:)/bin_size,w,'same');
+                                end
+
+                                psth = mean(binnedArray./bin_size); % normalize to Hz
                             else
                                 psth = mean(binnedArray./bin_size); % normalize to Hz
                             end
-                        else
-                            if smooth_option == 1
-                                psth = filtfilt(w,1,binnedArray./bin_size); % normalize to Hz
-                            else
-                                psth = binnedArray./bin_size; % normalize to Hz
-                            end
+%                         else
+%                             if smooth_option == 1
+%                                 for nevent = 1:size(binnedArray,1)
+%                                     binnedArray(nevent,:) = conv(binnedArray(nevent,:)/bin_size,w,'same');
+%                                 end
+% 
+%                                 psth = mean(binnedArray./bin_size); % normalize to Hz
+%                             else
+%                                 psth = binnedArray./bin_size; % normalize to Hz
+%                             end
                         end
 
                         [val,index]=min(abs(cumsum(psth)/sum(psth)-0.5));
@@ -209,7 +225,7 @@ if iscell(all_spike_data)
                         cell_psth(cell,:) = psth;
                     end
                 end
-                
+
                 if ~strcmp(sort_option,'sorted') & bin_size <= 0.01
                     mean_FR(peak_FR<0.5) = [];
                     peak_latency(peak_FR<0.5) = [];
@@ -217,7 +233,7 @@ if iscell(all_spike_data)
                     cell_psth(peak_FR<0.5,:) = [];
                     cell_spike_counts(peak_FR<0.5,:,:) = [];
                 end
-                
+
                 switch sort_option
                     case 'mean FR'
 
@@ -235,11 +251,11 @@ if iscell(all_spike_data)
                 if smooth_option == 1
 
                     if size(cell_psth,1) == 1
-                        psth = filtfilt(w,1,zscore(cell_psth,0,2)); % normalize to Hz
+                        psth = zscore(cell_psth,0,2); % normalize to Hz
                         psth_se = zeros(1,size(cell_psth,2));
                     else
-                        psth = filtfilt(w,1,mean(zscore(cell_psth,0,2))); % normalize to Hz
-                        psth_se = filtfilt(w,1,std(zscore(cell_psth,0,2)))./sqrt(size(cell_psth,1));
+                        psth = mean(zscore(cell_psth,0,2)); % normalize to Hz
+                        psth_se = std(zscore(cell_psth,0,2))./sqrt(size(cell_psth,1));
                     end
                 else
                     if size(cell_psth,1) == 1
@@ -256,7 +272,7 @@ if iscell(all_spike_data)
                 PSTH(n).sorted_option = sort_option;
                 PSTH(n).twin = twin;
                 PSTH(n).bin_size = bin_size;
-                
+
                 switch group
                     case 'by region'
                         PSTH(n).MUA_psth = psth;
@@ -287,7 +303,8 @@ if iscell(all_spike_data)
                     clim([-1 1])
                     title(group_name{n})
                     count = count + 1;
-
+%                     fontsize(fig, 14, "points")
+                    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
                     subplot(no_of_groups,2,count)
                     hold on
@@ -304,7 +321,8 @@ if iscell(all_spike_data)
                     xlabel('Spike time relative to event onset')
                     count = count + 1;
                     sgtitle(event_name)
-                    fontsize(fig, 14, "points")
+%                     fontsize(fig, 14, "points")
+                    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
                 end
             end
     end
@@ -322,8 +340,8 @@ elseif isstruct(all_spike_data) %
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_data(:,2), events, twin, bin_size);
                     psth = filtfilt(w,1,mean(binnedArray./bin_size)); % normalize to Hz
                     channel_psth(n,:) = psth;
-                    
-                    temp = find(binnedArray' ~= 0)/size(binnedArray,2); 
+
+                    temp = find(binnedArray' ~= 0)/size(binnedArray,2);
                     [~,ia,~] = unique(floor(temp));
                     temp = temp(ia);
                     temp = (temp - floor(temp))*size(binnedArray,2);
@@ -357,13 +375,14 @@ elseif isstruct(all_spike_data) %
             xlabel('First spike latency by channel (ms)')
 
             sgtitle(event_name)
-            fontsize(fig, 14, "points")
+            %             fontsize(fig, 14, "points")
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            
     end
 else
     spike_data = all_spike_data;
 
 end
-
 
 
 end

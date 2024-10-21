@@ -89,16 +89,14 @@ for nsession = 1:length(experiment_info)
         %             | clusters_combined1.odd_even_stability(:,2)>0.95));
 
         %         colorbar
-        ia = find(clusters_combined1.odd_even_stability(:,1)>0.95 ...
-            | clusters_combined1.odd_even_stability(:,2)>0.95);
-                plot_spatial_map_stability(place_fields_all,options);
-%         ia=1:length(clusters_combined1.region);
-        cluster_id= intersect(ia,find(contains(clusters_combined1.region,'HPC')));
-        [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
-            plot_place_cell_map_correlation(place_fields_all,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
+%         ia = find(clusters_combined1.odd_even_stability(:,1)>0.95 ...
+%             | clusters_combined1.odd_even_stability(:,2)>0.95);
+%                 plot_spatial_map_stability(place_fields_all,options);
+% %         ia=1:length(clusters_combined1.region);
+%         cluster_id= intersect(ia,find(contains(clusters_combined1.region,'HPC')));
+%         [~,PPvector,shuffled_globalRemap_PPvector,shuffled_rateRemap_PPvector] = ...
+%             plot_place_cell_map_correlation(place_fields_all,cluster_id,Task_info,Behaviour,options); % Roughly 6-7 mins for shuffle and plotting
 
-        place_fields_all = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
-            clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_size);
         %
 
 

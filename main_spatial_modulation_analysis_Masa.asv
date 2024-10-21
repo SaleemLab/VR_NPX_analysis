@@ -13,7 +13,7 @@ session_count = 0;
 SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-selected_sessions=[6 9 14 21 22 27 35 38 40];
+selected_sessions=[6 9 14 19 21 22 27 35 38 40];
 experiment_info=experiment_info(selected_sessions);
 
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
@@ -28,9 +28,8 @@ for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-
-    [SUBJECT_experiment_info(:).date]
-    iDate = selected_sessions(nsession);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
     session_folder = fullfile(base_folder,session_info(1).probe(1).SUBJECT,'analysis',session_info(1).probe(1).SESSION);
 
     for n = 1:length(session_info) % should just be 1 stimulus type normally (RUN1)
@@ -186,6 +185,12 @@ for nsession = 1:length(experiment_info)
         track_ID =Behaviour.track_ID;
         position = Behaviour.position;
         speed = Behaviour.speed;
+
+        w = gausswin(10);
+        w = w / sum(w);
+        speed(isnan(speed))=0;
+        speed=filtfilt(w,1,speed')';
+
         track_ID_all = Task_info.track_ID_all;
         start_time_all = Task_info.start_time_all;
         end_time_all = Task_info.end_time_all;
@@ -201,6 +206,7 @@ for nsession = 1:length(experiment_info)
         odd_even_corr_shuffled = cell(no_clusters_this_session,2);
         first_second_corr_shuffled = cell(no_clusters_this_session,2);
 
+        spatial_response_raw = spatial_response;
         % within_track_corr_raw = cell(no_clusters_this_session,2);
         % across_track_corr_raw = cell(no_clusters_this_session,1);
         % first_second_stability_raw = zeros(no_clusters_this_session,2);
@@ -356,50 +362,79 @@ end
 
 %% merge all sessions into clusters_all
 
-base_folder = '/Users/atom/Library/CloudStorage/OneDrive-UniversityCollegeLondon/data';
-SUBJECTS = {'M23031','M23032','M23034','M23037','M23038'};
-option = 'V1-MEC';
+clear all
 session_count = 0;
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+selected_sessions=[6 9 14 19 21 22 27 35 38 40];
+experiment_info=experiment_info(selected_sessions);
+
+Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
+% Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
+base_folder='Z:\ibn-vision\DATA\SUBJECTS';
+% 
+% base_folder = '/Users/atom/Library/CloudStorage/OneDrive-UniversityCollegeLondon/data';
+% SUBJECTS = {'M23031','M23032','M23034','M23037','M23038'};
+% option = 'V1-MEC';
+session_count = 0;
+
 clusters_all = struct();
-for iSub = 1:5
-    load(fullfile(base_folder,SUBJECTS{iSub},'analysis','experiment_info.mat'))
-    Stimulus_type = 'Track';
 
-    for nsession = 1:length(experiment_info)
-        session_count = session_count + 1;
+for nsession = 1:length(experiment_info)
+    session_count = session_count + 1;
 
-        iDate = nsession;
-        session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        session_folder = fullfile(base_folder,SUBJECTS{iSub},'analysis',session_info.probe(1).SESSION);
-        stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-        load(fullfile(session_folder,stimulus_name{1},'extracted_behaviour.mat'));
-        load(fullfile(session_folder,stimulus_name{1},'extracted_task_info.mat'));
-        load(fullfile(session_folder,"session_clusters.mat"))
-        session_clusters = rmfield(session_clusters,'timevec');
-        session_clusters.session_label = repmat([SUBJECTS{iSub},session_info.probe(1).SESSION],[size(session_clusters.cluster_id)]);
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    session_folder = fullfile(base_folder,session_info(1).probe(1).SUBJECT,'analysis',session_info(1).probe(1).SESSION);
+    
+    if length(stimulus_name)>1
+        disp('Same stimuli multiple recordings. Will take ')
+        find(contains(stimulus_name,'_2'))
+    end
 
-        % put all clusters in one struct
-        field_names = fieldnames(session_clusters);
-        for iField =1:length(field_names)
-            if session_count == 1
-                clusters_all.(field_names{iField}) = session_clusters.(field_names{iField});
-            else
-                try
-                    clusters_all.(field_names{iField}) = [clusters_all.(field_names{iField});session_clusters.(field_names{iField})];
-                catch
-                end
+
+    if contains(stimulus_name{1},'Masa2tracks')
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+    else
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+    end
+
+    session_clusters = rmfield(session_clusters,'timevec');
+
+    session_clusters.session_label = repmat([session_clusters.SUBJECTS,session_info.probe(1).SESSION],[size(session_clusters.cluster_id)]);
+
+    % put all clusters in one struct
+    field_names = fieldnames(session_clusters);
+    for iField =1:length(field_names)
+        if session_count == 1
+            clusters_all.(field_names{iField}) = session_clusters.(field_names{iField});
+        else
+            try
+                clusters_all.(field_names{iField}) = [clusters_all.(field_names{iField});session_clusters.(field_names{iField})];
+            catch
             end
         end
+    end
 
-        
-        session_count_clusters = repmat(session_count,size(session_clusters.cluster_id));
-        if session_count == 1
-            clusters_all.session_count = session_count_clusters;
-        else
-            clusters_all.session_count = [clusters_all.session_count;session_count_clusters];
-        end
+
+    session_count_clusters = repmat(session_count,size(session_clusters.cluster_id));
+    if session_count == 1
+        clusters_all.session_count = session_count_clusters;
+    else
+        clusters_all.session_count = [clusters_all.session_count;session_count_clusters];
     end
 end
+
 % clusters_all.region(contains(clusters_all.region,'MEC_entry')) = 'MEC';
 
 

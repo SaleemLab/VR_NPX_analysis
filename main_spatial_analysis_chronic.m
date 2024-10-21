@@ -370,7 +370,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
