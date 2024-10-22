@@ -364,13 +364,16 @@ end
 %% Decoding trajectory plotting
 lap_times = [];
 clear all
-SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018'};
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+ROOTPATH = 'Z:\ibn-vision'
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
-for nsession = [1 2 3 4 6 7 8 9 10 12 14]
+for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     if isempty(stimulus_name)
@@ -455,9 +458,9 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
                 for nshuffle = 1:1000
                     if track_id == 1
-                        T1_T2_ratio_shuffled(nshuffle) = cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                        T1_T2_ratio_shuffled(nshuffle) = probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                     else
-                        T1_T2_ratio_shuffled(nshuffle) = 1/cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                        T1_T2_ratio_shuffled(nshuffle) = 1/probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                     end
                 end
 
@@ -465,8 +468,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                 z_log_odds{track_id}(nlap) = (data-mean(shuffled_data))/std(shuffled_data);
                 track_label{track_id}(nlap) = track_id;
 
-                HPC_bayesian_bias{track_id}(nlap) = nansum(estimated_position_lap_CV_HPC(track_id).lap(nlap).track(1).run_bias)/...
-                    (nansum(estimated_position_lap_CV_HPC(track_id).lap(nlap).track(1).run_bias)+nansum(estimated_position_lap_CV_HPC(track_id).lap(nlap).track(2).run_bias)) ;
+                HPC_bayesian_bias{track_id}(nlap) = nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(1).run_bias)/...
+                    (nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(1).run_bias)+nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(2).run_bias)) ;
 
             end
         end
@@ -488,19 +491,19 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
             for track_id = 1:length(probability_ratio_RUN_lap{1})
                 for nlap = 1:length(probability_ratio_RUN_lap{1}{track_id}{1})
-                    data = log(cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                    data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
 
                     if track_id == 1
-                        data = log(cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                        data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
                     else
-                        data = log(1/cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                        data = log(1/probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
                     end
 
                     for nshuffle = 1:1000
                         if track_id == 1
-                            T1_T2_ratio_shuffled(nshuffle) = cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                            T1_T2_ratio_shuffled(nshuffle) = probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                         else
-                            T1_T2_ratio_shuffled(nshuffle) = 1/cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                            T1_T2_ratio_shuffled(nshuffle) = 1/probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                         end
                     end
 
@@ -545,10 +548,13 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         %                 scatter(nlap,track_orders(nlap) -2.2,'b')
         %             end
         %         end
-
-        [~,sorted_id] = sort([lap_times(1).start  lap_times(2).start]);
+        
+        
+        
+        [~,sorted_id] = sort([session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==1);...
+            session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==2)]);
         track_orders = [ones(1,length(lap_times(1).start))  2*ones(1,length(lap_times(2).start))];
-        track_orders = track_orders(sorted_id);
+        track_orders = session_clusters.track_ID_all{1}
 
         fig(nsession) = figure(nsession);
         fig(nsession).Position = [500 100 1200 900];

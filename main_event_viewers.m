@@ -1,5 +1,4 @@
-%% Main pipeline for viewing events
-%% UP DOWN state and ripple and spindle analysis
+%% Main pipeline for viewing sleep events
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -602,7 +601,22 @@ plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_
 
 %
 
-V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+for nprobe = 1:2
+    [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)]);
+    ripples(nprobe).DOWN_UP_transition_onset = ripples(nprobe).onset(ripples(nprobe).DOWN_UP_transition_index)';
+end
+
+for nprobe = 1:2
+    [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,1) slow_waves(1).ints.UP(:,1)+0.15]);
+    ripples(nprobe).UP_DOWN_transition_onset = ripples(nprobe).onset(ripples(nprobe).UP_DOWN_transition_index)';
+end
+
+T1_events = ripples(nprobe).DOWN_UP_transition_onset'; 
+T2_events = ripples(nprobe).UP_DOWN_transition_onset';
+
+slow_waves(1).ints.UP(:,1)
+
+find(V1_reactivations(2).ripple_peak(V1_reactivations(2).SWS_index)>=3)
 
 zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
 
@@ -611,6 +625,18 @@ T2_events = ripples(2).peaktimes(find(zero_meaned_log_odds<-1));
 
 T1_events = ripples(2).peaktimes(find(zero_meaned_log_odds>1));
 [T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
+
+
+
+
+T2_events = ripples(2).peaktimes(...
+    find(reactivation_strength(2).track(1).strength_percentile>0.95 & reactivation_strength(2).track(2).strength_percentile<0.95));
+[T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
+
+T1_events = ripples(2).peaktimes(...
+    find(reactivation_strength(2).track(1).strength_percentile<0.95 & reactivation_strength(2).track(2).strength_percentile>0.95));
+[T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
+
 %         T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
 plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
 plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
@@ -618,7 +644,7 @@ plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by region','gro
 
 metric_param =[];
 metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-metric_param.region = @(x) contains(x,'HPC');
+metric_param.region = @(x) contains(x,'V1');
 [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
 ia = find(cluster_id);
 %         ia = ia((41:60));

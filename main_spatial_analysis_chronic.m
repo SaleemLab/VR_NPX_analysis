@@ -362,6 +362,12 @@ end
 
 
 %% Decoding trajectory plotting
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
+rmpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis\buzcode\externalPackages'))
+
 lap_times = [];
 clear all
 SUBJECTS={'M24016','M24017','M24018'};
@@ -369,7 +375,7 @@ SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-
+ROOTPATH = 'Z:\ibn-vision'
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
@@ -440,8 +446,12 @@ for nsession = 1:length(experiment_info)
         HPC_bayesian_bias = [];
         V1_z_log_odds= [];
         V1_track_label= [];
+
         V1_bayesian_bias = [];
         T1_T2_ratio_shuffled=[];
+
+        V1_z_log_odds_combined=[];
+        V1_bayesian_bias_combined=[];
 
         % RUN lap log odds (for track 2 use 1/track 2 bias )
         % Because decoding now speed thresholded (nan for wrong track)
@@ -458,9 +468,9 @@ for nsession = 1:length(experiment_info)
 
                 for nshuffle = 1:1000
                     if track_id == 1
-                        T1_T2_ratio_shuffled(nshuffle) = cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{1}(nlap));
+                        T1_T2_ratio_shuffled(nshuffle) = probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                     else
-                        T1_T2_ratio_shuffled(nshuffle) = 1/cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{1}(nlap));
+                        T1_T2_ratio_shuffled(nshuffle) = 1/probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                     end
                 end
 
@@ -470,6 +480,38 @@ for nsession = 1:length(experiment_info)
 
                 HPC_bayesian_bias{track_id}(nlap) = nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(1).run_bias)/...
                     (nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(1).run_bias)+nansum(estimated_position_lap_CV_HPC.track(track_id).lap(nlap).track(2).run_bias)) ;
+
+            end
+        end
+
+
+        % RUN lap log odds (for track 2 use 1/track 2 bias )
+        % Because decoding now speed thresholded (nan for wrong track)
+        probability_ratio_RUN_lap=probability_ratio_RUN_lap_V1_combined;
+        for track_id = 1:length(probability_ratio_RUN_lap{1})
+            for nlap = 1:length(probability_ratio_RUN_lap{1}{track_id}{1})
+                data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
+
+                if track_id == 1
+                    data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
+                else
+                    data = log(1/probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
+                end
+
+                for nshuffle = 1:1000
+                    if track_id == 1
+                        T1_T2_ratio_shuffled(nshuffle) = probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
+                    else
+                        T1_T2_ratio_shuffled(nshuffle) = 1/probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
+                    end
+                end
+
+                shuffled_data = log(T1_T2_ratio_shuffled);
+                V1_z_log_odds_combined{track_id}(nlap) = (data-mean(shuffled_data))/std(shuffled_data);
+                track_label{track_id}(nlap) = track_id;
+
+                V1_bayesian_bias_combined{track_id}(nlap) = nansum(estimated_position_lap_CV_V1_combined.track(track_id).lap(nlap).track(1).run_bias)/...
+                    (nansum(estimated_position_lap_CV_V1_combined.track(track_id).lap(nlap).track(1).run_bias)+nansum(estimated_position_lap_CV_V1_combined.track(track_id).lap(nlap).track(2).run_bias)) ;
 
             end
         end
@@ -491,19 +533,19 @@ for nsession = 1:length(experiment_info)
 
             for track_id = 1:length(probability_ratio_RUN_lap{1})
                 for nlap = 1:length(probability_ratio_RUN_lap{1}{track_id}{1})
-                    data = log(cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                    data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
 
                     if track_id == 1
-                        data = log(cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                        data = log(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
                     else
-                        data = log(1/cell2mat(probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap)));
+                        data = log(1/probability_ratio_RUN_lap{1}{track_id}{track_id}(nlap));
                     end
 
                     for nshuffle = 1:1000
                         if track_id == 1
-                            T1_T2_ratio_shuffled(nshuffle) = cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                            T1_T2_ratio_shuffled(nshuffle) = probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                         else
-                            T1_T2_ratio_shuffled(nshuffle) = 1/cell2mat(probability_ratio_RUN_lap{2}{nshuffle}{track_id}{track_id}(nlap));
+                            T1_T2_ratio_shuffled(nshuffle) = 1/probability_ratio_RUN_lap{2}{nshuffle}{track_id}(nlap);
                         end
                     end
 
@@ -532,30 +574,19 @@ for nsession = 1:length(experiment_info)
             V1_z_log_odds{2} = [V1_z_log_odds{2}{1}, V1_z_log_odds{2}{2}];
             V1_bayesian_bias{2} = [V1_bayesian_bias{2}{1}, V1_bayesian_bias{2}{2}];
         end
+        V1_bayesian_bias_combined=[V1_bayesian_bias_combined{1} V1_bayesian_bias_combined{2}];
+        V1_z_log_odds_combined=[V1_z_log_odds_combined{1} V1_z_log_odds_combined{2}];
 
+        
 
+        % V1 Left and Right vs HPC
+        [~,sorted_id] = sort([session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==1);...
+            session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==2)]);
+        track_orders = session_clusters.track_ID_all{1};
 
-
-
-        %         subplot(2,3,2)
-        %         bar(V1_bayesian_bias{2}(sorted_id),'b','FaceAlpha',0.3,'EdgeColor','none');hold on;
-        %
-        %         bar(HPC_bayesian_bias(sorted_id),'k','FaceAlpha',0.3,'EdgeColor','none');hold on;
-        %         for nlap = 1:length(track_orders)
-        %             if track_orders(nlap) == 1
-        %                 scatter(nlap,track_orders(nlap) ,'r')
-        %             elseif track_orders(nlap) == 2
-        %                 scatter(nlap,track_orders(nlap) -2.2,'b')
-        %             end
-        %         end
-
-        [~,sorted_id] = sort([lap_times(1).start  lap_times(2).start]);
-        track_orders = [ones(1,length(lap_times(1).start))  2*ones(1,length(lap_times(2).start))];
-        track_orders = track_orders(sorted_id);
-
-        fig(nsession) = figure(nsession);
-        fig(nsession).Position = [500 100 1200 900];
-        fig(nsession).Name = sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION)
+        fig = figure();
+        fig.Position = [500 100 1200 900];
+        fig.Name = sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION)
         colour_lines = {'b','r'};
         clear h s
         sgtitle(sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION))
@@ -614,7 +645,7 @@ for nsession = 1:length(experiment_info)
         end
 
 
-        track_orders = [ones(1,length(lap_times(1).start))  2*ones(1,length(lap_times(2).start))];
+        track_orders = [ones(1,sum(session_clusters.track_ID_all{1}==1))  2*ones(1,sum(session_clusters.track_ID_all{1}==2))];
 
         subplot(2,4,5)
         if ~isempty(V1_bayesian_bias{1})
@@ -760,6 +791,141 @@ for nsession = 1:length(experiment_info)
         fontsize(gcf,14,"points")
 
 
+
+        % V1 combined vs HPC
+        [~,sorted_id] = sort([session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==1);...
+            session_clusters.start_time_all{1}(session_clusters.track_ID_all{1}==2)]);
+        track_orders = session_clusters.track_ID_all{1};
+
+        fig = figure();
+        fig.Position = [500 100 1200 900];
+        fig.Name = sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION)
+        colour_lines = {'b','r'};
+        clear h s
+        sgtitle(sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION))
+        subplot(2,2,1)
+        h(1) = plot(V1_bayesian_bias_combined(sorted_id),'k');hold on;
+        %         plot(HPC_bayesian_bias(sorted_id),'k');hold on;
+
+        h(2) = bar(HPC_bayesian_bias(sorted_id),'k','FaceAlpha',0.3,'EdgeColor','none');hold on;
+        for nlap = 1:length(track_orders)
+            if track_orders(nlap) == 1
+                s(1) = scatter(nlap,track_orders(nlap) ,3,'r','filled','MarkerFaceAlpha',1)
+            elseif track_orders(nlap) == 2
+                s(2) = scatter(nlap,track_orders(nlap) - 2.1,3,'b','filled','MarkerFaceAlpha',1)
+            end
+        end
+        ylabel('Bayesian Bias')
+        xlabel('lap id')
+        yline(0.5,'--')
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+
+        %         legend([h(1:3),s(1),s(2)],{'V1 Left','V1 Right','HPC','Track 1','Track 2'})
+
+
+
+        subplot(2,2,2)
+        h(1) = plot(V1_z_log_odds_combined(sorted_id),'k');hold on;
+        %         plot(HPC_bayesian_bias(sorted_id),'k');hold on;
+
+        h(2) = bar(z_log_odds(sorted_id),'k','FaceAlpha',0.3,'EdgeColor','none');hold on;
+        for nlap = 1:length(track_orders)
+            if track_orders(nlap) == 1
+                s(1) = scatter(nlap,track_orders(nlap) +2.5,3,'r','filled','MarkerFaceAlpha',1)
+            elseif track_orders(nlap) == 2
+                s(2) = scatter(nlap,track_orders(nlap) -5.5,3,'b','filled','MarkerFaceAlpha',1)
+            end
+        end
+        ylabel('Log odds (z)')
+        xlabel('lap id')
+        yline(0,'--')
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+
+        legend([h(1:2),s(1),s(2)],{'V1 combined','HPC combined','Track 1','Track 2'})
+
+
+        track_orders = [ones(1,sum(session_clusters.track_ID_all{1}==1))  2*ones(1,sum(session_clusters.track_ID_all{1}==2))];
+
+        subplot(2,2,3)
+        if ~isempty(V1_bayesian_bias_combined)
+            scatter(HPC_bayesian_bias(track_orders == 1), V1_bayesian_bias_combined(track_orders == 1),'r','filled','MarkerFaceAlpha',0.2)
+            hold on
+            scatter(HPC_bayesian_bias(track_orders == 2), V1_bayesian_bias_combined(track_orders == 2),'b','filled','MarkerFaceAlpha',0.2)
+
+            mdl = fitlm(HPC_bayesian_bias',V1_bayesian_bias{1});
+            [pval,~,~] = coefTest(mdl);
+            x =[min(HPC_bayesian_bias') max(HPC_bayesian_bias')];
+            b = mdl.Coefficients.Estimate';
+            y_est = polyval(fliplr(b),x);
+
+            if pval <= 0.05
+                plot(x,y_est,'r:')
+                %         xlim([-30 120])
+
+                %     title(sprintf('Session %i',s),'Color','red')
+                %         text(gca,.7,0.5,['p = ' num2str(pval,2)],'Units','Normalized','FontSize',12,'FontName','Arial');
+                text(gca,0.5,0.2,['p = ' num2str(pval,2)],'Units','Normalized','FontName','Arial','Color','red');
+            else
+                plot(x,y_est,'k:')
+                %         xlim([-30 120])
+                %     title(sprintf('Session %i',s))
+                %         text(gca,.7,0.5,['p = ' num2str(pval,2)],'Units','Normalized','FontSize',12,'FontName','Arial');
+                text(gca,0.5,0.2,['p = ' num2str(pval,2)],'Units','Normalized','FontName','Arial','Color','black');
+            end
+            ylabel('V1 Bayesian bias')
+            xlabel('HPC Bayesian bias')
+            yline(0.5,'--')
+            xline(0.5,'--')
+        end
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+
+        subplot(2,2,4)
+        if ~isempty(V1_z_log_odds_combined)
+            scatter(z_log_odds(track_orders == 1), V1_z_log_odds_combined(track_orders == 1),'r','filled','MarkerFaceAlpha',0.2)
+            hold on
+            scatter(z_log_odds(track_orders == 2), V1_z_log_odds_combined(track_orders == 2),'b','filled','MarkerFaceAlpha',0.2)
+
+            mdl = fitlm(z_log_odds',V1_z_log_odds_combined);
+            [pval,~,~] = coefTest(mdl);
+            x =[min(z_log_odds') max(z_log_odds')];
+            b = mdl.Coefficients.Estimate';
+            y_est = polyval(fliplr(b),x);
+
+            if pval <= 0.05
+                plot(x,y_est,'r:')
+                %         xlim([-30 120])
+
+                %     title(sprintf('Session %i',s),'Color','red')
+                %         text(gca,.7,0.5,['p = ' num2str(pval,2)],'Units','Normalized','FontSize',12,'FontName','Arial');
+                text(gca,0.5,0.2,['p = ' num2str(pval,2)],'Units','Normalized','FontName','Arial','Color','red');
+            else
+                plot(x,y_est,'k:')
+                %         xlim([-30 120])
+                %     title(sprintf('Session %i',s))
+                %         text(gca,.7,0.5,['p = ' num2str(pval,2)],'Units','Normalized','FontSize',12,'FontName','Arial');
+                text(gca,0.5,0.2,['p = ' num2str(pval,2)],'Units','Normalized','FontName','Arial','Color','black');
+            end
+            ylabel('V1 Log odds (z)')
+            xlabel('HPC log odds (z)')
+            yline(0,'--')
+            xline(0,'--')
+            %             track_orders = [ones(1,length(lap_times(1).start))  2*ones(1,length(lap_times(2).start))];
+            %             scatter3(z_log_odds(track_orders == 1), V1_z_log_odds{1}(track_orders == 1),V1_z_log_odds{2}(track_orders == 1),'r','filled','MarkerFaceAlpha',0.5)
+            %             hold on
+            %             scatter3(z_log_odds(track_orders == 2), V1_z_log_odds{1}(track_orders == 2),V1_z_log_odds{2}(track_orders == 2),'b','filled','MarkerFaceAlpha',0.5)
+            %             xlabel('HPC log odds')
+            %             ylabel('left V1 log odds')
+            %             zlabel('right V1 log odds')
+            %             set(gca,"TickDir","out",'box', 'off','Color','none')
+            %             legend([h(1:3)],{'V1 Left','V1 Right','HPC'})
+
+        end
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+
+
+        fig = figure();
+        fig.Position = [500 100 1200 900];
+        fig.Name = 'lap Z Log odds ROC two track discrimination in V1 and HPC';
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             options.ROOTPATH = ROOTPATH;
@@ -767,8 +933,7 @@ for nsession = 1:length(experiment_info)
             options.probe_no = probe_no;
             probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere
 
-            data = V1_bayesian_bias{probe_hemisphere};
-
+            data = V1_z_log_odds{probe_hemisphere};
 
             FPR = [];
             TPR = [];
@@ -791,51 +956,36 @@ for nsession = 1:length(experiment_info)
             end
 
             if session_info(n).probe(nprobe).probe_hemisphere == 1
-                fig(11) = figure(11);
-                fig(11).Position = [500 100 1200 900];
-                fig(11).Name = 'lap Bayesian Bias ROC two track discrimination in V1 for left probe';
-                % ROC#
-                subplot(2,5,nsession)
-                hold on
-                x = FPR';
-                CI_shuffle = prctile(TPR,[2.5 97.5]);
-                plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
-                plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
-                x2 = [x, fliplr(x)];
-                inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
-                h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2);
 
-                h(1) = plot([0 1],[0 1],'k--')
-                set(gca,"TickDir","out",'box', 'off','Color','none')
-                legend([h(2) h(1)],{'Real','chance'})
-                title(sprintf('Session %i AUC %.2f',nsession,mean(AUC)))
-                sgtitle('lap Bayesian Bias ROC two track discrimination in V1 for left probe')
-                fontsize(gcf,14,"points")
+                % ROC#
+                subplot(2,2,1)
+                hold on
+                title(sprintf('Left V1 AUC %.2f',mean(AUC)))
             elseif session_info(n).probe(nprobe).probe_hemisphere == 2
-                fig(12) = figure(12);
-                fig(12).Position = [500 100 1200 900];
-                fig(12).Name = 'lap Bayesian Bias ROC two track discrimination in V1 for right probe';
-                % ROC#
-                subplot(2,5,nsession)
+                subplot(2,2,2)
+                title(sprintf('Right V1 AUC %.2f',mean(AUC)))
                 hold on
-                x = FPR';
-                CI_shuffle = prctile(TPR,[2.5 97.5]);
-                plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
-                plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
-                x2 = [x, fliplr(x)];
-                inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
-                h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2);
-
-                h(1) = plot([0 1],[0 1],'k--')
-                set(gca,"TickDir","out",'box', 'off','Color','none')
-                legend([h(2) h(1)],{'Real','chance'})
-                title(sprintf('Session %i AUC %.2f',nsession,mean(AUC)))
-                sgtitle('lap Bayesian Bias ROC two track discrimination in V1 for right probe')
-                fontsize(gcf,14,"points")
             end
+            x = FPR';
+            CI_shuffle = prctile(TPR,[2.5 97.5]);
+            plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
+            plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
+            x2 = [x, fliplr(x)];
+            inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
+            h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2);
+
+            h(1) = plot([0 1],[0 1],'k--')
+            set(gca,"TickDir","out",'box', 'off','Color','none')
+            legend([h(2) h(1)],{'Real','chance'})
+            xlabel('False positive rate')
+            ylabel('True positive rate')
+            %                 sgtitle('lap z log odds ROC two track discrimination in V1 for left probe')
+            fontsize(gcf,14,"points")
+
         end
 
-        data = HPC_bayesian_bias;
+
+        data = z_log_odds;
 
         FPR = [];
         TPR = [];
@@ -857,12 +1007,8 @@ for nsession = 1:length(experiment_info)
             AUC(nboot) = A(1);
         end
 
-        fig(13) = figure(13);
-        fig(13).Position = [500 100 1200 900];
-        fig(13).Name = 'lap Bayesian Bias ROC two track discrimination in HPC';
-
         % ROC#
-        subplot(2,5,nsession)
+        subplot(2,2,3)
         hold on
         x = FPR';
         CI_shuffle = prctile(TPR,[2.5 97.5]);
@@ -875,11 +1021,58 @@ for nsession = 1:length(experiment_info)
         h(1) = plot([0 1],[0 1],'k--')
         set(gca,"TickDir","out",'box', 'off','Color','none')
         legend([h(2) h(1)],{'Real','chance'})
-        title(sprintf('Session %i AUC %.2f',nsession,mean(AUC)))
-        sgtitle('lap Bayesian Bias ROC two track discrimination in HPC')
+        title(sprintf('HPC AUC %.2f',mean(AUC)))
+        xlabel('False positive rate')
+        ylabel('True positive rate')
+        %         sgtitle('lap Bayesian Bias ROC two track discrimination in HPC')
         fontsize(gcf,14,"points")
 
-    
+        % ROC#
+        data = V1_z_log_odds_combined;
+
+        FPR = [];
+        TPR = [];
+        AUC = [];
+        data_resampled = [];
+        track_label_resampled = [];
+
+        for nboot = 1:1000
+            s = RandStream('mrg32k3a','Seed',nboot); % Set random seed for resampling
+
+            index = datasample(s,1:length(data),length(data));
+            data_resampled(nboot,:) = data(index);
+            track_label_resampled(nboot,:) = track_orders(index)-1;
+            [X,Y,T,A] = perfcurve(track_orders(index),data(index),1,'XVals',0:0.05:1,'NBoot',1);
+            %             [X,Y,T,A] = perfcurve(track_label(index),z_log_odds(index),1,'XVals',0:0.05:1);
+
+            FPR = X;
+            TPR(nboot,:) = Y(:,1);
+            AUC(nboot) = A(1);
+        end
+
+        subplot(2,2,4)
+        hold on
+        x = FPR';
+        CI_shuffle = prctile(TPR,[2.5 97.5]);
+        plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
+        plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
+        x2 = [x, fliplr(x)];
+        inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
+        h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2);
+
+        h(1) = plot([0 1],[0 1],'k--')
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+        legend([h(2) h(1)],{'Real','chance'})
+        title(sprintf('V1 combined AUC %.2f',mean(AUC)))
+        xlabel('False positive rate')
+        ylabel('True positive rate')
+        sgtitle('lap log odds ROC two track discrimination')
+        fontsize(gcf,14,"points")
+        if ~exist(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'))
+        end
+        save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','RUN Bayesian decoding'),[])
+
 
 
         % plotting decoded run trajectory
