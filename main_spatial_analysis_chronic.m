@@ -349,12 +349,10 @@ for nsession = 1:length(experiment_info)
             clear place_fields_BAYESIAN
 
         end
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
-        save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'),'estimated_position_lap_CV_V1',"estimated_position_lap_CV_V1_combined",'estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
-        save(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_V1','estimated_position_lap_CV_V1_combined','estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
 
     end
 end
@@ -397,6 +395,17 @@ for nsession = 1:length(experiment_info)
             clusters = clusters_ks3;
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_V1','estimated_position_lap_CV_V1_combined','estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
         end
 
         clusters_combined= session_clusters;
@@ -424,11 +433,7 @@ for nsession = 1:length(experiment_info)
             clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_width);
 
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
 
         % Plotting Log odds
 
