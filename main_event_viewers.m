@@ -148,17 +148,16 @@ for nsession =1:length(experiment_info)
         x_bin_width = 2;
         place_fields = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
             selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
-
         
-        for nprobe = 1:2
-            if ~isempty(behavioural_state(nprobe).SWS)
-                [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
-                V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
-            end
-        end
-
-        [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
-        reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
+%         for nprobe = 1:2
+%             if ~isempty(behavioural_state(nprobe).SWS)
+%                 [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
+%                 V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+%             end
+%         end
+% 
+%         [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
+%         reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
 
         cortex_LFP=[];
         CA1_LFP=[];
@@ -174,7 +173,7 @@ for nsession =1:length(experiment_info)
                         bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
                     end
                     bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
+                    [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,1));
                     good_channels = find(~bad_channels);
                     cortex_LFP{probe_no} = LFP(probe_no).L5(good_channels(best_channel),:);
 
@@ -185,7 +184,7 @@ for nsession =1:length(experiment_info)
                         bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                     end
                     bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
+                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
                     good_channels = find(~bad_channels);
                     cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
                 end
@@ -198,7 +197,7 @@ for nsession =1:length(experiment_info)
                         bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                     end
                     bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
+                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
                     good_channels = find(~bad_channels);
                     cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
                 else
@@ -224,6 +223,24 @@ for nsession =1:length(experiment_info)
                 CA1_LFP{probe_no} = LFP(probe_no).CA1(good_channels(best_channel),:);
             end
         end
+
+        filter_type  = 'bandpass';
+        filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+        signal = filtfilt(b_ripple,1,lfp);
+        zscored_ripple = zscore(abs(hilbert(signal)));
+
+
+        filter_type  = 'bandpass';
+        filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+        signal = filtfilt(b_ripple,1,lfp);
+        zscored_ripple = zscore(abs(hilbert(signal)));
+
+
+        
 
         spatial_cell_index = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
             | clusters_combined.odd_even_stability(:,2)>0.95);
