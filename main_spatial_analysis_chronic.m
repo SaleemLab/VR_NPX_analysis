@@ -807,7 +807,7 @@ for nsession = 1:length(experiment_info)
         fig.Name = sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION)
         colour_lines = {'b','r'};
         clear h s
-        sgtitle(sprintf('%s %s RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION))
+        sgtitle(sprintf('%s %s combined RUN lap bayesian bias and log odds',options.SUBJECT,options.SESSION))
         subplot(2,2,1)
         h(1) = plot(V1_bayesian_bias_combined(sorted_id),'k');hold on;
         %         plot(HPC_bayesian_bias(sorted_id),'k');hold on;
