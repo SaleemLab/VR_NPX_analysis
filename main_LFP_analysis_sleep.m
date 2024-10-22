@@ -302,12 +302,12 @@ for nstimuli = 1:length(all_stimulus_type)
                 if isfield(LFP(probe_no),'L5')
                     if ~isempty(LFP(probe_no).L5)
                         bad_channels=[];
-                        all_shanks = 1:size(LFP(probe_no).L5_power,1);
+                        all_shanks = 1:size(LFP(probe_no).L5_power,1c);
                         for nshank = 1:size(LFP(probe_no).L5_power,1)
                             bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;% ignore channels if the mean power is 3 x the rest of channels (possibly will be nosiy)
-                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L5(good_channels(best_channel),:);
                     else
@@ -317,7 +317,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;
-                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     end
@@ -330,7 +330,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;
-                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                        [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
                         cortex_LFP = LFP(probe_no).L4(good_channels(best_channel),:);
                     else
@@ -393,7 +393,7 @@ for nstimuli = 1:length(all_stimulus_type)
 
                 % Detect V1 populational bursting events (Candidate events)
                 metric_param =[];
-                %             metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
                 if options.probe_hemisphere==1
                     metric_param.region = @(x) contains(x,'V1_L');

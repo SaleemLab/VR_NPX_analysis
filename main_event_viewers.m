@@ -148,19 +148,23 @@ for nsession =1:length(experiment_info)
         x_bin_width = 2;
         place_fields = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
             selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
-        
-%         for nprobe = 1:2
-%             if ~isempty(behavioural_state(nprobe).SWS)
-%                 [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
-%                 V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
-%             end
-%         end
-% 
-%         [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
-%         reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
+
+        %         for nprobe = 1:2
+        %             if ~isempty(behavioural_state(nprobe).SWS)
+        %                 [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state(nprobe).SWS);
+        %                 V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
+        %             end
+        %         end
+        %
+        %         [reactivations_combined.SWS_offset,reactivations_combined.SWS_index] = RestrictInts(reactivations_combined.offset',behavioural_state(1).SWS);
+        %         reactivations_combined.SWS_onset = reactivations_combined.onset(reactivations_combined.SWS_index)';
 
         cortex_LFP=[];
         CA1_LFP=[];
+        cortex_LFP_filtered=[];
+        CA1_LFP_ripple_filtered=[];
+        CA1_LFP_filtered=[];
+        LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
         for nprobe = 1:length(session_clusters_RUN.probe_hemisphere)
             probe_no=session_clusters_RUN.probe_hemisphere(nprobe);
 
@@ -209,6 +213,14 @@ for nsession =1:length(experiment_info)
 
             end
 
+            passband = [0.5 30];
+            filter_type  = 'bandpass';
+            filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+            norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+            b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+            cortex_LFP_filtered{probe_no} = filtfilt(b_ripple,1,cortex_LFP{probe_no});
+            %         cortex_LFP{probe_no} = zscore(abs(hilbert(signal)));
+
             if isfield(LFP(probe_no),'CA1')
                 bad_channels=[];
                 all_shanks = 1:size(LFP(probe_no).CA1_power,1);
@@ -221,32 +233,33 @@ for nsession =1:length(experiment_info)
                 good_channels = find(~bad_channels);
 
                 CA1_LFP{probe_no} = LFP(probe_no).CA1(good_channels(best_channel),:);
+                
+                passband = [0.5 300];
+                filter_type  = 'bandpass';
+                filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+                norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+                signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
+                %         zscored_ripple = zscore(abs(hilbert(signal)));
+                CA1_LFP_filtered{probe_no}=signal;
+
+                passband = [150 300];
+                filter_type  = 'bandpass';
+                filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+                norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+                signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
+                %         zscored_ripple = zscore(abs(hilbert(signal)));
+                CA1_LFP_ripple_filtered{probe_no}=signal;
             end
         end
 
-        filter_type  = 'bandpass';
-        filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
-        norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-        signal = filtfilt(b_ripple,1,lfp);
-        zscored_ripple = zscore(abs(hilbert(signal)));
-
-
-        filter_type  = 'bandpass';
-        filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
-        norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-        signal = filtfilt(b_ripple,1,lfp);
-        zscored_ripple = zscore(abs(hilbert(signal)));
-
-
-        
-
+       
         spatial_cell_index = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
             | clusters_combined.odd_even_stability(:,2)>0.95);
 
         metric_param =[];
-        metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+%         metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
         metric_param.region = @(x) contains(x,'V1_L');
         [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
         V1_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
@@ -270,7 +283,7 @@ for nsession =1:length(experiment_info)
         group_name_HPC = {'HPC_L','HPC_R','HPC'};
         
 
-        % Sleep
+        %%%% Sleep
         mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
 
         mob_index = find(mobility_thresholded==1);
@@ -288,52 +301,246 @@ for nsession =1:length(experiment_info)
         Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
         Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
         Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
-
         Behaviour.mobility = mobility_thresholded;
 
+        %%% Get spike counts
+        tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
+        CA1_spike_counts=[];
+        V1_spike_counts=[];
+        w = gausswin(0.02*1/mean(diff(tvec)));
+        w = w / sum(w);
+        speed= filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
+        for nprobe = 1:length(V1_spikes)
+            spike_times = V1_spikes{nprobe}(:,2);
+            spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            spike_times_sleep = spike_times(spike_speed < 1);
+            V1_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
 
-        nprobe = 2
-        figure
-        LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
-        hold on;
-        plot(LFP(nprobe).tvec,CA1_LFP{1},'r')
-
-        figure
-        [s,f,t] = stft(cortex_LFP{1},LFP_SR,'Window',2*hann(LFP_SR),'FrequencyRange','onesided');
-        index = find(f<50);
-        %         sss= abs(s).^2;
-        S_mag_smoothed = imgaussfilt(abs(s(index,:)), 10); % Gaussian smoothing with sigma=2
-        figure;
-        imagesc(t, f(index), S_mag_smoothed);
+            spike_times = HPC_spikes{nprobe}(:,2);
+            spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            spike_times_sleep = spike_times(spike_speed < 1);
+            CA1_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
+        end
         
-%         set(gca,YScale="log",...
-%             YDir="reverse",View=[0 300])
-%         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
+
+        %%%%%% TF plot
+        nprobe = 2
+        LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
+
+        [s,f,t] = stft(cortex_LFP{1},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
+        %         index = find(f<20);
+        index = find(f>1 & f<20);
+        %         sss= abs(s).^2;
+        S_mag_smoothed_V1 = imgaussfilt(abs(s(index,:)), 10); % Gaussian smoothing with sigma=2
+
+        [s,f,t] = stft(CA1_LFP{1},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
+        index = find(f>1 & f<20);
+        %         sss= abs(s).^2;
+        S_mag_smoothed_HPC = imgaussfilt(abs(s(index,:)), 10); % Gaussian smoothing with sigma=2
+
+
+
+
+        tindex = find(t>behavioural_state(1).REM(1,1)-100 & t<behavioural_state(1).REM(1,1)+200);
+
+        figure
+        subplot(3,1,1)
+        imagesc(t(tindex), f(index), S_mag_smoothed_V1(:,tindex));
+
+        %         set(gca,YScale="log",...
+        %             YDir="reverse",View=[0 300])
+        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
         clim([prctile(reshape(S_mag_smoothed,1,[]),1) prctile(reshape(S_mag_smoothed,1,[]),99)])
         colorbar
-        hold on;
-
-        plot(LFP(nprobe).tvec,CA1_LFP{2}+1000,'b')
-
-        plot(LFP(nprobe).tvec,cortex_LFP{1}+2000,'r')
-        hold on;
-        plot(LFP(nprobe).tvec,cortex_LFP{2}+3000,'b')
-        
+        colormap(flipud(bone))
         hold on
-        for nwin = 1:length(behavioural_state(nprobe).SWS)
-            [~,index1]=min(abs(LFP(nprobe).tvec-behavioural_state(nprobe).SWS(nwin,1)));
-            [~,index2]=min(abs(LFP(nprobe).tvec-behavioural_state(nprobe).SWS(nwin,2)));
-            
-            yline(index1,'r')
-            yline(index2,'k')
 
+        yline(f(min(find(f>1&f<3))),'r')
+        yline(f(max(find(f>1&f<3))),'r')
+        title('V1 LFP Time frequency plot')
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,2)
+        imagesc(t(tindex), f(index), S_mag_smoothed_HPC(:,tindex));
+
+        %         set(gca,YScale="log",...
+        %             YDir="reverse",View=[0 300])
+        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
+        clim([prctile(reshape(S_mag_smoothed_HPC,1,[]),1) prctile(reshape(S_mag_smoothed_HPC,1,[]),99)])
+        colorbar
+        colormap(flipud(bone))
+        hold on
+
+        yline(f(min(find(f>4&f<10))),'r')
+        yline(f(max(find(f>4&f<10))),'r')
+
+        xline(min(t(t>behavioural_state(1).REM(1,1))),'k')
+        xline(max(t(t<behavioural_state(1).REM(1,2))),'k')
+        title('HPC LFP Time frequency plot')
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,3)
+        interp1_mobility = interp1(Behaviour.tvec,Behaviour.mobility_zscore,t(tindex));
+        plot(t(tindex),interp1_mobility)
+        xlabel('Time(s)')
+        ylabel('Mobility zscored')
+        for nevent =1:size(behavioural_state(1).SWS,1)
+            xline(min(t(t>behavioural_state(1).SWS(nevent,1))),'r')
+            xline(max(t(t<behavioural_state(1).SWS(nevent,2))),'b')
+        end
+        xlim([min(t(tindex)) max(t(tindex))])
+        colorbar
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+        %%%%%% Sleep TF plot
+        
+        tindex = 1:length(t);
+
+        figure
+        subplot(3,1,1)
+        imagesc(t(tindex), f(index), S_mag_smoothed_V1(:,tindex));
+
+        %         set(gca,YScale="log",...
+        %             YDir="reverse",View=[0 300])
+        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
+        clim([prctile(reshape(S_mag_smoothed,1,[]),1) prctile(reshape(S_mag_smoothed,1,[]),99)])
+        colorbar
+        colormap(flipud(bone))
+        hold on
+
+        yline(f(min(find(f>1&f<3))),'r')
+        yline(f(max(find(f>1&f<3))),'r')
+        xlabel('Time(s)')
+        ylabel('Frqeuncy')
+        title('V1 LFP Time frequency plot')
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,2)
+        imagesc(t(tindex), f(index), S_mag_smoothed_HPC(:,tindex));
+
+        %         set(gca,YScale="log",...
+        %             YDir="reverse",View=[0 300])
+        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
+        clim([prctile(reshape(S_mag_smoothed_HPC,1,[]),1) prctile(reshape(S_mag_smoothed_HPC,1,[]),99)])
+        colorbar
+        colormap(flipud(bone))
+        hold on
+
+        yline(f(min(find(f>4&f<10))),'r')
+        yline(f(max(find(f>4&f<10))),'r')
+%         for nevent =1:size(behavioural_state(1).REM,1)
+%             xline(min(t(t>behavioural_state(1).REM(nevent,1))),'r')
+%             xline(max(t(t<behavioural_state(1).REM(nevent,2))),'b')
+%         end
+        xlabel('Time(s)')
+        ylabel('Frqeuncy')
+        title('HPC LFP Time frequency plot')
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,3)
+        interp1_mobility = interp1(Behaviour.tvec,Behaviour.mobility_zscore,t(tindex));
+        plot(t(tindex),interp1_mobility)
+        xlabel('Time(s)')
+        ylabel('Mobility zscored')
+        for nevent =1:size(behavioural_state(1).SWS,1)
+            xline(min(t(t>behavioural_state(1).SWS(nevent,1))),'r')
+            xline(max(t(t<behavioural_state(1).SWS(nevent,2))),'b')
+        end
+        xlim([min(t(tindex)) max(t(tindex))])
+        colorbar
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+      
+
+        %%%%%% peri ripple LFP and spiking
+        for nprobe = 1:2
+            [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,1) slow_waves(1).ints.UP(:,1)+0.2]);
+            ripples(nprobe).DOWN_UP_transition_onset = ripples(nprobe).onset(ripples(nprobe).DOWN_UP_transition_index)';
+        end
+
+        for nprobe = 1:2
+            [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,2)-0.2 slow_waves(1).ints.UP(:,2)+0.1]);
+            ripples(nprobe).UP_DOWN_transition_onset = ripples(nprobe).onset(ripples(nprobe).UP_DOWN_transition_index)';
         end
 
 
-        
-        ripples
 
-        [s,f,t] = stft()
+        tvec = LFP(nprobe).tvec;
+        %         nevent = 819:826;
+        %         event_times = [slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)];
+        %
+
+        %         event_times = [slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)];
+        %         nevent = 60:65;
+
+%         nevent = 928:931;
+        nevent = 911:913;
+        event_times = [ripples(1).SWS_onset ripples(1).SWS_offset];
+        %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
+        tindex = find(tvec>event_times(min(nevent),1)-0.3 & tvec<event_times(max(nevent),2)+0.3);
+
+        figure
+        subplot(3,1,1)
+        plot(tvec(tindex),5*cortex_LFP_filtered{1}(tindex)+1500,'r')
+        hold on
+        plot(tvec(tindex),5*cortex_LFP_filtered{2}(tindex)+2500,'b')
+        plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
+        plot(tvec(tindex),CA1_LFP_ripple_filtered{1}(tindex),'k')
+
+        for n = nevent
+            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
+            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
+            %             xline(min(tvec(tvec>event_times(n,2))),'b')
+            %             xline(max(tvec(tvec<event_times(n,1))),'r')
+            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
+                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
+                2500],...
+                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
+        end
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,2)
+        %         CA1_spike_counts{3} = zscore(CA1_spike_counts{1}+CA1_spike_counts{2});
+        %         V1_spike_counts{3} = zscore(V1_spike_counts{1}+V1_spike_counts{2});
+
+        plot(tvec(tindex),2*V1_spike_counts{1}(tindex)+2,'r')
+        hold on
+        plot(tvec(tindex),2*V1_spike_counts{2}(tindex),'b')
+        title('V1 spiking')
+        for n = nevent
+            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
+            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
+            %             xline(min(tvec(tvec>event_times(n,2))),'b')
+            %             xline(max(tvec(tvec<event_times(n,1))),'r')
+            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
+                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
+                2+max(V1_spike_counts{1}(tindex))],...
+                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
+        end
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+        subplot(3,1,3)
+        plot(tvec(tindex),CA1_spike_counts{1}(tindex)+3,'r')
+        hold on
+        plot(tvec(tindex),CA1_spike_counts{2}(tindex),'b')
+        title('HPC spiking')
+        for n = nevent
+            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
+            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
+            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
+                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
+                3+max(CA1_spike_counts{1}(tindex))],...
+                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
+
+            %             xline(min(tvec(tvec>event_times(n,2))),'b')
+            %             xline(max(tvec(tvec<event_times(n,1))),'r')
+        end
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
         
     end
 
