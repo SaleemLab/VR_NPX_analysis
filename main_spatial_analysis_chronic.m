@@ -387,7 +387,6 @@ for nsession = 1:length(experiment_info)
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
@@ -433,7 +432,8 @@ for nsession = 1:length(experiment_info)
             clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_width);
 
 
-
+        find((clusters_combined.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined.odd_even_stability(:,2)>0.95)&contains(clusters_combined.region,'HPC')&(clusters_combined.firing_rate < 10));
 
         % Plotting Log odds
 

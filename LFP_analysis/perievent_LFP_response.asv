@@ -1,4 +1,4 @@
-function [lfpAvg,csd,PSD] = perievent_LFP_profile(event_name,stimTimes,AnalysisTimeWindow,PSD,clusters,options,varargin)
+function [lfpAvg,csd,PSD] = periSW_LFP_response(event_name,stimTimes,AnalysisTimeWindow,options,varargin)
 
 p = inputParser;
 addParameter(p,'place_fields',[],@isstruct);
@@ -7,12 +7,14 @@ addParameter(p,'filter_type',[],@iscell);
 addParameter(p,'filter_freq',[0.5 3;4 12;9 17;30 60;60 100;125 300; 300 600],@isnumeric) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
 addParameter(p,'CSD_V1_CA1_normalisation',0,@isnumeric) % Normalised CSD within region or not
 addParameter(p,'x_col',1,@isnumeric) % which x_col to use
+addParameter(p,'selected_channels',1,@isnumeric) % which x_col to use
 
 
 parse(p,varargin{:})
 filter_type = p.Results.filter_type;
 filter_freq = p.Results.filter_freq;
 place_fields = p.Results.place_fields;
+selected_channels = p.Results.selected_channels;
 CSD_V1_CA1_normalisation = p.Results.CSD_V1_CA1_normalisation;
 x_col  = p.Results.x_col;
 
@@ -20,9 +22,6 @@ extractedTimeWindow = AnalysisTimeWindow;
 extractedTimeWindow(1) = extractedTimeWindow(1)-5;
 extractedTimeWindow(2)= extractedTimeWindow(2)+5;
 
-if ~isempty(place_fields)
-
-end
 
 % 
 % if isfield(clusters,'merged_spike_id')
@@ -89,8 +88,19 @@ if ~contains(imecMeta.acqApLfSy,'384,0') % NPX2 only has AP but NPX1 has AP and 
     options.importMode = 'LF';
     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
     probe_type = 1;
+    disp('Using lf.bin for NP1')
 else
-    probe_type = 2;
+
+    DIR = dir(fullfile(options.EPHYS_DATAPATH,'*lf*'));
+    if ~isempty(DIR)
+        options.importMode = 'LF';
+        [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
+        probe_type = 1;
+        disp('Using preprocessed lf.bin for NP2')
+    else
+        probe_type = 2;
+        disp('Using preprocessed ap.bin for NP2. Will take longer time to process')
+    end
 end
 
 
@@ -112,19 +122,34 @@ imecMeta = ReadMeta(fullfile(options.EPHYS_DATAPATH,file_to_use));
 nSamp = fix(SampRate(imecMeta)*range(extractedTimeWindow));
 chanTypes = str2double(strsplit(imecMeta.acqApLfSy, ','));
 nEPhysChan = chanTypes(1);
-downSampleRate = fix(SampRate(imecMeta)*BinWidth); % the rate at which we downsample depends on the acquisition rate and target binwidth
+downSampleRate = round(SampRate(imecMeta)*BinWidth); % the rate at which we downsample depends on the acquisition rate and target binwidth
 % Design low pass filter (with corner frequency determined by the
 % desired output binwidth)
 d1 = designfilt('lowpassiir','FilterOrder',12, ...
     'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate',SampRate(imecMeta));
 
-% Read the data
-tresps = ReadBin(fix(SampRate(imecMeta)*first_stim), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
-tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
-if strcmp(imecMeta.typeThis, 'imec')
-    tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+
+if ~isempty(selected_channels)
+    % Read the data
+    tresps = ReadBin(fix(SampRate(imecMeta)*first_stim), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+
+    if strcmp(imecMeta.typeThis, 'imec')
+        tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+    else
+        tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+    end
+    tresps= tresps(selected_channels,:); % Get rid of sync channel
 else
-    tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+    % Read the data
+    tresps = ReadBin(fix(SampRate(imecMeta)*first_stim), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+    tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
+
+    if strcmp(imecMeta.typeThis, 'imec')
+        tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+    else
+        tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+    end
+
 end
 
 % Downsample
@@ -149,18 +174,36 @@ for thisTrial = 1:length(stimTimes)
     %%%% OLD - use Neuropixels library
     %             tresps = imec.readLF_timeWindow([stim_on+AnalysisTimeWindow(1) stim_on+AnalysisTimeWindow(2)]);
     %%%% NEW - use SpikeGLX_Datafile_Tools
-    tresps = ReadBin(fix(SampRate(imecMeta)*(stim_on+extractedTimeWindow(1))), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
-    tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
-    if strcmp(imecMeta.typeThis, 'imec')
-        tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+    if ~isempty(selected_channels)
+        % Read the data
+        tresps = ReadBin(fix(SampRate(imecMeta)*stim_on), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+        tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
+
+        if strcmp(imecMeta.typeThis, 'imec')
+            tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+        else
+            tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+        end
+        
+        tresps= tresps(selected_channels,:); % Get rid of sync channel
     else
-        tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+        % Read the data
+        tresps = ReadBin(fix(SampRate(imecMeta)*stim_on), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+        tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
+
+        if strcmp(imecMeta.typeThis, 'imec')
+            tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
+        else
+            tresps = GainCorrectNI(tresps, 1:nEPhysChan, imecMeta);
+        end
     end
 
     % Zero-mean the data ...
     tresps = tresps-repmat(mean(tresps,2),1,size(tresps,2));
     % ... and lowpass filter ...
-    tresps = filtfilt(d1,double(tresps)')';
+    if ~(contains(imecMeta.acqApLfSy,'384,0') & probe_type == 1) % if NP2 data but contains lf.bin, it is a preprocessed lf with low pass filter already applied
+        tresps = filtfilt(d1,double(tresps)')';
+    end
     % ... then downsample that data
     ttresps = downsample(tresps',downSampleRate)';
     % ... and save
@@ -168,20 +211,106 @@ for thisTrial = 1:length(stimTimes)
 end
 close(H)
 
-
 timestamps = linspace(extractedTimeWindow(1),extractedTimeWindow(2),size(resps,2));
+tidx = find(timestamps>=-0.5 & timestamps<=0.5);
+lfp.samplingRate = round(1/mean(diff(timestamps)));
+lfp.timestamps = timestamps;
 
-if isempty(PSD)
+filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+filterparms.gammafilter = [100 400];
+filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+filterparms.gammanormwin = 20; %window for gamma normalization (s)
 
 
-else
-    for nchannel = 1:size(chan_config,1)
-        power(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
-        xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
-        ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
-        shanks(nchannel) = PSD{nprobe}(nchannel).shank;
+selected_channels_shank = chan_config.Shank(selected_channels);
+selected_channels_xcoord = chan_config.Ks_xcoord(selected_channels);
+selected_channels_ycoord = chan_config.Ks_ycoord(selected_channels);
+
+unique_ycoords = unique(selected_channels_ycoord);
+unique_ycoords=unique_ycoords(1:3:end);
+
+unique_xcoords = unique(chan_config.Ks_xcoord(selected_channels));
+unique_shanks = unique(selected_channels_shank);
+line_colors = [[254,217,11];[253,141,60];[240,59,32];[227,26,28]]/255;
+
+% for nShank = 1:length(unique_shanks)
+%         median_channel_this_shank = 
+%         [~ channel_id]=min();
+% end
+% best_channels = best_channels{options.probe_id+1};
+shank_channels=[];
+selected_V1_channels = [];
+selected_shank_channels=[];
+for nShank = 1:length(unique_shanks)
+        selected_shank_channels{nShank} = find(selected_channels_shank==unique_shanks(nShank) & ismember(selected_channels_ycoord,unique_ycoords)); 
+        selected_V1_channels = [selected_V1_channels; find(selected_channels_shank==unique_shanks(nShank) & ismember(selected_channels_ycoord,unique_ycoords))];
+        if nShank==1
+            selected_shank_channels{nShank} = 1:length(selected_shank_channels{nShank});
+        else
+            selected_shank_channels{nShank} = selected_shank_channels{nShank-1}(end)+1 : selected_shank_channels{nShank-1}(end)+length(selected_shank_channels{nShank});
+        end
+end
+
+
+figure
+count = 0;
+for thisTrial = 50:length(stimTimes)
+    count = count + 1;
+
+
+    for nShank = 1:length(unique_shanks)
+        subplot(5,5,count)
+        lfp.data = squeeze(resps(selected_V1_channels(selected_shank_channels{nShank}),:,thisTrial))';
+        lfp.data= mean(lfp.data')';
+        deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+
+        plot(timestamps(tidx),zscore(deltaLFP.amp(tidx)),'Color',line_colors(nShank,:));
+        hold on
+        xline(0)
+        ylim([-3 3])
     end
 end
+
+figure
+count = 0;
+for thisTrial = 50:length(stimTimes)
+    count = count + 1;
+
+
+    for nShank = 1:length(unique_shanks)
+        lfp.data = squeeze(resps(selected_V1_channels(selected_shank_channels{nShank}),:,thisTrial))';
+        lfp.data= mean(lfp.data')';
+        gammaLFP= bz_Filter(lfp,'passband',filterparms.gammafilter,'filter','fir1','order',4);
+        for nChannel = 1:size(gammaLFP.amp,2)
+            gammaLFP.smoothamp(:,nChannel) = smooth(gammaLFP.amp(:,nChannel),round(filterparms.gammasmoothwin.*lfp.samplingRate),'moving' );
+        end
+
+        subplot(5,5,count)
+        plot(timestamps(tidx),zscore(gammaLFP.smoothamp(tidx)),'Color',line_colors(nShank,:));
+        hold on
+        xline(0)
+        ylim([-2 2])
+    end
+end
+
+
+
+
+
+
+
+
+
+
+
+[PSD,power] = calculate_channel_PSD(raw_LFP{nprobe},SR,selected_chan_config,options,'plot_option',0);
+for nchannel = 1:size(chan_config,1)
+    power(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
+    xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
+    ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
+    shanks(nchannel) = PSD{nprobe}(nchannel).shank;
+end
+
 xcoord_avaliable = unique(xcoord);
 
 % sort channel according to y coordinate
@@ -193,6 +322,15 @@ resps = resps(idx,:,:);
 % resps1 = resps;
 
 resps = permute(resps(xcoord == xcoord_avaliable(x_col),:,:), [2, 1, 3]);
+
+
+
+
+
+
+
+
+
 
 lfpAvg = [];
 csd = [];

@@ -326,11 +326,11 @@ if strcmp(show,'on')
         end
 
         figure
-        ripple_first = round(size(ripples,1)/2);
-        ripple_last = round(size(ripples,1)/2)+5;
+        ripple_first = round(size(ripples,1)/3)-1;
+        ripple_last = round(size(ripples,1)/3)+4;
 
         subplot(3,1,1)
-        time_index = find(timevec>=ripples(ripple_first,1)-1 &timevec<=ripples(ripple_last,1)+1);
+        time_index = find(timevec>=ripples(ripple_first,1)-0.1 &timevec<=ripples(ripple_last,1)+0.1);
         plot(timevec(time_index),signal(time_index))
         title('Ripple filtered LFP (125-300Hz)')
 

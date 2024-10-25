@@ -10,189 +10,7 @@
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
-%% Extract and save session clusters for sleep sessions
-clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% experiment_info = experiment_info(4);
-% Stimulus_type = 'RUN';
-% Stimulus_type = 'SleepChronic';
-% all_stimulus_type={'RUN'};
-all_stimulus_type={'SleepChronic'};
-for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
-        
-        session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
-        stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
-        SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-        % find right date number based on all experiment dates of the subject
-        iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
-        if isempty(stimulus_name)
-            continue
-        end
-
-        load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
-        for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            options = session_info(n).probe(1);
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-
-            if ~isempty(DIR)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-                session_clusters_RUN=session_clusters;
-                clear session_clusters
-            end
-
-            if ~isempty(DIR1)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-                session_clusters_RUN=session_clusters;
-                clear session_clusters
-            end
-
-            if contains(stimulus_name{n},'Masa2tracks')
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                session_clusters= session_clusters_RUN;
-%                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-%                 clusters = clusters_ks3;
-            else               
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-                clusters = clusters_ks3;
-            end
-            %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
-            %         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
-
-
-            if contains(stimulus_name{n},'Sleep')
-                mobility_thresholded = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))])>2000;%1 second movemean windows
-
-                mob_index = find(mobility_thresholded==1);
-                for nindex = 1:length(mob_index)
-                    if nindex<length(mob_index)
-                        if Behaviour.tvec(mob_index(nindex+1))-Behaviour.tvec(mob_index(nindex))<1 % if immobility less than 1 second, treats that as movement period
-                            mobility_thresholded(mob_index(nindex):mob_index(nindex+1))=1;
-                        end
-                    end
-                end
-                %             plot(Behaviour.tvec,Behaviour.mobility);hold on;
-                %             plot(Behaviour.tvec,mobility*500000);plot(Behaviour.tvec,abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]))
-                %             plot(Behaviour.mobility_zscore)
-                Behaviour.mobility_thresholded = mobility_thresholded;
-%                 mobility_thresholded = interp1(Behaviour.tvec,double(mobility_thresholded),LFP(probe_no).tvec,'linear');
-                Behaviour.mobility_zscore = abs([0 diff(movmean(Behaviour.mobility,1/mean(diff(Behaviour.tvec))))]);% Diff of pixel change
-                Behaviour.mobility_zscore(isnan(Behaviour.mobility_zscore))=mean(Behaviour.mobility_zscore,'omitnan');
-                Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
-%                 speed = mobility_thresholded;
-            else
-                speed = Behaviour.speed;
-                speed(isnan(speed))=0;
-                w = gausswin(9);
-                w = w / sum(w);
-                speed = filtfilt(w,1,speed')';
-%                 speed = interp1(Behaviour.tvec,speed,LFP(probe_no).tvec,'linear');
-            end
-
-            metric_param =[];
-            %                  metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
-            params = create_cluster_selection_params('sorting_option','masa');
-            clear selected_clusters V1_clusters session_clusters
-
-            for nprobe = 1:length(clusters)
-                options = session_info(n).probe(nprobe);
-                probe_no =  session_info(n).probe(nprobe).probe_hemisphere;
-
-                clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
-                if clusters(nprobe).probe_hemisphere == 1
-                    clusters(nprobe).region(:) = 'n.a_L';
-                    kClusters=kmeans(clusters(nprobe).peak_depth,2);
-                    if mean(clusters(nprobe).peak_depth(kClusters==1))>mean(clusters(nprobe).peak_depth(kClusters==2))
-                        % if mean ocation of cluster one is above cluster two, it is
-                        % Cortex.
-                        % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
-                        V1_cell_id = find(kClusters==1);
-                        HPC_cell_id = find(kClusters==2);
-                    else
-                        % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
-                        V1_cell_id = find(kClusters==2);
-                        HPC_cell_id = find(kClusters==1);
-                    end
-                    clusters(nprobe).region(V1_cell_id) = 'V1_L';
-                    clusters(nprobe).region(HPC_cell_id) = 'HPC_L';
-
-                elseif clusters(nprobe).probe_hemisphere == 2
-                    clusters(nprobe).region(:) = 'n.a_R';
-
-                    kClusters=kmeans(clusters(nprobe).peak_depth,2);
-                    if mean(clusters(nprobe).peak_depth(kClusters==1))>mean(clusters(nprobe).peak_depth(kClusters==2))
-                        % if mean ocation of cluster one is above cluster two, it is
-                        % Cortex.
-                        % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
-                        V1_cell_id = find(kClusters==1);
-                        HPC_cell_id = find(kClusters==2);
-                    else
-                        % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
-                        V1_cell_id = find(kClusters==2);
-                        HPC_cell_id = find(kClusters==1);
-                    end
-                    clusters(nprobe).region(V1_cell_id) = 'V1_R';
-                    clusters(nprobe).region(HPC_cell_id) = 'HPC_R';
-                end
-
-                % Convert to unique spike/cluster id
-                probe_clusters = select_clusters(clusters(nprobe),params); %only look at good clusters
-
-                probe_clusters.spike_id = probe_clusters.spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-                probe_clusters.cluster_id = probe_clusters.cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-                if session_info(n).probe(nprobe).probe_hemisphere==1
-                    probe_clusters.region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
-                    probe_clusters.spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
-                    probe_clusters.odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'),:);
-                    probe_clusters.peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'),:);
-                elseif session_info(n).probe(nprobe).probe_hemisphere==2
-                    probe_clusters.region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
-                    probe_clusters.spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'),:);
-                    probe_clusters.odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'),:);
-                    probe_clusters.peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
-                end
-
-                session_clusters(nprobe)=probe_clusters;
-
-                metric_param =[];
-                if options.probe_hemisphere==1
-                    metric_param.region = @(x) contains(x,'V1_L');
-                    %                     metric_param.region = @(x) contains(x,'x');
-                    V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
-                elseif options.probe_hemisphere==2
-                    metric_param.region = @(x) contains(x,'V1_R');
-                    V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
-                end
-            end
-
-            session_clusters= combine_clusters_from_multiple_probes(session_clusters(1),session_clusters(2));
-            % add behaviour info for each session
-            behaviour_fields = fieldnames(Behaviour);
-            for iF = 1:length(behaviour_fields)
-                session_clusters.(behaviour_fields{iF}) = {Behaviour.(behaviour_fields{iF})};
-            end
-
-            if contains(lower(stimulus_name{n}),'sleep') % 
-                save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-                clusters_ks3 = clusters;
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3'); % save region info 
-            end
-        end
-    end
-end
-
-
-%% Extract LFP for sleep and RUN
+%% Extract and save LFP from noise channel, cortical L5 channel
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 SUBJECTS={'M24016','M24017','M24018'};
@@ -204,15 +22,10 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % Stimulus_type = 'SleepChronic';
 % all_stimulus_type={'RUN'};
 all_stimulus_type={'SleepChronic','RUN'};
-
 for nstimuli = 1:length(all_stimulus_type)
     for nsession = 1:length(experiment_info)
-        
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
-        SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-        % find right date number based on all experiment dates of the subject
-        iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
         if isempty(stimulus_name)
             continue
         end
@@ -222,33 +35,14 @@ for nstimuli = 1:length(all_stimulus_type)
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
             options = session_info(n).probe(1);
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-
-            if ~isempty(DIR)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-                session_clusters_RUN=session_clusters;
-                clear session_clusters
-            end
-
-            if ~isempty(DIR1)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-                session_clusters_RUN=session_clusters;
-                clear session_clusters
-            end
-
             if contains(stimulus_name{n},'Masa2tracks')
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                session_clusters= session_clusters_RUN;
-%                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-%                 clusters = clusters_ks3;
-            else               
+            else
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-                clusters = clusters_ks3;
             end
-
+            %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
+            %         load(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD.mat'),'power');
             raw_LFP = [];
             LFP = [];
 
@@ -264,29 +58,19 @@ for nstimuli = 1:length(all_stimulus_type)
                 all_fields = fieldnames(best_channels{nprobe});
                 all_fields = {all_fields{contains(all_fields,'depth')}};
                 all_fields = erase(all_fields,'_depth');
-                all_fields{length(all_fields)+1} = 'V1_sparse'; % Add cortex sparse
-                all_fields{length(all_fields)+1} = 'HPC_sparse'; % Add HPC sparse
-
                 for nregion = 1:length(all_fields)
                     region_name = all_fields{nregion};
-                    [region_channels,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region',region_name,'group','by shank','clusters',clusters(nprobe));
+                    [region_channels,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region',region_name,'group','by shank');
                     %                 noise_channel{options.probe_hemisphere} = channels_temp;
-
-                    if contains(all_fields{nregion},'sparse') % want sparsely sampled channels
-                        selected_channels = [selected_channels region_channels'];
-                        channel_regions = [channel_regions nregion*ones(1,length(region_channels))];
-                        shank_id = [shank_id chan_config.Shank(region_channels)'];
-                    else % Just want the best channel
-                        selected_channels = [selected_channels channels_temp];
-                        channel_regions = [channel_regions nregion*ones(1,length(channels_temp))];
-                        shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
-                    end
-%                     shank_id = [shank_id chan_config.Shank(channels_temp)'];
+                    selected_channels = [selected_channels channels_temp];
+                    channel_regions = [channel_regions nregion*ones(1,length(channels_temp))];
+                    shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
                 end
 
                 channel_regions(isnan(selected_channels)) = []; % remove nan channel (Missing best channels for some shanks e.g. only 3 shanks with CA1)
                 shank_id(isnan(selected_channels)) = [];
                 selected_channels(isnan(selected_channels)) = [];
+
 
                 %             plot(power{1}(:,5))
                 %             hold on;
@@ -543,6 +327,8 @@ for nstimuli = 1:length(all_stimulus_type)
                 V1_spike_counts= filtfilt(w,1,zscore(histcounts(spike_times,tvec_edges))')';
 
 
+                
+
                 if isfield(LFP(probe_no),'L5')
                     if ~isempty(LFP(probe_no).L5)
                         bad_channels=[];
@@ -551,13 +337,30 @@ for nstimuli = 1:length(all_stimulus_type)
                             bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
                         end
                         bad_channels = sum(bad_channels,2)>4;% ignore channels if the mean power is 3 x the rest of channels (possibly will be nosiy)
-                        [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
+%                         [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,7));
                         good_channels = find(~bad_channels);
-                        cortex_LFP = mean(LFP(probe_no).L5(good_channels,:));
 %                         cortex_LFP = LFP(probe_no).L5(good_channels(best_channel),:);
 
+
+
                         %         cortex_LFP{probe_no} = zscore(abs(hilbert(signal)));
-       
+
+                        for nchannel = 1:length(good_channels)
+                            passband = [100 400];
+                            filter_type  = 'bandpass';
+                            filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+                            norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                            b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+                            cortex_LFP_filtered = zscore(filtfilt(b_ripple,1,LFP(probe_no).L5(good_channels(nchannel),:)));
+
+                            V1_spike_counts(isnan(cortex_LFP_filtered))=[];
+                            cortex_LFP_filtered(isnan(V1_spike_counts))=[];
+%                             cortex_LFP_filtered(isnan(cortex_LFP_filtered))=[];
+
+                            mdl=fitlm(V1_spike_counts,cortex_LFP_filtered);
+                            mdl.Coefficients.Estimate(2)
+%                             plot(mdl)
+                        end
                     else
                         bad_channels=[];
                         all_shanks = 1:size(LFP(probe_no).L4_power,1);
@@ -610,238 +413,10 @@ for nstimuli = 1:length(all_stimulus_type)
                         [LFP(probe_no).tvec' speed'],speedTreshold);
                 end
                 %             behavioural_state.freezing = freezing;
-
-
-                % Get V1 population spikes
-                metric_param =[];
-                %                  metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
-
-                if options.probe_hemisphere==1
-                    metric_param.region = @(x) contains(x,'V1_L');
-                    V1_clusters(probe_no) = select_clusters(selected_clusters(nprobe),metric_param);
-                elseif options.probe_hemisphere==2
-                    metric_param.region = @(x) contains(x,'V1_R');
-                    V1_clusters(probe_no) = select_clusters(selected_clusters(nprobe),metric_param);
-                end
-
-                %%%%%%% Slow wave detections (first round)
-                if isfield(LFP(nprobe),'L5')==1 & ~isempty(SWS)
-                    slow_waves = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',cortex_LFP,'spikes',V1_clusters(nprobe),'NREMInts',SWS);
-                    %                     slow_waves(nprobe) = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',cortex_LFP,'spikes',V1_clusters(nprobe),'NREMInts',behavioural_state(probe_no).SWS);
-                elseif isfield(LFP(nprobe),'L4')==1 & ~isempty(behavioural_state(probe_no).SWS)
-                    slow_waves = DetectSlowWaves_masa('time',LFP(nprobe).tvec,'lfp',cortex_LFP,'spikes',V1_clusters(nprobe),'NREMInts',SWS);
-                else
-                    if nprobe == length(session_info(n).probe)
-                        if exist('slow_waves')==0
-                            slow_waves(nprobe) = struct();
-                        end
-                    end
-                end
-
-                if ~isempty(SWS)
-                    %                     histogram(slow_waves.timestamps-slow_waves.ints.DOWN(:,1),'Normalization','cdf')
-
-                    [selected_channels,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region','V1','group','by shank','clusters',clusters(nprobe));
-
-                    s = RandStream('mlfg6331_64','Seed',nprobe);
-                    if length(slow_waves.timestamps)>100
-                        resampled_event_timestamps = datasample(s,slow_waves.timestamps,100,'Replace',false);
-                        resampled_event_timestamps=sort(resampled_event_timestamps);
-                    else
-                        resampled_event_timestamps = datasample(s,slow_waves.timestamps,100);
-                        resampled_event_timestamps=sort(resampled_event_timestamps);
-                    end
-
-                     [lfpAvg,csd,PSD] = perievent_LFP_response('DOWN phase',resampled_event_timestamps,[-0.2 0.2],options,'selected_channels',selected_channels);
-
-                    % Check
-
-                    deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-                    deltaLFP.normamp = NormToInt(deltaLFP.data,'modZ',NREMInts,SR);
-                    % deltaLFP.timestamps = time;
-                    % deltaLFP.samplingRate = SR;
-                    % filter_type  = 'bandpass';
-                    % passband = filterparms.deltafilter;
-                    % filter_order = round(6*SR/(max(passband)-min(passband)));  % creates filter for ripple
-                    % norm_freq_range = passband/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-                    % b_SW = fir1(filter_order, norm_freq_range,filter_type);
-                    % signal = filtfilt(b_SW,1,lfp);
-                    % zscored_SW = zscore(abs(hilbert(signal)));
-
-                    gammaLFP= bz_Filter(lfp,'passband',filterparms.gammafilter,'filter','fir1','order',4);
-                    gammaLFP.smoothamp = smooth(gammaLFP.amp,round(filterparms.gammasmoothwin.*SR),'moving' );
-
-                    gammaLFP.normamp = NormToInt(gammaLFP.smoothamp,'modZ',NREMInts,SR,'moving',filterparms.gammanormwin);
-
-
-                    %%% Rerun sleep detection based on 'best sleep cortex channel'
-                    [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
-                        [LFP(probe_no).tvec' cortex_LFP'],[LFP(probe_no).tvec' CA1_LFP'],...
-                        [LFP(probe_no).tvec' speed'],speedTreshold);
-                    behavioural_state(probe_no).quietWake = quietWake;
-                    behavioural_state(probe_no).SWS = SWS;
-                    behavioural_state(probe_no).REM = REM;
-                    behavioural_state(probe_no).movement = movement;
-                end
-
-            end
-
-            if contains(stimulus_name{n},'Masa2tracks')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'behavioural_state')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves')
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP')
-            else
-                save(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state.mat'),'behavioural_state')
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-            end
-        end
-    end
-end
-
-%% UP/DOWN, spindles and ripples detection
-
-clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-Stimulus_type = 'Sleep';
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% 1:length(experiment_info)
-% [1 2 3 4 6 7 8 9 10 12 14]
-
-all_stimulus_type={'SleepChronic','RUN'};
-for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
-        session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
-        stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
-
-        SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-        % find right date number based on all experiment dates of the subject
-        iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
-        if isempty(stimulus_name)
-            continue
-        end
-        load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
-        for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            %         if ~contains(stimulus_name{n},'Sleep')
-            %             continue
-            %         end
-
-            options = session_info(n).probe(1);
-
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
-            if isempty(DIR)
-                continue
-            end
-
-            clear clusters LFP
-            if contains(stimulus_name{n},'Masa2tracks')
-                % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-%                 save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
-
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                DIR = dir(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3*')));
-                if isempty(DIR)
-                    continue
-                end
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                clusters=clusters_ks3;
-            elseif contains(stimulus_name{n},'Sleep')
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-                %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-                clusters=clusters_ks3;
-            else
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-                clusters=clusters_ks3;
-            end
-            clear CA1_clusters V1_clusters
-
-            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-            DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-
-            DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
-
-            session_clusters_RUN=[];
-            session_clusters_RUN1=[];
-            session_clusters_RUN2=[];
-
-            if ~isempty(DIR)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-                session_clusters_RUN=session_clusters;
-            end
-
-            if ~isempty(DIR1)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-                session_clusters_RUN1=session_clusters;
-                session_clusters_RUN=session_clusters_RUN1;
-            end
-
-            if ~isempty(DIR2)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-                session_clusters_RUN2=session_clusters;
-            end
-
-            session_clusters=[];
-            if ~isempty(DIR3)
-                load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
-            end
-
-            params = create_cluster_selection_params('sorting_option','masa');
-            clear selected_clusters
-            for nprobe = 1:length(clusters)
-                selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
-            end
-
-            for nprobe = 1:length(clusters)
-                % Convert to unique spike/cluster id
-                selected_clusters(nprobe).spike_id = selected_clusters(nprobe).spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-                selected_clusters(nprobe).cluster_id = selected_clusters(nprobe).cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-                if session_info(n).probe(nprobe).probe_hemisphere==1
-                    selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
-                    selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
-                    selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'),:);
-                    selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'),:);
-                elseif session_info(n).probe(nprobe).probe_hemisphere==2
-                    selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
-                    selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'),:);
-                    selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'),:);
-                    selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
-                end
-            end
-
-            % spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            %     | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-
-
-            % As long as stable firing durng track running. It doesn't have to
-            % be single-peaked place cell like cells
-            spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-                | session_clusters_RUN.odd_even_stability(:,2)>0.95);
-
-            clear replay reactivations ripples spindles slow_waves raw_LFP CA1_clusters V1_clusters
-            clear V1_replay V1_reactivations replay_combined replay_combined
-            for nprobe = 1:length(session_info(n).probe)
-                clear cortex_LFP CA1_LFP
-                options = session_info(n).probe(nprobe);
-                probe_no = session_info(n).probe(nprobe).probe_id + 1;
-                options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-                %                 Behavioural state detection
+                behavioural_state(probe_no).quietWake = quietWake;
+                behavioural_state(probe_no).SWS = SWS;
+                behavioural_state(probe_no).REM = REM;
+                behavioural_state(probe_no).movement = movement;
 
                 %%%%%%%%%%%%%%%%%%
                 % UP/Down states and ripple and candidate reactivation events detection
