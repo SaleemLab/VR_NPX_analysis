@@ -39,7 +39,11 @@ for nstimuli = 1:length(all_stimulus_type)
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
             options = session_info(n).probe(1);
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-
+            DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+            if isempty(DIR)
+                continue
+            end
+            
             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
             DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
 
