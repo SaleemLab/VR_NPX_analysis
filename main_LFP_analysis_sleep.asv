@@ -210,7 +210,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 6:length(experiment_info)
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -311,7 +311,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     not_this_shank = unique_shank_id(HPC_channel_id(nChannel))~=unique_shank_id(HPC_channel_id);% find channels not this shanks
                     bad_channels(nChannel,:) = power{nprobe}(HPC_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:));
                 end
-                bad_channels = sum(bad_channels,2)>4;
+                bad_channels = sum(bad_channels,2)>3;
 
                 good_HPC_channels=[];
                 good_HPC_channels = HPC_channel_id(~bad_channels);
@@ -336,7 +336,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     not_this_shank = unique_shank_id(V1_channel_id(nChannel))~=unique_shank_id(V1_channel_id);% find channels not this shanks
                     bad_channels(nChannel,:) = power{nprobe}(V1_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:)); % remove noisy channels where the power is significantly greater than other channels.
                 end
-                bad_channels = sum(bad_channels,2)>4;
+                bad_channels = sum(bad_channels,2)>3;
 
                 good_V1_channels=[];
                 good_V1_channels = V1_channel_id(~bad_channels);
@@ -344,7 +344,13 @@ for nstimuli = 1:length(all_stimulus_type)
                 best_V1_channel = good_V1_channels(best_channel);
                 % %                  plot(5000*power{nprobe}(good_channels,7));hold on; plot(power{nprobe}(good_channels,1))
                 %                 cortex_LFP=raw_LFP(good_channels(best_V1_channel),:); % get mean V1 cortex LFP
-
+                % Best V1 channels high freq power for each shank
+                best_V1_high_power_shank_channel_id=[];
+                for nShank = unique(unique_shank_id(good_V1_channels))
+                    this_shank = find(unique_shank_id(good_V1_channels)==nShank);% find channels not this shanks
+                    [~,channel_id]=max(power{nprobe}(good_V1_channels(this_shank),7)); % Best V1 channel with highest high freq power
+                    best_V1_high_power_shank_channel_id(nShank) = good_V1_channels(this_shank(channel_id));
+                end
 
                 %%%%% V1 MUA spikes
                 metric_param =[]; % get all V1 spikes from left or right hemisphere
@@ -448,19 +454,24 @@ for nstimuli = 1:length(all_stimulus_type)
                         [tvec' raw_LFP(good_V1_channels(best_V1_sleep_channel),:)'],[tvec' raw_LFP(best_HPC_channel,:)'],...
                         [tvec' speed'],speedTreshold);
 
+                    behavioural_state(nprobe).quietWake = quietWake;
+                    behavioural_state(nprobe).SWS = SWS;
+                    behavioural_state(nprobe).REM = REM;
+                    behavioural_state(nprobe).movement = movement;
                     %%%%% UP/DOWN detection based on best V1 channel
                     if ~isempty(SWS)
-                        slow_waves(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
-                        if ~ismepty(slow_waves)
-                            slow_waves(nprobe).deltaspikecorr = deltaspikecorr;
-                            slow_waves(nprobe).gammaspikecorr = gammaspikecorr;
-                            slow_waves(nprobe).channel = unique_selected_channels(good_V1_channels);
-                            slow_waves(nprobe).shank = unique_shank_id(good_V1_channels);
-                            slow_waves(nprobe).depth = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
-                            slow_waves(nprobe).xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
-                            slow_waves(nprobe).best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
+                        temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
+                        if ~isempty(temp)
+                            slow_waves(nprobe) = temp;
                         end
-%                         slow_waves_HPC(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_HPC_channel,:),'spikes',HPC_clusters,'NREMInts',SWS);
+                        slow_waves(nprobe).deltaspikecorr = deltaspikecorr;
+                        slow_waves(nprobe).gammaspikecorr = gammaspikecorr;
+                        slow_waves(nprobe).channel = unique_selected_channels(good_V1_channels);
+                        slow_waves(nprobe).shank = unique_shank_id(good_V1_channels);
+                        slow_waves(nprobe).depth = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
+                        slow_waves(nprobe).xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
+                        slow_waves(nprobe).best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
+%                         slow_waves_HPC(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_V1_channel,:),'spikes',HPC_clusters,'NREMInts',SWS);
 
                     end
                     
@@ -515,6 +526,17 @@ for nstimuli = 1:length(all_stimulus_type)
                     LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
                     LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
                 end
+                
+                Region = 'best_V1_high_freq';
+                LFP(nprobe).(Region) = raw_LFP(best_V1_high_power_shank_channel_id,:);
+                LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_high_power_shank_channel_id); % only avaliable shanks
+                LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_V1_high_power_shank_channel_id);
+                LFP(nprobe).(sprintf('%s_depth',Region))=chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id)))';
+                LFP(nprobe).(sprintf('%s_xcoord',Region))=chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id)))';
+                LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_high_power_shank_channel_id,:);
+
+                
+
                 % Save best HPC channels based on ripple power
                 Region = 'best_HPC';
                 LFP(nprobe).(Region) = raw_LFP(best_HPC_shank_channel_id,:);
@@ -548,7 +570,7 @@ for nstimuli = 1:length(all_stimulus_type)
                 end
 
             end
-
+            clear raw_LFP
 
             %%%%% Ripple and Spindles and bursting event
 
@@ -587,8 +609,9 @@ for nstimuli = 1:length(all_stimulus_type)
                         [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
                         [replay(probe_no),reactivations(probe_no)] = detect_candidate_events_masa(LFP(probe_no).tvec,LFP(probe_no).best_HPC(best_channel,:),...
                             [CA1_clusters(probe_no).spike_id CA1_clusters(probe_no).spike_times],Behaviour,zscore_min,zscore_max,options);
-
-                        [frames] = detect_candidate_events_masa(tvec,spike_times,options);
+%                         if ~isempty(behavioural_state(probe_no).SWS)
+%                             [HPC_frames] = detect_candidate_frames_masa(LFP(probe_no).tvec,V1_clusters(probe_no).spike_times,behavioural_state(probe_no).SWS,0.01,options);
+%                         end
                     end
                 end
 
@@ -626,7 +649,13 @@ for nstimuli = 1:length(all_stimulus_type)
                 end
 
                 % Detect V1 spindle events
-                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
+                if ~isempty(behavioural_state(probe_no).SWS)
+                    best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
+                elseif isfield('best_V1_high_freq')
+                    [~,best_channel] = max(LFP(nprobe).best_V1_high_freq(:,7));
+                else
+                    [~,best_channel] = max(LFP(nprobe).L5_power(:,7));
+                end
                 [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                     'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
 
@@ -686,7 +715,8 @@ for nstimuli = 1:length(all_stimulus_type)
 
 
             %%%%%%%%%%%%%%%%%%
-            % Candidate reactivation events detection (probe combined)
+            % Candidate reactivation events detection (probe combined) with
+            % spatial cells only
             %%%%%%%%%%%%%%%%%%
             reactivations_combined= [];
             replay_combined = [];
