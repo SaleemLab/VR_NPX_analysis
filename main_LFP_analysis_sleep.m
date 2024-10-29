@@ -455,7 +455,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     %%%%% UP/DOWN detection based on best V1 channel
                     if ~isempty(SWS)
                         slow_waves(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
-                        if ~ismepty(slow_waves)
+                        if ~isempty(slow_waves)
                             slow_waves(nprobe).deltaspikecorr = deltaspikecorr;
                             slow_waves(nprobe).gammaspikecorr = gammaspikecorr;
                             slow_waves(nprobe).channel = unique_selected_channels(good_V1_channels);
@@ -464,7 +464,7 @@ for nstimuli = 1:length(all_stimulus_type)
                             slow_waves(nprobe).xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
                             slow_waves(nprobe).best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
                         end
-%                         slow_waves_HPC(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_HPC_channel,:),'spikes',HPC_clusters,'NREMInts',SWS);
+%                         slow_waves_HPC(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_V1_channel,:),'spikes',HPC_clusters,'NREMInts',SWS);
 
                     end
                     
@@ -691,7 +691,8 @@ for nstimuli = 1:length(all_stimulus_type)
 
 
             %%%%%%%%%%%%%%%%%%
-            % Candidate reactivation events detection (probe combined)
+            % Candidate reactivation events detection (probe combined) with
+            % spatial cells only
             %%%%%%%%%%%%%%%%%%
             reactivations_combined= [];
             replay_combined = [];
