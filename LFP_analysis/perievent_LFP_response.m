@@ -8,6 +8,8 @@ addParameter(p,'filter_freq',[0.5 3;4 12;9 17;30 60;60 100;125 300; 300 600],@is
 addParameter(p,'CSD_V1_CA1_normalisation',0,@isnumeric) % Normalised CSD within region or not
 addParameter(p,'x_col',1,@isnumeric) % which x_col to use
 addParameter(p,'selected_channels',1,@isnumeric) % which x_col to use
+addParameter(p,'LFP',[],@isnumeric) % which x_col to use
+addParameter(p,'best_channels',[],@isstruct) % which x_col to use
 
 
 parse(p,varargin{:})
@@ -17,6 +19,8 @@ place_fields = p.Results.place_fields;
 selected_channels = p.Results.selected_channels;
 CSD_V1_CA1_normalisation = p.Results.CSD_V1_CA1_normalisation;
 x_col  = p.Results.x_col;
+LFP  = p.Results.LFP;
+best_channels  = p.Results.best_channels;
 
 extractedTimeWindow = AnalysisTimeWindow;
 extractedTimeWindow(1) = extractedTimeWindow(1)-5;
