@@ -22,7 +22,7 @@ BAYSESIAN_NORMALIZED_ACROSS_TRACKS=1;  %normalized across all tracks if set to 1
 
 % load extracted_position
 place_field_index = [];
-place_field_index = place_fields_BAYESIAN(1).good_cells;
+place_field_index = place_fields_BAYESIAN(1).all_good_place_cells_LIBERAL;
 
 % Original place cell ratemap
 all_place_fields = [];

@@ -88,7 +88,7 @@ addParameter(p,'lfp',[]);
 addParameter(p,'spikes',[]);
 addParameter(p,'CTXChans','all');
 addParameter(p,'sensitivity',0.6,ratevalidation);
-addParameter(p,'noPrompts',false,@islogical);
+addParameter(p,'noPrompts',true,@islogical);
 addParameter(p,'filterparms',filterparms,filterparmsvalidate);
 addParameter(p,'minwindur',0.04);
 addParameter(p,'joinwindur',0.01);
@@ -136,10 +136,10 @@ if NOSPIKES
 elseif ~isempty(spikes)
 
     if isfield(spikes,'merged_cluster_id')
-        allspikes = spikes.spike_times';
+        allspikes = spikes.spike_times;
         numcells = length(unique(spikes.merged_cluster_id));
     elseif isfield(spikes,'cluster_id')
-        allspikes = clusters.spike_times';
+        allspikes = spikes.spike_times;
         numcells = length(unique(spikes.cluster_id));
     else
         allspikes = sort(cat(1,spikes.times{:}));
@@ -153,6 +153,9 @@ elseif MUAspikes
     numcells = length(spikes.times);
 end
 
+if size(allspikes,1)<size(allspikes,2)
+    allspikes=allspikes';
+end
 
 % %Sleep Scoring (for NREM). Load, Prompt if doesn't exist
 % if isempty(NREMInts)
@@ -212,7 +215,13 @@ display('Filtering LFP')
 data = lfp;
 lfp = [];
 lfp.data = data';
-lfp.timestamps = time;
+
+if size(time,1)<size(time,2)
+    lfp.timestamps = time';
+else
+    lfp.timestamps = time;
+end
+
 lfp.samplingRate = SR;
 
 deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
@@ -432,7 +441,7 @@ subplot(6,1,4)
 %     plot(SWspikerejected,ones(size(SWspikerejected)),'kx','MarkerSize',10)
     box off    
     xlim(samplewin)
-    ylabel('Cells');xlabel('t (s)')
+    ylabel('spikes');xlabel('t (s)')
     %legend('Spike Synchrony','Slow Waves','Gamma Power','Delta-Filtered LFP')
   
  subplot(6,1,6)
@@ -657,26 +666,15 @@ function [thresholds,threshfigs] = DetermineThresholds(deltaLFP,gammaLFP,spikes,
     numtimebins = 200;
     nummagbins = 30;
     timebins = linspace(-win,win,numtimebins);
-    
-    if isfield(spikes,'merged_cluster_id')
-        allspikes = spikes.spike_times';
-        numcells = length(unique(spikes.merged_cluster_id));
-    elseif isfield(spikes,'cluster_id')
-        allspikes = clusters.spike_times';
-        numcells = length(unique(spikes.cluster_id));
-    else
-        allspikes = sort(cat(1,spikes.times{:}));
-        numcells = length(spikes.UID);
-    end
 
     if strcmp(spikes,'NOSPIKES'); 
         NOSPIKES=true; allspikes = [];
     elseif isfield(spikes,'merged_cluster_id')
-        allspikes = spikes.spike_times';
+        allspikes = spikes.spike_times;
         numcells = length(unique(spikes.merged_cluster_id));
         NOSPIKES=false;
     elseif isfield(spikes,'cluster_id')
-        allspikes = clusters.spike_times';
+        allspikes = spikes.spike_times;
         numcells = length(unique(spikes.cluster_id));
         NOSPIKES=false;
     else
@@ -685,6 +683,10 @@ function [thresholds,threshfigs] = DetermineThresholds(deltaLFP,gammaLFP,spikes,
         NOSPIKES=false;
     end
     
+    if size(allspikes,1)<size(allspikes,2)
+        allspikes=allspikes';
+    end
+
     %DELTA
     display('DELTA...')
     %Pick the delta peaks to average spiking around

@@ -13,7 +13,7 @@
 
 %% Set the data folders and processing parameters
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -44,6 +44,10 @@ for n = 1:length(all_SUBJECTS)
     SUBJECTS = {all_SUBJECTS{n}};
     experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 
+    stimuli_info = readtable('Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table','Sheet',all_SUBJECTS{n});
+    stimuli_info.imErrFlags0=strings(size(stimuli_info,1),1);
+    stimuli_info.imErrFlags1=strings(size(stimuli_info,1),1);
+
     if exist(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis')) == 0
         mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',all_SUBJECTS{n},'analysis'))
     end
@@ -52,7 +56,7 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
-
+        
 
         for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
@@ -64,6 +68,9 @@ for n = 1:length(all_SUBJECTS)
 
             bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,'*.ap.bin'));
             meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,bin_DIR.name));
+            stimuli_info.imErrFlags0(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                stimuli_info.date == experiment_info(nsession).date&...
+                stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
 
             if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
                     + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
@@ -71,21 +78,32 @@ for n = 1:length(all_SUBJECTS)
                 sprintf('Session with non-zero imErrFlags0...')
                 Error_session_stimuli = [Error_session_stimuli experiment_info(nsession).StimulusName(nstimuli)];
                 Error_session_date = [Error_session_date experiment_info(nsession).date];
-                Error_session_subject = [Error_session_subject; experiment_info(nsession).subject];
+                Error_session_subject = [Error_session_subject; {experiment_info(nsession).subject}];
                 %                 Error_session_date
                 experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
+                
+                
             end
 
+
             if length(experiment_info(nsession).session(nstimuli).probe)==2
+                bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,'*.ap.bin'));
+                meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,bin_DIR.name));
+
+                stimuli_info.imErrFlags1(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                    stimuli_info.date == experiment_info(nsession).date&...
+                    stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+
                 if str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(3))...
                         + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(7)) ...
                         + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(9))~=0
                     sprintf('Session with non-zero imErrFlags1...')
                     Error_session_stimuli1 = [Error_session_stimuli1 experiment_info(nsession).StimulusName(nstimuli)];
                     Error_session_date1 = [Error_session_date1 experiment_info(nsession).date];
-                    Error_session_subject1 = [Error_session_subject1; experiment_info(nsession).subject];
+                    Error_session_subject1 = [Error_session_subject1; {experiment_info(nsession).subject}];
                     %                     Error_session_date
                     experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+
                 end
             end
 
@@ -113,11 +131,13 @@ for n = 1:length(all_SUBJECTS)
 
         end
     end
+
+    writetable(stimuli_info,'Z:\ibn-vision\USERS\Masa\recording_info\session_stimuli_table.xlsx','Sheet',all_SUBJECTS{n});
+
 end
 
-
 %% import and align and store Bonsai and cluster spike data
-
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
@@ -125,7 +145,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 %%%%%% want to process. 
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
-SUBJECTS = {'M24016'};
+SUBJECTS = {'M24016','M24017','M24018'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -133,13 +153,15 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+experiment_info=experiment_info([22 38]);
+% experiment_info=experiment_info(4:5);
 % All_stimuli = {'FullScreenFlash'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-
-All_stimuli = {'SleepChronic'};
-All_stimuli = {'SparseNoise','Checkerboard'};
-All_stimuli = {'Masa2tracks'};
+All_stimuli = {'Masa2tracks','SparseNoise'}
+% All_stimuli = {'SleepChronic'};
+% All_stimuli = {'SparseNoise','Checkerboard'};
+% All_stimuli = {'Masa2tracks'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
@@ -225,28 +247,13 @@ Stimulus_type= 'Checkerboard_sh4';
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 
-%% Determine L4 of V1 based on checkerboard (require manual updating)
-% addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
-
 clear all
-
-% Single session checkerboard
 ROOTPATH = 'Z:\ibn-vision';
-% SUBJECT = 'M24017';
-% SESSION = '20240530';
-% options = 'bilateral';
-SUBJECT = 'M24016';
-SESSION = '20240622';
+% Single session
+SUBJECT = 'M24017';
+SESSION = '20240605';
 options = 'bilateral';
-
-% Stimulus_type = 'FullScreenFlash_2';
-Stimulus_type = 'Checkerboard_sh1';
-% Stimulus_type = 'Checkerboard_sh2';
-% Stimulus_type = 'Checkerboard_sh3';
-% Stimulus_type = 'Checkerboard_sh4';
-% Stimulus_type = 'RUN';
-
+% Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
     Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
@@ -260,15 +267,19 @@ for nstimuli = 1:4
         options.Stimulus_type = Stimulus_type;
 
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"))
-        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',"checkerboard_CSD*.mat"))
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
 
         if ~isempty(DIR)|~isempty(DIR1)
             if contains(Stimulus_type,'sh')
                 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('checkerboard_CSD%s.mat',extractAfter(Stimulus_type,"Checkerboard"))),'lfpAvg','csd');
+                
             else
                 load(fullfile(options.ANALYSIS_DATAPATH,"checkerboard_CSD.mat"),'lfpAvg','csd');
+                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
             end
-        else
+        end
+        
+        if nprobe == 2 & length(lfpAvg)<2 | ~exist('lfpAvg','var')
             [lfpAvg(options.probe_no).column,csd(options.probe_no).column,PSD,best_channels] = checkerboard_CSD_profile(options);
 
             save_all_figures(options.ANALYSIS_DATAPATH,[]);
@@ -281,7 +292,20 @@ for nstimuli = 1:4
             end
         end
 
-        %
+        %%%%%%%%%% Comment out this sections when quantifying checkerboard
+        %%%%%%%%%% CSD and plotting channel maps. Then use this section for
+        %%%%%%%%%% manual channel map updates
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
+
+        if ~isempty(DIR)|~isempty(DIR1)
+            if contains(Stimulus_type,'sh')
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
+            else
+                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
+            end  
+        end
+
         [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
         [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
 
@@ -293,8 +317,10 @@ for nstimuli = 1:4
 
         checkerboard_CSD_profile(options);
         save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        %%%%%%%%%%
     end
 end
+
 
 Stimulus_type = 'Checkerboard_sh1';
 if contains(Stimulus_type,'_sh')
@@ -332,10 +358,10 @@ if contains(Stimulus_type,'_sh')
 
     for nshank = 2:length(DIR)
         load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
-        all_fields = fieldnames(best_channels{1});
         for nprobe = 1:length(best_channels)
+            all_fields = fieldnames(best_channels{nprobe});
             for nfield = 1:length(all_fields)
-                if contains(all_fields{nfield},'depth')
+                if contains(all_fields{nfield},'depth') | contains(all_fields{nfield},'channel')
                     if isfield(best_channels{nprobe},(all_fields{nfield}))
                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
                     else
@@ -362,7 +388,6 @@ save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels
 % Stimulus_type = 'Checkerboard';
 % % determine_best_channels
 % calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
-
 
 %% Visual tuning based on Static Gratings
 Stimulus_type = 'StaticGratings';

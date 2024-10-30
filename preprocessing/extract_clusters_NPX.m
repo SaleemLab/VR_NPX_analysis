@@ -48,6 +48,8 @@ if ~contains(sorter,'off') % if not default ks
     sorter_folder = [];
     if contains(sorter,'KS2')
         sorter_folder = 'kilosort2_5';
+    elseif contains(sorter,'KS3_original')
+        sorter_folder = 'kilosort3_original';
     elseif contains(sorter,'KS3')
         sorter_folder = 'kilosort3';
     elseif contains(sorter,'KS4')
@@ -233,12 +235,20 @@ elseif contains(sorter,'other sorter')  % place holder for other sorters
 
 
 else % if KS2 and KS3
-    quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv'));
-    template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','template_metrics','metrics.csv'));
-
-
-    CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','bins.npy'));
-    CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','CCGs.npy'));
+    
+    if contains(sorter_folder,'original')
+        sorter_folder = erase( sorter_folder , '_original' );
+        quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','quality_metrics','metrics.csv'));
+        template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','template_metrics','metrics.csv'));
+        CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','bins.npy'));
+        CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',sorter_folder,'extensions','correlograms','CCGs.npy'));
+        options.sorter_type = 'original';
+    else
+       quality_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv'));
+        template_metrics = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','template_metrics','metrics.csv'));
+        CCG_bin = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','bins.npy'));
+        CCGs= readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[sorter_folder,'_merged'],'extensions','correlograms','CCGs.npy'));
+    end
 
     cluster_metrics = join(quality_metrics,template_metrics);
 
@@ -254,7 +264,12 @@ else % if KS2 and KS3
 
     % Load spike time data and quality metrics
     options.sorter_folder = sorter_folder;
+
     [these_spike_times,cluster_id,peak_channel,peak_depth,peak_channel_waveforms] = import_spikeinterface_spiketimes(options,imecMeta.imSampRate);% Only clusters after spike interface post processing
+    if isempty(cluster_id)
+        clusters=[];
+        return
+    end
     cluster_id = cluster_id + 1; % Cluster ID transformed from 0-based to 1-based
 
     % scatter3(cluster_metrics.amplitude_cutoff,cluster_metrics.isi_viol,cluster_metrics.presence_ratio)
@@ -310,7 +325,7 @@ else % if KS2 and KS3
     % SUA_spike_count_smoothed = [];
     % SUA_zscore = [];
     % good_clusters_all= [];
-    SUA_good_unit = [];
+    % SUA_good_unit = [];
 
     for nchannel = selected_channels(1):selected_channels(2)
         index = find(peak_channel == nchannel); % ID for post-processed clusters
@@ -346,7 +361,6 @@ else % if KS2 and KS3
     end
 
     %     [~,~,index] = intersect(SUA_good_unit-1,table2array(cluster_metrics(:,1)));
-    
     clusters = table2struct(cluster_metrics,"ToScalar",true);
     clusters.cluster_id = clusters.Var1+1; %1 based
 
@@ -360,8 +374,8 @@ else % if KS2 and KS3
     %         clusters.good_clusters = good_clusters_all;
     % Spike time and spike id
     [~,index] = sort(SUA_spike_time); % Sort spike time from start to end
-    clusters.spike_id = SUA_spike_id(index);
-    clusters.spike_times = SUA_spike_time(index);
+    clusters.spike_id = SUA_spike_id;
+    clusters.spike_times = SUA_spike_time;
     clusters.peak_channel = peak_channel';
     clusters.peak_depth = peak_depth;
     clusters.peak_channel_waveforms = peak_channel_waveforms;

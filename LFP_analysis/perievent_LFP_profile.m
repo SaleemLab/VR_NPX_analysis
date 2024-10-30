@@ -171,11 +171,16 @@ close(H)
 
 timestamps = linspace(extractedTimeWindow(1),extractedTimeWindow(2),size(resps,2));
 
-for nchannel = 1:size(chan_config,1)
-    power(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
-    xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
-    ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
-    shanks(nchannel) = PSD{nprobe}(nchannel).shank;
+if isempty(PSD)
+
+
+else
+    for nchannel = 1:size(chan_config,1)
+        power(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
+        xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
+        ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
+        shanks(nchannel) = PSD{nprobe}(nchannel).shank;
+    end
 end
 xcoord_avaliable = unique(xcoord);
 

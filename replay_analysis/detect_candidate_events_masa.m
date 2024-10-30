@@ -69,6 +69,9 @@ function [replay, reactivations]=replay_search(time,spike_times,mua_zscore,rippl
 % load extracted_clusters;
 % load extracted_place_fields;
 % load extracted_position;   
+if isfield(Behaviour,'mobility_zscore') % mobility zscore based on pixel change
+    Behaviour.speed = Behaviour.mobility_zscore;
+end
 
 parameters= list_of_parameters;
 mua_idx = find(mua_zscore>=zscore_max); %finds indices where MUA is above set threshold
@@ -238,7 +241,13 @@ reactivations = replay;
 % end
 
 % index to ignore
-high_v_idx = find(reactivations.speed>5);
+if isfield(Behaviour,'mobility_zscore')
+    speed_threshold = 3; % zscore of three in terms of movement
+else
+    speed_threshold = 5;
+end
+
+high_v_idx = find(reactivations.speed>speed_threshold);
 % [~,idx,~] = unique(reactivations.onset);
 reactivations.onset(high_v_idx)    = [];
 reactivations.offset(high_v_idx)   = [];
@@ -258,7 +267,9 @@ reactivations.zscore_min = zscore_min;
 reactivations.zscore_max = zscore_max;
 
 % speed, neuron count and mua zscore threshold
-high_v_idx = find(replay.zscore<zscore_max | replay.speed>5 | replay.neuron_count<5);
+% if contains
+
+high_v_idx = find(replay.zscore<zscore_max | replay.speed>speed_threshold | replay.neuron_count<5);
 replay.onset(high_v_idx)    = [];
 replay.offset(high_v_idx)   = [];
 replay.duration(high_v_idx) = [];
@@ -275,5 +286,15 @@ replay.thresh_adapted_end(high_v_idx)   = [];
 
 replay.zscore_min = zscore_min;
 replay.zscore_max = zscore_max;
+
+
+if isfield(Behaviour,'mobility_zscore') % mobility zscore based on pixel change
+    reactivations.mobility_zscore = reactivations.speed;
+    reactivations=rmfield(reactivations,'speed');
+
+    replay.mobility_zscore = replay.speed;
+    replay=rmfield(replay,'speed');
+end
+
 end
 

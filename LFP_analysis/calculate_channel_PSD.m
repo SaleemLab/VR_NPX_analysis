@@ -7,7 +7,7 @@ addParameter(p,'nfft_seconds',[2],@isnumeric) % Hanning window for pwelch analys
 addParameter(p,'frequency_range',[0.5 3;4 12;9 17;30 60;60 100;125 300; 300 600],@isnumeric) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
 addParameter(p,'selected_frequency',[1 2 3 4 5 6 7],@isnumeric) % Powers Selected frequency for plotting
 addParameter(p,'plot_option',1,@isnumeric) % Powers Selected frequency for plotting
-
+addParameter(p,'tvec',[],@isnumeric) % Powers Selected frequency for plotting
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
@@ -16,35 +16,74 @@ nfft_seconds = p.Results.nfft_seconds;
 F = p.Results.frequency_range;
 plot_option =  p.Results.plot_option;
 selected_frequency = p.Results.selected_frequency;
-
+tvec = p.Results.tvec;
 nfft = 2^(nextpow2(SR*nfft_seconds));
 win  = hanning(nfft);
 % F  = [0.5 3;4 12;9 17;30 60;60 100;125 300];
 
+
+clipDur = 60; % seconds
+nClipSamps = round(SR*clipDur);
+nClips = floor(length(raw_LFP)/nClipSamps);
+
 for nchannel = 1:size(chan_config,1)
 
-    [pxx,fxx] = pwelch(raw_LFP(nchannel,:),win,[],nfft,SR);
     PSD(nchannel).channel = chan_config.Channel(nchannel);
     PSD(nchannel).shank = chan_config.Shank(nchannel);
     PSD(nchannel).xcoord = chan_config.Ks_xcoord(nchannel);
     PSD(nchannel).ycoord = chan_config.Ks_ycoord(nchannel);
 
-    PSD(nchannel).power = pxx;
-    PSD(nchannel).powerdB = 10*log10(pxx);
-    PSD(nchannel).frequency = fxx;
+    samples_to_pass = 0;
+    tic
+    if ~isempty(tvec)
 
-    P = nan(size(pxx,2),size(F,1));
-    f = nan(size(F,1),2);
-    for n = 1:size(F,1)
-        [~,f1idx] = min(abs(fxx-F(n,1)));
-        [~,f2idx] = min(abs(fxx-F(n,2)));
+        for clip = 1:nClips
+            tidx = [1+round(tvec(1))+samples_to_pass:round(tvec(1))+samples_to_pass+nClipSamps]; % in samples
+            timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
 
-        P(:,n) = mean(pxx(f1idx:f2idx,:));
-        f(n,:) = [fxx(f1idx),fxx(f2idx)];
+            [pxx,fxx] = pwelch(raw_LFP(nchannel,tidx),win,[],nfft,SR);
+            PSD(nchannel).power(clip,:) = pxx;
+            PSD(nchannel).powerdB(clip,:) = 10*log10(pxx);
+            samples_to_pass = samples_to_pass + nClipSamps;
+        end
+        PSD(nchannel).frequency = fxx;
+
+        P = nan(nClips,size(F,1));
+        f = nan(size(F,1),2);
+
+        for n = 1:size(F,1)
+            [~,f1idx] = min(abs(fxx-F(n,1)));
+            [~,f2idx] = min(abs(fxx-F(n,2)));
+            f(n,:) = [fxx(f1idx),fxx(f2idx)];
+            for clip = 1:nClips
+                P(clip,n) = mean(PSD(nchannel).power(clip,f1idx:f2idx));
+            end
+        end
+        PSD(nchannel).mean_power_time = P;
+        PSD(nchannel).mean_power = mean(P,1);
+        PSD(nchannel).frequency_range = f;
+    else
+        [pxx,fxx] = pwelch(raw_LFP(nchannel,:),win,[],nfft,SR);
+
+        PSD(nchannel).power = pxx;
+        PSD(nchannel).powerdB = 10*log10(pxx);
+        PSD(nchannel).frequency = fxx;
+
+        P = nan(size(pxx,2),size(F,1));
+        f = nan(size(F,1),2);
+        for n = 1:size(F,1)
+            [~,f1idx] = min(abs(fxx-F(n,1)));
+            [~,f2idx] = min(abs(fxx-F(n,2)));
+
+            P(:,n) = mean(pxx(f1idx:f2idx,:));
+            f(n,:) = [fxx(f1idx),fxx(f2idx)];
+        end
+
+        PSD(nchannel).mean_power = P;
+        PSD(nchannel).frequency_range = f;
     end
 
-    PSD(nchannel).mean_power = P;
-    PSD(nchannel).frequency_range = f;
+    toc
 end
 
 power = [];

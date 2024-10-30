@@ -72,7 +72,7 @@ end
 if isfield(place_fields_BAYESIAN,'good_cells')
     place_field_index = place_fields_BAYESIAN(1).good_cells;  % all good cells
 else
-    place_field_index = place_fields_BAYESIAN(1).good_cells;
+    place_field_index = place_fields_BAYESIAN(1).all_good_place_cells_LIBERAL;
 end
 place_field_index = place_fields_BAYESIAN(1).cluster_id(place_field_index);
 

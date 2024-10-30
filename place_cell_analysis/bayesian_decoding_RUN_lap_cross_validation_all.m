@@ -90,13 +90,13 @@ if isfield(clusters,'merged_spike_id')
     clusters.cluster_id = unique(clusters.merged_cluster_id);
 
 end
-place_fields_BAYESIAN = calculate_spatial_cells(clusters,Task_info,Behaviour,[0 140],10); % use 10 cm bin for Bayesian decoding
+% place_fields_BAYESIAN = calculate_spatial_cells(clusters,Task_info,Behaviour,[0 140],10); % use 10 cm bin for Bayesian decoding
 
-
-spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
-    find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
-% spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95)...
-%     find(place_fields_all(2).odd_even_stability>0.95)]);
+place_fields_BAYESIAN = place_fields_all;
+% spatial_cell_index = unique([find(place_fields_all(1).peak_percentile>0.95 & place_fields_all(1).odd_even_stability>0.95)...
+%     find(place_fields_all(2).peak_percentile>0.95 & place_fields_all(2).odd_even_stability>0.95)]);
+spatial_cell_index = unique([find(place_fields_all(1).odd_even_stability>0.95);...
+    find(place_fields_all(2).odd_even_stability>0.95)]);
 good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields_all(1).cluster_id, clusters.cluster_id)));
 good_cell_index = find(ismember(place_fields_BAYESIAN(1).cluster_id,place_fields_all(1).cluster_id(good_cell_index)));
 speed_range = 5:5:35;
@@ -181,12 +181,12 @@ else
                 %         estimated_position_ratemap_shuffled = log_odds_bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,place_cell_index,timebin,[],'ratemap shuffle','','N');
                 for nlap = 1:length(cv_groups{track_id}{groupIndex})
                     if length(cv_groups{track_id}{groupIndex})==1
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).probability_ratio;
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}(cv_groups{track_id}{groupIndex}(nlap))  = estimated_position_ratemap_shuffled(1).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}(cv_groups{track_id}{groupIndex}(nlap))  =  estimated_position_ratemap_shuffled(2).probability_ratio;
 
                     else
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
-                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}{1}{cv_groups{track_id}{groupIndex}(nlap)}  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}(cv_groups{track_id}{groupIndex}(nlap))  = estimated_position_ratemap_shuffled(1).laps(nlap).probability_ratio;
+                        ratemap_shuffled_probability_ratio{nshuffle}{track_id}(cv_groups{track_id}{groupIndex}(nlap))  =  estimated_position_ratemap_shuffled(2).laps(nlap).probability_ratio;
                     end
                 end
             end

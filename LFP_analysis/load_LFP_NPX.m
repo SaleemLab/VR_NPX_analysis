@@ -166,5 +166,12 @@ if probe_no == 2 & str2double(options.SESSION)<20240401
 end
 
 tvec = start_samp/imecMeta.imSampRate:1/new_SR:start_sec+(length(raw_LFP(1,:)))/new_SR;
+
+if length(tvec)==length(raw_LFP(1,:))+1
+    tvec(end)=[];
+elseif length(tvec)==length(raw_LFP(1,:))-1
+    raw_LFP(:,end)=[];
+end
+
 end
 

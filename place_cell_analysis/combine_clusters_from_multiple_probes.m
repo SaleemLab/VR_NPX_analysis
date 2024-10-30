@@ -4,11 +4,13 @@ function clusters_combined = combine_clusters_from_multiple_probes(clusters1,clu
 all_fields = fieldnames(clusters1);
 
 if isfield(clusters2,'cluster_id')
-    for ncell =1:length(clusters2.cluster_id)
-        % give cluster 2 spikes new cluster id
-        clusters2.spike_id(clusters2.spike_id == clusters2.cluster_id(ncell)) = clusters2.cluster_id(ncell) + 10000;
-        clusters2.cluster_id(ncell) = clusters2.cluster_id(ncell) + 10000;
+    if clusters2.cluster_id(1)<10000 % if unique id is already given
+        for ncell =1:length(clusters2.cluster_id)
+            % give cluster 2 spikes new cluster id
+            clusters2.spike_id(clusters2.spike_id == clusters2.cluster_id(ncell)) = clusters2.cluster_id(ncell) + 10000;
+            clusters2.cluster_id(ncell) = clusters2.cluster_id(ncell) + 10000;
 
+        end
     end
 end
 

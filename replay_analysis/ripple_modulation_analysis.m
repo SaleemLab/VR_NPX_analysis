@@ -3,14 +3,13 @@ function ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,Tas
 % Default values
 p = inputParser;
 addParameter(p,'event_times',Task_info.end_time_all,@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-addParameter(p,'event_label',[],@iscell) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'event_id',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-
 
 addParameter(p,'place_fields',[],@isstruct) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_depth',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_region',[],@isstring) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_id',unique(spike_id),@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
+
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
@@ -53,11 +52,6 @@ for nevent = 1:no_events
     spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
     event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
     
-end
-
-if isempty(event_label)
-    event_label{1} = 'event';
-    event_id = ones(length(event_times),1);
 end
 
 cluster_spike_id = cell(size(unit_id));
@@ -109,74 +103,6 @@ for iCell = 1:no_cluster
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
-
-    % expected activity due to spatial location (Visual feature)
-    yHat = [];
-    for track_id = 1:2
-        position_this_event = [];
-        speed_this_event = [];
-        responseProfile = conv(mean(place_fields(track_id).raw{place_fields(1).cluster_id==unit_id(iCell)}),spatial_w,'same');
-
-        track_event_time = event_times_unchanged(event_id==track_id);
-
-        for event = 1:length(track_event_time)
-            if length(trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
-                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-                speed_this_event(event,:) = trackSpeed(tvec>track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2))) == length(bins)
-                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-                speed_this_event(event,:) = trackSpeed(tvec>=track_event_time(event)+window(1) & tvec<=track_event_time(event)+window(2));
-            elseif length(trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))) == length(bins)
-                position_this_event(event,:) = trackPosition(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
-                speed_this_event(event,:) = trackSpeed(tvec>=track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
-            elseif track_event_time(event)+window(2)>max(tvec)
-                temp = trackPosition(end);
-                position_this_event(event,:) = [trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
-                    temp*ones(1,size(position_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
-                temp = trackSpeed(end);
-                speed_this_event(event,:) = [trackSpeed(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2))...
-                    temp*ones(1,size(speed_this_event,2)-sum(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2)))];
-            else
-                position_this_event(event,:) = trackPosition(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
-                speed_this_event(event,:) = trackSpeed(tvec>track_event_time(event)+window(1) & tvec<track_event_time(event)+window(2));
-            end
-
-            if contains(event_label,'Lap start')
-                position_this_event(event,bins<=0)=1;% Before lap start fix at location 1
-                position_this_event(event,bins<=0.1&position_this_event(event,:)>10)=1; % before lap start
-                position_this_event(isnan(position_this_event))=0;
-                position_jump = find([0 abs(diff(position_this_event(event,:)))]>5);
-                position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
-            elseif contains(event_label,'Lap end')
-                position_this_event(event,bins>=0)=place_fields(1).x_bin_edges(end)/x_bin_width;
-            end
-
-            position_this_event(isnan(position_this_event))=0;
-            position_jump = find([0 abs(diff(position_this_event(event,:)))]>3);
-            if sum(position_jump+2>length(position_this_event))>0 % where there is jump due to end of lap, nan it
-                position_this_event(event,length(position_this_event)-1:length(position_this_event)) =  ...
-                   nan;
-                position_jump(position_jump+2>length(position_this_event))=[];
-            end
-
-            position_this_event(event,position_jump) =  position_this_event(event,position_jump+2);
-
-            %                  position_this_event(position_this_event==70)=0;
-            yHat{track_id}(event,:) = interp1(1:length(responseProfile), responseProfile, position_this_event(event,:)); % predicted firing rate
-        end
-
-        yHat{track_id}(isnan(yHat{track_id}))=0;
-        average_resp_track{track_id} = mean( yHat{track_id},'omitnan');
-
-
-        if track_id == 1
-            binnedArray1(speed_this_event>5)=nan; % if animal is moving, remove the spikes
-        else
-            binnedArray2(speed_this_event>5)=nan; % if animal is moving, remove the spikes
-        end
-    end
-
 
     if size(binnedArray1,1)==1
         psth_track1 = conv(binnedArray1/psthBinSize,gaussianWindow,'same');
@@ -232,7 +158,10 @@ for iCell = 1:no_cluster
         FR_difference_shuffled1(nshuffle) = (max(PSTH_shuffled1(nshuffle,twin))-min(PSTH_shuffled1(nshuffle,twin)))/mean(PSTH_shuffled1(nshuffle,twin));
         FR_difference_shuffled2(nshuffle) = (max(PSTH_shuffled2(nshuffle,twin))-min(PSTH_shuffled2(nshuffle,twin)))/mean(PSTH_shuffled2(nshuffle,twin));
     end
-    
+
+    ripple_modulation(1).bins = bins;
+    ripple_modulation(2).bins = bins;
+
     ripple_modulation(1).spike_count{iCell} = binnedArray1;
     ripple_modulation(2).spike_count{iCell} = binnedArray2;
 

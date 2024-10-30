@@ -17,8 +17,13 @@ function [these_spike_times,cluster_id,peak_channel,peak_depth,peak_channel_wave
 if ~exist('SampleRate','var') || isempty(SampleRate)
     SampleRate = 30000;
 end
-
-SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'sorting');
+if isfield(options,'sorter_type')
+    if contains(options.sorter_type,'original')
+        SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'sorting');
+    end
+else
+    SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'sorting');
+end
 gfileNum = str2num(cell2mat(extractBetween(options.EPHYS_DATAPATH,'_g','\')));% g file number
 folder_names = cell2mat(extractBetween(options.EPHYS_DATAPATH,['_g',num2str(gfileNum),'\'],'_imec'));% to search for the session (e.g. 'M24010_20240231_1_g0')
 segment_frames = readtable(options.segment_frames,"Delimiter",",");% corresponding start and end sample point after concatenation via spike interface
@@ -30,7 +35,14 @@ if contains(options.sorter_folder,'kilosort')
     spike_times = spikes(:,3);
     spike_clusters = spikes(:,1);
     original_cluster_id = unique(spike_clusters);
-    cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+    if isfield(options,'sorter_type')
+        if contains(options.sorter_type,'original')
+            cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+        end
+
+    else
+        cluster_group = readtable(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','quality_metrics','metrics.csv')); % KS output cluster ID (before postprocessing)
+    end
     cluster_id = table2array(cluster_group(:,1));% 0 based original cluster id
     spike_clusters_temp = spike_clusters;
     for iC = 1:length(cluster_id)
@@ -45,6 +57,16 @@ if contains(options.sorter_folder,'kilosort')
     % (ie. already parsed) or not
     if sum(contains(segment_frames.Properties.VariableNames,'segment_info')) > 0
         this_segment = strcmp(segment_frames.segment_info,folder_names);
+        if sum(this_segment)==0
+            % if no segment (maybe error session)
+            these_spike_times=[];
+            cluster_id=[];
+            peak_channel=[];
+            peak_depth=[];
+            peak_channel_waveforms=[];
+            disp('This session is not being spike sorted! probably due to imErrFlags')
+            return
+        end
         sampleStart = segment_frames.segmentStartFrame(this_segment);
         sampleEnd = segment_frames.segmentEndFrame(this_segment);
     end
@@ -77,8 +99,14 @@ if contains(options.sorter_folder,'kilosort')
     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
     cluster_coordiantes = readNPY(fullfile(options.SORTER_DATAPATH,'sorters',options.sorter_folder,'sorter_output','channel_positions.npy')); % load all good channels (not noise channels) coordinate used for spike sorting
 %     templates= readNPY(fullfile(SORTER_DATAPATH,'templates.npy'));
-    templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
-
+    if isfield(options,'sorter_type')
+        if contains(options.sorter_type,'original')
+            templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
+        end
+    else
+        templates = readNPY(fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'extensions','templates','average.npy')); % Information about template waveform (for postprocessed clusters);
+       
+    end
 
 
     if contains(imecMeta.imDatPrb_pn,'NP2013') %
