@@ -210,7 +210,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 1:5
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -243,14 +243,14 @@ for nstimuli = 1:length(all_stimulus_type)
             end
 
             if contains(stimulus_name{n},'Masa2tracks')
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'session_clusters');
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                session_clusters= session_clusters_RUN;
 %                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 %                 clusters = clusters_ks3;
             else               
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters'); % Session clusters for SUA
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));% clusters for MUA
                 clusters = clusters_ks3;
             end
 
@@ -731,10 +731,10 @@ for nstimuli = 1:length(all_stimulus_type)
                 metric_param =[];
                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
                 metric_param.region = @(x) contains(x,'HPC');
-                clusters_combined = combine_clusters_from_multiple_probes(clusters(1),clusters(2))
-                CA1_clusters_combined = select_clusters(clusters_combined,metric_param);
 
-                [replay_combined,reactivations_combined] = detect_candidate_events_masa(LFP(nprobe).tvec,CA1_LFP,...
+                CA1_clusters_combined = select_clusters(session_clusters,metric_param);
+                [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
+                [replay_combined,reactivations_combined] = detect_candidate_events_masa(LFP(nprobe).tvec,LFP(nprobe).best_HPC(best_channel,:),...
                     [CA1_clusters_combined.spike_id CA1_clusters_combined.spike_times],Behaviour,zscore_min,zscore_max,options);
 
                 if contains(stimulus_name{n},'Sleep')

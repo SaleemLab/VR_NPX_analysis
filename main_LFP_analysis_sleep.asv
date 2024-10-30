@@ -210,7 +210,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 6:length(experiment_info)
+    for nsession = 1:5
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -429,6 +429,7 @@ for nstimuli = 1:length(all_stimulus_type)
                         gammaLFP.NREM = interp1(gammaLFP.timestamps,gammaLFP.data',tvec_NREM,'nearest');
                         deltaspikecorr(nChannel) = corr(deltaLFP.NREM,V1_spike_counts,'type','spearman');
                         gammaspikecorr(nChannel) = corr(gammaLFP.NREM,V1_spike_counts,'type','spearman');
+                        deltagammacorr(nChannel) = corr(deltaLFP.NREM,gammaLFP.NREM,'type','spearman');
                         toc
                     end
 
@@ -460,19 +461,19 @@ for nstimuli = 1:length(all_stimulus_type)
                     behavioural_state(nprobe).movement = movement;
                     %%%%% UP/DOWN detection based on best V1 channel
                     if ~isempty(SWS)
+                        clear temp
                         temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
+                        temp.deltaspikecorr = deltaspikecorr;
+                        temp.gammaspikecorr = gammaspikecorr;
+                        temp.deltagammacorr = deltagammacorr;
+                        temp.channel = unique_selected_channels(good_V1_channels);
+                        temp.shank = unique_shank_id(good_V1_channels);
+                        temp.depth = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
+                        temp.xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
+                        temp.best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
                         if ~isempty(temp)
                             slow_waves(nprobe) = temp;
                         end
-                        slow_waves(nprobe).deltaspikecorr = deltaspikecorr;
-                        slow_waves(nprobe).gammaspikecorr = gammaspikecorr;
-                        slow_waves(nprobe).channel = unique_selected_channels(good_V1_channels);
-                        slow_waves(nprobe).shank = unique_shank_id(good_V1_channels);
-                        slow_waves(nprobe).depth = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
-                        slow_waves(nprobe).xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
-                        slow_waves(nprobe).best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
-%                         slow_waves_HPC(nprobe) = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_V1_channel,:),'spikes',HPC_clusters,'NREMInts',SWS);
-
                     end
                     
 
@@ -527,6 +528,7 @@ for nstimuli = 1:length(all_stimulus_type)
                     LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
                 end
                 
+                % Save best V1 channels based on high freq power (eqivalent of L5 if channel didn't move much)
                 Region = 'best_V1_high_freq';
                 LFP(nprobe).(Region) = raw_LFP(best_V1_high_power_shank_channel_id,:);
                 LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_high_power_shank_channel_id); % only avaliable shanks
@@ -571,7 +573,7 @@ for nstimuli = 1:length(all_stimulus_type)
 
             end
             clear raw_LFP
-
+            close all
             %%%%% Ripple and Spindles and bursting event
 
             % As long as stable firing durng track running. It doesn't have to
@@ -651,8 +653,8 @@ for nstimuli = 1:length(all_stimulus_type)
                 % Detect V1 spindle events
                 if ~isempty(behavioural_state(probe_no).SWS)
                     best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
-                elseif isfield('best_V1_high_freq')
-                    [~,best_channel] = max(LFP(nprobe).best_V1_high_freq(:,7));
+                elseif isfield(LFP(nprobe),'best_V1_high_freq')
+                    [~,best_channel] = max(LFP(nprobe).best_V1_high_freq);
                 else
                     [~,best_channel] = max(LFP(nprobe).L5_power(:,7));
                 end
