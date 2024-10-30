@@ -346,8 +346,8 @@ else % if KS2 and KS3
     end
 
     %     [~,~,index] = intersect(SUA_good_unit-1,table2array(cluster_metrics(:,1)));
-    index = sort(SUA_good_unit);
-    clusters = table2struct(cluster_metrics(index,:),"ToScalar",true);
+    
+    clusters = table2struct(cluster_metrics,"ToScalar",true);
     clusters.cluster_id = clusters.Var1+1; %1 based
 
     % Continuous spike data (retired)

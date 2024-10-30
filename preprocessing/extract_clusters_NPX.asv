@@ -346,8 +346,8 @@ else % if KS2 and KS3
     end
 
     %     [~,~,index] = intersect(SUA_good_unit-1,table2array(cluster_metrics(:,1)));
-    index = sort(SUA_good_unit);
-    clusters = table2struct(cluster_metrics(index,:),"ToScalar",true);
+    
+    clusters = table2struct(cluster_metrics,"ToScalar",true);
     clusters.cluster_id = clusters.Var1+1; %1 based
 
     % Continuous spike data (retired)
@@ -363,7 +363,7 @@ else % if KS2 and KS3
     clusters.spike_id = SUA_spike_id(index);
     clusters.spike_times = SUA_spike_time(index);
     clusters.peak_channel = peak_channel';
-    clusters.peak_depth = peak_depth';
+    clusters.peak_depth = peak_depth;
     clusters.peak_channel_waveforms = peak_channel_waveforms;
     clusters.cell_type = cell_type_all';
     clusters.probe_id = options.probe_id'; % 0 is probe 1 and 1 is probe 2.
