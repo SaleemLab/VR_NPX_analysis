@@ -1,5 +1,6 @@
-function LFP_extraction_and_event_detection_pipeline(options,stimulus_name,best_channels)
+function LFP_extraction_and_event_detection_pipeline(session_info,stimulus_name,best_channels)
 
+options = session_info.probe(1);
 % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
 DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
 if isempty(DIR)
@@ -36,8 +37,8 @@ end
 raw_LFP = [];
 LFP = [];
 
-for nprobe = 1:length(session_info(n).probe)
-    options = session_info(n).probe(nprobe);
+for nprobe = 1:length(session_info.probe)
+    options = session_info.probe(nprobe);
     selected_channels = [];
     channel_regions = [];
     shank_id = [];
@@ -257,7 +258,7 @@ for nprobe = 1:length(session_info(n).probe)
 
 
     else
-        if nprobe == length(session_info(n).probe)
+        if nprobe == length(session_info.probe)
             if exist('slow_waves')==0
                 slow_waves(nprobe) = struct();
             end
@@ -362,9 +363,9 @@ spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
 
 clear replay reactivations ripples spindles CA1_clusters V1_clusters
 clear V1_replay V1_reactivations replay_combined replay_combined
-for nprobe = 1:length(session_info(n).probe)
-    options = session_info(n).probe(nprobe);
-    probe_no = session_info(n).probe(nprobe).probe_id + 1;
+for nprobe = 1:length(session_info.probe)
+    options = session_info.probe(nprobe);
+    probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
     %                 Behavioural state detection
 
@@ -503,7 +504,7 @@ reactivations_combined= [];
 replay_combined = [];
 clear CA1_clusters_combined
 
-if length(session_info(n).probe)>1
+if length(session_info.probe)>1
     zscore_min = 0;
     zscore_max = 3;
 
@@ -528,8 +529,8 @@ if length(session_info(n).probe)>1
 
 end
 
-for nprobe = 1:length(session_info(n).probe)
-    probe_no = session_info(n).probe(nprobe).probe_id + 1;
+for nprobe = 1:length(session_info.probe)
+    probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
     if isfield(Behaviour,'speed')
@@ -601,7 +602,7 @@ for nprobe = 1:length(session_info(n).probe)
 end
 
 if contains(stimulus_name,'RUN')
-    if length(session_info(n).probe)>1
+    if length(session_info.probe)>1
         [reactivations_combined.T1_offset,reactivations_combined.T1_index] = RestrictInts(reactivations_combined.offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
         reactivations_combined.T1_onset = reactivations_combined.onset(reactivations_combined.T1_index);
         reactivations_combined.T1_midpoint = reactivations_combined.midpoint(reactivations_combined.T1_index);

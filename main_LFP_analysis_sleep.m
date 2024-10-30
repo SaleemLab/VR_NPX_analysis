@@ -221,8 +221,8 @@ for nstimuli = 1:length(all_stimulus_type)
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            options = session_info(n).probe(1);
-
+            % options = session_info(n).probe(1);
+            LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
         end
     end
 end
