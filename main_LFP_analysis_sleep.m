@@ -62,8 +62,8 @@ for nstimuli = 1:length(all_stimulus_type)
             if contains(stimulus_name{n},'Masa2tracks')
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
                 session_clusters= session_clusters_RUN;
-%                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-%                 clusters = clusters_ks3;
+                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                clusters = clusters_ks3;
             else               
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
@@ -190,6 +190,9 @@ for nstimuli = 1:length(all_stimulus_type)
                 save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
                 clusters_ks3 = clusters;
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3'); % save region info 
+            else
+                clusters_ks3 = clusters;
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'clusters_ks3');
             end
         end
     end
