@@ -102,12 +102,13 @@ for nprobe = 1:length(session_info.probe)
 
     best_HPC_shank_channel_id=[];
     % Best HPC channels for each shank
-    for nShank = unique(unique_shank_id(good_HPC_channels))
-        this_shank = find(unique_shank_id(good_HPC_channels)==nShank);% find channels not this shanks
+    unique_shanks = unique(unique_shank_id(good_HPC_channels));
+    for nShank = 1:length(unique_shanks)
+        this_shank = find(unique_shank_id(good_HPC_channels)==unique_shanks(nShank));% find channels not this shanks
         [~,channel_id]=max(power{nprobe}(good_HPC_channels(this_shank),6)); % Best CA1 channel with highest ripple power
         best_HPC_shank_channel_id(nShank) = good_HPC_channels(this_shank(channel_id));
     end
-
+    
     %%%%% Find best V1 channels in terms of high freq power
     V1_channel_id = find(ismember(unique_selected_channels,selected_channels(channel_regions==find(contains(all_fields,'V1_sparse')))));
     V1_channels = unique_selected_channels(V1_channel_id);
@@ -126,8 +127,9 @@ for nprobe = 1:length(session_info.probe)
     %                 cortex_LFP=raw_LFP(good_channels(best_V1_channel),:); % get mean V1 cortex LFP
     % Best V1 channels high freq power for each shank
     best_V1_high_power_shank_channel_id=[];
-    for nShank = unique(unique_shank_id(good_V1_channels))
-        this_shank = find(unique_shank_id(good_V1_channels)==nShank);% find channels not this shanks
+    unique_shanks = unique(unique_shank_id(good_V1_channels));
+    for nShank = 1:length(unique_shanks)
+        this_shank = find(unique_shank_id(good_V1_channels)==unique_shanks(nShank));% find channels not this shanks
         [~,channel_id]=max(power{nprobe}(good_V1_channels(this_shank),7)); % Best V1 channel with highest high freq power
         best_V1_high_power_shank_channel_id(nShank) = good_V1_channels(this_shank(channel_id));
     end
@@ -216,8 +218,9 @@ for nprobe = 1:length(session_info.probe)
 
         best_V1_shank_channel_id=[];
         %%%%% Best slow-wave channel for each shank
-        for nShank = unique(unique_shank_id(good_V1_channels))
-            this_shank = find(unique_shank_id(good_V1_channels)==nShank);% find channels not this shanks
+        unique_shanks = unique(unique_shank_id(good_V1_channels));
+        for nShank = 1:length(unique_shanks)
+            this_shank = find(unique_shank_id(good_V1_channels)==unique_shanks(nShank));% find channels not this shanks
             [~,channel_id] = min(deltaspikecorr(this_shank).*gammaspikecorr(this_shank)); %
 
             best_V1_shank_channel_id(nShank) = good_V1_channels(this_shank(channel_id));
@@ -242,7 +245,8 @@ for nprobe = 1:length(session_info.probe)
         %%%%% UP/DOWN detection based on best V1 channel
         if ~isempty(SWS)
             clear temp
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(best_V1_channel,:),'spikes',V1_clusters,'NREMInts',SWS);
+%             temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(good_V1_channels(best_V1_sleep_channel),:),'spikes',V1_clusters,'NREMInts',SWS);
             temp.deltaspikecorr = deltaspikecorr;
             temp.gammaspikecorr = gammaspikecorr;
             temp.deltagammacorr = deltagammacorr;
