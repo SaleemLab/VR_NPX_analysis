@@ -25,8 +25,8 @@ end
 if contains(stimulus_name,'Masa2tracks')
     load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name,'Masa2tracks'))),'session_clusters');
     load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name,'Masa2tracks'))));
-    %                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-    %                 clusters = clusters_ks3;
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+    clusters = clusters_ks3;
 else
     load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
     load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
