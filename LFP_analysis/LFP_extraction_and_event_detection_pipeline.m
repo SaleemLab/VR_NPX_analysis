@@ -262,6 +262,11 @@ for nprobe = 1:length(session_info.probe)
 
 
     else
+        behavioural_state(nprobe).quietWake = quietWake;
+        behavioural_state(nprobe).SWS = SWS;
+        behavioural_state(nprobe).REM = REM;
+        behavioural_state(nprobe).movement = movement;
+
         if nprobe == length(session_info.probe)
             if exist('slow_waves')==0
                 slow_waves(nprobe) = struct();
@@ -451,13 +456,18 @@ for nprobe = 1:length(session_info.probe)
     % Detect V1 spindle events
     if ~isempty(behavioural_state(probe_no).SWS)
         best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
+        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
     elseif isfield(LFP(nprobe),'best_V1_high_freq')
-        [~,best_channel] = max(LFP(nprobe).best_V1_high_freq);
+        [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power);
+        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
     else
         [~,best_channel] = max(LFP(nprobe).L5_power(:,7));
+        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).L5(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
     end
-    [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-        'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+
 
     % Detect CA1 ripple events
     [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
