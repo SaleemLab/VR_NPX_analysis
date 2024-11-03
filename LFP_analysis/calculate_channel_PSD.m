@@ -39,7 +39,7 @@ for nchannel = 1:size(chan_config,1)
 
         for clip = 1:nClips
             tidx = [1+round(tvec(1))+samples_to_pass:round(tvec(1))+samples_to_pass+nClipSamps]; % in samples
-            timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
+%             timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
 
             [pxx,fxx] = pwelch(raw_LFP(nchannel,tidx),win,[],nfft,SR);
             PSD(nchannel).power(clip,:) = pxx;
