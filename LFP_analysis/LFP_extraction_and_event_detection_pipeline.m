@@ -708,4 +708,3 @@ else
 end
 
 close all
-behavioural_state
