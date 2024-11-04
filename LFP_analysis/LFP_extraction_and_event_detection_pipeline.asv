@@ -391,7 +391,7 @@ spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
     | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
 clear replay reactivations ripples spindles CA1_clusters V1_clusters
-clear V1_replay V1_reactivations replay_combined replay_combined
+clear V1_replay V1_reactivations replay_combined replay_combined slow_waves
 
 %
 
@@ -449,22 +449,9 @@ for nprobe = 1:length(session_info.probe)
         end
     end
 
-    % Detect V1 populational bursting events (Candidate events)
+    %%%%% Detect V1 populational bursting events (Candidate events)
     metric_param =[];
     %                  metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
-
-    if options.probe_hemisphere==1
-        metric_param.region = @(x) contains(x,'V1_L');
-        V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
-    elseif options.probe_hemisphere==2
-        metric_param.region = @(x) contains(x,'V1_R');
-        V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
-    end
-
-
-    %%%%%% Populational burtsting events
-    metric_param =[];
-    %                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
     if options.probe_hemisphere==1
         metric_param.region = @(x) contains(x,'V1_L');
@@ -486,7 +473,7 @@ for nprobe = 1:length(session_info.probe)
     if ~isempty(behavioural_state_merged.SWS)
         best_channel = find(LFP(probe_no).best_V1_channel==temp_V1_channels(nprobe).best_channel);
 
-        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters,'NREMInts',behavioural_state_merged.SWS);
+        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
         temp.deltaspikecorr = temp_V1_channels(nprobe).deltaspikecorr;
         temp.gammaspikecorr = temp_V1_channels(nprobe).gammaspikecorr;
         temp.deltagammacorr = temp_V1_channels(nprobe).deltagammacorr;
@@ -691,7 +678,7 @@ if contains(stimulus_name,'Masa2tracks')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_candidate_events_V1%s.mat',erase(stimulus_name,'Masa2tracks'))),'V1_replay','V1_reactivations')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'ripples')
-%     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'slow_waves')
+    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'slow_waves')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state_merged%s.mat',erase(stimulus_name,'Masa2tracks'))),'behavioural_state_merged')
 %     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))),'PSD')
 %     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
