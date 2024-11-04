@@ -38,7 +38,8 @@ for nchannel = 1:size(chan_config,1)
     if ~isempty(tvec)
 
         for clip = 1:nClips
-            tidx = [1+round(tvec(1))+samples_to_pass:round(tvec(1))+samples_to_pass+nClipSamps]; % in samples
+            tidx = [1+samples_to_pass:samples_to_pass+nClipSamps]; % in samples
+%             timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
 %             timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
 
             [pxx,fxx] = pwelch(raw_LFP(nchannel,tidx),win,[],nfft,SR);
