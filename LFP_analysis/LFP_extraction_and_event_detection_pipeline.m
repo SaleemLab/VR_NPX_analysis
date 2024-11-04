@@ -37,8 +37,8 @@ end
 % From cell structure to all cluster spike time and spike id
 session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
 session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
-[clusters_combined.spike_times,index] =sort(clusters_combined.spike_times);
-clusters_combined.spike_id=clusters_combined.spike_id(index);
+[session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+session_clusters.spike_id=session_clusters.spike_id(index);
 
 raw_LFP = [];
 LFP = [];
