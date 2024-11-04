@@ -33,11 +33,16 @@ for n = 1:length(all_fields)
 end
 
 if isfield(clusters1,'spike_id')
-    combined_spike_times = [clusters1.spike_times; clusters2.spike_times];
-    [~,spike_index]  = sort(combined_spike_times) ;
-    % clusters_combined.spike_id = [clusters1.spike_id; clusters2.spike_id];
-    clusters_combined.spike_id = clusters_combined.spike_id(spike_index);
-    clusters_combined.spike_times = clusters_combined.spike_times(spike_index);
+    if iscell(clusters1.spike_times)
+        clusters_combined.spike_id = [clusters1.spike_id; clusters2.spike_id];
+        clusters_combined.spike_times = [clusters1.spike_times; clusters2.spike_times];
+    else
+        combined_spike_times = [clusters1.spike_times; clusters2.spike_times];
+        [~,spike_index]  = sort(combined_spike_times) ;
+        % clusters_combined.spike_id = [clusters1.spike_id; clusters2.spike_id];
+        clusters_combined.spike_id = clusters_combined.spike_id(spike_index);
+        clusters_combined.spike_times = clusters_combined.spike_times(spike_index);
+    end
 end
 
 if isfield(clusters1,'merged_spike_id')

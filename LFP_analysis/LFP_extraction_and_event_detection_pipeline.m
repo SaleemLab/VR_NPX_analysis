@@ -34,6 +34,10 @@ else
     clusters = clusters_ks3;
 end
 
+% From cell structure to all cluster spike time and spike id
+session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+
 raw_LFP = [];
 LFP = [];
 
