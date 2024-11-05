@@ -23,7 +23,7 @@ parameters= list_of_parameters;
 SR = 1/mean(diff(tvec));
 
 % Define Gaussian window for smoothing
-windowWidth = 0.03; % seconds
+windowWidth = 0.05; % seconds
 gaussianWindow = gausswin(windowWidth/bin_size);
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
@@ -41,6 +41,8 @@ if ~isempty(time_epoches)
     mua = mua(idx)';
 end
 
+plot(tvec_epoches,mua)
+% histogram(mua,1:0.05:10);
 end
 
 
