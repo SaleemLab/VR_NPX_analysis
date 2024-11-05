@@ -6,7 +6,10 @@ function [intervals] = MergeIntervals(intervals1,intervals2)
 
 % Combine the two lists into one
 combined_list = [intervals1; intervals2];
-
+if isempty(combined_list)
+    intervals=[];
+    return
+end
 % Sort the combined list by the start of the intervals
 combined_list = sortrows(combined_list);
 
