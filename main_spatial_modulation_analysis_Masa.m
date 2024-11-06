@@ -361,6 +361,8 @@ end
 
 
 %% merge all sessions into clusters_all
+% Check if LFP detection and decoding is done, if clusters_all is intended for UP/DOWN
+% and ripple analysis
 
 clear all
 session_count = 0;
