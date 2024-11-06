@@ -152,8 +152,19 @@ for nstimuli = 1:length(all_stimulus_type)
                 % Convert to unique spike/cluster id
                 probe_clusters = select_clusters(clusters(nprobe),params); %only look at good clusters
 
-                probe_clusters.spike_id = probe_clusters.spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-                probe_clusters.cluster_id = probe_clusters.cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+                single_cluster_spike_id = cell(size(probe_clusters.cluster_id));
+                single_cluster_spike_times = cell(size(probe_clusters.cluster_id));
+                unique_spike_id = probe_clusters.spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+                unique_cluster_id = probe_clusters.cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
+                [unique_cluster_ids,first_index] = unique(unique_cluster_id);
+                for ncell =1:length(unique_cluster_ids)
+                    single_cluster_spike_id{ncell,1} = unique_spike_id(unique_spike_id == unique_cluster_ids(ncell));
+                    single_cluster_spike_times{ncell,1} = probe_clusters.spike_times(unique_spike_id == unique_cluster_ids(ncell));
+                end
+                probe_clusters.cluster_id = unique_cluster_id(first_index);
+                probe_clusters.spike_id = single_cluster_spike_id;
+                probe_clusters.spike_times = single_cluster_spike_times;
+                
                 if session_info(n).probe(nprobe).probe_hemisphere==1
                     probe_clusters.region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
                     probe_clusters.spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
