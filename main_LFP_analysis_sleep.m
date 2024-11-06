@@ -110,7 +110,7 @@ for nstimuli = 1:length(all_stimulus_type)
 
             for nprobe = 1:length(clusters)
                 options = session_info(n).probe(nprobe);
-                probe_no =  session_info(n).probe(nprobe).probe_hemisphere;
+                probe_no =  session_info(n).probe(nprobe).probe_id+1;
 
                 clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
                 if clusters(nprobe).probe_hemisphere == 1
@@ -164,7 +164,7 @@ for nstimuli = 1:length(all_stimulus_type)
                 probe_clusters.cluster_id = unique_cluster_id(first_index);
                 probe_clusters.spike_id = single_cluster_spike_id;
                 probe_clusters.spike_times = single_cluster_spike_times;
-                
+
                 if session_info(n).probe(nprobe).probe_hemisphere==1
                     probe_clusters.region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
                     probe_clusters.spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
@@ -241,12 +241,12 @@ for nstimuli = 1:length(all_stimulus_type)
     end
 end
 
-%% LFP PSD slope 
-pyversion('C:\Users\irene\AppData\Local\Programs\Python\Python37\python.exe')
-
+%% LFP PSD slope and cortical wave direction
+pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+pyenv("ExecutionMode","OutOfProcess")
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
@@ -292,21 +292,20 @@ for nsession =1:length(experiment_info)
             session_clusters_RUN=session_clusters;
             clear session_clusters
         end
-
+        tic
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            
+
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters=clusters_ks3;
         elseif contains(stimulus_name{n},'Sleep')
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            
+
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
@@ -314,29 +313,100 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
-%             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            % clusters=clusters_ks3;
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            clusters=clusters_ks3;
         else
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            
+
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         end
-
+        toc
         
+        % PSD slope
+        tvec = LFP(1).tvec;
         timebin_edges = tvec(1):10:tvec(end); % 10 seconds timebin edges for PSD slope
 
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(1).probe_id+1;
+            if ~isempty(behavioural_state_merged.SWS)
+                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(probe_no).best_channel);
+            end
+            LFP(probe_no).best_V1_channel;
+        end
+        
 
+        % Cortical wave direction (-1 is posterior -> anterior, 0 is no delay and 1 is anterior -> posterior)
+        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+        filterparms.gammafilter = [100 400];
+        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+
+
+
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+            lfp.timestamps = LFP(probe_no).tvec;
+
+
+            if isfield(LFP(probe_no),'best_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
+                
+                lfp.data= LFP(probe_no).best_V1';
+                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+                
+                zscored_LFP = [];
+                zscored_LFP = zscore(deltaLFP.amp);
+                for nevent = 1:length(slow_waves(probe_no).timestamps)
+                    tidx = FindInInterval(tvec,[slow_waves(probe_no).timestamps(nevent)-0.3 slow_waves(probe_no).timestamps(nevent)+0.3]);
+                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+                    tidx=tidx(1):tidx(end);
+                    [~,idx]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec));
+
+                    for nShank=1:length(LFP(probe_no).best_V1_xcoord)
+                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+
+                        [~,temp]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec(tidx(peak_id))));
+                        DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+                    end
+
+                    diff(LFP(probe_no).best_V1_xcoord)
+                    cum_delay(nevent) = sum(diff(DOWN_peaks_shank(:,nevent)));
+
+                    if session_clusters.probe_hemisphere(nprobe)==1
+                        
+                        % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+                    else session_clusters.probe_hemisphere(nprobe)==2
+
+                    end
+                    % nexttile
+                    % hold on;xline(tvec(idx));
+                    % plot(tvec(tidx),zscored_LFP(tidx,[1 2 3 4]));
+                    % hold on;xline(median(tvec(tidx(1):tidx(end))))
+                    
+                end
+
+            end
+
+            slow_waves(probe_no).DOWN_peaks_shank = [];
+            slow_waves(probe_no).DOWN_peaks_shank = [];
+            slow_waves(probe_no).DOWN_travling = [];
+
+
+        end
+        
     end
 end
 
-pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+
 
 
 
