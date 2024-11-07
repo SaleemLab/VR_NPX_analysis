@@ -491,11 +491,18 @@ for nprobe = 1:length(session_info.probe)
     if ~isempty(behavioural_state_merged.SWS)
 
         best_channel = find(LFP(probe_no).best_V1_channel==temp_V1_channels(nprobe).best_channel);
+        
         if isempty(best_channel)
             [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
+            [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+        else
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
+            [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
         end
 
-        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
         temp.deltaspikecorr = temp_V1_channels(nprobe).deltaspikecorr;
         temp.gammaspikecorr = temp_V1_channels(nprobe).gammaspikecorr;
         temp.deltagammacorr = temp_V1_channels(nprobe).deltagammacorr;
@@ -507,8 +514,7 @@ for nprobe = 1:length(session_info.probe)
         if ~isempty(temp)
             slow_waves(nprobe) = temp;
         end
-        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+
     elseif isfield(LFP(nprobe),'best_V1_high_freq')
         [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
         [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
