@@ -356,6 +356,8 @@ for nsession =1:length(experiment_info)
                 continue
             end
 
+            % slow_waves(probe_no).power=[];
+            % slow_waves(probe_no).powerdB=[];
             nClips = floor(length(V1_LFP)/nClipSamps);
             samples_to_pass = 0;
 
@@ -364,7 +366,11 @@ for nsession =1:length(experiment_info)
                 % timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
                 % timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
 
+
                 [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
+
+                slow_waves(probe_no).power(clip,:) = pxx;
+                % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
                 fxx = fxx';
                 % FOOOF settings
                 settings = struct();
@@ -377,7 +383,8 @@ for nsession =1:length(experiment_info)
 
                 samples_to_pass = samples_to_pass + nClipSamps;
             end
-            
+
+            PSD(nchannel).frequency = fxx;
             slow_waves(probe_no).PSD_slope = PSD_slope;
             slow_waves(probe_no).timebin_edges = timebin_edges;
 
