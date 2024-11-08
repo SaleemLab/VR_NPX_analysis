@@ -363,7 +363,6 @@ load(fullfile('D:\corticohippocampal_replay','ripples_all_POST.mat'))
 load(fullfile('D:\corticohippocampal_replay','spindles_all_POST.mat'))
 
 max(slow_waves_all(1).DOWN_session_count
-for nsession = 
 
 %% UP DOWN state and ripple and spindle analysis (backup)
 
