@@ -347,7 +347,15 @@ for nsession =1:length(experiment_info)
         disp('PSD slope for slow waves started')
         tic
         for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(1).probe_id+1;
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            slow_waves(probe_no).power = [];
+            slow_waves(probe_no).frequency = [];
+            slow_waves(probe_no).PSD_slope = [];
+            slow_waves(probe_no).timebin_edges = [];
+            slow_waves(probe_no).DOWN_PSD_slope = [];
+            slow_waves(probe_no).UP_PSD_slope = [];
+
             if ~isempty(behavioural_state_merged.SWS)
                 best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(probe_no).best_channel);
                 V1_LFP = LFP(probe_no).best_V1(best_channel,:);
@@ -421,7 +429,10 @@ for nsession =1:length(experiment_info)
             DOWN_peaks_shank = [];
             peaks_latency = [];
             DOWN_traveling = [];
-            
+            slow_waves(probe_no).DOWN_peaks_shank = [];
+            slow_waves(probe_no).DOWN_peaks_latency = [];
+            slow_waves(probe_no).DOWN_traveling = [];
+
             if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
                 
                 lfp.data= LFP(probe_no).average_V1';
