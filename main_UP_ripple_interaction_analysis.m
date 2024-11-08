@@ -20,7 +20,7 @@ ripples_all = struct();
 spindles_all = struct();
 behavioural_state_merged_all = struct();
 
-for nsession =1:length(experiment_info)
+for nsession =1:2
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -361,6 +361,7 @@ clear all
 load(fullfile('D:\corticohippocampal_replay','slow_waves_all_POST.mat'))
 load(fullfile('D:\corticohippocampal_replay','ripples_all_POST.mat'))
 load(fullfile('D:\corticohippocampal_replay','spindles_all_POST.mat'))
+
 max(slow_waves_all(1).DOWN_session_count
 for nsession = 
 
