@@ -113,6 +113,7 @@ for nsession =1:length(experiment_info)
     ripples = rmfield(ripples, 'detectorinfo');
     spindles = rmfield(spindles, 'detectorinfo');
     slow_waves = rmfield(slow_waves, 'detectorinfo');
+    
     % From cell structure back to spike times and spike id
     session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
     session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
@@ -233,7 +234,8 @@ for nsession =1:length(experiment_info)
                 if contains(field_names{iField},'ints')
                     slow_waves_all(probe_no).UP_ints = slow_waves(nprobe).ints.UP;
                     slow_waves_all(probe_no).DOWN_ints = slow_waves(nprobe).ints.DOWN;
-                    slow_waves_all(probe_no).UP_PSD_slope = slow_waves(nprobe).ints.UP_PSD_slope; 
+
+                    disp('UP_PSD_slope')
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth','xcoord','best_channel'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
@@ -250,13 +252,6 @@ for nsession =1:length(experiment_info)
                         slow_waves_all(probe_no).UP_ints = [A B];
                     end
 
-                    A = slow_waves_all(probe_no).UP_PSD_slope;
-                    B = slow_waves(nprobe).ints.UP_PSD_slope;
-                    try
-                        slow_waves_all(probe_no).UP_PSD_slope = [A;B];
-                    catch
-                        slow_waves_all(probe_no).UP_PSD_slope = [A B];
-                    end
 
                     A = slow_waves_all(probe_no).DOWN_ints;
                     B = slow_waves(nprobe).ints.DOWN;
@@ -268,7 +263,7 @@ for nsession =1:length(experiment_info)
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth','xcoord','best_channel'})
 
-                    slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField}); 
+                    slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
                 else
                     A = slow_waves_all(probe_no).(field_names{iField});
                     B = slow_waves(nprobe).(field_names{iField});
@@ -282,7 +277,7 @@ for nsession =1:length(experiment_info)
                 end
             end
         end
-
+        % slow_waves_all(probe_no).UP_PSD_slope
         session_count_events = repmat(session_count,size(slow_waves(nprobe).timestamps));
         if session_count == 1
             slow_waves_all(probe_no).DOWN_session_count = session_count_events;
@@ -348,14 +343,10 @@ end
 for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
     UP_index=[];
     DOWN_index=[];
-    ripples_index=[];
-
     % get events index this session
     for nprobe = 1:length(slow_waves_all)
         UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-        ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
-
         UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
         DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
 
@@ -363,7 +354,7 @@ for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
 
         % remove DOWN events without UP
         slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index),:)=[];
         slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
         slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
         slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];

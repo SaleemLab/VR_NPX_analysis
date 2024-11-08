@@ -400,7 +400,7 @@ for nsession =1:length(experiment_info)
             event_midpoint = mean(slow_waves(probe_no).ints.UP,2);
             % Find the bin indices for each event time
             [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-            slow_waves(probe_no).ints.UP_PSD_slope= PSD_slope(bin_indices);
+            slow_waves(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
 
             event_PSD_slope=[];
             event_midpoint = slow_waves(probe_no).timestamps;
