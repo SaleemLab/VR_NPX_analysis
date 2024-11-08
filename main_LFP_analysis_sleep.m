@@ -384,7 +384,7 @@ for nsession =1:length(experiment_info)
                 samples_to_pass = samples_to_pass + nClipSamps;
             end
 
-            PSD(nchannel).frequency = fxx;
+            slow_waves(probe_no).frequency = fxx;
             slow_waves(probe_no).PSD_slope = PSD_slope;
             slow_waves(probe_no).timebin_edges = timebin_edges;
 
