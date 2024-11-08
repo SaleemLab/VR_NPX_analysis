@@ -20,7 +20,7 @@ ripples_all = struct();
 spindles_all = struct();
 behavioural_state_merged_all = struct();
 
-for nsession =1:2
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -233,6 +233,7 @@ for nsession =1:2
                 if contains(field_names{iField},'ints')
                     slow_waves_all(probe_no).UP_ints = slow_waves(nprobe).ints.UP;
                     slow_waves_all(probe_no).DOWN_ints = slow_waves(nprobe).ints.DOWN;
+                    slow_waves_all(probe_no).UP_PSD_slope = slow_waves(nprobe).ints.UP_PSD_slope; 
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth','xcoord','best_channel'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
@@ -247,6 +248,14 @@ for nsession =1:2
                         slow_waves_all(probe_no).UP_ints = [A;B];
                     catch
                         slow_waves_all(probe_no).UP_ints = [A B];
+                    end
+
+                    A = slow_waves_all(probe_no).UP_PSD_slope;
+                    B = slow_waves(nprobe).ints.UP_PSD_slope;
+                    try
+                        slow_waves_all(probe_no).UP_PSD_slope = [A;B];
+                    catch
+                        slow_waves_all(probe_no).UP_PSD_slope = [A B];
                     end
 
                     A = slow_waves_all(probe_no).DOWN_ints;
@@ -333,36 +342,156 @@ for nsession =1:2
             slow_waves_all(probe_no).HPC_spike_id{session_count} = selected_clusters.spike_times;
         end
     end
-
 end
+
+
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+    UP_index=[];
+    DOWN_index=[];
+    ripples_index=[];
+
+    % get events index this session
+    for nprobe = 1:length(slow_waves_all)
+        UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+        ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
+
+        UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
+        DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
+
+        Exclude_index = find(~ismember(DOWN_UP_transition,UP_DOWN_transition));% Only DOWN followed by UP is included for analysis.
+
+        % remove DOWN events without UP
+        slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_peaks_shank(:,DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_peaks_latency(DOWN_index{nprobe}(Exclude_index))=[];
+        slow_waves_all(nprobe).DOWN_traveling(DOWN_index{nprobe}(Exclude_index))=[];
+
+        % DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+    end
+end
+
 % ripples_all = rmfield(ripples_all, 'detectorinfo');
 % spindles_all = rmfield(spindles_all, 'detectorinfo');
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
-    save(fullfile('D:\corticohippocampal_replay','slow_waves_all_POST.mat'),'slow_waves_all')
-    save(fullfile('D:\corticohippocampal_replay','ripples_all_POST.mat'),'ripples_all')
-    save(fullfile('D:\corticohippocampal_replay','spindles_all_POST.mat'),'spindles_all')
-    save(fullfile('D:\corticohippocampal_replay','behavioural_state_merged_all_POST.mat'),'behavioural_state_merged_all')
+    save(fullfile(analysis_folder,'slow_waves_all_POST.mat'),'slow_waves_all')
+    save(fullfile(analysis_folder,'ripples_all_POST.mat'),'ripples_all')
+    save(fullfile(analysis_folder,'spindles_all_POST.mat'),'spindles_all')
+    save(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'),'behavioural_state_merged_all')
 elseif contains(Stimulus_type,'PRE')
-    save(fullfile('D:\corticohippocampal_replay','slow_waves_all_PRE.mat'),'slow_waves_all')
-    save(fullfile('D:\corticohippocampal_replay','ripples_all_PRE.mat'),'ripples_all')
-    save(fullfile('D:\corticohippocampal_replay','spindles_all_PRE.mat'),'spindles_all')
-    save(fullfile('D:\corticohippocampal_replay','behavioural_state_merged_all_PRE.mat'),'behavioural_state_merged_all')
+    save(fullfile(analysis_folder,'slow_waves_all_PRE.mat'),'slow_waves_all')
+    save(fullfile(analysis_folder,'ripples_all_PRE.mat'),'ripples_all')
+    save(fullfile(analysis_folder,'spindles_all_PRE.mat'),'spindles_all')
+    save(fullfile(analysis_folder,'behavioural_state_merged_all_PRE.mat'),'behavioural_state_merged_all')
 else
-    save(fullfile('D:\corticohippocampal_replay','slow_waves_all.mat'),'slow_waves_all')
-    save(fullfile('D:\corticohippocampal_replay','ripples_all.mat'),'ripples_all')
-    save(fullfile('D:\corticohippocampal_replay','spindles_all.mat'),'spindles_all')
-    save(fullfile('D:\corticohippocampal_replay','behavioural_state_merged_all.mat'),'behavioural_state_merged_all')
+    save(fullfile(analysis_folder,'slow_waves_all.mat'),'slow_waves_all')
+    save(fullfile(analysis_folder,'ripples_all.mat'),'ripples_all')
+    save(fullfile(analysis_folder,'spindles_all.mat'),'spindles_all')
+    save(fullfile(analysis_folder,'behavioural_state_merged_all.mat'),'behavioural_state_merged_all')
 end
 
 %% UP DOWN state and ripple and spindle analysis
 clear all
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
-load(fullfile('D:\corticohippocampal_replay','slow_waves_all_POST.mat'))
-load(fullfile('D:\corticohippocampal_replay','ripples_all_POST.mat'))
-load(fullfile('D:\corticohippocampal_replay','spindles_all_POST.mat'))
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 
-max(slow_waves_all(1).DOWN_session_count
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+    UP_index=[];
+    DOWN_index=[];
+    ripples_index=[];
+
+    % get events index this session
+    for nprobe = 1:length(slow_waves_all)
+        UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+        ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
+
+        UP_DOWN_transition = slow_waves_all(mprobe).UP_ints(UP_index{mprobe},2);
+        DOWN_UP_transition = slow_waves_all(mprobe).DOWN_ints(DOWN_index{mprobe},1);
+
+        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+    end
+
+
+
+    %%% Get spike counts
+    last_spike = slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}(end);
+    tvec = 0:0.01:last_spike;
+    % mobility_interp = interp1(selected_clusters.tvec{1},double(selected_clusters.mobility_thresholded{1}),tvec,'previous');
+    tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
+    if ~isempty(behavioural_state_merged_all.SWS{nsession})
+        sleep_tvec = Restrict(tvec,behavioural_state_merged_all.SWS{nsession});
+        sleep_index = ismember(tvec,sleep_tvec);
+    end
+    HPC_spike_counts=[];
+    V1_spike_counts=[];
+    w = gausswin(0.03*1/mean(diff(tvec)));
+    w = w / sum(w);
+
+    HPC_MUA_sleep=[];
+    V1_MUA_sleep=[];
+    % speed= filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
+    for nprobe = 1:length(slow_waves_all) % Get distribution of sleep spike counts
+        temp_spike_count =[];
+        spike_times = slow_waves_all(nprobe).V1_MUA_spiketimes{nsession};
+        % temp_spike_count = filtfilt(w,1,histcounts(spike_times,tvec_edges)')';
+        temp_spike_count = histcounts(spike_times,tvec_edges);
+        V1_MUA_sleep{nprobe} = temp_spike_count(sleep_index==1);
+
+        spike_times = slow_waves_all(nprobe).HPC_MUA_spiketimes{nsession};
+        % temp_spike_count = filtfilt(w,1,histcounts(spike_times,tvec_edges)')';
+        temp_spike_count = histcounts(spike_times,tvec_edges);
+        HPC_MUA_sleep{nprobe} = temp_spike_count(sleep_index==1);
+    end
+
+
+
+    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}, event_times, [-0.5 0.5], 0.01);
+    binnedArray = filtfilt(w,1,binnedArray')';
+
+    zscored_psth= reshape(binnedArray,1,[]);
+    zscored_psth = (zscored_psth-mean(V1_MUA_sleep{nprobe}))/(std(V1_MUA_sleep{nprobe}));
+    zscored_psth = reshape(zscored_psth,length(event_times),[]);
+
+end
+
+
+
+nprobe = 2;
+mprobe = 1;
+
+
+[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}, event_times, [-0.5 0.5], 0.01);
+binnedArray = filtfilt(w,1,binnedArray')';
+
+zscored_psth= reshape(binnedArray,1,[]);
+zscored_psth = (zscored_psth-mean(V1_MUA_sleep{nprobe}))/(std(V1_MUA_sleep{nprobe}));
+zscored_psth = reshape(zscored_psth,length(event_times),[]);
+imagesc(zscored_psth)
+colorbar
+colormap(flipud(gray))
+
+plot_perievent_spiketime_histogram
 
 %% UP DOWN state and ripple and spindle analysis (backup)
 
@@ -423,7 +552,7 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters=clusters_ks3;
         elseif contains(stimulus_name{n},'Sleep')
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
@@ -441,7 +570,7 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
             clusters=clusters_ks3;
         else
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
