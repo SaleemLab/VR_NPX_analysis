@@ -48,8 +48,8 @@ for nsession = 1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters=clusters_ks3;
         elseif contains(stimulus_name{n},'Sleep')
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
