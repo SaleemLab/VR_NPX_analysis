@@ -395,6 +395,8 @@ end
 clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
 
 if exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
@@ -417,14 +419,324 @@ for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
         ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
 
-        UP_DOWN_transition = slow_waves_all(mprobe).UP_ints(UP_index{mprobe},2);
-        DOWN_UP_transition = slow_waves_all(mprobe).DOWN_ints(DOWN_index{mprobe},1);
+        UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
+        DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
 
         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
     end
+end
+
+
+%%%%%%%%%% Probability of SWR during normalised UP duration
+time_wondows = [-0.5 0.5];
+time_bin = 0.01;
+num_bins=20; % divide one UP event into 20 bins
+
+probability=[];
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+
+
+colour_lines = [215,25,28;44,123,182]/256;
+
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+
+    % DOWN state
+    for nsession = 1:all_sessions
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+        ripples_index = find(ripples_all(1).session_count == nsession& ripples_all(1).SWS_index == 1);
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
+        % UP_duration<2
+
+        probability(nprobe).L_ripples_DOWN(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        probability(nprobe).L_ripples_UP(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        probability(nprobe).L_ripples_DOWN_shuffled(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,1);
+        probability(nprobe).L_ripples_UP_shuffled(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,1);
+    end
+    %%%% Left ripples
+    % DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(cumsum(probability(nprobe).L_ripples_DOWN,2));
+    SE = std(cumsum(probability(nprobe).L_ripples_DOWN,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_ripples_DOWN_shuffled,2));
+    SE = std(cumsum(probability(nprobe).L_ripples_DOWN_shuffled,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(probability(nprobe).L_ripples_DOWN);
+    SE = std(probability(nprobe).L_ripples_DOWN)./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_ripples_DOWN_shuffled);
+    SE = std(probability(nprobe).L_ripples_DOWN_shuffled)./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(cumsum(probability(nprobe).L_ripples_UP,2));
+    SE = std(cumsum(probability(nprobe).L_ripples_UP,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_ripples_UP_shuffled,2));
+    SE = std(cumsum(probability(nprobe).L_ripples_UP_shuffled,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'})
+    % xline(0,'r')
+    % title('Cumulative prob of reft ripples during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    x_reshaped=repmat(x,[1 all_sessions]);
+    y = mean(probability(nprobe).L_ripples_UP);
+    y_reshaped = reshape(probability(nprobe).L_ripples_UP,1,[]);
+    SE = std(probability(nprobe).L_ripples_UP)./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_ripples_UP_shuffled);
+    SE = std(probability(nprobe).L_ripples_UP_shuffled)./sqrt(all_sessions);
+    PLOT(2) = plot(x,y,'k');hold on;
+    ERROR_SHADE = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(PLOT(1:2),{'Original','Shuffled'})
+    % xline(0,'r')
+    title('Probability of left ripples during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
 
+    %%%% Right ripples
+    % DOWN state
+    for nsession = 1:all_sessions
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+        ripples_index = find(ripples_all(2).session_count == nsession& ripples_all(2).SWS_index == 1);
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
+        % UP_duration<2
+
+        probability(nprobe).R_ripples_DOWN(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(2).peaktimes(ripples_index),num_bins,0);
+        probability(nprobe).R_ripples_UP(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(2).peaktimes(ripples_index),num_bins,0);
+        probability(nprobe).R_ripples_DOWN_shuffled(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(2).peaktimes(ripples_index),num_bins,1);
+        probability(nprobe).R_ripples_UP_shuffled(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(2).peaktimes(ripples_index),num_bins,1);
+    end
+
+
+    % DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(cumsum(probability(nprobe).R_ripples_DOWN,2));
+    SE = std(cumsum(probability(nprobe).R_ripples_DOWN,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_ripples_DOWN_shuffled,2));
+    SE = std(cumsum(probability(nprobe).R_ripples_DOWN_shuffled,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(probability(nprobe).R_ripples_DOWN);
+    SE = std(probability(nprobe).R_ripples_DOWN)./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_ripples_DOWN_shuffled);
+    SE = std(probability(nprobe).R_ripples_DOWN_shuffled)./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = mean(cumsum(probability(nprobe).R_ripples_UP,2));
+    SE = std(cumsum(probability(nprobe).R_ripples_UP,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_ripples_UP_shuffled,2));
+    SE = std(cumsum(probability(nprobe).R_ripples_UP_shuffled,2))./sqrt(all_sessions);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'})
+    % xline(0,'r')
+    % title('Cumulative prob of reft ripples during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    x_reshaped=repmat(x,[1 all_sessions]);
+    y = mean(probability(nprobe).R_ripples_UP);
+    y_reshaped = reshape(probability(nprobe).R_ripples_UP,1,[]);
+    SE = std(probability(nprobe).R_ripples_UP)./sqrt(all_sessions);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_ripples_UP_shuffled);
+    SE = std(probability(nprobe).R_ripples_UP_shuffled)./sqrt(all_sessions);
+    PLOT(2) = plot(x,y,'k');hold on;
+    ERROR_SHADE = patch([linspace(0,1,num_bins) fliplr(linspace(0,1,num_bins))],[y+SE fliplr(y-SE)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(PLOT(1:2),{'Original','Shuffled'})
+    % xline(0,'r')
+    title('Probability of right ripples during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+%%%%%%%%%% SWR
+time_wondows = [-0.5 0.5];
+time_bin = 0.01;
+num_bins=50; % divide one UP event into 20 bins
+
+probability=[];
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+
+
+colour_lines = [215,25,28;44,123,182]/256;
+probability(nprobe).L_ripples_DOWN_distribution = [];
+probability(nprobe).L_ripples_DOWN_distribution_shuffled = [];
+probability(nprobe).L_ripples_UP_distribution = [];
+probability(nprobe).L_ripples_UP_distribution_shuffled = [];
+
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+
+    % DOWN state
+    for nsession = 1:all_sessions
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+        ripples_index = find(ripples_all(1).session_count == nsession& ripples_all(1).SWS_index == 1);
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
+        % UP_duration<2
+        
+        [~,event_index,relative_duration] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        temp = event_index(~isnan(event_index));
+        event_index(~isnan(event_index))= DOWN_index(~isnan(event_index));
+        probability(nprobe).L_ripples_DOWN_distribution = [probability(nprobe).L_ripples_DOWN_distribution [DOWN_index(event_index); relative_duration]];
+
+        % probability(nprobe).L_ripples_UP(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        % probability(nprobe).L_ripples_DOWN_shuffled(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,1);
+        % probability(nprobe).L_ripples_UP_shuffled(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,1);
+    end
+
+end
+
+
+
+
+
+time_wondows = [-0.5 0.5];
+time_bin = 0.01;
+
+for nprobe = 1:2
+    figure
+    probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
+    xline(0,'r')
+    title('cumlative probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
+    xline(0,'r')
+    title('probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
+    xline(0,'r')
+    title('cumlative probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
+    xline(0,'r')
+    title('probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
+    xline(0,'r')
+    title('cumlative probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
+    xline(0,'r')
+    title('probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
+    xline(0,'r')
+    title('cumlative probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
+    xline(0,'r')
+    title('probability of Left ripples relative to DOWN phases')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
     %%% Get spike counts
     last_spike = slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}(end);
     tvec = 0:0.01:last_spike;
@@ -459,7 +771,6 @@ for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
 
     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}, event_times, [-0.5 0.5], 0.01);
     binnedArray = filtfilt(w,1,binnedArray')';
-
     zscored_psth= reshape(binnedArray,1,[]);
     zscored_psth = (zscored_psth-mean(V1_MUA_sleep{nprobe}))/(std(V1_MUA_sleep{nprobe}));
     zscored_psth = reshape(zscored_psth,length(event_times),[]);
