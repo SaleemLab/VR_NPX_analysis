@@ -427,6 +427,14 @@ for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
 end
 
 
+
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+    for nprobe = 1:2
+        shank_id(nprobe,nsession)=ceil(slow_waves_all(nprobe).xcoord{nsession}(slow_waves_all(nprobe).channel{nsession}==slow_waves_all(nprobe).best_channel{nsession})/250);
+        
+    end
+end
+
 %%%%%%%%%% Probability of SWR during normalised UP duration
 time_wondows = [-0.5 0.5];
 time_bin = 0.01;
@@ -641,15 +649,15 @@ colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
 
 
 colour_lines = [215,25,28;44,123,182]/256;
-probability(nprobe).L_ripples_DOWN_distribution = [];
-probability(nprobe).L_ripples_DOWN_distribution_shuffled = [];
-probability(nprobe).L_ripples_UP_distribution = [];
-probability(nprobe).L_ripples_UP_distribution_shuffled = [];
+
 
 for nprobe = 1:2
-    fig(nprobe)=figure;
-    fig(nprobe).Position = [982 50 700 950];
-
+    %     fig(nprobe)=figure;
+    %     fig(nprobe).Position = [982 50 700 950];
+    probability(nprobe).L_ripples_DOWN_distribution = [];
+    probability(nprobe).L_ripples_DOWN_distribution_shuffled = [];
+    probability(nprobe).L_ripples_UP_distribution = [];
+    probability(nprobe).L_ripples_UP_distribution_shuffled = [];
     % DOWN state
     for nsession = 1:all_sessions
         UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession);
@@ -658,17 +666,59 @@ for nprobe = 1:2
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
         % UP_duration<2
-        
+
+        %         [~,event_index,relative_duration] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        [~,event_index,relative_duration] = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,0);
+        temp = event_index(~isnan(event_index));
+        event_index(~isnan(event_index))= UP_index(temp); % Convert to event id across all sessions.
+        probability(nprobe).L_ripples_UP_distribution = [probability(nprobe).L_ripples_UP_distribution [event_index; relative_duration]];
+
         [~,event_index,relative_duration] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,0);
         temp = event_index(~isnan(event_index));
-        event_index(~isnan(event_index))= DOWN_index(~isnan(event_index));
-        probability(nprobe).L_ripples_DOWN_distribution = [probability(nprobe).L_ripples_DOWN_distribution [DOWN_index(event_index); relative_duration]];
+        event_index(~isnan(event_index))= DOWN_index(temp); % Convert to event id across all sessions.
+        probability(nprobe).L_ripples_DOWN_distribution = [probability(nprobe).L_ripples_DOWN_distribution [event_index; relative_duration]];
+
+        [~,event_index,relative_duration] = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,1);
+        temp = event_index(~isnan(event_index));
+        event_index(~isnan(event_index))= UP_index(temp); % Convert to event id across all sessions.
+        probability(nprobe).L_ripples_UP_distribution_shuffled = [probability(nprobe).L_ripples_UP_distribution_shuffled [event_index; relative_duration]];
+
+        [~,event_index,relative_duration] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,1);
+        temp = event_index(~isnan(event_index));
+        event_index(~isnan(event_index))= DOWN_index(temp); % Convert to event id across all sessions.
+        probability(nprobe).L_ripples_DOWN_distribution_shuffled = [probability(nprobe).L_ripples_DOWN_distribution_shuffled [event_index; relative_duration]];
+
 
         % probability(nprobe).L_ripples_UP(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,0);
         % probability(nprobe).L_ripples_DOWN_shuffled(nsession,:) = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripples_all(1).peaktimes(ripples_index),num_bins,1);
         % probability(nprobe).L_ripples_UP_shuffled(nsession,:) = calculate_relative_event_probability(UP_ints,ripples_all(1).peaktimes(ripples_index),num_bins,1);
     end
+end
 
+for nprobe = 1:2
+%     ripples_peaktimes = ripples_all(1).peaktimes(ripples_all(1).SWS_index);
+    ripples_zscore = ripples_all(1).peak_zscore(ripples_all(1).SWS_index)';
+    [N,Xedges,Yedges] = histcounts2(ripples_zscore,probability(nprobe).L_ripples_UP_distribution(2,:),linspace(5,prctile(ripples_zscore,99),20),0:0.1:1);
+   
+    UP_duration = slow_waves_all(nprobe).UP_ints(:,2)-slow_waves_all(nprobe).UP_ints(:,1);
+    event_id = 1:length(slow_waves_all(nprobe).UP_session_count);
+    event_id = event_id(UP_duration<10);
+    ripples_UP_index = event_id(ismember(event_id,[probability(nprobe).L_ripples_UP_distribution(1,:)]));
+    UP_only_index = event_id(~ismember(event_id,[probability(nprobe).L_ripples_UP_distribution(1,:)]));
+
+
+    probability(nprobe).L_ripples_UP_distribution(1,:)
+
+    next_DOWN_duration = slow_waves_all(nprobe).DOWN_ints(ripples_UP_index+1,2)-slow_waves_all(nprobe).DOWN_ints(ripples_UP_index+1,1);
+    next_DOWN_peaks = slow_waves_all(nprobe).SWpeakmag(ripples_UP_index+1,2)-slow_waves_all(nprobe).SWpeakmag(ripples_UP_index+1,1);
+
+
+
+    ripples_zscore
+
+    imagesc(N)
+    colorbar
+    colormap(flipud(gray))
 end
 
 
@@ -736,6 +786,10 @@ for nprobe = 1:2
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
 
+
+%%%%%%%%%% V1 and HPC MUA z-score relative to all ripples, UP - DOWN ripples,
+%%%%%%%%%% DOWN - UP ripples, UP ripples and DOWN ripples 
+
 for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
     %%% Get spike counts
     last_spike = slow_waves_all(nprobe).V1_MUA_spiketimes{nsession}(end);
@@ -776,7 +830,6 @@ for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
     zscored_psth = reshape(zscored_psth,length(event_times),[]);
 
 end
-
 
 
 nprobe = 2;
