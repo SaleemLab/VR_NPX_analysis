@@ -920,9 +920,16 @@ for nprobe = 1:2
     end
 end
 
+
+% for nsession = 1:10
+% nexttile   
+% histogram(slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,2)-slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,1),0:0.05:10);
+% end
+
 for nprobe = 1:2
 %     ripples_peaktimes = ripples_all(1).peaktimes(ripples_all(1).SWS_index);
     ripples_zscore = ripples_all(1).peak_zscore(ripples_all(1).SWS_index)';
+    ripples_duration = ripples_all(1).offset(ripples_all(1).SWS_index)'-ripples_all(1).onset(ripples_all(1).SWS_index)';
     [N,Xedges,Yedges] = histcounts2(ripples_zscore,probability(nprobe).L_ripples_UP_distribution(2,:),linspace(5,prctile(ripples_zscore,99),30),0:0.05:1);
    
     UP_duration = slow_waves_all(nprobe).UP_ints(:,2)-slow_waves_all(nprobe).UP_ints(:,1);
@@ -933,8 +940,6 @@ for nprobe = 1:2
     UP_only_index = event_id(~ismember(event_id,[probability(nprobe).L_ripples_UP_distribution(1,:)]));
     UP_only_index(end) = [];
 
-    probability(nprobe).L_ripples_UP_distribution(1,:)
-
     event_session_count = slow_waves_all(nprobe).DOWN_session_count(ripples_UP_index+1)';
     next_DOWN_duration = slow_waves_all(nprobe).DOWN_ints(ripples_UP_index+1,2)-slow_waves_all(nprobe).DOWN_ints(ripples_UP_index+1,1);
     next_DOWN_peaks = slow_waves_all(nprobe).SWpeakmag(ripples_UP_index+1);
@@ -943,20 +948,117 @@ for nprobe = 1:2
         relative_times = probability(nprobe).L_ripples_UP_distribution(2,(probability(nprobe).L_ripples_UP_distribution(1,:) == ripples_UP_index(nevent)));
         ripples_zscore_this_event = ripples_zscore(probability(nprobe).L_ripples_UP_distribution(1,:) == ripples_UP_index(nevent));
         last_ripple_UP(nevent) = relative_times(end);
+        first_ripple_UP(nevent) = relative_times(1);
+        mid_ripple_UP(nevent) = median(relative_times);
+        PSD_slope_UP(nevent)  = slow_waves_all(nprobe).DOWN_PSD_slope(ripples_UP_index(nevent));
+
         last_ripple_zscore_UP(nevent) = ripples_zscore_this_event(end);
         peak_ripple_zscore_UP(nevent) = max(ripples_zscore_this_event);
         ripples_number_UP(nevent) = sum(probability(nprobe).L_ripples_UP_distribution(1,:) == ripples_UP_index(nevent));
-        if relative_times>0.8
+        cum_ripples_duration_UP(nevent) = sum(ripples_duration(probability(nprobe).L_ripples_UP_distribution(1,:) == ripples_UP_index(nevent)));
+        if relative_times>0.80
             UP_end_ripples(nevent) = 1;
         else 
              UP_end_ripples(nevent) = 0;
         end
     end
 
+
+
+
+    nexttile
+    scatter(probability(nprobe).L_ripples_UP_distribution(2,:),ripples_zscore,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0)
+    xlabel('Ripple times (normalised UP duration)')
+    ylabel('Ripples zscore')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
     scatter(last_ripple_zscore_UP,next_DOWN_duration,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Last ripple ripple power dring UP')
+    ylabel('Next DOWN duration')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
     scatter(peak_ripple_zscore_UP,next_DOWN_duration,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Peak ripple ripple power dring UP')
+    ylabel('Next DOWN duration')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    scatter(last_ripple_zscore_UP,next_DOWN_peaks,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Last ripple ripple power dring UP')
+    ylabel('Next DOWN peak amplitude')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    scatter(peak_ripple_zscore_UP,next_DOWN_peaks,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Peak ripple ripple power dring UP')
+    ylabel('Next DOWN peak amplitude')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
     scatter(ripples_number_UP,next_DOWN_duration,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Ripple number per UP')
+    ylabel('Next DOWN duration')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    scatter(ripples_number_UP,next_DOWN_peaks,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Ripple number per UP')
+    ylabel('Next DOWN peak amplitude')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    scatter(cum_ripples_duration_UP,next_DOWN_duration,'k','filled','MarkerFaceAlpha',.01,'MarkerEdgeAlpha',0);
+    xlabel('Cumulative ripple durations per UP')
+    ylabel('Next DOWN duration')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     
+    nexttile
+    scatter(cum_ripples_duration_UP,next_DOWN_peaks,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Cumulative ripple durations per UP')
+    ylabel('Next DOWN peak amplitude')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    scatter(cum_ripples_duration_UP,UP_duration(ripples_UP_index),'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlabel('Cumulative ripple durations per UP')
+    ylabel('Next DOWN peak amplitude')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+
+
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    scatter(UP_duration,slow_waves_all(nprobe).DOWN_PSD_slope,'k','filled','MarkerFaceAlpha',.02,'MarkerEdgeAlpha',0);
+    xlim([0 2])
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    next_DOWN_duration = slow_waves_all(nprobe).DOWN_ints(UP_only_index+1,2)-slow_waves_all(nprobe).DOWN_ints(UP_only_index+1,1);
+    scatter(UP_duration(UP_only_index),next_DOWN_duration,'k','filled','MarkerFaceAlpha',.05,'MarkerEdgeAlpha',0);
+    xlim([0 2])
+    ylim([0 1])
+
+%     beeswarm(4*UP_end_ripples',last_ripple_zscore_UP')
+
+    for nBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',nBoot); % Set random seed for resampling
+        resampled_data = datasample(s,last_ripple_zscore_UP(UP_end_ripples==0),sum(UP_end_ripples==1));
+        A(nBoot) = mean(resampled_data);
+        resampled_data = datasample(s,last_ripple_zscore_UP(UP_end_ripples==1),sum(UP_end_ripples==1));
+        B(nBoot) = mean(resampled_data);
+
+        p = ranksum(resampled_data,last_ripple_zscore_UP(UP_end_ripples==1));
+        p_value(nBoot) = p;
+    end
+    prctile(A,2.5)
+    prctile(A,97.5)
+    prctile(B,2.5)
+    prctile(B,97.5)
+
     average_duration=[];
     for n = unique(ripples_number_UP)
         for nsession = unique(event_session_count)
@@ -972,7 +1074,9 @@ for nprobe = 1:2
     ylim([0 1])
     ripples_zscore
 
-    imagesc(N)
+
+     [N,Xedges,Yedges] = histcounts2(ripples_zscore,probability(nprobe).L_ripples_UP_distribution(2,:),linspace(5,prctile(ripples_zscore,99),20),0:0.05:1);
+    imagesc(N./sum(N))
 
     [~,index]=max(N);
     colorbar
@@ -982,67 +1086,6 @@ end
 
 
 
-
-time_wondows = [-0.5 0.5];
-time_bin = 0.01;
-
-for nprobe = 1:2
-    figure
-    probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-    xline(0,'r')
-    title('cumlative probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-    xline(0,'r')
-    title('probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-    xline(0,'r')
-    title('cumlative probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-    xline(0,'r')
-    title('probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-    probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-    xline(0,'r')
-    title('cumlative probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-    xline(0,'r')
-    title('probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-    xline(0,'r')
-    title('cumlative probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    nexttile
-    plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-    xline(0,'r')
-    title('probability of Left ripples relative to DOWN phases')
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-end
 
 
 %%%%%%%%%% V1 and HPC MUA z-score relative to all ripples, UP - DOWN ripples,
@@ -1105,316 +1148,6 @@ colorbar
 colormap(flipud(gray))
 
 plot_perievent_spiketime_histogram
-
-%% UP DOWN state and ripple and spindle analysis (backup)
-
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
-addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-
-clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-Stimulus_type = 'Sleep';
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% 1:length(experiment_info)
-% [1 2 3 4 6 7 8 9 10 12 14]
-
-for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-    % find right date number based on all experiment dates of the subject
-    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
-    if isempty(stimulus_name)
-        continue
-    end
-    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
-    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        options = session_info(n).probe(1);
-        
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
-        if isempty(DIR)
-            continue
-        end
-
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-
-        if ~isempty(DIR)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            session_clusters_RUN=session_clusters;
-            clear session_clusters
-        end
-
-        if ~isempty(DIR1)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-            session_clusters_RUN=session_clusters;
-            clear session_clusters
-        end
-
-        if contains(stimulus_name{n},'Masa2tracks')
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
-        elseif contains(stimulus_name{n},'Sleep')
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
-
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
-%             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
-        else
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
-        end
-        %         
-        
-        % From cell structure back to spike times and spike id
-        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
-        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
-        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
-        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
-
-        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
-        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
-        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
-        session_clusters.spike_id=session_clusters.spike_id(index);
-
-        clusters_combined= session_clusters; % SUA from both probes
-
-        if length(clusters) > 1
-            MUA_combined = combine_clusters_from_multiple_probes(clusters(1),clusters(2)); % all clusters for MUA
-        else
-            MUA_combined = clusters;
-        end
-
-        clear selected_clusters
-        %         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-        %             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
-
-        metric_param =[];
-        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
-        [selected_clusters,cluster_id] = select_clusters(session_clusters_RUN,metric_param);
-        x_window = [0 140];
-        x_bin_width = 2;
-        place_fields = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-            selected_clusters.position{1},selected_clusters.speed{1},selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
-
-        metric_param =[];
-        % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-        metric_param.region = @(x) contains(x,'V1_L');
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        V1_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
-        metric_param.region = @(x) contains(x,'V1_R');
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        V1_spikes{2}=[selected_clusters.spike_id selected_clusters.spike_times];
-
-        metric_param.region = @(x) contains(x,'HPC_L');
-        % metric_param.cell_type = @(x) x==1;
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        HPC_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
-        metric_param.region = @(x) contains(x,'HPC_R');
-        % metric_param.cell_type = @(x) x==1;
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        HPC_spikes{2}=[selected_clusters.spike_id selected_clusters.spike_times];
-        metric_param.region = @(x) contains(x,'HPC');
-        % metric_param.cell_type = @(x) x==1;
-        [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-        HPC_spikes{3}=[selected_clusters.spike_id selected_clusters.spike_times];
-
-        %%% Get spike counts
-        tvec = LFP(1).tvec;
-        mobility_interp = interp1(selected_clusters.tvec{1},double(selected_clusters.mobility_thresholded{1}),tvec,'previous');
-        tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
-        HPC_spike_counts=[];
-        V1_spike_counts=[];
-        w = gausswin(0.03*1/mean(diff(tvec)));
-        w = w / sum(w);
-        % speed= filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
-        for nprobe = 1:length(V1_spikes)
-            spike_times = V1_spikes{nprobe}(:,2);
-            spike_speed =  interp1(tvec,mobility_interp,spike_times,'nearest');
-            spike_times_sleep = spike_times(spike_speed < 1);
-            V1_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
-
-            spike_times = HPC_spikes{nprobe}(:,2);
-            spike_speed =  interp1(tvec,mobility_interp,spike_times,'nearest');
-            spike_times_sleep = spike_times(spike_speed < 1);
-            HPC_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
-        end
-        spike_times = HPC_spikes{3}(:,2);
-        spike_speed =  interp1(tvec,mobility_interp,spike_times,'nearest');
-        spike_times_sleep = spike_times(spike_speed < 1);
-        HPC_spike_counts{3} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
-
-        % 
-
-
-        % Probability of SWR during normalised UP duration
-        time_wondows = [-0.5 0.5];
-        time_bin = 0.01;
-        num_bins=15; % divide one UP event into 20 bins
-
-        for nprobe = 1:2
-            figure
-            % DOWN state
-            probabilities = calculate_relative_event_probability(slow_waves(nprobe).ints.DOWN,ripples(1).SWS_peaktimes,num_bins);
-            nexttile
-            plot(linspace(0,1,num_bins),cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples during DOWN phases')
-            xlabel('Normalised duration of DOWN')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot(linspace(0,1,num_bins),probabilities);
-            xline(0,'r')
-            title('probability of Left ripples during DOWN phases')
-            xlabel('Normalised duration of DOWN')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            % UP state
-            UP_duration = slow_waves(nprobe).ints.UP(:,2)-slow_waves(nprobe).ints.UP(:,1);
-
-            probabilities = calculate_relative_event_probability(slow_waves(nprobe).ints.UP(find(UP_duration<2),:),ripples(1).SWS_peaktimes,num_bins);
-            nexttile
-            plot(linspace(0,1,num_bins),cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples during UP phases')
-            xlabel('Normalised duration of UP')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot(linspace(0,1,num_bins),probabilities);
-            ylim([0 max(probabilities)+0.005])
-            xline(0,'r')
-            title('probability of Left ripples during UP phases')
-            xlabel('Normalised duration of UP')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-            % DOWN state
-            probabilities = calculate_relative_event_probability(slow_waves(nprobe).ints.DOWN,ripples(2).SWS_peaktimes,num_bins);
-            nexttile
-            plot(linspace(0,1,num_bins),cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Right ripples during DOWN phases')
-            xlabel('Normalised duration of DOWN')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot(linspace(0,1,num_bins),probabilities);
-            xline(0,'r')
-            title('probability of Right ripples during DOWN phases')
-            xlabel('Normalised duration of DOWN')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            % UP state
-            probabilities = calculate_relative_event_probability(slow_waves(nprobe).ints.UP(find(UP_duration<2),:),ripples(2).SWS_peaktimes,num_bins);
-            nexttile
-            plot(linspace(0,1,num_bins),cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Right ripples during UP phases')
-            xlabel('Normalised duration of UP')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot(linspace(0,1,num_bins),probabilities);
-            ylim([0 max(probabilities)+0.005])
-            xline(0,'r')
-            title('probability of Right ripples during UP phases')
-            xlabel('Normalised duration of UP')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)           
-        end
-
-
-        for nprobe = 1:2
-            figure
-            probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-            xline(0,'r')
-            title('probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-            xline(0,'r')
-            title('probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-            probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-            xline(0,'r')
-            title('probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(nprobe).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],cumsum(probabilities));
-            xline(0,'r')
-            title('cumlative probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-            nexttile
-            plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],probabilities);
-            xline(0,'r')
-            title('probability of Left ripples relative to DOWN phases')
-            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-        end
-
-
-    end
-end
 
 
 
