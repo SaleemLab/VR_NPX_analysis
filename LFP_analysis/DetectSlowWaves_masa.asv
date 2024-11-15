@@ -433,9 +433,9 @@ hold on
 patch([DOWNints(:,1) DOWNints(:,2) DOWNints(:,2) DOWNints(:,1)]',...
     repmat([y(1) y(1) y(2) y(2)],length(DOWNints(:,1)),1)',...
     'g','FaceAlpha',0.2,'EdgeColor','none');
-% plot(deltaLFP.timestamps,gammaLFP.normamp,'g','Linewidth',1)
-% hold on
-% plot(deltaLFP.timestamps,deltaLFP.normamp,'b','Linewidth',1)
+plot(deltaLFP.timestamps,gammaLFP.normamp,'g','Linewidth',1)
+hold on
+plot(deltaLFP.timestamps,deltaLFP.normamp,'b','Linewidth',1)
 %    plot(deltaLFP.timestamps,deltaLFP.normamp-peakthresh,'b','Linewidth',1)    
 %    plot(deltaLFP.timestamps(sampleIDX),gammaLFP.normamp(sampleIDX)+thresholds.GAMMAwinthresh,'g','Linewidth',1) 
 %    plot(deltaLFP.timestamps(sampleIDX),deltaLFP.normamp(sampleIDX)-thresholds.DELTAwinthresh,'b','Linewidth',1) 

@@ -938,10 +938,21 @@ for nprobe = 1:2
     end
 end
 
-figure
-for nsession = 1:10
-nexttile   
-histogram(log10(slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,2)-slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,1)),100);
+
+for nprobe = 1:2
+    figure
+    for nsession = 1:10
+        nexttile
+        histogram(log10(slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,2)-slow_waves_all(nprobe).UP_ints(slow_waves_all(nprobe).UP_session_count ==nsession,1)),100,'EdgeColor','none');
+        hold on;
+        histogram(log10(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).UP_session_count ==nsession,2)-slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).UP_session_count ==nsession,1)),100,'EdgeColor','none');
+
+        xlabel('Event duration (log10 sec)')
+        ylabel('event counts')
+
+        title(sprintf('Session %i',nsession))
+    end
+    legend('UP','DOWN','Box','off')
 end
 
 probe_hemisphere_texts = {'left','right'};

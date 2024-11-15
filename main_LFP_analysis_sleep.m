@@ -331,207 +331,252 @@ for nsession =1:length(experiment_info)
         end
         toc
         
-        % % PSD slope quantification using fooof ()
+
+
+        %%% Test slow wave detection
         tvec = LFP(1).tvec;
-        % SR = round(1/mean(diff(tvec)));
-        % nfft_seconds= 2;
-        % nfft = 2^(nextpow2(SR*nfft_seconds));
-        % win  = hanning(nfft);
-        % 
-        % clipDur = 10; % seconds
-        % timebin_edges = tvec(1):10:tvec(end); % 10 seconds timebin edges for PSD slope
-        % nClipSamps = round(SR*clipDur);
-        % 
-        % PSD_slope=[];
-        % 
-        % disp('PSD slope for slow waves started')
-        % tic
-        % for nprobe = 1:length(session_info(n).probe)
-        %     probe_no = session_info(n).probe(nprobe).probe_id+1;
-        % 
-        %     slow_waves(probe_no).power = [];
-        %     slow_waves(probe_no).frequency = [];
-        %     slow_waves(probe_no).PSD_slope = [];
-        %     slow_waves(probe_no).timebin_edges = [];
-        %     slow_waves(probe_no).DOWN_PSD_slope = [];
-        %     slow_waves(probe_no).UP_PSD_slope = [];
-        % 
-        %     if ~isempty(behavioural_state_merged.SWS)
-        %         best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(probe_no).best_channel);
-        %         V1_LFP = LFP(probe_no).best_V1(best_channel,:);
-        % 
-        %     else
-        %         continue
-        %     end
-        % 
-        %     % slow_waves(probe_no).power=[];
-        %     % slow_waves(probe_no).powerdB=[];
-        %     nClips = floor(length(V1_LFP)/nClipSamps);
-        %     samples_to_pass = 0;
-        % 
-        %     for clip = 1:nClips
-        %         tidx = [1+samples_to_pass:samples_to_pass+nClipSamps]; % in samples
-        %         % timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
-        %         % timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
-        % 
-        % 
-        %         [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
-        % 
-        %         slow_waves(probe_no).power(clip,:) = pxx;
-        %         % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
-        %         fxx = fxx';
-        %         % FOOOF settings
-        %         settings = struct();
-        %         f_range = [1, 50];
-        % 
-        %         % Run FOOOF to fit the model and quantify the slope of power spectra
-        %         fooof_results = fooof(fxx, pxx, f_range, settings);
-        %         % fooof_plot(fooof_results)
-        %        PSD_slope(clip) = fooof_results.aperiodic_params(2); % slope of aperiodic component
-        % 
-        %         samples_to_pass = samples_to_pass + nClipSamps;
-        %     end
-        % 
-        %     slow_waves(probe_no).frequency = fxx;
-        %     slow_waves(probe_no).PSD_slope = PSD_slope;
-        %     slow_waves(probe_no).timebin_edges = timebin_edges;
-        % 
-        %     event_PSD_slope=[];
-        %     event_midpoint = mean(slow_waves(probe_no).ints.UP,2);
-        %     % Find the bin indices for each event time
-        %     [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-        %     slow_waves(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
-        % 
-        %     event_PSD_slope=[];
-        %     event_midpoint = slow_waves(probe_no).timestamps;
-        %     % Find the bin indices for each event time
-        %     [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-        %     slow_waves(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
-        % 
-        % end
-        % toc
-        % disp('PSD slope for slow waves finished')
-        % 
-        % disp('cortical wave travleing direction analysis started')
-        % tic
-        % %%%%%%%%%%%% Cortical wave direction during DOWN state peak
-        % % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        % filterparms.deltafilter = [0.5 9];%heuristically defined.  room for improvement here.
-        % filterparms.gammafilter = [100 400];
-        % filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
-        % filterparms.gammanormwin = 20; %window for gamma normalization (s)
-        % 
-        % for nprobe = 1:length(session_info(n).probe)
-        %     probe_no = session_info(n).probe(nprobe).probe_id+1;
-        %     lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-        %     lfp.timestamps = LFP(probe_no).tvec;
-        %     lfp.data=[];
-        %     DOWN_peaks_shank = [];
-        %     peaks_latency = [];
-        %     DOWN_traveling = [];
-        %     slow_waves(probe_no).DOWN_peaks_shank = [];
-        %     slow_waves(probe_no).DOWN_peaks_latency = [];
-        %     slow_waves(probe_no).DOWN_traveling = [];
-        % 
-        %     if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
-        % 
-        %         lfp.data= LFP(probe_no).average_V1';
-        %         deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-        % 
-        %         zscored_LFP = [];
-        %         zscored_LFP = zscore(deltaLFP.data);
-        %         % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
-        % 
-        %         for nevent = 1:length(slow_waves(probe_no).timestamps)
-        %         % for nevent = 600:640
-        %             tidx = FindInInterval(tvec,[slow_waves(probe_no).timestamps(nevent)-0.1 slow_waves(probe_no).timestamps(nevent)+0.1]);
-        %             % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
-        %             tidx=tidx(1):tidx(end);
-        %             [~,idx]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec));
-        % 
-        %             for nShank=1:length(LFP(probe_no).average_V1_shank_id)
-        % 
-        %                 [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
-        % 
-        %                 [~,temp]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec(tidx(peak_id))));
-        %                 if ~isempty(temp)
-        %                     DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
-        %                 else
-        %                     DOWN_peaks_shank(nShank,nevent) = nan;
-        %                 end
-        %             end
-        % 
-        %             % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
-        %             %
-        %             % diff(DOWN_peaks_shank(:,425))
-        % 
-        %             % Putatively
-        %             if sum(~isnan(DOWN_peaks_shank(:,nevent)))==4 % if delta peaks on four shanks
-        %                 peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
-        %             elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==3 % if delta peaks on three shanks
-        %                 skipped_shank= diff(LFP(probe_no).average_V1_shank_id(~isnan(DOWN_peaks_shank(:,nevent))))>1;
-        %                 if sum(skipped_shank)>0 % if delta peak skipped one shank
-        % 
-        %                     if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
-        %                         peaks_latency(nevent) = DOWN_peaks_shank(1,nevent)-DOWN_peaks_shank(2,nevent);
-        %                     elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
-        %                         peaks_latency(nevent) = DOWN_peaks_shank(2,nevent)-DOWN_peaks_shank(3,nevent);
-        %                     end
-        %                 else
-        %                     peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
-        %                 end
-        %             elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==2 % if delta peaks on two shanks
-        %                 peaks_latency(nevent) = diff(DOWN_peaks_shank(1:2,nevent));
-        %             else % only one peak. Can't calculate latency
-        %                 peaks_latency(nevent) =nan;
-        %             end
-        % 
-        %             % From https://www.jneurosci.org/content/34/26/8875#sec-2
-        %             % speed is ~40 milimeter per seconds
-        %             % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
-        %             % putatively set the minimum delay threshold to be 3
-        %             % miliseconds.
-        %             if session_clusters.probe_hemisphere(nprobe)==1
-        % 
-        %                 % if direction of mean latency is consistent with the latency more than half
-        %                 % of the shank latency
-        %                 % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
-        %                 % (if three shanks, then still 2 jumps needed)
-        %                 if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-        %                     DOWN_traveling(nevent) = 1; % anterior to posterior
-        %                 elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-        %                     DOWN_traveling(nevent) = -1; % posterior to anterior
-        %                 else
-        %                     DOWN_traveling(nevent) = 0; % noisy or standing wave?
-        %                 end
-        %                 % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
-        %             elseif session_clusters.probe_hemisphere(nprobe)==2
-        %                 if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-        %                     DOWN_traveling(nevent) = -1; % posterior to anterior
-        %                 elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-        %                     DOWN_traveling(nevent) = 1; % anterior to posterior
-        %                 else
-        %                     DOWN_traveling(nevent) = 0; % noisy or standing wave?
-        %                 end
-        %             end
-        % 
-        %             % nexttile
-        %             % hold on;xline(tvec(idx));
-        %             % plot(tvec(tidx),zscored_LFP(tidx,:));
-        %             % % hold on;xline(median(tvec(tidx(1):tidx(end))))
-        %             % xline(DOWN_peaks_shank(:,nevent)')
-        %         end
-        % 
-        % 
-        %     end
-        % 
-        %     slow_waves(probe_no).DOWN_peaks_shank = DOWN_peaks_shank;
-        %     slow_waves(probe_no).DOWN_peaks_latency = peaks_latency;
-        %     slow_waves(probe_no).DOWN_traveling = DOWN_traveling;
-        % end
-        % disp('cortical wave travleing direction analysis finished')
-        % toc
-        % 
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+            options = session_info(n).probe(nprobe);
+
+            %%%%% V1 MUA spikes
+            metric_param =[]; % get all V1 spikes from left or right hemisphere
+            if options.probe_hemisphere==1
+                metric_param.region = @(x) contains(x,'V1_L');
+%                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                V1_clusters = select_clusters(clusters(nprobe),metric_param);
+                metric_param.region = @(x) contains(x,'HPC_L');
+                HPC_clusters = select_clusters(clusters(nprobe),metric_param);
+            elseif options.probe_hemisphere==2
+%                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                metric_param.region = @(x) contains(x,'V1_R');
+                V1_clusters = select_clusters(clusters(nprobe),metric_param);
+                metric_param.region = @(x) contains(x,'HPC_R');
+                HPC_clusters = select_clusters(clusters(nprobe),metric_param);
+            end
+
+            best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
+
+            if isempty(best_channel)
+                [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
+                temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+                [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                    'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+            else
+                temp_04 = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.4);
+                [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+                    'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+            end
+        end
+        % PSD slope quantification using fooof ()
+        tvec = LFP(1).tvec;
+        SR = round(1/mean(diff(tvec)));
+        nfft_seconds= 2;
+        nfft = 2^(nextpow2(SR*nfft_seconds));
+        win  = hanning(nfft);
+
+        clipDur = 10; % seconds
+        timebin_edges = tvec(1):10:tvec(end); % 10 seconds timebin edges for PSD slope
+        nClipSamps = round(SR*clipDur);
+
+        PSD_slope=[];
+
+        disp('PSD slope for slow waves started')
+        tic
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            slow_waves(probe_no).power = [];
+            slow_waves(probe_no).frequency = [];
+            slow_waves(probe_no).PSD_slope = [];
+            slow_waves(probe_no).timebin_edges = [];
+            slow_waves(probe_no).DOWN_PSD_slope = [];
+            slow_waves(probe_no).UP_PSD_slope = [];
+
+            if ~isempty(behavioural_state_merged.SWS)
+                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(probe_no).best_channel);
+                V1_LFP = LFP(probe_no).best_V1(best_channel,:);
+
+            else
+                continue
+            end
+
+            % slow_waves(probe_no).power=[];
+            % slow_waves(probe_no).powerdB=[];
+            nClips = floor(length(V1_LFP)/nClipSamps);
+            samples_to_pass = 0;
+
+            for clip = 1:nClips
+                tidx = [1+samples_to_pass:samples_to_pass+nClipSamps]; % in samples
+                % timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
+                % timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
+
+
+                [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
+
+                slow_waves(probe_no).power(clip,:) = pxx;
+                % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
+                fxx = fxx';
+                % FOOOF settings
+                settings = struct();
+                f_range = [0.5, 8];
+
+                % Run FOOOF to fit the model and quantify the slope of power spectra
+                fooof_results = fooof(fxx, pxx, f_range, settings);
+                % fooof_plot(fooof_results)
+                PSD_slope(clip) = fooof_results.aperiodic_params(2); % slope of aperiodic component
+
+                samples_to_pass = samples_to_pass + nClipSamps;
+            end
+
+            slow_waves(probe_no).frequency = fxx;
+            slow_waves(probe_no).PSD_slope = PSD_slope;
+            slow_waves(probe_no).timebin_edges = timebin_edges;
+            
+            delta_power=[];
+            delta_power = zscore(mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2));
+%             delta_power = mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2);
+            
+%             timebin_centre = timebin_edges(1)+mean(diff(timebin_edges))/2:mean(diff(timebin_edges)):timebin_edges(end)-mean(diff(timebin_edges))/2;
+%             NREM_delta_power = delta_power(find(ismember(timebin_centre,Restrict(timebin_centre,behavioural_state_merged.SWS))));
+%             delta_power = (delta_power-mean(NREM_delta_power))/std(NREM_delta_power);
+
+            event_midpoint = mean(slow_waves(probe_no).ints.UP,2);
+            % Find the bin indices for each event time
+            [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
+            slow_waves(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
+            slow_waves(probe_no).UP_delta_power= delta_power(bin_indices);
+
+
+            event_midpoint = slow_waves(probe_no).timestamps;
+            % Find the bin indices for each event time
+            [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
+            slow_waves(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
+            slow_waves(probe_no).DOWN_delta_power= delta_power(bin_indices);
+        end
+        toc
+        disp('PSD slope for slow waves finished')
+
+        disp('cortical wave travleing direction analysis started')
+        tic
+        %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+        % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
+        filterparms.deltafilter = [0.5 9];%heuristically defined.  room for improvement here.
+        filterparms.gammafilter = [100 400];
+        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+            lfp.timestamps = LFP(probe_no).tvec;
+            lfp.data=[];
+            DOWN_peaks_shank = [];
+            peaks_latency = [];
+            DOWN_traveling = [];
+            slow_waves(probe_no).DOWN_peaks_shank = [];
+            slow_waves(probe_no).DOWN_peaks_latency = [];
+            slow_waves(probe_no).DOWN_traveling = [];
+
+            if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
+
+                lfp.data= LFP(probe_no).average_V1';
+                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+
+                zscored_LFP = [];
+                zscored_LFP = zscore(deltaLFP.data);
+                % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
+
+                for nevent = 1:length(slow_waves(probe_no).timestamps)
+                    % for nevent = 600:640
+                    tidx = FindInInterval(tvec,[slow_waves(probe_no).timestamps(nevent)-0.1 slow_waves(probe_no).timestamps(nevent)+0.1]);
+                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+                    tidx=tidx(1):tidx(end);
+                    [~,idx]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec));
+
+                    for nShank=1:length(LFP(probe_no).average_V1_shank_id)
+
+                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+
+                        [~,temp]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec(tidx(peak_id))));
+                        if ~isempty(temp)
+                            DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+                        else
+                            DOWN_peaks_shank(nShank,nevent) = nan;
+                        end
+                    end
+
+                    % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
+                    %
+                    % diff(DOWN_peaks_shank(:,425))
+
+                    % Putatively
+                    if sum(~isnan(DOWN_peaks_shank(:,nevent)))==4 % if delta peaks on four shanks
+                        peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
+                    elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==3 % if delta peaks on three shanks
+                        skipped_shank= diff(LFP(probe_no).average_V1_shank_id(~isnan(DOWN_peaks_shank(:,nevent))))>1;
+                        if sum(skipped_shank)>0 % if delta peak skipped one shank
+
+                            if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
+                                peaks_latency(nevent) = DOWN_peaks_shank(1,nevent)-DOWN_peaks_shank(2,nevent);
+                            elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
+                                peaks_latency(nevent) = DOWN_peaks_shank(2,nevent)-DOWN_peaks_shank(3,nevent);
+                            end
+                        else
+                            peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
+                        end
+                    elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==2 % if delta peaks on two shanks
+                        peaks_latency(nevent) = diff(DOWN_peaks_shank(1:2,nevent));
+                    else % only one peak. Can't calculate latency
+                        peaks_latency(nevent) =nan;
+                    end
+
+                    % From https://www.jneurosci.org/content/34/26/8875#sec-2
+                    % speed is ~40 milimeter per seconds
+                    % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
+                    % putatively set the minimum delay threshold to be 3
+                    % miliseconds.
+                    if session_clusters.probe_hemisphere(nprobe)==1
+
+                        % if direction of mean latency is consistent with the latency more than half
+                        % of the shank latency
+                        % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
+                        % (if three shanks, then still 2 jumps needed)
+                        if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
+                            DOWN_traveling(nevent) = 1; % anterior to posterior
+                        elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
+                            DOWN_traveling(nevent) = -1; % posterior to anterior
+                        else
+                            DOWN_traveling(nevent) = 0; % noisy or standing wave?
+                        end
+                        % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+                    elseif session_clusters.probe_hemisphere(nprobe)==2
+                        if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
+                            DOWN_traveling(nevent) = -1; % posterior to anterior
+                        elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
+                            DOWN_traveling(nevent) = 1; % anterior to posterior
+                        else
+                            DOWN_traveling(nevent) = 0; % noisy or standing wave?
+                        end
+                    end
+
+                    % nexttile
+                    % hold on;xline(tvec(idx));
+                    % plot(tvec(tidx),zscored_LFP(tidx,:));
+                    % % hold on;xline(median(tvec(tidx(1):tidx(end))))
+                    % xline(DOWN_peaks_shank(:,nevent)')
+                end
+
+
+            end
+
+            slow_waves(probe_no).DOWN_peaks_shank = DOWN_peaks_shank;
+            slow_waves(probe_no).DOWN_peaks_latency = peaks_latency;
+            slow_waves(probe_no).DOWN_traveling = DOWN_traveling;
+        end
+        disp('cortical wave travleing direction analysis finished')
+        toc
+
         % 
 
         disp('Sharp wave amplitude started')
