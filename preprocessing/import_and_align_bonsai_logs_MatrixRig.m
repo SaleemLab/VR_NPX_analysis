@@ -162,7 +162,9 @@ switch(lower(StimulusName))
             average_stim_duration = (stimTimes(end)-stimTimes(1))/size(stimData,1);
             stim_id = (find(diff(stimTimes)>average_stim_duration*2));
 
-            if length(stim_id) == 1 % if happended once we can remove all the stimuli stime between these two points (happens rarely)
+            if isempty(stim_id)
+                
+            elseif length(stim_id) == 1 % if happended once we can remove all the stimuli stime between these two points (happens rarely)
                 stimData(stim_id:stim_id+size(stimData,1)-length(stimTimes)-1,:)=[];
             elseif length(stim_id) <4 % if happended few times we can remove all the stimuli stime between these two points (happens rarely)
                 stimData(stim_id(1):end,:)=[];
