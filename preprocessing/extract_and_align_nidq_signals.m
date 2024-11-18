@@ -1,6 +1,7 @@
 function extract_and_align_nidq_signals(options)
 % This code extracts  nidq signals then aligns nidq signals to Ephys signal
 DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*_NidqTimes.mat'))
+DIR=[];
 if isempty(DIR)
     
     td = dir(fullfile(options.EPHYS_DATAPATH,'..','*nidq.bin'));
@@ -84,11 +85,17 @@ if isempty(DIR)
         save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
     end
     
-    
-    %  [~,fname] = fileparts(options.EPHYS_DATAPATH);
-    % save(fullfile(options.EPHYS_DATAPATH,[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate');
+    % Room for improvement, potentially use 0 and 1 rather than on/off
+    % timestamps for interpolation
+
+    % ephys_DIR = dir(fullfile(options.EPHYS_DATAPATH,'*.meta'));
+    % ephys_meta = ReadMeta(fullfile(ephys_DIR(1).folder,ephys_DIR(1).name));
+    % syncTimes_ephys.tvec = 1/SampRate(ephys_meta):1/SampRate(ephys_meta):length(syncTimes_ephys.Sync)/SampRate(ephys_meta);
+    % 
+    % syncTimes_ephys.Sync_interp = interp1(syncTimes_ephys.tvec',syncTimes_ephys.Sync',Nidq.tvec','previous')';
+
     [Nidq] = alignNiqdToEphysSyncTimes(Nidq,syncTimes_ephys.on);
-    
+    disp(['Nidq first time is ',num2str(Nidq.sglxTime(1))])
     
     %%%
     % Store the spikeglx based event times

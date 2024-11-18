@@ -141,7 +141,10 @@ end
 
 blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per second so a block size should be quite large
 
-%    plot(photodiode.Photodiode_smoothed); hold on; scatter(pd_OFF(blocks_ind),50);
+   % plot(photodiode.sglxTime,photodiode.Photodiode_smoothed); hold on; scatter(photodiode.sglxTime(pd_OFF(blocks_ind)),50,'b');
+   % scatter(photodiode.sglxTime(pd_ON(blocks_ind)),50,'r');
+
+   % plot(Nidq.sglxTime,Nidq.photodiode/100);
 photodiodeData = [];
 photodiodeData.stim_on.sglxTime = photodiode.sglxTime(pd_ON(blocks_ind)');
 photodiodeData.stim_off.sglxTime = photodiode.sglxTime(pd_OFF(blocks_ind)');

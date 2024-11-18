@@ -146,6 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 SUBJECTS = {'M24016','M24017','M24018'};
+SUBJECTS = {'M24062'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -155,12 +156,12 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 experiment_info=experiment_info([22 38]);
 % experiment_info=experiment_info(4:5);
-% All_stimuli = {'FullScreenFlash'}
+% All_stimuli = {'Checkerboard'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 All_stimuli = {'Masa2tracks','SparseNoise'}
 % All_stimuli = {'SleepChronic'};
-% All_stimuli = {'SparseNoise','Checkerboard'};
+% All_stimuli = {'Checkerboard','Checkerboard'};
 % All_stimuli = {'Masa2tracks'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
@@ -226,6 +227,11 @@ else
 end
 
 
+All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
+for n = 1:length(All_stimuli)
+    extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
+end
+
 % Batch PSD analysis
 Stimulus_type = 'Checkerboard'; % extract LFP during RUN
 ROOTPATH = 'Z:\ibn-vision';
@@ -235,6 +241,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 SUBJECTS = {'M24016'};
+SUBJECTS = {'M24062'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % experiment_info = experiment_info(6);
 Stimulus_type= 'Checkerboard_sh1'; 
@@ -250,8 +257,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24017';
-SESSION = '20240605';
+SUBJECT = 'M24062';
+SESSION = '20241115';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
@@ -292,32 +299,32 @@ for nstimuli = 1:4
             end
         end
 
-        %%%%%%%%%% Comment out this sections when quantifying checkerboard
-        %%%%%%%%%% CSD and plotting channel maps. Then use this section for
-        %%%%%%%%%% manual channel map updates
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
-        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
-
-        if ~isempty(DIR)|~isempty(DIR1)
-            if contains(Stimulus_type,'sh')
-                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
-            else
-                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
-            end  
-        end
-
-        [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-        [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-
-        if contains(Stimulus_type,'_sh')
-            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-        else
-            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-        end
-
-        checkerboard_CSD_profile(options);
-        save_all_figures(options.ANALYSIS_DATAPATH,[]);
-        %%%%%%%%%%
+        % %%%%%%%%%% Comment out this sections when quantifying checkerboard
+        % %%%%%%%%%% CSD and plotting channel maps. Then use this section for
+        % %%%%%%%%%% manual channel map updates
+        % DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
+        % DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
+        % 
+        % if ~isempty(DIR)|~isempty(DIR1)
+        %     if contains(Stimulus_type,'sh')
+        %         load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
+        %     else
+        %         load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
+        %     end  
+        % end
+        % 
+        % [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+        % [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+        % 
+        % if contains(Stimulus_type,'_sh')
+        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+        % else
+        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        % end
+        % 
+        % checkerboard_CSD_profile(options);
+        % save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        % %%%%%%%%%%
     end
 end
 

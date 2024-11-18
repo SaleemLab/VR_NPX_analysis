@@ -1,30 +1,23 @@
-function [lfpAvg,csd,PSD] = periSW_LFP_response(event_name,stimTimes,AnalysisTimeWindow,options,varargin)
+function [resps] = perievent_LFP_response(stimTimes,AnalysisTimeWindow,options,varargin)
 
 p = inputParser;
-addParameter(p,'place_fields',[],@isstruct);
 % addParameter(p,'doDetrend',false,@islogical);
-addParameter(p,'filter_type',[],@iscell);
-addParameter(p,'filter_freq',[0.5 3;4 12;9 17;30 60;60 100;125 300; 300 600],@isnumeric) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
-addParameter(p,'CSD_V1_CA1_normalisation',0,@isnumeric) % Normalised CSD within region or not
-addParameter(p,'x_col',1,@isnumeric) % which x_col to use
-addParameter(p,'selected_channels',1,@isnumeric) % which x_col to use
-addParameter(p,'LFP',[],@isnumeric) % which x_col to use
-addParameter(p,'best_channels',[],@isstruct) % which x_col to use
+addParameter(p,'filter_freq',[],@isnumeric);
+% addParameter(p,'filter_freq',[0.5 3;4 12;9 17;30 60;60 100;125 300; 300 600],@isnumeric) % Frequency range: [freq1(1) freq1;freq2 freq2;......]
+% addParameter(p,'CSD_V1_CA1_normalisation',0,@isnumeric) % Normalised CSD within region or not
+% addParameter(p,'x_col',1,@isnumeric) % which x_col to use
+addParameter(p,'selected_channels',[],@isnumeric) % which x_col to use
+% addParameter(p,'LFP',[],@isnumeric) % which x_col to use
+% addParameter(p,'best_channels',[],@isstruct) % which x_col to use
 
 
 parse(p,varargin{:})
-filter_type = p.Results.filter_type;
+% filter_type = p.Results.filter_type;
 filter_freq = p.Results.filter_freq;
-place_fields = p.Results.place_fields;
 selected_channels = p.Results.selected_channels;
-CSD_V1_CA1_normalisation = p.Results.CSD_V1_CA1_normalisation;
-x_col  = p.Results.x_col;
-LFP  = p.Results.LFP;
-best_channels  = p.Results.best_channels;
-
 extractedTimeWindow = AnalysisTimeWindow;
-extractedTimeWindow(1) = extractedTimeWindow(1)-5;
-extractedTimeWindow(2)= extractedTimeWindow(2)+5;
+% extractedTimeWindow(1) = extractedTimeWindow(1)-5;
+% extractedTimeWindow(2)= extractedTimeWindow(2)+5;
 
 
 % 
@@ -71,19 +64,6 @@ BinWidth = 1/1250;
 %             options.ks_unitType = 'good'; % 'mua', 'good' or ''
 nprobe = options.probe_id+1; % probe_no is [1,2] based on options.probe_id (0 and 1)
 
-power = [];
-
-DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
-if ~isempty(DIR)
-    load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'))
-
-    if nprobe > 1 & length(best_channels) < nprobe
-        best_channels{nprobe} = [];
-    end
-else
-    best_channels{nprobe} = [];
-end
-
 column = 1;
 options.importMode = 'KS';
 [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,column);% Since it is LF
@@ -106,6 +86,8 @@ else
         disp('Using preprocessed ap.bin for NP2. Will take longer time to process')
     end
 end
+
+
 
 
 % Extract LFP data relative to the EVENT onset time
@@ -132,6 +114,14 @@ downSampleRate = round(SampRate(imecMeta)*BinWidth); % the rate at which we down
 d1 = designfilt('lowpassiir','FilterOrder',12, ...
     'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate',SampRate(imecMeta));
 
+% Additional filtering
+if ~isempty(filter_freq)
+    filter_type  = 'bandpass';
+    filter_width = filter_freq;                 % range of frequencies in Hz you want to filter between
+    filter_order = round(6*SampRate(imecMeta)/(max(filter_width)-min(filter_width)));  % creates filter for ripple
+    norm_freq_range = filter_width/(SampRate(imecMeta)/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+    b_filter = fir1(filter_order, norm_freq_range,filter_type);
+end
 
 if ~isempty(selected_channels)
     % Read the data
@@ -208,174 +198,19 @@ for thisTrial = 1:length(stimTimes)
     if ~(contains(imecMeta.acqApLfSy,'384,0') & probe_type == 1) % if NP2 data but contains lf.bin, it is a preprocessed lf with low pass filter already applied
         tresps = filtfilt(d1,double(tresps)')';
     end
+
+    if ~isempty(filter_freq)
+        tresps = filtfilt(b_filter,1,tresps')';
+    end
     % ... then downsample that data
     ttresps = downsample(tresps',downSampleRate)';
     % ... and save
-    resps(:,:,thisTrial) = single(ttresps);
+    if size(ttresps,2) == size(resps,2)
+        resps(:,:,thisTrial) = single(ttresps);
+    else
+        resps(:,:,thisTrial) = nan(size(resps,1),size(resps,2));
+    end
 end
 close(H)
 
-timestamps = linspace(extractedTimeWindow(1),extractedTimeWindow(2),size(resps,2));
-tidx = find(timestamps>=-0.5 & timestamps<=0.5);
-lfp.samplingRate = round(1/mean(diff(timestamps)));
-lfp.timestamps = timestamps;
-
-filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
-filterparms.gammafilter = [100 400];
-filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
-filterparms.gammanormwin = 20; %window for gamma normalization (s)
-
-
-selected_channels_shank = chan_config.Shank(selected_channels);
-selected_channels_xcoord = chan_config.Ks_xcoord(selected_channels);
-selected_channels_ycoord = chan_config.Ks_ycoord(selected_channels);
-
-unique_ycoords = unique(selected_channels_ycoord);
-unique_ycoords=unique_ycoords(1:3:end);
-
-unique_xcoords = unique(chan_config.Ks_xcoord(selected_channels));
-unique_shanks = unique(selected_channels_shank);
-line_colors = [[254,217,11];[253,141,60];[240,59,32];[227,26,28]]/255;
-
-% for nShank = 1:length(unique_shanks)
-%         median_channel_this_shank = 
-%         [~ channel_id]=min();
-% end
-% best_channels = best_channels{options.probe_id+1};
-shank_channels=[];
-selected_V1_channels = [];
-selected_shank_channels=[];
-for nShank = 1:length(unique_shanks)
-        selected_shank_channels{nShank} = find(selected_channels_shank==unique_shanks(nShank) & ismember(selected_channels_ycoord,unique_ycoords)); 
-        selected_V1_channels = [selected_V1_channels; find(selected_channels_shank==unique_shanks(nShank) & ismember(selected_channels_ycoord,unique_ycoords))];
-        if nShank==1
-            selected_shank_channels{nShank} = 1:length(selected_shank_channels{nShank});
-        else
-            selected_shank_channels{nShank} = selected_shank_channels{nShank-1}(end)+1 : selected_shank_channels{nShank-1}(end)+length(selected_shank_channels{nShank});
-        end
 end
-
-
-figure
-count = 0;
-for thisTrial = 50:length(stimTimes)
-    count = count + 1;
-
-
-    for nShank = 1:length(unique_shanks)
-        subplot(5,5,count)
-        lfp.data = squeeze(resps(selected_V1_channels(selected_shank_channels{nShank}),:,thisTrial))';
-        lfp.data= mean(lfp.data')';
-        deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-
-        plot(timestamps(tidx),zscore(deltaLFP.amp(tidx)),'Color',line_colors(nShank,:));
-        hold on
-        xline(0)
-        ylim([-3 3])
-    end
-end
-
-figure
-count = 0;
-for thisTrial = 50:length(stimTimes)
-    count = count + 1;
-
-
-    for nShank = 1:length(unique_shanks)
-        lfp.data = squeeze(resps(selected_V1_channels(selected_shank_channels{nShank}),:,thisTrial))';
-        lfp.data= mean(lfp.data')';
-        gammaLFP= bz_Filter(lfp,'passband',filterparms.gammafilter,'filter','fir1','order',4);
-        for nChannel = 1:size(gammaLFP.amp,2)
-            gammaLFP.smoothamp(:,nChannel) = smooth(gammaLFP.amp(:,nChannel),round(filterparms.gammasmoothwin.*lfp.samplingRate),'moving' );
-        end
-
-        subplot(5,5,count)
-        plot(timestamps(tidx),zscore(gammaLFP.smoothamp(tidx)),'Color',line_colors(nShank,:));
-        hold on
-        xline(0)
-        ylim([-2 2])
-    end
-end
-
-
-
-
-
-
-
-
-
-
-
-[PSD,power] = calculate_channel_PSD(raw_LFP{nprobe},SR,selected_chan_config,options,'plot_option',0);
-for nchannel = 1:size(chan_config,1)
-    power(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
-    xcoord(nchannel) = PSD{nprobe}(nchannel).xcoord;
-    ycoord(nchannel) = PSD{nprobe}(nchannel).ycoord;
-    shanks(nchannel) = PSD{nprobe}(nchannel).shank;
-end
-
-xcoord_avaliable = unique(xcoord);
-
-% sort channel according to y coordinate
-[ycoord idx] = sort(ycoord,'ascend');
-xcoord = xcoord(idx);
-power = power(idx,:);
-chan_config = chan_config(idx,:);
-resps = resps(idx,:,:);
-% resps1 = resps;
-
-resps = permute(resps(xcoord == xcoord_avaliable(x_col),:,:), [2, 1, 3]);
-
-
-
-
-
-
-
-
-
-
-lfpAvg = [];
-csd = [];
-% lfpAvg.filter_type = {'all'};
-lfpAvg.filter_type = filter_type;
-lfpAvg.event_group = {event_name};
-lfpAvg.probe_id = options.probe_id;
-%     lfpAvg(col).column = col;
-lfpAvg.xcoord = xcoord_avaliable(1);
-AnalysisTimeWindow(1) = -AnalysisTimeWindow(1);
-
-for type = 1:length(filter_type)
-    [csd.(filter_type{type}), lfpAvg.(filter_type{type}) ] = perievent_CSD_LFP_amplitude_phase(resps, timestamps,[],'twin',AnalysisTimeWindow,'filter',filter_freq(type,:));
-
-
-    % cd(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
-    %             plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power{nprobe},chan_config,sorted_config,best_channels{nprobe})
-
-end
-
-lfpAvg.filter_type(length(filter_type)+1) = {'all'};
-[csd.all, lfpAvg.all ] = perievent_CSD_LFP_amplitude_phase(resps, timestamps,[],'twin',AnalysisTimeWindow);
-
-if CSD_V1_CA1_normalisation==1 %plot both versions
-    plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power(xcoord == xcoord_avaliable(x_col),:),chan_config,chan_config(xcoord == xcoord_avaliable(x_col),:),best_channels{nprobe},options)
-    options.CSD_V1_CA1_normalisation = 1;
-    plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power(xcoord == xcoord_avaliable(x_col),:),chan_config,chan_config(xcoord == xcoord_avaliable(x_col),:),best_channels{nprobe},options)
-else
-    plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power(xcoord == xcoord_avaliable(x_col),:),chan_config,chan_config(xcoord == xcoord_avaliable(x_col),:),best_channels{nprobe},options)
-end
-
-% if ~isempty(clusters)
-%     [~,cluster_id] = intersect(clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)));
-%     all_fields = fieldnames(clusters);
-%     clusters_info = struct();
-% 
-%     for nfield = 1:length(all_fields)
-%         if length(clusters(nprobe).(all_fields{nfield})) > length(cluster_id)
-%             clusters_info.(all_fields{nfield}) = clusters(nprobe).(all_fields{nfield})(cluster_id);
-%         end
-%     end
-% 
-%     plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters_info,options);
-% end

@@ -103,7 +103,7 @@ d1 = designfilt('lowpassiir','FilterOrder',12, ...
     'HalfPowerFrequency',(1/BinWidth)/2,'DesignMethod','butter','SampleRate',SampRate(imecMeta));
 
 % Read the data
-tresps = ReadBin(fix(SampRate(imecMeta)*first_stim), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
+tresps = ReadBin(fix(SampRate(imecMeta)*(first_stim+AnalysisTimeWindow(1))), nSamp, imecMeta, file_to_use, options.EPHYS_DATAPATH);
 tresps(nEPhysChan+1:end,:) = []; % Get rid of sync channel
 if strcmp(imecMeta.typeThis, 'imec')
     tresps = GainCorrectIM(tresps, 1:nEPhysChan, imecMeta);
