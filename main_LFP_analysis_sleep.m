@@ -363,7 +363,12 @@ for nsession =1:length(experiment_info)
                 [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                     'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
             else
-                temp_04 = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.4);
+                temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+                
+                detect_UP_DOWN_markov(tvec,slow_waves(probe_no),V1_clusters.spike_times,LFP(probe_no))
+
+
+
                 [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
                     'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
             end
@@ -576,7 +581,6 @@ for nsession =1:length(experiment_info)
         end
         disp('cortical wave travleing direction analysis finished')
         toc
-
         % 
 
         disp('Sharp wave amplitude started')
@@ -625,8 +629,8 @@ for nsession =1:length(experiment_info)
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 
-                        [~,temp]=min(abs(ripples(probe_no).onset(nevent)-tvec(tidx(peak_id))));
-                        if ~isempty(temp)
+                        if ~isempty(peak_id)
+                            [~,temp]=min(abs(ripples(probe_no).onset(nevent)-tvec(tidx(peak_id))));
                             sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
                             sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
                         else
@@ -721,9 +725,9 @@ for nsession =1:length(experiment_info)
         % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
         if contains(stimulus_name{n},'Masa2tracks')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples');
-            % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
         else
-            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
         end
     end
