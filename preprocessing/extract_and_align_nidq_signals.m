@@ -1,7 +1,7 @@
 function extract_and_align_nidq_signals(options)
 % This code extracts  nidq signals then aligns nidq signals to Ephys signal
 DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*_NidqTimes.mat'))
-DIR=[];
+
 if isempty(DIR)
     
     td = dir(fullfile(options.EPHYS_DATAPATH,'..','*nidq.bin'));

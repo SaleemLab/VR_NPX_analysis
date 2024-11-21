@@ -49,7 +49,7 @@ for nsession =1:length(experiment_info)
         else
             DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
         end
-        DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         if isempty(DIR)
             disp('process and extract behavioural data')
@@ -120,18 +120,14 @@ for nsession =1:length(experiment_info)
               continue
         end
 
-        segment_frames = readtable(options.segment_frames);
+        segment_frames_table = readtable(options.segment_frames);
+        segment_frames = table2array(segment_frames_table(:,1));
+
         session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
         session_id=str2num(session_id(1));
-
-        if sum(table2array(segment_frames(:,3))==session_id)==0
-            disp('Session without sipike sorting is skipped due to imFlagError')
-            continue
-        end
-
         
-        if sum(contains(table2array(segment_frames(:,4)),['g',num2str(options.gFileNum)]))==0
-            disp('Session without sipike sorting is skipped')
+        if sum(contains(segment_frames,['_',num2str(session_id),'_g',num2str(options.gFileNum)]))==0
+            disp('Session without spike sorting is skipped')
             continue
         end
 

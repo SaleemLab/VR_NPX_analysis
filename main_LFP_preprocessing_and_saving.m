@@ -56,7 +56,7 @@ for ndate = 1:length(all_DIR)
 end
 
 
-SUBJECT = 'M24017';
+SUBJECT = 'M24062';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
 for ndate = 1:length(all_DIR)
@@ -73,13 +73,15 @@ for ndate = 1:length(all_DIR)
             if ~isempty(temp_DIR)
                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']);
                 preprocess_and_save_LFP(options)
+                extract_and_align_nidq_signals(options)
             end
 
-%             temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']));
-%             if ~isempty(temp_DIR)
-%                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']);
-%                 preprocess_and_save_LFP(options)
-%             end
+            temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']));
+            if ~isempty(temp_DIR)
+                options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']);
+                preprocess_and_save_LFP(options)
+                extract_and_align_nidq_signals(options)
+            end
 
 
         end
