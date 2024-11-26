@@ -149,6 +149,43 @@ photodiodeData = [];
 photodiodeData.stim_on.sglxTime = photodiode.sglxTime(pd_ON(blocks_ind)');
 photodiodeData.stim_off.sglxTime = photodiode.sglxTime(pd_OFF(blocks_ind)');
 
+if photodiodeData.stim_off.sglxTime(end) > Nidq.sglxTime(end)
+    % if last visual stimuli is later than last timestamp of the recording
+    % then it is probably because of wrong alignment (happens normally only during short sessions such as checkerboard)
+    % in this rare case use Nidq photodiode directly
+
+    Nidq.photodiode_smoothed = smoothdata(Nidq.photodiode,'movmedian',50);
+
+    pd_ON_OFF = Nidq.photodiode_smoothed >= mean(Nidq.photodiode); % find ON and OFF
+    pd_ON = find(diff(pd_ON_OFF) == 1); % Find ON
+    pd_OFF = find(diff(pd_ON_OFF) == -1); % Find OFF
+
+    if length(pd_ON) == length(pd_OFF)
+        block_length = abs(pd_ON-pd_OFF);
+    elseif length(pd_ON)>length(pd_OFF)
+        for i = 1:length(pd_OFF)
+            block_length(i) = abs(pd_ON(i) - pd_OFF(i));
+        end
+    else
+        for i = 1:length(pd_ON)
+            block_length(i) = abs(pd_ON(i) - pd_OFF(i));
+        end
+    end
+
+    blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per second so a block size should be quite large
+
+    % plot(photodiode.sglxTime,photodiode.Photodiode_smoothed); hold on; scatter(photodiode.sglxTime(pd_OFF(blocks_ind)),50,'b');
+    % scatter(photodiode.sglxTime(pd_ON(blocks_ind)),50,'r');
+
+    % plot(Nidq.sglxTime,Nidq.photodiode/100);
+    photodiodeData = [];
+    photodiodeData.stim_on.sglxTime = Nidq.sglxTime(pd_ON(blocks_ind))';
+    photodiodeData.stim_off.sglxTime = Nidq.sglxTime(pd_OFF(blocks_ind))';
+    photodiodeData.warning = 'Nidq photodiode';
+    disp('Nidq photodiode directly due to bad alignment between Bonsai and Ephys')
+end
+
+
 % Step 5: process wheel data (skipping this just save all peripheral data)
 % wheelData.pos = peripherals.Wheel;
 % wheelData.Time = peripherals.sglxTime;
