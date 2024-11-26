@@ -223,6 +223,9 @@ if  ~isempty(photodiodeData)
     if isfield(photodiodeData,'photodiode_failure')
         behaviour.photodiode_failure = photodiodeData.photodiode_failure;
     end
+    if isfield(photodiodeData,'warning')
+        task_info.warning = photodiodeData.warning;
+    end
 else % if photodiode empty
     behaviour.photodiode_failure = 1;
 end
