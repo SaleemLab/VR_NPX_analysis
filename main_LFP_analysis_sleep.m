@@ -335,6 +335,7 @@ for nsession =1:length(experiment_info)
 
         %%% Test slow wave detection
         tvec = LFP(1).tvec;
+        clear slow_waves_markov
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
             options = session_info(n).probe(nprobe);
@@ -343,36 +344,50 @@ for nsession =1:length(experiment_info)
             metric_param =[]; % get all V1 spikes from left or right hemisphere
             if options.probe_hemisphere==1
                 metric_param.region = @(x) contains(x,'V1_L');
-%                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
                 V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 metric_param.region = @(x) contains(x,'HPC_L');
                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
+                if length(V1_clusters.cluster_id)>150
+                    V1_clusters=[];
+                    V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_R");
+                    V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
+                    V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
+                end
             elseif options.probe_hemisphere==2
-%                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
                 metric_param.region = @(x) contains(x,'V1_R');
                 V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 metric_param.region = @(x) contains(x,'HPC_R');
                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
-            end
 
+                if length(V1_clusters.cluster_id)>150
+                        V1_clusters=[];
+                        V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_L");
+                        V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
+                        V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
+                end
+            end
+            
+            
             best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
 
             if isempty(best_channel)
                 [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
-                temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
-                [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                    'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+                slow_waves_markov(probe_no) = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+%                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+                temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+                temp.best_channel = LFP(nprobe).best_V1_high_freq_channel(best_channel);
+                slow_waves_markov(probe_no) = temp;
             else
-                temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
-                
-                detect_UP_DOWN_markov(tvec,slow_waves(probe_no),V1_clusters.spike_times,LFP(probe_no))
-
-
-
-                [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                    'noise',[],'passband',[9 17],'thresholds',[1 3],'show','off');
+%                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+                temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+                temp.best_channel = slow_waves(probe_no).best_channel;
+                slow_waves_markov(probe_no) = temp;
             end
+            
         end
+
         % PSD slope quantification using fooof ()
         tvec = LFP(1).tvec;
         SR = round(1/mean(diff(tvec)));
@@ -380,8 +395,8 @@ for nsession =1:length(experiment_info)
         nfft = 2^(nextpow2(SR*nfft_seconds));
         win  = hanning(nfft);
 
-        clipDur = 10; % seconds
-        timebin_edges = tvec(1):10:tvec(end); % 10 seconds timebin edges for PSD slope
+        clipDur = 5; % seconds
+        timebin_edges = tvec(1):clipDur:tvec(end); % 10 seconds timebin edges for PSD slope
         nClipSamps = round(SR*clipDur);
 
         PSD_slope=[];
@@ -391,15 +406,15 @@ for nsession =1:length(experiment_info)
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
 
-            slow_waves(probe_no).power = [];
-            slow_waves(probe_no).frequency = [];
-            slow_waves(probe_no).PSD_slope = [];
-            slow_waves(probe_no).timebin_edges = [];
-            slow_waves(probe_no).DOWN_PSD_slope = [];
-            slow_waves(probe_no).UP_PSD_slope = [];
+            slow_waves_markov(probe_no).power = [];
+            slow_waves_markov(probe_no).frequency = [];
+            slow_waves_markov(probe_no).PSD_slope = [];
+            slow_waves_markov(probe_no).timebin_edges = [];
+            slow_waves_markov(probe_no).DOWN_PSD_slope = [];
+            slow_waves_markov(probe_no).UP_PSD_slope = [];
 
             if ~isempty(behavioural_state_merged.SWS)
-                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(probe_no).best_channel);
+                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves_markov(probe_no).best_channel);
                 V1_LFP = LFP(probe_no).best_V1(best_channel,:);
 
             else
@@ -419,7 +434,7 @@ for nsession =1:length(experiment_info)
 
                 [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
 
-                slow_waves(probe_no).power(clip,:) = pxx;
+                slow_waves_markov(probe_no).power(clip,:) = pxx;
                 % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
                 fxx = fxx';
                 % FOOOF settings
@@ -434,30 +449,30 @@ for nsession =1:length(experiment_info)
                 samples_to_pass = samples_to_pass + nClipSamps;
             end
 
-            slow_waves(probe_no).frequency = fxx;
-            slow_waves(probe_no).PSD_slope = PSD_slope;
-            slow_waves(probe_no).timebin_edges = timebin_edges;
+            slow_waves_markov(probe_no).frequency = fxx;
+            slow_waves_markov(probe_no).PSD_slope = PSD_slope;
+            slow_waves_markov(probe_no).timebin_edges = timebin_edges;
             
             delta_power=[];
-            delta_power = zscore(mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2));
+            delta_power = zscore(mean(10*log10(slow_waves_markov(probe_no).power(:,slow_waves_markov(probe_no).frequency>0.5&slow_waves_markov(probe_no).frequency<4)),2));
 %             delta_power = mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2);
             
 %             timebin_centre = timebin_edges(1)+mean(diff(timebin_edges))/2:mean(diff(timebin_edges)):timebin_edges(end)-mean(diff(timebin_edges))/2;
 %             NREM_delta_power = delta_power(find(ismember(timebin_centre,Restrict(timebin_centre,behavioural_state_merged.SWS))));
 %             delta_power = (delta_power-mean(NREM_delta_power))/std(NREM_delta_power);
 
-            event_midpoint = mean(slow_waves(probe_no).ints.UP,2);
+            event_midpoint = mean(slow_waves_markov(probe_no).UP_ints,2);
             % Find the bin indices for each event time
             [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-            slow_waves(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
-            slow_waves(probe_no).UP_delta_power= delta_power(bin_indices);
+            slow_waves_markov(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
+            slow_waves_markov(probe_no).UP_delta_power= delta_power(bin_indices);
 
 
-            event_midpoint = slow_waves(probe_no).timestamps;
+            event_midpoint = mean(slow_waves_markov(probe_no).DOWN_ints,2);
             % Find the bin indices for each event time
             [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-            slow_waves(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
-            slow_waves(probe_no).DOWN_delta_power= delta_power(bin_indices);
+            slow_waves_markov(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
+            slow_waves_markov(probe_no).DOWN_delta_power= delta_power(bin_indices);
         end
         toc
         disp('PSD slope for slow waves finished')
@@ -479,9 +494,9 @@ for nsession =1:length(experiment_info)
             DOWN_peaks_shank = [];
             peaks_latency = [];
             DOWN_traveling = [];
-            slow_waves(probe_no).DOWN_peaks_shank = [];
-            slow_waves(probe_no).DOWN_peaks_latency = [];
-            slow_waves(probe_no).DOWN_traveling = [];
+            slow_waves_markov(probe_no).DOWN_peaks_shank = [];
+            slow_waves_markov(probe_no).DOWN_peaks_latency = [];
+            slow_waves_markov(probe_no).DOWN_traveling = [];
 
             if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
 
@@ -491,8 +506,9 @@ for nsession =1:length(experiment_info)
                 zscored_LFP = [];
                 zscored_LFP = zscore(deltaLFP.data);
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
+                slow_waves_markov(probe_no).DOWN_ints
 
-                for nevent = 1:length(slow_waves(probe_no).timestamps)
+                for nevent = 1:length(slow_waves_markov(probe_no).DOWN_ints)
                     % for nevent = 600:640
                     tidx = FindInInterval(tvec,[slow_waves(probe_no).timestamps(nevent)-0.1 slow_waves(probe_no).timestamps(nevent)+0.1]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
