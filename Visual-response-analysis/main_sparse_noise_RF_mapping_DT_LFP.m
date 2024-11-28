@@ -102,30 +102,38 @@ end
 imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise
-
-SUBJECTS = {'M24062'};
-Dates = {'20241125'};
+clear all
+SUBJECTS = {'M24072'};
+Dates = {'20241126'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','session_info.mat'))
 % hemisphere_texts = {'Left','Right'}
+options = session_info.probe(1);
 for nprobe = 1
     fig = figure
-    fig.Position = [300 150 1000 620]
-    fig.Name = sprintf('%s %s Averaged %s V1-MEC-paraSub Receptive field',options.SUBJECT,options.SESSION,hemisphere_texts{nprobe});
-    sgtitle(sprintf('%s %s Averaged %s V1 Receptive field',options.SUBJECT,options.SESSION,hemisphere_texts{nprobe}))
+    fig.Position = [34 60 1850 920]
+    fig.Name = sprintf('%s %s Averaged V1-MEC-paraSub Receptive field',options.SUBJECT,options.SESSION);
+    sgtitle(sprintf('%s %s Averaged V1 Receptive field',options.SUBJECT,options.SESSION))
     RF_map = RF(nprobe).peak_map;
     % RF(nprobe)
-     % [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
+    options.importMode = 'KS';
+     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
 
     % V1_channel_ids=RF(nprobe).V1_channel_ids;
     % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
-    channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
+    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),21));
+    channel_depths_range=[];
+    channel_depths_range(:,1) = temp(1:end-1);
+    channel_depths_range(:,2) = temp(2:end);
 
-    for nregion = 1:4
-        subplot(2,2,nregion)
+    % channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
+
+    for nregion = 1:20
+        subplot(5,4,nregion)
         % scal_f = 10; % scale image by this before...
         % sigma = 3; % ...filtering by this
         scal_f = 2; % scale image by this before...
@@ -145,13 +153,32 @@ for nprobe = 1
         xticklabels(-120:20:120)
         yticks(linspace(1,size(thisMap_s,1),7))
         yticklabels(flip(-30:20:90))
-        title(sprintf('Averaged Receptive field for depths %i micron to %i micron',channel_depths_range(nregion,1),channel_depths_range(nregion,2)))
+        title(sprintf('Averaged RF for depths %i micron to %i micron',channel_depths_range(nregion,1),channel_depths_range(nregion,2)))
         colorbar
         colormap((gray))
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
 
+
+
+figure
+n = 1;
+RF_map= RF(nprobe).RF_map;
+peak_map = RF(nprobe).peak_map;
+
+for x = 1:8
+    for y = 1:16
+        subplot(8,16,n)
+        if peak_map(x,y,233) == min(min(squeeze(peak_map(:,:,233))))
+            plot(squeeze(RF_map(x,y,233,:)),'r')
+        else
+            plot(squeeze(RF_map(x,y,233,:)),'k')
+        end
+        ylim([-0.0001 0.0001])
+        n = n+1;
+    end
+end
 
 for nshank = 1:4
     %     subplot(2,2,nshank)

@@ -59,7 +59,7 @@ end
 SUBJECT = 'M24062';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = 1:length(all_DIR)
+for ndate = 8:length(all_DIR)
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
     session_DIR= dir('20*');

@@ -154,7 +154,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([1]);
+experiment_info=experiment_info([2]);
 % experiment_info=experiment_info(4:5);
 % All_stimuli = {'Checkerboard'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
@@ -227,11 +227,6 @@ else
 end
 
 
-All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-for n = 1:length(All_stimuli)
-    extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
-end
-
 
 clear all
 % Batch PSD analysis
@@ -246,28 +241,29 @@ ROOTPATH = 'Z:\ibn-vision';
 SUBJECTS = {'M24072'};
 options = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info = experiment_info(1);
+experiment_info = experiment_info(2);
 % experiment_info = experiment_info(6);
-Stimulus_type= 'Checkerboard_sh1'; 
+Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
-Stimulus_type= 'Checkerboard_sh2'; 
+Stimulus_type= 'Checkerboard_sh2_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
-Stimulus_type= 'Checkerboard_sh3'; 
+Stimulus_type= 'Checkerboard_sh3_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
-Stimulus_type= 'Checkerboard_sh4'; 
+Stimulus_type= 'Checkerboard_sh4_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
-Stimulus_type= 'Checkerboard_shMEC'; 
-extract_PSD_profile_batch(experiment_info,Stimulus_type);
+% Stimulus_type= 'Checkerboard_shMEC'; 
+% extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
 SUBJECT = 'M24072';
-SESSION = '20241125';
+SESSION = '20241126';
 options = 'V1-MEC';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
-    Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
+    Stimulus_type= sprintf('Checkerboard_sh%i_half',nstimuli)
+    % Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     clear lfpAvg csd best_channels
 
@@ -332,7 +328,10 @@ for nstimuli = 1:4
         % %%%%%%%%%%
     end
 end
-
+fig = gcf;subplot(1,3,3);clim([-1.2*10^-6 1.2*10^-6]);
+subplot(1,3,1);yyaxis left;ylim([2000 6000]);
+subplot(1,3,2);yyaxis left;ylim([2000 6000]);
+subplot(1,3,3);yyaxis left;ylim([2000 6000]);
 
 Stimulus_type = 'Checkerboard_sh1';
 if contains(Stimulus_type,'_sh')
