@@ -35,18 +35,32 @@ end
 % Import wheel data, eye data, position data and photodiodide data
 % and synchronise them to async pulse
 % peripherals = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-this_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]),'Delimiter',{',','=','{','}','(',')'});
+if contains(peripheral_path,'reconstruct')
+    this_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 
-computer_timevec = datevec(table2cell(this_table(:,7)),'yyyy-mm-ddTHH:MM:SS.FFF');
-behaviour.computer_time_original = (computer_timevec(:,4)*60*60 + computer_timevec(:,5)*60 + computer_timevec(:,6))';
-behaviour.wheel_time_original =  behaviour.computer_time_original- behaviour.computer_time_original(1);
-behaviour.Sync_original = table2array(this_table(:,4))';
-behaviour.mobility_original = table2array(this_table(:,5))';
-behaviour.X_original = table2array(this_table(:,1))';
-behaviour.Y_original = table2array(this_table(:,3))';
+    behaviour.computer_time_original = table2array(this_table(:,5))';
+    behaviour.wheel_time_original =  table2array(this_table(:,5))';
+    behaviour.Sync_original = table2array(this_table(:,4))';
+    behaviour.mobility_original = table2array(this_table(:,3))';
+    behaviour.X_original = table2array(this_table(:,1))';
+    behaviour.Y_original = table2array(this_table(:,2))';
 
+    Sync_pulse = table2array(this_table(:,4)); %
+else
+    this_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]),'Delimiter',{',','=','{','}','(',')'});
+
+    computer_timevec = datevec(table2cell(this_table(:,7)),'yyyy-mm-ddTHH:MM:SS.FFF');
+    behaviour.computer_time_original = (computer_timevec(:,4)*60*60 + computer_timevec(:,5)*60 + computer_timevec(:,6))';
+    behaviour.wheel_time_original =  behaviour.computer_time_original- behaviour.computer_time_original(1);
+    behaviour.Sync_original = table2array(this_table(:,4))';
+    behaviour.mobility_original = table2array(this_table(:,5))';
+    behaviour.X_original = table2array(this_table(:,1))';
+    behaviour.Y_original = table2array(this_table(:,3))';
+
+    Sync_pulse = table2array(this_table(:,4)); %
+end
 % peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-Sync_pulse = table2array(this_table(:,4)); %
+
 
 % photodiode_smoothed = smoothdata(table2array(this_table(:,4)),'movmedian',5); %
 peripherals = [];
