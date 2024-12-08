@@ -73,6 +73,22 @@ for ndate = 8:length(all_DIR)
             if ~isempty(temp_DIR)
                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']);
                 preprocess_and_save_LFP(options)
+                DIR_ephys_sync = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'))
+                %     DIR = [];
+                if ~isempty(DIR_ephys_sync)
+                    load(fullfile(options.EPHYS_DATAPATH,'..',DIR_ephys_sync.name))
+                else
+                    [ap_file,lf_file] = findImecBinFile(options.EPHYS_DATAPATH);
+                    % if ~isempty(lf_file)
+                    %     binpath = fullfile(options.EPHYS_DATAPATH,lf_file);
+                    % else
+                    fprintf('\n'); warning('Extracting sync-pulses from AP file...this takes about 5 minutes or more'); fprintf('\n');
+                    binpath = fullfile(options.EPHYS_DATAPATH,ap_file);
+                    % end
+                    syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
+                    parseDate = date;
+                    save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
+                end
                 extract_and_align_nidq_signals(options)
             end
 
@@ -80,6 +96,24 @@ for ndate = 8:length(all_DIR)
             if ~isempty(temp_DIR)
                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']);
                 preprocess_and_save_LFP(options)
+                DIR_ephys_sync = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'))
+                %     DIR = [];
+
+                if ~isempty(DIR_ephys_sync)
+                    load(fullfile(options.EPHYS_DATAPATH,'..',DIR_ephys_sync.name))
+                else
+                    [ap_file,lf_file] = findImecBinFile(options.EPHYS_DATAPATH);
+                    % if ~isempty(lf_file)
+                    %     binpath = fullfile(options.EPHYS_DATAPATH,lf_file);
+                    % else
+                    fprintf('\n'); warning('Extracting sync-pulses from AP file...this takes about 5 minutes or more'); fprintf('\n');
+                    binpath = fullfile(options.EPHYS_DATAPATH,ap_file);
+                    % end
+                    syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
+                    parseDate = date;
+                    save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
+                end
+
                 extract_and_align_nidq_signals(options)
             end
 
