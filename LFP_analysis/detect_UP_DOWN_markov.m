@@ -43,13 +43,13 @@ NREMInts = behavioural_state.SWS;
 
 % Define observation sequences (spike rate, delta power, gamma power)
 timebin_size = 0.01;
-tvec_interp1 = tvec(1):0.01:tvec(end);
+tvec_interp1 = tvec(1):timebin_size:tvec(end);
 tvec_edges = [tvec_interp1(1)-1/(1/mean(diff(tvec_interp1))*2) tvec_interp1+1/(1/mean(diff(tvec_interp1))*2)];
 w = gausswin(0.03*1/mean(diff(tvec_interp1))); % Smoothed with σ = 30 ms
 w = w / sum(w);
 % spikeCounts =histcounts(spiketimes,tvec_edges);
 spikeCounts = round(filtfilt(w,1,histcounts(spiketimes(:,1),tvec_edges)')');
-spikeCounts(spikeCounts>50)=50;% limit spike count due to noise
+spikeCounts(spikeCounts>50*(timebin_size/0.01))=50*(timebin_size/0.01);% limit spike count due to noise
 % observations = [spikeCounts',interp1(tvec,deltaLFP.normamp,tvec_interp1)',interp1(tvec,gammaLFP.normamp,tvec_interp1)'];
 % spikeCounts = observations(:,1); %
 
@@ -93,8 +93,7 @@ P_UD = N_UD / N_U;        % Self-transition in UP state
 
 
 % Initialize parameters for EM
-T = 0.01;                    % Bin size in ms
-J = 2;                   % Number of history bins (corresponds to 20 ms memory)
+J = round(0.02/timebin_size);                   % Number of history bins (corresponds to 20 ms memory)
 
 
 % mu(1) = log(mean(observations(status,1))); % Average FR
@@ -104,8 +103,8 @@ J = 2;                   % Number of history bins (corresponds to 20 ms memory)
 [status,~,index] = InIntervals(tvec_interp1,[UP_ints(:,1) UP_ints(:,1)+0.1]); % take average firing rate
 alpha = log(mean(spikeCounts(status))); % UP Firing rate
 
-if alpha>log(50) | alpha<1
-    alpha = 3;
+if alpha>log(50*(timebin_size/0.01)) | alpha<log(3*(timebin_size/0.01))
+    alpha = log(20*(timebin_size/0.01));
 end
 
 [status,~,index] = InIntervals(tvec_interp1,[DOWN_ints(:,1) DOWN_ints(:,1)+0.1]);
@@ -114,8 +113,8 @@ mu = log(mean(spikeCounts(status)))-alpha; % UP-DOWN firing rate difference
 if mu >-1 & mu <-5
     mu = -2;
 end
-
-beta = 0.01;               % History-dependence weight
+% mu = -4.7
+beta = 0.01*(0.01/timebin_size);               % History-dependence weight
 
 % alpha = [0, log(3)];      % State-specific rates (DOWN=0, UP=3)
 [status,interval,index] = InIntervals(tvec_interp1,NREMInts);
@@ -225,7 +224,7 @@ for iter = 1:maxIter
         break;
     end
 
-    if iter > 1 && abs(alpha_iter(iter) - alpha_iter(iter-1)) < 1e-5 && abs(mu_iter(iter) - mu_iter(iter-1)) < 1e-5
+    if iter > 1 && (abs(alpha_iter(iter) - alpha_iter(iter-1)) < 1e-5 | abs(mu_iter(iter) - mu_iter(iter-1)) < 1e-5)
         disp('Converged');
         break;
     end
@@ -265,7 +264,7 @@ rapidAlternations = 0;
 
 % Iterate through transitions to detect noisy regions
 for i = 1:length(rapidTransitionIndices)
-    if rapidTransitionDurations(i) < 3
+    if rapidTransitionDurations(i) <= 3
         rapidAlternations = rapidAlternations + 1;
     else
         rapidAlternations = 0; % Reset if a longer duration is found
@@ -273,7 +272,7 @@ for i = 1:length(rapidTransitionIndices)
 
     % Mark as noise if more than 3 rapid alternations occur
     if rapidAlternations >= 3
-        startIdx = max(1, rapidTransitionIndices(i - 4)); % Start from 4 transitions ago
+        startIdx = max(1, rapidTransitionIndices(i - 3)); % Start from 4 transitions ago
         endIdx = min(numBins, rapidTransitionIndices(i + 1)); % End after the next state
         isNoise(startIdx:endIdx) = true; % Mark this region as noise
         rapidAlternations = 0; % Reset count after marking noise
@@ -291,26 +290,52 @@ for t = 2:numBins - 1
     end
 end
 
-%%%%% Step 3: Modify long UP states (more than 2 seconnds) with embedded short DOWN states
-minUpDuration = 200; % 2 seconds (200 bins at 10 ms/bin)
-for startIdx = find(diff([0; viterbiStatesCleaned]) == 1)' % Find UP start indices
-    endIdx = find(diff([viterbiStatesCleaned; 0]) == -1, 1, 'first') + startIdx - 1;
+%%%%% Step 3 Find UP events with duration <= 30ms (3 time bins) and surrounded by DOWN
+upOnsets = find(diff([0; viterbiStatesCleaned == 1]) == 1);
+upOffsets = find(diff([viterbiStatesCleaned == 1; 0]) == -1);
 
-    if endIdx - startIdx + 1 >= minUpDuration
-        % Check for short DOWN states within this UP state
-        downStarts = find(diff([0; viterbiStatesCleaned(startIdx:endIdx)]) == -1);
-        downEnds = find(diff([viterbiStatesCleaned(startIdx:endIdx); 0]) == 1);
-
-        for d = 1:length(downStarts)
-            if downEnds(d) - downStarts(d) + 1 >= 2 % Short DOWN state (with 20ms or more)
-                if d < length(downStarts) && (downStarts(d + 1) - downEnds(d) <= 3)
-                    % Merge into DOWN state
-                    viterbiStatesCleaned(startIdx + downEnds(d):startIdx + downStarts(d + 1) - 1) = 0;
-                end
-            end
-        end
+for i = 1:length(upOnsets)
+    if upOffsets(i) - upOnsets(i) <= 3
+        viterbiStatesCleaned(upOnsets(i):upOffsets(i))=0;
     end
 end
+
+% i= tvec_interp1(status==1);
+% 
+% for i = 1:max(epoch_id)
+%     subplot(8,7,i)
+%     histogram(spikeCounts((epoch_id==i)),100)
+% end
+% 
+% %%%%% Step 3: Modify long UP states (more than 2 seconnds) with embedded short DOWN states
+% minUpDuration = 200; % 2 seconds (200 bins at 10 ms/bin)
+% 
+% for startIdx = find(diff([0; viterbiStatesCleaned]) == 1)' % Find UP start indices
+%     endIdx = find(diff([viterbiStatesCleaned; 0]) == -1, 1, 'first') + startIdx - 1;
+% 
+%     if endIdx - startIdx + 1 >= minUpDuration
+%         % Check for short DOWN states within this UP state
+%         downStarts = find(diff([0; viterbiStatesCleaned(startIdx:endIdx)]) == -1);
+%         downEnds = find(diff([viterbiStatesCleaned(startIdx:endIdx); 0]) == 1);
+% 
+%         if isempty(downEnds) | isempty(downStarts) % if no short states
+%             continue
+%         end
+% 
+%         if length(downStarts) > length(downEnds)
+%             downStarts = downStarts(1:length(downEnds));
+%         end
+% 
+%         for d = 1:length(downStarts)
+%             if downEnds(d) - downStarts(d) + 1 >= 2 % Short DOWN state (with 20ms or more)
+%                 if d < length(downStarts) && (downStarts(d + 1) - downEnds(d) <= 3)
+%                     % Merge into DOWN state
+%                     viterbiStatesCleaned(startIdx + downEnds(d):startIdx + downStarts(d + 1) - 1) = 0;
+%                 end
+%             end
+%         end
+%     end
+% end
 
 %%%%% Step 4: Remove extremely short (1 bin events) or evens transiting out
 %%%%% of and/or into nan regions.
@@ -327,32 +352,36 @@ upOffsets = upOffsets(~isnan(viterbiStatesCleaned(upOffsets)));
 downOnsets = downOnsets(~isnan(viterbiStatesCleaned(downOnsets)));
 downOffsets = downOffsets(~isnan(viterbiStatesCleaned(downOffsets)));
 
-% Remove transitions with duration equal or less than 10ms
+% Remove transitions with duration equal or less than 30ms
 upOnsets = upOnsets(~isnan(viterbiStatesCleaned(upOnsets)));
 upOffsets = upOffsets(~isnan(viterbiStatesCleaned(upOffsets)));
 upDurations = (upOffsets - upOnsets);
-upOnsets(upDurations<=1)=[];
-upOffsets(upDurations<=1)=[];
+upOnsets(upDurations<=3)=[];
+upOffsets(upDurations<=3)=[];
 
 downOnsets = downOnsets(~isnan(viterbiStatesCleaned(downOnsets)));
 downOffsets = downOffsets(~isnan(viterbiStatesCleaned(downOffsets)));
 downDurations = (downOffsets - downOnsets);
-downOnsets(downDurations<=1)=[];
-downOffsets(downDurations<=1)=[];
+downOnsets(downDurations<=2)=[];
+downOffsets(downDurations<=2)=[];
 
 
-upOnsets = tvec_interp1(upOnsets);
-upOffsets =  tvec_interp1(upOffsets);
-downOnsets =  tvec_interp1(downOnsets);
-downOffsets =  tvec_interp1(downOffsets);
+upOnsets = tvec_interp1(upOnsets)';
+upOffsets =  tvec_interp1(upOffsets)';
+downOnsets =  tvec_interp1(downOnsets)';
+downOffsets =  tvec_interp1(downOffsets)';
 
 % Pair UP events with immediately following DOWN events
 upDownPairs = [];
 for i = 1:length(upOffsets)
     % Find the first DOWN onset that comes after the current UP offset
+    if upOffsets(i)-upOnsets(i)<=0.05 % only selecting UP with at least 50ms duration
+        continue
+    end
+
     nextDownIdx = find(downOnsets > upOffsets(i), 1, 'first');
     if ~isempty(nextDownIdx) 
-        if downOnsets(nextDownIdx)-upOffsets(i)<=0.02
+        if downOnsets(nextDownIdx)-upOffsets(i)<=0.03 
             % Record the UP-DOWN pair: [UP onset, UP offset, DOWN onset, DOWN offset]
             upDownPairs = [upDownPairs; i, nextDownIdx]; %#ok<AGROW>
         end
@@ -365,9 +394,11 @@ for i = 1:length(downOffsets)
     % Find the first UP onset that comes after the current DOWN offset
     nextUpIdx = find(upOnsets > downOffsets(i), 1, 'first');
     if ~isempty(nextUpIdx) 
-        if upOnsets(nextUpIdx)-downOffsets(i)<=0.02
-            % Record the DOWN-UP pair: [DOWN onset, DOWN offset, UP onset, UP offset]
-            downUpPairs = [downUpPairs; i, nextUpIdx]; %#ok<AGROW>
+        if upOnsets(nextUpIdx)-downOffsets(i)<=0.03 % Next event should happen within at least 30ms
+            if upOffsets(nextUpIdx)-upOnsets(nextUpIdx)>=0.05 % only selecting UP with at least 50ms duration
+                % Record the DOWN-UP pair: [DOWN onset, DOWN offset, UP onset, UP offset]
+                downUpPairs = [downUpPairs; i, nextUpIdx]; %#ok<AGROW>
+            end
         end
     end
 end

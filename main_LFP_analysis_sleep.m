@@ -259,7 +259,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =1:length(experiment_info)
+for nsession =5:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -331,7 +331,7 @@ for nsession =1:length(experiment_info)
         end
         toc
         
-
+        params = create_cluster_selection_params('sorting_option','masa');
 
         %%% Test slow wave detection
         tvec = LFP(1).tvec;
@@ -343,29 +343,35 @@ for nsession =1:length(experiment_info)
             %%%%% V1 MUA spikes
             metric_param =[]; % get all V1 spikes from left or right hemisphere
             if options.probe_hemisphere==1
-                metric_param.region = @(x) contains(x,'V1_L');
-                %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
-                V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 metric_param.region = @(x) contains(x,'HPC_L');
                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
-                if length(V1_clusters.cluster_id)>150
+
+                V1_clusters=[];
+                V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_L");
+                V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
+                V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
+
+                if length(V1_clusters.cluster_id)<100
                     V1_clusters=[];
-                    V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_R");
-                    V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
-                    V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
+                    metric_param.region = @(x) contains(x,'V1_L');
+                    %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                    V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 end
             elseif options.probe_hemisphere==2
                 %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
-                metric_param.region = @(x) contains(x,'V1_R');
-                V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 metric_param.region = @(x) contains(x,'HPC_R');
                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
 
-                if length(V1_clusters.cluster_id)>150
-                        V1_clusters=[];
-                        V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_L");
-                        V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
-                        V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
+                V1_clusters=[];
+                V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_R");
+                V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
+                V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
+
+                if length(V1_clusters.cluster_id)<100
+                    V1_clusters=[];
+                    metric_param.region = @(x) contains(x,'V1_R');
+                    %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+                    V1_clusters = select_clusters(clusters(nprobe),metric_param);
                 end
             end
             
@@ -384,8 +390,7 @@ for nsession =1:length(experiment_info)
                 temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
                 temp.best_channel = slow_waves(probe_no).best_channel;
                 slow_waves_markov(probe_no) = temp;
-            end
-            
+            end 
         end
 
         % PSD slope quantification using fooof ()
@@ -396,7 +401,7 @@ for nsession =1:length(experiment_info)
         win  = hanning(nfft);
 
         clipDur = 5; % seconds
-        timebin_edges = tvec(1):clipDur:tvec(end); % 10 seconds timebin edges for PSD slope
+        timebin_edges = tvec(1):clipDur:tvec(end); % 5 seconds timebin edges for PSD slope
         nClipSamps = round(SR*clipDur);
 
         PSD_slope=[];
@@ -481,7 +486,7 @@ for nsession =1:length(experiment_info)
         tic
         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        filterparms.deltafilter = [0.5 9];%heuristically defined.  room for improvement here.
+        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
         filterparms.gammafilter = [100 400];
         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
         filterparms.gammanormwin = 20; %window for gamma normalization (s)
@@ -506,20 +511,20 @@ for nsession =1:length(experiment_info)
                 zscored_LFP = [];
                 zscored_LFP = zscore(deltaLFP.data);
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
-                slow_waves_markov(probe_no).DOWN_ints
 
                 for nevent = 1:length(slow_waves_markov(probe_no).DOWN_ints)
                     % for nevent = 600:640
-                    tidx = FindInInterval(tvec,[slow_waves(probe_no).timestamps(nevent)-0.1 slow_waves(probe_no).timestamps(nevent)+0.1]);
+                    midpoint = mean(slow_waves_markov(probe_no).DOWN_ints(nevent,:));
+                    tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec));
+                    [~,idx]=min(abs(midpoint-tvec));
 
                     for nShank=1:length(LFP(probe_no).average_V1_shank_id)
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 
-                        [~,temp]=min(abs(slow_waves(probe_no).timestamps(nevent)-tvec(tidx(peak_id))));
+                        [~,temp]=min(abs(midpoint-tvec(tidx(peak_id))));
                         if ~isempty(temp)
                             DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
                         else
@@ -591,9 +596,9 @@ for nsession =1:length(experiment_info)
 
             end
 
-            slow_waves(probe_no).DOWN_peaks_shank = DOWN_peaks_shank;
-            slow_waves(probe_no).DOWN_peaks_latency = peaks_latency;
-            slow_waves(probe_no).DOWN_traveling = DOWN_traveling;
+            slow_waves_markov(probe_no).DOWN_peaks_shank = DOWN_peaks_shank;
+            slow_waves_markov(probe_no).DOWN_peaks_latency = peaks_latency;
+            slow_waves_markov(probe_no).DOWN_traveling = DOWN_traveling;
         end
         disp('cortical wave travleing direction analysis finished')
         toc
@@ -641,7 +646,7 @@ for nsession =1:length(experiment_info)
                     tidx=tidx(1):tidx(end);
                     [~,idx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
 
-                    for nShank=1:length(LFP(probe_no).average_V1_shank_id)
+                    for nShank=1:length(LFP(probe_no).best_HPC_shank_id)
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 
@@ -741,9 +746,11 @@ for nsession =1:length(experiment_info)
         % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
         if contains(stimulus_name{n},'Masa2tracks')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples');
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
+            % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
         else
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
+            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
         end
     end
