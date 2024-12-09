@@ -56,10 +56,10 @@ for ndate = 1:length(all_DIR)
 end
 
 
-SUBJECT = 'M24062';
+SUBJECT = 'M24064';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = 8:length(all_DIR)
+for ndate = 1:length(all_DIR)
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
     session_DIR= dir('20*');
@@ -68,15 +68,17 @@ for ndate = 8:length(all_DIR)
         DIR = dir('*_g*');
         for nfolder = 1:length(DIR)
             cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
+
+            % Probe 1
             options= [];
             temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']));
             if ~isempty(temp_DIR)
                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']);
-                preprocess_and_save_LFP(options)
-                DIR_ephys_sync = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'))
-                %     DIR = [];
-                if ~isempty(DIR_ephys_sync)
-                    load(fullfile(options.EPHYS_DATAPATH,'..',DIR_ephys_sync.name))
+
+                EPHYS_DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'));
+                % DIR = [];
+                if ~isempty(EPHYS_DIR)
+                    load(fullfile(options.EPHYS_DATAPATH,'..',EPHYS_DIR.name))
                 else
                     [ap_file,lf_file] = findImecBinFile(options.EPHYS_DATAPATH);
                     % if ~isempty(lf_file)
@@ -87,34 +89,24 @@ for ndate = 8:length(all_DIR)
                     % end
                     syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
                     parseDate = date;
+                    fname = extractBefore(ap_file,'.imec')
                     save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
                 end
-                extract_and_align_nidq_signals(options)
+
+                NIDQ_DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*nidq*'));
+                if ~isempty(NIDQ_DIR)
+                    extract_and_align_nidq_signals(options)
+                end
+                preprocess_and_save_LFP(options)
             end
 
+            % Probe 2
+            options=[];
             temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']));
             if ~isempty(temp_DIR)
                 options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']);
+                % extract_and_align_nidq_signals(options)
                 preprocess_and_save_LFP(options)
-                DIR_ephys_sync = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'))
-                %     DIR = [];
-
-                if ~isempty(DIR_ephys_sync)
-                    load(fullfile(options.EPHYS_DATAPATH,'..',DIR_ephys_sync.name))
-                else
-                    [ap_file,lf_file] = findImecBinFile(options.EPHYS_DATAPATH);
-                    % if ~isempty(lf_file)
-                    %     binpath = fullfile(options.EPHYS_DATAPATH,lf_file);
-                    % else
-                    fprintf('\n'); warning('Extracting sync-pulses from AP file...this takes about 5 minutes or more'); fprintf('\n');
-                    binpath = fullfile(options.EPHYS_DATAPATH,ap_file);
-                    % end
-                    syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
-                    parseDate = date;
-                    save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
-                end
-
-                extract_and_align_nidq_signals(options)
             end
 
 

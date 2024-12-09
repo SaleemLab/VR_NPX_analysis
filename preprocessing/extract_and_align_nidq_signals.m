@@ -1,7 +1,7 @@
 function extract_and_align_nidq_signals(options)
 % This code extracts  nidq signals then aligns nidq signals to Ephys signal
 DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*_NidqTimes.mat'))
-
+% DIR=[];
 if isempty(DIR)
     
     td = dir(fullfile(options.EPHYS_DATAPATH,'..','*nidq.bin'));
@@ -69,17 +69,17 @@ if isempty(DIR)
     %%% Extract Ephys Sync pulse from last channel (ephys and nidq)
     fname = erase(td.name,'.nidq.meta');
     DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*syncpulseTimes.mat'))
-    %     DIR = [];
+        % DIR = [];
     if ~isempty(DIR)
         load(fullfile(options.EPHYS_DATAPATH,'..',DIR.name))
     else
         [ap_file,lf_file] = findImecBinFile(options.EPHYS_DATAPATH);
-        if ~isempty(lf_file)
-            binpath = fullfile(options.EPHYS_DATAPATH,lf_file);
-        else
-            fprintf('\n'); warning('Extracting sync-pulses from AP file...this takes about 5 minutes or more'); fprintf('\n');
-            binpath = fullfile(options.EPHYS_DATAPATH,ap_file);
-        end
+        % if ~isempty(lf_file)
+        %     binpath = fullfile(options.EPHYS_DATAPATH,lf_file);
+        % else
+        fprintf('\n'); warning('Extracting sync-pulses from AP file...this takes about 5 minutes or more'); fprintf('\n');
+        binpath = fullfile(options.EPHYS_DATAPATH,ap_file);
+        % end
         syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath);
         parseDate = date;
         save(fullfile(options.EPHYS_DATAPATH,'..',[fname,'_syncpulseTimes.mat']),'syncTimes_ephys','parseDate','-v7.3'); % used to be saved inside the ephys probe folder, now just same place where niqd is saved
