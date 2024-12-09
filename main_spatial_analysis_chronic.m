@@ -1141,36 +1141,49 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-        if exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('merged_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters = merged_clusters;
-            sorting_option = 'spikeinterface';
-        elseif exist(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))))
             clusters = clusters_ks3;
-            sorting_option = 'spikeinterface';
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_HPC_combined','estimated_position_lap_CV_HPC','estimated_position_lap_CV_shuffled_HPC','estimated_position_lap_CV_shuffled_HPC_combined')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_HPC_combined','probability_ratio_RUN_lap_HPC')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('estimated_position_lap_CV_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'estimated_position_lap_CV_V1','estimated_position_lap_CV_V1_combined','estimated_position_lap_CV_shuffled_V1','estimated_position_lap_CV_shuffled_V1_combined')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('probability_ratio_RUN_lap_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'probability_ratio_RUN_lap_V1','probability_ratio_RUN_lap_V1_combined')
         else
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            sorting_option = 'old';
+            load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
         end
 
+        clusters_combined= session_clusters;
+        clusters_combined.spike_id=vertcat(session_clusters.spike_id{:});
+        clusters_combined.spike_times=vertcat(session_clusters.spike_times{:});
+        [clusters_combined.spike_times,index] =sort(clusters_combined.spike_times);
+        clusters_combined.spike_id=clusters_combined.spike_id(index);
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_place_fields.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        % Cell with spatial tuning
+        ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+            | clusters_combined.odd_even_stability(:,2)>0.95);
+%                 ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+%             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        %         [C,ia,ic] = unique(clusters_combined.cluster_id);
+        C = clusters_combined.cluster_id(ia);
 
-        if length(clusters) > 1
-            clusters_combined = combine_clusters_from_multiple_probes(merged_clusters(1),merged_clusters(2));
-        else
-            clusters_combined = merged_clusters;
-        end
-
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_HPC.mat'))
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_HPC.mat'))
-
-        load(fullfile(options.ANALYSIS_DATAPATH,'estimated_position_lap_CV_V1.mat'))
-        load(fullfile(options.ANALYSIS_DATAPATH,'probability_ratio_RUN_lap_V1.mat'))
+        speed = clusters_combined.speed{1};
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+        x_window = [0 140];
+        x_bin_width =5;
+        place_fields_BAYESIAN = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
+            clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_width);
         
 
         % plotting decoded run trajectory
@@ -1214,8 +1227,8 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 
 
         % initialise all variables
-        for track_id = 1:length(place_fields)
-            for temp_track = 1:length(place_fields)
+        for track_id = 1:length(place_fields_BAYESIAN)
+            for temp_track = 1:length(place_fields_BAYESIAN)
                 actual_position{nsession}{track_id} = [];
                 actual_speed{nsession}{track_id} = [];
                 VR_speed{nsession}{track_id} = [];
@@ -1247,11 +1260,12 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
         end
 
         % Position bins from both tracks
-        position_bin_across_tracks = estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position_bin_centres;
-        position_bin_across_tracks = [position_bin_across_tracks position_bin_across_tracks+1000];
+        %         position_bin_across_tracks = estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position_bin_centres;
+        %         position_bin_across_tracks = [position_bin_across_tracks position_bin_across_tracks+1000];
+        position_bin = place_fields_BAYESIAN.x_bin_centres;
 
-        for track_id = 1:length(place_fields)
-            for temp_track = 1:length(place_fields)
+        for track_id = 1:length(place_fields_BAYESIAN)
+            for temp_track = 1:length(place_fields_BAYESIAN)
                 for lap_id = 1:length(estimated_position_lap_CV_V1(nprobe).track(track_id).lap)
 
                     if temp_track == 1 %Do not need to loop twice
@@ -1283,24 +1297,24 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
 %                         decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} = [];
 %                         decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [];
 
+                        [~,index]=max(estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
                         decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                            estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
-                            - estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                            position_bin(index) - estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
+                        [~,index]=max(estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
                         decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_HPC{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                            estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).peak_position...
-                            - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                            position_bin(index) - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
                         for nshuffle = 1:100
-                            [~,index] = max(estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
-                            decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                                estimated_position_lap_CV_shuffled_V1(1).track(1).lap(1).track(1).position_bin_centres(index)...
-                                - estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                            [~,index]=max(estimated_position_lap_CV_shuffled_V1(nprobe).track{nshuffle}(track_id).lap(lap_id).track(temp_track).run);
 
-                            [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
+                            decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
+                                position_bin(index) - estimated_position_lap_CV_V1(nprobe).track(track_id).lap(lap_id).track(temp_track).run_actual_position];
+
+                            [~,index]=max(estimated_position_lap_CV_shuffled_HPC(nprobe).track{nshuffle}(track_id).lap(lap_id).track(temp_track).run);
                             decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} = [decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                                estimated_position_lap_CV_shuffled_HPC(1).track(1).lap(1).track(1).position_bin_centres(index)...
-                                - estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(track_id).run_actual_position];
+                                position_bin(index) - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run_actual_position];
+%                             [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
                         end
                         
 
@@ -1315,12 +1329,12 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                             decoded_position_HPC{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC{probe_hemisphere}{nsession}{track_id} index];
 
                             for nshuffle = 1:100
-                                [~,index] = max([estimated_position_lap_CV_shuffled_V1(nprobe).track{nshuffle}(track_id).lap(lap_id).track(1).run;...
-                                    estimated_position_lap_CV_shuffled_V1(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                                [~,index] = max([estimated_position_lap_CV_shuffled_V1(nprobe).track{nshuffle}(track_id).lap(lap_id).track(1).run; ...
+                                    estimated_position_lap_CV_shuffled_V1(nprobe).track{nshuffle}(track_id).lap(lap_id).track(2).run]);
                                 decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} = [decoded_position_V1_shuffled{probe_hemisphere}{nsession}{track_id} index];
 
                                 [~,index] = max([estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(1).run; ...
-                                    estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(2).run]);
+                                    estimated_position_lap_CV_shuffled_HPC(nprobe).track{nshuffle}(track_id).lap(lap_id).track(2).run]);
                                 decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} = [decoded_position_HPC_shuffled{probe_hemisphere}{nsession}{track_id} index];
                             end
 

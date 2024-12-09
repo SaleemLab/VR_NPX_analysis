@@ -24,7 +24,7 @@ ROOTPATH = 'Z:\ibn-vision';
 Stimulus_type = 'SparseNoise';
 initMap = [];
 probe_hemisphere_text = {'Left','Right'};
-
+experiment_info = experiment_info(10)
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -101,10 +101,10 @@ end
 
 imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
-%% plotting SparseNoise
+%% plotting SparseNoise 
 
 SUBJECTS = {'M24062'};
-Dates = {'20240531'};
+Dates = {'20241128'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
@@ -150,21 +150,48 @@ for nprobe = 1:2
     end
 end
 
+%% plotting SparseNoise (half shank)
+clear all
+SUBJECTS = {'M24062'}; 
+Dates = {'20241128'};
+nsession = 1;
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+% session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
+% options = session_info(nsession).probe(1);
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
+hemisphere_texts = {'Left','Right'}
 
-for nshank = 1:4
-    %     subplot(2,2,nshank)
-    scal_f = 10; % scale image by this before...
-    sigma = 3; % ...filtering by this
-    V1_cell_id = find(RF.probe(options.probe_no).shank == nshank);
+for nprobe = 1:2
+    options = session_info.probe(nprobe);
     fig = figure
-    fig.Position = [300 150 1000 620]
-    fig.Name = sprintf('%s %s Shank %i Averaged V1 Receptive field',options.SUBJECT,options.SESSION,nshank);
+    fig.Position = [34 60 1850 920]
+    fig.Name = sprintf('%s %s %s Averaged V1-MEC-paraSub Receptive field',options.SUBJECT,options.SESSION,hemisphere_texts{nprobe});
+    sgtitle(sprintf('%s %s %s Averaged V1 Receptive field',options.SUBJECT,options.SESSION,hemisphere_texts{nprobe}))
+    RF_map = RF(nprobe).peak_map;
+    % RF(nprobe)
+    options.importMode = 'KS';
+     [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
 
-    for unit = 1:16
+    % V1_channel_ids=RF(nprobe).V1_channel_ids;
+    % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
+    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),41));
+    channel_depths_range=[];
+    channel_depths_range(:,1) = temp(1:end-1);
+    channel_depths_range(:,2) = temp(2:end);
 
-        subplot(4,4,unit)
-        thisMap_s = squeeze(RF_map(V1_cell_id(unit),:,:));
-        thisMap_s = imresize(squeeze(thisMap_s),scal_f);
+    % channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
+
+    for nregion = 1:40
+        subplot(6,7,nregion)
+        % scal_f = 10; % scale image by this before...
+        % sigma = 3; % ...filtering by this
+        scal_f = 2; % scale image by this before...
+        sigma = 1/3; % ...filtering by this
+        % V1_channel_ids = find(RF(nprobe).shanks == nshank&RF(nprobe).V1_channel_ids==1);
+        V1_channel_ids=find(chan_config.Ks_ycoord<channel_depths_range(nregion,1) & chan_config.Ks_ycoord>channel_depths_range(nregion,2));
+
+        thisMap_s = imresize(squeeze(nanmean(RF_map(:,:,V1_channel_ids),3)),scal_f);
         thisMap_s = imgaussfilt(thisMap_s,sigma);
         %     thisMap_s = zscore(thisMap_s,0,'all');
         imagesc(flip(thisMap_s))
@@ -176,8 +203,9 @@ for nshank = 1:4
         xticklabels(-120:20:120)
         yticks(linspace(1,size(thisMap_s,1),7))
         yticklabels(flip(-30:20:90))
-        title(sprintf('Unit %i Shank %i V1 Receptive field',V1_cell_id(unit),nshank))
+        title(sprintf('depths %i micron to %i micron',channel_depths_range(nregion,1),channel_depths_range(nregion,2)))
         colorbar
+        colormap((gray))
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end

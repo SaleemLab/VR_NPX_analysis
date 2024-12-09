@@ -1,4 +1,4 @@
-function [templates,correlations,time_projection,weights,variance] = ActivityTemplates(spikes,varargin)
+function [templates,correlations,time_projection,weights,variance,n] = ActivityTemplates(spikes,varargin)
 
 %ActivityTemplates - Compute assemblies activity and neurons contribution from PCA of spike trains and ICA.
 %
@@ -40,6 +40,7 @@ function [templates,correlations,time_projection,weights,variance] = ActivityTem
 %                   eigenvectors in 'pca' mode and ICs in 'ica' mode
 %    variance       proportion of the variance explained by the weights; they
 %                   correspond to eigenvalues in 'pca' mode.
+%    n              spikecounts
 %
 %  SEE
 %
@@ -96,9 +97,9 @@ for i = 1:2:length(varargin)
 %             end
         case 'mode'
             mode = varargin{i+1};
-            if ~isastring(mode,'pca','ica','varimax')
-                error('Incorrect value for property ''bins'' (type ''help <a href="matlab:help ActivityTemplates">ActivityTemplates</a>'' for details).');
-            end
+%             if ~isastring(mode,'pca','ica','varimax')
+%                 error('Incorrect value for property ''bins'' (type ''help <a href="matlab:help ActivityTemplates">ActivityTemplates</a>'' for details).');
+%             end
         case 'tracywidom'
             tracyWidom = lower(varargin{i+1});
             % allow for 'on'/'off' usage and transform it to true/false
@@ -238,7 +239,7 @@ if strcmp(mode,'pca')
         templates(:,:,i) = templates(:,:,i) - diag(diag(templates(:,:,i))); % remove the diagonal
     end
     variance = eigenvalues(significant)/nUnits;
-    return
+%     return
 end
 
 if strcmp(mode,'varimax')
@@ -264,7 +265,9 @@ end
 time_projection = (eigenvectors * eigenvectors') * n';
 
 %% Run the ICA on the new spike matrix
-[weights,~] = fastica(time_projection,'pcaE',eigenvectors,'pcaD',diag(eigenvalues(significant)));
+if strcmp(mode,'ica')
+    [weights,~] = fastica(time_projection,'pcaE',eigenvectors,'pcaD',diag(eigenvalues(significant)));
+end
 
 if isempty(weights)
     templates = zeros(nUnits,nUnits,0); weights = zeros(nUnits,0); return;

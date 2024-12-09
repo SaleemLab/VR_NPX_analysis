@@ -243,14 +243,18 @@ ROOTPATH = 'Z:\ibn-vision';
 SUBJECTS = {'M24016'};
 SUBJECTS = {'M24062'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-% experiment_info = experiment_info(6);
+experiment_info = experiment_info(10);
 Stimulus_type= 'Checkerboard_sh1'; 
+Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 Stimulus_type= 'Checkerboard_sh2'; 
+Stimulus_type= 'Checkerboard_sh2_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 Stimulus_type= 'Checkerboard_sh3'; 
+Stimulus_type= 'Checkerboard_sh3_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 Stimulus_type= 'Checkerboard_sh4'; 
+Stimulus_type= 'Checkerboard_sh4_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
 
 
@@ -258,11 +262,23 @@ clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
 SUBJECT = 'M24062';
-SESSION = '20241115';
+SESSION = '20241128';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
-    Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli)
+    
+    Stimulus_type= sprintf('Checkerboard_sh%i_half',nstimuli);
+    DIR = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type));
+
+    if isempty(DIR)
+        disp('checkerboard_sh%i_half does not exist! Go for checkerboard_sh%i')
+        Stimulus_type= sprintf('Checkerboard_sh%i',nstimuli);
+        DIR = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type));
+        if isempty(DIR)
+            disp('checkerboard_sh%i does not exist!!!')
+        end
+    end
+
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     clear lfpAvg csd best_channels
 

@@ -39,6 +39,22 @@ for nsession = 1:length(experiment_info)
             continue
         end
 
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
@@ -49,11 +65,13 @@ for nsession = 1:length(experiment_info)
             clusters=clusters_ks3;
         elseif contains(stimulus_name{n},'Sleep')
 %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+
             clusters=clusters_ks3;
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
@@ -66,71 +84,20 @@ for nsession = 1:length(experiment_info)
         end
         clear CA1_clusters V1_clusters
 
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-
-        DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
-
-        session_clusters_RUN=[];
-        session_clusters_RUN1=[];
-        session_clusters_RUN2=[];
-
-        if ~isempty(DIR)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            session_clusters_RUN=session_clusters;
-        end
-
-        if ~isempty(DIR1)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-            session_clusters_RUN1=session_clusters;
-            session_clusters_RUN=session_clusters_RUN1;
-        end
-
-        if ~isempty(DIR2)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-            session_clusters_RUN2=session_clusters;
-        end
-
-        session_clusters=[];
-        if ~isempty(DIR3)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
-        end
-        
         % From cell structure back to spike times and spike id
         session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
         session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
         [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
         session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
 
-        params = create_cluster_selection_params('sorting_option','masa');
-        clear selected_clusters
-        for nprobe = 1:length(clusters)
-            selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
-        end
+        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+        session_clusters.spike_id=session_clusters.spike_id(index);
 
-        for nprobe = 1:length(clusters)
-            % Convert to unique spike/cluster id
-            selected_clusters(nprobe).spike_id = selected_clusters(nprobe).spike_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-            selected_clusters(nprobe).cluster_id = selected_clusters(nprobe).cluster_id + nprobe*10^4 + iDate* 10^6 + str2double(options.SUBJECT(2:end))*10^8;
-            if session_info(n).probe(nprobe).probe_hemisphere==1
-                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'L'));
-                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'L'),:);
-                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'L'),:);
-                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'L'),:);
-            elseif session_info(n).probe(nprobe).probe_hemisphere==2
-                selected_clusters(nprobe).region = session_clusters_RUN.region(contains(session_clusters_RUN.region,'R'));
-                selected_clusters(nprobe).spatial_response = session_clusters_RUN.spatial_response(contains(session_clusters_RUN.region,'R'),:);
-                selected_clusters(nprobe).odd_even_stability = session_clusters_RUN.odd_even_stability(contains(session_clusters_RUN.region,'R'),:);
-                selected_clusters(nprobe).peak_percentile = session_clusters_RUN.peak_percentile(contains(session_clusters_RUN.region,'R'),:);
-            end
-        end
+%         params = create_cluster_selection_params('sorting_option','masa');
+        clusters_combined = session_clusters;
 
-        if length(clusters) > 1
-            clusters_combined = combine_clusters_from_multiple_probes(selected_clusters(1),selected_clusters(2));
-        else
-            clusters_combined = selected_clusters;
-        end
 
         % HPC Log odds reactivation decoding
         decoded_ripple_events_shuffled = [];
@@ -138,13 +105,13 @@ for nsession = 1:length(experiment_info)
         timebin = 0.02;
         tic
 
-        %         spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-        %             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
 
         % For now just needed the cell to have reliable firing on the track
         % (more so than randomly shuffled spiking)
-        spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
-            | session_clusters_RUN.odd_even_stability(:,2)>0.95);
+%         spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+%             | session_clusters_RUN.odd_even_stability(:,2)>0.95);
 
         % grab HPC spikes during Sleep
         metric_param =[];
@@ -160,6 +127,19 @@ for nsession = 1:length(experiment_info)
         metric_param.region = @(x) contains(x,'HPC');
         HPC_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
         
+        % grab V1 spikes during Sleep
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters = select_clusters(clusters_combined,metric_param);
+        %         HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
+        %         HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
+
+        % grab V1 spikes during RUN
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
         % recalculate light-weight version of 'place fields' structure for hippocampal neurons for Bayesian
         % decoding
         clear place_fields_BAYESIAN
@@ -326,13 +306,33 @@ for nsession = 1:length(experiment_info)
           spikes_sleep(spikes_sleep(:,2)== HPC_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
       end
 
+      V1_spikes_template=[];
+      V1_spikes_template(:,1) = V1_clusters_RUN.spike_times;
+      V1_spikes_template(:,2) = V1_clusters_RUN.spike_id;
+
+      V1_spikes_sleep=[];
+      V1_spikes_sleep(:,1) = V1_clusters.spike_times;
+      V1_spikes_sleep(:,2) = V1_clusters.spike_id;
+
+      for iCell = 1:length(V1_clusters_RUN.cluster_id)
+          V1_spikes_template(V1_spikes_template(:,2)== V1_clusters_RUN.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
+          V1_spikes_sleep(V1_spikes_sleep(:,2)== V1_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
+      end
       clear reactivation_strength assembly_templates
       for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
+
+          dimension_reduction_two_tracks(session_clusters_RUN.tvec{1},...
+              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+              session_clusters_RUN.track_ID_all{1},spikes_template,...
+              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep)
 
           bins=[];control_bins=[];
           this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
           this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
           samples = Restrict(timevec_edge_RUN',[this_track_start_time this_track_end_time']);
+
+
           bins(:,1)=samples;
           bins(:,2)=samples+time_bin_size;
           %
@@ -340,24 +340,64 @@ for nsession = 1:length(experiment_info)
           %               session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)']);
 
           % 2 seconds before start of all laps as control correlation (grey screen running)
-          samples = Restrict(timevec_edge_RUN',[session_clusters_RUN.start_time_all{1}-2 session_clusters_RUN.start_time_all{1}]);
-%           samples = Restrict(timevec_edge_RUN',[this_track_start_time-2 this_track_start_time]);
+          this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}~=ntrack);
+          this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}~=ntrack);
+          samples = Restrict(timevec_edge_RUN',[this_track_start_time this_track_end_time']);
+          %           samples = Restrict(timevec_edge_RUN',[this_track_start_time-2 this_track_start_time]);
           control_bins(:,1)=samples;
           control_bins(:,2)=samples+time_bin_size;
 
-          [templates,correlations,projection,weights,variance] = ActivityTemplates(spikes_template,'bins',bins,'controlbins',control_bins);
-
+          [templates,correlations,projection,weights,variance] = ActivityTemplates(spikes_template,'bins',bins(T1_bins,:),'controlbins',bins(T2_bins,:),'mode','pca');
           relative_weights = (weights-min(weights))./(max(weights)-min(weights));
 
-%           figure
-%           scaled_place_fields=[];
-%           for nComponent = 1:length(variance)
-%               scaled_place_fields(:,:,nComponent) = zscore(place_fields_BAYESIAN(track_id).template,[],2).*relative_weights(:,nComponent);
-%               subplot(3,3,nComponent)
-% %               imagesc( scaled_place_fields(:,:,nComponent))
-%              plot(sum(scaled_place_fields(:,:,nComponent)))
-%           end
+            
 
+           %%%%% LDA
+           ldaModel = fitcdiscr(X, Y); % LDA on aligned data
+           %            [coeff, ~, ~] = ldaModel.Coeffs(1,2).Linear;
+           
+           LDA_Direction = ldaModel.Coeffs(1,2).Linear;
+           X_proj = X * LDA_Direction;
+
+           % For 2-class example
+           histogram(X_proj(Y==1),100,'FaceAlpha',0.3,'EdgeColor','none','Normalization','pdf');hold on;
+           histogram(X_proj(Y==2),100,'FaceAlpha',0.3,'EdgeColor','none','Normalization','pdf');hold on;
+           xlabel('Projection onto discriminant direction');
+           ylabel('Percentage of timebin');
+           title('LDA Projection');
+
+           % Decode test data
+           testSpikeCounts = X; % Spike counts for a test bin (1 x 20)
+           decodedTrack = predict(ldaModel, testSpikeCounts);
+%            plot(decodedTrack);hold on;plot(Y)
+           plot(cumsum(decodedTrack-1));hold on;plot(cumsum(Y-1))
+
+
+           plot(n(T1_bins,:)*LDA_Direction);hold on; plot(n(T2_bins,:)*LDA_Direction)
+
+%            plot(cumsum(strength(T1_bins,2)));hold on;plot(cumsum(strength(T2_bins,2)))
+
+           %           figure
+           %           scaled_place_fields=[];
+           %           for nComponent = 1:length(variance)
+           %               scaled_place_fields(:,:,nComponent) = zscore(place_fields_BAYESIAN(track_id).template,[],2).*relative_weights(:,nComponent);
+           %               subplot(3,3,nComponent)
+           % %               imagesc( scaled_place_fields(:,:,nComponent))
+           %              plot(sum(scaled_place_fields(:,:,nComponent)))
+           %           end
+
+%            for nCell = 1:length(HPC_clusters_RUN.spatial_response_raw)
+% 
+%                nexttile
+%                imagesc(HPC_clusters_RUN.spatial_response_raw{nCell,1})
+%                colormap("gray")
+%                title(sprintf('Cell %i Track 1',nCell))
+%                nexttile
+%                imagesc(HPC_clusters_RUN.spatial_response_raw{nCell,2})
+%                colormap("gray")
+%                title(sprintf('Cell %i Track 2',nCell))
+% 
+%            end
           assembly_templates(ntrack).templates=templates;
           assembly_templates(ntrack).correlations=correlations;
           assembly_templates(ntrack).projection=projection;

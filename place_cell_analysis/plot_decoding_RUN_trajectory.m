@@ -1,6 +1,6 @@
 function plot_decoding_RUN_trajectory(estimated_position_lap_CV,Task_info,options)
 
-
+position_bin_size = 5;
 pcount = 1;
 nfigure = 1;
 for track_id = 1:2
@@ -25,10 +25,10 @@ for track_id = 1:2
         if ~isempty(estimated_position_lap_CV(track_id).lap(lap_id))
             imagesc([estimated_position_lap_CV(track_id).lap(lap_id).track(1).run; estimated_position_lap_CV(track_id).lap(lap_id).track(2).run])
             hold on
-            plot(estimated_position_lap_CV(track_id).lap(lap_id).track(1).run_actual_position/10,'r')
-            plot(estimated_position_lap_CV(track_id).lap(lap_id).track(2).run_actual_position/10 + 15,'b')
-            yticks([30 50 70 90 110 140 170 190 210 230 250 280]/10)
-            yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
+            plot(estimated_position_lap_CV(track_id).lap(lap_id).track(1).run_actual_position/position_bin_size,'r')
+            plot(estimated_position_lap_CV(track_id).lap(lap_id).track(2).run_actual_position/position_bin_size + 140/position_bin_size+1,'b')
+            yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
+            yline(140/position_bin_size+0.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
             yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
             run_time_edges = estimated_position_lap_CV(track_id).lap(lap_id).track(1).run_time_edges;
 

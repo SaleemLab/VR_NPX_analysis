@@ -25,7 +25,9 @@ for type = 1:length(lfpAvg.filter_type)
 
         fig = figure
         fig.Position = [334.7143 102.7143 1050 830]
-        if isfield(options,'CSD_V1_CA1_normalisation')
+        if contains(options.Stimulus_type,'half')
+            fig.Name = sprintf('%s %s %s event (%s filtered CSD normalised) probe %i X shank %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Shank));
+        elseif isfield(options,'CSD_V1_CA1_normalisation')
             fig.Name = sprintf('%s %s %s event (%s filtered CSD normalised) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
         else
             fig.Name = sprintf('%s %s %s event (%s filtered) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
@@ -95,10 +97,10 @@ for type = 1:length(lfpAvg.filter_type)
         for ch=1:size(lfpAvg.(filter_type{type})(event).filtered,2)
 
             %         sh_tmp = 1e0*(500000*lfpAvg.SO(event).raw(:,ch)) + sorted_config.Ks_ycoord(ch);
-            if size(lfpAvg.(filter_type{type})(event).filtered,2)<150
-                sh_tmp = 1e0*(500000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
-            else % for NP2 whole shank LFP
-                sh_tmp = 1e0*(500000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
+            if size(lfpAvg.(filter_type{type})(event).filtered,2)<300 % if plotting less than 300 channels at once
+                sh_tmp = 1e0*(1000000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
+            else % plotting more than 300 channels (probably all channels from one shank)
+                sh_tmp = 1e0*(1000000*lfpAvg.(filter_type{type})(event).filtered(:,ch)) + sorted_config.Ks_ycoord(ch);
             end
             plot(taxis,sh_tmp,'k','LineWidth',1.5); hold on;
             clear sh_tmp

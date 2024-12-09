@@ -7,7 +7,7 @@ position_bin_across_tracks = estimated_position_lap_CV_V1(1).track(1).lap(1).tra
 position_bin_across_tracks = [position_bin_across_tracks position_bin_across_tracks+1000];
 
 %         decoding_error_confusion_matrix_HPC{nsession} = [];
-position_bin = estimated_position_lap_CV_V1(1).track(1).lap(1).track(1).position_bin_centres;
+position_bin = place_fields.x_bin_centres;
 
 nfigure = 1;
 fig = figure(nfigure)

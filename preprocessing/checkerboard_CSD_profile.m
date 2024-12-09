@@ -185,8 +185,8 @@ end
 
 lfpAvg = [];
 csd = [];
-
-for col = 1:length(xcoord_avaliable)
+if contains(options.Stimulus_type,'half') % no overlapping ycoord. and it is from same shank
+    col = 1;
     lfpAvg(col).filter_type = {'all'};
     if isfield(options,'Stimulus_type')
         lfpAvg(col).event_group = {options.Stimulus_type};
@@ -195,27 +195,62 @@ for col = 1:length(xcoord_avaliable)
     end
     lfpAvg(col).probe_no = nprobe;
     %     lfpAvg(col).column = col;
-    lfpAvg(col).xcoord = xcoord_avaliable(col);
+    lfpAvg(col).xcoord = xcoord_avaliable;
 
-    [csd(col).all, lfpAvg(col).all ] = perievent_CSD_LFP_amplitude_phase(permute(resps(xcoord == xcoord_avaliable(col),:,:), [2, 1, 3]), timestamps,[],'twin',[0.1 0.5]);
+    [csd(col).all, lfpAvg(col).all ] = perievent_CSD_LFP_amplitude_phase(permute(resps(1:2:end,:,:), [2, 1, 3]), timestamps,[],'twin',[0.1 0.5]);
 
 
     % cd(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
     %             plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power{nprobe},chan_config,sorted_config,best_channels{nprobe})
 
-    plot_perievent_CSD_LFP(lfpAvg(col),csd(col),power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},options)
-    
-    if ~isempty(clusters)
-        [~,cluster_id] = intersect(clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)));
-        all_fields = fieldnames(clusters);
-        clusters_info = struct();
+    plot_perievent_CSD_LFP(lfpAvg(col),csd(col),power{nprobe}(1:2:end,:),chan_config,chan_config(1:2:end,:),best_channels{nprobe},options)
 
-        for nfield = 1:length(all_fields)
-            if length(clusters(nprobe).(all_fields{nfield})) > length(cluster_id)
-                clusters_info.(all_fields{nfield}) = clusters(nprobe).(all_fields{nfield})(cluster_id);
-            end
+%     if ~isempty(clusters)
+%         [~,cluster_id] = intersect(clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)));
+%         all_fields = fieldnames(clusters);
+%         clusters_info = struct();
+% 
+%         for nfield = 1:length(all_fields)
+%             if length(clusters(nprobe).(all_fields{nfield})) > length(cluster_id)
+%                 clusters_info.(all_fields{nfield}) = clusters(nprobe).(all_fields{nfield})(cluster_id);
+%             end
+%         end
+% 
+%         plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters_info,options);
+%     end
+
+else
+    for col = 1:length(xcoord_avaliable)
+        lfpAvg(col).filter_type = {'all'};
+        if isfield(options,'Stimulus_type')
+            lfpAvg(col).event_group = {options.Stimulus_type};
+        else
+            lfpAvg(col).event_group = {'Checkerboard'};
         end
+        lfpAvg(col).probe_no = nprobe;
+        %     lfpAvg(col).column = col;
+        lfpAvg(col).xcoord = xcoord_avaliable(col);
 
-        plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters_info,options);
+        [csd(col).all, lfpAvg(col).all ] = perievent_CSD_LFP_amplitude_phase(permute(resps(xcoord == xcoord_avaliable(col),:,:), [2, 1, 3]), timestamps,[],'twin',[0.1 0.5]);
+
+
+        % cd(fullfile(options.ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis'))
+        %             plot_perievent_CSD_LFP_amplitude_phase(lfpAvg,csd,power{nprobe},chan_config,sorted_config,best_channels{nprobe})
+
+        plot_perievent_CSD_LFP(lfpAvg(col),csd(col),power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},options)
+
+        if ~isempty(clusters)
+            [~,cluster_id] = intersect(clusters(nprobe).peak_channel,find(xcoord == xcoord_avaliable(col)));
+            all_fields = fieldnames(clusters);
+            clusters_info = struct();
+
+            for nfield = 1:length(all_fields)
+                if length(clusters(nprobe).(all_fields{nfield})) > length(cluster_id)
+                    clusters_info.(all_fields{nfield}) = clusters(nprobe).(all_fields{nfield})(cluster_id);
+                end
+            end
+
+            plot_cluster_density_profile(power{nprobe}(xcoord == xcoord_avaliable(col),:),chan_config,chan_config(xcoord == xcoord_avaliable(col),:),best_channels{nprobe},clusters_info,options);
+        end
     end
 end
