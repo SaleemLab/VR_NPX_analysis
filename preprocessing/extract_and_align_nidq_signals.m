@@ -93,7 +93,10 @@ if isempty(DIR)
     % syncTimes_ephys.tvec = 1/SampRate(ephys_meta):1/SampRate(ephys_meta):length(syncTimes_ephys.Sync)/SampRate(ephys_meta);
     % 
     % syncTimes_ephys.Sync_interp = interp1(syncTimes_ephys.tvec',syncTimes_ephys.Sync',Nidq.tvec','previous')';
-
+    if length(syncTimes_ephys.on)<3
+         disp('g file too short for alignment (probably not experimental recording)')
+        return
+    end
     [Nidq] = alignNiqdToEphysSyncTimes(Nidq,syncTimes_ephys.on);
     disp(['Nidq first time is ',num2str(Nidq.sglxTime(1))])
     

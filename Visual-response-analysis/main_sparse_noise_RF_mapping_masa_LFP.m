@@ -14,7 +14,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24062'};
+SUBJECTS = {'M24064'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
@@ -24,7 +24,7 @@ ROOTPATH = 'Z:\ibn-vision';
 Stimulus_type = 'SparseNoise';
 initMap = [];
 probe_hemisphere_text = {'Left','Right'};
-experiment_info = experiment_info(10)
+% experiment_info = experiment_info(1)
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -103,13 +103,13 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise 
 
-SUBJECTS = {'M24062'};
-Dates = {'20241128'};
+SUBJECTS = {'M24064'};
+Dates = {'20241206'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_5','receptiveFields_LFP.mat'),'RF')
 hemisphere_texts = {'Left','Right'}
 for nprobe = 1:2
     fig = figure
@@ -152,16 +152,16 @@ end
 
 %% plotting SparseNoise (half shank)
 clear all
-SUBJECTS = {'M24062'}; 
-Dates = {'20241128'};
+SUBJECTS = {'M24064'}; 
+Dates = {'20241206'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','session_info.mat'))
 hemisphere_texts = {'Left','Right'}
-
+num_groups = 30;
 for nprobe = 1:2
     options = session_info.probe(nprobe);
     fig = figure
@@ -175,15 +175,15 @@ for nprobe = 1:2
 
     % V1_channel_ids=RF(nprobe).V1_channel_ids;
     % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
-    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),41));
+    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),num_groups+1));
     channel_depths_range=[];
     channel_depths_range(:,1) = temp(1:end-1);
     channel_depths_range(:,2) = temp(2:end);
 
     % channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
 
-    for nregion = 1:40
-        subplot(6,7,nregion)
+    for nregion = 1:num_groups
+        subplot(ceil(sqrt(num_groups)),floor(sqrt(num_groups)),nregion)
         % scal_f = 10; % scale image by this before...
         % sigma = 3; % ...filtering by this
         scal_f = 2; % scale image by this before...

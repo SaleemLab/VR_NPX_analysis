@@ -241,9 +241,9 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 SUBJECTS = {'M24016'};
-SUBJECTS = {'M24062'};
+SUBJECTS = {'M24064'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-experiment_info = experiment_info(10);
+experiment_info = experiment_info(1);
 Stimulus_type= 'Checkerboard_sh1'; 
 Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
@@ -261,8 +261,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24062';
-SESSION = '20241128';
+SUBJECT = 'M24064';
+SESSION = '20241206';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
