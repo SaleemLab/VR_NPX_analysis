@@ -367,3 +367,83 @@ for ndate = 1:length(all_DIR)
         writetable(T,'error_info.csv','Delimiter',',');
     end
 end
+
+
+%%% Rename to have animal id in ephys folder
+SUBJECT = 'M24072';
+all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
+
+for ndate = 1:length(all_DIR)
+    cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
+
+    session_DIR= dir('20*');
+
+    Error_sessions = [];
+    Error_idx = [];
+    Error_timestamp=[];
+    Error_acquisition = [];
+
+    for nsession = 1:length(session_DIR)
+        cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
+        DIR = dir('*_g*'); % For each acquisition, loop through all g files -> Extract sync pulse and error signal and preprocess LFP
+
+        for nfolder = 1:length(DIR)
+            cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
+
+            % Probe 1
+            options= [];
+            temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']));
+            if ~isempty(temp_DIR)
+                options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec0']);
+                cd(options.EPHYS_DATAPATH)
+
+                gfile_DIR = dir('*imec0*');
+
+                for iFile = 1:length(gfile_DIR)
+                    if ~contains(gfile_DIR(iFile).name,SUBJECT)
+
+                        movefile(gfile_DIR(iFile).name,[SUBJECT,'_',gfile_DIR(iFile).name])
+                    end
+
+                end
+            end
+
+            % Probe 2
+            options= [];
+            temp_DIR = dir(fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']));
+            if ~isempty(temp_DIR)
+                options.EPHYS_DATAPATH = fullfile(DIR(nfolder).folder,DIR(nfolder).name,[DIR(nfolder).name,'_imec1']);
+                cd(options.EPHYS_DATAPATH)
+
+                gfile_DIR = dir('*imec1*');
+
+                for iFile = 1:length(gfile_DIR)
+                    if ~contains(gfile_DIR(iFile).name,SUBJECT)
+
+                        movefile(gfile_DIR(iFile).name,[SUBJECT,'_',gfile_DIR(iFile).name])
+                    end
+
+                end
+            end
+
+            % Rename all the folders and files other than ephys (Nidq and etc)
+            cd(fullfile(DIR(nfolder).folder,DIR(nfolder).name))
+            all_DIR_this_folder = dir('*g*');
+            for iFile = 1:length(all_DIR_this_folder)
+                if ~contains(all_DIR_this_folder(iFile).name,SUBJECT)
+                    movefile(all_DIR_this_folder(iFile).name,[SUBJECT,'_',all_DIR_this_folder(iFile).name])
+                end
+            end
+
+            % Rename aquisition folder
+            cd(fullfile(DIR(nfolder).folder,DIR(nfolder).name,'..'))
+            if ~contains(DIR(nfolder).name,SUBJECT)
+                movefile(DIR(nfolder).name,[SUBJECT,'_',DIR(nfolder).name])
+            end
+        end
+    end
+end
+
+
+
+

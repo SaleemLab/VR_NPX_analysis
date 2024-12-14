@@ -1495,3 +1495,31 @@
 [Thd 71244 CPU 1 12/10/24 23:17:21.164] Creating lf stream for probe 0.
 [Thd 71244 CPU 1 12/10/24 23:20:09.934] Creating lf stream for probe 1.
 [Thd 71244 CPU 1 12/10/24 23:23:01.436] 
+[Thd 69696 CPU 0 12/13/24 16:19:53.924] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240625/20240625_0 -run=M24016_20240625_0 -g=0 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 69696 CPU 1 12/13/24 16:23:28.214] 
+[Thd 46208 CPU 1 12/13/24 16:57:19.402] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240625/20240625_0 -run=M24016_20240625_0 -g=1 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 46208 CPU 1 12/13/24 17:04:53.896] 
+[Thd 60240 CPU 1 12/13/24 17:26:20.862] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240625/20240625_0 -run=M24016_20240625_0 -g=2 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 60240 CPU 1 12/13/24 17:30:34.668] 
+[Thd 61160 CPU 1 12/13/24 17:37:17.584] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240625/20240625_0 -run=M24016_20240625_0 -g=3 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 61160 CPU 1 12/13/24 17:38:46.506] 
+[Thd 58384 CPU 1 12/14/24 00:05:06.335] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=0 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 58384 CPU 1 12/14/24 00:08:42.164] 
+[Thd 72548 CPU 1 12/14/24 01:03:42.665] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=1 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 72548 CPU 1 12/14/24 01:16:18.922] 
+[Thd 76176 CPU 2 12/14/24 01:17:36.600] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=2 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 76176 CPU 1 12/14/24 01:17:57.877] 
+[Thd 42384 CPU 1 12/14/24 01:18:56.965] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=3 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 42384 CPU 2 12/14/24 01:19:11.156] 
+[Thd 38468 CPU 1 12/14/24 01:36:33.054] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=4 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 38468 CPU 1 12/14/24 01:40:30.714] 
+[Thd 62504 CPU 1 12/14/24 01:45:12.266] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=5 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 62504 CPU 1 12/14/24 01:46:21.086] 
+[Thd 25144 CPU 1 12/14/24 01:47:42.723] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=6 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 25144 CPU 1 12/14/24 01:48:05.827] 
+[Thd 74908 CPU 1 12/14/24 01:49:27.015] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=7 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 74908 CPU 1 12/14/24 01:49:50.068] 
+[Thd 30320 CPU 1 12/14/24 01:51:13.921] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=8 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 30320 CPU 1 12/14/24 01:51:34.266] 
+[Thd 75120 CPU 1 12/14/24 01:52:55.200] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M24016/ephys/20240701/20240701_0 -run=M24016_20240701_0 -g=9 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 75120 CPU 1 12/14/24 01:53:17.160] 
