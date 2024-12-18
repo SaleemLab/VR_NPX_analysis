@@ -65,13 +65,15 @@ end
 % photodiode_smoothed = smoothdata(table2array(this_table(:,4)),'movmedian',5); %
 peripherals = [];
 peripherals.Sync_pulse = Sync_pulse;
-peripherals.Sync = kmeans(Sync_pulse-movmean(Sync_pulse,120),2)-1;
-if mean(peripherals.Sync_pulse(peripherals.Sync==1))<mean(peripherals.Sync_pulse(peripherals.Sync==0))
-    % if 0 is when Sync goes up, swap 1 and 0
-    temp = peripherals.Sync;
-    peripherals.Sync(temp==0)=1;
-    peripherals.Sync(temp==1)=0;
-end
+baseline_corrected_sync = Sync_pulse-movmean(Sync_pulse,120);
+initial_centroids = [ prctile(baseline_corrected_sync,10);prctile(baseline_corrected_sync,90)];
+peripherals.Sync = kmeans(baseline_corrected_sync,2,'Start', initial_centroids)-1;
+% if mean(peripherals.Sync_pulse(peripherals.Sync==1))<mean(peripherals.Sync_pulse(peripherals.Sync==0))
+%     % if 0 is when Sync goes up, swap 1 and 0
+%     temp = peripherals.Sync;
+%     peripherals.Sync(temp==0)=1;
+%     peripherals.Sync(temp==1)=0;
+% end
 
 peripherals.Time =  behaviour.computer_time_original*1000;
 idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
