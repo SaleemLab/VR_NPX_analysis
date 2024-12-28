@@ -25,23 +25,46 @@ td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*syncpulseTimes*'));
 
 
 
-% Import Sleap and sync pulse
+% Import wheel data, eye data, position data and photodiodide data
 % and synchronise them to async pulse
-    this_table = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-    behaviour.frame = this_table(:,16);
-    behaviour.tracking = this_table(:,2:15);
+% peripherals = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
+if contains(peripheral_path,'reconstruct')
+    this_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 
-    Sync_pulse = this_table(:,1); %
+    behaviour.computer_time_original = table2array(this_table(:,5))';
+    behaviour.wheel_time_original =  table2array(this_table(:,5))';
+    behaviour.Sync_original = table2array(this_table(:,4))';
+    behaviour.mobility_original = table2array(this_table(:,3))';
+    behaviour.X_original = table2array(this_table(:,1))';
+    behaviour.Y_original = table2array(this_table(:,2))';
 
+    Sync_pulse = table2array(this_table(:,4)); %
+else
+    this_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]),'Delimiter',{',','=','{','}','(',')'});
+
+    computer_timevec = datevec(table2cell(this_table(:,7)),'yyyy-mm-ddTHH:MM:SS.FFF');
+    behaviour.computer_time_original = (computer_timevec(:,4)*60*60 + computer_timevec(:,5)*60 + computer_timevec(:,6))';
+    behaviour.wheel_time_original =  behaviour.computer_time_original- behaviour.computer_time_original(1);
+    behaviour.Sync_original = table2array(this_table(:,4))';
+    behaviour.mobility_original = table2array(this_table(:,5))';
+    behaviour.X_original = table2array(this_table(:,1))';
+    behaviour.Y_original = table2array(this_table(:,3))';
+
+    Sync_pulse = table2array(this_table(:,4)); %
+end
 % peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 
 
 % photodiode_smoothed = smoothdata(table2array(this_table(:,4)),'movmedian',5); %
 peripherals = [];
 peripherals.Sync_pulse = Sync_pulse;
-baseline_corrected_sync = Sync_pulse-movmean(Sync_pulse,120);
-initial_centroids = [ prctile(baseline_corrected_sync,10);prctile(baseline_corrected_sync,90)];
-peripherals.Sync = kmeans(baseline_corrected_sync,2,'Start', initial_centroids)-1;
+peripherals.Sync = kmeans(Sync_pulse-movmean(Sync_pulse,120),2)-1;
+if mean(peripherals.Sync_pulse(peripherals.Sync==1))<mean(peripherals.Sync_pulse(peripherals.Sync==0))
+    % if 0 is when Sync goes up, swap 1 and 0
+    temp = peripherals.Sync;
+    peripherals.Sync(temp==0)=1;
+    peripherals.Sync(temp==1)=0;
+end
 
 peripherals.Time =  behaviour.computer_time_original*1000;
 idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
