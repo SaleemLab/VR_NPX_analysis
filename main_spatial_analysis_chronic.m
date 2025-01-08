@@ -10,7 +10,8 @@ clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+experiment_info=experiment_info([45 46 48 51]);
 Stimulus_type = 'RUN1';
 
 for nsession = 1:length(experiment_info)
