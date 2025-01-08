@@ -7,7 +7,7 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018','M24062','M24064'};
+SUBJECTS={'M24016','M24017','M24018'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
@@ -1355,18 +1355,13 @@ for nsession = [1 2 3 4 6 7 8 9 10 12 14]
                         decoded_error_HPC_combined{nsession}{track_id}{temp_track} = [decoded_error_HPC_combined{nsession}{track_id}{temp_track} ...
                             position_bin(index) - estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
-                        for nshuffle = 1:100
-                            [~,index]=max(estimated_position_lap_CV_shuffled_V1_combined.track{nshuffle}(track_id).lap(lap_id).track(temp_track).run);
+                        decoded_error_HPC_combined{nsession}{track_id}{temp_track} = [decoded_error_HPC_combined{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
-                            decoded_error_V1_combined_shuffled{nsession}{track_id}{temp_track} = [decoded_error_V1_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                                position_bin(index) - estimated_position_lap_CV_shuffled_V1_combined.track(track_id).lap(lap_id).track(temp_track).run_actual_position];
-
-                            [~,index]=max(estimated_position_lap_CV_shuffled_HPC(nprobe).track{nshuffle}(track_id).lap(lap_id).track(temp_track).run);
-
-                            decoded_error_HPC_combined_shuffled{nsession}{track_id}{temp_track} = [decoded_error_HPC_shuffled{probe_hemisphere}{nsession}{track_id}{temp_track} ...
-                                position_bin(index) - estimated_position_lap_CV_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run_actual_position];
-                            %                             [~,index] = max(estimated_position_lap_CV_shuffled_HPC(nprobe).track(track_id).lap(lap_id).track(temp_track).run);
-                        end
+                        decoded_error_V1_combined{nsession}{track_id}{temp_track} = [decoded_error_V1_combined{nsession}{track_id}{temp_track} ...
+                            estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(temp_track).peak_position...
+                            - estimated_position_lap_CV_V1_combined.track(track_id).lap(lap_id).track(track_id).run_actual_position];
 
                         if temp_track == 1 %Do not need to loop twice
                             [~,index] = max([estimated_position_lap_CV_HPC_combined.track(track_id).lap(lap_id).track(1).run;...

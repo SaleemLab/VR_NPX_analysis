@@ -320,94 +320,20 @@ for nsession = 1:length(experiment_info)
       end
       clear reactivation_strength assembly_templates
       for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
-
-          dimension_reduction_two_tracks(session_clusters_RUN.tvec{1},...
-              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-              session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-              [ripples(nprobe).onset ripples(nprobe).offset],V1_spikes_sleep)
-
-          bins=[];control_bins=[];
-          this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
-          this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
-          samples = Restrict(timevec_edge_RUN',[this_track_start_time this_track_end_time']);
-
-
-          bins(:,1)=samples;
-          bins(:,2)=samples+time_bin_size;
-          %
-          %           samples = Restrict(timevec_edge_RUN',[session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)...
-          %               session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)']);
-
-          % 2 seconds before start of all laps as control correlation (grey screen running)
-          this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}~=ntrack);
-          this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}~=ntrack);
-          samples = Restrict(timevec_edge_RUN',[this_track_start_time this_track_end_time']);
-          %           samples = Restrict(timevec_edge_RUN',[this_track_start_time-2 this_track_start_time]);
-          control_bins(:,1)=samples;
-          control_bins(:,2)=samples+time_bin_size;
-
-          [templates,correlations,projection,weights,variance] = ActivityTemplates(spikes_template,'bins',bins(T1_bins,:),'controlbins',bins(T2_bins,:),'mode','pca');
-          relative_weights = (weights-min(weights))./(max(weights)-min(weights));
-
-            
-
-           %%%%% LDA
-           ldaModel = fitcdiscr(X, Y); % LDA on aligned data
-           %            [coeff, ~, ~] = ldaModel.Coeffs(1,2).Linear;
-           
-           LDA_Direction = ldaModel.Coeffs(1,2).Linear;
-           X_proj = X * LDA_Direction;
-
-           % For 2-class example
-           histogram(X_proj(Y==1),100,'FaceAlpha',0.3,'EdgeColor','none','Normalization','pdf');hold on;
-           histogram(X_proj(Y==2),100,'FaceAlpha',0.3,'EdgeColor','none','Normalization','pdf');hold on;
-           xlabel('Projection onto discriminant direction');
-           ylabel('Percentage of timebin');
-           title('LDA Projection');
-
-           % Decode test data
-           testSpikeCounts = X; % Spike counts for a test bin (1 x 20)
-           decodedTrack = predict(ldaModel, testSpikeCounts);
-%            plot(decodedTrack);hold on;plot(Y)
-           plot(cumsum(decodedTrack-1));hold on;plot(cumsum(Y-1))
-
-
-           plot(n(T1_bins,:)*LDA_Direction);hold on; plot(n(T2_bins,:)*LDA_Direction)
-
-%            plot(cumsum(strength(T1_bins,2)));hold on;plot(cumsum(strength(T2_bins,2)))
-
-           %           figure
-           %           scaled_place_fields=[];
-           %           for nComponent = 1:length(variance)
-           %               scaled_place_fields(:,:,nComponent) = zscore(place_fields_BAYESIAN(track_id).template,[],2).*relative_weights(:,nComponent);
-           %               subplot(3,3,nComponent)
-           % %               imagesc( scaled_place_fields(:,:,nComponent))
-           %              plot(sum(scaled_place_fields(:,:,nComponent)))
-           %           end
-
-%            for nCell = 1:length(HPC_clusters_RUN.spatial_response_raw)
-% 
-%                nexttile
-%                imagesc(HPC_clusters_RUN.spatial_response_raw{nCell,1})
-%                colormap("gray")
-%                title(sprintf('Cell %i Track 1',nCell))
-%                nexttile
-%                imagesc(HPC_clusters_RUN.spatial_response_raw{nCell,2})
-%                colormap("gray")
-%                title(sprintf('Cell %i Track 2',nCell))
-% 
-%            end
-          assembly_templates(ntrack).templates=templates;
-          assembly_templates(ntrack).correlations=correlations;
-          assembly_templates(ntrack).projection=projection;
-          assembly_templates(ntrack).weights=weights;
-          assembly_templates(ntrack).relative_weights=relative_weights;
-          assembly_templates(ntrack).variance=variance;
-
           time_bin_size=0.02;
+
           for nprobe = 1:length(ripples)
               disp('Reactivation strength for original data')
+              options = session_info(n).probe(nprobe);
+               ripple_probe_no = session_info(n).probe(mprobe).probe_id + 1;
+
+              PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+                  session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+                  [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+                  session_clusters_RUN.track_ID_all{1},spikes_template,...
+                  [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
+
+
               bins=[];
               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
               ripples_time_edges=[];
