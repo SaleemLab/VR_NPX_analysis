@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24062'};
-all_SUBJECTS = {'M24016','M24017','M24018'};
+all_SUBJECTS = {'M24016','M24017','M24018','M24062','M24064'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24062'};
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -154,12 +154,13 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([22 38]);
+experiment_info=experiment_info([45 46 48 51]);
+% experiment_info=experiment_info([48 51]);
 % experiment_info=experiment_info(4:5);
 % All_stimuli = {'Checkerboard'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-All_stimuli = {'Masa2tracks','SparseNoise'}
+% All_stimuli = {'Masa2tracks','SparseNoise'}
 % All_stimuli = {'SleepChronic'};
 % All_stimuli = {'Checkerboard','Checkerboard'};
 % All_stimuli = {'Masa2tracks'};
@@ -241,9 +242,9 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 SUBJECTS = {'M24016'};
-SUBJECTS = {'M24064'};
+SUBJECTS = {'M24062'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-experiment_info = experiment_info(1);
+experiment_info = experiment_info(10);
 Stimulus_type= 'Checkerboard_sh1'; 
 Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
@@ -261,8 +262,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24064';
-SESSION = '20241206';
+SUBJECT = 'M24062';
+SESSION = '20241128';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
