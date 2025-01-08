@@ -250,3 +250,30 @@ for ndate = 12:length(all_DIR)
 end
 
 
+% SUBJECT = 'M24072';
+% all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'analysis','20*'));
+% 
+% for ndate = 1:length(all_DIR)
+%     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
+% 
+%     allFilesAndFolders = dir;
+% 
+%     % Extract only the folders
+%     session_DIR = allFilesAndFolders([allFilesAndFolders.isdir]);
+% 
+%     for nsession = 1:length(session_DIR)
+%         if ~strcmp(session_DIR(nsession).name, '.') && ~strcmp(session_DIR(nsession).name, '..')
+% 
+%             cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
+%             old_metafiles = dir('202*.meta');
+% 
+%             for n = 1:length(old_metafiles)
+%                 movefile(old_metafiles(n).name, [SUBJECT,'_',old_metafiles(n).name]);
+%                 % delete(old_metafiles(n).name)
+%             end
+%         end
+% 
+%     end
+% end
+% 
+

@@ -32,7 +32,10 @@ for nsession =1:length(experiment_info)
 
     %     cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
     %     load(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"))
-
+    if isempty(session_info)
+        continue
+    end
+    
     for n = 1:length(session_info)
         for nprobe = 1:length(session_info(n).probe) % For each session, how many probes
             options = session_info(n).probe(nprobe);
