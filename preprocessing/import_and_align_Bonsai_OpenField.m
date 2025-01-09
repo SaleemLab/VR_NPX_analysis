@@ -22,17 +22,24 @@ BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 % DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
 Nidq = [];
 td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*syncpulseTimes*'));
-
+if ~isempty(td)
+    load(td);
+    Nidq.on = syncTimes_ephys.on;% use upswings currently
+    Nidq.off = syncTimes_ephys.off;% use upswings currently
+else
+    error('nidq and ephys sync pulse extraction and alignment not done!')
+    return
+end
+frame_sampling_rate = 30; % 30Hz videos
 
 
 % Import Sleap and sync pulse
 % and synchronise them to async pulse
-    this_table = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-    behaviour.frame = this_table(:,16);
-    behaviour.tracking = this_table(:,2:15);
-
-    Sync_pulse = this_table(:,1); %
-
+this_table = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
+behaviour.frame = this_table(:,16);
+behaviour.tracking = this_table(:,2:15);
+Sync_pulse = this_table(:,1); %
+behaviour.Sync_pulse = Sync_pulse;
 % peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 
 
@@ -43,7 +50,7 @@ baseline_corrected_sync = Sync_pulse-movmean(Sync_pulse,120);
 initial_centroids = [ prctile(baseline_corrected_sync,10);prctile(baseline_corrected_sync,90)];
 peripherals.Sync = kmeans(baseline_corrected_sync,2,'Start', initial_centroids)-1;
 
-peripherals.Time =  behaviour.computer_time_original*1000;
+peripherals.Time =  behaviour.frame ./ frame_sampling_rate .* 1000;
 idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
 idx_trial_end = find(diff(peripherals.Sync)==-1) + 1;
 
@@ -83,23 +90,23 @@ if length(idx_trial_start)==length(idx_trial_end)
     idx_trial_start(idx_to_remove)=[];
 end
 
-false_index = find(abs(peripherals.Time(idx_trial_end)-peripherals.Time(idx_trial_start))<0.4*1000); %if the pulse was less than 0.3 second
+false_index = find(abs(peripherals.Time(idx_trial_end)-peripherals.Time(idx_trial_start))<0.4 * 1000); %if the pulse was less than 0.3 second
 for n = 1:length(false_index)
     peripherals.Sync(idx_trial_start(false_index(n))-1:idx_trial_end(false_index(n))+1)=0; % makes it zero
 end
 
-if length(Nidq.bonsai_sync_on) == length(Nidq.bonsai_sync_off)+1
+if length(Nidq.on) == length(Nidq.off)+1
     Nidq.bonsai_sync_on(end)=[];
 end
 
 
-[peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.bonsai_sync_on); % use upswings currently
+[peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.on); % use upswings currently
 
 temp = peripherals;
-temp.Time= peripherals.sglxTime*1000;
+temp.Time= peripherals.sglxTime * 1000;
 temp.Sync(peripherals.Sync==0)=1;
 temp.Sync(peripherals.Sync==1)=0;
-[peripherals] = alignBonsaiToEphysSyncTimes(temp,Nidq.bonsai_sync_off); % use upswings currently
+[peripherals] = alignBonsaiToEphysSyncTimes(temp,Nidq.off); % use upswings currently
 
 [unique_time,ia,~]=unique(peripherals.sglxTime);
 
@@ -110,9 +117,10 @@ behaviour.sglxTime_original = unique_time;
 behaviour.sglxTime = interp1(behaviour.sglxTime_original,behaviour.sglxTime_original,behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');            
 behaviour.tvec = behaviour.sglxTime;
 
-behaviour.mobility = interp1(behaviour.sglxTime_original,behaviour.mobility_original(ia),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
-behaviour.X = interp1(behaviour.sglxTime_original,behaviour.X_original(ia),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
-behaviour.Y = interp1(behaviour.sglxTime_original,behaviour.Y_original(ia),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+behaviour.frame = interp1(behaviour.sglxTime_original,behaviour.frame(ia),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+for i = 1:size(tracking,2)
+behaviour.tracking(:,i) = interp1(behaviour.sglxTime_original,behaviour.tracking(ia,i),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+end
 behaviour.Sync_pulse = interp1(behaviour.sglxTime_original,Sync_pulse(ia)',behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
 
 
