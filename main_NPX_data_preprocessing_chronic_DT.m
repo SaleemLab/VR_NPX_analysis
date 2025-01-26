@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24062'};
-all_SUBJECTS = {'M24072'};
+all_SUBJECTS = {'M24073'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 % SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24072'};
+SUBJECTS = {'M24073'};
 options = 'V1-MEC';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -154,14 +154,14 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([2]);
+experiment_info=experiment_info([1]);
 % experiment_info=experiment_info(4:5);
 % All_stimuli = {'Checkerboard'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 % All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 % All_stimuli = {'Masa2tracks','SparseNoise'}
 % All_stimuli = {'SleepChronic'};
-All_stimuli = {'Checkerboard','SparseNoise'};
+All_stimuli = {'SparseNoise'};
 % All_stimuli = {'Masa2tracks'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
@@ -238,10 +238,10 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 
-SUBJECTS = {'M24072'};
+SUBJECTS = {'M24073'};
 options = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info = experiment_info(2);
+experiment_info = experiment_info(1);
 % experiment_info = experiment_info(6);
 Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
@@ -257,8 +257,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24072';
-SESSION = '20241126';
+SUBJECT = 'M24073';
+SESSION = '20250124';
 options = 'V1-MEC';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
@@ -333,7 +333,7 @@ subplot(1,3,1);yyaxis left;ylim([2000 6000]);
 subplot(1,3,2);yyaxis left;ylim([2000 6000]);
 subplot(1,3,3);yyaxis left;ylim([2000 6000]);
 
-Stimulus_type = 'Checkerboard_sh1';
+Stimulus_type = 'Checkerboard_sh1_half';
 if contains(Stimulus_type,'_sh')
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     options= session_info.probe(1);
@@ -399,6 +399,8 @@ save(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'),'best_channels
 % Stimulus_type = 'Checkerboard';
 % % determine_best_channels
 % calculate_checkerboard_CSD_profile_batch(experiment_info,Stimulus_type)
+
+%% LFP receptive field
 
 %% Visual tuning based on Static Gratings
 Stimulus_type = 'StaticGratings';

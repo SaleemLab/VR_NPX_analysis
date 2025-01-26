@@ -9,12 +9,12 @@
 %% Visual tuning based on SparseNoise
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24072'};
+SUBJECTS = {'M24073'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'V1-MEC');
@@ -23,7 +23,7 @@ ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'SparseNoise_fullscreen';
 Stimulus_type = 'SparseNoise';
 initMap = [];
-probe_hemisphere_text = {'Left','Right'};
+probe_hemisphere_text = {'MEC','V1'};
 
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -103,17 +103,17 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise
 clear all
-SUBJECTS = {'M24072'};
-Dates = {'20241126'};
+SUBJECTS = {'M24073'};
+Dates = {'20250124'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','session_info.mat'))
 % hemisphere_texts = {'Left','Right'}
 options = session_info.probe(1);
-for nprobe = 1
+for nprobe = 1:2
     fig = figure
     fig.Position = [34 60 1850 920]
     fig.Name = sprintf('%s %s Averaged V1-MEC-paraSub Receptive field',options.SUBJECT,options.SESSION);
@@ -180,6 +180,7 @@ for x = 1:8
     end
 end
 
+%% 
 for nshank = 1:4
     %     subplot(2,2,nshank)
     scal_f = 10; % scale image by this before...
