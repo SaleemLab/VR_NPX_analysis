@@ -109,11 +109,12 @@ nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','session_info.mat'))
 % hemisphere_texts = {'Left','Right'}
-options = session_info.probe(1);
+
 for nprobe = 1:2
+    options = session_info.probe(nprobe);
     fig = figure
     fig.Position = [34 60 1850 920]
     fig.Name = sprintf('%s %s Averaged V1-MEC-paraSub Receptive field',options.SUBJECT,options.SESSION);
@@ -125,15 +126,15 @@ for nprobe = 1:2
 
     % V1_channel_ids=RF(nprobe).V1_channel_ids;
     % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
-    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),21));
+    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),37));
     channel_depths_range=[];
     channel_depths_range(:,1) = temp(1:end-1);
     channel_depths_range(:,2) = temp(2:end);
 
     % channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
 
-    for nregion = 1:20
-        subplot(5,4,nregion)
+    for nregion = 1:36
+        subplot(6,6,nregion)
         % scal_f = 10; % scale image by this before...
         % sigma = 3; % ...filtering by this
         scal_f = 2; % scale image by this before...
