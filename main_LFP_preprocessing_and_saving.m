@@ -2,6 +2,9 @@ clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\j.kok\Documents\GitHub\VR_NPX_analysis'))
+
+
 %% LFP preprocess -> Catgt
 
 SUBJECT = 'M24073';

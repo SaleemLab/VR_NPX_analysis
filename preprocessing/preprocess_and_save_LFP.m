@@ -27,10 +27,20 @@ else
         disp('CatGT folder not found!')
     end
 end
+
 if isempty(DIR)
     DIR = dir('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win');
     if ~isempty(DIR)
         path_to_runitsh = 'C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win\runit.bat'; % path to CatGT runit.bat file
+    else
+        disp('DT CatGT folder not found!')
+    end
+end
+
+if isempty(DIR)
+    DIR = dir('C:\Users\j.kok\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win');
+    if ~isempty(DIR)
+        path_to_runitsh = 'C:\Users\j.kok\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win\runit.bat'; % path to CatGT runit.bat file
     else
         disp('DT CatGT folder not found!')
     end
