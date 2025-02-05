@@ -120,7 +120,7 @@ for nsession =1:length(experiment_info)
               continue
         end
         if isempty(dir(options.segment_frames))
-            options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2str(options.probe_id),'segment_frames.csv']);
+            options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2soptions.probe_id,'segment_frames.csv']);
         end
         
         segment_frames_table = readtable(options.segment_frames);
