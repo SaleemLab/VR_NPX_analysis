@@ -119,14 +119,17 @@ for nsession =1:length(experiment_info)
         if isempty(DIR_SORTER) % if spike interface sorter folder is not present, skip
               continue
         end
-
+        if isempty(dir(options.segment_frames))
+            options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2str(options.probe_id),'segment_frames.csv']);
+        end
+        
         segment_frames_table = readtable(options.segment_frames);
         segment_frames = table2array(segment_frames_table(:,1));
 
         session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
         session_id=str2num(session_id(1));
         
-        if sum(contains(segment_frames,['_',num2str(session_id),'_g',num2str(options.gFileNum)]))==0
+        if sum(contains(segment_frames,[num2str(session_id),'_g',num2str(options.gFileNum)]))==0
             disp('Session without spike sorting is skipped')
             continue
         end
@@ -144,12 +147,12 @@ for nsession =1:length(experiment_info)
                 end
                 temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort3'));
                 if ~isempty(temp)
-                    [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                    [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 end
 
                 temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
                 if ~isempty(temp)
-                    [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                    [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 end
 
             elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
