@@ -46,6 +46,16 @@ if isempty(DIR)
     end
 end
 
+if isempty(DIR)
+    DIR = dir('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win');
+    if ~isempty(DIR)
+        path_to_runitsh = 'C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis\preprocessing\CatGT-win\runit.bat'; % path to CatGT runit.bat file
+    else
+        disp('DT CatGT folder not found!')
+    end
+end
+ 
+
 if isfield(options,'gFileNum')
 %     gNum = options.gFileNum;
     gNum= num2str(options.gFileNum);
