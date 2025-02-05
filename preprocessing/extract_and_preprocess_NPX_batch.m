@@ -129,7 +129,7 @@ for nsession =1:length(experiment_info)
         session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
         session_id=str2num(session_id(1));
         
-        if sum(contains(segment_frames,['_',num2str(session_id),'_g',num2str(options.gFileNum)]))==0
+        if sum(contains(segment_frames,[num2str(session_id),'_g',num2str(options.gFileNum)]))==0
             disp('Session without spike sorting is skipped')
             continue
         end
