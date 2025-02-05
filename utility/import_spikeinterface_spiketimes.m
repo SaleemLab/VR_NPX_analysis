@@ -72,9 +72,14 @@ if contains(options.sorter_folder,'kilosort')
     % Load the segment frame file for this sorting: check to see if it is a csv file
     % (ie. already parsed) or not
     if sum(contains(segment_frames.Properties.VariableNames,'segment_info')) > 0
-        if contains(folder_names,options.SUBJECT)
+        if contains(folder_names,options.SUBJECT) % remove SUBJECT (e.g. M24016) if present
             folder_names = extractAfter(folder_names,sprintf('%s_',options.SUBJECT));
         end
+
+        if contains(folder_names,options.SESSION) % remove SESSION (e.g. 20240701) if present
+            folder_names = extractAfter(folder_names,sprintf('%s_',options.SESSION));
+        end
+
         this_segment = contains(segment_frames.segment_info,folder_names);
 
         if sum(this_segment)==0
