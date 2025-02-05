@@ -48,10 +48,12 @@ if ~contains(sorter,'off') % if not default ks
     sorter_folder = [];
     if contains(sorter,'KS2')
         sorter_folder = 'kilosort2_5';
-    elseif contains(sorter,'KS3_original')
-        sorter_folder = 'kilosort3_original';
+    % elseif contains(sorter,'KS3_original')
+    %     sorter_folder = 'kilosort3_original';
     elseif contains(sorter,'KS3')
         sorter_folder = 'kilosort3';
+    % elseif contains(sorter,'KS4_original')
+    %     sorter_folder = 'kilosort4_original';
     elseif contains(sorter,'KS4')
         sorter_folder = 'kilosort4';
     end
