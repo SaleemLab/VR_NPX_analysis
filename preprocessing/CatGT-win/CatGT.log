@@ -2723,3 +2723,51 @@
 [Thd 18548 CPU 2 1/25/25 18:32:20.063] Creating lf stream for probe 0.
 [Thd 18548 CPU 4 1/25/25 18:32:49.311] Creating lf stream for probe 1.
 [Thd 18548 CPU 2 1/25/25 18:36:38.652] 
+[Thd 23604 CPU 2 2/05/25 16:40:45.337] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_0 -run=M25002_20250205_0 -g=0 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 23604 CPU 2 2/05/25 16:40:45.344] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_0/M25002_20250205_0_g0/M25002_20250205_0_g0_imec0/M25002_20250205_0_g0_t0.imec0.lf.meta'.
+[Thd 23604 CPU 2 2/05/25 16:40:45.347] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_0/M25002_20250205_0_g0/M25002_20250205_0_g0_imec1/M25002_20250205_0_g0_t0.imec1.lf.meta'.
+[Thd 23604 CPU 2 2/05/25 16:40:45.376] Creating lf stream for probe 0.
+[Thd 23604 CPU 2 2/05/25 16:41:09.600] Creating lf stream for probe 1.
+[Thd 23604 CPU 2 2/05/25 16:42:11.649] 
+[Thd 24256 CPU 2 2/05/25 16:43:55.534] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=0 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 24256 CPU 2 2/05/25 16:43:55.536] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g0/M25002_20250205_1_g0_imec0/M25002_20250205_1_g0_t0.imec0.lf.meta'.
+[Thd 24256 CPU 4 2/05/25 16:43:55.543] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g0/M25002_20250205_1_g0_imec1/M25002_20250205_1_g0_t0.imec1.lf.meta'.
+[Thd 24256 CPU 8 2/05/25 16:43:55.553] Creating lf stream for probe 0.
+[Thd 24256 CPU 2 2/05/25 16:44:51.131] Creating lf stream for probe 1.
+[Thd 24256 CPU 2 2/05/25 16:46:59.392] 
+[Thd 23564 CPU 2 2/05/25 16:47:44.228] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=1 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 23564 CPU 2 2/05/25 16:47:44.230] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g1/M25002_20250205_1_g1_imec0/M25002_20250205_1_g1_t0.imec0.lf.meta'.
+[Thd 23564 CPU 2 2/05/25 16:47:44.235] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g1/M25002_20250205_1_g1_imec1/M25002_20250205_1_g1_t0.imec1.lf.meta'.
+[Thd 23564 CPU 2 2/05/25 16:47:44.246] Creating lf stream for probe 0.
+[Thd 23564 CPU 2 2/05/25 16:48:10.114] Creating lf stream for probe 1.
+[Thd 23564 CPU 2 2/05/25 16:49:06.461] 
+[Thd 2296 CPU 2 2/05/25 16:50:51.287] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=2 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 2296 CPU 2 2/05/25 16:50:51.288] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g2/M25002_20250205_1_g2_imec0/M25002_20250205_1_g2_t0.imec0.lf.meta'.
+[Thd 2296 CPU 2 2/05/25 16:50:51.294] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g2/M25002_20250205_1_g2_imec1/M25002_20250205_1_g2_t0.imec1.lf.meta'.
+[Thd 2296 CPU 4 2/05/25 16:50:51.302] Creating lf stream for probe 0.
+[Thd 2296 CPU 2 2/05/25 16:51:46.824] Creating lf stream for probe 1.
+[Thd 2296 CPU 2 2/05/25 16:53:53.402] 
+[Thd 21508 CPU 2 2/05/25 16:54:40.065] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=3 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 21508 CPU 2 2/05/25 16:54:40.066] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g3/M25002_20250205_1_g3_imec0/M25002_20250205_1_g3_t0.imec0.lf.meta'.
+[Thd 21508 CPU 4 2/05/25 16:54:40.072] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g3/M25002_20250205_1_g3_imec1/M25002_20250205_1_g3_t0.imec1.lf.meta'.
+[Thd 21508 CPU 2 2/05/25 16:54:40.082] Creating lf stream for probe 0.
+[Thd 21508 CPU 3 2/05/25 16:55:04.083] Creating lf stream for probe 1.
+[Thd 21508 CPU 2 2/05/25 16:56:01.437] 
+[Thd 22196 CPU 4 2/05/25 16:57:42.913] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=4 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 22196 CPU 4 2/05/25 16:57:42.915] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g4/M25002_20250205_1_g4_imec0/M25002_20250205_1_g4_t0.imec0.lf.meta'.
+[Thd 22196 CPU 2 2/05/25 16:57:42.917] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g4/M25002_20250205_1_g4_imec1/M25002_20250205_1_g4_t0.imec1.lf.meta'.
+[Thd 22196 CPU 10 2/05/25 16:57:42.927] Creating lf stream for probe 0.
+[Thd 22196 CPU 2 2/05/25 16:58:37.615] Creating lf stream for probe 1.
+[Thd 22196 CPU 2 2/05/25 17:00:49.620] 
+[Thd 23040 CPU 2 2/05/25 17:01:36.278] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=5 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 23040 CPU 2 2/05/25 17:01:36.280] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g5/M25002_20250205_1_g5_imec0/M25002_20250205_1_g5_t0.imec0.lf.meta'.
+[Thd 23040 CPU 2 2/05/25 17:01:36.282] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g5/M25002_20250205_1_g5_imec1/M25002_20250205_1_g5_t0.imec1.lf.meta'.
+[Thd 23040 CPU 2 2/05/25 17:01:36.291] Creating lf stream for probe 0.
+[Thd 23040 CPU 2 2/05/25 17:02:00.112] Creating lf stream for probe 1.
+[Thd 23040 CPU 2 2/05/25 17:03:01.143] 
+[Thd 22312 CPU 2 2/05/25 17:04:44.520] Cmdline: CatGT -dir=Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1 -run=M25002_20250205_1 -g=6 -t=0 -prb_fld -lf -prb=0:1 -zerofillmax=500 -lffilter=butter,12,0,500 -gblcar
+[Thd 22312 CPU 4 2/05/25 17:04:44.521] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g6/M25002_20250205_1_g6_imec0/M25002_20250205_1_g6_t0.imec0.lf.meta'.
+[Thd 22312 CPU 4 2/05/25 17:04:44.524] Meta file not found 'Z:/ibn-vision/DATA/SUBJECTS/M25002/ephys/20250205/20250205_1/M25002_20250205_1_g6/M25002_20250205_1_g6_imec1/M25002_20250205_1_g6_t0.imec1.lf.meta'.
+[Thd 22312 CPU 2 2/05/25 17:04:44.531] Creating lf stream for probe 0.
+[Thd 22312 CPU 6 2/05/25 17:05:40.246] Creating lf stream for probe 1.
+[Thd 22312 CPU 2 2/05/25 17:07:51.282] 

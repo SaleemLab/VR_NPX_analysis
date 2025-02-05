@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24062'};
-all_SUBJECTS = {'M24073'};
+all_SUBJECTS = {'M25002'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 % SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24072'};
+SUBJECTS = {'M25002'};
 options = 'V1-MEC';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -161,7 +161,7 @@ experiment_info=experiment_info([1]);
 % All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 % All_stimuli = {'Masa2tracks','SparseNoise'}
 % All_stimuli = {'SleepChronic'};
-% All_stimuli = {'Checkerboard','SparseNoise'};
+All_stimuli = {'Checkerboard','SparseNoise'};
 % All_stimuli = {'Masa2tracks'};
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})

@@ -22,11 +22,7 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
     else % New Part 1 Extract Nidq sync pulse and event times and ephys sync pulse
         % Currently not using CatGT and Tprime
         options = session_info(n).probe(1);
-        NIDQ_DIR = dir(fullfile(options.EPHYS_DATAPATH,'..','*nidq*'));
-        if ~isempty(NIDQ_DIR)
-            extract_and_align_nidq_signals(options)
-        end
-
+        extract_and_align_nidq_signals(options);
         EPHYS_parent_folder = cd(fullfile(options.EPHYS_DATAPATH,'..','..'));
         preprocess_and_save_LFP(options)
 
