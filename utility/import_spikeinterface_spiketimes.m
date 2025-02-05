@@ -17,20 +17,28 @@ function [these_spike_times,cluster_id,peak_channel,peak_depth,peak_channel_wave
 if ~exist('SampleRate','var') || isempty(SampleRate)
     SampleRate = 30000;
 end
+
 if isfield(options,'sorter_type')
     if contains(options.sorter_type,'original')
         SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',options.sorter_folder,'sorting');
+        if isempty(dir(fullfile(SORTER_DATAPATH,'spikes.csv')))
+            SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'sorters',options.sorter_folder,'in_container_sorting');
+        end
     end
 else
     SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'waveform',[options.sorter_folder,'_merged'],'sorting');
+    if isempty(dir(fullfile(SORTER_DATAPATH,'spikes.csv')))
+        SORTER_DATAPATH = fullfile(options.SORTER_DATAPATH,'sorters',[options.sorter_folder,'_merged'],'in_container_sorting');
+    end
 end
+
 gfileNum = str2num(cell2mat(extractBetween(options.EPHYS_DATAPATH,'_g','\')));% g file number
 folder_names = cell2mat(extractBetween(options.EPHYS_DATAPATH,['_g',num2str(gfileNum),'\'],'_imec'));% to search for the session (e.g. 'M24010_20240231_1_g0')
 
 DIR_segment = dir(options.segment_frames);
 if isempty(DIR_segment)
-    temp_DIR =  fullfile(options.EPHYS_DATAPATH,'..','..','..',sprintf('probe%i_segment_info.csv',options.probe_id));
-    options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',sprintf('probe%i_segment_info.csv',options.probe_id));
+    temp_DIR =  fullfile(options.EPHYS_DATAPATH,'..','..','..',sprintf('probe%isegment_frames.csv',options.probe_id));
+    options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',sprintf('probe%isegment_frames.csv',options.probe_id));
 end
 
 segment_frames = readtable(options.segment_frames,"Delimiter",",");% corresponding start and end sample point after concatenation via spike interface
@@ -39,6 +47,7 @@ segment_frames = readtable(options.segment_frames,"Delimiter",",");% correspondi
 % Get KS spike times
 if contains(options.sorter_folder,'kilosort')
     spikes = readmatrix(fullfile(SORTER_DATAPATH,'spikes.csv'));
+
     spike_times = spikes(:,3);
     spike_clusters = spikes(:,1);
     original_cluster_id = unique(spike_clusters);
@@ -63,9 +72,14 @@ if contains(options.sorter_folder,'kilosort')
     % Load the segment frame file for this sorting: check to see if it is a csv file
     % (ie. already parsed) or not
     if sum(contains(segment_frames.Properties.VariableNames,'segment_info')) > 0
-        if contains(folder_names,options.SUBJECT)
+        if contains(folder_names,options.SUBJECT) % remove SUBJECT (e.g. M24016) if present
             folder_names = extractAfter(folder_names,sprintf('%s_',options.SUBJECT));
         end
+
+        if contains(folder_names,options.SESSION) % remove SESSION (e.g. 20240701) if present
+            folder_names = extractAfter(folder_names,sprintf('%s_',options.SESSION));
+        end
+
         this_segment = contains(segment_frames.segment_info,folder_names);
 
         if sum(this_segment)==0
