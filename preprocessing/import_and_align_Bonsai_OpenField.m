@@ -123,6 +123,9 @@ new_tracking(:,i) = interp1(behaviour.sglxTime_original,tracking(ia,i),behaviour
 end
 behaviour.Sync_pulse = interp1(behaviour.sglxTime_original,Sync_pulse(ia)',behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
 tracking_part_list = {'nose','neck','implant','earR','earL','spine','tail_start'};
-behaviour.nose = new_tracking(:,1:2)';
-behaviour.neck = new_tracking(:,3:4)';
+no_parts = length(tracking_part_list);
+for i = 1:no_parts
+behaviour.(tracking_part_list{i}) = new_tracking(:,(i-1)*2+1:i*2)';
+end
+
 end

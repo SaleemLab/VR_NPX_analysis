@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 % SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25072'};
 options = 'V1-MEC';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -182,6 +182,7 @@ SUBJECT = 'M24072';
 % SESSION = '20231212';
 SESSION = '20241204';
 options = 'V1-MEC';
+ROOTPATH = 'Z:\ibn-vision'; 
 % Stimulus_type = 'Masa2tracks';
 % Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'SparseNoise_fullscreen';
@@ -233,7 +234,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 
-SUBJECTS = {'M24073'};
+SUBJECTS = {'M25002'};
 options = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 experiment_info = experiment_info(1);
@@ -252,8 +253,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24073';
-SESSION = '20250124';
+SUBJECT = 'M25002';
+SESSION = '20250205';
 options = 'V1-MEC';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
