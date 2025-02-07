@@ -233,7 +233,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 
-SUBJECTS = {'M24073'};
+SUBJECTS = {'M25002'};
 options = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 experiment_info = experiment_info(1);
@@ -252,8 +252,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24073';
-SESSION = '20250124';
+SUBJECT = 'M25002';
+SESSION = '20250205';
 options = 'V1-MEC';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4

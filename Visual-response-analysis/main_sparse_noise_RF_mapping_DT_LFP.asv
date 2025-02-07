@@ -110,7 +110,7 @@ nsession = 1;
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
 load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','session_info.mat'))
 % hemisphere_texts = {'Left','Right'}
 
 for nprobe = 1:2
