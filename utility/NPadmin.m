@@ -184,9 +184,9 @@ classdef NPadmin
                     row = ceil(electrode/2);
                     kcoords.ycoords(n,1) = row * 15;
                     if isOdd(electrode)
-                        kcoords.xcoords(n,1) = 59 + ((shank-1)*250);
-                    else
                         kcoords.xcoords(n,1) = 27 + ((shank-1)*250);
+                    else
+                        kcoords.xcoords(n,1) = 59 + ((shank-1)*250);
                     end
                 end
             else
