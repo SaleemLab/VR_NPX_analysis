@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 % SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25072'};
 options = 'V1-MEC';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -182,6 +182,7 @@ SUBJECT = 'M24072';
 % SESSION = '20231212';
 SESSION = '20241204';
 options = 'V1-MEC';
+ROOTPATH = 'Z:\ibn-vision'; 
 % Stimulus_type = 'Masa2tracks';
 % Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'SparseNoise_fullscreen';

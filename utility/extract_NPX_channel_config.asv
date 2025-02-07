@@ -31,12 +31,13 @@ sorted_config = [];
 if ~isempty(column)
     % Set probe columns (4 columns for NPX1)
     % (x coordinate = 11, 27, 43 or 59 micron)
-    cols_available = [];
+    no_col = length(shanks_available);
+    cols_available =cell(no_col);
 
     shank_id = []; % the corresponding shank_id
     shanks_available = unique(chan_config.Shank);
     for n=1:size(shanks_available)
-        cols_available = [cols_available; unique(chan_config.Ks_xcoord(chan_config.Shank==shanks_available(n)))];
+        cols_available = [cols_available unique(chan_config.Ks_xcoord(chan_config.Shank==shanks_available(n)))];
         shank_id = [shank_id shanks_available(n)];
     end
 
