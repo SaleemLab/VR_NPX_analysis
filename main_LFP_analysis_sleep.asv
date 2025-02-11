@@ -512,7 +512,7 @@ for nsession =1:length(experiment_info)
                 zscored_LFP = zscore(deltaLFP.data);
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
 
-                for nevent = 1:length(slow_waves_markov(probe_no).DOWN_ints)
+                for nevent = 1:size(slow_waves_markov(probe_no).DOWN_ints,1)
                     % for nevent = 600:640
                     midpoint = mean(slow_waves_markov(probe_no).DOWN_ints(nevent,:));
                     tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
@@ -646,7 +646,7 @@ for nsession =1:length(experiment_info)
                     tidx=tidx(1):tidx(end);
                     [~,idx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
 
-                    for nShank=1:length(LFP(probe_no).average_V1_shank_id)
+                    for nShank=1:length(LFP(probe_no).best_HPC_shank_id)
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 

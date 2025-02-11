@@ -259,7 +259,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =5:length(experiment_info)
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -512,7 +512,7 @@ for nsession =5:length(experiment_info)
                 zscored_LFP = zscore(deltaLFP.data);
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
 
-                for nevent = 1:length(slow_waves_markov(probe_no).DOWN_ints)
+                for nevent = 1:size(slow_waves_markov(probe_no).DOWN_ints,1)
                     % for nevent = 600:640
                     midpoint = mean(slow_waves_markov(probe_no).DOWN_ints(nevent,:));
                     tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);

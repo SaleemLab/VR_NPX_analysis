@@ -137,6 +137,7 @@ xi_t = zeros(numBins-1, 2, 2); % Joint state probabilities for transitions
 % EM Algorithm Setup
 maxIter = 100; tol = 1e-5;  % Convergence criteria
 logLikelihoods = zeros(maxIter, 1);
+nan_counter = 0; % for cases when loglikelihood is nan.
 
 % EM Algorithm
 for iter = 1:maxIter
@@ -227,6 +228,14 @@ for iter = 1:maxIter
     if iter > 1 && (abs(alpha_iter(iter) - alpha_iter(iter-1)) < 1e-5 | abs(mu_iter(iter) - mu_iter(iter-1)) < 1e-5)
         disp('Converged');
         break;
+    end
+
+    if isnan(logLikelihoods(iter))
+        nan_counter = nan_counter + 1;
+        if nan_counter >5
+            break
+        end
+
     end
 end
 
@@ -366,10 +375,13 @@ downOnsets(downDurations<=2)=[];
 downOffsets(downDurations<=2)=[];
 
 
-upOnsets = tvec_interp1(upOnsets)';
-upOffsets =  tvec_interp1(upOffsets)';
-downOnsets =  tvec_interp1(downOnsets)';
-downOffsets =  tvec_interp1(downOffsets)';
+[status,interval,index] = InIntervals(tvec_interp1,NREMInts);
+tvec_NREM = tvec_interp1(status);
+
+upOnsets = tvec_NREM(upOnsets)';
+upOffsets =  tvec_NREM(upOffsets)';
+downOnsets =  tvec_NREM(downOnsets)';
+downOffsets =  tvec_NREM(downOffsets)';
 
 % Pair UP events with immediately following DOWN events
 upDownPairs = [];
@@ -402,8 +414,6 @@ for i = 1:length(downOffsets)
         end
     end
 end
-
-[status,interval,index] = InIntervals(tvec_interp1,NREMInts);
 
 slow_waves_markov.UP_ints = [upOnsets upOffsets];
 slow_waves_markov.DOWN_ints = [downOnsets downOffsets];
