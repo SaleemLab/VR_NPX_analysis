@@ -106,13 +106,13 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise 
 
-SUBJECTS = {'M24064'};
-Dates = {'20241206'};
+SUBJECTS = {'M24065'};
+Dates = {'20250126'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_5','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','receptiveFields_LFP.mat'),'RF')
 hemisphere_texts = {'Left','Right'}
 for nprobe = 1:2
     fig = figure
@@ -155,14 +155,14 @@ end
 
 %% plotting SparseNoise (half shank)
 clear all
-SUBJECTS = {'M24064'}; 
-Dates = {'20241206'};
+SUBJECTS = {'M24065'};
+Dates = {'20250126'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
 hemisphere_texts = {'Left','Right'}
 num_groups = 30;
 for nprobe = 1:2

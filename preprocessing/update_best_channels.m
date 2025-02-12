@@ -34,7 +34,11 @@ for col = columns_to_process
     sprintf('This is Shank %i column %i (X coord %i micron)',nshank,col,columns_avaliable(col))
 
     if isfield(options,'Stimulus_type')
-        openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,columns_avaliable(col))))
+        if isempty(dir(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,columns_avaliable(col)))))
+            openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X shank %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,nshank)))
+        else
+            openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s Checkerboard%s event (all filtered) probe %i X coord %i.fig',options.SUBJECT,options.SESSION,extractAfter(options.Stimulus_type,"Checkerboard"),options.probe_no,columns_avaliable(col))))
+        end
         datacursormode('on');
 %         openfig(fullfile(options.ANALYSIS_DATAPATH,sprintf('%s %s cluster density probe %i X coord %i.fig',options.SUBJECT,options.SESSION,options.probe_no,columns_avaliable(col))))
 %         datacursormode('on');

@@ -26,7 +26,7 @@ for type = 1:length(lfpAvg.filter_type)
         fig = figure
         fig.Position = [334.7143 102.7143 1050 830]
         if contains(options.Stimulus_type,'half')
-            fig.Name = sprintf('%s %s %s event (%s filtered CSD normalised) probe %i X shank %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Shank));
+            fig.Name = sprintf('%s %s %s event (%s filtered) probe %i X shank %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Shank));
         elseif isfield(options,'CSD_V1_CA1_normalisation')
             fig.Name = sprintf('%s %s %s event (%s filtered CSD normalised) probe %i X coord %i',options.SUBJECT,options.SESSION,lfpAvg.event_group{event},filter_type{type},nprobe,unique(sorted_config.Ks_xcoord));
         else
