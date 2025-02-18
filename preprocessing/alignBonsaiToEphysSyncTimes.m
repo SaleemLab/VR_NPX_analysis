@@ -37,5 +37,5 @@ else
     t_bonsai = syncTimes_bonsai(nSyncOffset:numel(t_npix)+nSyncOffset-1);
 end
 bonsai_data.sglxTime = interp1(t_bonsai, t_npix, bonsai_data.Time./1000,'linear','extrap');
-
+% figure;plot(bonsai_data.sglxTime,bonsai_data.Photodiode);hold on;plot(bonsai_data.Time./1000-(bonsai_data.Time(1)./1000-bonsai_data.sglxTime(1)),bonsai_data.Photodiode)
 end
