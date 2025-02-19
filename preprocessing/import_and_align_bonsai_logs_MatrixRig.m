@@ -91,6 +91,8 @@ td = dir(fullfile(EPHYS_DATAPATH,'..','*NidqTimes*'));
 if ~isempty(td)
     load(fullfile(EPHYS_DATAPATH,'..',td(1).name),'Nidq');
     syncTimes_ephys = Nidq.bonsai_sync_on;% use upswings currently
+    syncPulse_ephys = Nidq.bonsai_sync;
+    syncPulse_ephysTimes = Nidq.sglxTime;
 else
     error('nidq and ephys sync pulse extraction and alignment not done!')
     return
@@ -100,12 +102,14 @@ end
 % Step 4: align nidq and Bonsai logged data
 
 %%%%%%
-% For photodiode and convert to spike GLX time-base
-if exist('photodiode','var') && ~isempty(photodiode)
+% For photodiode and convert to spike GLX timeTheif exist('photodiode','var') && ~isempty(photodiode)
     photodiode.Sync =  photodiode.AsyncPulse;
     photodiode.Time = photodiode.ArduinoTime;
+%     photodiode.Time = photodiode.BonsaiTime;
 
     [photodiode] = alignBonsaiToEphysSyncTimes(photodiode,syncTimes_ephys);
+%     [photodiode] = alignBonsaiToEphysSyncPulse(photodiode,syncPulse_ephys,syncPulse_ephysTimes);
+    
 else
     photodiode = [];
 end

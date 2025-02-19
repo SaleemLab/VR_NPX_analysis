@@ -54,6 +54,8 @@ td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*NidqTimes*'));
 if ~isempty(td)
     load(fullfile(options(1).EPHYS_DATAPATH,'..',td(1).name),'Nidq');
     syncTimes_ephys = Nidq.bonsai_sync_on;% use upswings currently
+    syncPulse_ephys = Nidq.bonsai_sync;
+    syncPulse_ephysTimes = Nidq.sglxTime;
 else
     error('nidq and ephys sync pulse extraction and alignment not done!')
     return
@@ -81,6 +83,7 @@ end
 peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 % peripherals.Time = peripherals.FrameTime*1000;
 [peripherals] = alignBonsaiToEphysSyncTimes(peripherals,syncTimes_ephys);
+% [peripherals] = alignBonsaiToEphysSyncPulse(peripherals,syncPulse_ephys,syncPulse_ephysTimes);
 
 % eyeData = import_bonsai_eyedata(fullfile([BONSAI_DATAPATH,'\',char(EYEDATA_DATAPATH)]));
 % [eyeData] = alignBonsaiToEphysSyncTimes(eyeData,syncTimes_ephys);
@@ -89,12 +92,13 @@ eyeData = [];
 if exist('photodiode_path','var') && ~isempty(photodiode_path)
     [photodiode, photodiode_sync] = import_bonsai_photodiode(fullfile([BONSAI_DATAPATH,'\',char(photodiode_path)]));
     photodiode.Sync = photodiode.S;
-    %     photodiode.Time = photodiode.FrameTime*1000;
+%     photodiode.Time = photodiode.FrameTime*1000;
     photodiode.Time = photodiode.T;
     photodiode.Photodiode = photodiode.P;
     photodiode = rmfield(photodiode,{'T','S','P'});
     [photodiode] = alignBonsaiToEphysSyncTimes(photodiode,syncTimes_ephys);
-
+%     figure;plot(photodiode.sglxTime,photodiode.Photodiode);hold on;plot(Nidq.sglxTime,Nidq.photodiode/100);title('xcorr with interp1 Bonsai Time')
+%     [photodiode] = alignBonsaiToEphysSyncPulse(photodiode,syncPulse_ephys,syncPulse_ephysTimes);
 else
     photodiode = []; photodiode_sync = [];
 end
@@ -168,9 +172,9 @@ nTrials = length(temp_tbl.start_time);
 % else
    best_lag_correction = 0;
 % end
-% if difference between photodiode and quadstate is less than 10%, it is probably more or less acruate
+% if difference between photodiode and quadstate is less than 1%, it is probably more or less acruate
 if best_lag_correction ==0
-    if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    0.1
+    if abs(length(blocks_ind)-length(idx_trial_start))/length(idx_trial_start) <    0.01
 
         disp('Aligning bonsai timestamp based on the delay between photodiode and quad state (may take 10 mins)')
         pdstart = [];
@@ -212,6 +216,7 @@ if best_lag_correction ==0
             end
         end
         toc
+        close(H)
 
         pdend = []
         tic
@@ -250,7 +255,7 @@ if best_lag_correction ==0
             end
         end
         toc
-
+        close(H)
         %     photodiodeData.stim_on.sglxTime=Nidq.sglxTime(pd_ON(blocks_ind))';
         %     photodiodeData.stim_off.sglxTime=Nidq.sglxTime(pd_OFF(blocks_ind))';
         %     photodiodeData.stim_on.sglxTime=photodiode.sglxTime(pd_ON(blocks_ind))';
@@ -324,7 +329,8 @@ if best_lag_correction ==0
         if isempty(pdstart) | isempty (pdend)
             peripherals.corrected_sglxTime = peripherals.sglxTime;
         else
-            [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+%             [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+            [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
         end
 
 
@@ -334,9 +340,12 @@ if best_lag_correction ==0
             case 'replay_Masa2tracks'
                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'replay');
             case 'Masa2tracks' % For now, just subtract from the average delay (the variance is quite small (e.g. 0.5s to 0.6s))
-                [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+                %                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
             case 'Track'
-                [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+%                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
+                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
+
         end
     end
 end
@@ -359,15 +368,15 @@ peripherals.corrected_sglxTime_best_lag = peripherals.sglxTime-best_lag*(1/60);
 
 
 % 
-figure;
-plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
-hold on
-plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
-% plot(peripherals.corrected_sglxTime_best_lag(1:2000),peripherals.QuadState(1:2000)*210)
-% 
-plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
-% scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
-% scatter(photodiode.sglxTime(pd_OFF(1:300)),190*ones(1,300))
+% figure;
+% plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))
+% hold on
+% plot(peripherals.corrected_sglxTime(1:2000),peripherals.QuadState(1:2000)*200)
+% % plot(peripherals.corrected_sglxTime_best_lag(1:2000),peripherals.QuadState(1:2000)*210)
+% % 
+% plot(peripherals.sglxTime(1:2000),peripherals.QuadState(1:2000)*170)
+% % scatter(photodiode.sglxTime(pd_ON(1:300)),200*ones(1,300))
+% % scatter(photodiode.sglxTime(pd_OFF(1:300)),190*ones(1,300))
 
 
 % raw_LFP(nchannel,:) = interp1(peripherals.sglxTime,raw_LFP(nchannel,:),probe_1_tvec(1:2:end),'linear'); %probe 1 LFP time to match probe 2 LFP time

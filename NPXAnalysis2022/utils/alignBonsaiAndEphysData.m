@@ -63,6 +63,10 @@ syncTimes_bonsai = bonsai_data.Time(bonsai_idx+1)./1000; % add 1 to idx to compe
 % measurements. This can make xcorr less reliable as there are a large
 % number of potential correspondences
 % We therefore first attempt to align the overall sync pulse traces ...
+if sum(diff(syncTimes_ephys)<0.01)>0
+    syncTimes_ephys(find(diff(syncTimes_ephys)<0.01)+1) = []; % remove sync pulse that happens less than 10 ms (possibly due to jitter)
+end
+
 [r, lags] = xcorr(diff(syncTimes_bonsai), diff(syncTimes_ephys));
 [~, joint_idx] = max(r);
 best_lag = lags(joint_idx);

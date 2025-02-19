@@ -104,6 +104,7 @@ end
 
 % Step 4: align ephys and Bonsai logged data
 [stimData,peripherals,eyeData,photodiode] = alignBonsaiAndEphysData(syncTimes_ephys,stimData,peripherals,eyeData,photodiode);
+% [stimData,peripherals,eyeData,photodiode] = alignAllBonsaiAndEphysData(syncTimes_ephys,stimData,peripherals,eyeData,photodiode);
 wheelData = peripherals;
 
 if strcmp(options.paradigm,'photodiode_timestamp')
