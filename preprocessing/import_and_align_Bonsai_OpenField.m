@@ -26,6 +26,8 @@ if ~isempty(td)
     load(fullfile(td.folder,td.name));
     Nidq.on = syncTimes_ephys.on;% use upswings currently
     Nidq.off = syncTimes_ephys.off;% use upswings currently
+    syncPulse_ephys = Nidq.bonsai_sync;
+    syncPulse_ephysTimes = Nidq.sglxTime;
 else
     error('nidq and ephys sync pulse extraction and alignment not done!')
     return
@@ -99,14 +101,17 @@ if length(Nidq.on) == length(Nidq.off)+1
     Nidq.bonsai_sync_on(end)=[];
 end
 
+%%%% 2025.02.24 use whole signal xcorr rather than xcorr with interp1 based
+%%%% on upswings to be more robust against noise
 
-[peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.on); % use upswings currently
-
-temp = peripherals;
-temp.Time= peripherals.sglxTime * 1000;
-temp.Sync(peripherals.Sync==0)=1;
-temp.Sync(peripherals.Sync==1)=0;
-[peripherals] = alignBonsaiToEphysSyncTimes(temp,Nidq.off); % use upswings currently
+% [peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.on); % use upswings currently
+[peripherals] = alignBonsaiToEphysSyncPulse(peripherals,syncPulse_ephys,syncPulse_ephysTimes);
+% 
+% temp = peripherals;
+% temp.Time= peripherals.sglxTime * 1000;
+% temp.Sync(peripherals.Sync==0)=1;
+% temp.Sync(peripherals.Sync==1)=0;
+% [peripherals] = alignBonsaiToEphysSyncTimes(temp,Nidq.off); % use upswings currently
 
 [unique_time,ia,~]=unique(peripherals.sglxTime);
 

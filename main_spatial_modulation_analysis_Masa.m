@@ -188,7 +188,7 @@ for nsession = 1:length(experiment_info)
                 end
             end
         end
-        clear clusters clusters_ks3 clusters_probe
+        clear clusters clusters_ks3 clusters_probe clusters_ks4
         tvec = Behaviour.tvec;
         track_ID =Behaviour.track_ID;
         position = Behaviour.position;
