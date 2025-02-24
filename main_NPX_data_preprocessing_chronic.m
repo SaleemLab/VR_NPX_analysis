@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24016','M24017','M24018','M24062','M24064'};
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
