@@ -25,6 +25,8 @@ td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*NidqTimes*'));
 if ~isempty(td)
     load(fullfile(options(1).EPHYS_DATAPATH,'..',td(1).name),'Nidq');
     syncTimes_ephys_on = Nidq.bonsai_sync_on;% use upswings currently
+    syncTimes_ephys_off = Nidq.bonsai_sync_off;% use upswings currently
+
     syncPulse_ephys = Nidq.bonsai_sync;
     syncPulse_ephysTimes = Nidq.sglxTime;
 else
@@ -126,8 +128,10 @@ if length(Nidq.bonsai_sync_on) == length(Nidq.bonsai_sync_off)+1
 end
 
 
-% [peripherals] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.bonsai_sync_on); % use upswings currently
- [peripherals] = alignBonsaiToEphysSyncPulse(peripherals,syncPulse_ephys,syncPulse_ephysTimes);
+[temp] = alignBonsaiToEphysSyncTimes(peripherals,Nidq.bonsai_sync_on); % use upswings currently
+[peripherals] = alignBonsaiToEphysSyncPulse(peripherals,Nidq.bonsai_sync_on,syncPulse_ephys,syncPulse_ephysTimes);
+[peripherals] = alignBonsaiToEphysSyncPulse(peripherals,Nidq.bonsai_sync_on,syncPulse_ephys,syncPulse_ephysTimes);
+[peripherals] = alignBonsaiToEphysSyncPulse(peripherals,Nidq.bonsai_sync_on,syncPulse_ephys,syncPulse_ephysTimes);
 
 % temp = peripherals;
 % temp.Time= peripherals.sglxTime*1000;

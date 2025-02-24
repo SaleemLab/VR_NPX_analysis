@@ -14,7 +14,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24062','M24064'};
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
