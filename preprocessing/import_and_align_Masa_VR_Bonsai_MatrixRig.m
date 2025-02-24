@@ -330,7 +330,7 @@ if best_lag_correction ==0
             peripherals.corrected_sglxTime = peripherals.sglxTime;
         else
 %             [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
-            [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
+            [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime);
         end
 
 
@@ -341,10 +341,10 @@ if best_lag_correction ==0
                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),'replay');
             case 'Masa2tracks' % For now, just subtract from the average delay (the variance is quite small (e.g. 0.5s to 0.6s))
                 %                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
-                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
+                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime);
             case 'Track'
 %                 [peripherals] = alignBonsaiToPhotodiode(peripherals,sort([photodiodeData.stim_on.sglxTime; photodiodeData.stim_off.sglxTime]),[]);
-                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime)
+                [peripherals] = alignBonsaiToPhotodiodeTrace(peripherals,Nidq.photodiode,Nidq.sglxTime);
 
         end
     end
@@ -366,7 +366,7 @@ pd_60(isnan(pd_60))=[];
 best_lag = lags(joint_idx);
 peripherals.corrected_sglxTime_best_lag = peripherals.sglxTime-best_lag*(1/60);
 
-
+% 
 % 
 % figure;
 % plot(photodiode.sglxTime(1:20000),photodiode.Photodiode_smoothed(1:20000))

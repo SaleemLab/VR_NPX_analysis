@@ -141,16 +141,16 @@ for nsession =1:length(experiment_info)
 
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort2'));
                 if ~isempty(temp)
                     [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 end
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort3'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort3'));
                 if ~isempty(temp)
                     [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 end
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort4'));
                 if ~isempty(temp)
                     [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
                 end

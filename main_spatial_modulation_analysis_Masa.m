@@ -15,8 +15,9 @@ SUBJECTS={'M24016','M24017','M24018','M24062','M24064'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-experiment_info=experiment_info([45 46 48 51]);
-experiment_info=experiment_info(selected_sessions);
+% experiment_info=experiment_info([45 46 48 51]);
+experiment_info=experiment_info([6 19]);
+% experiment_info=experiment_info(selected_sessions);
 
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
 % Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
@@ -46,23 +47,23 @@ for nsession = 1:length(experiment_info)
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
         if contains(stimulus_name{n},'Masa2tracks')
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
         end
 
-        clusters = clusters_ks3;
+        clusters = clusters_ks4;
         sorting_option = 'masa';
         load(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels.mat'));
-        receptive_field_file =fullfile(session_folder,'SparseNoise_fullscreen','receptiveFields_ks3.mat');
+        receptive_field_file =fullfile(session_folder,'SparseNoise_fullscreen','receptiveFields_LFP.mat');
         if exist(receptive_field_file,"file")
             load(receptive_field_file);
             receptive_field=RF;
         else
-            receptive_field_file =fullfile(session_folder,'SparseNoise','receptiveFields_ks3.mat');
+            receptive_field_file =fullfile(session_folder,'SparseNoise','receptiveFields_LFP.mat');
             if exist(receptive_field_file,"file")
                 load(receptive_field_file);
                 receptive_field=RF;
@@ -70,15 +71,20 @@ for nsession = 1:length(experiment_info)
                 receptive_field = [];
             end
         end
-receptive_field=[];
+% receptive_field=[];
         for nprobe = 1:length(clusters)
-            if isempty(receptive_field)
-                clusters(nprobe).receptive_field = cell(size(clusters(nprobe).cluster_id));
-            else
-                if iscell(receptive_field)
-                    clusters(nprobe).receptive_field = receptive_field{nprobe};
+            for nCluster = 1:length(clusters(nprobe).cluster_id)
+                this_cluster_peak_channel = clusters(nprobe).peak_channel(nCluster);
+
+                if isempty(receptive_field)
+                    clusters(nprobe).receptive_field = cell(size(clusters(nprobe).cluster_id));
                 else
-                    clusters(nprobe).receptive_field = receptive_field.probe(nprobe).RF_map;
+                    if iscell(receptive_field)
+                        clusters(nprobe).receptive_field = receptive_field{nprobe};
+                    else
+                        clusters(nprobe).receptive_field{nCluster}= squeeze(receptive_field(nprobe).peak_map(:,:,this_cluster_peak_channel));
+%                         clusters(nprobe).receptive_field = receptive_field.probe(nprobe).RF_map;
+                    end
                 end
             end
         end

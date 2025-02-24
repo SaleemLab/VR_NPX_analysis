@@ -102,7 +102,8 @@ end
 % Step 4: align nidq and Bonsai logged data
 
 %%%%%%
-% For photodiode and convert to spike GLX timeTheif exist('photodiode','var') && ~isempty(photodiode)
+% For photodiode and convert to spike GLX timeThe
+if exist('photodiode','var') && ~isempty(photodiode)
     photodiode.Sync =  photodiode.AsyncPulse;
     photodiode.Time = photodiode.ArduinoTime;
 %     photodiode.Time = photodiode.BonsaiTime;
