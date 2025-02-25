@@ -1,4 +1,7 @@
-function LFP_extraction_and_event_detection_pipeline(session_info,stimulus_name,best_channels)
+function LFP_extraction_and_event_detection_pipeline_with_GD_corr(session_info,stimulus_name,best_channels)
+%%% similar to LFP_extraction_and_event_detection_pipeline but with
+%%% Gamma-delta corr to identify 'Best' channel in cortex for UP/DOWN
+%%% detection according to Buzaki et al but may not be very crucial
 
 options = session_info.probe(1);
 % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
@@ -204,23 +207,22 @@ for nprobe = 1:length(session_info.probe)
         %%%%%% minimum corrlation between two measures.
         deltaspikecorr=[];
         gammaspikecorr=[];
-        deltagammacorr=[];
-%         for nChannel = 1:length(good_V1_channels)
-%             tic
-%             deltaLFP=[];
-%             gammaLFP=[];
-% 
-%             lfp.data= raw_LFP(good_V1_channels(nChannel),:)';
-%             deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-%             gammaLFP= bz_Filter(lfp,'passband',filterparms.gammafilter,'filter','fir1','order',4);
-% 
-%             deltaLFP.NREM = interp1(deltaLFP.timestamps,deltaLFP.data',tvec_NREM,'nearest');
-%             gammaLFP.NREM = interp1(gammaLFP.timestamps,gammaLFP.data',tvec_NREM,'nearest');
-%             deltaspikecorr(nChannel) = corr(deltaLFP.NREM,V1_spike_counts,'type','spearman');
-%             gammaspikecorr(nChannel) = corr(gammaLFP.NREM,V1_spike_counts,'type','spearman');
-%             deltagammacorr(nChannel) = corr(deltaLFP.NREM,gammaLFP.NREM,'type','spearman');
-%             toc
-%         end
+        for nChannel = 1:length(good_V1_channels)
+            tic
+            deltaLFP=[];
+            gammaLFP=[];
+
+            lfp.data= raw_LFP(good_V1_channels(nChannel),:)';
+            deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+            gammaLFP= bz_Filter(lfp,'passband',filterparms.gammafilter,'filter','fir1','order',4);
+
+            deltaLFP.NREM = interp1(deltaLFP.timestamps,deltaLFP.data',tvec_NREM,'nearest');
+            gammaLFP.NREM = interp1(gammaLFP.timestamps,gammaLFP.data',tvec_NREM,'nearest');
+            deltaspikecorr(nChannel) = corr(deltaLFP.NREM,V1_spike_counts,'type','spearman');
+            gammaspikecorr(nChannel) = corr(gammaLFP.NREM,V1_spike_counts,'type','spearman');
+            deltagammacorr(nChannel) = corr(deltaLFP.NREM,gammaLFP.NREM,'type','spearman');
+            toc
+        end
 
 
         best_V1_shank_channel_id=[];
@@ -234,16 +236,16 @@ for nprobe = 1:length(session_info.probe)
         end
 
 
-        best_V1_sleep_channel=best_V1_channel;
-%         % Best channel for slow wave detection based on anti-correlation between delta-spike corr and gamma-spike corr
-%         [~,best_V1_sleep_channel] = min(deltaspikecorr.*gammaspikecorr);
-%         %                     unique_shank_id(V1_channel_id(best_V1_sleep_channel))
-%         [~,sortcorr] = sort(deltaspikecorr.*gammaspikecorr);
-% 
-%         %%%%% Sleep detection 2nd round
-%         [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
-%             [tvec' raw_LFP(good_V1_channels(best_V1_sleep_channel),:)'],[tvec' raw_LFP(best_HPC_channel,:)'],...
-%             [tvec' speed'],speedTreshold);
+        best_V1_sleep_channel=[];
+        % Best channel for slow wave detection based on anti-correlation between delta-spike corr and gamma-spike corr
+        [~,best_V1_sleep_channel] = min(deltaspikecorr.*gammaspikecorr);
+        %                     unique_shank_id(V1_channel_id(best_V1_sleep_channel))
+        [~,sortcorr] = sort(deltaspikecorr.*gammaspikecorr);
+
+        %%%%% Sleep detection 2nd round
+        [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
+            [tvec' raw_LFP(good_V1_channels(best_V1_sleep_channel),:)'],[tvec' raw_LFP(best_HPC_channel,:)'],...
+            [tvec' speed'],speedTreshold);
 
         behavioural_state(nprobe).quietWake = quietWake;
         behavioural_state(nprobe).SWS = SWS;
@@ -313,20 +315,20 @@ for nprobe = 1:length(session_info.probe)
 
 
     if ~isempty(SWS)
-        % Save best SW V1 channels (here is equivalent of L5 based on high freq power)
+        % Save best SW V1 channels
         Region = 'best_V1';
-        LFP(nprobe).(Region) = raw_LFP(best_V1_high_power_shank_channel_id,:);
-        LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_high_power_shank_channel_id); % only avaliable shanks
-        LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_V1_high_power_shank_channel_id);
+        LFP(nprobe).(Region) = raw_LFP(best_V1_shank_channel_id,:);
+        LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_shank_channel_id); % only avaliable shanks
+        LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_V1_shank_channel_id);
 
-        [xcoord,sorted_order] = sort(chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id))));
-        ycoord = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id)))';
+        [xcoord,sorted_order] = sort(chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_shank_channel_id))));
+        ycoord = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_shank_channel_id)))';
         ycoord=ycoord(sorted_order);
 
         LFP(nprobe).(sprintf('%s_depth',Region))=ycoord';
         LFP(nprobe).(sprintf('%s_xcoord',Region))=xcoord';
-        LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_high_power_shank_channel_id,:);
-%         LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
+        LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
+        LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
     end
 
     % Save best V1 channels based on high freq power (eqivalent of L5 if channel didn't move much)
