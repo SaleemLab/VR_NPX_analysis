@@ -16,8 +16,8 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 17 18 19 21 39 33 34 44 45 46 47 56 58 59 60 70 71 72 73]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 39 33 34 44 45 46 47 56 58 59 60 70 71 72 73]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 47 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % Novel one side
 % experiment_info=experiment_info([4 5 6 ]);
 % Novel Both sides
