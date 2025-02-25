@@ -261,7 +261,10 @@ for nprobe = 1:length(session_info.probe)
             temp_V1_channels(nprobe).shank = unique_shank_id(good_V1_channels);
             temp_V1_channels(nprobe).depth = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
             temp_V1_channels(nprobe).xcoord = chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)));
-            temp_V1_channels(nprobe).best_channel = unique_selected_channels(good_V1_channels(best_V1_sleep_channel));
+
+            [~,channel_id]=max(power{nprobe}(good_V1_channels,7)); % Best V1 channel with highest high freq power
+
+            temp_V1_channels(nprobe).best_channel = unique_selected_channels(good_V1_channels(channel_id));
             % if ~isempty(temp_V1_channels(nprobe))
             %     slow_waves(nprobe) = temp;
             % end
