@@ -223,15 +223,15 @@ for nprobe = 1:length(session_info.probe)
 %         end
 
 
-        best_V1_shank_channel_id=[];
-        %%%%% Best slow-wave channel for each shank
-        unique_shanks = unique(unique_shank_id(good_V1_channels));
-        for nShank = 1:length(unique_shanks)
-            this_shank = find(unique_shank_id(good_V1_channels)==unique_shanks(nShank));% find channels not this shanks
-            [~,channel_id] = min(deltaspikecorr(this_shank).*gammaspikecorr(this_shank)); %
-
-            best_V1_shank_channel_id(nShank) = good_V1_channels(this_shank(channel_id));
-        end
+%         best_V1_shank_channel_id=[];
+%         %%%%% Best slow-wave channel for each shank
+%         unique_shanks = unique(unique_shank_id(good_V1_channels));
+%         for nShank = 1:length(unique_shanks)
+%             this_shank = find(unique_shank_id(good_V1_channels)==unique_shanks(nShank));% find channels not this shanks
+%             [~,channel_id] = min(deltaspikecorr(this_shank).*gammaspikecorr(this_shank)); %
+% 
+%             best_V1_shank_channel_id(nShank) = good_V1_channels(this_shank(channel_id));
+%         end
 
 
         best_V1_sleep_channel=best_V1_channel;
