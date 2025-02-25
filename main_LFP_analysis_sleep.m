@@ -12,11 +12,13 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
 %% Extract and save session clusters for sleep sessions
 clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -213,10 +215,13 @@ end
 %% Extract LFP for sleep and RUN, analyse sleep and slow oscillation and then save LFP from selected channels
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';

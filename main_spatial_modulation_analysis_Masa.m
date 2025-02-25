@@ -29,7 +29,7 @@ base_folder='Z:\ibn-vision\DATA\SUBJECTS';
 % for iSub = 1:length(SUBJECTS)
 %     load(fullfile(base_folder,SUBJECTS{iSub},'analysis','experiment_info.mat'))
 %     Stimulus_type = 'Track';
-for nsession = 1:length(experiment_info)
+for nsession = 1:6
     session_clusters = struct();
 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
