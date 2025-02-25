@@ -7,7 +7,7 @@ addpath(genpath('C:\Users\j.kok\Documents\GitHub\VR_NPX_analysis'))
 
 %% LFP preprocess -> Catgt
 
-SUBJECT = 'M2408';
+SUBJECT = 'M25002';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
 for ndate = 1:length(all_DIR)
@@ -168,7 +168,7 @@ end
 
 
 
-SUBJECT = 'M24064';
+SUBJECT = 'M24065';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
 for ndate = 12:length(all_DIR)
@@ -253,30 +253,93 @@ for ndate = 12:length(all_DIR)
 end
 
 
-% SUBJECT = 'M24072';
-% all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'analysis','20*'));
-% 
-% for ndate = 1:length(all_DIR)
-%     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
-% 
-%     allFilesAndFolders = dir;
-% 
-%     % Extract only the folders
-%     session_DIR = allFilesAndFolders([allFilesAndFolders.isdir]);
-% 
-%     for nsession = 1:length(session_DIR)
-%         if ~strcmp(session_DIR(nsession).name, '.') && ~strcmp(session_DIR(nsession).name, '..')
-% 
-%             cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
-%             old_metafiles = dir('202*.meta');
-% 
-%             for n = 1:length(old_metafiles)
-%                 movefile(old_metafiles(n).name, [SUBJECT,'_',old_metafiles(n).name]);
-%                 % delete(old_metafiles(n).name)
-%             end
-%         end
-% 
-%     end
-% end
-% 
+SUBJECT = 'M24072';
+all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'analysis','20*'));
 
+for ndate = 1:length(all_DIR)
+    cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
+
+    allFilesAndFolders = dir;
+
+    % Extract only the folders
+    session_DIR = allFilesAndFolders([allFilesAndFolders.isdir]);
+
+    for nsession = 1:length(session_DIR)
+        if ~strcmp(session_DIR(nsession).name, '.') && ~strcmp(session_DIR(nsession).name, '..')
+
+            cd(fullfile(session_DIR(nsession).folder,session_DIR(nsession).name))
+            old_metafiles = dir('202*.meta');
+
+            for n = 1:length(old_metafiles)
+                movefile(old_metafiles(n).name, [SUBJECT,'_',old_metafiles(n).name]);
+                % delete(old_metafiles(n).name)
+            end
+        end
+
+    end
+end
+
+
+base_folder = 'Z:\ibn-vision\DATA\SUBJECTS\M24065\analysis\';
+
+ALLDIR = dir(base_folder);
+
+for nsession = 3:17
+    cd(ALLDIR(nsession).folder)
+    DIR = dir(ALLDIR(nsession).name)
+
+    cd(ALLDIR(nsession).name)
+    for nfolder = 1:length(DIR)
+        cd(DIR(nfolder).folder)
+        if DIR(nfolder).isdir==1 & ~contains(DIR(nfolder).name,'.')
+            cd(DIR(nfolder).name)
+            TCAT_DIR = dir('*tcat*.lf.meta');
+            T0_DIR =  dir('*t0*.lf.meta');
+            if isempty(TCAT_DIR) & ~isempty(T0_DIR)
+
+            elseif ~isempty(TCAT_DIR) & ~isempty(T0_DIR) %if both present
+                if length(T0_DIR)==length(TCAT_DIR)
+                    for nfile = 1:length(T0_DIR)
+                        delete(T0_DIR(nfile).name)
+                        disp(['delete file: ',T0_DIR(nfile).name])
+                    end
+                end
+            end
+
+        end
+    end
+end
+
+
+base_folder = 'Z:\ibn-vision\DATA\SUBJECTS\M24018\ephys\20240723\20240723_9';
+
+DIR = dir(base_folder);
+
+for nfolder = 1:length(DIR)
+    cd(DIR(nfolder).folder)
+    if DIR(nfolder).isdir==1 & ~contains(DIR(nfolder).name,'.')
+        ephys_folders = dir(DIR(nfolder).name);
+        cd(DIR(nfolder).name)
+
+        for n = 1:length(ephys_folders)
+            cd(ephys_folders(n).folder)
+            if ephys_folders(n).isdir==1 & ~contains(ephys_folders(n).name,'.')
+                cd(ephys_folders(n).name)
+
+                TCAT_DIR = dir('*tcat*.lf*');
+                T0_DIR =  dir('*t0*.lf*');
+                if isempty(TCAT_DIR) & ~isempty(T0_DIR)
+
+                elseif ~isempty(TCAT_DIR) & ~isempty(T0_DIR) %if both present
+                    if length(T0_DIR)==length(TCAT_DIR)
+                        for nfile = 1:length(T0_DIR)
+                            delete(T0_DIR(nfile).name)
+                            disp(['delete file: ',T0_DIR(nfile).name])
+                        end
+                    end
+                end
+
+            end
+        end
+    end
+end
