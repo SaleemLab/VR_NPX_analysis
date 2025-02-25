@@ -14,10 +14,14 @@ session_count = 0;
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% experiment_info=experiment_info([45 46 48 51]);
-% experiment_info=experiment_info([6 19]);
-% experiment_info=experiment_info(selected_sessions);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 39 33 34 44 45 46 47 56 58 59 60 70 71 72 73]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 39 33 34 44 45 46 47 56 58 59 60 70 71 72 73]);
+% Novel one side
+% experiment_info=experiment_info([4 5 6 ]);
+% Novel Both sides
+% experiment_info=experiment_info([4 5 6 ]);
 
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
 % Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 

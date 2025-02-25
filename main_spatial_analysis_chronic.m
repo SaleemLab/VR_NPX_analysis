@@ -7,11 +7,11 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018','M24062','M24064'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-experiment_info=experiment_info([45 46 48 51]);
+% experiment_info=experiment_info([45 46 48 51]);
 Stimulus_type = 'RUN1';
 
 for nsession = 1:length(experiment_info)
@@ -44,6 +44,7 @@ for nsession = 1:length(experiment_info)
 %             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
             | clusters_combined.odd_even_stability(:,2)>0.95);
+        
         % ib = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
         %     | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         % ia = find(contains(clusters_combined.region,'HPC'))
@@ -69,33 +70,39 @@ for nsession = 1:length(experiment_info)
         Behaviour.tvec = clusters_combined.tvec{1};
         Behaviour.position = clusters_combined.position{1};
         Behaviour.speed = clusters_combined.speed{1};
-%         place_fields=struct();
-%         Behaviour.tvec =Behaviour.sglxTime_uncorrected ;% check if photodiode correction is causing this issue...
-        plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+
+        plot_spatial_heatmap_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[0 140],2,...
             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C);
-%    plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
-%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
-        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
-        else
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
-        end
 
-
-        %
-        %         % Spatial modulation
-        %         x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
-        %         SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
-        %         SMI = calculate_spatial_modulation_index(V1_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_R,'subplot_xy',[3 1],'plot_option',1)
-        %
-        %
-        %         metric_param.region = @(x) contains(x,'HPC_L');
-        %         [HPC_clusters_L,cluster_id] = select_clusters(clusters(1),metric_param);
-        %
-        %         SMI = calculate_spatial_modulation_index(HPC_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_L,'subplot_xy',[3 1],'plot_option',1)
-        %         SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
-        %         %         calculate_spatial_modulation_index(place_fields_V1_L);
+%         %         place_fields=struct();
+%         %         Behaviour.tvec =Behaviour.sglxTime_uncorrected ;% check if photodiode correction is causing this issue...
+% %         plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[4 1],[0 140],2,...
+% %             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C);
+%         plot_spatial_heatmap_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[4 1],[0 140],2,...
+%             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C);
+% %    plot_raster_both_track(clusters_combined.spike_times,clusters_combined.spike_id,Task_info,Behaviour,[5 1],[0 140],2,...
+% %             'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'place_fields',place_fields);
+%         if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+%             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+%         else
+%             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','Spatial PSTH'),[])
+%         end
+% 
+% 
+%         %
+%         %         % Spatial modulation
+%         %         x_bin_size = mean(diff(place_fields_V1_L(1).x_bin_centres));
+%         %         SMI = calculate_spatial_modulation_index(V1_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_L,'subplot_xy',[3 1],'plot_option',1)
+%         %         SMI = calculate_spatial_modulation_index(V1_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_V1_R,'subplot_xy',[3 1],'plot_option',1)
+%         %
+%         %
+%         %         metric_param.region = @(x) contains(x,'HPC_L');
+%         %         [HPC_clusters_L,cluster_id] = select_clusters(clusters(1),metric_param);
+%         %
+%         %         SMI = calculate_spatial_modulation_index(HPC_clusters_L,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_L,'subplot_xy',[3 1],'plot_option',1)
+%         %         SMI = calculate_spatial_modulation_index(HPC_clusters_R,Task_info,Behaviour,[0 140],x_bin_size,'place_fields',place_fields_HPC_R,'subplot_xy',[3 1],'plot_option',1)
+%         %         %         calculate_spatial_modulation_index(place_fields_V1_L);
 
         spatial_cell_id = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));

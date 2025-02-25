@@ -62,12 +62,12 @@ for nstimuli = 1:length(all_stimulus_type)
             if contains(stimulus_name{n},'Masa2tracks')
                 load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
                 session_clusters= session_clusters_RUN;
-                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-                clusters = clusters_ks3;
+                load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+                clusters = clusters_ks4;
             else               
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-                clusters = clusters_ks3;
+                load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+                clusters = clusters_ks4;
             end
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
@@ -199,11 +199,11 @@ for nstimuli = 1:length(all_stimulus_type)
 
             if contains(lower(stimulus_name{n}),'sleep') % 
                 save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-                clusters_ks3 = clusters;
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3'); % save region info 
+                clusters_ks4 = clusters;
+                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4'); % save region info 
             else
-                clusters_ks3 = clusters;
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'clusters_ks3');
+                clusters_ks4 = clusters;
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'clusters_ks4');
             end
         end
     end
@@ -299,8 +299,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
         elseif contains(stimulus_name{n},'Sleep')
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
@@ -318,16 +318,16 @@ for nsession =1:length(experiment_info)
             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
             %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         else
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
 
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         end
         toc
         
@@ -816,8 +816,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
         elseif contains(stimulus_name{n},'Sleep')
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -834,16 +834,16 @@ for nsession =1:length(experiment_info)
             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
 %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         end
 
 
