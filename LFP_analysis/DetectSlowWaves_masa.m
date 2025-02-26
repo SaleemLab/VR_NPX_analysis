@@ -374,7 +374,7 @@ sampleIDX = time>=samplewin(1) & time<=samplewin(2);
 
 ratecolor = makeColorMap([1 1 1],[0.8 0 0],[0 0 0]);
 baseName = 1;
-figure('name',[baseName,' Slow Waves'])
+figure('name','Slow Waves Detecion')
     gammafig = copyobj(threshfigs.GAMMArate,gcf);
     subplot(4,2,4,gammafig)
     colorbar

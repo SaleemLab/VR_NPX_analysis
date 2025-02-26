@@ -259,7 +259,7 @@ end
 % Optionally, plot results
 if strcmp(show,'on')
     if plotType == 1
-    	figure;
+        figure('Name','Spindle-band filtered LFP');
     	if ~isempty(noise)
             subplot(4,1,1)
             plot(timevec,signal)
@@ -273,14 +273,28 @@ if strcmp(show,'on')
             subplot(4,1,4)
             plot(timevec,zscored_noise)
             title('z-scored Spindle power noise (9-17Hz)')
+            set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+            
     	else
-            subplot(4,1,1)
+            subplot(3,1,1)
             plot(timevec,signal)
-            subplot(4,1,2)
+            title('Spindle filtered signal LFP (9-17Hz)')
+            xlabel('time (sec)')
+
+            subplot(3,1,2)
             plot(timevec,zscored_spindle)
+            title('z-scored Spindle power (9-17Hz)')
+            xlabel('time (sec)')
+
+            subplot(3,1,3)
+            plot(timevec,speed)
+            title('Movement (pixel change zscored)')
+            xlabel('time (sec)')
+
+            set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
         end
 
-        figure
+        figure('Name','Spindle detection');
         spindle_first = round(size(spindles,1)/2);
         spindle_last = round(size(spindles,1)/2)+5;
 
@@ -288,6 +302,8 @@ if strcmp(show,'on')
         time_index = find(timevec>=spindles(spindle_first,1)-1 &timevec<=spindles(spindle_last,1)+1);
         plot(timevec(time_index),signal(time_index))
         title('spindle filtered LFP (9 - 17Hz)')
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
         subplot(3,1,2)
         plot(timevec(time_index),zscored_spindle(time_index))
@@ -295,7 +311,7 @@ if strcmp(show,'on')
 %         plot([timevec(time_index(1)) timevec(time_index(end))],[ThresholdFactor ThresholdFactor],'k','linestyle','--');
         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
         plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
-        title('spindle filtered RMS zscore (9 - 17Hz)')
+        title('spindle filtered RMS zscored (9 - 17Hz)')
 
         for j=spindle_first:spindle_last
             hold on
@@ -304,12 +320,14 @@ if strcmp(show,'on')
             plot([spindles(j,1) spindles(j,3)],[spindles(j,4) spindles(j,4)],'k-');
             plot([spindles(j,3) spindles(j,3)],[min(zscored_spindle(time_index)) spindles(j,4)],'r-');
         end
-        
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
         subplot(3,1,3)
         plot(timevec(time_index),speed(time_index))
         title('Movement (pixel change zscored)')
         hold on
-%         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+        %         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
         for j=spindle_first:spindle_last
             hold on
             plot([spindles(j,1) spindles(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
@@ -317,7 +335,8 @@ if strcmp(show,'on')
             plot([spindles(j,1) spindles(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
             plot([spindles(j,3) spindles(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
         end
-
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     end
 end
 

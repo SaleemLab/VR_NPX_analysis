@@ -500,11 +500,13 @@ for nprobe = 1:length(session_info.probe)
             if probe_no == 1 % Left hemisphere (shank 1 most anterior)
                 if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(1,7)
                     best_channel = 1;
+                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(1);
                 end
 
             elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
                 if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(end,7)
                     best_channel = length(LFP(probe_no).best_V1_high_freq_shank_id);
+                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(end);
                 end
             end
 
@@ -516,11 +518,13 @@ for nprobe = 1:length(session_info.probe)
             if probe_no == 1 % Left hemisphere (shank 1 most anterior)
                 if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(1,7)
                     best_channel = 1;
+                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(1);
                 end
 
             elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
                 if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(end,7)
                     best_channel = length(LFP(probe_no).best_V1_shank_id);
+                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(end);
                 end
             end
 
@@ -582,7 +586,7 @@ for nprobe = 1:length(session_info.probe)
     [ripples(probe_no)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
         'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
 
-    if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+    if  contains(stimulus_name,'RUN1')|contains(stimulus_name,'RUN2')
         mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('LFP_events_%s',erase(stimulus_name,'Masa2tracks_')),sprintf('Probe%i',probe_no)))
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('LFP_events_%s',erase(stimulus_name,'Masa2tracks_')),sprintf('Probe%i',probe_no)),[])
     else

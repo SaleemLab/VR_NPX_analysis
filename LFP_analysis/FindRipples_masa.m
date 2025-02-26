@@ -303,7 +303,7 @@ end
 % Optionally, plot results
 if strcmp(show,'on')
     if plotType == 1
-    	figure;
+    	figure('Name','Ripple-band filtered LFP');
     	if ~isempty(noise)
             
             subplot(4,1,1)
@@ -319,13 +319,23 @@ if strcmp(show,'on')
             plot(timevec,zscored_noise)
             title('z-scored Ripple power noise (125-300Hz)')
     	else
-            subplot(4,1,1)
+            subplot(3,1,1)
             plot(timevec,signal)
-            subplot(4,1,2)
+            title('Ripple filtered signal LFP (125-300Hz)')
+            xlabel('time (sec)')
+            subplot(3,1,2)
             plot(timevec,zscored_ripple)
+            title('z-scored Ripple power (125-300Hz)')
+            xlabel('time (sec)')
+%             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+            subplot(3,1,3)
+            plot(timevec,speed)
+            title('Movement (pixel change zscored)')
+            xlabel('time (sec)')
+            set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
         end
 
-        figure
+    	figure('Name','Ripple detection');
         ripple_first = round(size(ripples,1)/3)-1;
         ripple_last = round(size(ripples,1)/3)+4;
 
@@ -333,6 +343,8 @@ if strcmp(show,'on')
         time_index = find(timevec>=ripples(ripple_first,1)-0.1 &timevec<=ripples(ripple_last,1)+0.1);
         plot(timevec(time_index),signal(time_index))
         title('Ripple filtered LFP (125-300Hz)')
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
         subplot(3,1,2)
         plot(timevec(time_index),zscored_ripple(time_index))
@@ -351,12 +363,14 @@ if strcmp(show,'on')
         hold on
         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
         plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
         subplot(3,1,3)
         plot(timevec(time_index),speed(time_index))
         title('Movement (pixel change zscored)')
         hold on
-%         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+        %         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
         for j=ripple_first:ripple_last
             hold on
             plot([ripples(j,1) ripples(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
@@ -364,7 +378,9 @@ if strcmp(show,'on')
             plot([ripples(j,1) ripples(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
             plot([ripples(j,3) ripples(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
         end
-  
+        xlabel('time (sec)')
+        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
         % Check ripples
 %         fig = figure;
 % 
