@@ -368,7 +368,7 @@ end
 
 %% DETECTION FIGURE
 if SHOWFIG
-winsize = 200; %s
+winsize = 50; %s
 samplewin =randsample(SWpeaks,1)+winsize.*[-0.5 0.5];
 sampleIDX = time>=samplewin(1) & time<=samplewin(2);
 
