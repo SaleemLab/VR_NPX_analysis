@@ -21,7 +21,9 @@ options.importMode = 'KS';
 
 all_fields = fieldnames(best_channels);
 
-shank_id_avaliable = ceil(best_channels.xcoord./250); % based on xcoord in best_channels
+% shank_id_avaliable = ceil(best_channels.xcoord./250); % based on xcoord in best_channels
+shank_id_avaliable = ceil(unique(chan_config.Ks_xcoord)./250)'; % based on xcoord in chan_config
+
 
 region_channels = [];
 
