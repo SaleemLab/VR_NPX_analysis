@@ -40,6 +40,48 @@ session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
 [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
 session_clusters.spike_id=session_clusters.spike_id(index);
 
+% check cluster region label
+if ~isfield(clusters(1),'region')
+    for nprobe = 1:length(session_info.probe)
+        clusters(nprobe).region = strings(length(clusters(nprobe).cluster_id),1);
+        if clusters(nprobe).probe_hemisphere == 1
+            clusters(nprobe).region(:) = 'n.a_L';
+            kClusters=kmeans(clusters(nprobe).peak_depth,2);
+            if mean(clusters(nprobe).peak_depth(kClusters==1))>mean(clusters(nprobe).peak_depth(kClusters==2))
+                % if mean ocation of cluster one is above cluster two, it is
+                % Cortex.
+                % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
+                V1_cell_id = find(kClusters==1);
+                HPC_cell_id = find(kClusters==2);
+            else
+                % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
+                V1_cell_id = find(kClusters==2);
+                HPC_cell_id = find(kClusters==1);
+            end
+            clusters(nprobe).region(V1_cell_id) = 'V1_L';
+            clusters(nprobe).region(HPC_cell_id) = 'HPC_L';
+
+        elseif clusters(nprobe).probe_hemisphere == 2
+            clusters(nprobe).region(:) = 'n.a_R';
+
+            kClusters=kmeans(clusters(nprobe).peak_depth,2);
+            if mean(clusters(nprobe).peak_depth(kClusters==1))>mean(clusters(nprobe).peak_depth(kClusters==2))
+                % if mean ocation of cluster one is above cluster two, it is
+                % Cortex.
+                % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==1);
+                V1_cell_id = find(kClusters==1);
+                HPC_cell_id = find(kClusters==2);
+            else
+                % V1_cell_id = find(RF.probe(nprobe).shank == nshank & kClusters==2);
+                V1_cell_id = find(kClusters==2);
+                HPC_cell_id = find(kClusters==1);
+            end
+            clusters(nprobe).region(V1_cell_id) = 'V1_R';
+            clusters(nprobe).region(HPC_cell_id) = 'HPC_R';
+        end
+    end
+end
+
 raw_LFP = [];
 LFP = [];
 
@@ -141,6 +183,7 @@ for nprobe = 1:length(session_info.probe)
     end
 
     %%%%% V1 MUA spikes
+
     metric_param =[]; % get all V1 spikes from left or right hemisphere
     if options.probe_hemisphere==1
         metric_param.region = @(x) contains(x,'V1_L');
