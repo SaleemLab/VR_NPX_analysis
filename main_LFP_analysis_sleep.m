@@ -17,7 +17,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 % experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
@@ -220,7 +220,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 % experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
@@ -229,7 +229,7 @@ experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:5
+    for nsession = 1:length(experiment_info)
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -254,15 +254,13 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 pyenv("ExecutionMode","OutOfProcess")
 
 clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% 1:length(experiment_info)
-% [1 2 3 4 6 7 8 9 10 12 14]
 
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -449,7 +447,7 @@ for nsession =1:length(experiment_info)
                 fxx = fxx';
                 % FOOOF settings
                 settings = struct();
-                f_range = [0.5, 8];
+                f_range = [1, 10];
 
                 % Run FOOOF to fit the model and quantify the slope of power spectra
                 fooof_results = fooof(fxx, pxx, f_range, settings);
