@@ -339,8 +339,8 @@ if strcmp(show,'on')
         ripple_first = round(size(ripples,1)/3)-1;
         ripple_last = round(size(ripples,1)/3)+4;
 
-        if spindle_last > size(spindles,1)
-            spindle_last = size(spindles,1);
+        if ripple_last > size(ripples,1)
+            ripple_last = size(ripples,1);
         end
 
         subplot(3,1,1)
