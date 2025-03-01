@@ -298,6 +298,10 @@ if strcmp(show,'on')
         spindle_first = round(size(spindles,1)/2);
         spindle_last = round(size(spindles,1)/2)+5;
 
+        if spindle_last > size(spindles,1)
+            spindle_last = size(spindles,1);
+        end
+
         subplot(3,1,1)
         time_index = find(timevec>=spindles(spindle_first,1)-1 &timevec<=spindles(spindle_last,1)+1);
         plot(timevec(time_index),signal(time_index))
