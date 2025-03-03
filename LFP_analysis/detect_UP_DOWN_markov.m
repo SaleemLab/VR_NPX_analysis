@@ -104,7 +104,7 @@ J = round(0.02/timebin_size);                   % Number of history bins (corres
 alpha = log(mean(spikeCounts(status))); % UP Firing rate
 
 if alpha>log(50*(timebin_size/0.01)) | alpha<log(3*(timebin_size/0.01))
-    alpha = log(20*(timebin_size/0.01));
+    alpha = log(10*(timebin_size/0.01));
 end
 
 [status,~,index] = InIntervals(tvec_interp1,[DOWN_ints(:,1) DOWN_ints(:,1)+0.1]);

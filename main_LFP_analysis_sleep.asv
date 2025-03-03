@@ -12,11 +12,13 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
 %% Extract and save session clusters for sleep sessions
 clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -67,7 +69,7 @@ for nstimuli = 1:length(all_stimulus_type)
             else               
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
                 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
-                clusters = clusters_ks3;
+                clusters = clusters_ks4;
             end
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             %         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'power');
@@ -199,11 +201,11 @@ for nstimuli = 1:length(all_stimulus_type)
 
             if contains(lower(stimulus_name{n}),'sleep') % 
                 save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-                clusters_ks3 = clusters;
-                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3'); % save region info 
+                clusters_ks4 = clusters;
+                save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4'); % save region info 
             else
-                clusters_ks3 = clusters;
-                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'clusters_ks3');
+                clusters_ks4 = clusters;
+                save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'clusters_ks4');
             end
         end
     end
@@ -213,10 +215,13 @@ end
 %% Extract LFP for sleep and RUN, analyse sleep and slow oscillation and then save LFP from selected channels
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -224,7 +229,7 @@ experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:5
+    for nsession = 1:length(experiment_info)
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -242,22 +247,20 @@ for nstimuli = 1:length(all_stimulus_type)
 end
 
 %% LFP PSD slope and cortical wave direction
-pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+pyversion('C:\Users\masahiro.takigawa\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 pyenv("ExecutionMode","OutOfProcess")
 
 clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-SUBJECTS={'M24016','M24017','M24018'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
-% 1:length(experiment_info)
-% [1 2 3 4 6 7 8 9 10 12 14]
 
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -299,8 +302,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
         elseif contains(stimulus_name{n},'Sleep')
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
@@ -318,16 +321,16 @@ for nsession =1:length(experiment_info)
             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
             %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         else
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
 
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         end
         toc
         
@@ -444,7 +447,7 @@ for nsession =1:length(experiment_info)
                 fxx = fxx';
                 % FOOOF settings
                 settings = struct();
-                f_range = [0.5, 8];
+                f_range = [1, 10];
 
                 % Run FOOOF to fit the model and quantify the slope of power spectra
                 fooof_results = fooof(fxx, pxx, f_range, settings);
@@ -816,8 +819,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
         elseif contains(stimulus_name{n},'Sleep')
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -834,16 +837,16 @@ for nsession =1:length(experiment_info)
             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
 %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         end
 
 
