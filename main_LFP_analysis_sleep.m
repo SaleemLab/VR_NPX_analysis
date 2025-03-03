@@ -430,6 +430,14 @@ for nsession =1:length(experiment_info)
                 continue
             end
 
+            if isempty(slow_waves_markov(probe_no).UP_DOWN_index) 
+                continue
+            end
+
+            if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
+                continue
+            end
+
             % slow_waves(probe_no).power=[];
             % slow_waves(probe_no).powerdB=[];
             nClips = floor(length(V1_LFP)/nClipSamps);
@@ -506,6 +514,14 @@ for nsession =1:length(experiment_info)
             slow_waves_markov(probe_no).DOWN_peaks_shank = [];
             slow_waves_markov(probe_no).DOWN_peaks_latency = [];
             slow_waves_markov(probe_no).DOWN_traveling = [];
+
+            if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
+                continue
+            end
+
+            if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
+                continue
+            end
 
             if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
 

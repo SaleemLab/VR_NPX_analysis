@@ -247,7 +247,8 @@ for nstimuli = 1:length(all_stimulus_type)
 end
 
 %% LFP PSD slope and cortical wave direction
-pyversion('C:\Users\masahiro.takigawa\anaconda3\envs\fooof\python')
+% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -354,7 +355,7 @@ for nsession =1:length(experiment_info)
                 V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
                 V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
 
-                if length(V1_clusters.cluster_id)<100
+                if length(V1_clusters.cluster_id)<150
                     V1_clusters=[];
                     metric_param.region = @(x) contains(x,'V1_L');
                     %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
@@ -370,7 +371,7 @@ for nsession =1:length(experiment_info)
                 V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
                 V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
 
-                if length(V1_clusters.cluster_id)<100
+                if length(V1_clusters.cluster_id)<150
                     V1_clusters=[];
                     metric_param.region = @(x) contains(x,'V1_R');
                     %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20

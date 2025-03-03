@@ -104,7 +104,7 @@ J = round(0.02/timebin_size);                   % Number of history bins (corres
 alpha = log(mean(spikeCounts(status))); % UP Firing rate
 
 if alpha>log(50*(timebin_size/0.01)) | alpha<log(3*(timebin_size/0.01))
-    alpha = log(10*(timebin_size/0.01));
+    alpha = log(20*(timebin_size/0.01));
 end
 
 [status,~,index] = InIntervals(tvec_interp1,[DOWN_ints(:,1) DOWN_ints(:,1)+0.1]);
@@ -139,6 +139,7 @@ maxIter = 100; tol = 1e-5;  % Convergence criteria
 logLikelihoods = zeros(maxIter, 1);
 nan_counter = 0; % for cases when loglikelihood is nan.
 
+% plot(tvec_interp1(status),spikeCounts(status));hold on;scatter(UP_ints(:,1),ones(1,length(UP_ints(:,1))))
 % EM Algorithm
 for iter = 1:maxIter
     tic
@@ -282,7 +283,13 @@ for i = 1:length(rapidTransitionIndices)
     % Mark as noise if more than 3 rapid alternations occur
     if rapidAlternations >= 3
         startIdx = max(1, rapidTransitionIndices(i - 3)); % Start from 4 transitions ago
-        endIdx = min(numBins, rapidTransitionIndices(i + 1)); % End after the next state
+
+        if size(rapidTransitionIndices,1) == i
+            endIdx = min(numBins, rapidTransitionIndices(i)); % End after the next state
+        else
+            endIdx = min(numBins, rapidTransitionIndices(i + 1)); % End after the next state
+        end
+
         isNoise(startIdx:endIdx) = true; % Mark this region as noise
         rapidAlternations = 0; % Reset count after marking noise
     end
