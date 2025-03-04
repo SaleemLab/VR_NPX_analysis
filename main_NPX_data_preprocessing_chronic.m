@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 all_SUBJECTS = {'M24065'};
-all_SUBJECTS = {'M24016','M24017','M24018','M24062','M24065'};
+all_SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];

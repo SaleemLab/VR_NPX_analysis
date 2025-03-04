@@ -6,6 +6,7 @@ addParameter(p,'place_fields',[],@isstruct) % Select channels for analysis (defa
 addParameter(p,'unit_depth',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_region',[],@isstring) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_id',unique(spike_id),@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
+addParameter(p,'session_clusters',[],@isstruct) % session clusters loaded for more information
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
@@ -13,6 +14,7 @@ place_fields = p.Results.place_fields;
 unit_depth = p.Results.unit_depth;
 unit_region = p.Results.unit_region;
 unit_id = p.Results.unit_id;
+session_clusters = p.Results.session_clusters;
 
 if ~isempty(place_fields) % if place fields, only select spatially tuned cells
     spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
@@ -61,6 +63,33 @@ no_cluster = length(unit_id);
 track1_ID = find(Task_info.track_ID_all == 1);
 track2_ID = find(Task_info.track_ID_all == 2);
 
+switchLaps1 = []; % Initialize array to store switch laps
+switchLaps2 = []; % Initialize array to store switch laps
+current_track = Task_info.track_ID_all(1);
+track_lap_count = 0; % Counter for laps in the given track
+
+for i = 1:length(Task_info.track_ID_all)
+    if Task_info.track_ID_all(i) == current_track
+        track_lap_count = track_lap_count + 1; % Count laps in the same track
+    else
+        if current_track == 1
+            switchLaps1 = [switchLaps1, track_lap_count]; % Store switch lap count
+        elseif current_track == 2
+            switchLaps2 = [switchLaps2, track_lap_count]; % Store switch lap count
+        end
+        current_track = Task_info.track_ID_all(i); % Update current track
+        track_lap_count = 1; % Reset count for new track
+    end
+end
+
+switchLaps1 = cumsum(switchLaps1);
+switchLaps2 = cumsum(switchLaps2);
+if length(switchLaps1) > length(switchLaps2)
+    switchLaps1(end)=[];
+elseif length(switchLaps1) < length(switchLaps2)
+    switchLaps2(end)=[]
+end
+
 
 % Define Gaussian window for smoothing
 gaussianWindow = gausswin(5);
@@ -74,10 +103,10 @@ colour_lines = {[145,191,219]/255,[69,117,180]/255,[215,48,39]/255,[252,141,89]/
 
 for iCluster = 1:no_cluster
     fig = figure;
-    fig.Position = [109 135 1000 600];
+    fig.Position = [109 135 1110 600];
     fig.Name = sprintf('%s unit %i at %i um',unit_region(iCluster),unit_id(iCluster),unit_depth(iCluster));
 
-    subplot(1,3,1)
+    subplot(1,4,1)
     cluster_spike_id{iCluster} = spike_id == unit_id(iCluster);
 
     [~,~,rasterX,rasterY,~,~] = psthAndBA(spike_position(cluster_spike_id{iCluster}),event_position, window, psthBinSize/20);
@@ -101,7 +130,7 @@ for iCluster = 1:no_cluster
     ylim([0 length(Task_info.start_time_all)])
     xlim(window)
     ylabel('lap')
-    xlabel('position')
+    xlabel('position (cm)')
     %     title(sprintf('%s unit %i at %i um',unit_region(iCluster),unit_id(iCluster),unit_depth(iCluster)))
     xticks([0 30 50 70 90 110])
 %     xticklabels([0 20 40 60 80 100 120 140])
@@ -131,7 +160,7 @@ for iCluster = 1:no_cluster
     %     average_map_track2_even = mean(ratemaps_track2(2:2:end,:),'omitnan');
 
 
-    subplot(3,3,[2])
+    subplot(3,16,[6:9])
     h(1)=plot(bins,average_map_track1,'LineWidth',2,'Color',colour_lines{2});
     map_error = std(ratemaps_track1(:,:),'omitnan')./sqrt(size(ratemaps_track1(:,:),1));
     hold on
@@ -139,7 +168,7 @@ for iCluster = 1:no_cluster
     patch([bins fliplr(bins)],[average_map_track1+map_error fliplr(average_map_track1-map_error)],colour_lines{2},'FaceAlpha','0.3','LineStyle','none');
 
     h(2)=plot(bins,average_map_track2,'LineWidth',2,'Color',colour_lines{3});
-    map_error = std(ratemaps_track1(:,:),'omitnan')./sqrt(size(ratemaps_track1(:,:),1));
+    map_error = std(ratemaps_track2(:,:),'omitnan')./sqrt(size(ratemaps_track2(:,:),1));
     hold on
     % patch([time fliplr(time)], [Ymax fliplr(Ymin)], 'g')
     patch([bins fliplr(bins)],[average_map_track2+map_error fliplr(average_map_track2-map_error)],colour_lines{3},'FaceAlpha','0.3','LineStyle','none');
@@ -147,41 +176,75 @@ for iCluster = 1:no_cluster
     set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
 %     xline([30 50 70 90 110],'LineWidth',1,'Color',[0.5 0.5 0.5])
-    legend([h(1:2)],{'Track L','Track R'},'Color','none','box','off','Units', 'normalized','Position', [0.60 0.85 0.1 0.1])
+    legend([h(1:2)],{'Track L','Track R'},'Color','none','box','off','Units', 'normalized','Position', [0.56 0.80 0.1 0.1])
 
     xlim(window)
     xlabel('position (cm)')
     ylabel('firing rate (Hz)')
 
-    reshape([ratemaps_track1; ratemaps_track2])))
 
-    subplot(6,3,[11 14 17])
+    subplot(6,4,[14 18 22])
     imagesc(ratemaps_track1)
-    clim([0 )
+    clim([min([average_map_track2 average_map_track1]) max([average_map_track2 average_map_track1])])
     set(gca, 'YDir', 'normal')
     colormap(flipud(gray))
     colorbar
+    hold on
+
+    yline(switchLaps1+0.5,'LineWidth',2,'Color',colour_lines{2})
+
     set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     ylabel('lap')
-    xlabel('position')
+    xlabel('position (cm)')
     xticks([0 30 50 70 90 110]/psthBinSize)
     xticklabels([0 30 50 70 90 110])
-
     title('Track L')
-    subplot(6,3,[12 15 18])
+
+    subplot(6,4,[15 19 23])
     imagesc(ratemaps_track2)
     set(gca, 'YDir', 'normal')
-    clim([0 (max(max([ratemaps_track1; ratemaps_track2])))])
+    clim([min([average_map_track2 average_map_track1]) max([average_map_track2 average_map_track1])])
     colormap(flipud(gray))
     colorbar
+    hold on
+
+    yline(switchLaps2+0.5,'LineWidth',2,'Color',colour_lines{3})
+
     ylabel('lap')
-    xlabel('position')
+    xlabel('position (cm)')
     xticks([0 30 50 70 90 110]/psthBinSize)
     xticklabels([0 30 50 70 90 110])
     set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
-
     title('Track R')
-    sgt = sgtitle(sprintf('%s unit %i at %i um',unit_region(iCluster),unit_id(iCluster),unit_depth(iCluster)))
+
+    subplot(4,32,[25:32])
+    scal_f = 2; % scale image by this before...
+    sigma = 1/3; % ...filtering by this
+    thisMap_s = imresize(session_clusters.receptive_field{find(session_clusters.cluster_id == unit_id(iCluster))},scal_f);
+    thisMap_s = imgaussfilt(thisMap_s,sigma);
+    %     thisMap_s = zscore(thisMap_s,0,'all');
+    imagesc(flip(thisMap_s))
+
+    % clim([min([average_map_track2 average_map_track1]) max([average_map_track2 average_map_track1])])
+    colormap(flipud(gray))
+    colorbar
+    xlabel('Azimuth')
+    ylabel('Elevation')
+    xticks(linspace(1,size(thisMap_s,2),7))
+    xticklabels(-120:40:120)
+    yticks(linspace(1,size(thisMap_s,1),4))
+    yticklabels(flip(-30:40:90))
+    set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+    title('RF')
+
+    subplot(4,32,[2*32+26:2*32+32])
+    waveform_tvec = linspace(-0.001,0.002,size(session_clusters.peak_channel_waveforms,2));
+    plot(waveform_tvec,session_clusters.peak_channel_waveforms(find(session_clusters.cluster_id == unit_id(iCluster)),:),'k')
+    set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+    xlabel('time (sec)')
+    title('waveform')
+
+    sgt = sgtitle(sprintf('%s unit %i at %i um',unit_region(iCluster),unit_id(iCluster),unit_depth(iCluster)));
     sgt.FontSize = 15;
 
 end
