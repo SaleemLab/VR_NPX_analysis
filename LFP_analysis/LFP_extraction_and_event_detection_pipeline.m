@@ -129,6 +129,9 @@ for nprobe = 1:length(session_info.probe)
     selected_chan_config = chan_config(unique_selected_channels,:);
     [PSD{nprobe},power{nprobe}] = calculate_channel_PSD(raw_LFP,SR,selected_chan_config,options,'nfft_seconds',2,'plot_option',0,'tvec',tvec);
 
+    rms_values = rms(raw_LFP, 2);
+    channel_std = std(raw_LFP, 0, 2);
+
     %%%%% Find CA1 channels with best ripple power
     HPC_channel_id = find(ismember(unique_selected_channels,selected_channels(channel_regions==find(contains(all_fields,'HPC_sparse')))));
     HPC_channels = unique_selected_channels(HPC_channel_id);
@@ -137,9 +140,11 @@ for nprobe = 1:length(session_info.probe)
     bad_channels =[];
     for nChannel = 1:length(HPC_channel_id)
         not_this_shank = unique_shank_id(HPC_channel_id(nChannel))~=unique_shank_id(HPC_channel_id);% find channels not this shanks
-        bad_channels(nChannel,:) = power{nprobe}(HPC_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:));
+        this_shank = unique_shank_id(HPC_channel_id(nChannel))==unique_shank_id(HPC_channel_id);% find channels this shanks
+        bad_channels(nChannel,:) = rms_values(nChannel) > mean(rms_values) + 3 * std(rms_values) | channel_std(nChannel) > 5 * median(channel_std); % remove noisy channels based RMS and STD
+%         power{nprobe}(HPC_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:))
     end
-    bad_channels = sum(bad_channels,2)>3;
+%     bad_channels = sum(bad_channels,2)>3;
 
     good_HPC_channels=[];
     good_HPC_channels = HPC_channel_id(~bad_channels);
@@ -163,9 +168,9 @@ for nprobe = 1:length(session_info.probe)
     bad_channels =[];
     for nChannel = 1:length(V1_channel_id)
         not_this_shank = unique_shank_id(V1_channel_id(nChannel))~=unique_shank_id(V1_channel_id);% find channels not this shanks
-        bad_channels(nChannel,:) = power{nprobe}(V1_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:)); % remove noisy channels where the power is significantly greater than other channels.
+        bad_channels(nChannel,:) = rms_values(nChannel) > mean(rms_values) + 3 * std(rms_values) | channel_std(nChannel) > 5 * median(channel_std); % remove noisy channels based RMS and STD
     end
-    bad_channels = sum(bad_channels,2)>3;
+%     bad_channels = sum(bad_channels,2)>3;
 
     good_V1_channels=[];
     good_V1_channels = V1_channel_id(~bad_channels);

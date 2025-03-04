@@ -247,8 +247,8 @@ for nstimuli = 1:length(all_stimulus_type)
 end
 
 %% LFP PSD slope and cortical wave direction
-% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
-pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -263,7 +263,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:length(experiment_info)
+for nsession =1:9
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -688,7 +688,7 @@ for nsession =1:length(experiment_info)
                     if sum(~isnan(sharp_wave_peaks_shank(:,nevent)))==4 % if delta peaks on four shanks
                         peaks_latency(nevent) = mean(diff(sharp_wave_peaks_shank(:,nevent)),'omitnan');
                     elseif sum(~isnan(sharp_wave_peaks_shank(:,nevent)))==3 % if delta peaks on three shanks
-                        skipped_shank= diff(LFP(probe_no).average_V1_shank_id(~isnan(sharp_wave_peaks_shank(:,nevent))))>1;
+                        skipped_shank= diff(LFP(probe_no).best_HPC_shank_id(~isnan(sharp_wave_peaks_shank(:,nevent))))>1;
                         if sum(skipped_shank)>0 % if delta peak skipped one shank
 
                             if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
