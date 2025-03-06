@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 all_SUBJECTS = {'M24065'};
-all_SUBJECTS = {'M24016','M24017','M24018','M24062','M24065'};
+all_SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24016','M24017','M24018','M24062','M24064'};
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 options = 'bilateral';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -154,7 +154,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([45 46 48 51]);
+experiment_info=experiment_info([4 5 6 9]);
 % experiment_info=experiment_info([48 51]);
 % experiment_info=experiment_info(4:5);
 % All_stimuli = {'Checkerboard'}
@@ -242,9 +242,9 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 SUBJECTS = {'M24016'};
-SUBJECTS = {'M24062'};
+SUBJECTS = {'M24065'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
-experiment_info = experiment_info(10);
+experiment_info = experiment_info(1);
 Stimulus_type= 'Checkerboard_sh1'; 
 Stimulus_type= 'Checkerboard_sh1_half'; 
 extract_PSD_profile_batch(experiment_info,Stimulus_type);
@@ -262,8 +262,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M24062';
-SESSION = '20241128';
+SUBJECT = 'M24065';
+SESSION = '20250126';
 options = 'bilateral';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4
@@ -316,63 +316,64 @@ for nstimuli = 1:4
             end
         end
 
-        % %%%%%%%%%% Comment out this sections when quantifying checkerboard
-        % %%%%%%%%%% CSD and plotting channel maps. Then use this section for
-        % %%%%%%%%%% manual channel map updates
-        % DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
-        % DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
-        % 
-        % if ~isempty(DIR)|~isempty(DIR1)
-        %     if contains(Stimulus_type,'sh')
-        %         load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
-        %     else
-        %         load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
-        %     end  
-        % end
-        % 
-        % [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
-        % [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
-        % 
-        % if contains(Stimulus_type,'_sh')
-        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
-        % else
-        %     save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
-        % end
-        % 
-        % checkerboard_CSD_profile(options);
-        % save_all_figures(options.ANALYSIS_DATAPATH,[]);
-        % %%%%%%%%%%
+        %%%%%%%%%% Comment out this sections when quantifying checkerboard
+        %%%%%%%%%% CSD and plotting channel maps. Then use this section for
+        %%%%%%%%%% manual channel map updates
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"))
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))))
+
+        if ~isempty(DIR)|~isempty(DIR1)
+            if contains(Stimulus_type,'sh')
+                load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('best_channels%s.mat',extractAfter(Stimulus_type,"Checkerboard"))));
+            else
+                load(fullfile(options.ANALYSIS_DATAPATH,"best_channels.mat"));
+            end  
+        end
+
+        [LF_FILE imecMeta chan_config ~] = extract_NPX_channel_config(options,[]);% Since it is LF
+        [best_channels{options.probe_no}] = update_best_channels(options,chan_config);
+
+        if contains(Stimulus_type,'_sh')
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf("best_channels%s.mat",extractAfter(options.Stimulus_type,"Checkerboard"))),'best_channels')
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"),'best_channels')
+        end
+
+        checkerboard_CSD_profile(options);
+        save_all_figures(options.ANALYSIS_DATAPATH,[]);
+        %%%%%%%%%%
     end
 end
 
 
-Stimulus_type = 'Checkerboard_sh1';
+Stimulus_type = 'Checkerboard_sh1_half';
 if contains(Stimulus_type,'_sh')
     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     options= session_info.probe(1);
 
-%     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
-%     load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(1).name))
-%     all_fields = fieldnames(best_channels{1});
-%     all_best_channels=best_channels;
-% 
-%     for nshank = 2:length(DIR)
-%         load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
-%         all_fields = fieldnames(best_channels{1});
-%         for nprobe = 1:length(best_channels)
-%             for nfield = 1:length(all_fields)
-%                 if contains(all_fields{nfield},'depth')
-%                     if isfield(best_channels{nprobe},(all_fields{nfield}))
-%                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
-%                     else
-%                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) NaN(1,length(best_channels{nprobe}.xcoord))];
-%                     end
-%                 elseif contains(all_fields{nfield},'xcoord')
-%                     all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}); best_channels{nprobe}.(all_fields{nfield})];
-%                 end
-%             end
-%         end
-%     end
+
+    %     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','extracted_PSD_sh*.mat'));
+    %     load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(1).name))
+    %     all_fields = fieldnames(best_channels{1});
+    %     all_best_channels=best_channels;
+    %
+    %     for nshank = 2:length(DIR)
+    %         load(fullfile(options.ANALYSIS_DATAPATH,'..',DIR(nshank).name))
+    %         all_fields = fieldnames(best_channels{1});
+    %         for nprobe = 1:length(best_channels)
+    %             for nfield = 1:length(all_fields)
+    %                 if contains(all_fields{nfield},'depth')
+    %                     if isfield(best_channels{nprobe},(all_fields{nfield}))
+    %                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) best_channels{nprobe}.(all_fields{nfield})];
+    %                     else
+    %                         all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}) NaN(1,length(best_channels{nprobe}.xcoord))];
+    %                     end
+    %                 elseif contains(all_fields{nfield},'xcoord')
+    %                     all_best_channels{nprobe}.(all_fields{nfield})=[all_best_channels{nprobe}.(all_fields{nfield}); best_channels{nprobe}.(all_fields{nfield})];
+    %                 end
+    %             end
+    %         end
+    %     end
 
 
     DIR=dir(fullfile(options.ANALYSIS_DATAPATH,'..','best_channels_sh*.mat'));

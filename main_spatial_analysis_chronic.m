@@ -12,7 +12,9 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 58 59 60 71]);
+experiment_info=experiment_info([33 34 35 44 45 58 59 71 72]);
+% experiment_info=experiment_info([33 34 35 44 45 58 59 71 72 73]);
+% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % experiment_info=experiment_info([45 46 48 51]);

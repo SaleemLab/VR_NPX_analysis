@@ -8,15 +8,17 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% Log odds Reactivation and reactivation strength
 
-clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 % option = 'bilateral';
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 
-SUBJECTS={'M24016','M24017','M24018'};
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
@@ -218,6 +220,15 @@ for nsession = 1:length(experiment_info)
                     /(nansum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
+
+                [peak_log_odds,peak_index]= max(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin(1):time_bin(1)+0.1/timebin-1));
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).peak_percentile = ...
+                    sum(peak_log_odds>decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+                
+                [peak_log_odds,peak_index]= min(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin(1):time_bin(1)+0.1/timebin-1));
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).peak_percentile = ...
+                    sum(peak_log_odds<decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+               
             end
 
 %             % Shuffled log odds
@@ -256,7 +267,9 @@ for nsession = 1:length(experiment_info)
             %         save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
         end
         clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped decoded_ripple_events decoded_ripple_events_shuffled
-        
+    end
+end
+
 
 
         %%%%% Reactivation strength analysis
