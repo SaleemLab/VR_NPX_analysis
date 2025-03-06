@@ -584,11 +584,17 @@ for nprobe = 1:length(session_info.probe)
         temp.deltaspikecorr = [];
         temp.gammaspikecorr = [];
         temp.deltagammacorr = [];
+        % temp.channel = [];
+        % temp.shank = [];
+        % temp.depth = [];
+        % temp.xcoord = [];
+        % % temp.best_channel = temp_V1_channels(nprobe).best_channel;
+        % 
         temp.channel = temp_V1_channels(nprobe).channel;
         temp.shank = temp_V1_channels(nprobe).shank;
         temp.depth = temp_V1_channels(nprobe).depth;
         temp.xcoord = temp_V1_channels(nprobe).xcoord;
-        temp.best_channel = temp_V1_channels(nprobe).best_channel;
+        temp.best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
         if ~isempty(temp)
             slow_waves(nprobe) = temp;
         end
