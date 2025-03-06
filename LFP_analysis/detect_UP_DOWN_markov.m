@@ -282,7 +282,11 @@ for i = 1:length(rapidTransitionIndices)
 
     % Mark as noise if more than 3 rapid alternations occur
     if rapidAlternations >= 3
-        startIdx = max(1, rapidTransitionIndices(i - 3)); % Start from 4 transitions ago
+        if i <= 3 %  If first 3 were rapid alternations happened 
+            startIdx = rapidTransitionIndices(1); % Start from 1st transition
+        else
+            startIdx = max(1, rapidTransitionIndices(i - 3)); % Start from 4 transitions ago
+        end
 
         if size(rapidTransitionIndices,1) == i
             endIdx = min(numBins, rapidTransitionIndices(i)); % End after the next state
