@@ -541,45 +541,45 @@ for nprobe = 1:length(session_info.probe)
 
     %%%%%% Detect V1 spindle events and slow waves (combined SWS)
     if ~isempty(behavioural_state_merged.SWS)
-        
-        if ~isfield(LFP(probe_no),'best_V1') % if best v1 does not exist
-            [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
 
-            if probe_no == 1 % Left hemisphere (shank 1 most anterior)
-                if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(1,7)
-                    best_channel = 1;
-                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(1);
-                end
+        % if ~isfield(LFP(probe_no),'best_V1')|isempty(LFP(nprobe).best_V1) % if best v1 does not exist
+        [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
 
-            elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
-                if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(end,7)
-                    best_channel = length(LFP(probe_no).best_V1_high_freq_shank_id);
-                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(end);
-                end
+        if probe_no == 1 % Left hemisphere (shank 1 most anterior)
+            if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(1,7)
+                best_channel = 1;
+                temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(1);
             end
 
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
-            [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
-        else
-            [~,best_channel] = max(LFP(nprobe).best_V1_power(:,7));
-            if probe_no == 1 % Left hemisphere (shank 1 most anterior)
-                if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(1,7)
-                    best_channel = 1;
-                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(1);
-                end
-
-            elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
-                if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(end,7)
-                    best_channel = length(LFP(probe_no).best_V1_shank_id);
-                    temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(end);
-                end
+        elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
+            if LFP(probe_no).best_V1_high_freq_power(best_channel,7) < 2*LFP(probe_no).best_V1_high_freq_power(end,7)
+                best_channel = length(LFP(probe_no).best_V1_high_freq_shank_id);
+                temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(end);
             end
-
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
-            [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-                'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
         end
+
+        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
+        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
+        % else
+        %     [~,best_channel] = max(LFP(nprobe).best_V1_power(:,7));
+        %     if probe_no == 1 % Left hemisphere (shank 1 most anterior)
+        %         if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(1,7)
+        %             best_channel = 1;
+        %             temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(1);
+        %         end
+        % 
+        %     elseif probe_no ==2 % Right hemisphere (shank 1 most posterior)
+        %         if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(end,7)
+        %             best_channel = length(LFP(probe_no).best_V1_shank_id);
+        %             temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_channel(end);
+        %         end
+        %     end
+        % 
+        %     temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
+        %     [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+        %         'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
+        % end
 
         temp.deltaspikecorr = temp_V1_channels(nprobe).deltaspikecorr;
         temp.gammaspikecorr = temp_V1_channels(nprobe).gammaspikecorr;
