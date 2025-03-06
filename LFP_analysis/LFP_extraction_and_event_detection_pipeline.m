@@ -581,9 +581,9 @@ for nprobe = 1:length(session_info.probe)
         %         'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
         % end
 
-        temp.deltaspikecorr = temp_V1_channels(nprobe).deltaspikecorr;
-        temp.gammaspikecorr = temp_V1_channels(nprobe).gammaspikecorr;
-        temp.deltagammacorr = temp_V1_channels(nprobe).deltagammacorr;
+        temp.deltaspikecorr = [];
+        temp.gammaspikecorr = [];
+        temp.deltagammacorr = [];
         temp.channel = temp_V1_channels(nprobe).channel;
         temp.shank = temp_V1_channels(nprobe).shank;
         temp.depth = temp_V1_channels(nprobe).depth;
