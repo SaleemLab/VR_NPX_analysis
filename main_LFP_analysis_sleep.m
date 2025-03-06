@@ -17,6 +17,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
+
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 % experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
@@ -220,6 +221,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
+experiment_info=experiment_info([33 9 10 14]);
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 % experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
@@ -229,7 +231,7 @@ experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 12:length(experiment_info)
+    for nsession = 1:length(experiment_info)
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -263,7 +265,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
 
-for nsession =14:length(experiment_info)
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -511,7 +513,10 @@ for nsession =14:length(experiment_info)
             DOWN_peaks_shank = [];
             peaks_latency = [];
             DOWN_traveling = [];
-            slow_waves_markov(probe_no).DOWN_peaks_shank = [];
+            DOWN_peaks_zscore= [];
+
+            slow_waves_markov(probe_no).DOWN_peaks_zscore = [];
+            slow_waves_markov(probe_no).DOWN_peaktimes = [];
             slow_waves_markov(probe_no).DOWN_peaks_latency = [];
             slow_waves_markov(probe_no).DOWN_traveling = [];
 
@@ -547,8 +552,10 @@ for nsession =14:length(experiment_info)
                         [~,temp]=min(abs(midpoint-tvec(tidx(peak_id))));
                         if ~isempty(temp)
                             DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+                            DOWN_peaks_zscore(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
                         else
                             DOWN_peaks_shank(nShank,nevent) = nan;
+                            DOWN_peaks_zscore(nShank,nevent) = nan;
                         end
                     end
 
@@ -615,8 +622,12 @@ for nsession =14:length(experiment_info)
 
 
             end
+            slow_waves_markov(probe_no).DOWN_peaks_zscore = [];
+            slow_waves_markov(probe_no).DOWN_peaktimes = [];
+            slow_waves_markov(probe_no).DOWN_peaks_latency = [];
+            slow_waves_markov(probe_no).DOWN_traveling = [];
 
-            slow_waves_markov(probe_no).DOWN_peaks_shank = DOWN_peaks_shank;
+            slow_waves_markov(probe_no).DOWN_peaktimes = DOWN_peaks_shank;
             slow_waves_markov(probe_no).DOWN_peaks_latency = peaks_latency;
             slow_waves_markov(probe_no).DOWN_traveling = DOWN_traveling;
         end
