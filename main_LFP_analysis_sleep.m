@@ -229,7 +229,7 @@ experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 all_stimulus_type={'SleepChronic','RUN'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 12:length(experiment_info)
         
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -247,7 +247,7 @@ for nstimuli = 1:length(all_stimulus_type)
 end
 
 %% LFP PSD slope and cortical wave direction
-pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
 % pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
@@ -263,7 +263,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:9
+for nsession =14:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
