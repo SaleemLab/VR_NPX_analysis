@@ -223,13 +223,24 @@ for nsession = 6:length(experiment_info)
 
                 % 100ms after ripple onset
                 time_bin = time_bin(1):time_bin(1)+(0.1/timebin)-1;
-                [peak_log_odds,peak_index]= max(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin));
+                [peak_log_odds,peak_index]= max(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index))...
+                    ./decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)));
+
                 decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).peak_percentile = ...
-                    sum(peak_log_odds>decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+                    sum(peak_log_odds>shuffled_data)/1000;
                 
-                [peak_log_odds,peak_index]= min(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin));
+
+                [peak_log_odds,peak_index]= min(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(sum(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)),2)...
+                    ./sum(decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)),2));
+
                 decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).peak_percentile = ...
-                    sum(peak_log_odds<decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+                    sum(peak_log_odds<shuffled_data)/1000;
                
             end
 

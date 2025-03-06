@@ -26,7 +26,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 6:length(experiment_info)
+for nsession = 7:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -202,8 +202,8 @@ for nsession = 6:length(experiment_info)
                 % timebins_centre = 
 
                 % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
-                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
-
+                % [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.onset(event)+0.1);
                 data = log(sum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     /sum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
@@ -222,14 +222,25 @@ for nsession = 6:length(experiment_info)
                     + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
                 % 100ms after ripple onset
-                time_bin = time_bin(1):time_bin(1)+(0.1/timebin)-1;
-                [peak_log_odds,peak_index]= max(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin));
+                % time_bin = time_bin(1):time_bin(1)+(0.1/timebin)-1;
+                [peak_log_odds,peak_index]= max(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index))...
+                    ./decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)));
+
                 decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).peak_percentile = ...
-                    sum(peak_log_odds>decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+                    sum(peak_log_odds>shuffled_data)/1000;
                 
-                [peak_log_odds,peak_index]= min(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin));
+
+                [peak_log_odds,peak_index]= min(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index))...
+                    ./decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)));
+
                 decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).peak_percentile = ...
-                    sum(peak_log_odds<decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index)))/1000;
+                    sum(peak_log_odds<shuffled_data)/1000;
                
             end
 
