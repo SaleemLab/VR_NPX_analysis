@@ -496,10 +496,12 @@ for nsession =1:length(experiment_info)
         toc
         disp('PSD slope for slow waves finished')
 
-        disp('cortical wave travleing direction analysis started')
+        disp('cortical wave traveling direction analysis started')
         tic
         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
+        % https://www.nature.com/articles/s41467-019-10327-5 levenstein et
+        % al used 0.5 to 8 Hz for slow wave UP DOWN detection
         filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
         filterparms.gammafilter = [100 400];
         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
@@ -519,6 +521,8 @@ for nsession =1:length(experiment_info)
             slow_waves_markov(probe_no).DOWN_peaktimes = [];
             slow_waves_markov(probe_no).DOWN_peaks_latency = [];
             slow_waves_markov(probe_no).DOWN_traveling = [];
+            slow_waves_markov(probe_no).probe_hemisphere = [];
+            slow_waves_markov(probe_no).shank_id = [];
 
             if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
                 continue
@@ -529,8 +533,21 @@ for nsession =1:length(experiment_info)
             end
 
             if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
+                probe_id = [];
 
-                lfp.data= LFP(probe_no).average_V1';
+                if length(LFP)==1
+                    lfp.data= [LFP(probe_no).average_V1'];
+                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
+                    slow_waves_markov(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
+                else
+                    lfp.data= [LFP(1).average_V1' LFP(2).average_V1'];
+                    probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
+                    slow_waves_markov(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
+                end
+
+                slow_waves_markov(probe_no).probe_hemisphere = probe_hemisphere;
+                
+
                 deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
 
                 zscored_LFP = [];
@@ -545,7 +562,7 @@ for nsession =1:length(experiment_info)
                     tidx=tidx(1):tidx(end);
                     [~,idx]=min(abs(midpoint-tvec));
 
-                    for nShank=1:length(LFP(probe_no).average_V1_shank_id)
+                    for nShank=1:length(probe_hemisphere) % across shanks from both probes if using two probes
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 
@@ -563,56 +580,60 @@ for nsession =1:length(experiment_info)
                     %
                     % diff(DOWN_peaks_shank(:,425))
 
-                    % Putatively
-                    if sum(~isnan(DOWN_peaks_shank(:,nevent)))==4 % if delta peaks on four shanks
-                        peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
-                    elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==3 % if delta peaks on three shanks
-                        skipped_shank= diff(LFP(probe_no).average_V1_shank_id(~isnan(DOWN_peaks_shank(:,nevent))))>1;
-                        if sum(skipped_shank)>0 % if delta peak skipped one shank
+                    % Putative calculation of average latency across shanks
+                    % for each hemisphere
+                    for h = unique(probe_hemisphere)
+                        DOWN_peaks_shank_temp = DOWN_peaks_shank(probe_hemisphere==h,nevent);
 
-                            if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
-                                peaks_latency(nevent) = DOWN_peaks_shank(1,nevent)-DOWN_peaks_shank(2,nevent);
-                            elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
-                                peaks_latency(nevent) = DOWN_peaks_shank(2,nevent)-DOWN_peaks_shank(3,nevent);
+                        if sum(~isnan(DOWN_peaks_shank_temp))==4 % if delta peaks on four shanks
+                            peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
+                        elseif sum(~isnan(DOWN_peaks_shank_temp))==3 % if delta peaks on three shanks
+                            skipped_shank= diff(LFP(h).average_V1_shank_id(~isnan(DOWN_peaks_shank_temp)))>1;
+                            if sum(skipped_shank)>0 % if delta peak skipped one shank
+
+                                if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
+                                    peaks_latency(h,nevent) = DOWN_peaks_shank_temp(1)-DOWN_peaks_shank_temp(2);
+                                elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
+                                    peaks_latency(h,nevent) = DOWN_peaks_shank_temp(2)-DOWN_peaks_shank_temp(3);
+                                end
+                            else
+                                peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
                             end
-                        else
-                            peaks_latency(nevent) = mean(diff(DOWN_peaks_shank(:,nevent)),'omitnan');
+                        elseif sum(~isnan(DOWN_peaks_shank_temp))==2 % if delta peaks on two shanks (latency divide by number of shanks skipped to caluclate mean latency per 250 micron)
+                            peaks_latency(h,nevent) = diff(DOWN_peaks_shank_temp(1:2))/abs(LFP(h).average_V1_shank_id(2)-LFP(h).average_V1_shank_id(1));
+                        else % only one peak. Can't calculate latency
+                            peaks_latency(h,nevent) =nan;
                         end
-                    elseif sum(~isnan(DOWN_peaks_shank(:,nevent)))==2 % if delta peaks on two shanks
-                        peaks_latency(nevent) = diff(DOWN_peaks_shank(1:2,nevent));
-                    else % only one peak. Can't calculate latency
-                        peaks_latency(nevent) =nan;
-                    end
 
-                    % From https://www.jneurosci.org/content/34/26/8875#sec-2
-                    % speed is ~40 milimeter per seconds
-                    % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
-                    % putatively set the minimum delay threshold to be 3
-                    % miliseconds.
-                    if session_clusters.probe_hemisphere(nprobe)==1
+                        % From https://www.jneurosci.org/content/34/26/8875#sec-2
+                        % speed is ~40 milimeter per seconds
+                        % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
+                        % putatively set the minimum delay threshold to be 3
+                        % miliseconds.
+                        if h==1
 
-                        % if direction of mean latency is consistent with the latency more than half
-                        % of the shank latency
-                        % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
-                        % (if three shanks, then still 2 jumps needed)
-                        if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            DOWN_traveling(nevent) = 1; % anterior to posterior
-                        elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            DOWN_traveling(nevent) = -1; % posterior to anterior
-                        else
-                            DOWN_traveling(nevent) = 0; % noisy or standing wave?
-                        end
-                        % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
-                    elseif session_clusters.probe_hemisphere(nprobe)==2
-                        if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            DOWN_traveling(nevent) = -1; % posterior to anterior
-                        elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank(2:end,nevent)-DOWN_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            DOWN_traveling(nevent) = 1; % anterior to posterior
-                        else
-                            DOWN_traveling(nevent) = 0; % noisy or standing wave?
+                            % if direction of mean latency is consistent with the latency more than half
+                            % of the shank latency
+                            % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
+                            % (if three shanks, then still 2 jumps needed)
+                            if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
+                                DOWN_traveling(h,nevent) = 1; % anterior to posterior
+                            elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
+                                DOWN_traveling(h,nevent) = -1; % posterior to anterior
+                            else
+                                DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
+                            end
+                            % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+                        elseif h==2
+                            if peaks_latency(h,nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
+                                DOWN_traveling(h,nevent) = -1; % posterior to anterior
+                            elseif peaks_latency(h,nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
+                                DOWN_traveling(h,nevent) = 1; % anterior to posterior
+                            else
+                                DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
+                            end
                         end
                     end
-
                     % nexttile
                     % hold on;xline(tvec(idx));
                     % plot(tvec(tidx),zscored_LFP(tidx,:));
@@ -622,27 +643,22 @@ for nsession =1:length(experiment_info)
 
 
             end
-            slow_waves_markov(probe_no).DOWN_peaks_zscore = [];
-            slow_waves_markov(probe_no).DOWN_peaktimes = [];
-            slow_waves_markov(probe_no).DOWN_peaks_latency = [];
-            slow_waves_markov(probe_no).DOWN_traveling = [];
+
 
             slow_waves_markov(probe_no).DOWN_peaktimes = DOWN_peaks_shank;
+            slow_waves_markov(probe_no).DOWN_peaks_zscore = DOWN_peaks_zscore;
             slow_waves_markov(probe_no).DOWN_peaks_latency = peaks_latency;
             slow_waves_markov(probe_no).DOWN_traveling = DOWN_traveling;
         end
-        disp('cortical wave travleing direction analysis finished')
+        disp('cortical wave traveling direction analysis finished')
         toc
         % 
 
-        disp('Sharp wave amplitude started')
+        disp('Sharp wave ripple traveling direction analysis started')
         tic
         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        filterparms.deltafilter = [0.5 9];%heuristically defined.  room for improvement here.
-        filterparms.gammafilter = [100 400];
-        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
-        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
 
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
@@ -657,27 +673,53 @@ for nsession =1:length(experiment_info)
 
 
             ripples(probe_no).sharp_wave_peaktimes = [];
-            ripples(probe_no).sharp_wave_latency = [];
-            ripples(probe_no).sharp_wave_zscore = sharp_wave_zscore_shank;
-            ripples(probe_no).SW_traveling = [];
+            ripples(probe_no).sharp_wave_zscore = [];
+
+            ripples(probe_no).SWR_peaktimes = [];
+            ripples(probe_no).SWR_zscore = [];
+            ripples(probe_no).SWR_traveling = [];
+
+            ripples(probe_no).probe_hemisphere = [];
+            ripples(probe_no).shank_id = [];
 
             if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+                probe_id = [];
 
-                lfp.data= LFP(probe_no).best_HPC';
-                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+                if length(LFP)==1
+                    lfp.data= [LFP(probe_no).best_HPC'];
+                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
+                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                else
+                    lfp.data= [LFP(1).best_HPC' LFP(2).best_HPC'];
+                    probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
+                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                end
 
-                zscored_LFP = [];
-                zscored_LFP = zscore(deltaLFP.amp);
+                ripples(probe_no).probe_hemisphere = probe_hemisphere;
+
+                filter_type  = 'bandpass';
+                passband = [125 300];
+                filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+                norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+
+                signal = [];
+                for nShank = 1:length(probe_hemisphere)
+                    signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+                end
+                zscored_LFP = zscore(abs(hilbert(signal)));
+
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
 
                 for nevent = 1:length(ripples(probe_no).onset)
-                % for nevent = 600:640
+
                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
                     [~,idx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
 
-                    for nShank=1:length(LFP(probe_no).best_HPC_shank_id)
+
+                    for nShank=1:length(probe_hemisphere)
 
                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
 
@@ -696,54 +738,58 @@ for nsession =1:length(experiment_info)
                     % diff(DOWN_peaks_shank(:,425))
 
                     % Putatively
-                    if sum(~isnan(sharp_wave_peaks_shank(:,nevent)))==4 % if delta peaks on four shanks
-                        peaks_latency(nevent) = mean(diff(sharp_wave_peaks_shank(:,nevent)),'omitnan');
-                    elseif sum(~isnan(sharp_wave_peaks_shank(:,nevent)))==3 % if delta peaks on three shanks
-                        skipped_shank= diff(LFP(probe_no).best_HPC_shank_id(~isnan(sharp_wave_peaks_shank(:,nevent))))>1;
-                        if sum(skipped_shank)>0 % if delta peak skipped one shank
+                    for h = unique(probe_hemisphere)
+                        sharp_wave_peaks_shank_temp = sharp_wave_peaks_shank(probe_hemisphere==h,nevent);
 
-                            if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
-                                peaks_latency(nevent) = sharp_wave_peaks_shank(1,nevent)-sharp_wave_peaks_shank(2,nevent);
-                            elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
-                                peaks_latency(nevent) = sharp_wave_peaks_shank(2,nevent)-sharp_wave_peaks_shank(3,nevent);
+                        if sum(~isnan(sharp_wave_peaks_shank_temp))==4 % if delta peaks on four shanks
+                            peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
+                        elseif sum(~isnan(sharp_wave_peaks_shank_temp))==3 % if delta peaks on three shanks
+                            skipped_shank= diff(LFP(probe_no).best_HPC_shank_id(~isnan(sharp_wave_peaks_shank_temp)))>1;
+                            if sum(skipped_shank)>0 % if delta peak skipped one shank
+
+                                if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
+                                    peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(1)-sharp_wave_peaks_shank_temp(2);
+                                elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
+                                    peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(2)-sharp_wave_peaks_shank_temp(3);
+                                end
+                            else
+                                peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
                             end
-                        else
-                            peaks_latency(nevent) = mean(diff(sharp_wave_peaks_shank(:,nevent)),'omitnan');
+                        elseif sum(~isnan(sharp_wave_peaks_shank_temp))==2 % if delta peaks on two shanks
+                            peaks_latency(h,nevent) = diff(sharp_wave_peaks_shank_temp(1:2));
+                        else % only one peak. Can't calculate latency
+                            peaks_latency(h,nevent) =nan;
                         end
-                    elseif sum(~isnan(sharp_wave_peaks_shank(:,nevent)))==2 % if delta peaks on two shanks
-                        peaks_latency(nevent) = diff(sharp_wave_peaks_shank(1:2,nevent));
-                    else % only one peak. Can't calculate latency
-                        peaks_latency(nevent) =nan;
+
+                        % From Patel et al. (2013) https://pmc.ncbi.nlm.nih.gov/articles/PMC3807028/#sec2
+                        % ripple propogation speed roughly 0.35 m/s or 0.7
+                        % ms per 250 micron
+                        % putatively set the minimum delay threshold to be 2
+                        % miliseconds.
+                        if h==1
+
+                            % if direction of mean latency is consistent with the latency more than half
+                            % of the shank latency
+                            % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
+                            % (if three shanks, then still 2 jumps needed)
+                            if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
+                                wave_traveling(h,nevent) = 1; % anterior to posterior
+                            elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
+                                wave_traveling(h,nevent) = -1; % posterior to anterior
+                            else
+                                wave_traveling(h,nevent) = 0; % noisy or standing wave?
+                            end
+                            % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+                        elseif h==2
+                            if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
+                                wave_traveling(h,nevent) = -1; % posterior to anterior
+                            elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
+                                wave_traveling(h,nevent) = 1; % anterior to posterior
+                            else
+                                wave_traveling(h,nevent) = 0; % noisy or standing wave?
+                            end
+                        end
                     end
-
-                    % From https://pmc.ncbi.nlm.nih.gov/articles/PMC10125019/
-                    % roughly 5 miliseconds to travel 500 micrometer (rough shank spacing)
-                    % putatively set the minimum delay threshold to be 3
-                    % miliseconds.
-                    if session_clusters.probe_hemisphere(nprobe)==1
-
-                        % if direction of mean latency is consistent with the latency more than half
-                        % of the shank latency
-                        % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
-                        % (if three shanks, then still 2 jumps needed)
-                        if peaks_latency(nevent)>0.003 & sum(sharp_wave_peaks_shank(2:end,nevent)-sharp_wave_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            wave_traveling(nevent) = 1; % anterior to posterior
-                        elseif peaks_latency(nevent)<-0.003 & sum(sharp_wave_peaks_shank(2:end,nevent)-sharp_wave_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            wave_traveling(nevent) = -1; % posterior to anterior
-                        else
-                            wave_traveling(nevent) = 0; % noisy or standing wave?
-                        end
-                        % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
-                    elseif session_clusters.probe_hemisphere(nprobe)==2
-                        if peaks_latency(nevent)>0.003 & sum(sharp_wave_peaks_shank(2:end,nevent)-sharp_wave_peaks_shank(1,nevent)>0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            wave_traveling(nevent) = -1; % posterior to anterior
-                        elseif peaks_latency(nevent)<-0.003 & sum(sharp_wave_peaks_shank(2:end,nevent)-sharp_wave_peaks_shank(1,nevent)<0)>=length(LFP(probe_no).average_V1_shank_id)/2
-                            wave_traveling(nevent) = 1; % anterior to posterior
-                        else
-                            wave_traveling(nevent) = 0; % noisy or standing wave?
-                        end
-                    end
-
                     % nexttile
                     % hold on;xline(tvec(idx));
                     % plot(tvec(tidx),zscored_LFP(tidx,:));
@@ -751,16 +797,52 @@ for nsession =1:length(experiment_info)
                     % xline(sharp_wave_peaks_shank(:,nevent)')
                 end
 
+                ripples(probe_no).SWR_peaktimes = sharp_wave_peaks_shank;
+                ripples(probe_no).SWR_latency = peaks_latency;
+                ripples(probe_no).SWR_zscore = sharp_wave_zscore_shank;
+                ripples(probe_no).SWR_traveling = wave_traveling;
 
+
+                sharp_wave_zscore_shank = [];
+                sharp_wave_peaks_shank = [];
+
+
+                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+
+                zscored_LFP = [];
+                zscored_LFP = zscore(deltaLFP.amp);
+
+                count = 1
+                for nevent = 1:length(ripples(probe_no).onset)
+                    %                 ripples(probe_no).peaktimes(nevent)
+
+                    tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
+                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+                    tidx=tidx(1):tidx(end);
+                    [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
+
+
+                    for nShank=1:length(probe_hemisphere)
+
+                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+
+                        if ~isempty(peak_id)
+                            [~,temp]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec(tidx(peak_id))));
+                            sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+                            sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
+                        else
+                            sharp_wave_peaks_shank(nShank,nevent) = nan;
+                            sharp_wave_zscore_shank(nShank,nevent) = nan;
+                        end
+                    end
+                end
+
+                ripples(probe_no).sharp_wave_peaktimes = sharp_wave_peaks_shank;
+                ripples(probe_no).sharp_wave_zscore = sharp_wave_zscore_shank;
             end
-
-            ripples(probe_no).sharp_wave_peaktimes = sharp_wave_peaks_shank;
-            ripples(probe_no).sharp_wave_latency = peaks_latency;
-            ripples(probe_no).sharp_wave_zscore = sharp_wave_zscore_shank;
-            ripples(probe_no).SW_traveling = wave_traveling;
-            
         end
-        disp('HPC sharp wave analysis finished')
+
+        disp('Sharp wave ripple traveling direction analysis started')
         toc
 
         % histogram(slow_waves(1).DOWN_peaks_latency,100,'Normalization','cdf');
