@@ -250,7 +250,7 @@ end
 region_name = {'Left','Right'};
 
 colour_lines = [215,25,28;44,123,182]/256;
-title_text = sprintf('%s %s Logistic Ridge regression of PLS latent components %s',options.SUBJECT,options.SESSION);
+title_text = sprintf('%s %s Logistic Ridge regression of PLS components %s',options.SUBJECT,options.SESSION);
 nfigure = 1;
 fig(nfigure)=figure;
 fig(nfigure).Name=title_text;
@@ -373,7 +373,7 @@ region_name = {'Left','Right'};
 
 colour_lines = [215,25,28;44,123,182]/256;
 title_text = sprintf('%s %s PLS latent components visualisation %s',options.SUBJECT,options.SESSION);
-nfigure = 1;
+nfigure = 2;
 fig(nfigure)=figure;
 fig(nfigure).Name=title_text;
 fig(nfigure).Position = [300 380 1300 600]
@@ -651,7 +651,7 @@ KDE_reactivation.ripple_T2_probability_shuffled = pdf_T1_shuffled;
 %%%%% Visualisation of Peak bias distribution
 nfigure = nfigure+ 1;
 fig(nfigure) = figure;
-fig(nfigure).Name=sprintf('%s',region_name{options.probe_hemisphere});
+fig(nfigure).Name=sprintf('KDE peak bias distribution %s',region_name{options.probe_hemisphere});
 
 subplot(2,2,1)
 histogram(KDE_bias_T1_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
@@ -670,9 +670,10 @@ fontsize(gcf,12,"points")
 
 
 %%%%% Visualisation of significant T1 and T2 ripple events
-
-fig = figure
-fig.Position = [279,55,1800,933];
+nfigure = nfigure+ 1;
+fig(nfigure) = figure;
+fig(nfigure).Position = [279,55,1800,933];
+fig(nfigure).Position = [279,55,1800,933];
 count = 0
 for nEvent = find(KDE_T1_event_pvalue >=0.95)
     count = count + 1;

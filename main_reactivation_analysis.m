@@ -476,7 +476,7 @@ for nsession = 1:length(experiment_info)
           V1_spikes_template(V1_spikes_template(:,2)== V1_clusters_RUN.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
           V1_spikes_sleep(V1_spikes_sleep(:,2)== V1_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
       end
-      clear reactivation_strength assembly_templates
+      clear KDE_reactivation KDE_RUN PLS
       for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
           time_bin_size=0.02;
 
