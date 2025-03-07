@@ -756,7 +756,7 @@ for nsession =1:length(experiment_info)
                                 peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
                             end
                         elseif sum(~isnan(sharp_wave_peaks_shank_temp))==2 % if delta peaks on two shanks
-                            peaks_latency(h,nevent) = diff(sharp_wave_peaks_shank_temp(1:2));
+                            peaks_latency(h,nevent) = diff(sharp_wave_peaks_shank_temp(1:2))/abs(LFP(h).best_HPC_shank_id(2)-LFP(h).best_HPC_shank_id(1));
                         else % only one peak. Can't calculate latency
                             peaks_latency(h,nevent) =nan;
                         end
