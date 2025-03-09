@@ -812,7 +812,6 @@ for nsession =1:length(experiment_info)
                 zscored_LFP = [];
                 zscored_LFP = zscore(deltaLFP.amp);
 
-                count = 1
                 for nevent = 1:length(ripples(probe_no).onset)
                     %                 ripples(probe_no).peaktimes(nevent)
 

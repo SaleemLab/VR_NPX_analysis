@@ -11,7 +11,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
 experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-Stimulus_type = 'Sleep';
+Stimulus_type = 'SleepChronic';
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
@@ -83,8 +83,8 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
         load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
 
-        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-        clusters=clusters_ks3;
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        clusters=clusters_ks4;
     elseif contains(stimulus_name{n},'Sleep')
 %         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -101,28 +101,26 @@ for nsession =1:length(experiment_info)
         % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-        clusters=clusters_ks3;
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters=clusters_ks4;
     else
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
 %         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-        clusters=clusters_ks3;
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters=clusters_ks4;
     end
     ripples = rmfield(ripples, 'detectorinfo');
     spindles = rmfield(spindles, 'detectorinfo');
     %     slow_waves = rmfield(slow_waves, 'detectorinfo');
     slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
     slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'detectorinfo');
+    slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
+    slow_waves_markov = rmfield(slow_waves_markov, 'gamma_t');
+    slow_waves_markov = rmfield(slow_waves_markov, 'beta_t');
+    slow_waves_markov = rmfield(slow_waves_markov, 'xi_t');
 
 
     
@@ -181,7 +179,13 @@ for nsession =1:length(experiment_info)
 
         for iField =1:length(field_names)
             if session_count == 1
-                ripples_all(probe_no).(field_names{iField}) = ripples(nprobe).(field_names{iField});
+                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere'})
+                    ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
+                else
+                    ripples_all(probe_no).(field_names{iField}) = ripples(nprobe).(field_names{iField});
+                end
+
+
             else
                 A = ripples_all(probe_no).(field_names{iField});
                 B = ripples(nprobe).(field_names{iField});
@@ -250,7 +254,8 @@ for nsession =1:length(experiment_info)
 
                     disp('UP_PSD_slope')
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
-                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth','xcoord','best_channel'})
+                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
+                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
                 else
                     slow_waves_all(probe_no).(field_names{iField}) = slow_waves(nprobe).(field_names{iField});
@@ -274,7 +279,8 @@ for nsession =1:length(experiment_info)
                         slow_waves_all(probe_no).DOWN_ints = [A B];
                     end
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
-                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth','xcoord','best_channel'})
+                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
+                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere'})
 
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
                 else
@@ -291,19 +297,35 @@ for nsession =1:length(experiment_info)
             end
         end
         % slow_waves_all(probe_no).UP_PSD_slope
-        session_count_events = repmat(session_count,size(slow_waves(nprobe).timestamps));
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_ints,1),1]);
         if session_count == 1
             slow_waves_all(probe_no).DOWN_session_count = session_count_events;
         else
             slow_waves_all(probe_no).DOWN_session_count = [slow_waves_all(probe_no).DOWN_session_count;session_count_events];
         end
 
-        session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.UP,1) 1]);
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_ints,1),1]);
         if session_count == 1
             slow_waves_all(probe_no).UP_session_count = session_count_events;
         else
             slow_waves_all(probe_no).UP_session_count = [slow_waves_all(probe_no).UP_session_count;session_count_events];
         end
+
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_DOWN_index,1),1]);
+        if session_count == 1
+            slow_waves_all(probe_no).UP_DOWN_session_count = session_count_events;
+        else
+            slow_waves_all(probe_no).UP_DOWN_session_count = [slow_waves_all(probe_no).UP_DOWN_session_count;session_count_events];
+        end
+
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_UP_index,1),1]);
+        if session_count == 1
+            slow_waves_all(probe_no).DOWN_UP_session_count = session_count_events;
+        else
+            slow_waves_all(probe_no).DOWN_UP_session_count = [slow_waves_all(probe_no).DOWN_UP_session_count;session_count_events];
+        end
+
+
         if probe_no==1
             metric_param =[];
             % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
@@ -352,32 +374,33 @@ for nsession =1:length(experiment_info)
     end
 end
 
-
-for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    UP_index=[];
-    DOWN_index=[];
-    % get events index this session
-    for nprobe = 1:length(slow_waves_all)
-        UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
-        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-        UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
-        DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
-
-        Exclude_index = find(~ismember(DOWN_UP_transition,UP_DOWN_transition));% Only DOWN followed by UP is included for analysis.
-
-        % remove DOWN events without UP
-        slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index),:)=[];
-        slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_peaks_shank(:,DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_peaks_latency(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_traveling(DOWN_index{nprobe}(Exclude_index))=[];
-
-        % DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-    end
-end
+% 
+% for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+%     UP_index=[];
+%     DOWN_index=[];
+%     % get events index this session
+%     for nprobe = 1:length(slow_waves_all)
+%         UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
+%         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+% 
+%         UP_DOWN_transition = slow_waves_all(nprobe).UP_DOWN_index;
+%         DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
+% 
+%         Exclude_index = find(~ismember(DOWN_UP_transition,UP_DOWN_transition));% Only DOWN followed by UP is included for analysis.
+% 
+%         % remove DOWN events without UP
+%         slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index),:)=[];
+% %         slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_peaks_shank{nsession}(:,DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_peaks_latency(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_traveling(DOWN_index{nprobe}(Exclude_index))=[];
+% 
+%         % DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+%     end
+% end
 
 % ripples_all = rmfield(ripples_all, 'detectorinfo');
 % spindles_all = rmfield(spindles_all, 'detectorinfo');
@@ -404,6 +427,10 @@ else
     save(fullfile(analysis_folder,'behavioural_state_merged_all.mat'),'behavioural_state_merged_all')
 end
 
+%% Analyse and plot peri-ripple, peri-spindle and peri-UP activity
+
+
+
 %% UP DOWN state and ripple and spindle analysis
 clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
@@ -420,33 +447,33 @@ load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
-
-for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    UP_index=[];
-    DOWN_index=[];
-    ripples_index=[];
-
-    % get events index this session
-    for nprobe = 1:length(slow_waves_all)
-        UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
-        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-        ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
-
-        UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
-        DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
-
-        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-    end
-end
-
-
-
-for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    for nprobe = 1:2
-        shank_id(nprobe,nsession)=ceil(slow_waves_all(nprobe).xcoord{nsession}(slow_waves_all(nprobe).channel{nsession}==slow_waves_all(nprobe).best_channel{nsession})/250);
-        
-    end
-end
+% 
+% for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+%     UP_index=[];
+%     DOWN_index=[];
+%     ripples_index=[];
+% 
+%     % get events index this session
+%     for nprobe = 1:length(slow_waves_all)
+%         UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
+%         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+%         ripples_index{nprobe} = find(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index == 1);
+% 
+%         UP_DOWN_transition = slow_waves_all(nprobe).UP_ints(UP_index{nprobe},2);
+%         DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
+% 
+%         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+%     end
+% end
+% 
+% 
+% 
+% for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+%     for nprobe = 1:2
+%         shank_id(nprobe,nsession)=ceil(slow_waves_all(nprobe).xcoord{nsession}(slow_waves_all(nprobe).channel{nsession}==slow_waves_all(nprobe).best_channel{nsession})/250);
+%         
+%     end
+% end
 
 %%%%%%%%%% Probability of SWR during normalised UP duration
 time_wondows = [-0.5 0.5];
