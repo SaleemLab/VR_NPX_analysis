@@ -497,83 +497,75 @@ for nsession = 1:length(experiment_info)
       end
       clear KDE_reactivation KDE_RUN PLS
       % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
-      time_bin_size=0.02;
+          time_bin_size=0.02;
 
-      for nprobe = 1:length(ripples)
-          disp('Reactivation strength for original data')
-          options = session_info(n).probe(nprobe);
-          ripple_probe_no = options.probe_id + 1;
+          for nprobe = 1:length(ripples)
+              disp('Reactivation strength for original data')
+              options = session_info(n).probe(nprobe);
+              ripple_probe_no = options.probe_id + 1;
 
-          [PLS(ripple_probe_no) KDE_RUN(ripple_probe_no) KDE_reactivation(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
-              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-              session_clusters_RUN.track_ID_all{1},spikes_template,...
-              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
+             [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+                  session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+                  [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+                  session_clusters_RUN.track_ID_all{1},spikes_template,...
+                  [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
 
+            
 
-          if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
-          else
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
+%               bins=[];
+%               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
+%               ripples_time_edges=[];
+%               ripples_id=[];
+%               for i = 1: length(ripples(nprobe).onset)
+%                   event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
+%                   num_bins = floor(event_duration / time_bin_size);
+%                   timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
+%                   ripples_time_edges = [ripples_time_edges timebins_edges];
+%                   ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
+%               end
+% 
+%               bins(:,1)=ripples_time_edges;
+%               bins(:,2)=ripples_time_edges+time_bin_size;
+%               [strength,zscored_spike_counts] = ReactivationStrength(spikes_sleep,templates,'bins',bins);
+%               reactivation_strength(nprobe).track(ntrack).ripples_id=ripples_id;
+%               reactivation_strength(nprobe).track(ntrack).strength=strength(:,2:end);
+%               reactivation_strength(nprobe).track(ntrack).ripples_time_edges=ripples_time_edges;
+%               reactivation_strength(nprobe).track(ntrack).zscored_spike_counts=zscored_spike_counts;
+%                 
+%               strength_shuffled=[];
+%               checkpoint=0;
+%               disp('Reactivation strength for cell id shuffle')
+%               parfor nshuffle =1:1000
+%                   
+%                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
+%                   unique_cell_id = unique(spikes_sleep(:,2));
+%                   p = randperm(s,length(unique_cell_id));
+%                   cell_id_shuffled_spikes=spikes_sleep;
+% 
+%                   for iCell = 1:length(unique_cell_id)
+%                       cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
+%                   end
+% 
+%                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
+%                   strength_shuffled(nshuffle,:,:)=temp(:,2:end);
+%               end
+%               reactivation_strength(nprobe).track(ntrack).strength_shuffled=strength_shuffled;
+% 
+%               for nevent = 1:max(ripples_id)
+%                   index = reactivation_strength(nprobe).track(ntrack).ripples_id==nevent;
+% 
+%                   strength_this_event = mean(mean(reactivation_strength(nprobe).track(ntrack).strength(index,:),2));
+%                   strength_shuffled_this_event = mean(mean(strength_shuffled(:,index,:),3),2);
+%                   reactivation_strength(nprobe).track(ntrack).strength_percentile(nevent)=...
+%                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
+% 
+%               end
           end
-
-
-          %               bins=[];
-          %               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
-          %               ripples_time_edges=[];
-          %               ripples_id=[];
-          %               for i = 1: length(ripples(nprobe).onset)
-          %                   event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
-          %                   num_bins = floor(event_duration / time_bin_size);
-          %                   timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
-          %                   ripples_time_edges = [ripples_time_edges timebins_edges];
-          %                   ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
-          %               end
-          %
-          %               bins(:,1)=ripples_time_edges;
-          %               bins(:,2)=ripples_time_edges+time_bin_size;
-          %               [strength,zscored_spike_counts] = ReactivationStrength(spikes_sleep,templates,'bins',bins);
-          %               reactivation_strength(nprobe).track(ntrack).ripples_id=ripples_id;
-          %               reactivation_strength(nprobe).track(ntrack).strength=strength(:,2:end);
-          %               reactivation_strength(nprobe).track(ntrack).ripples_time_edges=ripples_time_edges;
-          %               reactivation_strength(nprobe).track(ntrack).zscored_spike_counts=zscored_spike_counts;
-          %
-          %               strength_shuffled=[];
-          %               checkpoint=0;
-          %               disp('Reactivation strength for cell id shuffle')
-          %               parfor nshuffle =1:1000
-          %
-          %                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
-          %                   unique_cell_id = unique(spikes_sleep(:,2));
-          %                   p = randperm(s,length(unique_cell_id));
-          %                   cell_id_shuffled_spikes=spikes_sleep;
-          %
-          %                   for iCell = 1:length(unique_cell_id)
-          %                       cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
-          %                   end
-          %
-          %                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
-          %                   strength_shuffled(nshuffle,:,:)=temp(:,2:end);
-          %               end
-          %               reactivation_strength(nprobe).track(ntrack).strength_shuffled=strength_shuffled;
-          %
-          %               for nevent = 1:max(ripples_id)
-          %                   index = reactivation_strength(nprobe).track(ntrack).ripples_id==nevent;
-          %
-          %                   strength_this_event = mean(mean(reactivation_strength(nprobe).track(ntrack).strength(index,:),2));
-          %                   strength_shuffled_this_event = mean(mean(strength_shuffled(:,index,:),3),2);
-          %                   reactivation_strength(nprobe).track(ntrack).strength_percentile(nevent)=...
-          %                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
-          %
-          %               end
-      end
       % end
 
       if contains(stimulus_name{n},'Masa2tracks')
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS','-v7.3')
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
       else
           save(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation','KDE_RUN','PLS','-v7.3');
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');

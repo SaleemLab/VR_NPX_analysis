@@ -1,5 +1,37 @@
 function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_template,position,speed,lap_times,track_ID,spikes_template,event_times,spike_target,options)
+% PLS_KDE_Reactivation_decoding - 1. Perform PLS regression to obtain PLS latent components that are maximised for covariance between track identity and spiking data during RUN, which can be projected to RUN data or Ripple data
+%  2. Use KDE to find probability of track reactivation during ripple based on PLS projection
+%
+% Inputs:
+%   tvec_template   - Time vector template for interpolation.
+%   position        - Position data corresponding to the time vector.
+%   speed           - Speed data corresponding to the time vector.
+%   lap_times       - Lap times for different tracks.
+%   track_ID        - Track identifiers for each lap.
+%   spikes_template - Spike data template for activity templates.
+%   event_times     - Event times for ripple events.
+%   spike_target    - Spike data for target neurons.
+%   options         - Struct containing additional options (e.g., SUBJECT, SESSION).
+%
+% Outputs:
+%   PLS             - Struct containing PLS regression results, including weights, indices, and hit rates.
+%   KDE_RUN         - Struct containing KDE analysis results during running periods, including bandwidth and AUC.
+%   KDE_reactivation- Struct containing KDE reactivation analysis results, including ripple bias and probabilities.
+%
+% Description:
+%   This function performs Partial Least Squares (PLS) regression and Kernel Density Estimation (KDE) analysis on neural data.
+%   It first interpolates the input data to create time bins, then calculates activity templates and performs PLS regression.
+%   The function also performs cross-validation and logistic regression to classify track identity based on PLS components.
+%   Additionally, it calculates KDE for ripple events and evaluates reactivation strength based on PLS projections.
+%
+% Example:
+%   [PLS, KDE_RUN, KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_template, position, speed, lap_times, track_ID, spikes_template, event_times, spike_target, options);
+%
 
+    % Initialize output variables
+PLS = struct();
+KDE_RUN = struct();
+KDE_reactivation = struct();
 
 % Define time bin edges
 time_bin_size=0.1;
@@ -58,15 +90,7 @@ coeff = (mean_ripple_activity' * n_ripples) / (mean_ripple_activity' * mean_ripp
 ripple_global_pattern = mean_ripple_activity * coeff; % Global dynamics component
 n_ripples_residuals = zscore(n_ripples - ripple_global_pattern,0,1); % Residuals
 
-
-for i = 1:size(n_ripples, 2)
-    % Linear regression: regress neuron i's activity on meanRipple
-    mdl = fitlm(mean_ripple_activity, n_ripples(:, i));
-
-    % Extract residuals
-    adjustedZscore(:, i) = zscore(mdl.Residuals.Raw);
-end
-
+% n_ripples_residuals = n_ripples;
 % n_ripples_residuals = zscore(n_ripples - mean_ripple_activity); % Residuals
 % [status,interval,index] = InIntervals(values,event_times)
 
@@ -89,7 +113,7 @@ end
 % %     scatter3(n_ripples_shuffled* weights(:, 1),n_ripples_shuffled* weights(:, 2),n_ripples_shuffled* weights(:, 3),15,'k','filled','MarkerFaceAlpha',0.1);hold on
 % 
 % end
-
+disp('Caclulate PLS during RUN')
 % Combine data and labels
 X = [n(T1_bins,:); n(T2_bins,:)];
 Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
@@ -98,11 +122,11 @@ position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
 [XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(X,Y,3); % 3 components
 [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
 
-figure
-plsScores_Track1 = X(Y == 1,:) * W;
-plsScores_Track2 = X(Y == 2,:) * W;
-scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+% figure
+% plsScores_Track1 = X(Y == 1,:) * W;
+% plsScores_Track2 = X(Y == 2,:) * W;
+% scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+% scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
 
 % Create 10-fold stratified partition
 rng(200)
@@ -454,8 +478,8 @@ sgtitle(title_text)
 % legend('Track 1', 'Track 2','Ripples','Ripple (shuffled)');
 % title('PLS-DA Separation');
 
-
-%%%%% Create 10-fold stratified partition for finding 
+disp('Find best bandwidth for KDE of PLS projection')
+%%%%% Create 10-fold partition for finding best bandwidth for KDE PLS
 rng(200)
 numFolds = 10;
 cv = cvpartition(Y, 'KFold', numFolds);
@@ -464,7 +488,7 @@ cv = cvpartition(Y, 'KFold', numFolds);
 Bandwith_list = 0.1:0.1:2;
 track_separation=[];
 KDE_RUN = [];
-title_text = sprintf('%s %s PLS components KDE RUN ',options.SUBJECT,options.SESSION);
+% title_text = sprintf('%s %s PLS components KDE RUN ',options.SUBJECT,options.SESSION);
 
 for i = 1:20
     pdf_T1_CV=[];
@@ -581,13 +605,15 @@ end
 [~,index] = max(mean_AUC);% Bandwith that leads to maximum separation between tracks
 Bandwidth = Bandwith_list(index);
 
+
+% n_ripples_residuals = n_ripples;
 %%% Reactivation analysis based on KDE of PLS projection to ripple data
 [pdf_T1] = mvksdensity( X(Y == 1,:) * W,n_ripples_residuals * W, 'Bandwidth',Bandwidth); % Cross-validated bandwidth
 [pdf_T2] = mvksdensity( X(Y == 2,:) * W,n_ripples_residuals * W, 'Bandwidth', Bandwidth);
 
 pdf_T1_shuffled = zeros(1000,size(n_ripples_residuals,1));
 pdf_T2_shuffled = zeros(1000,size(n_ripples_residuals,1));
-
+disp('Caclulate Reactivation based on KDE of PLS projection to ripple data')
 % tic
 parfor nshuffle = 1:1000
     tic
@@ -604,7 +630,7 @@ KDE_bias_shuffled_event=[];
 KDE_bias_event = [];
 KDE_bias = pdf_T1./(pdf_T1+pdf_T2);
 KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
-figure
+
 count=0;
 for nEvent = 1:max(ripples_id)
     count = count + 1;
@@ -651,7 +677,7 @@ KDE_reactivation.ripple_T2_probability_shuffled = pdf_T1_shuffled;
 %%%%% Visualisation of Peak bias distribution
 nfigure = nfigure+ 1;
 fig(nfigure) = figure;
-fig(nfigure).Name=sprintf('KDE peak bias distribution %s',region_name{options.probe_hemisphere});
+fig(nfigure).Name=sprintf('KDE peak bias distribution %s ripples',region_name{options.probe_hemisphere});
 
 subplot(2,2,1)
 histogram(KDE_bias_T1_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
@@ -673,7 +699,7 @@ fontsize(gcf,12,"points")
 nfigure = nfigure+ 1;
 fig(nfigure) = figure;
 fig(nfigure).Position = [279,55,1800,933];
-fig(nfigure).Position = [279,55,1800,933];
+fig(nfigure).Name=sprintf('T1 events KDE bias %s ripples',region_name{options.probe_hemisphere});
 count = 0
 for nEvent = find(KDE_T1_event_pvalue >=0.95)
     count = count + 1;
@@ -693,18 +719,19 @@ for nEvent = find(KDE_T1_event_pvalue >=0.95)
         set(gca,"TickDir","out",'box', 'off','Color','none')
     end
 end
-fontsize(gcf,12,"points")
+fontsize(gcf,10,"points")
 % Add a common x-label and y-label
 % Use 'Position' to adjust placement
-han = axes(fig, 'Visible', 'off'); % Create invisible axes
+han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
 han.XLabel.Visible = 'on'; % Turn on visibility for x-label
 han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-xlabel(han, 'Time');
+xlabel(han, 'Time (s)');
 ylabel(han, 'T1/T2 bias');
 
 
-fig = figure
-fig.Position = [279,55,1800,933];
+fig(nfigure) = figure
+fig(nfigure).Position = [279,55,1800,933];
+fig(nfigure).Name=sprintf('T2 events KDE bias %s ripples',region_name{options.probe_hemisphere});
 count = 0
 for nEvent = find(KDE_T2_event_pvalue >=0.95)
     count = count + 1;
@@ -724,17 +751,17 @@ for nEvent = find(KDE_T2_event_pvalue >=0.95)
         set(gca,"TickDir","out",'box', 'off','Color','none')
     end
 end
-fontsize(gcf,12,"points")
+fontsize(gcf,10,"points")
 % Add a common x-label and y-label
 % Use 'Position' to adjust placement
-han = axes(fig, 'Visible', 'off'); % Create invisible axes
+han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
 han.XLabel.Visible = 'on'; % Turn on visibility for x-label
 han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-xlabel(han, 'Time');
+xlabel(han, 'Time (s)');
 ylabel(han, 'T1/T2 bias');
 
 
-
+disp('PLS KDE decoding finished')
 % %%%%%% Visualising single event
 % figure;
 % scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
