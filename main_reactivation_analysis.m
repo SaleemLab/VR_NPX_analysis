@@ -304,25 +304,6 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
-%% Log odds Reactivation and reactivation strength
-
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-% option = 'bilateral';
-% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-
-clear all
-SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% Famililar 
-% experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
-Stimulus_type = 'Sleep';
-% [1 2 3 4 9 10 12 14]
-% Stimulus_types_all = {'RUN'};
-% Stimulus_types_all = {'RUN','POST'};
-
 
 for nsession = 1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
