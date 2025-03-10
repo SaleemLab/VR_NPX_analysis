@@ -270,6 +270,61 @@ for nsession = 6:length(experiment_info)
         end
         toc
         
+        position_bin_size = 5;
+        region_name = {'Left','Right'};
+        nfigure = 1;
+
+        for mprobe = 1:length(decoded_ripple_events)
+            for track_id = 1:2
+                title_text = sprintf('%s %s %s ripple Track %s reactivation',options.SUBJECT,options.SESSION,region_name{mprobe},region_name{track_id});
+
+                fig(nfigure)=figure;
+                fig(nfigure).Name=title_text;
+                fig(nfigure).Position = [114 90 1800 900]
+                
+                peak_percentile = [decoded_ripple_events(mprobe).track(1).replay_events(:).peak_percentile; decoded_ripple_events(mprobe).track(2).replay_events(:).peak_percentile];
+                s = RandStream('mrg32k3a','Seed',track_id+mprobe*10); % Set random seed for resampling
+
+                if track_id == 1
+                    sig_event_id = find(peak_percentile(1,:)>0.95 & peak_percentile(2,:)<0.95);
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                else
+                    sig_event_id = find(peak_percentile(2,:)>0.95 & peak_percentile(1,:)<0.95);
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                end
+
+                for nevent = 1:length(sampled_event_id)
+                    subplot(5,8,nevent)
+                    event_id = sampled_event_id(nevent);
+
+                    imagesc([decoded_ripple_events(1).track(1).replay_events(event_id).replay; decoded_ripple_events(1).track(2).replay_events(event_id).replay])
+                    colormap(flipud(gray))
+                    clim([0.001 max(max([decoded_ripple_events(1).track(1).replay_events(event_id).replay decoded_ripple_events(1).track(2).replay_events(event_id).replay]))/2])
+                    colorbar
+                    xline(25.5,'r')
+                    xline(30.5,'r')
+                    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
+                    yline(140/position_bin_size+0.5,'LineWidth',1,'Color','k','DisplayName','Track 2')
+                    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
+                    event_time_edges = decoded_ripple_events(1).track(1).replay_events(event_id).timebins_edges ;
+
+                    xticks(linspace(1,length(event_time_edges),6))
+                    xticklabels(linspace(event_time_edges(1),event_time_edges(end),6))
+                end
+
+                nfigure = nfigure + 1;
+            end
+        end
+
+        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+        else
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})),[])
+        end
+
+
         if contains(stimulus_name{n},'Masa2tracks')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events','-v7.3');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events_shuffled','-v7.3');
