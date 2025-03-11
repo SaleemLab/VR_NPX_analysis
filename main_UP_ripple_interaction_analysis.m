@@ -540,8 +540,8 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
-% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
@@ -640,15 +640,19 @@ for nprobe = 1:2
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
 
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
-        
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
 
@@ -727,20 +731,24 @@ for nprobe = 1:2
 
     for nsession = 1:length(sessions_to_process)
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-        
+
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
@@ -806,38 +814,9 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
 probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'),'probability_normalised');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'),'probability_normalised');
 % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
-probability(nprobe).R_ripples_DOWN_shuffled = tempDOWN;
-probability(nprobe).R_ripples_UP_shuffled = tempUP;
-probability(nprobe).R_ripples_DOWN_shuffled = tempDOWN;
-probability(nprobe).R_ripples_UP_shuffled = tempUP;
-
-normalised_timebin = linspace(0,1,20);
-
-figure
-subplot(2,2,1)
-plot(normalised_timebin,probability_normalised(1).L_ripples_UP_bootstrap','Color',colour_lines(1,:))
-hold on
-plot(normalised_timebin,probability_normalised(1).L_ripples_UP_shuffled','k')
-ylim([0 0.045])
-title('Left UP and Left ripples')
-
-subplot(2,2,2)
-plot(normalised_timebin,probability_normalised(2).L_ripples_UP_bootstrap')
-ylim([0.01 0.045])
-title('Right UP and Left ripples')
-
-subplot(2,2,3)
-plot(normalised_timebin,probability_normalised(1).R_ripples_UP_bootstrap')
-ylim([0.01 0.045])
-title('Left UP and Right ripples')
-
-subplot(2,2,4)
-plot(normalised_timebin,probability_normalised(2).R_ripples_UP_bootstrap')
-ylim([0.01 0.045])
-title('Right UP and Right ripples')
 
 %% Probability of SWR relative to U-D and D-U transition
 
@@ -869,20 +848,24 @@ for nprobe = 1:2
     for nsession = 1:length(sessions_to_process)
         
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
 
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
@@ -962,20 +945,24 @@ for nprobe = 1:2
 
     for nsession = 1:length(sessions_to_process)
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-        
+
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
@@ -1042,7 +1029,7 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
 % probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'),'probability');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'),'probability');
 
 %% Plotting
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
