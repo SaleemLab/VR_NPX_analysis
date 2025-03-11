@@ -1,4 +1,4 @@
-function probabilities = calculate_event_probability(event_A, event_B, time_windows,shuffle_options)
+function [probabilities,binnedArray] = calculate_event_probability(event_A, event_B, time_windows,shuffle_options)
 % Calculate the probability distribution of observing event A relative to event B for a range of time windows.
 %
 % Parameters:
@@ -11,7 +11,7 @@ function probabilities = calculate_event_probability(event_A, event_B, time_wind
 
 
 probabilities = zeros(1, length(time_windows) - 1);
-
+binnedArray = zeros(size(event_B,1), length(time_windows)-1);
 for i = 1:length(event_B)
     b = event_B(i);
 
@@ -28,6 +28,7 @@ for i = 1:length(event_B)
     % Check if there are any event A timestamps within the current time window of event B
     for j = 1:length(bins)-1
         probabilities(j) = probabilities(j) + sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+        binnedArray(i,j) = sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
     end
 end
 

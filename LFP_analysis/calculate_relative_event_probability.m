@@ -1,4 +1,4 @@
-function [probabilities,event_index,normalized_duration] = calculate_relative_event_probability(event_A, event_B,num_bins,shuffle_options)
+function [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(event_A, event_B,num_bins,shuffle_options)
 % Calculate the probability distribution of observing event B relative to event A for a range of normalized time bins.
 %
 % Parameters:
@@ -15,6 +15,7 @@ function [probabilities,event_index,normalized_duration] = calculate_relative_ev
 
 % Initialize the probabilities array
 probabilities = zeros(1, num_bins);
+binnedArray = zeros(size(event_A,1), num_bins);
 outside_count = 0;
 event_index = nan(1,length(event_B));
 normalized_duration = nan(1,length(event_B));
@@ -29,8 +30,8 @@ for i = 1:size(event_A, 1)
     relative_times = (event_B - onset_A) / duration_A;
 
     % Count occurrences of event_B within each bin
-    if shuffle_options ==1
-        s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+    if shuffle_options ~=0
+        s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
         bins_to_shift = datasample(s,1:num_bins,1);
         bins= circshift(1:num_bins,bins_to_shift);
          
@@ -42,6 +43,8 @@ for i = 1:size(event_A, 1)
         bin_start = (n - 1) / num_bins;
         bin_end = n / num_bins;
         probabilities(j) = probabilities(j) + sum(relative_times >= bin_start & relative_times < bin_end);
+
+        binnedArray(i,j) = sum(relative_times >= bin_start & relative_times < bin_end);
     end
 
     % Count occurrences of event_B outside of event_A
