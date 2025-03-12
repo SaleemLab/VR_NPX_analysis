@@ -52,6 +52,9 @@ for nprobe = 1:2
     % scatter(chan_config.Ks_xcoord,chan_config.Ks_ycoord)
     probe_no = session_info.probe(nprobe).probe_id + 1;
 
+    for nchannel = 1:length(PSD{nprobe})
+        power{nprobe}(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
+    end
 
     for nshank = 1:4
         % channel_id = 48;%40
@@ -67,7 +70,7 @@ for nprobe = 1:2
         % LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
         LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(index).ycoord;
         LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(index).xcoord;
-        LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(index,:);
+        % LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(index,:);
         % LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
     end
     if nprobe ==2
