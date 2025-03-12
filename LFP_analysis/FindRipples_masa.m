@@ -336,8 +336,8 @@ if strcmp(show,'on')
         end
 
     	figure('Name','Ripple detection');
-        ripple_first = round(size(ripples,1)/3)-1;
-        ripple_last = round(size(ripples,1)/3)+4;
+        ripple_first = round(size(ripples,1)/2)-11;
+        ripple_last = round(size(ripples,1)/2)-5;
 
         if ripple_last > size(ripples,1)
             ripple_last = size(ripples,1);
