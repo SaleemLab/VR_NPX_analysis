@@ -60,6 +60,10 @@ for nprobe = 1:2
     %
     % % temp_xcoord = [PSD{nprobe}.xcoord];
     %
+    for nchannel = 1:length(ycoord_temp)
+        power{nprobe}(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
+    end
+
     figure;plot( power{nprobe}(IB,6)*1000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
@@ -67,7 +71,7 @@ for nprobe = 1:2
 
     if nprobe == 2
 
-    [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
+        [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
     end
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
@@ -106,13 +110,15 @@ for nprobe = 1:2
             LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
             LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
             LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
 
 
-            LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-            LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-            LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-            LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            % LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+            % LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            % LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+            % LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+            % LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            % LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
             %
         end
         % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
@@ -280,7 +286,7 @@ clear lap_times
 
 if contains(stimulus_name,'Masa2tracks')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'ripples')
-    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
+    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
 else
     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')

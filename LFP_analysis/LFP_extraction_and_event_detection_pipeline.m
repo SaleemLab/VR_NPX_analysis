@@ -103,7 +103,12 @@ for nprobe = 1:length(session_info.probe)
         region_name = all_fields{nregion};
         [region_channels,channels_temp] = determine_region_channels(best_channels{nprobe},options,'region',region_name,'group','by shank','clusters',clusters(nprobe));
         %                 noise_channel{options.probe_hemisphere} = channels_temp;
-
+        if contains(all_fields{nregion},'HPC')
+            region_channels(chan_config.Ks_ycoord(region_channels) > mean(chan_config.Ks_ycoord))=[];
+        elseif contains(all_fields{nregion},'V1')
+            region_channels(chan_config.Ks_ycoord(region_channels) < mean(chan_config.Ks_ycoord))=[];
+        end
+        
         if contains(all_fields{nregion},'sparse') % want sparsely sampled channels
             selected_channels = [selected_channels region_channels'];
             channel_regions = [channel_regions nregion*ones(1,length(region_channels))];
