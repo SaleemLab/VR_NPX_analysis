@@ -46,6 +46,8 @@ end
 % for nprobe = 1:length(session_info.probe)
 for nprobe = 1:2
     options = session_info.probe(nprobe);
+
+    [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_config(options,1);
     probe_no = session_info.probe(nprobe).probe_id + 1;
 
 
