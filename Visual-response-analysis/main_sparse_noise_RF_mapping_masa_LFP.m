@@ -25,7 +25,7 @@ Stimulus_type = 'SparseNoise';
 initMap = [];
 probe_hemisphere_text = {'Left','Right'};
 % experiment_info = experiment_info(1)
-for nsession =1:length(experiment_info)
+for nsession =5:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -112,9 +112,14 @@ nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_4','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise','session_info.mat'))
+
+% load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'receptiveFields_LFP.mat'),'RF')
+% load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'session_info.mat'))
 hemisphere_texts = {'Left','Right'}
 for nprobe = 1:2
+    options = session_info.probe(nprobe);
     fig = figure
     fig.Position = [300 150 1000 620]
     fig.Name = sprintf('%s %s Averaged %s V1 Receptive field',options.SUBJECT,options.SESSION,hemisphere_texts{nprobe});
@@ -122,7 +127,7 @@ for nprobe = 1:2
     RF_map = RF(nprobe).peak_map;
     % RF(nprobe)
 
-    V1_channel_ids=RF(nprobe).V1_channel_ids;
+    % V1_channel_ids=find(RF(nprobe).V1_channel_ids==1);
     % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
 
 
@@ -137,7 +142,7 @@ for nprobe = 1:2
         thisMap_s = imresize(squeeze(nanmean(RF_map(:,:,V1_channel_ids),3)),scal_f);
         thisMap_s = imgaussfilt(thisMap_s,sigma);
         %     thisMap_s = zscore(thisMap_s,0,'all');
-        imagesc(flip(thisMap_s))
+        imagesc(thisMap_s)
 
 
         xlabel('Azimuth')
@@ -158,11 +163,12 @@ clear all
 SUBJECTS = {'M24065'};
 Dates = {'20250126'};
 nsession = 1;
+nstimuli = 2;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'session_info.mat'))
 hemisphere_texts = {'Left','Right'}
 num_groups = 30;
 for nprobe = 1:2
@@ -197,7 +203,7 @@ for nprobe = 1:2
         thisMap_s = imresize(squeeze(nanmean(RF_map(:,:,V1_channel_ids),3)),scal_f);
         thisMap_s = imgaussfilt(thisMap_s,sigma);
         %     thisMap_s = zscore(thisMap_s,0,'all');
-        imagesc(flip(thisMap_s))
+        imagesc(thisMap_s)
 
 
         xlabel('Azimuth')
@@ -260,7 +266,7 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
 
     thisMap_s = imresize(squeeze(nanmean(RF_map(V1_cell_id,:,:))),scal_f);
     thisMap_s = imgaussfilt(thisMap_s,sigma);
-    imagesc(flip(thisMap_s/max(max(thisMap_s))))
+    imagesc(thisMap_s/max(max(thisMap_s)))
     xlabel('Azimuth')
     ylabel('Elevation')
     xticks(linspace(1,size(thisMap_s,2),13))

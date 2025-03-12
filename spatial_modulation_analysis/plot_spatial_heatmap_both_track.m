@@ -223,7 +223,7 @@ for iCluster = 1:no_cluster
     thisMap_s = imresize(session_clusters.receptive_field{find(session_clusters.cluster_id == unit_id(iCluster))},scal_f);
     thisMap_s = imgaussfilt(thisMap_s,sigma);
     %     thisMap_s = zscore(thisMap_s,0,'all');
-    imagesc(flip(thisMap_s))
+    imagesc(thisMap_s)
 
     % clim([min([average_map_track2 average_map_track1]) max([average_map_track2 average_map_track1])])
     colormap(flipud(gray))
