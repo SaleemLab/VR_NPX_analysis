@@ -52,13 +52,23 @@ for nprobe = 1:2
 
     % [C,IA,IB]= intersect(LFP(nprobe).average_V1_channel,[PSD{nprobe}.channel]);
     [IA,IB]= ismember([PSD{nprobe}.channel],LFP(nprobe).average_V1_channel);
-    
+
     channels_selected = [PSD{nprobe}.channel];
     ycoord_temp = [PSD{nprobe}.ycoord];
     channels_selected= channels_selected(ycoord_temp < 3700)
+    [C,IA,IB]= intersect(channels_selected,[PSD{nprobe}.channel]);
+    %
+    % % temp_xcoord = [PSD{nprobe}.xcoord];
+    %
+    figure;plot( power{nprobe}(IB,6)*1000)
+    hold on;plot([PSD{nprobe}(IB').xcoord])
+    hold on;plot([PSD{nprobe}(IB').ycoord])
+    ylim([0 6000])
+
+    if nprobe == 2
 
     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
-
+    end
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
     %%%%%%%%%%%%%%%%%%
@@ -86,31 +96,25 @@ for nprobe = 1:2
         % best_channel = 1;
         % 
         % 
-        [C,IA,IB]= intersect(channels_selected,[PSD{nprobe}.channel]);
+
         % 
-        % % temp_xcoord = [PSD{nprobe}.xcoord];
-        % 
-        figure;plot( power{nprobe}(IB,6)*1000)
-        hold on;plot([PSD{nprobe}(IB').xcoord])
-        hold on;plot([PSD{nprobe}(IB').ycoord])
-        ylim([0 6000])
-        % 
-        channel_id = 40;
-        nshank = 2;
-        LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
-        LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-        LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-        LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-        LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+        if nprobe ==2
+            channel_id = 48;%40
+            nshank = 1;%2
+            LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
+            LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+            LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+            LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
 
 
-        LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-        LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-        LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-        LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-        LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-        % 
-
+            LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+            LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+            LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+            LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            %
+        end
         % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
         tvec = LFP(probe_no).tvec;
         if contains(stimulus_name,'Sleep')
@@ -131,8 +135,8 @@ for nprobe = 1:2
         end
         [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-        [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(48,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+        % [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(48,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+        %     'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
     end
 
 
