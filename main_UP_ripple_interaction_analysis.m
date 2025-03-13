@@ -540,8 +540,8 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
-load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
@@ -1032,6 +1032,8 @@ end
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'),'probability');
 
 %% Plotting
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 
@@ -1044,13 +1046,13 @@ num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of ripples during left V1 normalised UP-DOWN duration','Probability of ripples during right V1 normalised UP-DOWN duration'};
 
 colour_lines = [215,25,28;44,123,182]/256;
 for nprobe = 1:2
     fig(nprobe)=figure;
     fig(nprobe).Position = [982 50 700 950];
     fig(nprobe).Name = probe_hemisphere_texts{nprobe};
-    probe_hemisphere_texts = {'Probability of ripples during left V1 normalised UP-DOWN duration','Probability of ripples during right V1 normalised UP-DOWN duration'};
 
     all_ripple_no = probability(nprobe).L_ripple_no;
 
@@ -1485,15 +1487,6 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
-
-
-
-
-
-
-
-
-
 
 %%%%%%%%%% xcorr between UP and ripples
 
