@@ -60,6 +60,13 @@ for i = 1:size(event_A, 1)
     end
 end
 
+temp = event_index;
+[~,index]=find(~isnan(temp));
+
+event_index=[];
+event_index(:,1) = index; % Record event_A index
+event_index(:,2) = temp(index); % Record event_A index
+
 % Normalize probabilities by the number of event_B
 probabilities = probabilities / size(event_B, 1);
 end

@@ -36,7 +36,7 @@ clusters = clusters_ks4;
 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
 
 % for nprobe = 1:length(session_info.probe)
-for nprobe = 1
+for nprobe = 1:2
     options = session_info.probe(nprobe);
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
@@ -54,7 +54,7 @@ for nprobe = 1
 
     % temp_xcoord = [PSD{nprobe}.xcoord];
 
-    figure;plot( power{nprobe}(IB,7)*100000)
+    figure;plot( power{nprobe}(IB,7)*10000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
@@ -74,6 +74,7 @@ for nprobe = 1
     %                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
     %%%%% Detect V1 populational bursting events (Candidate events)
+    
     metric_param =[];
     %                  metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
 
@@ -85,13 +86,23 @@ for nprobe = 1
         V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
     end
 
+    % if length(V1_clusters(probe_no).cluster_id)>200
+    %     metric_param =create_cluster_selection_params('sorting_option','masa');
+    %     if options.probe_hemisphere==1
+    %         metric_param.region = @(x) contains(x,'V1_L');
+    %         V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
+    %     elseif options.probe_hemisphere==2
+    %         metric_param.region = @(x) contains(x,'V1_R');
+    %         V1_clusters(probe_no) = select_clusters(clusters(nprobe),metric_param);
+    %     end
+    % end
     %%%%%% Detect V1 spindle events and slow waves (combined SWS)
     if ~isempty(behavioural_state_merged.SWS)
 
         if nprobe == 1
-            best_channel = 1;
+            
         elseif nprobe == 2
-
+            best_channel = 2;
 
         end
         temp_V1_channels(nprobe).deltaspikecorr = [];
@@ -105,8 +116,8 @@ for nprobe = 1
         temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
 
 
-        channel_id = 29;
-        nshank = 3;
+        channel_id = 52;
+        nshank = 2;
         LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
         LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
         LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
@@ -126,7 +137,8 @@ for nprobe = 1
 
         tvec = LFP(probe_no).tvec;
         temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
-        
+        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(channel_id,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
+                
         Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
         spindles_temp = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
@@ -234,7 +246,7 @@ for nprobe = 1
 
 end
 
-for nprobe = 1
+for nprobe =1
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
@@ -305,7 +317,7 @@ for nprobe = 1
     %     ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
     % end
 end
-spindles1(1) = spindles(1);%backup
+spindles1(2) = spindles(1);%backup
 spindles = spindles1;
 
 clear lap_times

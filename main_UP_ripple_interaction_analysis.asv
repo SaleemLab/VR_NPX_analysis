@@ -123,7 +123,22 @@ for nsession =1:length(experiment_info)
     slow_waves_markov = rmfield(slow_waves_markov, 'beta_t');
     slow_waves_markov = rmfield(slow_waves_markov, 'xi_t');
 
-
+    for nprobe = 1:2
+        slow_waves(nprobe).power = [];
+        slow_waves(nprobe).frequency = [];
+        slow_waves(nprobe).PSD_slope = [];
+        slow_waves(nprobe).timebin_edges = [];
+        slow_waves(nprobe).DOWN_PSD_slope = [];
+        slow_waves(nprobe).UP_PSD_slope = [];
+        slow_waves(nprobe).DOWN_delta_power = [];
+        slow_waves(nprobe).DOWN_peaks_zscore = [];
+        slow_waves(nprobe).DOWN_peaktimes = [];
+        slow_waves(nprobe).DOWN_peaks_latency = [];
+        slow_waves(nprobe).DOWN_traveling = [];
+        slow_waves(nprobe).probe_hemisphere = [];
+        slow_waves(nprobe).shank_id = [];
+        % slow_waves.power = [];
+    end
     
     % From cell structure back to spike times and spike id
     session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
@@ -540,8 +555,8 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
-load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
@@ -640,15 +655,19 @@ for nprobe = 1:2
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
 
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
-        
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
 
@@ -656,7 +675,8 @@ for nprobe = 1:2
         % Ripple probability during normalised UP duration
         [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_peaktimes,num_bins,0);
         binnedArrayDOWN=[binnedArrayDOWN; temp];
-
+        
+        ripple_event_index_all = ;
 
         [probability(nprobe).L_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_peaktimes,num_bins,0);
         binnedArrayUP=[binnedArrayUP; temp];
@@ -669,6 +689,7 @@ for nprobe = 1:2
 
     probability(nprobe).L_ripples_DOWN = binnedArrayDOWN;
     probability(nprobe).L_ripples_UP = binnedArrayUP;
+    probability(nprobe).L_ripples_UP = slow_waves_all(nprobe).DOWN_ints(DOWN_index_all,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index_all,1);
     
     all_ripple_no = sum(ripples_all(1).SWS_index == 1);
     probability(nprobe).L_ripple_no = all_ripple_no;
@@ -727,20 +748,24 @@ for nprobe = 1:2
 
     for nsession = 1:length(sessions_to_process)
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-        
+
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
@@ -840,20 +865,24 @@ for nprobe = 1:2
     for nsession = 1:length(sessions_to_process)
         
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
 
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
@@ -933,20 +962,24 @@ for nprobe = 1:2
 
     for nsession = 1:length(sessions_to_process)
         % Find UP followed by a DOWN 
-        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
         UP_index = UP_index(UP_duration<=duration_threshold);
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-        
+
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
         DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
         
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
@@ -1016,6 +1049,8 @@ end
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'),'probability');
 
 %% Plotting
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 
@@ -1028,13 +1063,13 @@ num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of ripples during left V1 normalised UP-DOWN duration','Probability of ripples during right V1 normalised UP-DOWN duration'};
 
 colour_lines = [215,25,28;44,123,182]/256;
 for nprobe = 1:2
     fig(nprobe)=figure;
     fig(nprobe).Position = [982 50 700 950];
     fig(nprobe).Name = probe_hemisphere_texts{nprobe};
-    probe_hemisphere_texts = {'Probability of ripples during left V1 normalised UP-DOWN duration','Probability of ripples during right V1 normalised UP-DOWN duration'};
 
     all_ripple_no = probability(nprobe).L_ripple_no;
 
@@ -1470,20 +1505,252 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
-
-
-
-
-
-
-
-
-
 %%%%%%%%%% xcorr between UP and ripples
 
+time_wondows = [-0.5 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+probability=[];
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:14;
+
+for nprobe = 1:2
+    %%%%%%%%%%%%%%% L ripples
+    UP_index_all = [];
+    DOWN_index_all = [];
+
+    binnedArrayUP = [];
+    binnedArrayDOWN = [];
+    binnedArrayUPShuffled = [];
+    binnedArrayDOWNShuffled = [];
+
+    for nsession = 1:length(sessions_to_process)
+        
+        % Find UP followed by a DOWN 
+        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
+        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_index = UP_index(UP_duration<=duration_threshold);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+
+        % Find DOWN index
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
+        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
+        DOWN_index = DOWN_index(ib);
+        DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        UP_index_all = [UP_index_all; UP_index];
+
+        ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
+        ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
 
 
+        % Ripple probability during normalised UP duration
+        [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_peaktimes,num_bins,0);
+        binnedArrayDOWN=[binnedArrayDOWN; temp];
 
+
+        [probability(nprobe).L_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_peaktimes,num_bins,0);
+        binnedArrayUP=[binnedArrayUP; temp];
+        
+        ripples_all(1).peak_zscore(ripples_index)
+        
+        (event_index)
+        
+    end
+end
+%% distribution of DOWN duration with high vs low ripple
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+hemisphere_text = {'L','R'}
+time_index = 6:45;
+time_index = reshape(time_index, 5, [])';
+time_edges = -0.5:0.02:0.5;
+time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+% time_windows = reshape(time_windows, 5, [])';
+nfigure = 1;
+for nprobe = 1:2
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s DOWN duration with and without L ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+
+        histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).L_ripples_DOWN(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).L_ripples_DOWN(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with L ripples','without L ripples','box','off')
+
+    nfigure = nfigure+1;
+    time_index = 6:45;
+    time_index = reshape(time_index, 5, [])';
+    time_edges = -0.5:0.02:0.5;
+    time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+    % time_windows = reshape(time_windows, 5, [])';
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s DOWN duration with and without R ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+        histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).R_ripples_DOWN(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).R_ripples_DOWN(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with R ripples','without R ripples','box','off')
+    nfigure = nfigure+1;
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+%% distribution of DOWN duration with and without ripples
+hemisphere_text = {'L','R'}
+time_index = 6:45;
+time_index = reshape(time_index, 5, [])';
+time_edges = -0.5:0.02:0.5;
+time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+% time_windows = reshape(time_windows, 5, [])';
+nfigure = 1;
+for nprobe = 1:2
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s DOWN duration with and without L ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+        histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).L_ripples_DOWN(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).L_ripples_DOWN(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with L ripples','without L ripples','box','off')
+
+    nfigure = nfigure+1;
+    time_index = 6:45;
+    time_index = reshape(time_index, 5, [])';
+    time_edges = -0.5:0.02:0.5;
+    time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+    % time_windows = reshape(time_windows, 5, [])';
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s DOWN duration with and without R ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+        histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).R_ripples_DOWN(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).DOWN_duration(find(sum(probability(nprobe).R_ripples_DOWN(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with R ripples','without R ripples','box','off')
+    nfigure = nfigure+1;
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+%% distribution of UP duration with and without ripples
+hemisphere_text = {'L','R'}
+time_index = 6:45;
+time_index = reshape(time_index, 5, [])';
+time_edges = -0.5:0.02:0.5;
+time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+% time_windows = reshape(time_windows, 5, [])';
+nfigure = 1;
+for nprobe = 1:2
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s UP duration with and without L ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+        histogram(probability(nprobe).UP_duration(find(sum(probability(nprobe).L_ripples_UP(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).UP_duration(find(sum(probability(nprobe).L_ripples_UP(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with L ripples','without L ripples','box','off')
+
+    nfigure = nfigure+1;
+    time_index = 6:45;
+    time_index = reshape(time_index, 5, [])';
+    time_edges = -0.5:0.02:0.5;
+    time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+    % time_windows = reshape(time_windows, 5, [])';
+    fig(nfigure)=figure;
+    fig(nfigure).Name=sprintf('%s UP duration with and without R ripples',hemisphere_text{nprobe});
+    fig(nfigure).Position = [680 150 1200 800]
+    for n = 1:size(time_index,1)
+        subplot(2,4,n)
+        histogram(probability(nprobe).UP_duration(find(sum(probability(nprobe).R_ripples_UP(:,time_index(n,:)),2)>0)),0:0.01:0.4,'Normalization','probability');
+        hold on;histogram(probability(nprobe).UP_duration(find(sum(probability(nprobe).R_ripples_UP(:,1:26),2)==0)),0:0.01:0.4,'Normalization','probability')
+        ylim([0 0.1])
+        title(sprintf('Ripple from %.2f to %.2f',time_windows(time_index(n,1)),time_windows(time_index(n,end))))
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlabel('DOWN duration (s)');
+        ylabel('probability');
+
+        % han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        % han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        % han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        % xlabel(han, 'Time (s)');
+        % ylabel(han, 'T1/T2 bias');
+    end
+    legend('with R ripples','without R ripples','box','off')
+    nfigure = nfigure+1;
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 
 %%
