@@ -262,7 +262,8 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([18 19 34 35 44 45 58 59 60 71]);
 Stimulus_type = 'Sleep';
 
 for nsession =1:length(experiment_info)

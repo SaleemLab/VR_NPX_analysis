@@ -17,8 +17,9 @@ function [probabilities,event_index,normalized_duration,binnedArray] = calculate
 probabilities = zeros(1, num_bins);
 binnedArray = zeros(size(event_A,1), num_bins);
 outside_count = 0;
-event_index = nan(1,length(event_B));
+event_index = [];
 normalized_duration = nan(1,length(event_B));
+count = 1;
 
 % Iterate through each event_A
 for i = 1:size(event_A, 1)
@@ -38,34 +39,49 @@ for i = 1:size(event_A, 1)
     else
         bins = 1:num_bins;
     end
+
+
     for j = 1:num_bins
         n = bins(j);
         bin_start = (n - 1) / num_bins;
         bin_end = n / num_bins;
-        probabilities(j) = probabilities(j) + sum(relative_times >= bin_start & relative_times < bin_end);
+        probabilities(j) = probabilities(j) + sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
 
-        binnedArray(i,j) = sum(relative_times >= bin_start & relative_times < bin_end);
+        binnedArray(i,j) =sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
+
+        if sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end)>0
+            index = find(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
+            for k = 1:length(index)
+                event_index(count,1) = index(k);
+                event_index(count,2) = i;
+                event_index(count,3) = bin_start+(bin_start-bin_end)/2;
+                count = count +1;
+            end
+        end
+
     end
 
     % Count occurrences of event_B outside of event_A
     % outside_count = outside_count + sum(relative_times < 0 | relative_times > 1);
 
 
-    % Record event_B info
-    for k = 1:length(event_B)
-        if relative_times(k) >= 0 && relative_times(k) <= 1
-            event_index(k) = i; % Record event_A index
-            normalized_duration(k) = relative_times(k); % Record normalized time
-        end
-    end
+
+
+    % % Record event_B info
+    % for k = 1:length(event_B)
+    %     if relative_times(k) >= 0 && relative_times(k) <= 1
+    %         event_index(k) = i; % Record event_A index
+    %         normalized_duration(k) = relative_times(k); % Record normalized time
+    %     end
+    % end
 end
 
-temp = event_index;
-[~,index]=find(~isnan(temp));
-
-event_index=[];
-event_index(:,1) = index; % Record event_A index
-event_index(:,2) = temp(index); % Record event_A index
+% temp = event_index;
+% [~,index]=find(~isnan(temp));
+% 
+% event_index=[];
+% event_index(:,1) = index; % Record event_A index
+% event_index(:,2) = temp(index); % Record event_A index
 
 % Normalize probabilities by the number of event_B
 probabilities = probabilities / size(event_B, 1);
