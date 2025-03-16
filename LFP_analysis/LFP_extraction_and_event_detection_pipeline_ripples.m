@@ -43,8 +43,10 @@ clusters = clusters_ks4;
 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
 end
 
+
+clear ripples_temp
 % for nprobe = 1:length(session_info.probe)
-for nprobe = 1:2
+for nprobe =1:2
     options = session_info.probe(nprobe);
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
@@ -56,7 +58,7 @@ for nprobe = 1:2
 
     channels_selected = [PSD{nprobe}.channel];
     ycoord_temp = [PSD{nprobe}.ycoord];
-    channels_selected= channels_selected(ycoord_temp < 3700)
+    channels_selected= channels_selected(ycoord_temp < mean(ycoord_temp))
     [C,IA,IB]= intersect(channels_selected,[PSD{nprobe}.channel]);
     %
     % % temp_xcoord = [PSD{nprobe}.xcoord];
@@ -65,10 +67,10 @@ for nprobe = 1:2
         power{nprobe}(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
     end
 
-    % figure;plot( power{nprobe}(IB,6)*1000)
-    % hold on;plot([PSD{nprobe}(IB').xcoord])
-    % hold on;plot([PSD{nprobe}(IB').ycoord])
-    % ylim([0 6000])
+    figure;plot( power{nprobe}(IB,6)*1000)
+    hold on;plot([PSD{nprobe}(IB').xcoord])
+    hold on;plot([PSD{nprobe}(IB').ycoord])
+    ylim([0 6000])
 
     % if nprobe == 2
     % 
@@ -140,7 +142,7 @@ for nprobe = 1:2
             best_channel = 1;
             % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
         elseif nprobe == 2
-            best_channel = 1;
+            best_channel = 3;
         end
         [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');

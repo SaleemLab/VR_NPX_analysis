@@ -54,7 +54,7 @@ for nprobe = 1:2
 
     % temp_xcoord = [PSD{nprobe}.xcoord];
 
-    figure;plot( power{nprobe}(IB,7)*10000)
+    figure;plot( power{nprobe}(IB,7)*100000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
@@ -116,7 +116,7 @@ for nprobe = 1:2
         temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
 
 
-        channel_id = 52;
+        channel_id = 43;
         nshank = 2;
         LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
         LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
@@ -145,7 +145,8 @@ for nprobe = 1:2
 
         
         % else
-        %     [~,best_channel] = max(LFP(nprobe).best_V1_power(:,7));
+        %     [~,best_channel] = max(LFP(nprobe).best_V1_power(:,7));=]
+        
         %     if probe_no == 1 % Left hemisphere (shank 1 most anterior)
         %         if LFP(probe_no).best_V1_power(best_channel,7) < 2*LFP(probe_no).best_V1_power(1,7)
         %             best_channel = 1;

@@ -476,11 +476,11 @@ for nsession =1:length(experiment_info)
             slow_waves(probe_no).probe_hemisphere = [];
             slow_waves(probe_no).shank_id = [];
 
-            if isempty(slow_waves(probe_no).UP)
+            if isempty(slow_waves(probe_no).timestamps)
                 continue
             end
 
-            if size(slow_waves(probe_no).UP_DOWN_index,1) < 10
+            if size(slow_waves(probe_no).timestamps,1) < 10
                 continue
             end
 
@@ -892,7 +892,7 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
