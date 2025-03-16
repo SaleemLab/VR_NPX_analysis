@@ -302,45 +302,49 @@ if strcmp(show,'on')
             spindle_last = size(spindles,1);
         end
 
-        subplot(3,1,1)
-        time_index = find(timevec>=spindles(spindle_first,1)-1 &timevec<=spindles(spindle_last,1)+1);
-        plot(timevec(time_index),signal(time_index))
-        title('spindle filtered LFP (9 - 17Hz)')
-        xlabel('time (sec)')
-        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+        if ~isempty(spindles)
+            if size(spindles,1)>10
+                subplot(3,1,1)
+                time_index = find(timevec>=spindles(spindle_first,1)-1 &timevec<=spindles(spindle_last,1)+1);
+                plot(timevec(time_index),signal(time_index))
+                title('spindle filtered LFP (9 - 17Hz)')
+                xlabel('time (sec)')
+                set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
 
-        subplot(3,1,2)
-        plot(timevec(time_index),zscored_spindle(time_index))
-        hold on
-%         plot([timevec(time_index(1)) timevec(time_index(end))],[ThresholdFactor ThresholdFactor],'k','linestyle','--');
-        plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
-        plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
-        title('spindle filtered RMS zscored (9 - 17Hz)')
+                subplot(3,1,2)
+                plot(timevec(time_index),zscored_spindle(time_index))
+                hold on
+                %         plot([timevec(time_index(1)) timevec(time_index(end))],[ThresholdFactor ThresholdFactor],'k','linestyle','--');
+                plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+                plot([timevec(time_index(1)) timevec(time_index(end))],[lowThresholdFactor lowThresholdFactor],'k');
+                title('spindle filtered RMS zscored (9 - 17Hz)')
 
-        for j=spindle_first:spindle_last
-            hold on
-            plot([spindles(j,1) spindles(j,1)],[min(zscored_spindle(time_index)) spindles(j,4)],'g-');
-            plot([spindles(j,2) spindles(j,2)],[spindles(j,4) spindles(j,4)],'k-');
-            plot([spindles(j,1) spindles(j,3)],[spindles(j,4) spindles(j,4)],'k-');
-            plot([spindles(j,3) spindles(j,3)],[min(zscored_spindle(time_index)) spindles(j,4)],'r-');
+                for j=spindle_first:spindle_last
+                    hold on
+                    plot([spindles(j,1) spindles(j,1)],[min(zscored_spindle(time_index)) spindles(j,4)],'g-');
+                    plot([spindles(j,2) spindles(j,2)],[spindles(j,4) spindles(j,4)],'k-');
+                    plot([spindles(j,1) spindles(j,3)],[spindles(j,4) spindles(j,4)],'k-');
+                    plot([spindles(j,3) spindles(j,3)],[min(zscored_spindle(time_index)) spindles(j,4)],'r-');
+                end
+                xlabel('time (sec)')
+                set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+
+                subplot(3,1,3)
+                plot(timevec(time_index),speed(time_index))
+                title('Movement (pixel change zscored)')
+                hold on
+                %         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
+                for j=spindle_first:spindle_last
+                    hold on
+                    plot([spindles(j,1) spindles(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
+                    plot([spindles(j,2) spindles(j,2)],[lowThresholdFactor lowThresholdFactor],'k-');
+                    plot([spindles(j,1) spindles(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
+                    plot([spindles(j,3) spindles(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
+                end
+                xlabel('time (sec)')
+                set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
+            end
         end
-        xlabel('time (sec)')
-        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
-
-        subplot(3,1,3)
-        plot(timevec(time_index),speed(time_index))
-        title('Movement (pixel change zscored)')
-        hold on
-        %         plot([timevec(time_index(1)) timevec(time_index(end))],[highThresholdFactor highThresholdFactor],'k','linestyle','--');
-        for j=spindle_first:spindle_last
-            hold on
-            plot([spindles(j,1) spindles(j,1)],[min(speed(time_index)) lowThresholdFactor],'g-');
-            plot([spindles(j,2) spindles(j,2)],[lowThresholdFactor lowThresholdFactor],'k-');
-            plot([spindles(j,1) spindles(j,3)],[lowThresholdFactor lowThresholdFactor],'k-');
-            plot([spindles(j,3) spindles(j,3)],[min(speed(time_index)) lowThresholdFactor],'r-');
-        end
-        xlabel('time (sec)')
-        set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
     end
 end
 
@@ -348,10 +352,18 @@ end
 %% BUZCODE Struct Output
 temp = spindles; clear spindles
 
-spindles.onset = temp(:,1);
-spindles.offset = temp(:,3);
-spindles.peaktimes = temp(:,2);            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
-spindles.peak_zscore = temp(:,4);  %amplitudes?
+if ~isempty(temp)
+    spindles.onset = temp(:,1);
+    spindles.offset = temp(:,3);
+    spindles.peaktimes = temp(:,2);            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
+    spindles.peak_zscore = temp(:,4);  %amplitudes?
+else
+    spindles.onset = [];
+    spindles.offset = [];
+    spindles.peaktimes = [];            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
+    spindles.peak_zscore = [];  %amplitudes?
+end
+
 % ripples.stdev = sd;
 % if ~isempty(bad)
 %     ripples.noise.times = bad(:,[1 3]);

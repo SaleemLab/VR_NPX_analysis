@@ -17,8 +17,9 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([33 72 9 10 14]);
 % experiment_info=experiment_info([17 46 47 56 73]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 47 58 59 60 71]);
-% experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 46 47 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+experiment_info=experiment_info([17 20 33 46 47 56 70 72 73]);
 % Novel one side
 % experiment_info=experiment_info([9 10]);
 % Novel Both sides
@@ -30,7 +31,7 @@ base_folder='Z:\ibn-vision\DATA\SUBJECTS';
 % for iSub = 1:length(SUBJECTS)
 %     load(fullfile(base_folder,SUBJECTS{iSub},'analysis','experiment_info.mat'))
 %     Stimulus_type = 'Track';
-for nsession = 4:length(experiment_info)
+for nsession = 1:length(experiment_info)
     session_clusters = struct();
 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));

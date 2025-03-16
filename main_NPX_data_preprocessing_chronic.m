@@ -154,7 +154,11 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-experiment_info=experiment_info([4 5 6 9]);
+% experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([17 20 33 46 47 56 70 72 73]);
+
+% experiment_info=experiment_info([4 5 6 9]);
 % experiment_info=experiment_info([48 51]);
 % experiment_info=experiment_info(4:5);
 % All_stimuli = {'Checkerboard'}
