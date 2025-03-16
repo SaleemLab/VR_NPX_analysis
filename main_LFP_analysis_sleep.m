@@ -263,7 +263,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-experiment_info=experiment_info([18 19 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([19 34 35 44 45 58 59 60 71 18]);
 Stimulus_type = 'Sleep';
 
 for nsession =1:length(experiment_info)
@@ -476,11 +476,11 @@ for nsession =1:length(experiment_info)
             slow_waves(probe_no).probe_hemisphere = [];
             slow_waves(probe_no).shank_id = [];
 
-            if isempty(slow_waves(probe_no).UP_DOWN_index)
+            if isempty(slow_waves(probe_no).timestamps)
                 continue
             end
 
-            if size(slow_waves(probe_no).UP_DOWN_index,1) < 10
+            if size(slow_waves(probe_no).timestamps,1) < 10
                 continue
             end
 
@@ -508,7 +508,9 @@ for nsession =1:length(experiment_info)
 
                 for nevent = 1:size(slow_waves(probe_no).DOWN_ints,1)
                     % for nevent = 600:640
-                    midpoint = mean(slow_waves(probe_no).DOWN_ints(nevent,:));
+                    midpoint = mean(slow_waves(probe_no).timestamps(nevent));
+                    % midpoint = mean(slow_waves(probe_no).DOWN_ints(nevent,:));
+
                     tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
@@ -810,11 +812,11 @@ for nsession =1:length(experiment_info)
         % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
         if contains(stimulus_name{n},'Masa2tracks')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples');
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
-            % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+            % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
         else
-            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
+            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
         end
     end
@@ -890,7 +892,7 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
