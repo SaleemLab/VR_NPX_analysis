@@ -1,7 +1,7 @@
-function probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,option,varargin)
+function probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,varargin)
 
 p = inputParser;
-addParameter(p,'option',[],@ischar);
+addParameter(p,'option','absolute',@ischar);
 
 addParameter(p,'time_option','peaktimes',@ischar);
 addParameter(p,'time_wondows',[-0.5 0.5],@isnumeric);
@@ -9,6 +9,7 @@ addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
 
+parse(p,varargin{:})
 option = p.Results.option;
 time_option = p.Results.time_option;
 time_wondows = p.Results.time_wondows;
@@ -230,8 +231,8 @@ for nprobe = 1:length(slow_waves_all)
         parfor event_id = 1:size(binnedArrayUP,1)
             s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
             %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-            bins_to_shift = datasample(s,1:num_bins,1);
-            bins= circshift(1:num_bins,bins_to_shift);
+            bins_to_shift = datasample(s,1:1:size(binnedArrayUP,2),1);
+            bins= circshift(1:1:size(binnedArrayUP,2),bins_to_shift);
             temp1(event_id,:) = binnedArrayUP(event_id,bins);
             temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
         end

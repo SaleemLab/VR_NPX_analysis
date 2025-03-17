@@ -15,6 +15,8 @@ bins_centre = time_windows(1)+mean(diff(time_windows))/2:mean(diff(time_windows)
 count = 1;
 probabilities = zeros(1, length(time_windows) - 1);
 binnedArray = zeros(size(event_B,1), length(time_windows)-1);
+event_index = [];
+
 for i = 1:length(event_B)
     b = event_B(i);
 

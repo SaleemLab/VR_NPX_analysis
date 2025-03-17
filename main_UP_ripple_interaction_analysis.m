@@ -122,24 +122,39 @@ for nsession =1:length(experiment_info)
     slow_waves_markov = rmfield(slow_waves_markov, 'gamma_t');
     slow_waves_markov = rmfield(slow_waves_markov, 'beta_t');
     slow_waves_markov = rmfield(slow_waves_markov, 'xi_t');
-
-    for nprobe = 1:2
-        slow_waves(nprobe).power = [];
-        slow_waves(nprobe).frequency = [];
-        slow_waves(nprobe).PSD_slope = [];
-        slow_waves(nprobe).timebin_edges = [];
-        slow_waves(nprobe).DOWN_PSD_slope = [];
-        slow_waves(nprobe).UP_PSD_slope = [];
-        slow_waves(nprobe).DOWN_delta_power = [];
-        slow_waves(nprobe).DOWN_peaks_zscore = [];
-        slow_waves(nprobe).DOWN_peaktimes = [];
-        slow_waves(nprobe).DOWN_peaks_latency = [];
-        slow_waves(nprobe).DOWN_traveling = [];
-        slow_waves(nprobe).probe_hemisphere = [];
-        slow_waves(nprobe).shank_id = [];
-        % slow_waves.power = [];
-    end
-    
+    % 
+    % for nprobe = 1:2
+    %     slow_waves(nprobe).power = [];
+    %     slow_waves(nprobe).frequency = [];
+    %     slow_waves(nprobe).PSD_slope = [];
+    %     slow_waves(nprobe).timebin_edges = [];
+    %     slow_waves(nprobe).DOWN_PSD_slope = [];
+    %     slow_waves(nprobe).UP_PSD_slope = [];
+    %     slow_waves(nprobe).DOWN_delta_power = [];
+    %     slow_waves(nprobe).DOWN_peaks_zscore = [];
+    %     slow_waves(nprobe).DOWN_peaktimes = [];
+    %     slow_waves(nprobe).DOWN_peaks_latency = [];
+    %     slow_waves(nprobe).DOWN_traveling = [];
+    %     slow_waves(nprobe).probe_hemisphere = [];
+    %     slow_waves(nprobe).shank_id = [];
+    %     % slow_waves.power = [];
+    % 
+    % 
+    %     slow_waves(nprobe).power = [];
+    %     slow_waves(nprobe).frequency = [];
+    %     slow_waves(nprobe).PSD_slope = [];
+    %     slow_waves(nprobe).timebin_edges = [];
+    %     slow_waves(nprobe).DOWN_PSD_slope = [];
+    %     slow_waves(nprobe).UP_PSD_slope = [];
+    %     slow_waves(nprobe).DOWN_delta_power = [];
+    %     slow_waves(nprobe).DOWN_peaks_zscore = [];
+    %     slow_waves(nprobe).DOWN_peaktimes = [];
+    %     slow_waves(nprobe).DOWN_peaks_latency = [];
+    %     slow_waves(nprobe).DOWN_traveling = [];
+    %     slow_waves(nprobe).probe_hemisphere = [];
+    %     slow_waves(nprobe).shank_id = [];
+    % end
+    % 
     % From cell structure back to spike times and spike id
     session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
     session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
@@ -392,33 +407,33 @@ for nsession =1:length(experiment_info)
     end
 end
 
-
-for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    UP_index=[];
-    DOWN_index=[];
-    % get events index this session
-    for nprobe = 1:length(slow_waves_all)
-        UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
-        DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-
-        UP_DOWN_transition = slow_waves_all(nprobe).UP_DOWN_index;
-        DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
-
-        Exclude_index = find(~ismember(DOWN_UP_transition,UP_DOWN_transition));% Only DOWN followed by UP is included for analysis.
-
-        % remove DOWN events without UP
-        slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index),:)=[];
-%         slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_peaks_shank{nsession}(:,DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_peaks_latency(DOWN_index{nprobe}(Exclude_index))=[];
-        slow_waves_all(nprobe).DOWN_traveling(DOWN_index{nprobe}(Exclude_index))=[];
-
-        % DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-    end
-end
+% 
+% for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+%     UP_index=[];
+%     DOWN_index=[];
+%     % get events index this session
+%     for nprobe = 1:length(slow_waves_all)
+%         UP_index{nprobe} = find(slow_waves_all(nprobe).UP_session_count == nsession);
+%         DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+% 
+%         UP_DOWN_transition = slow_waves_all(nprobe).UP_DOWN_index;
+%         DOWN_UP_transition = slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe},1);
+% 
+%         Exclude_index = find(~ismember(DOWN_UP_transition,UP_DOWN_transition));% Only DOWN followed by UP is included for analysis.
+% 
+%         % remove DOWN events without UP
+%         slow_waves_all(nprobe).DOWN_session_count(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_ints(DOWN_index{nprobe}(Exclude_index),:)=[];
+% %         slow_waves_all(nprobe).SWpeakmag(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).timestamps(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_PSD_slope(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_peaks_shank{nsession}(:,DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_peaks_latency(DOWN_index{nprobe}(Exclude_index))=[];
+%         slow_waves_all(nprobe).DOWN_traveling(DOWN_index{nprobe}(Exclude_index))=[];
+% 
+%         % DOWN_index{nprobe} = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+%     end
+% end
 
 % ripples_all = rmfield(ripples_all, 'detectorinfo');
 % spindles_all = rmfield(spindles_all, 'detectorinfo');
@@ -612,7 +627,7 @@ for nprobe = 1:2
         %     UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
         % UP_duration<2
         subplot(3,5,nsession)
-
+c
         hold on
         histogram(log10(DOWN_duration),-2:0.1:0.5,'EdgeColor','none')
         histogram(log10(UP_duration),-2:0.1:0.5,'EdgeColor','none')
@@ -653,228 +668,6 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 
 
 % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
-
-
-%% Probability of SWR relative to U-D and D-U transition
-
-time_wondows = [-0.5 0.5];
-time_bin = 0.02;
-num_bins=20; % divide one UP event into 20 bins
-duration_threshold = 2;
-probability=[];
-all_sessions = max(slow_waves_all(1).DOWN_session_count);
-colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
-
-
-colour_lines = [215,25,28;44,123,182]/256;
-
-sessions_to_process = [1 2 3 6 8 9 10 11 12 13];
-sessions_to_process = 1:all_sessions
-
-for nprobe = 1:2
-    %%%%%%%%%%%%%%% L ripples
-    UP_index_all = [];
-    DOWN_index_all = [];
-    ripple_index_UP_all = [];
-    ripple_index_DOWN_all=[];
-
-    binnedArrayUP = [];
-    binnedArrayDOWN = [];
-    binnedArrayUPShuffled = [];
-    binnedArrayDOWNShuffled = [];
-    temp = [];
-
-    for nsession = 1:length(sessions_to_process)
-        
-        % Find UP followed by a DOWN 
-        UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
-        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
-        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
-        UP_index = UP_index(UP_duration<=duration_threshold);
-        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-
-        % Find DOWN index
-        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
-        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
-        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
-        UP_index = UP_index(ia);
-        DOWN_index = DOWN_index(ib);
-        DOWN_index_all = [DOWN_index_all; DOWN_index];
-
-        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-
-        
-        ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
-        ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
-        ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
-
-
-        % Ripple probability during normalised UP duration
-        [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_peaktimes,slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_wondows(1):time_bin:time_wondows(end),0);
-        binnedArrayDOWN=[binnedArrayDOWN; temp];
-        ripple_index_DOWN_all = [ripple_index_DOWN_all;event_index];
-
-        [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_peaktimes,slow_waves_all(nprobe).UP_ints(UP_index,1),time_wondows(1):time_bin:time_wondows(end),0);
-        binnedArrayUP=[binnedArrayUP; temp];
-        ripple_index_UP_all = [ripple_index_UP_all;event_index];
-    end
-
-    probability(nprobe).UP_all_index = UP_index_all;
-    probability(nprobe).DOWN_all_index = DOWN_index_all;
-    probability(nprobe).UP_duration = slow_waves_all(nprobe).UP_ints(UP_index_all,2)-slow_waves_all(nprobe).UP_ints(UP_index_all,1);
-    probability(nprobe).DOWN_duration = slow_waves_all(nprobe).DOWN_ints(DOWN_index_all,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index_all,1);
-
-    probability(nprobe).L_ripples_DOWN = binnedArrayDOWN;
-    probability(nprobe).L_ripples_UP = binnedArrayUP;
-    probability(nprobe).L_ripples_DOWN_index = ripple_index_DOWN_all;
-    probability(nprobe).L_ripples_UP_index = ripple_index_UP_all;
-    
-    all_ripple_no = sum(ripples_all(1).SWS_index == 1);
-    probability(nprobe).L_ripple_no = all_ripple_no;
-    
-    % bootstrap distribution
-    tempUP = [];
-    tempDOWN = [];
-    for iBoot = 1:1000
-        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-        event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
-
-        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-        event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
-    end
-
-    probability(nprobe).L_ripples_DOWN_bootstrap = tempDOWN;
-    probability(nprobe).L_ripples_UP_bootstrap = tempUP;
-
-    % timebin circularly shifted
-    tempUP = [];
-    tempDOWN = [];
-    tic
-    for iBoot = 1:1000
-        temp1 = [];
-        temp2 = [];
-        parfor event_id = 1:size(binnedArrayUP,1)
-            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-            bins_to_shift = datasample(s,1:size(binnedArrayUP,2),1);
-            bins= circshift(1:size(binnedArrayUP,2),bins_to_shift);
-            temp1(event_id,:) = binnedArrayUP(event_id,bins);
-            temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
-        end
-
-        tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-        tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
-    end
-    toc
-    
-    probability(nprobe).L_ripples_DOWN_shuffled = tempDOWN;
-    probability(nprobe).L_ripples_UP_shuffled = tempUP;
-
-
-
-
-    %%%%%%%%%%%%%%% R ripples
-    UP_index_all = [];
-    DOWN_index_all = [];
-
-    binnedArrayUP = [];
-    binnedArrayDOWN = [];
-    binnedArrayUPShuffled = [];
-    binnedArrayDOWNShuffled = [];
-
-    for nsession = 1:length(sessions_to_process)
-        % Find UP followed by a DOWN 
-        UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
-        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
-        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
-        UP_index = UP_index(UP_duration<=duration_threshold);
-        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-
-        % Find DOWN index
-        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
-        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
-        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
-        UP_index = UP_index(ia);
-        DOWN_index = DOWN_index(ib);
-        DOWN_index_all = [DOWN_index_all; DOWN_index];
-
-        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
-        UP_index_all = [UP_index_all; UP_index];
-
-        
-        ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
-        ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
-        ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
-
-        % Ripple probability during normalised UP duration
-        [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_peaktimes,slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_wondows(1):time_bin:time_wondows(end),0);
-        binnedArrayDOWN=[binnedArrayDOWN; temp];
-        ripple_index_DOWN_all = [ripple_index_DOWN_all;event_index];
-
-        [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index]  = calculate_event_probability(ripple_peaktimes,slow_waves_all(nprobe).UP_ints(UP_index,1),time_wondows(1):time_bin:time_wondows(end),0);
-        binnedArrayUP=[binnedArrayUP; temp];
-        ripple_index_UP_all = [ripple_index_UP_all;event_index];
-    end
-
-    probability(nprobe).R_ripples_DOWN = binnedArrayDOWN;
-    probability(nprobe).R_ripples_UP = binnedArrayUP;
-    probability(nprobe).R_ripples_DOWN_index = ripple_index_DOWN_all;
-    probability(nprobe).R_ripples_UP_index = ripple_index_UP_all;
-
-    all_ripple_no = sum(ripples_all(2).SWS_index == 1);
-    probability(nprobe).R_ripple_no = all_ripple_no;
-    
-    % bootstrap distribution
-    tempUP = [];
-    tempDOWN = [];
-    for iBoot = 1:1000
-        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-        event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
-
-        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-        event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
-    end
-
-    probability(nprobe).R_ripples_DOWN_bootstrap = tempDOWN;
-    probability(nprobe).R_ripples_UP_bootstrap = tempUP;
-
-    % timebin circularly shifted
-    tempUP = [];
-    tempDOWN = [];
-    tic
-    for iBoot = 1:1000
-        temp1 = [];
-        temp2 = [];
-        parfor event_id = 1:size(binnedArrayUP,1)
-            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-            bins_to_shift = datasample(s,1:size(binnedArrayUP,2),1);
-            bins= circshift(1:size(binnedArrayUP,2),bins_to_shift);
-            temp1(event_id,:) = binnedArrayUP(event_id,bins);
-            temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
-        end
-
-        tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-        tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
-    end
-    toc
-    
-    probability(nprobe).R_ripples_DOWN_shuffled = tempDOWN;
-    probability(nprobe).R_ripples_UP_shuffled = tempUP;
-end
-
-if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
-    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
-end
-% probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'),'probability');
 
 %% Plotting
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
