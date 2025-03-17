@@ -107,7 +107,7 @@ for nprobe =1:2
 
         % 
         if nprobe ==1
-            channel_id = 17;%40
+            channel_id = 16;%40
             nshank = 1;%2
             LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
             LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
@@ -146,8 +146,8 @@ for nprobe =1:2
         end
         [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-        % [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(17,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-        %     'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+%         [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(16,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+%             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
     % end
 
 

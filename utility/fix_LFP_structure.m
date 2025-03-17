@@ -56,7 +56,7 @@ for nprobe = 1:2
         power{nprobe}(nchannel,:) = PSD{nprobe}(nchannel).mean_power;
     end
 
-    for nshank = 1:4
+    for nshank = 1:length( LFP(probe_no).best_HPC_channel)
         % channel_id = 48;%40
         % nshank = 1;%2
         channels_selected = [PSD{nprobe}.channel];
@@ -73,22 +73,22 @@ for nprobe = 1:2
         % LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(index,:);
         % LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
     end
-    if nprobe ==2
-        LFP(probe_no).best_HPC(4,:) = [];
-        LFP(probe_no).best_HPC_channel(4) = [];
-        LFP(probe_no).best_HPC_depth(4) = [];
-        LFP(probe_no).best_HPC_xcoord(4) = [];
-        LFP(probe_no).best_HPC_power(4,:) =  [];
-        LFP(probe_no).best_HPC_shank_id(4) =  [];
-
-        % LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-        % LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-        % LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-        % LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-        % LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-        % LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
-        %
-    end
+%     if nprobe ==2
+%         LFP(probe_no).best_HPC(4,:) = [];
+%         LFP(probe_no).best_HPC_channel(4) = [];
+%         LFP(probe_no).best_HPC_depth(4) = [];
+%         LFP(probe_no).best_HPC_xcoord(4) = [];
+%         LFP(probe_no).best_HPC_power(4,:) =  [];
+%         LFP(probe_no).best_HPC_shank_id(4) =  [];
+% 
+%         % LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+%         % LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+%         % LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+%         % LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+%         % LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+%         % LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
+%         %
+%     end
 end
 
 if contains(stimulus_name,'Masa2tracks')
