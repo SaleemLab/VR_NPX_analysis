@@ -117,23 +117,23 @@ for nprobe = 1:2
     if ~isempty(behavioural_state_merged.SWS)
 
         if nprobe == 1
-            best_channel = 3;
+            best_channel = 1;
 
-            channel_id = 30;
-            nshank = 3;
-            LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
-            LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
-            LFP(probe_no).best_V1_high_freq_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
-            LFP(probe_no).best_V1_high_freq_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-
-
-
-            LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_V1_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
-            LFP(probe_no).best_V1_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
-            LFP(probe_no).best_V1_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
-            LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+%             channel_id = 30;
+%             nshank = 3;
+%             LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
+%             LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
+%             LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
+%             LFP(probe_no).best_V1_high_freq_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
+%             LFP(probe_no).best_V1_high_freq_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+% 
+% 
+% 
+%             LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
+%             LFP(probe_no).best_V1_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
+%             LFP(probe_no).best_V1_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
+%             LFP(probe_no).best_V1_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
+%             LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
         elseif nprobe == 2
             best_channel = 4;
 %             channel_id = 9;
@@ -169,7 +169,7 @@ for nprobe = 1:2
 
         tvec = LFP(probe_no).tvec;
         if nprobe == 1
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.8);
         else
             temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
         end
