@@ -22,25 +22,25 @@ if ~isempty(DIR1)
     clear session_clusters
 end
 if contains(stimulus_name,'Masa2tracks')
-load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'ripples')
-load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP')
-load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))))
-load(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state_merged%s.mat',erase(stimulus_name,'Masa2tracks'))))
-load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name,'Masa2tracks'))))
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'ripples')
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP')
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))))
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state_merged%s.mat',erase(stimulus_name,'Masa2tracks'))))
+    load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name,'Masa2tracks'))))
 
 else
-% load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
-load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'),'behavioural_state_merged')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
-% save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
-load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));% clusters for MUA
-clusters = clusters_ks4;
-load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
+    % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
+    load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'),'behavioural_state_merged')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
+    % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP')
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));% clusters for MUA
+    clusters = clusters_ks4;
+    load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
 end
 
 
@@ -50,7 +50,7 @@ for nprobe =1:2
     options = session_info.probe(nprobe);
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
-    
+
     %                 Behavioural state detection
 
     % [C,IA,IB]= intersect(LFP(nprobe).average_V1_channel,[PSD{nprobe}.channel]);
@@ -72,15 +72,15 @@ for nprobe =1:2
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
 
-    if nprobe == 1
-
-        [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
-    end
+    % if nprobe == 2
+    %
+    %     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
+    % end
 
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
     %%%%%%%%%%%%%%%%%%
-    
+
     zscore_min = 0;
     zscore_max = 3;
     %                 metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
@@ -101,53 +101,53 @@ for nprobe =1:2
     % if ~isempty(behavioural_state_merged.SWS)
 
 
-        % best_channel = 1;
-        % 
-        % 
+    % best_channel = 1;
+    %
+    %
 
-        % 
-        if nprobe ==1
-            channel_id = 16;%40
-            nshank = 1;%2
-            LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-            LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-            LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-            LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-            LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
+    %
+    % if nprobe ==1
+    %     channel_id = 16;%40
+    %     nshank = 1;%2
+    %     LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
+    %     LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+    %     LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+    %     LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+    %     LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+    %     LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
+    %
+    %
+    %     LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+    %     LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+    %     LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+    %     LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+    %     LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+    %     LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
+    %
+    % end
+    % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
+    tvec = LFP(probe_no).tvec;
+    if contains(stimulus_name,'Sleep')
+        speed = double(session_clusters.mobility_thresholded{1});
+        Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
+    else
+        speed = Behaviour.speed;
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+    end
 
-
-            LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-            LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-            LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-            LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-            LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
-
-        end
-        % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
-        tvec = LFP(probe_no).tvec;
-        if contains(stimulus_name,'Sleep')
-            speed = double(session_clusters.mobility_thresholded{1});
-            Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
-        else
-            speed = Behaviour.speed;
-            speed(isnan(speed))=0;
-            w = gausswin(9);
-            w = w / sum(w);
-            speed = filtfilt(w,1,speed')';
-        end
-
-        if nprobe == 1
-            best_channel = 1;
-            % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
-        elseif nprobe == 2
-            best_channel = 3;
-        end
-        [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-%         [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(16,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-%             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+    if nprobe == 1
+        best_channel = 1;
+        % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
+    elseif nprobe == 2
+        best_channel = 3;
+    end
+    [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+        'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+    %         [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(16,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+    %             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
     % end
 
 
@@ -173,12 +173,12 @@ for nprobe = 1:2
         %         reactivations(nprobe).awake_onset = reactivations(nprobe).onset(reactivations(nprobe).awake_index)';
         %     end
         % end
-        % 
+        %
         % if ~isempty(V1_reactivations(nprobe).onset)
         %     [V1_reactivations(nprobe).awake_offset,V1_reactivations(nprobe).awake_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state_merged.quietWake);
         %     V1_reactivations(nprobe).awake_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).awake_index)';
         % end
-        % 
+        %
         [ripples(nprobe).awake_offset,ripples(nprobe).awake_index] = RestrictInts(ripples(nprobe).offset,behavioural_state_merged.quietWake);
         ripples(nprobe).awake_onset = ripples(nprobe).onset(ripples(nprobe).awake_index);
         ripples(nprobe).awake_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).awake_index);
@@ -193,12 +193,12 @@ for nprobe = 1:2
             %     [reactivations(nprobe).SWS_offset,reactivations(nprobe).SWS_index] = RestrictInts(reactivations(nprobe).offset',behavioural_state_merged.SWS);
             %     reactivations(nprobe).SWS_onset = reactivations(nprobe).onset(reactivations(nprobe).SWS_index)';
             % end
-            % 
+            %
             % if ~isempty(V1_reactivations(nprobe).onset)
             %     [V1_reactivations(nprobe).SWS_offset,V1_reactivations(nprobe).SWS_index] = RestrictInts(V1_reactivations(nprobe).offset',behavioural_state_merged.SWS);
             %     V1_reactivations(nprobe).SWS_onset = V1_reactivations(nprobe).onset(V1_reactivations(nprobe).SWS_index)';
             % end
-            % 
+            %
             [ripples(nprobe).SWS_offset,ripples(nprobe).SWS_index] = RestrictInts(ripples(nprobe).offset,behavioural_state_merged.SWS);
             ripples(nprobe).SWS_onset = ripples(nprobe).onset(ripples(nprobe).SWS_index);
             ripples(nprobe).SWS_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).SWS_index);
@@ -241,44 +241,44 @@ for nprobe = 1:2
     % if ~contains(stimulus_name,'RUN') % If reactivation events during lap running
     %     continue
     % end
-    % 
+    %
     % lap_times(1).start = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==1);
     % lap_times(1).end = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==1)';
-    % 
+    %
     % lap_times(2).start = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==2);
     % lap_times(2).end = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==2)';
-    % 
+    %
     % if contains(stimulus_name,'RUN') % If reactivation events during lap running
     %     if length(CA1_clusters(probe_no).cluster_id)>10
     %         if ~isempty(reactivations(probe_no).onset)
     %             [reactivations(probe_no).T1_offset,reactivations(probe_no).T1_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %             reactivations(probe_no).T1_onset = reactivations(probe_no).onset(reactivations(probe_no).T1_index);
     %             reactivations(probe_no).T1_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T1_index);
-    % 
+    %
     %             [reactivations(probe_no).T2_offset,reactivations(probe_no).T2_index] = RestrictInts(reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %             reactivations(probe_no).T2_onset = reactivations(probe_no).onset(reactivations(probe_no).T2_index);
     %             reactivations(probe_no).T2_midpoint = reactivations(probe_no).midpoint(reactivations(probe_no).T2_index);
     %         end
     %     end
-    % 
+    %
     %     if length(V1_clusters(probe_no).cluster_id)>10
     %         if ~isempty(V1_reactivations(probe_no).onset)
     %             [V1_reactivations(probe_no).T1_offset,V1_reactivations(probe_no).T1_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %             V1_reactivations(probe_no).T1_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T1_index);
     %             V1_reactivations(probe_no).T1_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T1_index);
-    % 
+    %
     %             [V1_reactivations(probe_no).T2_offset,V1_reactivations(probe_no).T2_index] = RestrictInts(V1_reactivations(probe_no).offset',[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %             V1_reactivations(probe_no).T2_onset = V1_reactivations(probe_no).onset(V1_reactivations(probe_no).T2_index);
     %             V1_reactivations(probe_no).T2_midpoint = V1_reactivations(probe_no).midpoint(V1_reactivations(probe_no).T2_index);
     %         end
     %     end
     % end
-    % 
+    %
     % if contains(stimulus_name,'RUN') % If reactivation events during lap running
     %     [ripples(probe_no).T1_offset,ripples(probe_no).T1_index] = RestrictInts(ripples(probe_no).offset,[lap_times(1).start lap_times(1).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %     ripples(probe_no).T1_onset = ripples(probe_no).onset(ripples(probe_no).T1_index);
     %     ripples(probe_no).T1_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T1_index);
-    % 
+    %
     %     [ripples(probe_no).T2_offset,ripples(probe_no).T2_index] = RestrictInts(ripples(probe_no).offset,[lap_times(2).start lap_times(2).end]); % Including 2 seconds after each lap finishes (it usually takes 3 second before starting next lap)
     %     ripples(probe_no).T2_onset = ripples(probe_no).onset(ripples(probe_no).T2_index);
     %     ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);

@@ -35,8 +35,25 @@ load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));% cluster
 clusters = clusters_ks4;
 load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name,'Chronic'))),'session_clusters'); % Session clusters for SUA
 
-% for nprobe = 1:length(session_info.probe)
 for nprobe = 1:2
+    temp.power = [];
+    temp.frequency = [];
+    temp.PSD_slope = [];
+    temp.timebin_edges = [];
+    temp.DOWN_PSD_slope = [];
+    temp.UP_PSD_slope = [];
+    temp.DOWN_delta_power = [];
+    temp.DOWN_peaks_zscore = [];
+    temp.DOWN_peaktimes = [];
+    temp.DOWN_peaks_latency = [];
+    temp.DOWN_traveling = [];
+    temp.probe_hemisphere = [];
+    temp.shank_id = [];
+    % slow_waves.power = [];
+end
+
+% for nprobe = 1:length(session_info.probe)
+for nprobe = 1
     options = session_info.probe(nprobe);
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
@@ -54,7 +71,7 @@ for nprobe = 1:2
 
     % temp_xcoord = [PSD{nprobe}.xcoord];
 
-    figure;plot( power{nprobe}(IB,7)*100000)
+    figure;plot( power{nprobe}(IB,7)*10000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
@@ -100,9 +117,9 @@ for nprobe = 1:2
     if ~isempty(behavioural_state_merged.SWS)
 
         if nprobe == 1
-            
+            best_channel = 3;
         elseif nprobe == 2
-            best_channel = 2;
+            % best_channel = 2;
 
         end
         temp_V1_channels(nprobe).deltaspikecorr = [];
@@ -116,8 +133,8 @@ for nprobe = 1:2
         temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
 
 
-        channel_id = 43;
-        nshank = 2;
+        channel_id = 15;
+        nshank = 3;
         LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
         LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
         LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
@@ -136,8 +153,8 @@ for nprobe = 1:2
         temp_V1_channels(nprobe).best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
 
         tvec = LFP(probe_no).tvec;
-        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
-        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(channel_id,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
+        temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.75);
+        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(channel_id,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.75);
                 
         Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
         spindles_temp = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
@@ -179,6 +196,28 @@ for nprobe = 1:2
         temp.depth = temp_V1_channels(nprobe).depth;
         temp.xcoord = temp_V1_channels(nprobe).xcoord;
         temp.best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
+        temp.power = [];
+        temp.frequency = [];
+        temp.PSD_slope = [];
+        temp.timebin_edges = [];
+        temp.DOWN_PSD_slope = [];
+        temp.UP_PSD_slope = [];
+        temp.UP_delta_power = [];
+        temp.DOWN_delta_power = [];
+        temp.DOWN_peaks_zscore = [];
+        temp.DOWN_peaktimes = [];
+        temp.DOWN_peaks_latency = [];
+        temp.DOWN_traveling = [];
+        temp.probe_hemisphere = [];
+        temp.shank_id = [];
+        if isfield(temp,'ints')
+            temp.UP_ints = temp.ints.UP;
+            temp.DOWN_ints = temp.ints.DOWN;
+        end
+
+        if isfield(temp,'ints')
+            temp = rmfield(temp,'ints');
+        end
         if ~isempty(temp)
             slow_waves(nprobe) = temp;
         end
@@ -318,7 +357,7 @@ for nprobe =1
     %     ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
     % end
 end
-spindles1(2) = spindles(1);%backup
+spindles1(1) = spindles(1);%backup
 spindles = spindles1;
 
 clear lap_times
