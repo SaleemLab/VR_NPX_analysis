@@ -72,10 +72,10 @@ for nprobe =1:2
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
 
-    % if nprobe == 2
-    %
-    %     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
-    % end
+    if nprobe == 2
+    
+        [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
+    end
 
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
@@ -106,25 +106,25 @@ for nprobe =1:2
     %
 
     %
-    % if nprobe ==1
-    %     channel_id = 16;%40
-    %     nshank = 1;%2
-    %     LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
-    %     LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-    %     LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-    %     LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-    %     LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-    %     LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
-    %
-    %
-    %     LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-    %     LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-    %     LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-    %     LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-    %     LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-    %     LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
-    %
-    % end
+    if nprobe ==2
+        channel_id = 32;%40
+        nshank = 1;%2
+        LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
+        LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+        LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+        LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+        LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+        LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
+    
+    
+        LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+        LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+        LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+        LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+        LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+        LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
+    
+    end
     % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
     tvec = LFP(probe_no).tvec;
     if contains(stimulus_name,'Sleep')
@@ -142,13 +142,13 @@ for nprobe =1:2
         best_channel = 1;
         % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
     elseif nprobe == 2
-        best_channel = 3;
+        best_channel = 1;
     end
     [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
         'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-    %         [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(16,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-    %             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-    % end
+%             [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(32,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+%                 'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+%     % end
 
 
     if  contains(stimulus_name,'RUN1')|contains(stimulus_name,'RUN2')
@@ -291,10 +291,10 @@ clear lap_times
 
 if contains(stimulus_name,'Masa2tracks')
     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'ripples')
-    % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
+    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
 else
     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
-    % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
 end
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
 

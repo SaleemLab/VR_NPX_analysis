@@ -71,7 +71,7 @@ for nprobe = 1:2
 
     % temp_xcoord = [PSD{nprobe}.xcoord];
 
-    figure;plot( power{nprobe}(IB,7)*100000)
+    figure;plot( power{nprobe}(IB,7)*1000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
@@ -117,10 +117,10 @@ for nprobe = 1:2
     if ~isempty(behavioural_state_merged.SWS)
 
         if nprobe == 1
-            best_channel = 3;
+            best_channel = 1;
 
-            channel_id = 30;
-            nshank = 3;
+            channel_id = 43;
+            nshank = 1;
             LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
             LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
             LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
@@ -169,11 +169,11 @@ for nprobe = 1:2
 
         tvec = LFP(probe_no).tvec;
         if nprobe == 1
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.8);
         else
             temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
         end
-        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(channel_id,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.8);
+        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(43,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
                 
         Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
         spindles_temp(nprobe)= FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
@@ -215,28 +215,28 @@ for nprobe = 1:2
         temp.depth = temp_V1_channels(nprobe).depth;
         temp.xcoord = temp_V1_channels(nprobe).xcoord;
         temp.best_channel = LFP(probe_no).best_V1_high_freq_channel(best_channel);
-        temp.power = [];
-        temp.frequency = [];
-        temp.PSD_slope = [];
-        temp.timebin_edges = [];
-        temp.DOWN_PSD_slope = [];
-        temp.UP_PSD_slope = [];
-        temp.UP_delta_power = [];
-        temp.DOWN_delta_power = [];
-        temp.DOWN_peaks_zscore = [];
-        temp.DOWN_peaktimes = [];
-        temp.DOWN_peaks_latency = [];
-        temp.DOWN_traveling = [];
-        temp.probe_hemisphere = [];
-        temp.shank_id = [];
-        if isfield(temp,'ints')
-            temp.UP_ints = temp.ints.UP;
-            temp.DOWN_ints = temp.ints.DOWN;
-        end
-
-        if isfield(temp,'ints')
-            temp = rmfield(temp,'ints');
-        end
+%         temp.power = [];
+%         temp.frequency = [];
+%         temp.PSD_slope = [];
+%         temp.timebin_edges = [];
+%         temp.DOWN_PSD_slope = [];
+%         temp.UP_PSD_slope = [];
+%         temp.UP_delta_power = [];
+%         temp.DOWN_delta_power = [];
+%         temp.DOWN_peaks_zscore = [];
+%         temp.DOWN_peaktimes = [];
+%         temp.DOWN_peaks_latency = [];
+%         temp.DOWN_traveling = [];
+%         temp.probe_hemisphere = [];
+%         temp.shank_id = [];
+%         if isfield(temp,'ints')
+%             temp.UP_ints = temp.ints.UP;
+%             temp.DOWN_ints = temp.ints.DOWN;
+%         end
+% 
+%         if isfield(temp,'ints')
+%             temp = rmfield(temp,'ints');
+%         end
         if ~isempty(temp)
             slow_waves(nprobe) = temp;
         end
