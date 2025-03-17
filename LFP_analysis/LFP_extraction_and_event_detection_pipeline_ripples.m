@@ -72,10 +72,10 @@ for nprobe =1:2
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
 
-    % if nprobe == 2
-    % 
-    %     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
-    % end
+    if nprobe == 1
+
+        [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
+    end
 
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
@@ -98,7 +98,7 @@ for nprobe =1:2
     % end
 
     %%%%%% Detect V1 spindle events and slow waves (combined SWS)
-    if ~isempty(behavioural_state_merged.SWS)
+    % if ~isempty(behavioural_state_merged.SWS)
 
 
         % best_channel = 1;
@@ -106,24 +106,24 @@ for nprobe =1:2
         % 
 
         % 
-        if nprobe ==2
-            % channel_id = 48;%40
-            % nshank = 1;%2
-            % LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
-            % LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-            % LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-            % LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-            % LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-            % LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
-            % 
+        if nprobe ==1
+            channel_id = 17;%40
+            nshank = 1;%2
+            LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
+            LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+            LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+            LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
 
-            % LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
-            % LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-            % LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
-            % LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
-            % LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-            % LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
-            %
+
+            LFP(probe_no).best_CA1(nshank,:) =  raw_LFP(channel_id,:);
+            LFP(probe_no).best_CA1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            LFP(probe_no).best_CA1_depth(nshank) = PSD{nprobe}(IB(channel_id)).ycoord;
+            LFP(probe_no).best_CA1_xcoord(nshank) = PSD{nprobe}(IB(channel_id)).xcoord;
+            LFP(probe_no).best_CA1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+            LFP(probe_no).best_CA1_shank_id(nshank) =  nshank;
+
         end
         % [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
         tvec = LFP(probe_no).tvec;
@@ -146,9 +146,9 @@ for nprobe =1:2
         end
         [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
             'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-        % [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(48,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+        % [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(17,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
         %     'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
-    end
+    % end
 
 
     if  contains(stimulus_name,'RUN1')|contains(stimulus_name,'RUN2')
