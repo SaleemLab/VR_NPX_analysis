@@ -177,6 +177,8 @@ if isempty(firstPass)
     spindles.offset =[];
     spindles.peak_zscore =[];
     spindles.peaktimes = [];
+    spindles.detectorinfo = [];
+    
 	disp('Detection by thresholding failed');
 	return
 else
@@ -201,6 +203,7 @@ if isempty(secondPass)
     spindles.offset =[];
     spindles.peak_zscore =[];
     spindles.peaktimes = [];
+    spindles.detectorinfo = [];
     disp('Peak thresholding failed.');
     return
 else

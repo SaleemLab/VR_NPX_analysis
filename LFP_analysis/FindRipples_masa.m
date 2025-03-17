@@ -201,6 +201,7 @@ if isempty(firstPass)
     ripples.offset =[];
     ripples.peak_zscore =[];
     ripples.peaktimes = [];
+    ripples.detectorinfo = [];
     disp('Detection by thresholding failed');
     return
 else
@@ -227,6 +228,7 @@ if isempty(secondPass)
     ripples.offset =[];
     ripples.peak_zscore =[];
     ripples.peaktimes = [];
+    ripples.detectorinfo = [];
     disp('Ripple merge failed');
     return
 else
@@ -249,6 +251,7 @@ if isempty(thirdPass),
     ripples.offset = [];
     ripples.peaktimes = [];            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
     ripples.peak_zscore = [];
+    ripples.detectorinfo = [];
     return
 else
     disp(['Detecting: ' num2str(length(thirdPass)) ' ripple events after ripple peak thresholding.']);
