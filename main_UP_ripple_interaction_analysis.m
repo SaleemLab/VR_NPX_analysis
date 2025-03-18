@@ -1159,6 +1159,11 @@ UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
 
 
+%% 
+extract_UP_DOWN_ripples_info()
+
+
+
 %% distribution of DOWN duration with high vs low ripple
 
 if exist('D:\corticohippocampal_replay')>0
