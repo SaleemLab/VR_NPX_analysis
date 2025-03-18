@@ -61,7 +61,7 @@ for nprobe = 1:2
         % nshank = 1;%2
         channels_selected = [PSD{nprobe}.channel];
         index = find(channels_selected == LFP(probe_no).best_HPC_channel(nshank));
-        if nshank ~= PSD{nprobe}(index).shank
+        if LFP(probe_no).best_HPC_shank_id(nshank) ~= PSD{nprobe}(index).shank
             disp('shank id of LFP.best_HPC_shank_id not consistent')
             continue
         end
@@ -95,7 +95,7 @@ for nprobe = 1:2
         % nshank = 1;%2
         channels_selected = [PSD{nprobe}.channel];
         index = find(channels_selected == LFP(probe_no).best_V1_channel(nshank));
-        if nshank ~= PSD{nprobe}(index).shank
+        if LFP(probe_no).best_V1_shank_id(nshank) ~= PSD{nprobe}(index).shank
             disp('shank id of LFP.best_v1_shank_id not consistent')
             continue
         end
@@ -116,19 +116,21 @@ for nprobe = 1:2
         end
     end
 
-    LFP(probe_no).best_V1(nshank_to_delete,:) =  [];
-    LFP(probe_no).best_V1_channel(nshank_to_delete) = [];
-    LFP(probe_no).best_V1_depth(nshank_to_delete) = [];
-    LFP(probe_no).best_V1_xcoord(nshank_to_delete) = [];
-    LFP(probe_no).best_V1_power(nshank_to_delete,:) =  [];
-    LFP(probe_no).best_V1_shank_id(nshank_to_delete) =  [];
+    if isfield(LFP,'best_V1')
+        LFP(probe_no).best_V1(nshank_to_delete,:) =  [];
+        LFP(probe_no).best_V1_channel(nshank_to_delete) = [];
+        LFP(probe_no).best_V1_depth(nshank_to_delete) = [];
+        LFP(probe_no).best_V1_xcoord(nshank_to_delete) = [];
+        LFP(probe_no).best_V1_power(nshank_to_delete,:) =  [];
+        LFP(probe_no).best_V1_shank_id(nshank_to_delete) =  [];
+    end
 
-    for nshank = 1:length( LFP(probe_no).best_V1_channel)
+    for nshank = 1:length( LFP(probe_no).best_V1_high_freq)
         % channel_id = 48;%40
         % nshank = 1;%2
         channels_selected = [PSD{nprobe}.channel];
         index = find(channels_selected == LFP(probe_no).best_V1_high_freq_channel(nshank));
-        if nshank ~= PSD{nprobe}(index).shank
+        if LFP(probe_no).best_V1_high_freq_shank_id(nshank)  ~= PSD{nprobe}(index).shank
             disp('shank id of LFP.best_v1_shank_id not consistent')
             continue
         end
