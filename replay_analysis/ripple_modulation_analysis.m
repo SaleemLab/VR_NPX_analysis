@@ -1,8 +1,8 @@
-function ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,Task_info,Behaviour,window,psthBinSize,varargin)
+function ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,window,psthBinSize,varargin)
 
 % Default values
 p = inputParser;
-addParameter(p,'event_times',Task_info.end_time_all,@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
+addParameter(p,'event_times',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'event_id',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 
 addParameter(p,'place_fields',[],@isstruct) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
@@ -10,6 +10,7 @@ addParameter(p,'unit_depth',[],@isnumeric) % Select channels for analysis (defau
 addParameter(p,'unit_region',[],@isstring) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 addParameter(p,'unit_id',unique(spike_id),@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
 
+Behaviour = [];
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
@@ -36,6 +37,7 @@ if ~isempty(place_fields) % if place fields, only select spatially tuned cells
 end
 
 t_bin = mean(diff(Behaviour.tvec));
+tvec 
 no_events = size(event_times,1);
 time_edges = window(1):psthBinSize:window(2);
 % spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
@@ -67,22 +69,22 @@ timevec_edge = (timevec(1)-(psthBinSize)/2....
     timevec(end)+(psthBinSize)/2)';
 
 % Define Gaussian window for smoothing
-gaussianWindow = gausswin(0.2*1/psthBinSize);
+gaussianWindow = gausswin(0.05*1/psthBinSize);
 % Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
 
 % Define Gaussian window for spatial smoothing
-spatial_w = gausswin(11);
-% Normalize to have an area of 1 (i.e., to be a probability distribution)
-spatial_w = spatial_w / sum(spatial_w);
+% spatial_w = gausswin(11);
+% % Normalize to have an area of 1 (i.e., to be a probability distribution)
+% spatial_w = spatial_w / sum(spatial_w);
 
 % interpolated tvec and track position
-tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
-trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
-    Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
-trackSpeed = interp1(Behaviour.tvec,Behaviour.speed,...
-    Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
+% tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
+% trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
+%     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
+% trackSpeed = interp1(Behaviour.tvec,Behaviour.speed,...
+%     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
 
 tic
 for iCell = 1:no_cluster
