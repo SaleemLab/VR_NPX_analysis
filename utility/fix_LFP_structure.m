@@ -125,7 +125,7 @@ for nprobe = 1:2
         LFP(probe_no).best_V1_shank_id(nshank_to_delete) =  [];
     end
 
-    for nshank = 1:length( LFP(probe_no).best_V1_high_freq)
+    for nshank = 1:length( LFP(probe_no).best_V1_high_freq_channel)
         % channel_id = 48;%40
         % nshank = 1;%2
         channels_selected = [PSD{nprobe}.channel];
