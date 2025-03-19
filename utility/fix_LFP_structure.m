@@ -71,7 +71,7 @@ for nprobe = 1:2
         LFP(probe_no).best_HPC_depth(nshank) = PSD{nprobe}(index).ycoord;
         LFP(probe_no).best_HPC_xcoord(nshank) = PSD{nprobe}(index).xcoord;
         % LFP(probe_no).best_HPC_power(nshank,:) =  power{nprobe}(index,:);
-        % LFP(probe_no).best_HPC_shank_id(nshank) =  nshank;
+        LFP(probe_no).best_HPC_shank_id(nshank) =   PSD{nprobe}(index).shank;
     end
 
     shank_ids = ceil(LFP(probe_no).best_HPC_xcoord ./250);
@@ -132,7 +132,7 @@ for nprobe = 1:2
         channels_selected = [PSD{nprobe}.channel];
         index = find(channels_selected == LFP(probe_no).best_V1_high_freq_channel(nshank));
         if LFP(probe_no).best_V1_high_freq_shank_id(nshank)  ~= PSD{nprobe}(index).shank
-            disp('shank id of LFP.best_v1_shank_id not consistent')
+            disp('shank id of LFP.best_V1_high_freq_channel not consistent')
             continue
         end
 
