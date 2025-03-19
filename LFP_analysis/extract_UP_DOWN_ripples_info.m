@@ -1,9 +1,9 @@
-function extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,sessions_to_process,varargin)
+function extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,varargin)
 
 p = inputParser;
 addParameter(p,'option','UD',@ischar);
 
-addParameter(p,'time_option','peaktimes',@ischar);
+% addParameter(p,'time_option','peaktimes',@ischar);
 addParameter(p,'time_wondows',[-0.5 0.5],@isnumeric);
 addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
@@ -11,7 +11,7 @@ addParameter(p,'duration_threshold',2,@isnumeric);
 
 parse(p,varargin{:})
 option = p.Results.option;
-time_option = p.Results.time_option;
+% time_option = p.Results.time_option;
 time_wondows = p.Results.time_wondows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
@@ -43,7 +43,13 @@ for nprobe = 1:length(slow_waves_all)
         % Find DOWN index
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+
+        if contains(options,'UD')
+            [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        elseif contains(options,'DU')
+            [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        end
+        
         % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
         UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);

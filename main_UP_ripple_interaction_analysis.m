@@ -974,12 +974,14 @@ probability=[];
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 probability = [];
+
 for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% L ripples
     UP_index_all = [];
     DOWN_index_all = [];
     ripple_index_UP_all = [];
     ripple_index_DOWN_all = [];
+    ripple_index_all=[];
 
     binnedArray = [];
     binnedArrayShuffled = [];
@@ -1133,7 +1135,8 @@ load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
-
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:all_sessions;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
@@ -1159,8 +1162,10 @@ UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
 
 
-%% 
-extract_UP_DOWN_ripples_info()
+%% Extract key information
+extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU')
+
+extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
 
 
 
