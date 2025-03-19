@@ -89,40 +89,41 @@ for nprobe = 1:2
     LFP(probe_no).best_HPC_power(nshank_to_delete,:) =  [];
     LFP(probe_no).best_HPC_shank_id(nshank_to_delete) =  [];
 
-
-    for nshank = 1:length( LFP(probe_no).best_V1_channel)
-        % channel_id = 48;%40
-        % nshank = 1;%2
-        channels_selected = [PSD{nprobe}.channel];
-        index = find(channels_selected == LFP(probe_no).best_V1_channel(nshank));
-        if LFP(probe_no).best_V1_shank_id(nshank) ~= PSD{nprobe}(index).shank
-            disp('shank id of LFP.best_v1_shank_id not consistent')
-            continue
-        end
-
-        % LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
-        % LFP(probe_no).best_V1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
-        LFP(probe_no).best_V1_depth(nshank) = PSD{nprobe}(index).ycoord;
-        LFP(probe_no).best_V1_xcoord(nshank) = PSD{nprobe}(index).xcoord;
-        % LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(index,:);
-        % LFP(probe_no).best_V1_shank_id(nshank) =  nshank;
-    end
-
-    shank_ids = ceil(LFP(probe_no).best_V1_xcoord ./250);
-    nshank_to_delete=[];
-    for nshank = 1:length(shank_ids)
-        if LFP(probe_no).best_V1_shank_id(nshank) ~= shank_ids(nshank)
-            nshank_to_delete = [nshank_to_delete nshank];
-        end
-    end
-
     if isfield(LFP,'best_V1')
-        LFP(probe_no).best_V1(nshank_to_delete,:) =  [];
-        LFP(probe_no).best_V1_channel(nshank_to_delete) = [];
-        LFP(probe_no).best_V1_depth(nshank_to_delete) = [];
-        LFP(probe_no).best_V1_xcoord(nshank_to_delete) = [];
-        LFP(probe_no).best_V1_power(nshank_to_delete,:) =  [];
-        LFP(probe_no).best_V1_shank_id(nshank_to_delete) =  [];
+        for nshank = 1:length( LFP(probe_no).best_V1_channel)
+            % channel_id = 48;%40
+            % nshank = 1;%2
+            channels_selected = [PSD{nprobe}.channel];
+            index = find(channels_selected == LFP(probe_no).best_V1_channel(nshank));
+            if LFP(probe_no).best_V1_shank_id(nshank) ~= PSD{nprobe}(index).shank
+                disp('shank id of LFP.best_v1_shank_id not consistent')
+                continue
+            end
+
+            % LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
+            % LFP(probe_no).best_V1_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
+            LFP(probe_no).best_V1_depth(nshank) = PSD{nprobe}(index).ycoord;
+            LFP(probe_no).best_V1_xcoord(nshank) = PSD{nprobe}(index).xcoord;
+            % LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(index,:);
+            % LFP(probe_no).best_V1_shank_id(nshank) =  nshank;
+        end
+
+        shank_ids = ceil(LFP(probe_no).best_V1_xcoord ./250);
+        nshank_to_delete=[];
+        for nshank = 1:length(shank_ids)
+            if LFP(probe_no).best_V1_shank_id(nshank) ~= shank_ids(nshank)
+                nshank_to_delete = [nshank_to_delete nshank];
+            end
+        end
+
+        if isfield(LFP,'best_V1')
+            LFP(probe_no).best_V1(nshank_to_delete,:) =  [];
+            LFP(probe_no).best_V1_channel(nshank_to_delete) = [];
+            LFP(probe_no).best_V1_depth(nshank_to_delete) = [];
+            LFP(probe_no).best_V1_xcoord(nshank_to_delete) = [];
+            LFP(probe_no).best_V1_power(nshank_to_delete,:) =  [];
+            LFP(probe_no).best_V1_shank_id(nshank_to_delete) =  [];
+        end
     end
 
     for nshank = 1:length( LFP(probe_no).best_V1_high_freq_channel)
