@@ -97,7 +97,7 @@ for nsession =1:length(experiment_info)
 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
         % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
@@ -116,13 +116,13 @@ for nsession =1:length(experiment_info)
     ripples = rmfield(ripples, 'detectorinfo');
     spindles = rmfield(spindles, 'detectorinfo');
     slow_waves = rmfield(slow_waves, 'detectorinfo');
-    slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
-    slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
-    slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
-    slow_waves_markov = rmfield(slow_waves_markov, 'gamma_t');
-    slow_waves_markov = rmfield(slow_waves_markov, 'beta_t');
-    slow_waves_markov = rmfield(slow_waves_markov, 'xi_t');
-    % 
+    % slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
+    % slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
+    % slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
+    % slow_waves_markov = rmfield(slow_waves_markov, 'gamma_t');
+    % slow_waves_markov = rmfield(slow_waves_markov, 'beta_t');
+    % slow_waves_markov = rmfield(slow_waves_markov, 'xi_t');
+    % % 
     % for nprobe = 1:2
     %     slow_waves(nprobe).power = [];
     %     slow_waves(nprobe).frequency = [];
@@ -328,16 +328,16 @@ for nsession =1:length(experiment_info)
             end
         end
         % slow_waves_all(probe_no).UP_PSD_slope
-        session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.DOWN,1),1]);
-%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_ints,1),1]);
+        % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.DOWN,1),1]);
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_ints,1),1]);
         if session_count == 1
             slow_waves_all(probe_no).DOWN_session_count = session_count_events;
         else
             slow_waves_all(probe_no).DOWN_session_count = [slow_waves_all(probe_no).DOWN_session_count;session_count_events];
         end
 
-        session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.UP,1),1]);
-%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_ints,1),1]);
+        % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.UP,1),1]);
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_ints,1),1]);
         if session_count == 1
             slow_waves_all(probe_no).UP_session_count = session_count_events;
         else
