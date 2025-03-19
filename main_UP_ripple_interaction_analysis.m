@@ -679,7 +679,7 @@ num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;
 probability=[];
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
-sessions_to_process = 1:14;
+sessions_to_process = 1:all_sessions;
 
 for nprobe = 1:2
     %%%%%%%%%%%%%%% L ripples
@@ -972,7 +972,7 @@ num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;
 probability=[];
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
-sessions_to_process = 1:14;
+sessions_to_process = 1:all_sessions;
 probability = [];
 for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% L ripples
