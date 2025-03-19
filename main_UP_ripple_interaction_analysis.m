@@ -1167,7 +1167,8 @@ extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged
 
 extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
 
-
+[~,index]=sort(probability(1).DOWN_duration);
+imagesc(probability(1).L_ripples_DOWN(index,:))
 
 %% distribution of DOWN duration with high vs low ripple
 

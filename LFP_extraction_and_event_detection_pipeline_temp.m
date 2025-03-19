@@ -23,7 +23,7 @@ if ~isempty(DIR1)
 end
 
 % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
-% load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
+load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples')
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
 load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
@@ -53,7 +53,7 @@ load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',e
 % end
 
 % for nprobe = 1:length(session_info.probe)
-for nprobe = 2
+for nprobe = 1
     options = session_info.probe(nprobe);
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
@@ -71,7 +71,7 @@ for nprobe = 2
 
     % temp_xcoord = [PSD{nprobe}.xcoord];
 
-    figure;plot( power{nprobe}(IB,7)*1000)
+    figure;plot( power{nprobe}(IB,7)*10000)
     hold on;plot([PSD{nprobe}(IB').xcoord])
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
@@ -79,9 +79,9 @@ for nprobe = 2
     % hold on;plot([PSD{nprobe}(IB').xcoord])
     % hold on;plot([PSD{nprobe}(IB').ycoord])
     % ylim([0 6000])
-    if nprobe == 1
-        [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',LFP(nprobe).average_V1_channel);
-    end
+%     if nprobe == 1
+%         [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',LFP(nprobe).average_V1_channel);
+%     end
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
     %%%%%%%%%%%%%%%%%%
@@ -117,23 +117,23 @@ for nprobe = 2
     if ~isempty(behavioural_state_merged.SWS)
 
         if nprobe == 1
-%             best_channel = 1;
+            best_channel = 1;
 % 
 %             channel_id = 43;
 %             nshank = 1;
-            LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
-            LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
-            LFP(probe_no).best_V1_high_freq_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
-            LFP(probe_no).best_V1_high_freq_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
-
-
-
-            LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
-            LFP(probe_no).best_V1_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
-            LFP(probe_no).best_V1_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
-            LFP(probe_no).best_V1_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
-            LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+%             LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
+%             LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
+%             LFP(probe_no).best_V1_high_freq_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
+%             LFP(probe_no).best_V1_high_freq_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
+%             LFP(probe_no).best_V1_high_freq_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
+% 
+% 
+% 
+%             LFP(probe_no).best_V1(nshank,:) =  raw_LFP(channel_id,:);
+%             LFP(probe_no).best_V1_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
+%             LFP(probe_no).best_V1_depth(nshank) = LFP(nprobe).average_V1_depth(channel_id);
+%             LFP(probe_no).best_V1_xcoord(nshank) = LFP(nprobe).average_V1_xcoord(channel_id);
+%             LFP(probe_no).best_V1_power(nshank,:) =  power{nprobe}(IB(channel_id),:);
         elseif nprobe == 2
             best_channel = 3;
 %             channel_id = 9;
@@ -169,9 +169,9 @@ for nprobe = 2
 
         tvec = LFP(probe_no).tvec;
         if nprobe == 1
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.8);
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
         else
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
+%             temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
         end
         % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(43,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
                 
@@ -257,7 +257,7 @@ clear spindles
 spindles = spindles_temp;
 
 
-for nprobe = 1:2
+for nprobe = 1
     if contains(stimulus_name,'Sleep')
         % if ~isempty(CA1_clusters(probe_no).cluster_id)
         %     if length(CA1_clusters(probe_no).cluster_id)>10
@@ -305,7 +305,7 @@ for nprobe = 1:2
 
 end
 
-for nprobe =1:2
+for nprobe =1
     probe_no = session_info.probe(nprobe).probe_id + 1;
     options.probe_no = probe_no; % probe_no is [1,2] it is redundant as we have options.probe_id (0 and 1)
 
@@ -376,8 +376,8 @@ for nprobe =1:2
     %     ripples(probe_no).T2_peaktimes = ripples(probe_no).peaktimes(ripples(probe_no).T2_index);
     % end
 end
-% spindles1(1) = spindles(1);%backup
-% spindles = spindles1;
+spindles1(1) = spindles(1);%backup
+spindles = spindles1;
 
 clear lap_times
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
@@ -385,6 +385,6 @@ clear lap_times
 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
-save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
+% save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
 
 close all

@@ -44,9 +44,9 @@ for nprobe = 1:length(slow_waves_all)
         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
 
-        if contains(options,'UD')
+        if contains(option,'UD')
             [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
-        elseif contains(options,'DU')
+        elseif contains(option,'DU')
             [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
         end
         
@@ -61,6 +61,36 @@ for nprobe = 1:length(slow_waves_all)
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
         ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+
+        %%% Get spike counts this session
+        NREMInts = behavioural_state_merged_all.SWS{nsession};
+
+        % Define variables
+        tvec = [time_bin/2 slow_waves_all(1).V1_MUA_spiketimes{nsession}(end)];
+        tvec_interp1 = tvec(1):time_bin:tvec(end);
+        tvec_edges = [tvec_interp1(1)-1/(1/mean(diff(tvec_interp1))*2) tvec_interp1+1/(1/mean(diff(tvec_interp1))*2)];
+        w = gausswin(0.03*1/mean(diff(tvec_interp1))); % Smoothed with σ = 30 ms
+        w = w / sum(w);
+
+        for mprobe = 1:length(slow_waves_all)
+            spike_times_sleep = slow_waves_all(mprobe).V1_MUA_spiketimes{nsession};
+            % spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            % spike_times_sleep = spike_times(spike_speed < 1);
+
+            % imagesc(filtfilt(w,1,temp));
+            V1_spike_counts{mprobe} = filtfilt(w,1,histcounts(spike_times_sleep,tvec_edges));
+
+            spike_times_sleep = slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession};
+            % spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            % spike_times_sleep = spike_times(spike_speed < 1);
+            HPC_spike_counts{mprobe} = filtfilt(w,1,histcounts(spike_times_sleep,tvec_edges));
+        end
+
+        [~,event_index,normalized_duration,temp] = ...
+            calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
+
+        [~,event_index,normalized_duration,temp] = ...
+            calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
 
         calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
 
