@@ -1113,7 +1113,7 @@ for nprobe = 1:length(slow_waves_all)
     
     probability(nprobe).R_ripples_shuffled = tempUP;
 end
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','probability_ripples_ripples.mat'),'probability');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'),'probability');
 
 % binnedArrayUP = [];
 % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
