@@ -10,7 +10,7 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 71 72 73]);
 Stimulus_type = 'SleepChronic';
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
@@ -602,37 +602,37 @@ load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 %         
 %     end
 % end
-for nprobe = 1:2
-    figure
-    for nsession = 1:all_sessions
-%         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
-        UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP this session
-%         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN 
-        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
-        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<=2),:);
-        UP_duration = UP_ints(:,2)-UP_ints(:,1);
-
-
-        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession); % Find DOWN this session
-        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
-        DOWN_index = DOWN_index(ib);
-
-        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-        DOWN_duration = DOWN_ints(:,2)-DOWN_ints(:,1);
-
-        ripples_index = find(ripples_all(1).session_count == nsession& ripples_all(1).SWS_index == 1);
-
-
-        %     UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
-        % UP_duration<2
-        subplot(3,5,nsession)
-c
-        hold on
-        histogram(log10(DOWN_duration),-2:0.1:0.5,'EdgeColor','none')
-        histogram(log10(UP_duration),-2:0.1:0.5,'EdgeColor','none')
-    end
-end
+% for nprobe = 1:2
+%     figure
+%     for nsession = 1:all_sessions
+% %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
+%         UP_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP this session
+% %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN 
+%         UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+%         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<=2),:);
+%         UP_duration = UP_ints(:,2)-UP_ints(:,1);
+% 
+% 
+%         DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession); % Find DOWN this session
+%         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+%         [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+%         DOWN_index = DOWN_index(ib);
+% 
+%         DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+%         DOWN_duration = DOWN_ints(:,2)-DOWN_ints(:,1);
+% 
+%         ripples_index = find(ripples_all(1).session_count == nsession& ripples_all(1).SWS_index == 1);
+% 
+% 
+%         %     UP_ints = slow_waves_all(nprobe).UP_ints(UP_index(UP_duration<10),:);
+%         % UP_duration<2
+%         subplot(3,5,nsession)
+% c
+%         hold on
+%         histogram(log10(DOWN_duration),-2:0.1:0.5,'EdgeColor','none')
+%         histogram(log10(UP_duration),-2:0.1:0.5,'EdgeColor','none')
+%     end
+% end
 
 
 %% Caclulating ripple-UP-DOWN temporal probability
