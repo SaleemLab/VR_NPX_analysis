@@ -2,6 +2,7 @@ function probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,rippl
 
 p = inputParser;
 addParameter(p,'option','absolute',@ischar);
+addParameter(p,'shuffle_option',1,@isnumeric);
 
 addParameter(p,'time_option','peaktimes',@ischar);
 addParameter(p,'time_wondows',[-0.5 0.5],@isnumeric);
@@ -16,7 +17,7 @@ time_wondows = p.Results.time_wondows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
-
+shuffle_option = p.Results.shuffle_option;
 
 for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% L ripples
