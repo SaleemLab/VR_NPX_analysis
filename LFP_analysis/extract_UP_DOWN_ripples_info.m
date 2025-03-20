@@ -31,6 +31,9 @@ for nprobe = 1:length(slow_waves_all)
     event_info(nprobe).previous_DOWN_duration = [];
     event_info(nprobe).next_DOWN_duration = [];
 
+    event_info(nprobe).DU_slope_HPC = [];
+    event_info(nprobe).DU_slope_V1 = [];
+
     for nsession = 1:length(sessions_to_process)
         
         % Find UP followed by a DOWN 
@@ -87,7 +90,10 @@ for nprobe = 1:length(slow_waves_all)
         w = w / sum(w);
 
         
-        DU_slope_HPC = [];DU_slope_V1 = [];
+        DU_slope_HPC = [];
+        DU_slope_V1 = [];
+
+        [status,interval,index] = InIntervals(tvec_interp1,NREMInts);
 
         for mprobe = 1:length(slow_waves_all)
 
@@ -132,8 +138,8 @@ for nprobe = 1:length(slow_waves_all)
         end
 
         % log D-U transition MUA spike slope
-        event_info(nprobe).DU_slope_HPC = [event_info(nprobe).DU_slope_HPC];
-        event_info(nprobe).DU_slope_V1 = [event_info(nprobe).DU_slope_V1];
+        event_info(nprobe).DU_slope_HPC = [event_info(nprobe).DU_slope_HPC DU_slope_HPC];
+        event_info(nprobe).DU_slope_V1 = [event_info(nprobe).DU_slope_V1 DU_slope_V1];
         
         % UP times
         [index,event_index,UP_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).UP_ints(UP_index,:));

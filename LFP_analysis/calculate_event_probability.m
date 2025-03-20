@@ -11,7 +11,8 @@ function [probabilities,binnedArray,event_index] = calculate_event_probability(e
 % event_index (:,1) : Event A index (e.g. ripple)
 % event_index (:,2) : Event B index (e.g.UP or DOWN)
 % event_index (:,3) : Time of Event A retive to event B
-bins_centre = time_windows(1)+mean(diff(time_windows))/2:mean(diff(time_windows)):time_windows(end)-mean(diff(time_windows))/2;
+
+bins_centre = linspace( time_windows(1)+mean(diff(time_windows))/2,time_windows(end)-mean(diff(time_windows))/2,length(time_windows)-1);
 count = 1;
 probabilities = zeros(1, length(time_windows) - 1);
 binnedArray = zeros(size(event_B,1), length(time_windows)-1);
