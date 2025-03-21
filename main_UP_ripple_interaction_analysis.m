@@ -1156,19 +1156,19 @@ probability_ripples_SO = probability;
 plot_UP_DOWN_ripple_probability
 
 %% Plotting and calculating MUA relative to UP DOWN and ripple
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:all_sessions;
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute');
-
+UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
 
 
 %% Extract key information
-extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU')
+event_info = extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU')
 
 extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
-
-[~,index]=sort(probability(1).DOWN_duration);
-imagesc(probability(1).L_ripples_DOWN(index,:))
 
 %% distribution of DOWN duration with high vs low ripple
 

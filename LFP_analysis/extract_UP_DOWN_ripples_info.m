@@ -19,6 +19,7 @@ duration_threshold = p.Results.duration_threshold;
 
 
 for nprobe = 1:length(slow_waves_all)
+    tic
     %%%%%%%%%%%%%%% L ripples
     UP_index_all = [];
     DOWN_index_all = [];
@@ -49,8 +50,8 @@ for nprobe = 1:length(slow_waves_all)
     event_info(nprobe).R_ripple_normalised_DOWN_duration = [];
 
     event_info(nprobe).L_ripple_zscore_UP=[];
-    event_info(nprobe).R_ripple_zscore_DOWN=[];
-    event_info(nprobe).L_ripple_zscore_UP=[];
+    event_info(nprobe).L_ripple_zscore_DOWN=[];
+    event_info(nprobe).R_ripple_zscore_UP=[];
     event_info(nprobe).R_ripple_zscore_DOWN=[];
 
     event_info(nprobe).L_ripple_cumulative_duration_UP=[];
@@ -70,9 +71,19 @@ for nprobe = 1:length(slow_waves_all)
     event_info(nprobe).L_HPC_cumulative_activity_UP= [];
     event_info(nprobe).R_HPC_cumulative_activity_UP= [];
 
+    event_info(nprobe).L_ripple_V1_MUA_peak_DOWN = [];
+    event_info(nprobe).R_ripple_V1_MUA_peak_DOWN = [];
+    event_info(nprobe).L_ripple_HPC_MUA_peak_DOWN = [];
+    event_info(nprobe).R_ripple_HPC_MUA_peak_DOWN =[];
+
+    event_info(nprobe).L_V1_cumulative_activity_DOWN = [];
+    event_info(nprobe).R_V1_cumulative_activity_DOWN = [];
+    event_info(nprobe).L_HPC_cumulative_activity_DOWN = [];
+    event_info(nprobe).R_HPC_cumulative_activity_DOWN = [];
+
     for nsession = 1:length(sessions_to_process)
-        
-        % Find UP followed by a DOWN 
+
+        % Find UP followed by a DOWN
         %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
@@ -89,7 +100,7 @@ for nprobe = 1:length(slow_waves_all)
         elseif contains(option,'DU')
             [C,ia,ib] = intersect(UP_ints(:,1),DOWN_ints(:,2));
         end
-        
+
         % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
         UP_index = UP_index(ia);
         DOWN_index = DOWN_index(ib);
@@ -111,8 +122,8 @@ for nprobe = 1:length(slow_waves_all)
         % log event_info
         event_info(nprobe).UP_index = [event_info(nprobe).UP_index UP_index]; % total UP index
         event_info(nprobe).DOWN_index = [event_info(nprobe).DOWN_index DOWN_index]; % total DOWN index
-        event_info(nprobe).UP_duration = [event_info(nprobe).UP_duration UP_ints(:,2)-UP_ints(:,1)]; 
-        event_info(nprobe).previous_DOWN_duration = [event_info(nprobe).previous_DOWN_duration slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,1)]; 
+        event_info(nprobe).UP_duration = [event_info(nprobe).UP_duration UP_ints(:,2)-UP_ints(:,1)];
+        event_info(nprobe).previous_DOWN_duration = [event_info(nprobe).previous_DOWN_duration slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,1)];
         event_info(nprobe).next_DOWN_duration = [event_info(nprobe).next_DOWN_duration slow_waves_all(nprobe).DOWN_ints(DOWN_index,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index,1)];
 
 
@@ -126,7 +137,7 @@ for nprobe = 1:length(slow_waves_all)
         w = gausswin(0.03*1/mean(diff(tvec_interp1))); % Smoothed with σ = 30 ms
         w = w / sum(w);
 
-        
+
         DU_slope_HPC = [];
         DU_slope_V1 = [];
 
@@ -160,7 +171,7 @@ for nprobe = 1:length(slow_waves_all)
             [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, slow_waves_all(nprobe).UP_ints(UP_index,1), time_wondows, time_bin);
             temp = (temp-mean(V1_spike_counts{mprobe}(NREM_status)))./std(V1_spike_counts{mprobe}(NREM_status));% zscore relative to spike count during sleep
             binnedArrayUPHPC{mprobe} = filtfilt(w,1,temp);
-    
+
 
             %%%% Grab perievent V1 MUA activity
             [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, slow_waves_all(nprobe).UP_ints(UP_index,1), time_wondows, time_bin);
@@ -176,10 +187,10 @@ for nprobe = 1:length(slow_waves_all)
         % grab D-U transition MUA spike slope
         event_info(nprobe).DU_slope_HPC = [event_info(nprobe).DU_slope_HPC DU_slope_HPC];
         event_info(nprobe).DU_slope_V1 = [event_info(nprobe).DU_slope_V1 DU_slope_V1];
-        
+
         % UP spike count index
         [UP_status,UP_event_index,UP_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).UP_ints(UP_index,:));
-        % 
+        %
         [DOWN_status,DOWN_event_index,DOWN_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).DOWN_ints(DOWN_index,:));
 
         %%%%% Ripple distribution during UP
@@ -207,14 +218,14 @@ for nprobe = 1:length(slow_waves_all)
                 for i = 1:length(this_event_index)
 
                     event_info(nprobe).L_ripple_V1_MUA_peak_UP = [event_info(nprobe).L_ripple_V1_MUA_peak_UP; ...
-                    max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
-                    max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
-                    
+                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
+                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
+
                     event_info(nprobe).L_ripple_HPC_MUA_peak_UP = [event_info(nprobe).L_ripple_HPC_MUA_peak_UP; ...
-                    max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
-                    max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
-                    
-                
+                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
+                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
+
+
                 end
 
             end
@@ -229,12 +240,12 @@ for nprobe = 1:length(slow_waves_all)
 
                 for i = 1:length(this_event_index)
                     event_info(nprobe).R_ripple_V1_MUA_peak_UP = [event_info(nprobe).R_ripple_V1_MUA_peak_UP; ...
-                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
-                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
+                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
+                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
 
                     event_info(nprobe).R_ripple_HPC_MUA_peak_UP = [event_info(nprobe).R_ripple_HPC_MUA_peak_UP; ...
-                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
-                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
+                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
+                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
                 end
             end
 
@@ -259,15 +270,20 @@ for nprobe = 1:length(slow_waves_all)
         % event_info(nprobe).L_ripple_zscore_DOWN=[];
         % event_info(nprobe).R_ripple_zscore_UP=[];
         % event_info(nprobe).R_ripple_zscore_DOWN=[];
-        % 
+        %
         % event_info(nprobe).L_ripple_cumulative_duration_UP=[];
         % event_info(nprobe).L_ripple_cumulative_duration_DOWN=[];
         % event_info(nprobe).R_ripple_cumulative_duration_UP=[];
         % event_info(nprobe).R_ripple_cumulative_duration_DOWN=[];
 
 
+<<<<<<< Updated upstream
         %%%%% Ripple distribution during DOWN
       [DOWN_status,DOWN_event_index,DOWN_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).DOWN_ints(DOWN_index,:));
+=======
+        %%%%% DOWN
+        [DOWN_status,DOWN_event_index,DOWN_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).DOWN_ints(DOWN_index,:));
+>>>>>>> Stashed changes
 
         % Ripple distribution during UP
         % (event_index -> 1 is ripple index, 2 is UP index, 3 is normalized duration)
@@ -294,14 +310,14 @@ for nprobe = 1:length(slow_waves_all)
                 for i = 1:length(this_event_index)
 
                     event_info(nprobe).L_ripple_V1_MUA_peak_DOWN = [event_info(nprobe).L_ripple_V1_MUA_peak_DOWN; ...
-                    max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
-                    max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
-                    
+                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
+                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
+
                     event_info(nprobe).L_ripple_HPC_MUA_peak_DOWN = [event_info(nprobe).L_ripple_HPC_MUA_peak_DOWN; ...
-                    max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
-                    max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
-                    
-                
+                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
+                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(1).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
+
+
                 end
 
             end
@@ -309,39 +325,40 @@ for nprobe = 1:length(slow_waves_all)
             this_event_index = find(event_index2(:,2) == nevent);
 
             if ~isempty(this_event_index)
-                event_info(nprobe).R_ripple_zscore_DOWN = [event_info(nprobe).L_ripple_zscore_UP; ripples_all(2).peak_zscore(ripple_index2(event_index2(this_event_index,1)))];
+                event_info(nprobe).R_ripple_zscore_DOWN = [event_info(nprobe).R_ripple_zscore_DOWN; ripples_all(2).peak_zscore(ripple_index2(event_index2(this_event_index,1)))];
 
-                event_info(nprobe).R_ripple_cumulative_duration_UP = [event_info(nprobe).L_ripple_cumulative_duration_UP...
+                event_info(nprobe).R_ripple_cumulative_duration_DOWN = [event_info(nprobe).R_ripple_cumulative_duration_DOWN...
                     sum(ripples_all(2).offset(ripple_index2(event_index2(this_event_index,1))) - ripples_all(2).onset(ripple_index2(event_index2(this_event_index,1))))];
 
                 for i = 1:length(this_event_index)
-                    event_info(nprobe).R_ripple_V1_MUA_peak_UP = [event_info(nprobe).R_ripple_V1_MUA_peak_UP; ...
-                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
-                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
+                    event_info(nprobe).R_ripple_V1_MUA_peak_DOWN = [event_info(nprobe).R_ripple_V1_MUA_peak_DOWN; ...
+                        max(V1_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{1}(NREM_status)))./std(V1_spike_counts{1}(NREM_status))...
+                        max(V1_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(V1_spike_counts{2}(NREM_status)))./std(V1_spike_counts{2}(NREM_status))];
 
-                    event_info(nprobe).R_ripple_HPC_MUA_peak_UP = [event_info(nprobe).R_ripple_HPC_MUA_peak_UP; ...
-                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
-                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index1(event_index1(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
+                    event_info(nprobe).R_ripple_HPC_MUA_peak_DOWN = [event_info(nprobe).R_ripple_HPC_MUA_peak_DOWN; ...
+                        max(HPC_spike_counts{1}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{1}(NREM_status)))./std(HPC_spike_counts{1}(NREM_status))...
+                        max(HPC_spike_counts{2}(tvec_interp1 >= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1))) & tvec_interp1 <= ripples_all(2).peaktimes(ripple_index2(event_index2(this_event_index(i),1)))+0.1)-mean(HPC_spike_counts{2}(NREM_status)))./std(HPC_spike_counts{2}(NREM_status))];
                 end
             end
 
             % min-max (99%) normalised cumulative spiking normalised by
             % UP duration
 
-            event_info(nprobe).L_V1_cumulative_activity_UP= [event_info(nprobe).L_V1_cumulative_activity_UP sum((V1_spike_counts{1}(UP_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(prctile(V1_spike_counts{1}(NREM_status),99)-min(V1_spike_counts{1}(NREM_status))))...
-                /diff(UP_ints(nevent,:))];
+            event_info(nprobe).L_V1_cumulative_activity_DOWN= [event_info(nprobe).L_V1_cumulative_activity_DOWN sum((V1_spike_counts{1}(DOWN_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(prctile(V1_spike_counts{1}(NREM_status),99)-min(V1_spike_counts{1}(NREM_status))))...
+                /diff(DOWN_ints(nevent,:))];
 
-            event_info(nprobe).R_V1_cumulative_activity_UP= [event_info(nprobe).R_V1_cumulative_activity_UP sum(V1_spike_counts{2}(UP_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(prctile(V1_spike_counts{2}(NREM_status),99)-min(V1_spike_counts{2}(NREM_status)))...
-                /diff(UP_ints(nevent,:))];
+            event_info(nprobe).R_V1_cumulative_activity_DOWN= [event_info(nprobe).R_V1_cumulative_activity_DOWN sum(V1_spike_counts{2}(DOWN_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(prctile(V1_spike_counts{2}(NREM_status),99)-min(V1_spike_counts{2}(NREM_status)))...
+                /diff(DOWN_ints(nevent,:))];
 
-            event_info(nprobe).L_HPC_cumulative_activity_UP= [event_info(nprobe).L_HPC_cumulative_activity_UP sum((HPC_spike_counts{1}(UP_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(prctile(HPC_spike_counts{1}(NREM_status),99)-min(HPC_spike_counts{1}(NREM_status)))...
-                /diff(UP_ints(nevent,:))];
+            event_info(nprobe).L_HPC_cumulative_activity_DOWN= [event_info(nprobe).L_HPC_cumulative_activity_DOWN sum((HPC_spike_counts{1}(DOWN_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(prctile(HPC_spike_counts{1}(NREM_status),99)-min(HPC_spike_counts{1}(NREM_status)))...
+                /diff(DOWN_ints(nevent,:))];
 
-            event_info(nprobe).R_HPC_cumulative_activity_UP= [event_info(nprobe).R_HPC_cumulative_activity_UP sum(HPC_spike_counts{2}(UP_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(prctile(HPC_spike_counts{2}(NREM_status),99)-min(HPC_spike_counts{2}(NREM_status)))...
-                /diff(UP_ints(nevent,:))];
+            event_info(nprobe).R_HPC_cumulative_activity_DOWN= [event_info(nprobe).R_HPC_cumulative_activity_DOWN sum(HPC_spike_counts{2}(DOWN_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(prctile(HPC_spike_counts{2}(NREM_status),99)-min(HPC_spike_counts{2}(NREM_status)))...
+                /diff(DOWN_ints(nevent,:))];
 
         end
-        
-    end
 
+    end
+    toc
 end
+
