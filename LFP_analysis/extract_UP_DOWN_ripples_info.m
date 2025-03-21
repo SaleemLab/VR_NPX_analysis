@@ -277,13 +277,9 @@ for nprobe = 1:length(slow_waves_all)
         % event_info(nprobe).R_ripple_cumulative_duration_DOWN=[];
 
 
-<<<<<<< Updated upstream
         %%%%% Ripple distribution during DOWN
-      [DOWN_status,DOWN_event_index,DOWN_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).DOWN_ints(DOWN_index,:));
-=======
-        %%%%% DOWN
         [DOWN_status,DOWN_event_index,DOWN_time_index] = InIntervals(tvec_interp1, slow_waves_all(nprobe).DOWN_ints(DOWN_index,:));
->>>>>>> Stashed changes
+
 
         % Ripple distribution during UP
         % (event_index -> 1 is ripple index, 2 is UP index, 3 is normalized duration)
