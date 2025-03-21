@@ -10,7 +10,7 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 % % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 % load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 % load(fullfile(analysis_folder,'spindles_all_POST.mat'))
@@ -955,7 +955,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 %% plotting Probability of UP and/or DOWN relative to Ripple peaktime
 probability = probability_ripples_SO;
 
-time_wondows = [-0.2 0.5];
+time_wondows = [-0.5 0.5];
 time_bin = 0.02;
 num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;

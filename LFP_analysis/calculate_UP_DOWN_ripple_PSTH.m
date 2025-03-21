@@ -178,6 +178,7 @@ for nprobe = 1:length(slow_waves_all)
     tempUP = [];
     tempDOWN = [];
     tempRipples = [];
+    disp('V1 L spike shift shuffle')
     tic
     for iBoot = 1:1000
         temp1 = [];
@@ -239,6 +240,7 @@ for nprobe = 1:length(slow_waves_all)
     tempUP = [];
     tempDOWN = [];
     tempRipples = [];
+    disp('V1 R spike shift shuffle')
     tic
     for iBoot = 1:1000
         temp1 = [];
@@ -301,6 +303,7 @@ for nprobe = 1:length(slow_waves_all)
     tempUP = [];
     tempDOWN = [];
     tempRipples = [];
+    disp('V1 L spike shift shuffle')
     tic
     for iBoot = 1:1000
         temp1 = [];
@@ -362,6 +365,7 @@ for nprobe = 1:length(slow_waves_all)
     tempUP = [];
     tempDOWN = [];
     tempRipples = [];
+    disp('HPC R spike shift shuffle')
     tic
     for iBoot = 1:1000
         temp1 = [];
