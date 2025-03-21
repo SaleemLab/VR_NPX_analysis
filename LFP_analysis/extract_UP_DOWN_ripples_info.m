@@ -8,6 +8,7 @@ addParameter(p,'time_wondows',[-1 1],@isnumeric);
 addParameter(p,'time_bin',0.01,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
+addParameter(p,'nprobe',1,@isnumeric);
 
 parse(p,varargin{:})
 option = p.Results.option;
@@ -16,10 +17,10 @@ time_wondows = p.Results.time_wondows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
+nprobe =  p.Results.nprobe;
 
+% for nprobe = 1:length(slow_waves_all)
 
-for nprobe = 1:length(slow_waves_all)
-    tic
     %%%%%%%%%%%%%%% L ripples
     UP_index_all = [];
     DOWN_index_all = [];
@@ -82,7 +83,7 @@ for nprobe = 1:length(slow_waves_all)
     event_info(nprobe).R_HPC_cumulative_activity_DOWN = [];
 
     for nsession = 1:length(sessions_to_process)
-
+        tic
         % Find UP followed by a DOWN
         %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
@@ -201,9 +202,17 @@ for nprobe = 1:length(slow_waves_all)
         [~,event_index2,~,temp] = ...
             calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:),ripple_peaktimes2,num_bins,0);
 
-        event_info(nprobe).L_ripple_normalised_UP_duration = [event_info(nprobe).L_ripple_normalised_UP_duration;   [ripple_index1(event_index1(:,1)) UP_index(event_index1(:,2)) event_index1(:,3)]];
-        event_info(nprobe).R_ripple_normalised_UP_duration = [event_info(nprobe).R_ripple_normalised_UP_duration;   [ripple_index2(event_index2(:,1)) UP_index(event_index2(:,2)) event_index2(:,3)]];
+        if ~isempty(event_index1)
+            event_info(nprobe).L_ripple_normalised_UP_duration = [event_info(nprobe).L_ripple_normalised_UP_duration;   [ripple_index1(event_index1(:,1)) UP_index(event_index1(:,2)) event_index1(:,3)]];
+        else
+            event_index1 = [0 0 0];
+        end
 
+        if ~isempty(event_index2)
+            event_info(nprobe).R_ripple_normalised_UP_duration = [event_info(nprobe).R_ripple_normalised_UP_duration;   [ripple_index2(event_index2(:,1)) UP_index(event_index2(:,2)) event_index2(:,3)]];
+        else
+            event_index2 = [0 0 0];
+        end
         for nevent = 1:length(UP_index)
             % This event ripple
             this_event_index = find(event_index1(:,2) == nevent);
@@ -289,8 +298,18 @@ for nprobe = 1:length(slow_waves_all)
         [~,event_index2,~,temp] = ...
             calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_peaktimes2,num_bins,0);
 
-        event_info(nprobe).L_ripple_normalised_DOWN_duration = [event_info(nprobe).L_ripple_normalised_DOWN_duration;   [ripple_index1(event_index1(:,1)) DOWN_index(event_index1(:,2)) event_index1(:,3)]];
-        event_info(nprobe).R_ripple_normalised_DOWN_duration = [event_info(nprobe).R_ripple_normalised_DOWN_duration;   [ripple_index2(event_index2(:,1)) DOWN_index(event_index2(:,2)) event_index2(:,3)]];
+
+        if ~isempty(event_index1)
+            event_info(nprobe).L_ripple_normalised_DOWN_duration = [event_info(nprobe).L_ripple_normalised_DOWN_duration;   [ripple_index1(event_index1(:,1)) DOWN_index(event_index1(:,2)) event_index1(:,3)]];
+        else
+            event_index1 = [0 0 0];
+        end
+
+        if ~isempty(event_index2)
+            event_info(nprobe).R_ripple_normalised_DOWN_duration = [event_info(nprobe).R_ripple_normalised_DOWN_duration;   [ripple_index2(event_index2(:,1)) DOWN_index(event_index2(:,2)) event_index2(:,3)]];
+        else
+            event_index2 = [0 0 0];
+        end
 
         for nevent = 1:length(DOWN_index)
             % This event ripple
@@ -353,8 +372,8 @@ for nprobe = 1:length(slow_waves_all)
                 /diff(DOWN_ints(nevent,:))];
 
         end
-
+        toc
     end
-    toc
-end
+
+% end
 

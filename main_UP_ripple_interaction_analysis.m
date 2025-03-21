@@ -1169,7 +1169,12 @@ UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
 
 
 %% Extract key information
-event_info = extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU')
+parfor nprobe = 1:2
+    temp{nprobe} = extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU','nprobe',nprobe)
+    % event_info(2) = extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','DU','nprobe',1)
+end
+event_info(1) = temp{1};
+event_info(2) = temp{2};
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
 extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
