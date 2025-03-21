@@ -288,7 +288,7 @@ colour_lines = [215,25,28;214,100,77;103,169,207;44,123,182]/256;
 
 
 % colour_lines = [215,25,28;44,123,182]/256;
-probe_hemisphere_texts = {'MUA activity during left ripples with shuffle','MUA activity during right ripples with shuffle'};
+probe_hemisphere_texts = {'MUA activity during left ripples with shuffles','MUA activity during right ripples with shuffles'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 UP-DOWN','Probability of WHOLE ripples during right V1 UP-DOWN'};
 
 for nprobe = 1:2
@@ -412,7 +412,7 @@ colour_lines = [215,25,28;214,100,77;103,169,207;44,123,182]/256;
 
 
 % colour_lines = [215,25,28;44,123,182]/256;
-probe_hemisphere_texts = {'MUA activity during left DOWN UP transition','MUA activity during right DOWN UP transition'};
+probe_hemisphere_texts = {'MUA activity during left DOWN-UP transition','MUA activity during right DOWN-UP transition'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 UP-DOWN','Probability of WHOLE ripples during right V1 UP-DOWN'};
 fig(nprobe)=figure;
 fig(nprobe).Position = [500 150 980 760];
@@ -499,7 +499,7 @@ colour_lines = [215,25,28;214,100,77;103,169,207;44,123,182]/256;
 
 
 % colour_lines = [215,25,28;44,123,182]/256;
-probe_hemisphere_texts = {'MUA activity during left UP DOWN transition','MUA activity during right UP DOWN transition'};
+probe_hemisphere_texts = {'MUA activity during left UP-DOWN transition','MUA activity during right UP-DOWN transition'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 UP-DOWN','Probability of WHOLE ripples during right V1 UP-DOWN'};
 fig(nprobe)=figure;
 fig(nprobe).Position = [500 150 980 760];
@@ -660,6 +660,11 @@ for nprobe = 1:2
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     % nexttile
 end
+
+
+%%
+
+
 
 
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
