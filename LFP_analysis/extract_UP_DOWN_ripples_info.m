@@ -120,11 +120,11 @@ for nprobe = 1:length(slow_waves_all)
 
 
         % log event_info
-        event_info(nprobe).UP_index = [event_info(nprobe).UP_index UP_index]; % total UP index
-        event_info(nprobe).DOWN_index = [event_info(nprobe).DOWN_index DOWN_index]; % total DOWN index
-        event_info(nprobe).UP_duration = [event_info(nprobe).UP_duration UP_ints(:,2)-UP_ints(:,1)];
-        event_info(nprobe).previous_DOWN_duration = [event_info(nprobe).previous_DOWN_duration slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,1)];
-        event_info(nprobe).next_DOWN_duration = [event_info(nprobe).next_DOWN_duration slow_waves_all(nprobe).DOWN_ints(DOWN_index,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index,1)];
+        event_info(nprobe).UP_index = [event_info(nprobe).UP_index; UP_index]; % total UP index
+        event_info(nprobe).DOWN_index = [event_info(nprobe).DOWN_index; DOWN_index]; % total DOWN index
+        event_info(nprobe).UP_duration = [event_info(nprobe).UP_duration; UP_ints(:,2)-UP_ints(:,1)];
+        event_info(nprobe).previous_DOWN_duration = [event_info(nprobe).previous_DOWN_duration; slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index-1,1)];
+        event_info(nprobe).next_DOWN_duration = [event_info(nprobe).next_DOWN_duration; slow_waves_all(nprobe).DOWN_ints(DOWN_index,2)-slow_waves_all(nprobe).DOWN_ints(DOWN_index,1)];
 
 
         %%% Get spike counts this session
