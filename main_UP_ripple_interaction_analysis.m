@@ -1137,10 +1137,15 @@ all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
+probability_normalised = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
@@ -1149,22 +1154,6 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','probability_SO_SO_cont
 probability_SO_SO_contralateral = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
 probability_ripples_SO = probability;
-
-%% Plotting basic temporal probability of UP DOWN and ripple
-plot_UP_DOWN_ripple_probability
-
-%% Plotting and calculating MUA relative to UP DOWN and ripple
-all_sessions = max(slow_waves_all(1).DOWN_session_count);
-sessions_to_process = 1:all_sessions;
-
-UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
-
-UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
-
 
 
 
@@ -1179,23 +1168,36 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 
 extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
 
-
-%% Ripple probability distribution with late ripples
-%%%% P(ripples) during UP DOWN ()
-probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','peaktimes','shuffle_option',0)
-probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'),'probability_normalised');
-probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','peaktimes','time_wondows',[-0.2 0.5]);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'),'probability');
+%% Plotting basic temporal probability of UP DOWN and ripple
+plot_UP_DOWN_ripple_probability
 
 
-probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','whole')
-probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'),'probability_normalised');
-probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_wondows',[-0.2 0.5])
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'),'probability');
+%% Plotting and calculating MUA relative to UP DOWN and ripple
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:all_sessions;
+
+UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+
+UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
+
+plot_UP_DOWN_ripple_MUA_PSTH
+
+%% The effect of different timing of ripple relative to UP on MUA and ripple distribution
+%%%% P(ripples) during UP DOWN
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+plot_ripple_timing_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA)
 
 
+
+%% Analyse UP - DOWN transition
+analyse_UP_DOWN_transition(slow_waves_all,event_info,ripples_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+
+analyse_DOWN_UP_transition(slow_waves_all,event_info,ripples_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
 
 %% distribution of DOWN duration with high vs low ripple
 

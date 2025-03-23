@@ -54,7 +54,7 @@ for i = 1:size(event_A, 1)
             for k = 1:length(index)
                 event_index(count,1) = index(k);
                 event_index(count,2) = i;
-                event_index(count,3) = bin_start+(bin_start-bin_end)/2;
+                event_index(count,3) = bin_start+(bin_start+bin_end)/2;
                 count = count +1;
             end
         end
