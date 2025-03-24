@@ -144,6 +144,8 @@ for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% R ripples
     UP_index_all = [];
     DOWN_index_all = [];
+    ripple_index_UP_all = [];
+    ripple_index_DOWN_all = [];
 
     binnedArrayUP = [];
     binnedArrayDOWN = [];

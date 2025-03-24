@@ -144,6 +144,8 @@ for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% R spindles
     UP_index_all = [];
     DOWN_index_all = [];
+    spindle_index_UP_all = [];
+    spindle_index_DOWN_all = [];
 
     binnedArrayUP = [];
     binnedArrayDOWN = [];
@@ -172,7 +174,7 @@ for nprobe = 1:length(slow_waves_all)
 
         
         spindles_index = find(spindles_all(2).session_count == sessions_to_process(nsession)& spindles_all(2).SWS_index == 1);
-        spindle_peaktimes = min(spindles_all(2).SWR_peaktimes{sessions_to_process(nsession)}(spindles_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,spindles_all(2).SWS_index(spindles_all(2).session_count == sessions_to_process(nsession))==1))';
+        spindle_peaktimes = spindles_all(2).SWS_peaktimes;
         
         if contains(time_option,'peaktimes')
             spindle_times= spindle_peaktimes;
@@ -188,7 +190,7 @@ for nprobe = 1:length(slow_waves_all)
         end
 
         binnedArrayDOWN=[binnedArrayDOWN; temp];
-        spindles_index_DOWN_all = [spindles_index_DOWN_all;event_index];
+        spindle_index_DOWN_all = [spindle_index_DOWN_all;event_index];
 
         if contains(option,'normalised')
             [probability(nprobe).R_spindles_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,spindle_times,num_bins,0);
