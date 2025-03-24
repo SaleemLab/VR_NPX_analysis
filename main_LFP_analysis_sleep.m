@@ -667,7 +667,7 @@ for nsession =1:length(experiment_info)
 
                 for nevent = 1:length(ripples(probe_no).onset)
 
-                    tidx = FindInInterval(tvec,[ripples(probe_no).peaktimes(nevent)-0.05 ripples(probe_no).offset(nevent)]);
+                    tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
                     [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
