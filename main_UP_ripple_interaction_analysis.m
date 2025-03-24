@@ -1192,7 +1192,7 @@ extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged
 
 %% Plotting basic temporal probability of UP DOWN and ripple
 plot_UP_DOWN_ripple_probability
-
+plot_UP_DOWN_spindle_probability
 
 %% Plotting and calculating MUA relative to UP DOWN and ripple
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
@@ -1208,8 +1208,27 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_
 
 plot_UP_DOWN_ripple_MUA_PSTH
 
-%% The effect of different timing of ripple relative to UP on MUA and ripple distribution
+%% The effect of ripple timing and power on DOWN UP transition and MUA response
 %%%% P(ripples) during UP DOWN
+clear all
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:all_sessions;
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
