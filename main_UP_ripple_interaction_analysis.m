@@ -666,9 +666,10 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 
 
 %%%% P(UP) and P(DOWN) during ripples
-probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','peaktimes')
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
-
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole')
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'),'probability');
 
 %%%% P(spindles) during UP DOWN
 probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','normalised','time_option','peaktimes')
@@ -1210,13 +1211,20 @@ plot_UP_DOWN_ripple_MUA_PSTH
 %%%% P(ripples) during UP DOWN
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
 probability_normalised = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 probability_psth = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
-plot_ripple_timing_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA)
-plot_ripple_power_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA)
+
+plot_ripple_timing_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA);
+plot_ripple_power_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA);
 
 
 

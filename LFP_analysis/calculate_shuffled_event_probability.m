@@ -1,9 +1,10 @@
-function probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,varargin)
+function probability = calculate_shuffled_event_probability(slow_waves_all,ripples_all,sessions_to_process,varargin)
 
 p = inputParser;
 addParameter(p,'option','absolute',@ischar);
+addParameter(p,'shuffle_option',1,@isnumeric);
 
-addParameter(p,'time_option','onset',@ischar);
+addParameter(p,'time_option','peaktimes',@ischar);
 addParameter(p,'time_wondows',[-0.5 0.5],@isnumeric);
 addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
@@ -16,7 +17,7 @@ time_wondows = p.Results.time_wondows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
-
+shuffle_option = p.Results.shuffle_option;
 
 for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% L ripples
@@ -54,28 +55,27 @@ for nprobe = 1:length(slow_waves_all)
 
         ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
-        ripple_times= ripple_peaktimes;
 
-        if contains(time_option,'onset')
-            time_index= 1;
+        if contains(time_option,'peaktimes')
+            ripple_times= ripple_peaktimes;
         else
-            time_index= 1:2;
+            ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
         end
 
         if contains(option,'normalised')
             % Ripple probability during normalised UP duration
-            % [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
+            [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
         else
-            [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_times,slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_wondows(1):time_bin:time_wondows(end),0);
         end
 
         binnedArrayDOWN=[binnedArrayDOWN; temp];
         ripple_index_DOWN_all = [ripple_index_DOWN_all;event_index];
 
         if contains(option,'normalised')
-            % [probability(nprobe).L_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
+            [probability(nprobe).L_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
         else
-            [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_times,slow_waves_all(nprobe).UP_ints(UP_index,1),time_wondows(1):time_bin:time_wondows(end),0);
         end
 
         binnedArrayUP=[binnedArrayUP; temp];
@@ -94,48 +94,51 @@ for nprobe = 1:length(slow_waves_all)
     
     all_ripple_no = sum(ripples_all(1).SWS_index == 1);
     probability(nprobe).L_ripple_no = all_ripple_no;
-    
+    all_UP_no = length(UP_index_all);
+    all_DOWN_no = length(DOWN_index_all);
+
     % bootstrap distribution
     tempUP = [];
     tempDOWN = [];
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
+        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_UP_no;
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
+        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_DOWN_no;
     end
 
     probability(nprobe).L_ripples_DOWN_bootstrap = tempDOWN;
     probability(nprobe).L_ripples_UP_bootstrap = tempUP;
 
-    % timebin circularly shifted
-    tempUP = [];
-    tempDOWN = [];
-    tic
-    for iBoot = 1:1000
-        temp1 = [];
-        temp2 = [];
-        parfor event_id = 1:size(binnedArrayUP,1)
-            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-            bins_to_shift = datasample(s,1:1:size(binnedArrayUP,2),1);
-            bins= circshift(1:1:size(binnedArrayUP,2),bins_to_shift);
-            temp1(event_id,:) = binnedArrayUP(event_id,bins);
-            temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
+    if shuffle_option == 1
+        % timebin circularly shifted
+        tempUP = [];
+        tempDOWN = [];
+        tic
+        for iBoot = 1:1000
+            temp1 = [];
+            temp2 = [];
+            parfor event_id = 1:size(binnedArrayUP,1)
+                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+                bins_to_shift = datasample(s,1:1:size(binnedArrayUP,2),1);
+                bins= circshift(1:1:size(binnedArrayUP,2),bins_to_shift);
+                temp1(event_id,:) = binnedArrayUP(event_id,bins);
+                temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
+            end
+
+            tempUP(iBoot,:) = sum(temp1,1)/all_UP_no;
+            tempDOWN(iBoot,:) = sum(temp2,1)/all_DOWN_no;
         end
+        toc
 
-        tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-        tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
+        probability(nprobe).L_ripples_DOWN_shuffled = tempDOWN;
+        probability(nprobe).L_ripples_UP_shuffled = tempUP;
+
     end
-    toc
-    
-    probability(nprobe).L_ripples_DOWN_shuffled = tempDOWN;
-    probability(nprobe).L_ripples_UP_shuffled = tempUP;
-
-
 
 
     %%%%%%%%%%%%%%% R ripples
@@ -170,33 +173,27 @@ for nprobe = 1:length(slow_waves_all)
         
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
-        ripple_times= ripple_peaktimes;
-
-        if contains(time_option,'onset')
-            time_index= 1;
+        
+        if contains(time_option,'peaktimes')
+            ripple_times= ripple_peaktimes;
         else
-            time_index= 1:2;
+            ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
         end
-%         if contains(time_option,'peaktimes')
-%             ripple_times= ripple_peaktimes;
-%         else
-%             ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
-%         end
 
         if contains(option,'normalised')
             % Ripple probability during normalised UP duration
-            % [probability(nprobe).R_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
+            [probability(nprobe).R_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
         else
-            [probability(nprobe).R_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).R_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_times,slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_wondows(1):time_bin:time_wondows(end),0);
         end
 
         binnedArrayDOWN=[binnedArrayDOWN; temp];
         ripple_index_DOWN_all = [ripple_index_DOWN_all;event_index];
 
         if contains(option,'normalised')
-            % [probability(nprobe).R_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
+            [probability(nprobe).R_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
         else
-            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_times,slow_waves_all(nprobe).UP_ints(UP_index,1),time_wondows(1):time_bin:time_wondows(end),0);
         end
 
         binnedArrayUP=[binnedArrayUP; temp];
@@ -211,44 +208,47 @@ for nprobe = 1:length(slow_waves_all)
 
     all_ripple_no = sum(ripples_all(2).SWS_index == 1);
     probability(nprobe).R_ripple_no = all_ripple_no;
-    
+    all_UP_no = length(UP_index_all);
+    all_DOWN_no = length(DOWN_index_all);
+
     % bootstrap distribution
     tempUP = [];
     tempDOWN = [];
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
+        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_UP_no;
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
+        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_DOWN_no;
     end
 
     probability(nprobe).R_ripples_DOWN_bootstrap = tempDOWN;
     probability(nprobe).R_ripples_UP_bootstrap = tempUP;
 
-    % timebin circularly shifted
-    tempUP = [];
-    tempDOWN = [];
-    tic
-    for iBoot = 1:1000
-        temp1 = [];
-        temp2 = [];
-        parfor event_id = 1:size(binnedArrayUP,1)
-            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-            bins_to_shift = datasample(s,1:1:size(binnedArrayUP,2),1);
-            bins= circshift(1:1:size(binnedArrayUP,2),bins_to_shift);
-            temp1(event_id,:) = binnedArrayUP(event_id,bins);
-            temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
-        end
+    if shuffle_option == 1
+        % timebin circularly shifted
+        tempUP = [];
+        tempDOWN = [];
+        tic
+        for iBoot = 1:1000
+            temp1 = [];
+            temp2 = [];
+            parfor event_id = 1:size(binnedArrayUP,1)
+                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+                bins_to_shift = datasample(s,1:1:size(binnedArrayUP,2),1);
+                bins= circshift(1:1:size(binnedArrayUP,2),bins_to_shift);
+                temp1(event_id,:) = binnedArrayUP(event_id,bins);
+                temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
+            end
 
-        tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-        tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
+            tempUP(iBoot,:) = sum(temp1,1)/all_UP_no;
+            tempDOWN(iBoot,:) = sum(temp2,1)/all_DOWN_no;
+        end
+        toc
     end
-    toc
-    
     probability(nprobe).R_ripples_DOWN_shuffled = tempDOWN;
     probability(nprobe).R_ripples_UP_shuffled = tempUP;
 end
