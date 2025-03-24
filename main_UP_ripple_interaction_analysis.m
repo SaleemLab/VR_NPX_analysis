@@ -1175,7 +1175,8 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','probability_SO_SO_cont
 probability_SO_SO_contralateral = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
 probability_ripples_SO = probability;
-
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'));
+probability_ripples_SO_whole = probability;
 
 
 %% Extract key information
