@@ -128,7 +128,7 @@ for nprobe = 1:length(slow_waves_all)
         end
     end
 
-    PSTH(nprobe).timebins = bins;
+    % PSTH(nprobe).timebins = bins;
 
     PSTH(nprobe).V1_UP = binnedArrayUPV1{1};
     PSTH(nprobe).V1_DOWN = binnedArrayDOWNV1{1};
