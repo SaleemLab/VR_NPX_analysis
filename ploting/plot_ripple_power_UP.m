@@ -6,7 +6,7 @@ elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
 
-%% Select UP events based on ripple timing
+%% Select UP events based on ripple power
 bin_edges = [0 0.2 0.4 0.6 0.8 1];
 
 for nprobe = 1:2
