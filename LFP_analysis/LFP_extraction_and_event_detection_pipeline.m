@@ -82,8 +82,6 @@ if ~isfield(clusters(1),'region')
     end
 end
 
-raw_LFP = [];
-LFP = [];
 
 for nprobe = 1:length(session_info.probe)
     options = session_info.probe(nprobe);
@@ -112,20 +110,22 @@ for nprobe = 1:length(session_info.probe)
         if contains(all_fields{nregion},'sparse') % want sparsely sampled channels
             selected_channels = [selected_channels region_channels'];
             channel_regions = [channel_regions nregion*ones(1,length(region_channels))];
-            shank_id = [shank_id chan_config.Shank(region_channels)'];
+%             shank_id = [shank_id chan_config.Shank(region_channels)'];
         else % Just want the best channel
             selected_channels = [selected_channels channels_temp];
             channel_regions = [channel_regions nregion*ones(1,length(channels_temp))];
-            shank_id = [shank_id unique(ceil(best_channels{nprobe}.xcoord/250))];
+%             shank_id = [shank_id chan_config.Shank(region_channels)'];
         end
         %                     shank_id = [shank_id chan_config.Shank(channels_temp)'];
     end
 
     channel_regions(isnan(selected_channels)) = []; % remove nan channel (Missing best channels for some shanks e.g. only 3 shanks with CA1)
-    shank_id(isnan(selected_channels)) = [];
+%     shank_id(isnan(selected_channels)) = [];
     selected_channels(isnan(selected_channels)) = [];
     [unique_selected_channels,ia,ic] = unique(selected_channels);
-    unique_shank_id = shank_id(ia);
+    shank_id = chan_config.Shank(selected_channels);
+    unique_shank_id = chan_config.Shank(unique_selected_channels);
+%     unique_shank_id = shank_id(ia);
 
     % Extract LFP
     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',unique_selected_channels);
@@ -499,7 +499,8 @@ for nprobe = 1:length(session_info.probe)
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
     %%%%%%%%%%%%%%%%%%
-
+    tvec = LFP(nprobe).tvec;
+    
     zscore_min = 0;
     zscore_max = 3;
     metric_param =[];
