@@ -118,8 +118,8 @@ for nprobe = 1
 
         if nprobe == 1
             best_channel = 1;
-% 
-%             channel_id = 43;
+            %
+%             channel_id = 42;
 %             nshank = 1;
 %             LFP(probe_no).best_V1_high_freq(nshank,:) =  raw_LFP(channel_id,:);
 %             LFP(probe_no).best_V1_high_freq_channel(nshank) = LFP(nprobe).average_V1_channel(channel_id);
@@ -169,11 +169,11 @@ for nprobe = 1
 
         tvec = LFP(probe_no).tvec;
         if nprobe == 1
-            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
+            temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.4);
         else
 %             temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
         end
-        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(43,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.7);
+        % temp = DetectSlowWaves_masa('time',tvec,'lfp',raw_LFP(55,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.6);
                 
         Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
         spindles_temp(nprobe)= FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
@@ -251,6 +251,7 @@ for nprobe = 1
         save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('LFP_events_%s',stimulus_name),sprintf('Probe%i',probe_no)),[])
     end
 end
+
 
 spindles1 = spindles;%backup
 clear spindles

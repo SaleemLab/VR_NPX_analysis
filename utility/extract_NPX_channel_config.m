@@ -5,7 +5,18 @@ function [file_to_use imecMeta chan_config sorted_config] = extract_NPX_channel_
 % Find config files for ephys data information
 % [AP_FILE,LF_FILE] = findImecBinFile(options.EPHYS_DATAPATH);
 % imecMeta = ReadMeta(fullfile(options.EPHYS_DATAPATH,LF_FILE));
-[AP_FILE,LF_FILE] = findImecMetaFile(options.ANALYSIS_DATAPATH,options.probe_id,options.gFileNum);
+% extractAfter(options.EPHYS_DATAPATH,sprintf('%s_%s_',options.SUBJECT,options.SESSION))
+
+% extractBetween(options.EPHYS_DATAPATH,sprintf('%s_%s_',options.SUBJECT,options.SESSION),sprintf('g%i_imec%i',options.gFileNum,options.probe_id))
+% options.EPHYS_DATAPATH
+
+temp = extractAfter(options.EPHYS_DATAPATH,sprintf('%s_%s_',options.SUBJECT,options.SESSION));
+if ~contains(temp(1),'g') %if doesn't have session_id
+    [AP_FILE,LF_FILE] = findImecMetaFile(options.ANALYSIS_DATAPATH,options.probe_id,options.gFileNum,str2double(temp(1)));
+else
+    [AP_FILE,LF_FILE] = findImecMetaFile(options.ANALYSIS_DATAPATH,options.probe_id,options.gFileNum);
+end
+
 
 switch options.importMode
     case 'LF'

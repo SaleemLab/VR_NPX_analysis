@@ -82,8 +82,6 @@ if ~isfield(clusters(1),'region')
     end
 end
 
-raw_LFP = [];
-LFP = [];
 
 for nprobe = 1:length(session_info.probe)
     options = session_info.probe(nprobe);
@@ -501,7 +499,8 @@ for nprobe = 1:length(session_info.probe)
     %%%%%%%%%%%%%%%%%%
     % UP/Down states and ripple and candidate reactivation events detection
     %%%%%%%%%%%%%%%%%%
-
+    tvec = LFP(nprobe).tvec;
+    
     zscore_min = 0;
     zscore_max = 3;
     metric_param =[];
