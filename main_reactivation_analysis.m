@@ -18,15 +18,15 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 34 35 44 45 46 47 56 58 59 60 71 72 73 33]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 6:length(experiment_info)
+for nsession = 9:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -293,20 +293,24 @@ for nsession = 6:length(experiment_info)
                     sampled_event_id = datasample(s,sig_event_id,40);
                 end
 
+                if isempty(sampled_event_id)
+                    continue
+                end
+
                 for nevent = 1:length(sampled_event_id)
                     subplot(5,8,nevent)
                     event_id = sampled_event_id(nevent);
 
-                    imagesc([decoded_ripple_events(1).track(1).replay_events(event_id).replay; decoded_ripple_events(1).track(2).replay_events(event_id).replay])
+                    imagesc([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay; decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay])
                     colormap(flipud(gray))
-                    clim([0.001 max(max([decoded_ripple_events(1).track(1).replay_events(event_id).replay decoded_ripple_events(1).track(2).replay_events(event_id).replay]))/2])
+                    clim([0.001 max(max([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay]))/2])
                     colorbar
                     xline(25.5,'r')
                     xline(30.5,'r')
                     yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
                     yline(140/position_bin_size+0.5,'LineWidth',1,'Color','k','DisplayName','Track 2')
                     yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
-                    event_time_edges = decoded_ripple_events(1).track(1).replay_events(event_id).timebins_edges ;
+                    event_time_edges = decoded_ripple_events(mprobe).track(1).replay_events(event_id).timebins_edges ;
 
                     xticks(linspace(1,length(event_time_edges),6))
                     xticklabels(linspace(event_time_edges(1),event_time_edges(end),6))
@@ -352,8 +356,8 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 34 35 44 45 46 47 56 58 59 60 71 72 73 33]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
