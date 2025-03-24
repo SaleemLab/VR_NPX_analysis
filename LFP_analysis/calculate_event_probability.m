@@ -32,36 +32,36 @@ for i = 1:length(event_B)
     end
 
     % Check if there are any event A timestamps within the current time window of event B
-    if size(event_A,2)==1
-        for j = 1:length(bins)-1
-            probabilities(j) = probabilities(j) + sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
-            binnedArray(i,j) = sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+    %     if size(event_A,2)==1
+    %         for j = 1:length(bins)-1
+    %             probabilities(j) = probabilities(j) + sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+    %             binnedArray(i,j) = sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+    %
+    %             if sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)))>0
+    %
+    %                 event_index(count,1) = find((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+    %                 event_index(count,2) = i;
+    %                 event_index(count,3) = bins_centre(j);
+    %                 count = count +1;
+    %             end
+    %         end
+    %     else
+    for j = 1:length(bins)-1
+        probabilities(j) = probabilities(j) + sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
+        binnedArray(i,j) = sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
 
-            if sum((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)))>0
+        if sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)))>0
+            index = find((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
 
-                event_index(count,1) = find((event_A >= b + bins(j)) & (event_A <= b + bins(j + 1)));
+            for k = 1:length(index)
+                event_index(count,1) = index(k);
                 event_index(count,2) = i;
                 event_index(count,3) = bins_centre(j);
                 count = count +1;
             end
         end
-    else
-        for j = 1:length(bins)-1
-            probabilities(j) = probabilities(j) + sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
-            binnedArray(i,j) = sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
-
-            if sum((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)))>0
-                index = find((event_A(:,end) >= b + bins(j)) & (event_A(:,1) <= b + bins(j + 1)));
-
-                for k = 1:length(index)
-                    event_index(count,1) = index(k);
-                    event_index(count,2) = i;
-                    event_index(count,3) = bins_centre(j);
-                    count = count +1;
-                end
-            end
-        end
     end
+    %     end
 end
 
 probabilities = probabilities ./ length(event_B);
