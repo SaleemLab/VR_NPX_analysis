@@ -5,68 +5,77 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
+probability_ripples_SO = probability;
 
+probability = probability_normalised_whole;
 %% Select UP events based on ripple power (within session normalised)
-bin_edges = [0 0.2 0.4 0.6 0.8 1];
+bin_edges = [0 1/4 2/4 3/4 1];
+UP_index = []; % index out of selected UP events for grabbing already-calculated metrics
+UP_index_all = []; % index out of all UP events (can be useful for grabbing additional information not previously calculated)
+DOWN_index= []; % index out of selected DOWN events for grabbing already-calculated metrics
+DOWN_index_all = []; % index out of all DOWN events (can be useful for grabbing additional information not previously calculated)
+
+ripples_index = [];% index out of all ripple events (can be useful for grabbing additional information not previously calculated)
+ripples_index_all = [];% index out of selected ripple events (can be useful for grabbing additional information not previously calculated)
+
 
 for nprobe = 1:2
-   
+
     % 0 0.2 0.4 0.6 0.8
-   
+
     for mprobe = 1:2
 
-        % ripple power normalised based on 
+        % ripple power normalised based on
         peak_normalised_all=[];
         for nsession = 1:max(ripples_all(mprobe).session_count)
-            peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
+            % peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
+            peak_zscore = max(ripples_all(mprobe).SWR_zscore{nsession});
             [temp,sortIdx] = sort(peak_zscore);
-            temp = ((1:length(temp))-0.5)/length(temp);
-%             peak_zscore = (peak_zscore-min(peak_zscore))/(max(peak_zscore)-min(peak_zscore));
-            peak_normalised_all = [peak_normalised_all temp(sortIdx)];
+            percentileRanks = zeros(1,length(peak_zscore));
+            percentileRanks(sortIdx) = ((1:length(temp))-0.5)/length(temp); 
+            %             peak_zscore = (peak_zscore-min(peak_zscore))/(max(peak_zscore)-min(peak_zscore));
+            peak_normalised_all = [peak_normalised_all percentileRanks];
         end
 
         SWS_ripples_index = find(ripples_all(mprobe).SWS_index);
         peak_normalised = peak_normalised_all(SWS_ripples_index);
-        ripples_all(mprobe).peak_zscore(SWS_ripples_index(find(peak_normalised > bin_edges(nbin) & peak_normalised < bin_edges(nbin+1))));
-        
+        % ripples_all(mprobe).peak_zscore(SWS_ripples_index(find(peak_normalised > bin_edges(nbin) & peak_normalised < bin_edges(nbin+1))));
+
         for nbin = 1:length(bin_edges)-1
             UP_index{nprobe}{mprobe}{nbin} = []; % index out of selected UP events for grabbing already-calculated metrics
             UP_index_all{nprobe}{mprobe}{nbin} = []; % index out of all UP events (can be useful for grabbing additional information not previously calculated)
             DOWN_index{nprobe}{mprobe}{nbin} = []; % index out of selected DOWN events for grabbing already-calculated metrics
             DOWN_index_all{nprobe}{mprobe}{nbin} = []; % index out of all DOWN events (can be useful for grabbing additional information not previously calculated)
 
-            ripples_index{nprobe}{mprobe}{nbin} = [];% index out of all ripple events (can be useful for grabbing additional information not previously calculated) 
-            ripples_index_all{nprobe}{mprobe}{nbin} = [];% index out of selected ripple events (can be useful for grabbing additional information not previously calculated) 
+            ripples_index{nprobe}{mprobe}{nbin} = [];% index out of all ripple events (can be useful for grabbing additional information not previously calculated)
+            ripples_index_all{nprobe}{mprobe}{nbin} = [];% index out of selected ripple events (can be useful for grabbing additional information not previously calculated)
+
+            ripples_index{nprobe}{mprobe}{nbin} = find(peak_normalised > bin_edges(nbin) & peak_normalised < bin_edges(nbin+1));
+            ripples_index_all{nprobe}{mprobe}{nbin} = SWS_ripples_index(ripples_index{nprobe}{mprobe}{nbin});
 
             if mprobe == 1
-                peak_normalised_all
-                ripples_index{nprobe}{mprobe}{nbin} = find(peak_normalised > bin_edges(nbin) & peak_normalised < bin_edges(nbin+1));
-                
-                event_info(nprobe).L_ripple_normalised_UP_duration(event_info(nprobe).L_ripple_normalised_UP_duration(:,3) > bin_edges(nbin) & event_info(nprobe).L_ripple_normalised_UP_duration(:,3) < bin_edges(nbin+1),1);
-
-                UP_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_UP_duration(event_info(nprobe).L_ripple_normalised_UP_duration(:,3) > bin_edges(nbin) & event_info(nprobe).L_ripple_normalised_UP_duration(:,3) < bin_edges(nbin+1),2);
+                [C,ia,ib] = intersect(event_info(nprobe).L_ripple_normalised_UP_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
+                UP_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_UP_duration(ia,2);
                 [C,ia,ib] = intersect(event_info(nprobe).UP_index,UP_index_all{nprobe}{mprobe}{nbin});
                 UP_index{nprobe}{mprobe}{nbin} = ia;
 
-                DOWN_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_DOWN_duration(event_info(nprobe).L_ripple_normalised_DOWN_duration(:,3) > bin_edges(nbin) & event_info(nprobe).L_ripple_normalised_DOWN_duration(:,3) < bin_edges(nbin+1),2);
+                [C,ia,ib] = intersect(event_info(nprobe).L_ripple_normalised_DOWN_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
+                DOWN_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_DOWN_duration(ia,2);
                 [C,ia,ib] = intersect(event_info(nprobe).DOWN_index,DOWN_index_all{nprobe}{mprobe}{nbin});
                 DOWN_index{nprobe}{mprobe}{nbin} = ia;
 
-                ripples_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_UP_duration(event_info(nprobe).L_ripple_normalised_UP_duration(:,3) > bin_edges(nbin) & event_info(nprobe).L_ripple_normalised_UP_duration(:,3) < bin_edges(nbin+1),1);
             else
-                UP_index_all{nprobe}{mprobe}{nbin} =  event_info(nprobe).R_ripple_normalised_UP_duration(event_info(nprobe).R_ripple_normalised_UP_duration(:,3) > bin_edges(nbin) & event_info(nprobe).R_ripple_normalised_UP_duration(:,3) < bin_edges(nbin+1),2);
+                [C,ia,ib] = intersect(event_info(nprobe).R_ripple_normalised_UP_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
+                UP_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).R_ripple_normalised_UP_duration(ia,2);
                 [C,ia,ib] = intersect(event_info(nprobe).UP_index,UP_index_all{nprobe}{mprobe}{nbin});
                 UP_index{nprobe}{mprobe}{nbin} = ia;
 
-                DOWN_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).R_ripple_normalised_DOWN_duration(event_info(nprobe).R_ripple_normalised_DOWN_duration(:,3) > bin_edges(nbin) & event_info(nprobe).R_ripple_normalised_DOWN_duration(:,3) < bin_edges(nbin+1),2);
+                [C,ia,ib] = intersect(event_info(nprobe).R_ripple_normalised_DOWN_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
+                DOWN_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).R_ripple_normalised_DOWN_duration(ia,2);
                 [C,ia,ib] = intersect(event_info(nprobe).DOWN_index,DOWN_index_all{nprobe}{mprobe}{nbin});
                 DOWN_index{nprobe}{mprobe}{nbin} = ia;
-
-                ripples_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).R_ripple_normalised_UP_duration(event_info(nprobe).R_ripple_normalised_UP_duration(:,3) > bin_edges(nbin) & event_info(nprobe).R_ripple_normalised_UP_duration(:,3) < bin_edges(nbin+1),1);
             end
-
-            [C,ia,ib] = intersect(SWS_ripples_index,ripples_index_all{nprobe}{mprobe}{nbin});
-            ripples_index{nprobe}{mprobe}{nbin} = ia;
         end
     end
 end
@@ -76,9 +85,106 @@ end
 colour_lines = [215,48,39;244,109,67;145,191,219;69,117,180]/256;% 4 colors Dark red, orangish red, light blue, dark blue
 clear colour_lines
 
-colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red
-colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue 
+colour_lines = [239,59,44;153,0,13;107,174,214;8,69,148]/256;% 5 red
+% colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;]/256;% 5 blue 
 
+%% Effect of ripple amplitude on ripple distribution
+ripple_amplitude_probability = [];
+ripple_amplitude_probability_LCL =[];
+ripple_amplitude_probability_UCL =[];
+for nprobe = 1:2
+    for mprobe = 1:2
+
+        index = unique(cat(1,UP_index{nprobe}{mprobe}{1}));
+        for iBoot = 1:1000
+            s = RandStream('philox4x32_10','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(probability(nprobe).L_ripples_UP(index,:),1),size(probability(nprobe).L_ripples_UP(index,:),1));
+            if mprobe == 1
+                tempUP(iBoot,:) = sum(probability(nprobe).L_ripples_UP(index(event_id),:))/length(index(event_id));
+            else
+                tempUP(iBoot,:) = sum(probability(nprobe).R_ripples_UP(index(event_id),:))/length(index(event_id));
+            end
+        end
+        
+        ripple_amplitude_probability(nprobe,mprobe,1) = mean(mean(tempUP(:,end-1:end),2));
+        ripple_amplitude_probability_LCL(nprobe,mprobe,1) = prctile(mean(tempUP(:,end-1:end),2),2.5);
+        ripple_amplitude_probability_UCL(nprobe,mprobe,1) = prctile(mean(tempUP(:,end-1:end),2),97.5);
+        
+        index = unique(cat(1,UP_index{nprobe}{mprobe}{end}));
+        for iBoot = 1:1000
+            s = RandStream('philox4x32_10','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(probability(nprobe).L_ripples_UP(index,:),1),size(probability(nprobe).L_ripples_UP(index,:),1));
+            if mprobe == 1
+                tempUP(iBoot,:) = sum(probability(nprobe).L_ripples_UP(index(event_id),:))/length(index(event_id));
+            else
+                tempUP(iBoot,:) = sum(probability(nprobe).R_ripples_UP(index(event_id),:))/length(index(event_id));
+            end
+        end
+
+        ripple_amplitude_probability(nprobe,mprobe,2) = mean(mean(tempUP(:,end-1:end),2));
+        ripple_amplitude_probability_LCL(nprobe,mprobe,2) = prctile(mean(tempUP(:,end-1:end),2),2.5);
+        ripple_amplitude_probability_UCL(nprobe,mprobe,2) = prctile(mean(tempUP(:,end-1:end),2),97.5);
+
+    end
+end
+
+
+
+x = [ripple_amplitude_probability(1,1,1) ripple_amplitude_probability(1,1,2) ripple_amplitude_probability(2,1,1) ripple_amplitude_probability(2,1,2)];
+x_CI = [ripple_amplitude_probability_LCL(1,1,1) ripple_amplitude_probability_UCL(1,1,1); ripple_amplitude_probability_LCL(1,1,2) ripple_amplitude_probability_UCL(1,1,2);...
+    ripple_amplitude_probability_LCL(2,1,1) ripple_amplitude_probability_UCL(2,1,1); ripple_amplitude_probability_LCL(2,1,2) ripple_amplitude_probability_UCL(2,1,2);];
+
+nfig = figure('Color','w','Name','Left ripple amplitude on ripple distribution')
+nfig.Position = [940 100 920 900];
+orient(nfig,'landscape')
+clear b
+
+% subplot(2,2,1)
+hold on
+% x = [mean(theta_SWR_b(:,2)) mean(theta_SWR_b(:,3)) mean(theta_SWR_b(:,4))];
+% x_CI = [prctile(theta_SWR_b(:,2),[2.5 97.5]); prctile(theta_SWR_b(:,3),[2.5 97.5]); prctile(theta_SWR_b(:,4),[2.5 97.5])];
+
+for k = 1:4
+    hold on
+    b(k) = bar(k,x(k),'FaceAlpha',0.5)
+    b(k).FaceColor  = colour_lines(k,:);
+    e(k) = errorbar(k,x(k),abs(x_CI(k,1)-x(k)),abs(x_CI(k,2)-x(k)),"MarkerSize",10);
+    e(k).Color = 'k';
+end
+xticks([1.5 3.5])
+xticklabels({'Left V1 UP','Right V1 UP'})
+% legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off')
+ylim([0 0.4])
+ylabel('Beta coefficient')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+subplot(2,2,2)
+x = [ripple_amplitude_probability(1,2,1) ripple_amplitude_probability(1,2,2) ripple_amplitude_probability(2,2,1) ripple_amplitude_probability(2,2,2)];
+x_CI = [ripple_amplitude_probability_LCL(1,2,1) ripple_amplitude_probability_UCL(1,2,1); ripple_amplitude_probability_LCL(1,2,2) ripple_amplitude_probability_UCL(1,2,2);...
+    ripple_amplitude_probability_LCL(2,2,1) ripple_amplitude_probability_UCL(2,2,1); ripple_amplitude_probability_LCL(2,2,2) ripple_amplitude_probability_UCL(2,2,2);];
+hold on
+% x = [mean(theta_SWR_b(:,2)) mean(theta_SWR_b(:,3)) mean(theta_SWR_b(:,4))];
+% x_CI = [prctile(theta_SWR_b(:,2),[2.5 97.5]); prctile(theta_SWR_b(:,3),[2.5 97.5]); prctile(theta_SWR_b(:,4),[2.5 97.5])];
+
+for k = 1:4
+    hold on
+    b(k) = bar(k,x(k),'FaceAlpha',0.5)
+    b(k).FaceColor  = colour_lines(k,:);
+    e(k) = errorbar(k,x(k),abs(x_CI(k,1)-x(k)),abs(x_CI(k,2)-x(k)),"MarkerSize",10);
+    e(k).Color = 'k';
+end
+xticks([1.5 3.5])
+xticklabels({'Left V1 UP','Right V1 UP'})
+legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off',...
+    'Position',[0.7 0.87 0.2 0.1])
+
+ylim([0 0.4])
+ylabel('Beta coefficient')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+%%
+%%
 %% Plotting distribution of ripple during normalised duration of UP  (peaktimes)
 probability = probability_normalised;
 
@@ -91,9 +197,9 @@ all_sessions = max(slow_waves_all(1).DOWN_session_count);
 clear colour_lines
 colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red
 colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue 
-probe_hemisphere_texts = {'Probability of ripples at different timing during left V1 normalised UP-DOWN duration','Probability of ripples at different timing during right V1 normalised UP-DOWN duration'};
+probe_hemisphere_texts = {'Probability of ripples with different power during left V1 normalised UP-DOWN duration','Probability of ripples at different power during right V1 normalised UP-DOWN duration'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples during right V1 normalised UP-DOWN duration'};
-probability_ripple_timing_normalised = [];
+probability_ripple_power_normalised = [];
 % colour_lines = [215,25,28;44,123,182]/256;
 for nprobe = 1:2
     fig(nprobe)=figure;
@@ -106,7 +212,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
@@ -119,7 +225,7 @@ for nprobe = 1:2
             event_id = datasample(s,1:size(probability(nprobe).L_ripples_DOWN(index,:),1),size(probability(nprobe).L_ripples_DOWN(index,:),1));
             tempUP(iBoot,:) = sum(probability(nprobe).L_ripples_DOWN(index(event_id),:))/length(index(event_id));
         end
-        probability_ripple_timing_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin} = tempUP;
+        probability_ripple_power_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin} = tempUP;
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
@@ -127,7 +233,7 @@ for nprobe = 1:2
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
-    legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    % legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
     % xline(0,'r')
     % title('Probability of left ripples during UP')
     xlabel('Normalised duration of DOWN')
@@ -136,15 +242,15 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).L_ripples_DOWN(index,:))/length(index);
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 
-        LCI = prctile(probability_ripple_timing_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin},2.5);
-        UCI = prctile(probability_ripple_timing_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin} ,97.5);
+        LCI = prctile(probability_ripple_power_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin},2.5);
+        UCI = prctile(probability_ripple_power_normalised(nprobe).L_ripple_DOWN_bootstrap{nbin} ,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
@@ -161,7 +267,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
@@ -174,7 +280,7 @@ for nprobe = 1:2
             event_id = datasample(s,1:size(probability(nprobe).R_ripples_DOWN(index,:),1),size(probability(nprobe).R_ripples_DOWN(index,:),1));
             tempUP(iBoot,:) = sum(probability(nprobe).R_ripples_DOWN(index(event_id),:))/length(index(event_id));
         end
-        probability_ripple_timing_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin} = tempUP;
+        probability_ripple_power_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin} = tempUP;
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
@@ -191,15 +297,15 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).R_ripples_DOWN(index,:))/length(index);
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 
-        LCI = prctile(probability_ripple_timing_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin},2.5);
-        UCI = prctile(probability_ripple_timing_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin} ,97.5);
+        LCI = prctile(probability_ripple_power_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin},2.5);
+        UCI = prctile(probability_ripple_power_normalised(nprobe).R_ripple_DOWN_bootstrap{nbin} ,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
@@ -215,7 +321,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
@@ -228,7 +334,7 @@ for nprobe = 1:2
             event_id = datasample(s,1:size(probability(nprobe).L_ripples_UP(index,:),1),size(probability(nprobe).L_ripples_UP(index,:),1));
             tempUP(iBoot,:) = sum(probability(nprobe).L_ripples_UP(index(event_id),:))/length(index(event_id));
         end
-        probability_ripple_timing_normalised(nprobe).L_ripple_UP_bootstrap{nbin} = tempUP;
+        probability_ripple_power_normalised(nprobe).L_ripple_UP_bootstrap{nbin} = tempUP;
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
@@ -245,15 +351,15 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).L_ripples_UP(index,:))/length(index);
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 
-        LCI = prctile(probability_ripple_timing_normalised(nprobe).L_ripple_UP_bootstrap{nbin},2.5);
-        UCI = prctile(probability_ripple_timing_normalised(nprobe).L_ripple_UP_bootstrap{nbin} ,97.5);
+        LCI = prctile(probability_ripple_power_normalised(nprobe).L_ripple_UP_bootstrap{nbin},2.5);
+        UCI = prctile(probability_ripple_power_normalised(nprobe).L_ripple_UP_bootstrap{nbin} ,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
@@ -270,7 +376,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
@@ -283,7 +389,7 @@ for nprobe = 1:2
             event_id = datasample(s,1:size(probability(nprobe).R_ripples_UP(index,:),1),size(probability(nprobe).R_ripples_UP(index,:),1));
             tempUP(iBoot,:) = sum(probability(nprobe).R_ripples_UP(index(event_id),:))/length(index(event_id));
         end
-        probability_ripple_timing_normalised(nprobe).R_ripple_UP_bootstrap{nbin} = tempUP;
+        probability_ripple_power_normalised(nprobe).R_ripple_UP_bootstrap{nbin} = tempUP;
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
@@ -300,15 +406,15 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).R_ripples_UP(index,:))/length(index);
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 
-        LCI = prctile(probability_ripple_timing_normalised(nprobe).R_ripple_UP_bootstrap{nbin},2.5);
-        UCI = prctile(probability_ripple_timing_normalised(nprobe).R_ripple_UP_bootstrap{nbin} ,97.5);
+        LCI = prctile(probability_ripple_power_normalised(nprobe).R_ripple_UP_bootstrap{nbin},2.5);
+        UCI = prctile(probability_ripple_power_normalised(nprobe).R_ripple_UP_bootstrap{nbin} ,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
@@ -350,7 +456,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -371,7 +477,8 @@ for nprobe = 1:2
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
-    legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    % legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    legend(ERROR_SHADE(1:4),{'0-0.25','0.25-0.5','0.5-0.75','0.75-1'},'Box','off')
     % xline(0,'r')
     % title('Probability of left ripples during UP')
     xlabel('Time relative to DOWN onset (s)')
@@ -380,7 +487,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -405,7 +512,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -435,7 +542,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -459,7 +566,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -489,7 +596,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -514,7 +621,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -544,7 +651,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -584,8 +691,8 @@ all_sessions = max(slow_waves_all(1).DOWN_session_count);
 % colour_lines = [215,48,39;244,109,67;145,191,219;69,117,180]/256;
 clear colour_lines
 colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red
-colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue 
-probe_hemisphere_texts = {'Probability of WHOLE ripples at different timing during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples at different timing during right V1 normalised UP-DOWN duration'};
+colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue
+probe_hemisphere_texts = {'Probability of WHOLE ripples with different power during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples with different power during right V1 normalised UP-DOWN duration'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples during right V1 normalised UP-DOWN duration'};
 probability_ripple_timing_normalised = [];
 % colour_lines = [215,25,28;44,123,182]/256;
@@ -600,9 +707,9 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_DOWN_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(cumsum(probability(nprobe).L_ripples_DOWN(index,:),2))/all_DOWN_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -617,11 +724,12 @@ for nprobe = 1:2
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
-        
+
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
-    legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    legend(ERROR_SHADE(1:4),{'0-0.25','0.25-0.5','0.5-0.75','0.75-1'},'Box','off')
+    % legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
     % xline(0,'r')
     % title('Probability of left ripples during UP')
     xlabel('Normalised duration of DOWN')
@@ -630,9 +738,9 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_DOWN_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).L_ripples_DOWN(index,:))/all_DOWN_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -655,9 +763,9 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_DOWN_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(cumsum(probability(nprobe).R_ripples_DOWN(index,:),2))/all_DOWN_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -672,7 +780,7 @@ for nprobe = 1:2
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
-        
+
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
@@ -685,9 +793,9 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_DOWN_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).R_ripples_DOWN(index,:))/all_DOWN_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -709,9 +817,9 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_UP_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(cumsum(probability(nprobe).L_ripples_UP(index,:),2))/all_UP_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -726,7 +834,7 @@ for nprobe = 1:2
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
-        
+
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
@@ -739,9 +847,9 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_UP_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).L_ripples_UP(index,:))/all_UP_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -764,9 +872,9 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_UP_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(cumsum(probability(nprobe).R_ripples_UP(index,:),2))/all_UP_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -781,7 +889,7 @@ for nprobe = 1:2
 
         LCI = prctile(cumsum(tempUP,2),2.5);
         UCI = prctile(cumsum(tempUP,2),97.5);
-        
+
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
@@ -794,9 +902,9 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
-
+        all_UP_no = length(index);
         x = linspace(0,1,num_bins);
         y = sum(probability(nprobe).R_ripples_UP(index,:))/all_UP_no;
         %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
@@ -844,7 +952,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -865,7 +973,8 @@ for nprobe = 1:2
         PLOT = plot(x,y,'Color',colour_lines{nprobe}(nbin,:));hold on;
         ERROR_SHADE(nbin) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines{nprobe}(nbin,:),'FaceAlpha','0.3','LineStyle','none');
     end
-    legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    % legend(ERROR_SHADE(1:5),{'0-0.2','0.2-0.4','0.4-0.6','0.6-0.8','0.8-1'},'Box','off')
+    legend(ERROR_SHADE(1:4),{'0-0.25','0.25-0.5','0.5-0.75','0.75-1'},'Box','off')
     % xline(0,'r')
     % title('Probability of left ripples during UP')
     xlabel('Time relative to DOWN onset (s)')
@@ -874,7 +983,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -899,7 +1008,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -929,7 +1038,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -953,7 +1062,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -983,7 +1092,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -1008,7 +1117,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
@@ -1038,7 +1147,7 @@ for nprobe = 1:2
 
     nexttile
 
-    for nbin = 1:5
+    for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
