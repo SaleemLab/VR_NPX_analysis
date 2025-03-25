@@ -112,7 +112,7 @@ nprobe =  p.Results.nprobe;
         % UP_index_all = [UP_index_all; UP_index];
 
         ripple_index1 = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
-        ripple_peaktimes1 = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
+        ripple_peaktimes1 = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 1,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
         ripple_times1 = [ripples_all(1).onset(ripple_index1) ripples_all(1).offset(ripple_index1)];
 
         ripple_index2 = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
@@ -179,8 +179,8 @@ nprobe =  p.Results.nprobe;
             temp = (temp-mean(V1_spike_counts{mprobe}(NREM_status)))./std(V1_spike_counts{mprobe}(NREM_status));% zscore relative to spike count during sleep
             binnedArrayUPV1{mprobe} = filtfilt(w,1,temp);
 
-            DU_slope_HPC(mprobe,:) = mean(diff(binnedArrayUPHPC{mprobe}(:,bins >= -0.02 & bins <= 0.04)'));
-            DU_slope_V1(mprobe,:) = mean(diff(binnedArrayUPV1{mprobe}(:,bins >= -0.02 & bins <= 0.04)'));
+            DU_slope_HPC(mprobe,:) = mean(diff(binnedArrayUPHPC{mprobe}(:,bins >= 0 & bins <= 0.05)'));
+            DU_slope_V1(mprobe,:) = mean(diff(binnedArrayUPV1{mprobe}(:,bins >= 0 & bins <= 0.05)'));
         end
 
 
