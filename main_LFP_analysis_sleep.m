@@ -461,8 +461,19 @@ for nsession =1:length(experiment_info)
 
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+                time_idx = 1:length(LFP(1).best_HPC);
+            elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+                time_idx = 1:length(LFP(2).best_HPC);
+            else
+                time_idx = 1:length(LFP(1).best_HPC) ;
+            end
+            
             lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-            lfp.timestamps = LFP(probe_no).tvec;
+            lfp.timestamps = LFP(probe_no).tvec(time_idx);
+            tvec = LFP(probe_no).tvec(time_idx);
             lfp.data=[];
             DOWN_peaks_shank = [];
             peaks_latency = [];
@@ -488,13 +499,17 @@ for nsession =1:length(experiment_info)
                 probe_id = [];
 
                 if length(LFP)==1
-                    lfp.data= [LFP(probe_no).average_V1'];
+                    lfp.data= [LFP(probe_no).average_V1(:,time_idx)'];
                     probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
                     slow_waves(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
                 else
-                    lfp.data= [LFP(1).average_V1' LFP(2).average_V1'];
+                    lfp.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
                     probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
-                    slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
+                    if size(slow_waves(probe_no).shank_id,1)==1
+                        slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
+                    else
+                        slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id' LFP(2).average_V1_shank_id'];
+                    end
                 end
 
                 slow_waves(probe_no).probe_hemisphere = probe_hemisphere;
@@ -616,8 +631,20 @@ for nsession =1:length(experiment_info)
 
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+
+            if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+                time_idx = 1:length(LFP(1).best_HPC);
+            elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+                time_idx = 1:length(LFP(2).best_HPC);
+            else
+                time_idx = 1:length(LFP(1).best_HPC) ;
+            end
+
             lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-            lfp.timestamps = LFP(probe_no).tvec;
+            lfp.timestamps = LFP(probe_no).tvec(time_idx);
+            tvec = LFP(probe_no).tvec(time_idx);
             lfp.data=[];
             % DOWN_peaks_shank = [];
             sharp_wave_peaks_shank=[];
@@ -640,13 +667,17 @@ for nsession =1:length(experiment_info)
                 probe_id = [];
 
                 if length(LFP)==1
-                    lfp.data= [LFP(probe_no).best_HPC'];
+                    lfp.data= [LFP(probe_no).best_HPC(:,time_idx)'];
                     probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
                     ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
                 else
-                    lfp.data= [LFP(1).best_HPC' LFP(2).best_HPC'];
+                    lfp.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
                     probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
-                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                    if size(ripples(probe_no).shank_id,1)==1
+                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                    else
+                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id' LFP(2).best_HPC_shank_id'];
+                    end
                 end
 
                 ripples(probe_no).probe_hemisphere = probe_hemisphere;
