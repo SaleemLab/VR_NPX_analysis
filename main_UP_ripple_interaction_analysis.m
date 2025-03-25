@@ -685,12 +685,6 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probabilit
 probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','absolute','time_option','whole','time_wondows',[-0.2 0.5])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'),'probability');
 
-
-
-%%%% P(UP) and P(DOWN) during ripples
-probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','peaktimes')
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
-
 %%% Probability of UP during DOWN and DOWN during UP
 time_wondows = [-0.5 0.5];
 time_bin = 0.02;
