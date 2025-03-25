@@ -62,7 +62,7 @@ for nprobe = 1:length(slow_waves_all)
         UP_index_all = [UP_index_all; UP_index];
 
         ripples_index = find(ripples_all(nprobe).session_count == sessions_to_process(nsession)& ripples_all(nprobe).SWS_index == 1);
-        ripple_peaktimes = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        ripple_peaktimes = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % if contains(time_option,'peaktimes')
         ripple_times= ripple_peaktimes;
 
