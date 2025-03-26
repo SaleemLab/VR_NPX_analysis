@@ -1243,9 +1243,9 @@ plot_ripple_power_UP(slow_waves_all,ripples_all,event_info,probability_psth,prob
 
 
 %% Analyse UP - DOWN transition
-analyse_UP_DOWN_transition(slow_waves_all,event_info,ripples_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+analyse_UP_DOWN_transition(event_info,ripples_all,spindles_all)
 
-analyse_DOWN_UP_transition(slow_waves_all,event_info,ripples_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+analyse_DOWN_UP_transition(event_info,ripples_all,spindles_all)
 
 %% distribution of DOWN duration with high vs low ripple
 

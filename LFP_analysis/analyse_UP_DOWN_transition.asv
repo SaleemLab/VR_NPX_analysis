@@ -63,12 +63,12 @@ for nprobe = 1:2
 
                 end
 
-                event_info(nprobe).L_ripple_zscore_UP(index)
-
+                event_info(nprobe).L_ripple_zscore_UP
+                index
                 ripple_duration{mprobe}(nevent) = event_info(nprobe).L_ripple_cumulative_duration_UP(unique_UP_index == unique(event_info(nprobe).L_ripple_normalised_UP_duration(index,2)));
-                ripple_count{mprobe}(nevent) = length(index);
-                ripple_power{mprobe}(nevent) = max(event_info(nprobe).L_ripple_zscore_UP(index));
-                ripple_L_V1_MUA{mprobe}(nevent) = max(event_info(nprobe).L_ripple_HPC_MUA_peak_UP(index));
+                ripple_count{mprobe}(nevent) = 0;
+                ripple_power{mprobe}(nevent) = 0;
+                ripple_L_V1_MUA{mprobe}(nevent) = 0;
                 ripple_L_HPC_MUA{mprobe}(nevent) = 0;
                 ripple_R_V1_MUA{mprobe}(nevent) = 0;
                 ripple_R_HPC_MUA{mprobe}(nevent) = 0;

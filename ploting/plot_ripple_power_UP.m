@@ -1,10 +1,33 @@
-function plot_ripple_power_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA)
-
+function plot_ripple_power_UP
+% slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA
 if exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
+
+% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+all_sessions = max(slow_waves_all(1).DOWN_session_count);
+sessions_to_process = 1:all_sessions;
+
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
+probability_normalised = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
+probability_psth = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
 probability_ripples_SO = probability;
 
@@ -55,7 +78,7 @@ for nprobe = 1:2
             ripples_index_all{nprobe}{mprobe}{nbin} = SWS_ripples_index(ripples_index{nprobe}{mprobe}{nbin});
 
             if mprobe == 1
-                [C,ia,ib] = intersect(event_info(nprobe).L_ripple_normalised_UP_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
+                [C,ia,ib] = intersect(probability_normalised_whole(nprobe).L_ripple_normalised_UP_duration(:,1),ripples_index_all{nprobe}{mprobe}{nbin});
                 UP_index_all{nprobe}{mprobe}{nbin} = event_info(nprobe).L_ripple_normalised_UP_duration(ia,2);
                 [C,ia,ib] = intersect(event_info(nprobe).UP_index,UP_index_all{nprobe}{mprobe}{nbin});
                 UP_index{nprobe}{mprobe}{nbin} = ia;
@@ -135,7 +158,7 @@ x_CI = [ripple_amplitude_probability_LCL(1,1,1) ripple_amplitude_probability_UCL
     ripple_amplitude_probability_LCL(2,1,1) ripple_amplitude_probability_UCL(2,1,1); ripple_amplitude_probability_LCL(2,1,2) ripple_amplitude_probability_UCL(2,1,2);];
 
 nfig = figure('Color','w','Name','Left ripple amplitude on ripple distribution')
-nfig.Position = [940 100 920 900];
+nfig.Position = [940 100 550 500];
 orient(nfig,'landscape')
 clear b
 
@@ -153,13 +176,16 @@ for k = 1:4
 end
 xticks([1.5 3.5])
 xticklabels({'Left V1 UP','Right V1 UP'})
-% legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off')
+legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off')
 ylim([0 0.4])
-ylabel('Beta coefficient')
+ylabel('Ripple probability')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-subplot(2,2,2)
+nfig = figure('Color','w','Name','Right ripple amplitude on ripple distribution')
+nfig.Position = [940 100 550 500];
+orient(nfig,'landscape')
+clear b
 x = [ripple_amplitude_probability(1,2,1) ripple_amplitude_probability(1,2,2) ripple_amplitude_probability(2,2,1) ripple_amplitude_probability(2,2,2)];
 x_CI = [ripple_amplitude_probability_LCL(1,2,1) ripple_amplitude_probability_UCL(1,2,1); ripple_amplitude_probability_LCL(1,2,2) ripple_amplitude_probability_UCL(1,2,2);...
     ripple_amplitude_probability_LCL(2,2,1) ripple_amplitude_probability_UCL(2,2,1); ripple_amplitude_probability_LCL(2,2,2) ripple_amplitude_probability_UCL(2,2,2);];
@@ -176,12 +202,11 @@ for k = 1:4
 end
 xticks([1.5 3.5])
 xticklabels({'Left V1 UP','Right V1 UP'})
-legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off',...
-    'Position',[0.7 0.87 0.2 0.1])
-
+legend(b(1:4),{'low amplitude ripples','high amplitude ripples','low amplitude ripples','high amplitude ripples'},'Box','off')
 ylim([0 0.4])
-ylabel('Beta coefficient')
+ylabel('Ripple probability')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
 
 %%
 %%
