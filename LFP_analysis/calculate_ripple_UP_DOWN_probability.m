@@ -196,7 +196,7 @@ for nprobe = 1:length(slow_waves_all)
         if contains(option,'normalised')
             % [probability(nprobe).R_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
         else
-            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
         end
 
         binnedArrayUP=[binnedArrayUP; temp];
