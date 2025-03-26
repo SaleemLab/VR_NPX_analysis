@@ -82,6 +82,17 @@ nprobe =  p.Results.nprobe;
     event_info(nprobe).L_HPC_cumulative_activity_DOWN = [];
     event_info(nprobe).R_HPC_cumulative_activity_DOWN = [];
 
+    event_info(nprobe).L_ripple_V1_MUA_cumulative_UP = [];
+    event_info(nprobe).R_ripple_V1_MUA_cumulative_UP = [];
+    event_info(nprobe).L_ripple_HPC_MUA_cumulative_UP = [];
+    event_info(nprobe).R_ripple_HPC_MUA_cumulative_UP = [];
+
+    event_info(nprobe).L_ripple_V1_MUA_cumulative_DOWN = [];
+    event_info(nprobe).R_ripple_V1_MUA_cumulative_DOWN = [];
+    event_info(nprobe).L_ripple_HPC_MUA_cumulative_DOWN = [];
+    event_info(nprobe).R_ripple_HPC_MUA_cumulative_DOWN = [];
+
+
     for nsession = 1:length(sessions_to_process)
         tic
         % Find UP followed by a DOWN
