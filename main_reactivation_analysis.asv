@@ -18,15 +18,15 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 6:length(experiment_info)
+for nsession = 4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -270,6 +270,71 @@ for nsession = 6:length(experiment_info)
         end
         toc
         
+        position_bin_size = 5;
+        region_name = {'Left','Right'};
+        nfigure = 1;
+
+        for mprobe = 1:length(decoded_ripple_events)
+            for track_id = 1:2
+                title_text = sprintf('%s %s %s ripple Track %s reactivation',options.SUBJECT,options.SESSION,region_name{mprobe},region_name{track_id});
+
+                fig(nfigure)=figure;
+                fig(nfigure).Name=title_text;
+                fig(nfigure).Position = [114 90 1800 900]
+                
+                peak_percentile = [decoded_ripple_events(mprobe).track(1).replay_events(:).peak_percentile; decoded_ripple_events(mprobe).track(2).replay_events(:).peak_percentile];
+                s = RandStream('mrg32k3a','Seed',track_id+mprobe*10); % Set random seed for resampling
+
+                if track_id == 1
+                    sig_event_id = find(peak_percentile(1,:)>0.95 & peak_percentile(2,:)<0.95);
+                    if isempty(sig_event_id)
+
+                    end
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                else
+                    sig_event_id = find(peak_percentile(2,:)>0.95 & peak_percentile(1,:)<0.95);
+                                      if isempty(sig_event_id)
+
+                    end
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                end
+
+                if isempty(sampled_event_id)
+                    continue
+                end
+
+                for nevent = 1:length(sampled_event_id)
+                    subplot(5,8,nevent)
+                    event_id = sampled_event_id(nevent);
+
+                    imagesc([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay; decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay])
+                    colormap(flipud(gray))
+                    clim([0.001 max(max([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay]))/2])
+                    colorbar
+                    xline(25.5,'r')
+                    xline(30.5,'r')
+                    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
+                    yline(140/position_bin_size+0.5,'LineWidth',1,'Color','k','DisplayName','Track 2')
+                    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
+                    event_time_edges = decoded_ripple_events(mprobe).track(1).replay_events(event_id).timebins_edges ;
+
+                    xticks(linspace(1,length(event_time_edges),6))
+                    xticklabels(linspace(event_time_edges(1),event_time_edges(end),6))
+                end
+
+                nfigure = nfigure + 1;
+            end
+        end
+
+        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+        else
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})),[])
+        end
+
+
         if contains(stimulus_name{n},'Masa2tracks')
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events','-v7.3');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events_shuffled','-v7.3');
@@ -297,34 +362,15 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
-Stimulus_type = 'Sleep';
-% [1 2 3 4 9 10 12 14]
-% Stimulus_types_all = {'RUN'};
-% Stimulus_types_all = {'RUN','POST'};
-
-%% Log odds Reactivation and reactivation strength
-
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
-% option = 'bilateral';
-% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-
-clear all
-SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% Famililar 
-% experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 1:length(experiment_info)
+for nsession = 4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -497,75 +543,83 @@ for nsession = 1:length(experiment_info)
       end
       clear KDE_reactivation KDE_RUN PLS
       % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
-          time_bin_size=0.02;
+      time_bin_size=0.02;
 
-          for nprobe = 1:length(ripples)
-              disp('Reactivation strength for original data')
-              options = session_info(n).probe(nprobe);
-              ripple_probe_no = options.probe_id + 1;
+      for nprobe = 1:length(ripples)
+          disp('Reactivation strength for original data')
+          options = session_info(n).probe(nprobe);
+          ripple_probe_no = options.probe_id + 1;
 
-             [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
-                  session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-                  [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-                  session_clusters_RUN.track_ID_all{1},spikes_template,...
-                  [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
+          [PLS(ripple_probe_no) KDE_RUN(ripple_probe_no) KDE_reactivation(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+              session_clusters_RUN.track_ID_all{1},spikes_template,...
+              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
 
-            
 
-%               bins=[];
-%               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
-%               ripples_time_edges=[];
-%               ripples_id=[];
-%               for i = 1: length(ripples(nprobe).onset)
-%                   event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
-%                   num_bins = floor(event_duration / time_bin_size);
-%                   timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
-%                   ripples_time_edges = [ripples_time_edges timebins_edges];
-%                   ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
-%               end
-% 
-%               bins(:,1)=ripples_time_edges;
-%               bins(:,2)=ripples_time_edges+time_bin_size;
-%               [strength,zscored_spike_counts] = ReactivationStrength(spikes_sleep,templates,'bins',bins);
-%               reactivation_strength(nprobe).track(ntrack).ripples_id=ripples_id;
-%               reactivation_strength(nprobe).track(ntrack).strength=strength(:,2:end);
-%               reactivation_strength(nprobe).track(ntrack).ripples_time_edges=ripples_time_edges;
-%               reactivation_strength(nprobe).track(ntrack).zscored_spike_counts=zscored_spike_counts;
-%                 
-%               strength_shuffled=[];
-%               checkpoint=0;
-%               disp('Reactivation strength for cell id shuffle')
-%               parfor nshuffle =1:1000
-%                   
-%                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
-%                   unique_cell_id = unique(spikes_sleep(:,2));
-%                   p = randperm(s,length(unique_cell_id));
-%                   cell_id_shuffled_spikes=spikes_sleep;
-% 
-%                   for iCell = 1:length(unique_cell_id)
-%                       cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
-%                   end
-% 
-%                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
-%                   strength_shuffled(nshuffle,:,:)=temp(:,2:end);
-%               end
-%               reactivation_strength(nprobe).track(ntrack).strength_shuffled=strength_shuffled;
-% 
-%               for nevent = 1:max(ripples_id)
-%                   index = reactivation_strength(nprobe).track(ntrack).ripples_id==nevent;
-% 
-%                   strength_this_event = mean(mean(reactivation_strength(nprobe).track(ntrack).strength(index,:),2));
-%                   strength_shuffled_this_event = mean(mean(strength_shuffled(:,index,:),3),2);
-%                   reactivation_strength(nprobe).track(ntrack).strength_percentile(nevent)=...
-%                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
-% 
-%               end
+          if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
+          else
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
           end
+
+
+          %               bins=[];
+          %               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
+          %               ripples_time_edges=[];
+          %               ripples_id=[];
+          %               for i = 1: length(ripples(nprobe).onset)
+          %                   event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
+          %                   num_bins = floor(event_duration / time_bin_size);
+          %                   timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
+          %                   ripples_time_edges = [ripples_time_edges timebins_edges];
+          %                   ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
+          %               end
+          %
+          %               bins(:,1)=ripples_time_edges;
+          %               bins(:,2)=ripples_time_edges+time_bin_size;
+          %               [strength,zscored_spike_counts] = ReactivationStrength(spikes_sleep,templates,'bins',bins);
+          %               reactivation_strength(nprobe).track(ntrack).ripples_id=ripples_id;
+          %               reactivation_strength(nprobe).track(ntrack).strength=strength(:,2:end);
+          %               reactivation_strength(nprobe).track(ntrack).ripples_time_edges=ripples_time_edges;
+          %               reactivation_strength(nprobe).track(ntrack).zscored_spike_counts=zscored_spike_counts;
+          %
+          %               strength_shuffled=[];
+          %               checkpoint=0;
+          %               disp('Reactivation strength for cell id shuffle')
+          %               parfor nshuffle =1:1000
+          %
+          %                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
+          %                   unique_cell_id = unique(spikes_sleep(:,2));
+          %                   p = randperm(s,length(unique_cell_id));
+          %                   cell_id_shuffled_spikes=spikes_sleep;
+          %
+          %                   for iCell = 1:length(unique_cell_id)
+          %                       cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
+          %                   end
+          %
+          %                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
+          %                   strength_shuffled(nshuffle,:,:)=temp(:,2:end);
+          %               end
+          %               reactivation_strength(nprobe).track(ntrack).strength_shuffled=strength_shuffled;
+          %
+          %               for nevent = 1:max(ripples_id)
+          %                   index = reactivation_strength(nprobe).track(ntrack).ripples_id==nevent;
+          %
+          %                   strength_this_event = mean(mean(reactivation_strength(nprobe).track(ntrack).strength(index,:),2));
+          %                   strength_shuffled_this_event = mean(mean(strength_shuffled(:,index,:),3),2);
+          %                   reactivation_strength(nprobe).track(ntrack).strength_percentile(nevent)=...
+          %                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
+          %
+          %               end
+      end
       % end
 
       if contains(stimulus_name{n},'Masa2tracks')
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS','-v7.3')
       else
           save(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation','KDE_RUN','PLS','-v7.3');
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');

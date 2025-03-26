@@ -19,14 +19,14 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-experiment_info=experiment_info([4 5 6 17 18 19 21 34 35 44 45 46 47 56 58 59 60 71 72 73 33]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 9:length(experiment_info)
+for nsession = 4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -287,9 +287,15 @@ for nsession = 9:length(experiment_info)
 
                 if track_id == 1
                     sig_event_id = find(peak_percentile(1,:)>0.95 & peak_percentile(2,:)<0.95);
+                    if isempty(sig_event_id)
+                        continue
+                    end
                     sampled_event_id = datasample(s,sig_event_id,40);
                 else
                     sig_event_id = find(peak_percentile(2,:)>0.95 & peak_percentile(1,:)<0.95);
+                    if isempty(sig_event_id)
+                        continue
+                    end
                     sampled_event_id = datasample(s,sig_event_id,40);
                 end
 
@@ -357,14 +363,14 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-experiment_info=experiment_info([4 5 6 17 18 19 21 34 35 44 45 46 47 56 58 59 60 71 72 73 33]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 % [1 2 3 4 9 10 12 14]
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 1:length(experiment_info)
+for nsession = 4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
