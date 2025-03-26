@@ -1243,7 +1243,7 @@ plot_ripple_power_UP;
 
 
 %% Analyse UP - DOWN transition
-analyse_UP_DOWN_transition(event_info,ripples_all,spindles_all)
+analyse_UP_DOWN_transition(event_info,ripples_all,spindles_all,slow_waves_all)
 
 analyse_DOWN_UP_transition(event_info,ripples_all,spindles_all)
 
