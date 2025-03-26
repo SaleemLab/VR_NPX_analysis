@@ -975,7 +975,7 @@ for nprobe = 1:2
     probability(nprobe).UP_UP_shuffled = tempUU; % UP during D-U
     probability(nprobe).DOWN_DOWN_shuffled = tempDD; % UP during D-U
 end
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','probability_SO_SO_contralateral.mat'),'probability');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'),'probability');
 
 
 %%%%% L-R Ripple interaction
