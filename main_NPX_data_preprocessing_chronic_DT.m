@@ -31,13 +31,13 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24062'};
-all_SUBJECTS = {'M25002'};
+all_SUBJECTS = {'M25026'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
 Error_session_stimuli1 = [];
 Error_session_date1=[];
-Error_session_subject1=[];
+Error_session_subject=[];
 
 for n = 1:length(all_SUBJECTS)
     % extract information about this animal
@@ -146,7 +146,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 % SUBJECTS = {'M23017','M23029','M23087','M23153'};
 % SUBJECTS = {'M23028','M23087','M23153'};
 % SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M25072'};
+SUBJECTS = {'M25026'};
 options = 'V1-MEC';
 ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 
@@ -167,9 +167,9 @@ for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
 
-SUBJECTS = {'M24017'};
+SUBJECTS = {'M24072'};
 options = 'V1-MEC';
-Stimulus_type = 'Checkerboard';
+Stimulus_type = 'OpenField';
 % Stimulus_type = 'SparseNoise';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % experiment_info = experiment_info(1);
@@ -234,7 +234,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 
 
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25026'};
 options = 'V1-MEC';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 experiment_info = experiment_info(1);
@@ -253,8 +253,8 @@ extract_PSD_profile_batch(experiment_info,Stimulus_type);
 clear all
 ROOTPATH = 'Z:\ibn-vision';
 % Single session
-SUBJECT = 'M25002';
-SESSION = '20250205';
+SUBJECT = 'M25026';
+SESSION = '20250228';
 options = 'V1-MEC';
 % Stimulus_type = 'Checkerboard';
 for nstimuli = 1:4

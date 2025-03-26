@@ -98,7 +98,7 @@ for n = 1:length(false_index)
 end
 
 if length(Nidq.on) == length(Nidq.off)+1
-    Nidq.bonsai_sync_on(end)=[];
+    Nidq.on(end)=[];
 end
 
 %%%% 2025.02.24 use whole signal xcorr rather than xcorr with interp1 based

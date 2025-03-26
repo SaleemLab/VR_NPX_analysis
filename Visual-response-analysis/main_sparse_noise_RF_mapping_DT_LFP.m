@@ -14,7 +14,7 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25026'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'V1-MEC');
@@ -103,8 +103,8 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise
 clear all
-SUBJECTS = {'M25002'};
-Dates = {'20250205'};
+SUBJECTS = {'M25026'};
+Dates = {'20250228'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
@@ -126,15 +126,15 @@ for nprobe = 1:2
 
     % V1_channel_ids=RF(nprobe).V1_channel_ids;
     % imagesc(mean(RF(nprobe).peak_map(:,:,V1_channel_ids),3))
-    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),37));
+    temp = round(linspace(max(chan_config.Ks_ycoord),min(chan_config.Ks_ycoord),73));
     channel_depths_range=[];
     channel_depths_range(:,1) = temp(1:end-1);
     channel_depths_range(:,2) = temp(2:end);
 
     % channel_depths_range = [3200 2700;2700 2200;2200 1700;1700 1300];
 
-    for nregion = 1:36
-        subplot(6,6,nregion)
+    for nregion = 1:72
+        subplot(6,12,nregion)
         % scal_f = 10; % scale image by this before...
         % sigma = 3; % ...filtering by this
         scal_f = 2; % scale image by this before...
@@ -147,17 +147,20 @@ for nprobe = 1:2
         %     thisMap_s = zscore(thisMap_s,0,'all');
         imagesc(flip(thisMap_s))
 
+        if nregion == 1
+            xlabel('Azimuth')
+            ylabel('Elevation')
 
-        xlabel('Azimuth')
-        ylabel('Elevation')
+                colorbar
+        end
+
+        title(sprintf('RF dep %i to %i mi',channel_depths_range(nregion,1),channel_depths_range(nregion,2)))
         xticks(linspace(1,size(thisMap_s,2),13))
         xticklabels(-120:20:120)
         yticks(linspace(1,size(thisMap_s,1),7))
         yticklabels(flip(-30:20:90))
-        title(sprintf('Averaged RF for depths %i micron to %i micron',channel_depths_range(nregion,1),channel_depths_range(nregion,2)))
-        colorbar
         colormap((gray))
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',10)
     end
 end
 

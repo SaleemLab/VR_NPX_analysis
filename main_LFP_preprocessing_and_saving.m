@@ -3,17 +3,17 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\Testing\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\j.kok\Documents\GitHub\VR_NPX_analysis'))
-
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% LFP preprocess -> Catgt
 
-SUBJECT = 'M25002';
+SUBJECT = 'M25026';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = 1:length(all_DIR)
+for ndate = [16,18]
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
-    session_DIR= dir('20*');
+    session_DIR= dir('M*');
 
     Error_sessions = [];
     Error_idx = [];
@@ -90,7 +90,7 @@ for ndate = 1:length(all_DIR)
     end
 end
 
-
+%% %
 %%% Rename to have animal id in ephys folder
 SUBJECT = 'M24064';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
