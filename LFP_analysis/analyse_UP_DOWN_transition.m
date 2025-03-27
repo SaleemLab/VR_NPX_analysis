@@ -27,33 +27,40 @@ if length(unique_duration) == length(normalised_duration)
 end
 
 duration_threshold = median(unique(event_info(1).L_ripple_normalised_UP_duration(:,3)));
-
-
 for nprobe = 1:2
     for mprobe = 1:2
 
         % Define survival response variables
-        timeToTransition = event_info(nprobe).UP_duration; % Time until UP to DOWN transition
-
-        L_V1_MUA_activity{nprobe}{nprobe} = [];
-        L_HPC_MUA_activity{nprobe}{nprobe} = [];
-        R_V1_MUA_activity{nprobe}{nprobe} = [];
-        R_HPC_MUA_activity{nprobe}{nprobe} = [];
-
+        timeToTransition{nprobe} = event_info(nprobe).UP_duration; % Time until UP to DOWN transition
         % find predictor variables for each UP event
         normalised_ripple_duration{nprobe}{mprobe} = [];
         ripple_duration{nprobe}{mprobe} = [];
         ripple_count{nprobe}{mprobe} = [];
         ripple_power{nprobe}{mprobe} = [];
+        last_ripple_power{nprobe}{mprobe} = [];
+        first_ripple_power{nprobe}{mprobe} = [];
         ripple_rate{nprobe}{mprobe} = [];
 
         early_ripple_count{nprobe}{mprobe} = [];
         late_ripple_count{nprobe}{mprobe} = [];
 
-        ripple_L_V1_MUA{nprobe}{mprobe} = [];
-        ripple_L_HPC_MUA{nprobe}{mprobe}= [];
-        ripple_R_V1_MUA{nprobe}{mprobe} = [];
-        ripple_R_HPC_MUA{nprobe}{mprobe} = [];
+        % peri-ripple MUA peak zscore
+        ripple_L_HPC_MUA_peak{nprobe}{mprobe} = [];
+        ripple_R_HPC_MUA_peak{nprobe}{mprobe}= [];
+        ripple_L_V1_MUA_peak{nprobe}{mprobe} = [];
+        ripple_R_V1_MUA_peak{nprobe}{mprobe} = [];
+
+        % peri-ripple MUA cumulative activity
+        ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
+        ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
+        ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
+        ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
+
+        % peri-ripple normalised MUA cumulative activity
+        normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
+        normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
+        normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
+        normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
 
         time_to_first_ripples{nprobe}{mprobe} = [];
         time_from_last_ripples{nprobe}{mprobe} = [];
@@ -78,37 +85,54 @@ for nprobe = 1:2
                 ripple_count{nprobe}{mprobe}(nevent) = 0;
                 ripple_power{nprobe}{mprobe}(nevent) = 0;
                 ripple_rate{nprobe}{mprobe}(nevent) = 0;
-                ripple_L_V1_MUA{nprobe}{mprobe}(nevent) = 0;
-                ripple_L_HPC_MUA{nprobe}{mprobe}(nevent) = 0;
-                ripple_R_V1_MUA{nprobe}{mprobe}(nevent) = 0;
-                ripple_R_HPC_MUA{nprobe}{mprobe}(nevent) = 0;
+                last_ripple_power{nprobe}{mprobe}(nevent) = 0;
+                first_ripple_power{nprobe}{mprobe}(nevent) = 0;
 
                 time_to_first_ripples{nprobe}{mprobe}(nevent) = 0;
                 time_from_last_ripples{nprobe}{mprobe}(nevent) = 0;
                 time_from_mean_ripples{nprobe}{mprobe}(nevent) = 0;
 
+                ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+
+                first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+                first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+
+                % peri-ripple MUA cumulative activity
+                ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
+                ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+                ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+                ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+
+                normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+                normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
+                normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+                normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
 
             else
 
                 ripples_index = event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,1);
-                
+
                 time_to_first_ripples{nprobe}{mprobe}(nevent) = min(ripples_all(mprobe).peaktimes(ripples_index))-UP_ints(1);
                 time_from_last_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-max(ripples_all(mprobe).peaktimes(ripples_index));
                 time_from_mean_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-mean(ripples_all(mprobe).peaktimes(ripples_index));
 
-                
+
                 late_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) > 0.5);
                 early_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) <= 0.5);
 
-                ripple_duration{nprobe}{mprobe}(nevent) = event_info(nprobe).UP_duration(nevent)*...
-                    event_info(nprobe).(sprintf('%s_ripple_cumulative_duration_UP',hemisphere{mprobe}))(unique_UP_index == unique(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,2)));
+                ripple_duration{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_cumulative_duration_UP',hemisphere{mprobe}))(unique_UP_index == unique(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,2)));
 
                 if length(index)>1
                     normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent)...
                         /(max(ripples_all(mprobe).peaktimes(ripples_index))-min(ripples_all(mprobe).peaktimes(ripples_index))); % normalised by time windows where first and last ripple happens
 
                     ripple_rate{nprobe}{mprobe}(nevent) = length(index)...
-                        /(max(ripples_all(mprobe).peaktimes(ripples_index))-min(ripples_all(mprobe).peaktimes(ripples_index))); % normalised by time windows where first and last ripple happens
+                        /(max(ripples_all(mprobe).offset(ripples_index))-min(ripples_all(mprobe).onset(ripples_index))); % normalised by time windows where first and last ripple happens
                 else
                     normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent);
 
@@ -118,12 +142,31 @@ for nprobe = 1:2
                 ripple_count{nprobe}{mprobe}(nevent) = length(index);
 
                 [ripple_power{nprobe}{mprobe}(nevent),temp] = max(event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index));
+                last_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(end));
+                first_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(1));
 
                 % peri-ripple MUA peak zscore
-                ripple_L_HPC_MUA{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(temp),1);
-                ripple_R_HPC_MUA{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(temp),2);
-                ripple_L_V1_MUA{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(temp),1);
-                ripple_R_V1_MUA{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(temp),2);
+                ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
+                ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
+                ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
+                ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
+
+                first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
+                first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
+                first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
+                first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
+
+                % peri-ripple MUA cumulative activity
+                ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
+                ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
+                ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
+                ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
+
+
+                normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+                normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+                normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+                normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
             end
 
         end
@@ -141,112 +184,1043 @@ for nprobe = 1:2
     R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP;
     R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
 
-    % Define predictor variables
-    timeToTransition_ripples = time_from_last_ripples{1}{1}(normalised_ripple_duration{1}{1}>0);
-    X = [ripple_L_HPC_MUA{1}(normalised_ripple_duration{1}>0); ripple_power{1}(normalised_ripple_duration{1}>0)]';
-    % X = [normalised_ripple_duration{1}; ripple_power{1}; ripple_L_V1_MUA{1}; ripple_R_V1_MUA{1};...
-    %     L_V1_MUA_activity{1}; R_V1_MUA_activity{1}]';
-    % 
-    % scatter(normalised_ripple_duration{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
-    % scatter(ripple_power{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
-
-    % Fit Cox proportional hazards model
-    [b, logL, H, stats] = coxphfit(X, timeToTransition_ripples);
-
-    % Display results
-    disp('Cox Model Coefficients:');
-    disp(coxMdl);
-
-
-
-    % Plot survival function (Kaplan-Meier estimate)
-
-    % ripple rate -> time from last ripple to UP end
-    figure;
-    timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-    ripple_threshold1 = prctile(ripple_rate{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
-    ripple_threshold2 = prctile(ripple_rate{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-
-    ecdf(timeToTransition_ripples(ripple_rate{nprobe}{mprobe}>=ripple_threshold2), 'Function', 'survivor');
-    hold on;
-    ecdf(timeToTransition_ripples(ripple_rate{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1), 'Function', 'survivor');
-    legend('top 25% ripple rate','bottom 25% ripple rate','box off')
-
-    xlabel('Time (s)');
-    ylabel('Survival Probability of UP');
-    title('Kaplan-Meier Survival Curve');
-
-    
-    % ripple count -> time from last ripple to UP end (confound....)
-    figure;
-    timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-    ripple_threshold1 = prctile(ripple_count{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
-    ripple_threshold2 = prctile(ripple_count{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
-
-    ecdf(timeToTransition_ripples(ripple_count{nprobe}{mprobe}>=ripple_threshold2), 'Function', 'survivor');
-    hold on;
-    ecdf(timeToTransition_ripples(ripple_count{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0), 'Function', 'survivor');
-    legend('2 ripples or more','1 ripple')
-
-    xlabel('Time (s)');
-    ylabel('Survival Probability of UP');
-    title('Kaplan-Meier Survival Curve');
-
-
-    % ripple power
-    figure;
-    timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-    ripple_threshold1 = prctile(ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
-    ripple_threshold2 = prctile(ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
-
-    ecdf(timeToTransition_ripples(ripple_power{nprobe}{mprobe}>=ripple_threshold2), 'Function', 'survivor');
-    hold on;
-    ecdf(timeToTransition_ripples(ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0), 'Function', 'survivor');
-    legend('top 25% ripple power','bottom 25% ripple power','box off')
-
-    xlabel('Time (s)');
-    ylabel('Survival Probability of UP');
-    title('Kaplan-Meier Survival Curve');
-
-    
+    % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
+    normalised_L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+end
 
 
 
 
+% Define predictor variables
+% timeToTransition_ripples = time_from_last_ripples{1}{1}(normalised_ripple_duration{1}{1}>0);
+% X = [ripple_L_HPC_MUA{1}(normalised_ripple_duration{1}>0); ripple_power{1}(normalised_ripple_duration{1}>0)]';
+
+% scatter(normalised_ripple_duration{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
+% scatter(ripple_power{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
+
+% Fit Cox proportional hazards model
+% [b, logL, H, stats] = coxphfit(X, timeToTransition_ripples);
+%
+% % Display results
+% disp('Cox Model Coefficients:');
+% disp(coxMdl);
+
+
+colour_lines = [215,48,39;69,117,180;244,109,67;145,191,219]/256;% 4 colors Dark red, orangish red, light blue, dark blue
+
+% Plot survival function (Kaplan-Meier estimate)
+%%%%%%%%%%%%%% ripple duration
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Cumulative ripple duration and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_duration{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_duration{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% cumulative ripple duration','bottom 25% cumulative ripple duration'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Ripple duration');
+
+
+%%%%%%%%%%%%%% ripple duration
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Ripple duration and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),25);
+        ripple_threshold2 = prctile(ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_duration{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_duration{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% ripple duration','bottom 25% ripple duration'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Ripple duration');
+
+
+%%%%%%%%%%%%%%% normalised ripple duration
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Normalised cumulative ripple duration and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(normalised_ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
+        ripple_threshold2 = prctile(normalised_ripple_duration{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_ripple_duration{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_ripple_duration{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% normalised cumulative\newline ripple duration','bottom 25% normalised cumulative\newline ripple duration'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Normalised ripple duration');
+
+
+%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+%%%%%%%%%%%%% Last Ripple power (1 or more ripples)
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'ripple peak power and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        % timeToTransition_ripples = timeToTransition{nprobe};
+        ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Ripple peak power');
 
 
 
-    % Plot survival function (Kaplan-Meier estimate)
-    figure;
-    ripple_threshold1 = prctile(ripple_R_V1_MUA{1}(normalised_ripple_duration{1}>0),25);
-    ripple_threshold2 = prctile(ripple_R_V1_MUA{1}(normalised_ripple_duration{1}>0),75);
+%%%%%%%%%%%%% Last Ripple power (1)
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Last ripple peak power and last ripple to UP-DOWN transition (1 ripple)';
+count = 1;
 
-    ecdf(timeToTransition(ripple_L_V1_MUA{1}>ripple_threshold2), 'Function', 'survivor');
-    hold on;
-    ecdf(timeToTransition(ripple_L_V1_MUA{1}<ripple_threshold1&normalised_ripple_duration{1}>0), 'Function', 'survivor');
-    legend('top 25% normalised V1 MUA during ripples','bottom 25% normalised V1 MUA during ripples')
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),25);
+        ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),75);
 
-    xlabel('Time (s)');
-    ylabel('Survival Probability of UP');
-    title('Kaplan-Meier Survival Curve');
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    % Plot survival function (Kaplan-Meier estimate)
-    figure;
-    ripple_threshold1 = prctile(R_V1_MUA_activity{1},25);
-    ripple_threshold2 = prctile(R_V1_MUA_activity{1},75);
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
-    ecdf(timeToTransition(R_V1_MUA_activity{1}>ripple_threshold2), 'Function', 'survivor');
-    hold on;
-    ecdf(timeToTransition(R_V1_MUA_activity{1}<ripple_threshold1), 'Function', 'survivor');
-    legend('top 25% normalised HPC MUA during ripples','bottom 25% normalised HPC MUA during ripples')
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Ripple peak power (1 ripple)');
 
-    xlabel('Time (s)');
-    ylabel('Survival Probability of UP');
-    title('Kaplan-Meier Survival Curve');
 
-    % Hazard ratio interpretation
-    HR = exp(b);
-    disp('Hazard Ratios:');
-    disp(HR);
+%%%%%%%%%%%%% Last Ripple power (2 or more ripples)
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Last ripple power and last ripple to UP-DOWN transition (2 and more ripples)';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
+        ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('Last ripple peak power (2 and more ripples)');
+
+
+
+%%%%%%%%%%%%% First Ripple power (2 or more ripples)
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'First ripple power and last ripple to UP-DOWN transition (2 and more ripples)';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
+        ripple_threshold2 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('First ripple peak power');
+
+%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+%%%%%%%%%%%%% L HPC MUA peak during last ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'L HPC MUA peak during last ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('L HPC last ripple MUA Peak');
+
+%%%%%%%%%%%%% R HPC MUA peak during last ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'R HPC MUA peak during last ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('R HPC last ripple MUA Peak');
+
+%%%%%%%%%%%%% L V1 MUA peak during last ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'L V1 MUA peak during last ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_L_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_L_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_V1_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_V1_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('L V1 last ripple MUA Peak');
+
+
+%%%%%%%%%%%%% R V1 MUA peak during last ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'R V1 MUA peak during last ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(ripple_R_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_R_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_V1_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_V1_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('R V1 last ripple MUA Peak');
+
+
+
+%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+%%%%%%%%%%%%% L HPC MUA peak during first ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'L HPC MUA peak during first ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('L HPC first ripple MUA Peak');
+
+%%%%%%%%%%%%% R HPC MUA peak during first ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'R HPC MUA peak during last ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('R HPC first ripple MUA Peak');
+
+%%%%%%%%%%%%% L V1 MUA peak during first ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'L V1 MUA peak during first ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_L_V1_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_L_V1_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('L V1 first ripple MUA Peak');
+
+
+%%%%%%%%%%%%% R V1 MUA peak during first ripple
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'R V1 MUA peak during first ripple and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_R_V1_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_R_V1_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+        xlim([0 0.5])
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    end
+end
+sgtitle('R V1 first ripple MUA Peak');
+
+
+
+%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+%%%%%%%%%%%%% Normalised cumulative L HPC MUA activity during UP
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Normalised cumulative L HPC MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_HPC_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_HPC_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Normalised cumulative L HPC MUA activity during UP with ripples');
+
+
+%%%%%%%%%%%%% Cumulative R HPC MUA activity during UP
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Normalised cumulative R HPC MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(normalised_R_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(normalised_R_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_R_HPC_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_R_HPC_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Normalised cumulative R HPC MUA activity during UP with ripples');
+
+%%%%%%%%%%%%% Cumulative L V1 MUA activity during UP
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Normalised cumulative L V1 MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(normalised_L_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(normalised_L_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_V1_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_V1_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Normalised cumulative L V1 MUA activity during UP with ripples');
+
+
+%%%%%%%%%%%%% Cumulative L V1 MUA activity during UP
+
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Normalised umulative R V1 MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(normalised_R_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(normalised_R_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_R_V1_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_R_V1_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Normalised cumulative R V1 MUA activity during UP with ripples');
+
+
+
+
+
+%%%%%%%%%%%%%
+%%%%%%%%%%%%%
+%%%%%%%%%%%%% Cumulative L V1 MUA activity during UP
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Cumulative L HPC MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(L_HPC_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(L_HPC_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Cumulative L HPC MUA activity during UP with ripples');
+
+
+%%%%%%%%%%%%% Cumulative R V1 MUA activity during UP
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Cumulative R HPC MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(R_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(R_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(R_HPC_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(R_HPC_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Cumulative R HPC MUA activity during UP with ripples');
+
+
+%%%%%%%%%%%%% Cumulative L V1 MUA activity during UP
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Cumulative L V1 MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(L_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(L_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(L_V1_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(L_V1_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Cumulative L V1 MUA activity during UP with ripples');
+
+
+%%%%%%%%%%%%% Cumulative R V1 MUA activity during UP
+fig(1)=figure;
+fig(1).Position = [800 200 960 780];
+fig(1).Name = 'Cumulative R V1 MUA activity during UP and last ripple to UP-DOWN transition';
+count = 1;
+
+for nprobe = 1:2
+    for mprobe = 1:2
+        subplot(2,2,count)
+        count = count+1;
+        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        ripple_threshold1 = prctile(R_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(R_V1_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}>0),75);
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(R_V1_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(R_V1_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        xlabel('Time (s)');
+        ylabel('Survival Probability of UP');
+
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([0 0.5])
+    end
+end
+sgtitle('Cumulative R V1 MUA activity during UP with ripples');
+
+
+% 
+% 
+% %%%%%%%%%%%%% Cumulative L HPC MUA activity during UP
+% 
+% fig(1)=figure;
+% fig(1).Position = [800 200 960 780];
+% fig(1).Name = 'Cumulative L HPC MUA activity during UP and last ripple to UP-DOWN transition';
+% count = 1;
+% 
+% for nprobe = 1:2
+%     for mprobe = 1:2
+%         subplot(2,2,count)
+%         count = count+1;
+%         timeToTransition_ripples = timeToTransition{nprobe};
+%         ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}<1),25);
+%         ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity{nprobe}(ripple_count{nprobe}{mprobe}<1),75);
+% 
+%         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_HPC_MUA_activity{nprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+%         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+%         PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+%         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+% 
+%         hold on;
+%         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(normalised_L_HPC_MUA_activity{nprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}<1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+%         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+%         PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+%         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+%         legend(ERROR_SHADE(1:2),{'top 25% MUA activtiy','bottom 25%  MUA activtiy'},'box','off')
+% 
+%         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+%         xlabel('Time (s)');
+%         ylabel('Survival Probability of UP');
+% 
+%         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+%         xlim([0 0.5])
+%     end
+% end
+% sgtitle('Cumulative L HPC MUA activity during UP with ripples');
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+
+
+
+
+
+
+
+% scatter(normalised_ripple_duration{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
+% scatter(ripple_power{1}(normalised_ripple_duration{1}>0),timeToTransition(normalised_ripple_duration{1}>0),'filled','MarkerFaceAlpha','0.02')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Fit Cox proportional hazards model
+[b, logL, H, stats] = coxphfit(X, timeToTransition_ripples(ripple_count{nprobe}{mprobe}>0));
+
+% Hazard ratio interpretation
+HR = exp(b);
+disp('Hazard Ratios:');
+disp(HR);
+
+
+% Hazard ratio interpretation
+HR = exp(bootBetas);
+disp('Hazard Ratios:');
+disp(HR);
+
+%
+% % Display results
+% disp('Cox Model Coefficients:');
+% disp(coxMdl);
+
+
+
+
+
+% Plot survival function (Kaplan-Meier estimate)
+figure;
+ripple_threshold1 = prctile(ripple_L_V1_MUA_cumulative{1}(normalised_ripple_duration{1}>0),25);
+ripple_threshold2 = prctile(ripple_L_V1_MUA_cumulative{1}(normalised_ripple_duration{1}>0),75);
+
+ecdf(timeToTransition(ripple_L_V1_MUA_cumulative{1}>ripple_threshold2), 'Function', 'survivor');
+hold on;
+ecdf(timeToTransition(ripple_L_V1_MUA_cumulative{1}<ripple_threshold1&normalised_ripple_duration{1}>0), 'Function', 'survivor');
+legend('top 25% normalised V1 MUA during ripples','bottom 25% normalised V1 MUA during ripples')
+
+xlabel('Time (s)');
+ylabel('Survival Probability of UP');
+title('Kaplan-Meier Survival Curve');
+
+% Plot survival function (Kaplan-Meier estimate)
+figure;
+ripple_threshold1 = prctile(R_V1_MUA_activity{1},25);
+ripple_threshold2 = prctile(R_V1_MUA_activity{1},75);
+
+ecdf(timeToTransition(R_V1_MUA_activity{1}>ripple_threshold2), 'Function', 'survivor');
+hold on;
+ecdf(timeToTransition(R_V1_MUA_activity{1}<ripple_threshold1), 'Function', 'survivor');
+legend('top 25% normalised HPC MUA during ripples','bottom 25% normalised HPC MUA during ripples')
+
+xlabel('Time (s)');
+ylabel('Survival Probability of UP');
+title('Kaplan-Meier Survival Curve');
+
 
 end
