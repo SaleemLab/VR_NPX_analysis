@@ -42,7 +42,929 @@ probability_psth = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 
 
+
+
 %% Plotting distribution of ripple during normalised duration of UP  (peaktimes)
+probability = probability_spindles_normalised;
+
+time_wondows = [-0.2 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+% all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of spindles during left V1 normalised UP-DOWN duration','Probability of spindles during right V1 normalised UP-DOWN duration'};
+% probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples during right V1 normalised UP-DOWN duration'};
+
+colour_lines = [215,25,28;44,123,182]/256;
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+    fig(nprobe).Name = probe_hemisphere_texts{nprobe};
+
+    % all_ripple_no = probability(nprobe).L_ripple_no;
+    all_UP_no = length(probability(nprobe).UP_all_index);
+    all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+
+    %%%% Left spindles plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+    %%%% right spindles plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+
+
+
+%% plotting Probability of SWR relative to UP and DOWN onset (peaktimes)
+probability = probability_spindles_psth;
+
+time_wondows = [-0.2 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+% all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+
+
+colour_lines = [215,25,28;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of spindles during left V1 UP-DOWN','Probability of spindles during right V1 UP-DOWN'};
+% probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 UP-DOWN','Probability of WHOLE ripples during right V1 UP-DOWN'};
+colour_lines = [215,25,28;44,123,182]/256;
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+    fig(nprobe).Name = probe_hemisphere_texts{nprobe};
+
+    % all_ripple_no = probability(nprobe).L_ripple_no;
+    all_UP_no = length(probability(nprobe).UP_all_index);
+    all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+
+    %%%% Left spindles plotting
+    %%%% DOWN
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to UP (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during UP')
+    xlabel('Time relative to UP (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+    %%%% right spindles plotting
+    %%%% DOWN
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to UP (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during UP')
+    xlabel('Time relative to UP (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+
+if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+
+%% Plotting distribution of ripple during normalised duration of UP  (WHOLE)
+probability = probability_spindles_normalised_whole;
+
+time_wondows = [-0.2 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+% all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of WHOLE spindles during left V1 normalised UP-DOWN duration','Probability of WHOLE spindles during right V1 normalised UP-DOWN duration'};
+% probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples during right V1 normalised UP-DOWN duration'};
+
+colour_lines = [215,25,28;44,123,182]/256;
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+    fig(nprobe).Name = probe_hemisphere_texts{nprobe};
+
+    % all_ripple_no = probability(nprobe).L_ripple_no;
+    all_UP_no = length(probability(nprobe).UP_all_index);
+    all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+
+    %%%% Left spindles plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+    %%%% right spindles plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+
+
+
+%% plotting Probability of SWR relative to UP and DOWN onset (WHOLE)
+probability = probability_spindles_psth_whole;
+
+time_wondows = [-0.2 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+% all_sessions = max(slow_waves_all(1).DOWN_session_count);
+colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+
+
+colour_lines = [215,25,28;44,123,182]/256;
+probe_hemisphere_texts = {'Probability of WHOLE spindles during left V1 UP-DOWN','Probability of WHOLE spindles during right V1 UP-DOWN'};
+% probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 UP-DOWN','Probability of WHOLE ripples during right V1 UP-DOWN'};
+colour_lines = [215,25,28;44,123,182]/256;
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+    fig(nprobe).Name = probe_hemisphere_texts{nprobe};
+
+    % all_ripple_no = probability(nprobe).L_ripple_no;
+    all_UP_no = length(probability(nprobe).UP_all_index);
+    all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+
+    %%%% Left spindles plotting
+    %%%% DOWN
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to UP (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).L_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left spindles during UP')
+    xlabel('Time relative to UP (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+    %%%% right spindles plotting
+    %%%% DOWN
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during DOWN')
+    xlabel('Time relative to DOWN (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = cumsum(sum(probability(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
+    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Time relative to UP (s)')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+    y = sum(probability(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = mean(probability(nprobe).R_spindles_UP_shuffled);
+    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
+    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right spindles during UP')
+    xlabel('Time relative to UP (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+
+if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
+
+
+
+
+
+
+
+
+
+
+
+
+%% Plotting distribution of ripple + spindles during normalised duration of UP  (peaktimes)
 probability = probability_normalised;
 probability_spindles = probability_spindles_normalised;
 
@@ -285,7 +1207,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 
 
-%% plotting Probability of SWR relative to UP and DOWN onset (peaktimes)
+%% plotting Probability of SWR + spindles relative to UP and DOWN onset (peaktimes)
 probability = probability_psth;
 probability_spindles= probability_spindles_psth;
 
@@ -524,7 +1446,7 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
-%% Plotting distribution of ripple during normalised duration of UP  (WHOLE)
+%% Plotting distribution of ripple + spindle during normalised duration of UP  (WHOLE)
 probability = probability_normalised_whole;
 probability_spindles = probability_spindles_normalised_whole;
 
@@ -766,7 +1688,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 
 
-%% plotting Probability of SWR relative to UP and DOWN onset (WHOLE)
+%% plotting Probability of SWR + spindles relative to UP and DOWN onset (WHOLE)
 probability = probability_psth_whole;
 probability_spindles= probability_spindles_psth_whole;
 
@@ -1004,6 +1926,245 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
+%% Plotting distribution of spindles during normalised duration of UP  (WHOLE)
+probability = probability_normalised_whole;
+probability_spindles = probability_spindles_normalised_whole;
+
+time_wondows = [-0.2 0.5];
+time_bin = 0.02;
+num_bins=20; % divide one UP event into 20 bins
+duration_threshold = 2;
+% all_sessions = max(slow_waves_all(1).DOWN_session_count);
+% colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+% probe_hemisphere_texts = {'Probability of ripples during left V1 normalised UP-DOWN duration','Probability of ripples during right V1 normalised UP-DOWN duration'};
+probe_hemisphere_texts = {'Probability of WHOLE spindles during left V1 normalised UP-DOWN duration','Probability of WHOLE spindles during right V1 normalised UP-DOWN duration'};
+% colour_lines = [215,48,39;69,117,180;244,109,67;145,191,219]/256;% 4 colors Dark red, orangish red, light blue, dark blue
+% colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
+colour_lines = [215,48,39;69,117,180;244,109,67;145,191,219]/256;% 4 colors Dark red, orangish red, light blue, dark blue
+
+% colour_lines = [215,25,28;44,123,182]/256;
+for nprobe = 1:2
+    fig(nprobe)=figure;
+    fig(nprobe).Position = [982 50 700 950];
+    fig(nprobe).Name = probe_hemisphere_texts{nprobe};
+
+    % all_ripple_no = probability(nprobe).L_ripple_no;
+    all_UP_no = length(probability(nprobe).UP_all_index);
+    all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+
+    %%%% Left ripples plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_ripples_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = cumsum(sum(probability_spindles(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_spindles(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_spindles(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+
+    legend(ERROR_SHADE(1:2),{'Ripples','Spindles'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_ripples_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_ripples_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_ripples_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = sum(probability_spindles(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_spindles(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_spindles(nprobe).L_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left ripples/spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).L_ripples_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).L_ripples_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).L_ripples_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = cumsum(sum(probability_spindles(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_spindles(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_spindles(nprobe).L_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Ripples','Spindles'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).L_ripples_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).L_ripples_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).L_ripples_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = sum(probability_spindles(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_spindles(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_spindles(nprobe).L_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of left ripples/spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+     %%%% Right ripples plotting
+    %%%% DOWN
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_ripples_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_ripples_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_ripples_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = cumsum(sum(probability_spindles(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_spindles(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_spindles(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+
+    legend(ERROR_SHADE(1:2),{'Ripples','Spindles'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_ripples_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = sum(probability_spindles(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_spindles(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_spindles(nprobe).R_spindles_DOWN_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right ripples/spindles during DOWN')
+    xlabel('Normalised duration of DOWN')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    %%% UP
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = cumsum(sum(probability(nprobe).R_ripples_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability(nprobe).R_ripples_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability(nprobe).R_ripples_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = cumsum(sum(probability_spindles(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_spindles(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_spindles(nprobe).R_spindles_UP_bootstrap,2),97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+    legend(ERROR_SHADE(1:2),{'Ripples','Spindles'},'Location','northwest','Box','off')
+
+    % xline(0,'r')
+    % title('Prob of left ripples during DOWN')
+    xlabel('Normalised duration of UP')
+    ylabel('Cumulative probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    x = linspace(0,1,num_bins);
+    y = sum(probability(nprobe).R_ripples_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability(nprobe).R_ripples_UP_bootstrap,2.5);
+    UCI = prctile(probability(nprobe).R_ripples_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+
+    y = sum(probability_spindles(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_spindles(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_spindles(nprobe).R_spindles_UP_bootstrap,97.5);
+
+    PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+    ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+    % legend(ERROR_SHADE(1:2),{'Original','Shuffled'},'Box','off')
+    % xline(0,'r')
+    title('Probability of right ripples/spindles during UP')
+    xlabel('Normalised duration of UP')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 
 %% plotting Probability of UP and/or DOWN relative to Ripple peaktime

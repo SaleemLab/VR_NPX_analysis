@@ -713,7 +713,7 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability
 probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','normalised','time_option','peaktimes','shuffle_option','baseline')
 probability_normalised = probability;
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_baseline.mat'),'probability_normalised');
-probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','absolute','time_option','peaktimes','time_wondows',[-0.2 0.5,'shuffle_option','baseline']);
+probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','absolute','time_option','peaktimes','time_wondows',[-0.2 0.5],'shuffle_option','baseline');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_baseline.mat'),'probability');
 
 
@@ -1229,7 +1229,11 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 
 extract_UP_DOWN_ripples_info(slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','UD')
 
-
+%% Plotting basic temporal probability of UP DOWN and ripple
+plot_UP_DOWN_ripple_probability
+plot_UP_DOWN_ripple_probability_baseline
+plot_UP_DOWN_spindle_probability
+plot_UP_DOWN_spindle_probability_baseline
 %% Plotting and calculating MUA relative to UP DOWN and ripple
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
