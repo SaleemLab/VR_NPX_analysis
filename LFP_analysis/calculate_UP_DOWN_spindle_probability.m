@@ -53,15 +53,18 @@ for nprobe = 1:length(slow_waves_all)
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
         UP_index_all = [UP_index_all; UP_index];
 
+
         if contains(shuffle_option,'baseline')
-            s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
-            time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
-            time_jitter = [time_jitter' time_jitter'];
+            % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(UP_index))' 3*ones(1,length(UP_index))'];
             UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:)-time_jitter;
 
-            s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
-            time_jitter = 2 + (2.5 - 2) * rand(s,1, length(DOWN_index));
-            time_jitter = [time_jitter' time_jitter'];
+            % s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(DOWN_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(DOWN_index))' 3*ones(1,length(DOWN_index))'];
             DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:)-time_jitter;
         else
             UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
@@ -188,14 +191,16 @@ for nprobe = 1:length(slow_waves_all)
         UP_index_all = [UP_index_all; UP_index];
 
         if contains(shuffle_option,'baseline')
-            s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
-            time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
-            time_jitter = [time_jitter' time_jitter'];
+            % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(UP_index))' 3*ones(1,length(UP_index))'];
             UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:)-time_jitter;
 
-            s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
-            time_jitter = 2 + (2.5 - 2) * rand(s,1, length(DOWN_index));
-            time_jitter = [time_jitter' time_jitter'];
+            % s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(DOWN_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(DOWN_index))' 3*ones(1,length(DOWN_index))'];
             DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:)-time_jitter;
         else
             UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);

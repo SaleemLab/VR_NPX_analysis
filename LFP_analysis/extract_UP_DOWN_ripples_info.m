@@ -295,11 +295,24 @@ nprobe =  p.Results.nprobe;
 
             event_info(nprobe).L_V1_cumulative_activity_UP= [event_info(nprobe).L_V1_cumulative_activity_UP sum((V1_spike_counts{1}(UP_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{1}(NREM_status))))];
 
-            event_info(nprobe).R_V1_cumulative_activity_UP= [event_info(nprobe).R_V1_cumulative_activity_UP sum(V1_spike_counts{2}(UP_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{2}(NREM_status)))];
+            event_info(nprobe).R_V1_cumulative_activity_UP= [event_info(nprobe).R_V1_cumulative_activity_UP sum(V1_spike_counts{2}(UP_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{2}(NREM_status))-min(V1_spike_counts{2}(NREM_status)))];
 
-            event_info(nprobe).L_HPC_cumulative_activity_UP= [event_info(nprobe).L_HPC_cumulative_activity_UP sum((HPC_spike_counts{1}(UP_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(max(V1_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)))];
+            event_info(nprobe).L_HPC_cumulative_activity_UP= [event_info(nprobe).L_HPC_cumulative_activity_UP sum((HPC_spike_counts{1}(UP_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(max(HPC_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)))];
 
-            event_info(nprobe).R_HPC_cumulative_activity_UP= [event_info(nprobe).R_HPC_cumulative_activity_UP sum(HPC_spike_counts{2}(UP_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)))];
+            event_info(nprobe).R_HPC_cumulative_activity_UP= [event_info(nprobe).R_HPC_cumulative_activity_UP sum(HPC_spike_counts{2}(UP_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(HPC_spike_counts{2}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)))];
+
+
+            % get all normalised spike counts
+            event_info(nprobe).L_V1_MUA_UP{nevent}= tvec_interp1(UP_event_index == nevent);
+
+            event_info(nprobe).L_V1_MUA_UP{nevent}= (V1_spike_counts{1}(UP_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{2}(NREM_status)));
+
+            event_info(nprobe).R_V1_MUA_UP{nevent}= (V1_spike_counts{2}(UP_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{2}(NREM_status))-min(V1_spike_counts{2}(NREM_status)));
+
+            event_info(nprobe).L_HPC_MUA_UP{nevent}= (HPC_spike_counts{1}(UP_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status)))./(max(HPC_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)));
+
+            event_info(nprobe).R_HPC_MUA_UP{nevent}= (HPC_spike_counts{2}(UP_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(HPC_spike_counts{2}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)));
+
 
         end
 
@@ -407,11 +420,22 @@ nprobe =  p.Results.nprobe;
 
              event_info(nprobe).L_V1_cumulative_activity_DOWN= [event_info(nprobe).L_V1_cumulative_activity_DOWN sum((V1_spike_counts{1}(DOWN_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{1}(NREM_status))))];
 
-            event_info(nprobe).R_V1_cumulative_activity_DOWN= [event_info(nprobe).R_V1_cumulative_activity_DOWN sum(V1_spike_counts{2}(DOWN_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{2}(NREM_status)))];
+            event_info(nprobe).R_V1_cumulative_activity_DOWN= [event_info(nprobe).R_V1_cumulative_activity_DOWN sum(V1_spike_counts{2}(DOWN_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{2}(NREM_status))-min(V1_spike_counts{2}(NREM_status)))];
 
-            event_info(nprobe).L_HPC_cumulative_activity_DOWN= [event_info(nprobe).L_HPC_cumulative_activity_DOWN sum((HPC_spike_counts{1}(DOWN_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(max(V1_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)))];
+            event_info(nprobe).L_HPC_cumulative_activity_DOWN= [event_info(nprobe).L_HPC_cumulative_activity_DOWN sum((HPC_spike_counts{1}(DOWN_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status))))./(max(HPC_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)))];
 
-            event_info(nprobe).R_HPC_cumulative_activity_DOWN= [event_info(nprobe).R_HPC_cumulative_activity_DOWN sum(HPC_spike_counts{2}(DOWN_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)))];
+            event_info(nprobe).R_HPC_cumulative_activity_DOWN= [event_info(nprobe).R_HPC_cumulative_activity_DOWN sum(HPC_spike_counts{2}(DOWN_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(HPC_spike_counts{2}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)))];
+
+            % get all normalised spike counts
+            event_info(nprobe).L_V1_MUA_DOWN{nevent}= tvec_interp1(DOWN_event_index == nevent);
+
+            event_info(nprobe).L_V1_MUA_DOWN{nevent}= (V1_spike_counts{1}(DOWN_event_index == nevent)-min(V1_spike_counts{1}(NREM_status)))./(max(V1_spike_counts{1}(NREM_status))-min(V1_spike_counts{2}(NREM_status)));
+
+            event_info(nprobe).R_V1_MUA_DOWN{nevent}= (V1_spike_counts{2}(DOWN_event_index == nevent)-min(V1_spike_counts{2}(NREM_status)))./(max(V1_spike_counts{2}(NREM_status))-min(V1_spike_counts{2}(NREM_status)));
+
+            event_info(nprobe).L_HPC_MUA_DOWN{nevent}= (HPC_spike_counts{1}(DOWN_event_index == nevent)-min(HPC_spike_counts{1}(NREM_status)))./(max(HPC_spike_counts{1}(NREM_status))-min(HPC_spike_counts{1}(NREM_status)));
+
+            event_info(nprobe).R_HPC_MUA_DOWN{nevent}= (HPC_spike_counts{2}(DOWN_event_index == nevent)-min(HPC_spike_counts{2}(NREM_status)))./(max(HPC_spike_counts{2}(NREM_status))-min(HPC_spike_counts{2}(NREM_status)));
 
         end
         toc
