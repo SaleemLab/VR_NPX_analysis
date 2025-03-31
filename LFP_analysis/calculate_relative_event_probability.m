@@ -84,5 +84,5 @@ end
 % event_index(:,2) = temp(index); % Record event_A index
 
 % Normalize probabilities by the number of event_B
-probabilities = probabilities / size(event_B, 1);
+probabilities = probabilities / size(event_A, 1);
 end

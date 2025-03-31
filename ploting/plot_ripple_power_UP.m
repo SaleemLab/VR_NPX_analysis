@@ -31,7 +31,8 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
 probability_ripples_SO = probability;
 
-
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'));
+probability_ripples_SO_whole=probability;
 %% Select UP events based on ripple power (within session normalised)
 
 probability = probability_normalised_whole;
@@ -43,22 +44,22 @@ DOWN_index_all = []; % index out of all DOWN events (can be useful for grabbing 
 
 ripples_index = [];% index out of all ripple events (can be useful for grabbing additional information not previously calculated)
 ripples_index_all = [];% index out of selected ripple events (can be useful for grabbing additional information not previously calculated)
-
+% ripples_all = []
 
 for nprobe = 1:2
 
     % 0 0.2 0.4 0.6 0.8
 
     for mprobe = 1:2
-
+        binnedArray3{1} = [];
         % ripple power normalised based on
         peak_normalised_all=[];
         for nsession = 1:max(ripples_all(mprobe).session_count)
-            % peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
-            peak_zscore = max(ripples_all(mprobe).SWR_zscore{nsession});
+            peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
+            % peak_zscore = max(ripples_all(mprobe).SWR_zscore{nsession});
             [temp,sortIdx] = sort(peak_zscore);
             percentileRanks = zeros(1,length(peak_zscore));
-            percentileRanks(sortIdx) = ((1:length(temp))-0.5)/length(temp); 
+            percentileRanks(sortIdx) = ((1:length(temp))-0.5)/length(temp);
             %             peak_zscore = (peak_zscore-min(peak_zscore))/(max(peak_zscore)-min(peak_zscore));
             peak_normalised_all = [peak_normalised_all percentileRanks];
         end
@@ -211,8 +212,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 %% Plot probability of UP and DOWN relative to ripples with different power
 %% plotting Probability of UP and/or DOWN relative to Ripple peaktime
-probability = probability_ripples_SO;
-time_wondows = [-0.2 0.5];
+probability = probability_ripples_SO_whole;
+time_wondows = [-0.5 0.5];
 time_bin = 0.02;
 num_bins=20; % divide one UP event into 20 bins
 duration_threshold = 2;
@@ -235,9 +236,10 @@ for nprobe = 1:2
     all_DOWN_no = length(probability(nprobe).DOWN_all_index);
     %%%% Left ripples plotting
     %%%% DOWN
+    mprobe = 1;
     nexttile
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(cumsum(probability(nprobe).L_ripples_DOWN(index,:),2))/length(index);
@@ -268,7 +270,7 @@ for nprobe = 1:2
     nexttile
 
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(probability(nprobe).L_ripples_DOWN(index,:))/length(index);
@@ -292,8 +294,9 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
+    mprobe = 2;
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(cumsum(probability(nprobe).R_ripples_DOWN(index,:),2))/length(index);
@@ -323,7 +326,7 @@ for nprobe = 1:2
     nexttile
 
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(probability(nprobe).R_ripples_DOWN(index,:))/length(index);
@@ -346,8 +349,9 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
+    mprobe = 1;
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(cumsum(probability(nprobe).L_ripples_UP(index,:),2))/length(index);
@@ -377,7 +381,7 @@ for nprobe = 1:2
     nexttile
 
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(probability(nprobe).L_ripples_UP(index,:))/length(index);
@@ -401,8 +405,9 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
+    mprobe = 2;
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(cumsum(probability(nprobe).R_ripples_UP(index,:),2))/length(index);
@@ -432,7 +437,7 @@ for nprobe = 1:2
     nexttile
 
     for nbin = 1:length(bin_edges)-1
-        index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
+        index = unique(cat(1,ripples_index{nprobe}{mprobe}{nbin}));
 
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
         y = sum(probability(nprobe).R_ripples_UP(index,:))/length(index);
@@ -483,6 +488,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -538,6 +544,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -592,6 +599,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -647,6 +655,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -727,6 +736,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -783,6 +793,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -837,6 +848,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -892,6 +904,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -977,6 +990,7 @@ for nprobe = 1:2
     all_DOWN_no = length(probability(nprobe).DOWN_all_index);
     %%%% Left ripples plotting
     %%%% DOWN
+    mprobe = 1;
     nexttile
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
@@ -1033,6 +1047,7 @@ for nprobe = 1:2
 
     %%%% Right ripples plotting
     %%%% DOWN
+    mprobe = 2;
     nexttile
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
@@ -1087,6 +1102,7 @@ for nprobe = 1:2
 
     %%%% Left ripples plotting
     %%%% UP
+    mprobe = 1;
     nexttile
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
@@ -1143,6 +1159,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
+    mprobe = 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
         all_UP_no = length(index);
@@ -1223,6 +1240,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -1279,6 +1297,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% DOWN
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -1333,6 +1352,7 @@ for nprobe = 1:2
     %%%% Left ripples plotting
     %%%% UP
     nexttile
+    mprobe= 1;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 
@@ -1388,6 +1408,7 @@ for nprobe = 1:2
     %%%% Right ripples plotting
     %%%% UP
     nexttile
+    mprobe= 2;
     for nbin = 1:length(bin_edges)-1
         index = unique(cat(1,UP_index{nprobe}{mprobe}{nbin}));
 

@@ -1,4 +1,4 @@
-function plot_UP_DOWN_spindle_probability()
+function plot_UP_DOWN_spindle_probability_baseline()
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -59,6 +59,7 @@ probability_psth = probability;
 
 %% Plotting distribution of ripple during normalised duration of UP  (peaktimes)
 probability = probability_spindles_normalised;
+probability_baseline = probability_spindles_normalised_baseline;
 
 time_wondows = [-0.2 0.5];
 time_bin = 0.02;
@@ -91,9 +92,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -115,9 +117,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -139,9 +142,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -163,9 +167,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -190,9 +195,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -214,9 +220,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -238,9 +245,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -262,9 +270,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -286,6 +295,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 %% plotting Probability of SWR relative to UP and DOWN onset (peaktimes)
 probability = probability_spindles_psth;
+probability_baseline = probability_spindles_psth_baseline;
 
 time_wondows = [-0.2 0.5];
 time_bin = 0.02;
@@ -320,9 +330,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -344,9 +355,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -368,9 +380,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -392,9 +405,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -419,9 +433,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -443,9 +458,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -467,9 +483,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -491,9 +508,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -514,6 +532,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 %% Plotting distribution of ripple during normalised duration of UP  (WHOLE)
 probability = probability_spindles_normalised_whole;
+probability_baseline = probability_spindles_normalised_whole_baseline;
 
 time_wondows = [-0.2 0.5];
 time_bin = 0.02;
@@ -546,9 +565,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -570,9 +590,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -594,9 +615,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -618,9 +640,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -645,9 +668,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -669,9 +693,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -693,9 +718,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -717,9 +743,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -741,6 +768,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
 %% plotting Probability of SWR relative to UP and DOWN onset (WHOLE)
 probability = probability_spindles_psth_whole;
+probability_baseline = probability_spindles_psth_whole_baseline;
 
 time_wondows = [-0.2 0.5];
 time_bin = 0.02;
@@ -775,9 +803,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -799,9 +828,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -823,9 +853,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).L_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).L_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).L_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -847,9 +878,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).L_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).L_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).L_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).L_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).L_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -874,9 +906,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_DOWN_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -898,9 +931,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_DOWN_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_DOWN_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_DOWN)./all_DOWN_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_DOWN_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -922,9 +956,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(cumsum(probability(nprobe).R_spindles_UP_shuffled,2));
-    LCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),2.5);
-    UCI = prctile(cumsum(probability(nprobe).R_spindles_UP_shuffled,2),97.5);
+    y = cumsum(sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no);
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),2.5);
+    UCI = prctile(cumsum(probability_baseline(nprobe).R_spindles_UP_bootstrap,2),97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -946,9 +981,10 @@ for nprobe = 1:2
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-    y = mean(probability(nprobe).R_spindles_UP_shuffled);
-    LCI = prctile(probability(nprobe).R_spindles_UP_shuffled,2.5);
-    UCI = prctile(probability(nprobe).R_spindles_UP_shuffled,97.5);
+    y = sum(probability_baseline(nprobe).R_spindles_UP)./all_UP_no;
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,2.5);
+    UCI = prctile(probability_baseline(nprobe).R_spindles_UP_bootstrap,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -959,7 +995,6 @@ for nprobe = 1:2
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
-
 
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))

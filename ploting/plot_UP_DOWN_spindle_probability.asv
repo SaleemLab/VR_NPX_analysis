@@ -21,26 +21,13 @@ load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_whole.mat'));
 probability_spindles_normalised_whole = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_whole_baseline.mat'));
-probability_spindles_normalised_whole_baseline = probability_normalised;
-
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'));
 probability_spindles_psth_whole = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole_baseline.mat'));
-probability_spindles_psth_whole_baseline = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised.mat'));
 probability_spindles_normalised = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_baseline.mat'));
-probability_spindles_normalised_baseline = probability_normalised;
-
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability.mat'));
 probability_spindles_psth = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_baseline.mat'));
-probability_spindles_psth_baseline = probability;
-
-
-
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 probability_normalised_whole = probability_normalised;
