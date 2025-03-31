@@ -167,8 +167,15 @@ for nprobe = 1:2
                 normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
                 normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
                 normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+
+
+                % Cumulative activity until last ripple ends
+                event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))
+            
             end
 
+
+   
         end
     end
 
@@ -183,6 +190,13 @@ for nprobe = 1:2
     L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP;
     R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP;
     R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
+
+    % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
+    normalised_L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+    normalised_R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+
 
     % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
     normalised_L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
