@@ -708,10 +708,10 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 
 
 %%%% P(UP) and P(DOWN) during ripples
-% probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','onset','time_windows',[-1 1])
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
-% probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1])
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'),'probability');
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','onset','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'),'probability');
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'),'probability');
 
 %%%% P(spindles) during UP DOWN
 % probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','normalised','time_option','peaktimes')
@@ -774,6 +774,7 @@ duration_threshold = 2;
 probability=[];
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
+probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','shuffle_option','baseline');
 
 for nprobe = 1:2
     %%%%%%%%%%%%%%% L ripples
@@ -815,6 +816,27 @@ for nprobe = 1:2
         % ripple_times,slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_wondows(1):time_bin:time_wondows(end),0
         % Probability of UP During D-U
         [~,temp,~] = calculate_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:),slow_waves_all(nprobe).DOWN_ints(DOWN_index,1),time_windows(1):time_bin:time_windows(end),0);
+        
+        slow_waves_all(nprobe).UP_ints(UP_index,:)
+        for i = 1:size(UP_ints,1)
+
+            timebin_edges_all(i,:);
+            % Previous UP (skip if this is the first UP)
+            if i > 1
+                prev_offset = UP_ints(i-1,2);
+                % Find peri-time indices within the previous UP state
+                mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                temp(i, mask_prev) = NaN;
+            end
+
+            % Next UP (skip if this is the last UP)
+            if i < size(UP_ints,1)
+                next_onset = UP_ints(i+1,1);
+                % Find peri-time indices within the next UP state
+                mask_next = timebin_edges_all(i,:) >= next_onset;
+                temp(i, mask_next) = NaN;
+            end
+        end
         binnedArrayUD=[binnedArrayUD; temp];
 
         % Probability of DOWN During U-D

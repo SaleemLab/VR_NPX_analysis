@@ -89,24 +89,27 @@ for nprobe = 1:length(slow_waves_all)
         else
             [probability(nprobe).L_spindles_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times,DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
-            timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(DOWN_ints,1)
 
-                timebin_edges_all(i,:);
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = DOWN_ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp(i, mask_prev) = NaN;
-                end
+            if ~contains(shuffle_option,'baseline')
+                timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(DOWN_ints,1)
 
-                % Next DOWN (skip if this is the last UP)
-                if i < size(DOWN_ints,1)
-                    next_onset = DOWN_ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp(i, mask_next) = NaN;
+                    timebin_edges_all(i,:);
+                    % Previous DOWN (skip if this is the first UP)
+                    if i > 1
+                        prev_offset = DOWN_ints(i-1,2);
+                        % Find peri-time indices within the previous UP state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
+
+                    % Next DOWN (skip if this is the last UP)
+                    if i < size(DOWN_ints,1)
+                        next_onset = DOWN_ints(i+1,1);
+                        % Find peri-time indices within the next UP state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
                 end
             end
         end
@@ -269,24 +272,26 @@ for nprobe = 1:length(slow_waves_all)
         else
             [probability(nprobe).R_spindles_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times,DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
-            timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(DOWN_ints,1)
+            if ~contains(shuffle_option,'baseline')
+                timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(DOWN_ints,1)
 
-                timebin_edges_all(i,:);
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = DOWN_ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp(i, mask_prev) = NaN;
-                end
+                    timebin_edges_all(i,:);
+                    % Previous DOWN (skip if this is the first UP)
+                    if i > 1
+                        prev_offset = DOWN_ints(i-1,2);
+                        % Find peri-time indices within the previous UP state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
 
-                % Next DOWN (skip if this is the last UP)
-                if i < size(DOWN_ints,1)
-                    next_onset = DOWN_ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp(i, mask_next) = NaN;
+                    % Next DOWN (skip if this is the last UP)
+                    if i < size(DOWN_ints,1)
+                        next_onset = DOWN_ints(i+1,1);
+                        % Find peri-time indices within the next UP state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
                 end
             end
         end
