@@ -10,7 +10,7 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 SUBJECT = 'M25026';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = [16,18]
+for ndate = 1:length(all_DIR)
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
     session_DIR= dir('M*');
