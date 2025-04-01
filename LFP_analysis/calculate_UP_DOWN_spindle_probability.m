@@ -94,7 +94,6 @@ for nprobe = 1:length(slow_waves_all)
                 timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
                 for i = 1:size(DOWN_ints,1)
 
-                    timebin_edges_all(i,:);
                     % Previous DOWN (skip if this is the first UP)
                     if i > 1
                         prev_offset = DOWN_ints(i-1,2);
@@ -127,7 +126,6 @@ for nprobe = 1:length(slow_waves_all)
             if ~contains(shuffle_option,'baseline')
                 for i = 1:size(UP_ints,1)
 
-                    timebin_edges_all(i,:);
                     % Previous UP (skip if this is the first UP)
                     if i > 1
                         prev_offset = UP_ints(i-1,2);
@@ -275,8 +273,6 @@ for nprobe = 1:length(slow_waves_all)
             if ~contains(shuffle_option,'baseline')
                 timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
                 for i = 1:size(DOWN_ints,1)
-
-                    timebin_edges_all(i,:);
                     % Previous DOWN (skip if this is the first UP)
                     if i > 1
                         prev_offset = DOWN_ints(i-1,2);
@@ -309,7 +305,6 @@ for nprobe = 1:length(slow_waves_all)
 
                 for i = 1:size(UP_ints,1)
 
-                    timebin_edges_all(i,:);
                     % Previous UP (skip if this is the first UP)
                     if i > 1
                         prev_offset = UP_ints(i-1,2);

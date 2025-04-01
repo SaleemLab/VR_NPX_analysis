@@ -37,16 +37,17 @@ for nprobe = 1:length(slow_waves_all)
        ripples_index = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 1,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
 
+        ripples_index1 = find(ripples_all(nprobe).session_count == sessions_to_process(nsession)& ripples_all(nprobe).SWS_index == 1);
         ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % if contains(time_option,'peaktimes')
         % else
-            % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+        % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
         % end
         if contains(time_option,'peaktimes')
             ripple_times1= ripple_peaktimes1;
         else
-            ripple_times1 = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
+            ripple_times1 = [ripples_all(nprobe).onset(ripples_index1) ripples_all(nprobe).offset(ripples_index1)];
         end
 
         if contains(shuffle_option,'baseline')
@@ -72,22 +73,20 @@ for nprobe = 1:length(slow_waves_all)
 
         if ~contains(shuffle_option,'baseline')
             ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
-            timebin_edges_all1 = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+            timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
 
 
             for i = 1:size(ripple_times,1)
-
-                timebin_edges_all(i,:);
                 % Previous DOWN (skip if this is the first DOWN)
                 if i > 1
                     prev_offset = ripple_times(i-1,2);
                     % Find peri-time indices within the previous DOWN state
-                    mask_prev =  timebin_edges_all1(i,:) <= prev_offset;
+                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
                     temp(i, mask_prev) = NaN;
                 end
 
                 % Next DOWN (skip if this is the last DOWN)
-                if i < size(DOWN_ints,1)
+                if i < size(ripple_times,1)
                     next_onset = ripple_times(i+1,1);
                     % Find peri-time indices within the next DOWN state
                     mask_next = timebin_edges_all(i,:) >= next_onset;
@@ -153,6 +152,7 @@ for nprobe = 1:length(slow_waves_all)
         ripples_index = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
 
+        ripples_index1 = find(ripples_all(nprobe).session_count == sessions_to_process(nsession)& ripples_all(nprobe).SWS_index == 1);
         ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % if contains(time_option,'peaktimes')
@@ -162,7 +162,7 @@ for nprobe = 1:length(slow_waves_all)
         if contains(time_option,'peaktimes')
             ripple_times1= ripple_peaktimes1;
         else
-            ripple_times1 = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
+            ripple_times1 = [ripples_all(nprobe).onset(ripples_index1) ripples_all(nprobe).offset(ripples_index1)];
         end
 
         if contains(shuffle_option,'baseline')
@@ -188,11 +188,10 @@ for nprobe = 1:length(slow_waves_all)
 
         if ~contains(shuffle_option,'baseline')
             ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
-            timebin_edges_all = ripple_times + bins_centre;  % Absolute times of peri-event window
+            timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+
 
             for i = 1:size(ripple_times,1)
-
-                timebin_edges_all(i,:);
                 % Previous DOWN (skip if this is the first DOWN)
                 if i > 1
                     prev_offset = ripple_times(i-1,2);
@@ -202,7 +201,7 @@ for nprobe = 1:length(slow_waves_all)
                 end
 
                 % Next DOWN (skip if this is the last DOWN)
-                if i < size(DOWN_ints,1)
+                if i < size(ripple_times,1)
                     next_onset = ripple_times(i+1,1);
                     % Find peri-time indices within the next DOWN state
                     mask_next = timebin_edges_all(i,:) >= next_onset;
