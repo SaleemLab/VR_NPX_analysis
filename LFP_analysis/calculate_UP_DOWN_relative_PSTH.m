@@ -4,7 +4,7 @@ p = inputParser;
 addParameter(p,'option','MUA',@ischar);
 
 addParameter(p,'time_option','absolute',@ischar);
-addParameter(p,'time_wondows',[-1 1],@isnumeric);
+addParameter(p,'time_windows',[-1 1],@isnumeric);
 addParameter(p,'time_bin',0.01,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
@@ -12,7 +12,7 @@ addParameter(p,'duration_threshold',2,@isnumeric);
 parse(p,varargin{:})
 option = p.Results.option;
 time_option = p.Results.time_option;
-time_wondows = p.Results.time_wondows;
+time_windows = p.Results.time_windows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
@@ -67,6 +67,30 @@ for nprobe = 1:length(slow_waves_all)
         ripple_times= ripple_peaktimes;
 
         ripples_index_all = [ripples_index_all; ripples_index];
+
+
+        if contains(shuffle_option,'baseline')
+            % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(UP_index))' 3*ones(1,length(UP_index))'];
+            UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:)-time_jitter;
+
+            % s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(DOWN_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(UP_index))' 3*ones(1,length(UP_index))'];
+            DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:)-time_jitter;
+
+            time_jitter = [3*ones(1,length(ripples_index))'];
+            ripple_times = ripple_peaktimes-time_jitter;
+
+        else
+            UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+            DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+            ripple_times= ripple_peaktimes;
+        end
+        
         % else
         %     ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
         % end

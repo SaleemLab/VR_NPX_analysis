@@ -222,7 +222,7 @@ for nprobe = 1:length(slow_waves_all)
 
 
                 %%%%% HPC MUA
-                % HPC MUA UP
+                % V1 MUA UP
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, UP_ints(:,1), time_windows, timebin_size);
 
                 if ~contains(shuffle_option,'baseline')
@@ -255,7 +255,7 @@ for nprobe = 1:length(slow_waves_all)
                 
 
 
-                % HPC MUA DOWN
+
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, DOWN_ints(:,1), time_windows, timebin_size);
 
                 if ~contains(shuffle_option,'baseline')
@@ -286,7 +286,7 @@ for nprobe = 1:length(slow_waves_all)
 
 
 
-                % HPC MUA ripple
+
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, ripple_peaktimes, time_windows, timebin_size);
                 temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 binnedArrayRipplesHPC{mprobe} = [binnedArrayRipplesHPC{mprobe}; filtfilt(w,1,temp)];
@@ -361,44 +361,43 @@ for nprobe = 1:length(slow_waves_all)
     PSTH(nprobe).L_V1_DOWN_bootstrap = tempDOWN;
     PSTH(nprobe).L_V1_ripples_bootstrap = tempRipples;
 
-    if contains(shuffle_option,'time_circular_shift')
-        % timebin circularly shifted
-        tempUP = [];
-        tempDOWN = [];
-        tempRipples = [];
-        disp('V1 L spike shift shuffle')
-        tic
-        for iBoot = 1:1000
-            temp1 = [];
-            temp2 = [];
-            parfor event_id = 1:size(binnedArrayUPV1{1},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayUPV1{1},2),1);
-                bins= circshift(1:1:size(binnedArrayUPV1{1},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayUPV1{1}(event_id,bins);
-                temp2(event_id,:) = binnedArrayDOWNV1{1}(event_id,bins);
-            end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
-
-            temp1 = [];
-            parfor event_id = 1:size(binnedArrayRipplesV1{1},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesV1{1},2),1);
-                bins= circshift(1:1:size(binnedArrayRipplesV1{1},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayRipplesV1{1}(event_id,bins);
-            end
-            tempRipples(iBoot,:) = mean(temp1,1);
-
+    % timebin circularly shifted
+    tempUP = [];
+    tempDOWN = [];
+    tempRipples = [];
+    disp('V1 L spike shift shuffle')
+    tic
+    for iBoot = 1:1000
+        temp1 = [];
+        temp2 = [];
+        parfor event_id = 1:size(binnedArrayUPV1{1},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayUPV1{1},2),1);
+            bins= circshift(1:1:size(binnedArrayUPV1{1},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayUPV1{1}(event_id,bins);
+            temp2(event_id,:) = binnedArrayDOWNV1{1}(event_id,bins);
         end
-        toc
+        tempUP(iBoot,:) = mean(temp1,1);
+        tempDOWN(iBoot,:) = mean(temp2,1);
 
-        PSTH(nprobe).L_V1_UP_shuffled = tempUP;
-        PSTH(nprobe).L_V1_DOWN_shuffled = tempDOWN;
-        PSTH(nprobe).L_V1_ripples_shuffled = tempRipples;
+        temp1 = [];
+        parfor event_id = 1:size(binnedArrayRipplesV1{1},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesV1{1},2),1);
+            bins= circshift(1:1:size(binnedArrayRipplesV1{1},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayRipplesV1{1}(event_id,bins);
+        end
+        tempRipples(iBoot,:) = mean(temp1,1);
+
     end
+    toc
+
+    PSTH(nprobe).L_V1_UP_shuffled = tempUP;
+    PSTH(nprobe).L_V1_DOWN_shuffled = tempDOWN;
+    PSTH(nprobe).L_V1_ripples_shuffled = tempRipples;
+
 
 
     % V1 R
@@ -424,44 +423,43 @@ for nprobe = 1:length(slow_waves_all)
     PSTH(nprobe).R_V1_DOWN_bootstrap = tempDOWN;
     PSTH(nprobe).R_V1_ripples_bootstrap = tempRipples;
 
-    if contains(shuffle_option,'time_circular_shift')
-        % timebin circularly shifted
-        tempUP = [];
-        tempDOWN = [];
-        tempRipples = [];
-        disp('V1 R spike shift shuffle')
-        tic
-        for iBoot = 1:1000
-            temp1 = [];
-            temp2 = [];
-            parfor event_id = 1:size(binnedArrayUPV1{2},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayUPV1{2},2),1);
-                bins= circshift(1:1:size(binnedArrayUPV1{2},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayUPV1{2}(event_id,bins);
-                temp2(event_id,:) = binnedArrayDOWNV1{2}(event_id,bins);
-            end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
-
-            temp1 = [];
-            parfor event_id = 1:size(binnedArrayRipplesV1{2},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesV1{2},2),1);
-                bins= circshift(1:1:size(binnedArrayRipplesV1{2},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayRipplesV1{2}(event_id,bins);
-            end
-            tempRipples(iBoot,:) = mean(temp1,1);
-
+    % timebin circularly shifted
+    tempUP = [];
+    tempDOWN = [];
+    tempRipples = [];
+    disp('V1 R spike shift shuffle')
+    tic
+    for iBoot = 1:1000
+        temp1 = [];
+        temp2 = [];
+        parfor event_id = 1:size(binnedArrayUPV1{2},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayUPV1{2},2),1);
+            bins= circshift(1:1:size(binnedArrayUPV1{2},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayUPV1{2}(event_id,bins);
+            temp2(event_id,:) = binnedArrayDOWNV1{2}(event_id,bins);
         end
-        toc
+        tempUP(iBoot,:) = mean(temp1,1);
+        tempDOWN(iBoot,:) = mean(temp2,1);
 
-        PSTH(nprobe).R_V1_UP_shuffled = tempUP;
-        PSTH(nprobe).R_V1_DOWN_shuffled = tempDOWN;
-        PSTH(nprobe).R_V1_ripples_shuffled = tempRipples;
+        temp1 = [];
+        parfor event_id = 1:size(binnedArrayRipplesV1{2},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesV1{2},2),1);
+            bins= circshift(1:1:size(binnedArrayRipplesV1{2},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayRipplesV1{2}(event_id,bins);
+        end
+        tempRipples(iBoot,:) = mean(temp1,1);
+
     end
+    toc
+
+    PSTH(nprobe).R_V1_UP_shuffled = tempUP;
+    PSTH(nprobe).R_V1_DOWN_shuffled = tempDOWN;
+    PSTH(nprobe).R_V1_ripples_shuffled = tempRipples;
+
 
 
 
@@ -489,43 +487,42 @@ for nprobe = 1:length(slow_waves_all)
     PSTH(nprobe).L_HPC_ripples_bootstrap = tempRipples;
 
     % timebin circularly shifted
-    if contains(shuffle_option,'time_circular_shift')
-        tempUP = [];
-        tempDOWN = [];
-        tempRipples = [];
-        disp('V1 L spike shift shuffle')
-        tic
-        for iBoot = 1:1000
-            temp1 = [];
-            temp2 = [];
-            parfor event_id = 1:size(binnedArrayUPHPC{1},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayUPHPC{1},2),1);
-                bins= circshift(1:1:size(binnedArrayUPHPC{1},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayUPHPC{1}(event_id,bins);
-                temp2(event_id,:) = binnedArrayDOWNHPC{1}(event_id,bins);
-            end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
-
-            temp1 = [];
-            parfor event_id = 1:size(binnedArrayRipplesHPC{1},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesHPC{1},2),1);
-                bins= circshift(1:1:size(binnedArrayRipplesHPC{1},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayRipplesHPC{1}(event_id,bins);
-            end
-            tempRipples(iBoot,:) = mean(temp1,1);
-
+    tempUP = [];
+    tempDOWN = [];
+    tempRipples = [];
+    disp('V1 L spike shift shuffle')
+    tic
+    for iBoot = 1:1000
+        temp1 = [];
+        temp2 = [];
+        parfor event_id = 1:size(binnedArrayUPHPC{1},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayUPHPC{1},2),1);
+            bins= circshift(1:1:size(binnedArrayUPHPC{1},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayUPHPC{1}(event_id,bins);
+            temp2(event_id,:) = binnedArrayDOWNHPC{1}(event_id,bins);
         end
-        toc
+        tempUP(iBoot,:) = mean(temp1,1);
+        tempDOWN(iBoot,:) = mean(temp2,1);
 
-        PSTH(nprobe).L_HPC_UP_shuffled = tempUP;
-        PSTH(nprobe).L_HPC_DOWN_shuffled = tempDOWN;
-        PSTH(nprobe).L_HPC_ripples_shuffled = tempRipples;
+        temp1 = [];
+        parfor event_id = 1:size(binnedArrayRipplesHPC{1},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesHPC{1},2),1);
+            bins= circshift(1:1:size(binnedArrayRipplesHPC{1},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayRipplesHPC{1}(event_id,bins);
+        end
+        tempRipples(iBoot,:) = mean(temp1,1);
+
     end
+    toc
+
+    PSTH(nprobe).L_HPC_UP_shuffled = tempUP;
+    PSTH(nprobe).L_HPC_DOWN_shuffled = tempDOWN;
+    PSTH(nprobe).L_HPC_ripples_shuffled = tempRipples;
+
 
 
     % HPC R
@@ -551,42 +548,40 @@ for nprobe = 1:length(slow_waves_all)
     PSTH(nprobe).R_HPC_DOWN_bootstrap = tempDOWN;
     PSTH(nprobe).R_HPC_ripples_bootstrap = tempRipples;
 
-    if contains(shuffle_option,'time_circular_shift')
-        % timebin circularly shifted
-        tempUP = [];
-        tempDOWN = [];
-        tempRipples = [];
-        disp('HPC R spike shift shuffle')
-        tic
-        for iBoot = 1:1000
-            temp1 = [];
-            temp2 = [];
-            parfor event_id = 1:size(binnedArrayUPHPC{2},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayUPHPC{2},2),1);
-                bins= circshift(1:1:size(binnedArrayUPHPC{2},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayUPHPC{2}(event_id,bins);
-                temp2(event_id,:) = binnedArrayDOWNHPC{2}(event_id,bins);
-            end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
-
-            temp1 = [];
-            parfor event_id = 1:size(binnedArrayRipplesHPC{2},1)
-                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
-                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
-                bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesHPC{2},2),1);
-                bins= circshift(1:1:size(binnedArrayRipplesHPC{2},2),bins_to_shift);
-                temp1(event_id,:) = binnedArrayRipplesHPC{2}(event_id,bins);
-            end
-            tempRipples(iBoot,:) = mean(temp1,1);
-
+    % timebin circularly shifted
+    tempUP = [];
+    tempDOWN = [];
+    tempRipples = [];
+    disp('HPC R spike shift shuffle')
+    tic
+    for iBoot = 1:1000
+        temp1 = [];
+        temp2 = [];
+        parfor event_id = 1:size(binnedArrayUPHPC{2},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayUPHPC{2},2),1);
+            bins= circshift(1:1:size(binnedArrayUPHPC{2},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayUPHPC{2}(event_id,bins);
+            temp2(event_id,:) = binnedArrayDOWNHPC{2}(event_id,bins);
         end
-        toc
+        tempUP(iBoot,:) = mean(temp1,1);
+        tempDOWN(iBoot,:) = mean(temp2,1);
 
-        PSTH(nprobe).R_HPC_UP_shuffled = tempUP;
-        PSTH(nprobe).R_HPC_DOWN_shuffled = tempDOWN;
-        PSTH(nprobe).R_HPC_ripples_shuffled = tempRipples;
+        temp1 = [];
+        parfor event_id = 1:size(binnedArrayRipplesHPC{2},1)
+            s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+            %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+            bins_to_shift = datasample(s,1:1:size(binnedArrayRipplesHPC{2},2),1);
+            bins= circshift(1:1:size(binnedArrayRipplesHPC{2},2),bins_to_shift);
+            temp1(event_id,:) = binnedArrayRipplesHPC{2}(event_id,bins);
+        end
+        tempRipples(iBoot,:) = mean(temp1,1);
+
     end
+    toc
+
+    PSTH(nprobe).R_HPC_UP_shuffled = tempUP;
+    PSTH(nprobe).R_HPC_DOWN_shuffled = tempDOWN;
+    PSTH(nprobe).R_HPC_ripples_shuffled = tempRipples;
 end
