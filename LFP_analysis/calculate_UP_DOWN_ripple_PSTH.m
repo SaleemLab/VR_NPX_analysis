@@ -346,15 +346,15 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUPV1{1},1),size(binnedArrayUPV1{1},1));
-        tempUP(iBoot,:) = mean(binnedArrayUPV1{1}(event_id,:));
+        tempUP(iBoot,:) = mean(binnedArrayUPV1{1}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWNV1{1},1),size(binnedArrayDOWNV1{1},1));
-        tempDOWN(iBoot,:) = mean(binnedArrayDOWNV1{1}(event_id,:));
+        tempDOWN(iBoot,:) = mean(binnedArrayDOWNV1{1}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayRipplesV1{1},1),size(binnedArrayRipplesV1{1},1));
-        tempRipples(iBoot,:) = mean(binnedArrayRipplesV1{1}(event_id,:));
+        tempRipples(iBoot,:) = mean(binnedArrayRipplesV1{1}(event_id,:),'omitnan');
     end
 
     PSTH(nprobe).L_V1_UP_bootstrap = tempUP;
@@ -379,8 +379,8 @@ for nprobe = 1:length(slow_waves_all)
                 temp1(event_id,:) = binnedArrayUPV1{1}(event_id,bins);
                 temp2(event_id,:) = binnedArrayDOWNV1{1}(event_id,bins);
             end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
+            tempUP(iBoot,:) = mean(temp1,1,'omitnan');
+            tempDOWN(iBoot,:) = mean(temp2,1,'omitnan');
 
             temp1 = [];
             parfor event_id = 1:size(binnedArrayRipplesV1{1},1)
@@ -390,7 +390,7 @@ for nprobe = 1:length(slow_waves_all)
                 bins= circshift(1:1:size(binnedArrayRipplesV1{1},2),bins_to_shift);
                 temp1(event_id,:) = binnedArrayRipplesV1{1}(event_id,bins);
             end
-            tempRipples(iBoot,:) = mean(temp1,1);
+            tempRipples(iBoot,:) = mean(temp1,1,'omitnan');
 
         end
         toc
@@ -409,15 +409,15 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUPV1{2},1),size(binnedArrayUPV1{2},1));
-        tempUP(iBoot,:) = mean(binnedArrayUPV1{2}(event_id,:));
+        tempUP(iBoot,:) = mean(binnedArrayUPV1{2}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWNV1{2},1),size(binnedArrayDOWNV1{2},1));
-        tempDOWN(iBoot,:) = mean(binnedArrayDOWNV1{2}(event_id,:));
+        tempDOWN(iBoot,:) = mean(binnedArrayDOWNV1{2}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayRipplesV1{2},1),size(binnedArrayRipplesV1{2},1));
-        tempRipples(iBoot,:) = mean(binnedArrayRipplesV1{2}(event_id,:));
+        tempRipples(iBoot,:) = mean(binnedArrayRipplesV1{2}(event_id,:),'omitnan');
     end
 
     PSTH(nprobe).R_V1_UP_bootstrap = tempUP;
@@ -442,8 +442,8 @@ for nprobe = 1:length(slow_waves_all)
                 temp1(event_id,:) = binnedArrayUPV1{2}(event_id,bins);
                 temp2(event_id,:) = binnedArrayDOWNV1{2}(event_id,bins);
             end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
+            tempUP(iBoot,:) = mean(temp1,1,'omitnan');
+            tempDOWN(iBoot,:) = mean(temp2,1,'omitnan');
 
             temp1 = [];
             parfor event_id = 1:size(binnedArrayRipplesV1{2},1)
@@ -453,7 +453,7 @@ for nprobe = 1:length(slow_waves_all)
                 bins= circshift(1:1:size(binnedArrayRipplesV1{2},2),bins_to_shift);
                 temp1(event_id,:) = binnedArrayRipplesV1{2}(event_id,bins);
             end
-            tempRipples(iBoot,:) = mean(temp1,1);
+            tempRipples(iBoot,:) = mean(temp1,1,'omitnan');
 
         end
         toc
@@ -473,15 +473,15 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUPHPC{1},1),size(binnedArrayUPHPC{1},1));
-        tempUP(iBoot,:) = mean(binnedArrayUPHPC{1}(event_id,:));
+        tempUP(iBoot,:) = mean(binnedArrayUPHPC{1}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWNHPC{1},1),size(binnedArrayDOWNHPC{1},1));
-        tempDOWN(iBoot,:) = mean(binnedArrayDOWNHPC{1}(event_id,:));
+        tempDOWN(iBoot,:) = mean(binnedArrayDOWNHPC{1}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayRipplesHPC{1},1),size(binnedArrayRipplesHPC{1},1));
-        tempRipples(iBoot,:) = mean(binnedArrayRipplesHPC{1}(event_id,:));
+        tempRipples(iBoot,:) = mean(binnedArrayRipplesHPC{1}(event_id,:),'omitnan');
     end
 
     PSTH(nprobe).L_HPC_UP_bootstrap = tempUP;
@@ -506,8 +506,8 @@ for nprobe = 1:length(slow_waves_all)
                 temp1(event_id,:) = binnedArrayUPHPC{1}(event_id,bins);
                 temp2(event_id,:) = binnedArrayDOWNHPC{1}(event_id,bins);
             end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
+            tempUP(iBoot,:) = mean(temp1,1,'omitnan');
+            tempDOWN(iBoot,:) = mean(temp2,1,'omitnan');
 
             temp1 = [];
             parfor event_id = 1:size(binnedArrayRipplesHPC{1},1)
@@ -517,7 +517,7 @@ for nprobe = 1:length(slow_waves_all)
                 bins= circshift(1:1:size(binnedArrayRipplesHPC{1},2),bins_to_shift);
                 temp1(event_id,:) = binnedArrayRipplesHPC{1}(event_id,bins);
             end
-            tempRipples(iBoot,:) = mean(temp1,1);
+            tempRipples(iBoot,:) = mean(temp1,1,'omitnan');
 
         end
         toc
@@ -536,15 +536,15 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUPHPC{2},1),size(binnedArrayUPHPC{2},1));
-        tempUP(iBoot,:) = mean(binnedArrayUPHPC{2}(event_id,:));
+        tempUP(iBoot,:) = mean(binnedArrayUPHPC{2}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWNHPC{2},1),size(binnedArrayDOWNHPC{2},1));
-        tempDOWN(iBoot,:) = mean(binnedArrayDOWNHPC{2}(event_id,:));
+        tempDOWN(iBoot,:) = mean(binnedArrayDOWNHPC{2}(event_id,:),'omitnan');
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayRipplesHPC{2},1),size(binnedArrayRipplesHPC{2},1));
-        tempRipples(iBoot,:) = mean(binnedArrayRipplesHPC{2}(event_id,:));
+        tempRipples(iBoot,:) = mean(binnedArrayRipplesHPC{2}(event_id,:),'omitnan');
     end
 
     PSTH(nprobe).R_HPC_UP_bootstrap = tempUP;
@@ -569,8 +569,8 @@ for nprobe = 1:length(slow_waves_all)
                 temp1(event_id,:) = binnedArrayUPHPC{2}(event_id,bins);
                 temp2(event_id,:) = binnedArrayDOWNHPC{2}(event_id,bins);
             end
-            tempUP(iBoot,:) = mean(temp1,1);
-            tempDOWN(iBoot,:) = mean(temp2,1);
+            tempUP(iBoot,:) = mean(temp1,1,'omitnan');
+            tempDOWN(iBoot,:) = mean(temp2,1,'omitnan');
 
             temp1 = [];
             parfor event_id = 1:size(binnedArrayRipplesHPC{2},1)
@@ -580,7 +580,7 @@ for nprobe = 1:length(slow_waves_all)
                 bins= circshift(1:1:size(binnedArrayRipplesHPC{2},2),bins_to_shift);
                 temp1(event_id,:) = binnedArrayRipplesHPC{2}(event_id,bins);
             end
-            tempRipples(iBoot,:) = mean(temp1,1);
+            tempRipples(iBoot,:) = mean(temp1,1,'omitnan');
 
         end
         toc
