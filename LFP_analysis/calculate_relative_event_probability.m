@@ -20,6 +20,8 @@ outside_count = 0;
 event_index = [];
 normalized_duration = nan(1,length(event_B));
 count = 1;
+bin_edges = linspace(0, 1, num_bins+1);
+bin_centres = bin_edges(1:end-1) + diff(bin_edges)/2;
 
 % Iterate through each event_A
 for i = 1:size(event_A, 1)
@@ -29,6 +31,10 @@ for i = 1:size(event_A, 1)
 
     % Normalize event_B times relative to the duration of event_A
     relative_times = (event_B - onset_A) / duration_A;
+
+    % Find event_Bs within this event_A
+    in_window_idx = find(relative_times >= 0 & relative_times < 1);
+    relative_times = relative_times(in_window_idx);
 
     % Count occurrences of event_B within each bin
     if shuffle_options ~=0
@@ -40,25 +46,20 @@ for i = 1:size(event_A, 1)
         bins = 1:num_bins;
     end
 
+    % Digitize into bins
+    [~,~,bin_ids] = histcounts(relative_times, bin_edges);
 
     for j = 1:num_bins
-        n = bins(j);
-        bin_start = (n - 1) / num_bins;
-        bin_end = n / num_bins;
-        probabilities(j) = probabilities(j) + sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
+        bin_count = sum(bin_ids == j);
+        probabilities(j) = probabilities(j) + bin_count;
+        binnedArray(i, j) = bin_count;
 
-        binnedArray(i,j) =sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
-
-        if sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end)>0
-            index = find(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
-            for k = 1:length(index)
-                event_index(count,1) = index(k);
-                event_index(count,2) = i;
-                event_index(count,3) = bin_start+(bin_end-bin_start)/2;
-                count = count +1;
-            end
+        if bin_count > 0
+            idx = find(bin_ids == j);
+            new_rows = [idx, repmat(i, bin_count, 1), repmat(bin_centres(j), bin_count, 1)];
+            event_index(count:count+size(new_rows,1)-1, :) = new_rows;
+            count = count + size(new_rows,1);
         end
-
     end
 
     % Count occurrences of event_B outside of event_A
@@ -86,3 +87,4 @@ end
 % Normalize probabilities by the number of event_B
 probabilities = probabilities / size(event_A, 1);
 end
+

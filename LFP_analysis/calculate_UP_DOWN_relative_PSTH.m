@@ -135,22 +135,22 @@ for nprobe = 1:length(slow_waves_all)
 
             tic
             if contains(option,'MUA')
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
+                [~,~,~,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayUPV1{mprobe} = [binnedArrayUPV1{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
+                [~,~,~,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayDOWNV1{mprobe} = [binnedArrayDOWNV1{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
+                [~,~,~,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayUPHPC{mprobe} = [binnedArrayUPHPC{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
+                [~,~,~,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayDOWNHPC{mprobe} = [binnedArrayDOWNHPC{mprobe}; temp];
