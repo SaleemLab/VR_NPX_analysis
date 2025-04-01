@@ -833,7 +833,7 @@ UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','baseline');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA_baseline.mat'),'UP_DOWN_relative_PSTH_MUA');
 
 end

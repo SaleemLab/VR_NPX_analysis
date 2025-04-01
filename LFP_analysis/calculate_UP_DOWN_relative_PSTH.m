@@ -8,6 +8,7 @@ addParameter(p,'time_windows',[-1 1],@isnumeric);
 addParameter(p,'time_bin',0.01,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
+addParameter(p,'shuffle_option','no',@ischar);
 
 parse(p,varargin{:})
 option = p.Results.option;
@@ -16,7 +17,11 @@ time_windows = p.Results.time_windows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
-shuffle_options = 0;
+shuffle_option= p.Results.shuffle_option;
+
+% timebin_edge = time_windows(1):time_bin:time_windows(end);
+% bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
+
 
 for nprobe = 1:length(slow_waves_all)
 
@@ -26,22 +31,23 @@ for nprobe = 1:length(slow_waves_all)
         binnedArrayUPHPC{mprobe} = [];
         binnedArrayDOWNHPC{mprobe} = [];
         binnedArrayRipplesHPC{mprobe} = [];
+        binnedArraySpindlesHPC{mprobe} = [];
 
         binnedArrayUPV1{mprobe} = [];
         binnedArrayDOWNV1{mprobe} = [];
         binnedArrayRipplesV1{mprobe} = [];
+        binnedArraySpindlesV1{mprobe} = [];
     end
 
     %%%%%%%%%%%%%%% L ripples
     UP_index_all = [];
     DOWN_index_all = [];
     ripples_index_all = [];
-    ripple_index_UP_all = [];
-    ripple_index_DOWN_all = [];
+    spindles_index_all = [];
 
     for nsession = 1:length(sessions_to_process)
         
-        % Find UP followed by a DOWN 
+        % Find UP followed by a DOWN
         %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
@@ -64,10 +70,12 @@ for nprobe = 1:length(slow_waves_all)
         ripples_index = find(ripples_all(nprobe).session_count == sessions_to_process(nsession)& ripples_all(nprobe).SWS_index == 1);
         ripple_peaktimes = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
         % if contains(time_option,'peaktimes')
-        ripple_times= ripple_peaktimes;
-
         ripples_index_all = [ripples_index_all; ripples_index];
 
+        % spindles_index = find(spindles_all(1).session_count == sessions_to_process(nsession)& spindles_all(1).SWS_index == 1);
+        % spindle_onset = spindles_all(1).onset(spindles_index);
+        % 
+        % spindles_index_all = [spindles_index_all; ripples_index];
 
         if contains(shuffle_option,'baseline')
             % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
@@ -83,12 +91,15 @@ for nprobe = 1:length(slow_waves_all)
             DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:)-time_jitter;
 
             time_jitter = [3*ones(1,length(ripples_index))'];
-            ripple_times = ripple_peaktimes-time_jitter;
+            ripple_peaktimes = ripple_peaktimes-time_jitter;
 
+            % time_jitter = [3*ones(1,length(spindles_index))'];
+            % spindle_onset = spindle_onset-time_jitter;
         else
             UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
             DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
-            ripple_times= ripple_peaktimes;
+            ripple_peaktimes= ripple_peaktimes;
+            % spindle_onset = spindle_onset;
         end
         
         % else
@@ -122,24 +133,24 @@ for nprobe = 1:length(slow_waves_all)
             % spike_times_sleep = spike_times(spike_speed < 1);
             HPC_spike_counts{mprobe} = filtfilt(w,1,histcounts(spike_times_sleep,tvec_edges));
 
-
+            tic
             if contains(option,'MUA')
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,shuffle_options);
+                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayUPV1{mprobe} = [binnedArrayUPV1{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,shuffle_options);
+                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).V1_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayDOWNV1{mprobe} = [binnedArrayDOWNV1{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,shuffle_options);
+                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).UP_ints(UP_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayUPHPC{mprobe} = [binnedArrayUPHPC{mprobe}; temp];
 
-                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,shuffle_options);
+                [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:), slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession},num_bins,[]);
                 temp = reshape(binnedArray,1,[]);
                 temp = (binnedArray-mean(temp))./std(temp);% zscore relative to spike count during sleep
                 binnedArrayDOWNHPC{mprobe} = [binnedArrayDOWNHPC{mprobe}; temp];
@@ -147,7 +158,7 @@ for nprobe = 1:length(slow_waves_all)
             elseif contains(option,'SUA')
 
             end
-
+            toc
 
         end
     end
