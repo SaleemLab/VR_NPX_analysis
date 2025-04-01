@@ -1,4 +1,4 @@
-function probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,varargin)
+function probability = calculate_SO_SO_contralateral_probability(slow_waves_all,sessions_to_process,varargin)
 % ripples_all = [];
 p = inputParser;
 addParameter(p,'option','absolute',@ischar);
@@ -23,8 +23,17 @@ timebin_edge = time_windows(1):time_bin:time_windows(end);
 bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
 
 for nprobe = 1:length(slow_waves_all)
+    if nprobe == 1
+        mprobe = 2;
+    else
+        mprobe = 1;
+    end
+    %%%%%%%%%%%%%%% L ripples
     UP_index_all = [];
+    UP_index_all1 = [];
+
     DOWN_index_all = [];
+    DOWN_index_all1 = [];
 
 
     binnedArrayUU = [];
@@ -34,7 +43,8 @@ for nprobe = 1:length(slow_waves_all)
 
     for nsession = 1:length(sessions_to_process)
 
-        % Find UP followed by a DOWN
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ipsilateral UP and DOWN
+        % Find UP followed by a DOWN 
         %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
         UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
         %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
@@ -53,6 +63,31 @@ for nprobe = 1:length(slow_waves_all)
 
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
         UP_index_all = [UP_index_all; UP_index];
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% contralateral UP and DOWN
+        % Find UP followed by a DOWN 
+        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
+        UP_index1 = find(slow_waves_all(mprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
+        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
+        UP_duration1 = slow_waves_all(mprobe).UP_ints(UP_index1,2)-slow_waves_all(mprobe).UP_ints(UP_index1,1);
+        UP_index1 = UP_index1(UP_duration1<=duration_threshold);
+        UP_ints1 = slow_waves_all(mprobe).UP_ints(UP_index1,:);
+
+
+        % Find DOWN index
+        DOWN_index1 = find(slow_waves_all(mprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
+        DOWN_ints1 = slow_waves_all(mprobe).DOWN_ints(DOWN_index1,:);
+        [C,ia,ib] = intersect(UP_ints1(:,2),DOWN_ints1(:,1));
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index1 = UP_index1(ia);
+        DOWN_index1 = DOWN_index1(ib);
+        
+        DOWN_ints1 = slow_waves_all(mprobe).DOWN_ints(DOWN_index1,:);
+        DOWN_index_all1 = [DOWN_index_all1; DOWN_index1];
+
+        UP_ints1 = slow_waves_all(mprobe).UP_ints(UP_index1,:);
+        UP_index_all1 = [UP_index_all1; UP_index1];
 
 
         if contains(shuffle_option,'baseline')
@@ -78,11 +113,11 @@ for nprobe = 1:length(slow_waves_all)
             time_index= 1:2;
         end
 
-        % Probability of UP During U-D
+         % Probability of UP During U-D
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,UP_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,UP_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(UP_ints(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(UP_ints1(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -113,9 +148,9 @@ for nprobe = 1:length(slow_waves_all)
 
         % Probability of DOWN During D-U
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,DOWN_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,DOWN_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(DOWN_ints(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(DOWN_ints1(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -146,9 +181,9 @@ for nprobe = 1:length(slow_waves_all)
 
         % Probability of UP During D-U
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,UP_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,UP_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(UP_ints(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(UP_ints1(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -179,9 +214,9 @@ for nprobe = 1:length(slow_waves_all)
         
         % Probability of DOWN During U-D
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,DOWN_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,DOWN_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(DOWN_ints(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(DOWN_ints1(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -217,6 +252,8 @@ for nprobe = 1:length(slow_waves_all)
     probability(nprobe).UP_UP = binnedArrayUU; % UP during D-U
     probability(nprobe).DOWN_DOWN = binnedArrayDD; % DOWN during U-D
 
+    all_spindle_no = sum(spindles_all(1).SWS_index == 1);
+    probability(nprobe).L_spindle_no = all_spindle_no;
     all_UP_no = length(UP_index_all);
     all_DOWN_no = length(DOWN_index_all);
 
