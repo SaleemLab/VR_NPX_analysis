@@ -132,6 +132,8 @@ for nprobe = 1:length(slow_waves_all)
 
                 % V1 MUA UP
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, UP_ints(:,1), time_windows, timebin_size);
+                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -157,13 +159,14 @@ for nprobe = 1:length(slow_waves_all)
                     end
                 end
 
-                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayUPV1{mprobe} = [binnedArrayUPV1{mprobe}; filtfilt(w,1,temp)];
+                binnedArrayUPV1{mprobe} = [binnedArrayUPV1{mprobe}; temp];
 
 
 
                % V1 MUA DOWN
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, DOWN_ints(:,1), time_windows, timebin_size);
+                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -188,12 +191,13 @@ for nprobe = 1:length(slow_waves_all)
                     end
                 end
 
-                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayDOWNV1{mprobe} = [binnedArrayDOWNV1{mprobe}; filtfilt(w,1,temp)];
+                binnedArrayDOWNV1{mprobe} = [binnedArrayDOWNV1{mprobe}; temp];
 
 
                % V1 MUA ripples
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, ripple_peaktimes, time_windows, timebin_size);
+                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     ripple_times = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
@@ -217,13 +221,14 @@ for nprobe = 1:length(slow_waves_all)
                     end
                 end
 
-                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayRipplesV1{mprobe} = [binnedArrayRipplesV1{mprobe}; filtfilt(w,1,temp)];
+                binnedArrayRipplesV1{mprobe} = [binnedArrayRipplesV1{mprobe}; temp];
 
 
                 %%%%% HPC MUA
                 % HPC MUA UP
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, UP_ints(:,1), time_windows, timebin_size);
+                temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -249,14 +254,15 @@ for nprobe = 1:length(slow_waves_all)
                     end
                 end
 
-                temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayUPHPC{mprobe} = [binnedArrayUPHPC{mprobe}; filtfilt(w,1,temp)];
+                binnedArrayUPHPC{mprobe} = [binnedArrayUPHPC{mprobe}; temp];
 
                 
 
 
                 % HPC MUA DOWN
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, DOWN_ints(:,1), time_windows, timebin_size);
+                temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -281,15 +287,14 @@ for nprobe = 1:length(slow_waves_all)
                     end
                 end
 
-                temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayDOWNHPC{mprobe} = [binnedArrayDOWNHPC{mprobe}; filtfilt(w,1,temp)];
+                binnedArrayDOWNHPC{mprobe} = [binnedArrayDOWNHPC{mprobe}; temp];
 
 
 
                 % HPC MUA ripple
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, ripple_peaktimes, time_windows, timebin_size);
                 temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                binnedArrayRipplesHPC{mprobe} = [binnedArrayRipplesHPC{mprobe}; filtfilt(w,1,temp)];
+                temp = filtfilt(w,1,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     ripple_times = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
@@ -312,6 +317,9 @@ for nprobe = 1:length(slow_waves_all)
                         end
                     end
                 end
+
+                binnedArrayRipplesHPC{mprobe} = [binnedArrayRipplesHPC{mprobe}; temp];
+
             elseif contains(option,'SUA')
 
             end
