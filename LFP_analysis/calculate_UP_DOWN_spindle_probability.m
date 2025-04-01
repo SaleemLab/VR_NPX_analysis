@@ -75,10 +75,10 @@ for nprobe = 1:length(slow_waves_all)
         end
 
         spindles_index = find(spindles_all(1).session_count == sessions_to_process(nsession)& spindles_all(1).SWS_index == 1);
-        spindle_peaktimes = spindles_all(1).peaktimes(spindles_index);
+        spindle_onset = spindles_all(1).onset(spindles_index);
 
-        if contains(time_option,'peaktimes')
-            spindle_times= spindle_peaktimes;
+        if contains(time_option,'onset')
+            spindle_times= spindle_onset;
         else
             spindle_times = [spindles_all(1).onset(spindles_index) spindles_all(1).offset(spindles_index)];
         end
@@ -256,10 +256,10 @@ for nprobe = 1:length(slow_waves_all)
         end
 
         spindles_index = find(spindles_all(2).session_count == sessions_to_process(nsession)& spindles_all(2).SWS_index == 1);
-        spindle_peaktimes = spindles_all(2).peaktimes(spindles_index);
+        spindle_onset = spindles_all(2).onset(spindles_index);
 
         if contains(time_option,'peaktimes')
-            spindle_times= spindle_peaktimes;
+            spindle_times= spindle_onset;
         else
             spindle_times = [spindles_all(2).onset(spindles_index) spindles_all(2).offset(spindles_index)];
         end
