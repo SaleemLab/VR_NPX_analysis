@@ -73,8 +73,8 @@ for nprobe = 1:length(slow_waves_all)
         % if contains(time_option,'peaktimes')
         ripples_index_all = [ripples_index_all; ripples_index];
 
-        spindles_index = find(spindles_all(1).session_count == sessions_to_process(nsession)& spindles_all(1).SWS_index == 1);
-        spindle_onset = spindles_all(1).onset(spindles_index);
+        spindles_index = find(spindles_all(nprobe).session_count == sessions_to_process(nsession)& spindles_all(nprobe).SWS_index == 1);
+        spindle_onset = spindles_all(nprobe).onset(spindles_index);
 
         spindles_index_all = [spindles_index_all; ripples_index];
 
@@ -232,33 +232,35 @@ for nprobe = 1:length(slow_waves_all)
 
 
                 % V1 MUA spindles
-                [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
-                temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                temp = filtfilt(w,1,temp);
+                if ~isempty(spindle_onset)
+                    [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
+                    temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                    temp = filtfilt(w,1,temp);
 
-                if ~contains(shuffle_option,'baseline')
-                    spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
-                    timebin_edges_all = spindle_onset + bins_centre;  % Absolute times of peri-event window
-                    for i = 1:size(spindle_onset,1)
-                        % Previous DOWN (skip if this is the first UP)
-                        if i > 1
-                            prev_offset = spindle_times(i-1,2);
-                            % Find peri-time indices within the previous UP state
-                            mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                            temp(i, mask_prev) = NaN;
-                        end
+                    if ~contains(shuffle_option,'baseline')
+                        spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
+                        timebin_edges_all = spindle_onset + bins_centre;  % Absolute times of peri-event window
+                        for i = 1:size(spindle_onset,1)
+                            % Previous DOWN (skip if this is the first UP)
+                            if i > 1
+                                prev_offset = spindle_times(i-1,2);
+                                % Find peri-time indices within the previous UP state
+                                mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                                temp(i, mask_prev) = NaN;
+                            end
 
-                        % Next DOWN (skip if this is the last UP)
-                        if i < size(spindle_times,1)
-                            next_onset = spindle_times(i+1,1);
-                            % Find peri-time indices within the next UP state
-                            mask_next = timebin_edges_all(i,:) >= next_onset;
-                            temp(i, mask_next) = NaN;
+                            % Next DOWN (skip if this is the last UP)
+                            if i < size(spindle_times,1)
+                                next_onset = spindle_times(i+1,1);
+                                % Find peri-time indices within the next UP state
+                                mask_next = timebin_edges_all(i,:) >= next_onset;
+                                temp(i, mask_next) = NaN;
+                            end
                         end
                     end
+                    binnedArraySpindlesV1{mprobe} = [binnedArraySpindlesV1{mprobe}; temp];
                 end
 
-                binnedArraySpindlesV1{mprobe} = [binnedArraySpindlesV1{mprobe}; temp];
 
 
                 %%%%% HPC MUA
@@ -360,34 +362,35 @@ for nprobe = 1:length(slow_waves_all)
 
 
                 % HPC MUA spindles
-                [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
-                temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                temp = filtfilt(w,1,temp);
+                if ~isempty(spindle_onset)
+                    [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
+                    temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
+                    temp = filtfilt(w,1,temp);
 
-                if ~contains(shuffle_option,'baseline')
-                    spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
-                    timebin_edges_all = spindle_onset + bins_centre;  % Absolute times of peri-event window
-                    for i = 1:size(spindle_onset,1)
-                        % Previous DOWN (skip if this is the first UP)
-                        if i > 1
-                            prev_offset = spindle_times(i-1,2);
-                            % Find peri-time indices within the previous UP state
-                            mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                            temp(i, mask_prev) = NaN;
-                        end
+                    if ~contains(shuffle_option,'baseline')
+                        spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
+                        timebin_edges_all = spindle_onset + bins_centre;  % Absolute times of peri-event window
+                        for i = 1:size(spindle_onset,1)
+                            % Previous DOWN (skip if this is the first UP)
+                            if i > 1
+                                prev_offset = spindle_times(i-1,2);
+                                % Find peri-time indices within the previous UP state
+                                mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                                temp(i, mask_prev) = NaN;
+                            end
 
-                        % Next DOWN (skip if this is the last UP)
-                        if i < size(spindle_times,1)
-                            next_onset = spindle_times(i+1,1);
-                            % Find peri-time indices within the next UP state
-                            mask_next = timebin_edges_all(i,:) >= next_onset;
-                            temp(i, mask_next) = NaN;
+                            % Next DOWN (skip if this is the last UP)
+                            if i < size(spindle_times,1)
+                                next_onset = spindle_times(i+1,1);
+                                % Find peri-time indices within the next UP state
+                                mask_next = timebin_edges_all(i,:) >= next_onset;
+                                temp(i, mask_next) = NaN;
+                            end
                         end
                     end
+
+                    binnedArraySpindlesHPC{mprobe} = [binnedArraySpindlesHPC{mprobe}; temp];
                 end
-
-                binnedArraySpindlesHPC{mprobe} = [binnedArraySpindlesHPC{mprobe}; temp];
-
 
             elseif contains(option,'SUA')
 
