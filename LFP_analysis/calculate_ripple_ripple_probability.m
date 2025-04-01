@@ -21,7 +21,7 @@ shuffle_option = p.Results.shuffle_option;
 
 timebin_edge = time_windows(1):time_bin:time_windows(end);
 bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
-ripples_all = [];
+
 for nprobe = 1:length(slow_waves_all)
     UP_index_all = [];
     DOWN_index_all = [];
