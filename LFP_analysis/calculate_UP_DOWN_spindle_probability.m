@@ -4,7 +4,7 @@ p = inputParser;
 addParameter(p,'option','absolute',@ischar);
 addParameter(p,'shuffle_option','time_circular_shift',@ischar);
 
-addParameter(p,'time_option','peaktimes',@ischar);
+addParameter(p,'time_option','onset',@ischar);
 addParameter(p,'time_windows',[-0.5 0.5],@isnumeric);
 addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
@@ -258,7 +258,7 @@ for nprobe = 1:length(slow_waves_all)
         spindles_index = find(spindles_all(2).session_count == sessions_to_process(nsession)& spindles_all(2).SWS_index == 1);
         spindle_onset = spindles_all(2).onset(spindles_index);
 
-        if contains(time_option,'peaktimes')
+        if contains(time_option,'onset')
             spindle_times= spindle_onset;
         else
             spindle_times = [spindles_all(2).onset(spindles_index) spindles_all(2).offset(spindles_index)];
