@@ -822,10 +822,10 @@ all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
+    (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','baseline');
+    (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','baseline');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'),'UP_DOWN_ripple_PSTH_MUA');
 
 
