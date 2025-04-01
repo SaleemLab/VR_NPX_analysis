@@ -239,7 +239,7 @@ for nprobe = 1:length(slow_waves_all)
                 if ~contains(shuffle_option,'baseline')
                     spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
                     timebin_edges_all = spindle_onset + bins_centre;  % Absolute times of peri-event window
-                    for i = 1:size(ripple_peaktimes,1)
+                    for i = 1:size(spindle_onset,1)
                         % Previous DOWN (skip if this is the first UP)
                         if i > 1
                             prev_offset = spindle_times(i-1,2);
