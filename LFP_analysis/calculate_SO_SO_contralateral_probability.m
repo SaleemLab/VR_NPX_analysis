@@ -252,8 +252,7 @@ for nprobe = 1:length(slow_waves_all)
     probability(nprobe).UP_UP = binnedArrayUU; % UP during D-U
     probability(nprobe).DOWN_DOWN = binnedArrayDD; % DOWN during U-D
 
-    all_spindle_no = sum(spindles_all(1).SWS_index == 1);
-    probability(nprobe).L_spindle_no = all_spindle_no;
+
     all_UP_no = length(UP_index_all);
     all_DOWN_no = length(DOWN_index_all);
 
