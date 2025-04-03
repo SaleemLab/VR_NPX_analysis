@@ -106,7 +106,7 @@ for nprobe =1:2
 
     %
     if nprobe ==1
-        channel_id = 19;%40
+        channel_id = 17;%40
         nshank = 1;%2
         LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
         LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
@@ -301,7 +301,7 @@ else
 end
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
 
-% save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
+% save(fullfile(c,'extracted_spindle_events.mat'),'spindles')
 % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
 % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')

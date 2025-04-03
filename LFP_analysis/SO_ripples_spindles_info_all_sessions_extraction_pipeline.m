@@ -118,6 +118,19 @@ for nsession =1:length(experiment_info)
     ripples = rmfield(ripples, 'detectorinfo');
     spindles = rmfield(spindles, 'detectorinfo');
     slow_waves = rmfield(slow_waves, 'detectorinfo');
+    if isfield(slow_waves,'DOWN_peaks_latency')
+        slow_waves = rmfield(slow_waves, 'DOWN_peaks_latency');
+        slow_waves = rmfield(slow_waves, 'DOWN_traveling');
+        slow_waves = rmfield(slow_waves, 'gammaspikecorr');
+        slow_waves = rmfield(slow_waves, 'deltaspikecorr');
+        slow_waves = rmfield(slow_waves, 'deltagammacorr');        
+    end
+
+
+    if isfield(ripples,'SWR_traveling')
+        ripples = rmfield(ripples, 'SWR_traveling');
+        ripples = rmfield(ripples, 'SWR_latency');
+    end
     % slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
     % slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
     % slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
@@ -223,7 +236,8 @@ for nsession =1:length(experiment_info)
 
             else
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     A = ripples_all(probe_no).(field_names{iField});
