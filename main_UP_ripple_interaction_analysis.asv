@@ -41,8 +41,8 @@ sessions_to_process = 1:all_sessions;
 %% Plotting basic temporal probability of UP DOWN and ripple
 % plot_UP_DOWN_ripple_probability
 plot_UP_DOWN_ripple_probability_baseline
-plot_ipsilateral_contralateral_UP_DOWN_ripples
-plot_bilateral_synchronisation
+plot_ipsilateral_contralateral_
+plot_bilateral_
 
 % plot_UP_DOWN_spindle_probability
 plot_UP_DOWN_spindle_probability_baseline

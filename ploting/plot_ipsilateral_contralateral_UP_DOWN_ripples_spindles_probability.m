@@ -1,4 +1,4 @@
-function plot_UP_DOWN_ripple_probability_baseline()
+function plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability()
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))

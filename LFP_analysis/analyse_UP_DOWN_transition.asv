@@ -180,7 +180,7 @@ for nprobe = 1:2
 
 
                 % Cumulative activity until last ripple ends
-%                 event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}));
+                event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}));
             
             end
 
