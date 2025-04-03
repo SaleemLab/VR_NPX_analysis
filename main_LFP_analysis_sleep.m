@@ -906,11 +906,9 @@ for nsession =1:length(experiment_info)
             ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
                 &slow_waves(probe_no).probe_hemisphere == probe_no);
             cortex_ref_shank = ref_shank;
+            spindles(nprobe).best_channel = cortex_ref_shank;
 
-            [~,idx] = min(abs(ripples(probe_no).SWR_peaktimes' - ripples(probe_no).peaktimes)');
-            ripple_counts = histcounts(idx,length(ripples(probe_no).shank_id));
-            [~,ref_shank] = max(ripple_counts);
-            HPC_ref_shank = ref_shank;
+            HPC_ref_shank = ripples(nprobe).best_channel;
             % ripple amplitude
             step_s = 0.02;
             win_s = step_s*2;

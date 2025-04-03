@@ -92,7 +92,7 @@ addParameter(p,'saveMat',false,@islogical);
 addParameter(p,'minDuration',20,@isnumeric)
 addParameter(p,'plotType',1,@isnumeric)
 addParameter(p,'savepath',[],@isstr)
-
+addParameter(p,'best_channel',[],@isnumeric)
 % lfp;
 % timevec;
 
@@ -113,6 +113,8 @@ passband = p.Results.passband;
 speed_threshold = p.Results.speed_threshold;
 behaviour = p.Results.behaviour;
 savepath = p.Results.savepath;
+best_channel = p.Results.best_channel;
+
 
 filter_type  = 'bandpass';
 filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
@@ -429,6 +431,7 @@ else
     ripples.peak_zscore = [];  %amplitudes?
 end
 
+ripples.best_channel = best_channel;  % save best channel info
 
 % ripples.stdev = sd;
 % if ~isempty(bad)

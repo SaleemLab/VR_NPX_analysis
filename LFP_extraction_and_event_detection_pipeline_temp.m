@@ -177,7 +177,7 @@ for nprobe = 1:2
                 
         Behaviour.mobility_zscore=session_clusters.mobility_zscore{1};
         spindles_temp(nprobe)= FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on','best_channel',best_channel);
 
         
         % else
