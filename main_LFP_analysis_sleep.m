@@ -986,6 +986,11 @@ for nsession =1:length(experiment_info)
 
             end
         
+            % right hemisphere
+            if max(slow_waves(probe_no).probe_hemisphere)==2
+                HPC_speed(2,:) = -HPC_speed(2,:);
+                cortex_speed(2,:) = -cortex_speed(2,:);
+            end
 
             ripples(probe_no).plv = plv_ripples;
             ripples(probe_no).pd = pd_ripples;
@@ -1071,10 +1076,17 @@ for nsession =1:length(experiment_info)
                     cortex_phase = angle(mean(exp(1i * spindle_phase_LFP(tidx(1):tidx(end),(slow_waves(probe_no).probe_hemisphere == mprobe))), 1));
                     cortex_speed(mprobe,nevent) = mean(lfp.samplingRate / (2*pi) * diff(unwrap(spindle_phase_LFP(tidx(1):tidx(end),cortex_ref_shank))))/...
                         mean(diff(unwrap(cortex_phase))./diff(0.25*slow_waves(probe_no).shank_id(slow_waves(probe_no).probe_hemisphere == mprobe)));  % speed =  inst frequency / gradient(radians per mm)
+
+
                 end
 
             end
         
+            % right hemisphere
+            if max(slow_waves(probe_no).probe_hemisphere)==2
+                HPC_speed(2,:) = -HPC_speed(2,:);
+                cortex_speed(2,:) = -cortex_speed(2,:);
+            end
 
             spindles(probe_no).plv = plv_spindles;
             spindles(probe_no).pd = pd_spindles;
@@ -1302,6 +1314,12 @@ for nsession =1:length(experiment_info)
 
                     end
 
+                    % right hemisphere
+                    if max(slow_waves(probe_no).probe_hemisphere)==2
+                        HPC_speed_DU(2,:) = -HPC_speed_DU(2,:);
+                        cortex_speed_DU(2,:) = -cortex_speed_DU(2,:);
+                    end
+
                     for nevent = 1:size(DOWN_ints,1)
                         if nevent ==1  | nevent ==size(DOWN_ints,1)
                             tidx = FindInInterval(tvec,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,1)+0.05]);
@@ -1343,7 +1361,13 @@ for nsession =1:length(experiment_info)
                                 mean(diff(unwrap(cortex_phase))./diff(0.25*slow_waves(probe_no).shank_id(slow_waves(probe_no).probe_hemisphere == mprobe)));  % speed =  inst frequency / gradient(radians per mm)
                         end
                     end
-                    
+
+                    % right hemisphere
+                    if max(slow_waves(probe_no).probe_hemisphere)==2
+                        HPC_speed_UD(2,:) = -HPC_speed_UD(2,:);
+                        cortex_speed_UD(2,:) = -cortex_speed_UD(2,:);
+                    end
+
                     slow_waves(probe_no).xcorr_lag_UD = xcorr_lag_UD;
                     slow_waves(probe_no).xcorr_lag_DU = xcorr_lag_DU;
 
