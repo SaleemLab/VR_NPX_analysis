@@ -1254,7 +1254,7 @@ for nsession =1:length(experiment_info)
                             phase_UP(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
                     end
-                    slow_waves(probe_no).mean_phase_UP = amp_corr;
+                    slow_waves(probe_no).mean_phase_UP = phase_UP;
                     % polarhistogram(phase_DOWN(1,:));hold on;polarhistogram(phase_UP(1,:))
 
                     %%%%%%%%% Phase Locking Value (PLV) at D-U transition and U-D
