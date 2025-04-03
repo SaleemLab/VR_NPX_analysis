@@ -39,8 +39,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
         elseif contains(stimulus_name{n},'Sleep')
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -49,15 +49,15 @@ for nsession =1:length(experiment_info)
             
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
 %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'));
-            clusters=clusters_ks3;
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
         else
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -73,8 +73,8 @@ for nsession =1:length(experiment_info)
         DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
         DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
         
-        DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
-        
+        % DIR3 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_Sleep.mat'));
+
         session_clusters_RUN=[];
         session_clusters_RUN1=[];
         session_clusters_RUN2=[];
@@ -96,8 +96,8 @@ for nsession =1:length(experiment_info)
         end
         
         session_clusters=[];
-        if ~isempty(DIR3)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters.mat'));
+        if contains(stimulus_name{n},'Sleep')
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
         end
 
         % From cell structure back to spike times and spike id
@@ -168,18 +168,18 @@ for nsession =1:length(experiment_info)
         for nprobe = 1:length(session_clusters_RUN.probe_hemisphere)
             probe_no=session_clusters_RUN.probe_hemisphere(nprobe);
 
-            if isfield(LFP(probe_no),'L5')                
+            if isfield(LFP(probe_no),'best_V1')                
 
-                if ~isempty(LFP(probe_no).L5)
+                if ~isempty(LFP(probe_no).best_V1)
                     bad_channels=[];
-                    all_shanks = 1:size(LFP(probe_no).L5_power,1);
-                    for nshank = 1:size(LFP(probe_no).L5_power,1)
-                        bad_channels(nshank,:) = LFP(probe_no).L5_power(nshank,:)>3*mean(LFP(probe_no).L5_power(all_shanks~=nshank,:));
+                    all_shanks = 1:size(LFP(probe_no).best_V1_power,1);
+                    for nshank = 1:size(LFP(probe_no).best_V1_power,1)
+                        bad_channels(nshank,:) = LFP(probe_no).best_V1_power(nshank,:)>3*mean(LFP(probe_no).best_V1_power(all_shanks~=nshank,:));
                     end
                     bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L5_power(~bad_channels,1));
+                    [~,best_channel]=max(LFP(probe_no).best_V1_power(~bad_channels,1));
                     good_channels = find(~bad_channels);
-                    cortex_LFP{probe_no} = LFP(probe_no).L5(good_channels(best_channel),:);
+                    cortex_LFP{probe_no} = LFP(probe_no).best_V1(good_channels(best_channel),:);
 
                 else
                     bad_channels=[];
@@ -213,7 +213,7 @@ for nsession =1:length(experiment_info)
 
             end
 
-            passband = [0.5 30];
+            passband = [9 17];
             filter_type  = 'bandpass';
             filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
             norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
@@ -304,21 +304,26 @@ for nsession =1:length(experiment_info)
         Behaviour.mobility = mobility_thresholded;
 
         %%% Get spike counts
+
+        tvec = LFP(1).tvec;
         tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
         CA1_spike_counts=[];
         V1_spike_counts=[];
         w = gausswin(0.02*1/mean(diff(tvec)));
         w = w / sum(w);
-        speed= filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
+
+        % [NREM_status,interval,~] = InIntervals(tvec,behavioural_state_merged.SWS);
+        % spike_times_sleep = NREM_status;
+
         for nprobe = 1:length(V1_spikes)
             spike_times = V1_spikes{nprobe}(:,2);
-            spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
-            spike_times_sleep = spike_times(spike_speed < 1);
+            % spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            spike_times_sleep = spike_times;
             V1_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
 
             spike_times = HPC_spikes{nprobe}(:,2);
-            spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
-            spike_times_sleep = spike_times(spike_speed < 1);
+            % spike_speed =  interp1(tvec,Behaviour.mobility,spike_times,'nearest');
+            spike_times_sleep = spike_times;
             CA1_spike_counts{nprobe} = filtfilt(w,1,zscore(histcounts(spike_times_sleep,tvec_edges))')';
         end
         
@@ -456,39 +461,58 @@ for nsession =1:length(experiment_info)
 
         %%%%%% peri ripple LFP and spiking
         for nprobe = 1:2
-            [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,1) slow_waves(1).ints.UP(:,1)+0.2]);
+            [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,1) slow_waves(1).UP_ints(:,1)+0.2]);
             ripples(nprobe).DOWN_UP_transition_onset = ripples(nprobe).onset(ripples(nprobe).DOWN_UP_transition_index)';
         end
 
         for nprobe = 1:2
-            [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,2)-0.2 slow_waves(1).ints.UP(:,2)+0.1]);
+            [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,2)-0.4 slow_waves(1).UP_ints(:,2)+0.1]);
             ripples(nprobe).UP_DOWN_transition_onset = ripples(nprobe).onset(ripples(nprobe).UP_DOWN_transition_index)';
+        end
+
+% slow_waves = [];
+
+        event_times = [spindles(1).onset(spindles(1).peak_zscore>4) spindles(1).offset(spindles(1).peak_zscore>4)];
+        %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
+        tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
+
+        count = 1;
+        nevent =1:48;
+        for count = 1:48
+            subplot(7,7,count)
+            tindex = find(tvec>event_times(nevent(count),1)-0.2 & tvec<event_times(nevent(count),2)+0.2);
+            plot(tvec(tindex),cortex_LFP_filtered{1}(tindex),'k','LineWidth',1.5)
+            ylim([min(cortex_LFP_filtered{1}(tindex))-50 max(cortex_LFP_filtered{1}(tindex))+50])
         end
 
 
 
-        tvec = LFP(nprobe).tvec;
-        %         nevent = 819:826;
-        %         event_times = [slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)];
-        %
 
-        %         event_times = [slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)];
-        %         nevent = 60:65;
-
-%         nevent = 928:931;
-        nevent = 911:913;
-        event_times = [ripples(1).SWS_onset ripples(1).SWS_offset];
+        nevent =200
+        event_times = [ripples(1).UP_DOWN_transition_onset' ripples(1).UP_DOWN_transition_offset];
         %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
-        tindex = find(tvec>event_times(min(nevent),1)-0.3 & tvec<event_times(max(nevent),2)+0.3);
+        tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
+
+
+        count = 1;
+        nevent =200:225;
+        for count = 1:25
+            subplot(5,5,count)
+            tindex = find(tvec>event_times(nevent(count),1)-0.05 & tvec<event_times(nevent(count),2)+0.05);
+            plot(tvec(tindex),LFP(1).best_HPC(1,tindex),'k','LineWidth',1.5)
+            ylim([min(LFP(1).best_HPC(1,tindex))-50 max(LFP(1).best_HPC(1,tindex))+50])
+        end
 
         figure
         subplot(3,1,1)
-        plot(tvec(tindex),5*cortex_LFP_filtered{1}(tindex)+1500,'r')
+        plot(tvec(tindex),2*cortex_LFP_filtered{1}(tindex)+1500,'r')
         hold on
-        plot(tvec(tindex),5*cortex_LFP_filtered{2}(tindex)+2500,'b')
-        plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
-        plot(tvec(tindex),CA1_LFP_ripple_filtered{1}(tindex),'k')
-
+        plot(tvec(tindex),2*cortex_LFP_filtered{2}(tindex)+2500,'b')
+        hold on;
+        plot(tvec(tindex),LFP(1).best_HPC(1,tindex)+800,'k')
+        % plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
+        plot(tvec(tindex),CA1_LFP_ripple_filtered{1}(tindex)*2,'k')
+  
         for n = nevent
             %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
             %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')

@@ -142,7 +142,7 @@ for nprobe =1:2
         best_channel = 1;
         % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
     elseif nprobe == 2
-        best_channel = 1;
+        best_channel = 3;
     end
     [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
         'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
