@@ -1089,7 +1089,7 @@ for nsession =1:length(experiment_info)
             %%%%% Ripple and spindle coupling with UP DOWN
 
             if ~isempty(slow_waves(probe_no).timestamps)
-                if size(slow_waves(probe_no).timestamps,1) < 10
+                if size(slow_waves(probe_no).timestamps,1) > 10
 
                     UP_ints = slow_waves(probe_no).UP_ints;
                     DOWN_ints = slow_waves(probe_no).DOWN_ints;
