@@ -213,7 +213,8 @@ for nsession =1:length(experiment_info)
         for iField =1:length(field_names)
             if session_count == 1
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     ripples_all(probe_no).(field_names{iField}) = ripples(nprobe).(field_names{iField});
@@ -221,12 +222,17 @@ for nsession =1:length(experiment_info)
 
 
             else
-                A = ripples_all(probe_no).(field_names{iField});
-                B = ripples(nprobe).(field_names{iField});
-                try
-                    ripples_all(probe_no).(field_names{iField}) = [A;B];
-                catch
-                    ripples_all(probe_no).(field_names{iField}) = [A B];
+                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
+                    ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
+                else
+                    A = ripples_all(probe_no).(field_names{iField});
+                    B = ripples(nprobe).(field_names{iField});
+                    try
+                        ripples_all(probe_no).(field_names{iField}) = [A;B];
+                    catch
+                        ripples_all(probe_no).(field_names{iField}) = [A B];
+                    end
                 end
             end
         end
@@ -251,19 +257,24 @@ for nsession =1:length(experiment_info)
         for iField =1:length(field_names)
             if session_count == 1
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude'})
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
 
                 end
             else
-                A = spindles_all(probe_no).(field_names{iField});
-                B = spindles(nprobe).(field_names{iField});
-                try
-                    spindles_all(probe_no).(field_names{iField}) = [A;B];
-                catch
-                    spindles_all(probe_no).(field_names{iField}) = [A B];
+                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude'})
+                    spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
+                else
+                    A = spindles_all(probe_no).(field_names{iField});
+                    B = spindles(nprobe).(field_names{iField});
+                    try
+                        spindles_all(probe_no).(field_names{iField}) = [A;B];
+                    catch
+                        spindles_all(probe_no).(field_names{iField}) = [A B];
+                    end
                 end
             end
         end
@@ -296,7 +307,8 @@ for nsession =1:length(experiment_info)
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
                         'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
-                        'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN'})
+                        'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
+                        'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
                 else
                     slow_waves_all(probe_no).(field_names{iField}) = slow_waves(nprobe).(field_names{iField});
@@ -321,7 +333,9 @@ for nsession =1:length(experiment_info)
                     end
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere'})
+                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
+                        'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
 
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
                 else
