@@ -33,6 +33,8 @@ load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
@@ -40,9 +42,11 @@ sessions_to_process = 1:all_sessions;
 
 %% Plotting basic temporal probability of UP DOWN and ripple
 % plot_UP_DOWN_ripple_probability
+plot_bilateral_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+
 plot_UP_DOWN_ripple_probability_baseline
 plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability
-plot_bilateral_synchronisation
+
 
 % plot_UP_DOWN_spindle_probability
 plot_UP_DOWN_spindle_probability_baseline
