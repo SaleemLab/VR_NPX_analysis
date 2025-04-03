@@ -910,7 +910,6 @@ for nsession =1:length(experiment_info)
             [~,idx] = min(abs(ripples(probe_no).SWR_peaktimes' - ripples(probe_no).peaktimes)');
             ripple_counts = histcounts(idx,length(ripples(probe_no).shank_id));
             [~,ref_shank] = max(ripple_counts);
-            
             HPC_ref_shank = ref_shank;
             % ripple amplitude
             step_s = 0.02;
