@@ -54,15 +54,11 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probab
 probability_ripples_ripples = probability;
 
 
-colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red for R
-colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue for L
-colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
+colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red
+colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue
 
-colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
-
-
-colour_lines{5} = [;]/256;% 5 purple
+colour_lines{3} = [100,35,90;,0 4;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red
+colour_lines{4} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue
 %% Plotting distribution of ripple during normalised duration of UP  (peaktimes)
 probability = probability_normalised;
 probability_baseline = probability_normalised_baseline;
