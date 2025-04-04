@@ -910,7 +910,7 @@ for nsession =1:length(experiment_info)
 
 
             shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
-            HPC_ref_shank = hank_id(ripples(probe_no).best_channel);
+            HPC_ref_shank = shank_id(ripples(probe_no).best_channel);
             ref_shank= HPC_ref_shank;
 
             % ripple amplitude
