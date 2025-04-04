@@ -454,7 +454,7 @@ for nsession =1:length(experiment_info)
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
         % https://www.nature.com/articles/s41467-019-10327-5 levenstein et
         % al used 0.5 to 8 Hz for slow wave UP DOWN detection
-        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+        filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
         filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
         filterparms.gammafilter = [100 400];
         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
@@ -664,7 +664,7 @@ for nsession =1:length(experiment_info)
         tic
         %%%%%%%%%%%% sharp wave direction during ripple peaktimes
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+        filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
 
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
@@ -949,10 +949,10 @@ for nsession =1:length(experiment_info)
 
             %%%%%%%%% Phase Locking Value (PLV) during ripples
             %%%%%%%%%% transition and amplitude cross correlation PER EVENT
-            plv_ripples = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-            pd_ripples = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-            xcorr_r_ripples = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-            xcorr_lag_ripples = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+            plv_ripples = nan(length(ripples(probe_no).shank_id),length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+            pd_ripples = nan(length(ripples(probe_no).shank_id),length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+            xcorr_r_ripples = nan(length(ripples(probe_no).shank_id),length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+            xcorr_lag_ripples = nan(length(ripples(probe_no).shank_id),length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
 
             cortex_speed = nan(max(ripples(probe_no).probe_hemisphere), length(ripples(probe_no).peaktimes));
             HPC_speed = nan(max(ripples(probe_no).probe_hemisphere), length(ripples(probe_no).peaktimes));
@@ -961,20 +961,22 @@ for nsession =1:length(experiment_info)
                 tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent) ripples(probe_no).offset(nevent)]);
 
                 for nchannel = 1:length(ripples(probe_no).shank_id)
-                    amp1 = ripple_amplitude_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                    amp2 = ripple_amplitude_LFP(tidx(1):tidx(end),nchannel);
-                    [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
-                    [~,idx] = max(r);
-                    xcorr_lag_ripples(nchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
-                    xcorr_r_ripples(nchannel,nevent) = r(lag==0); % xcorr at zero lag
+                    for mchannel = 1:length(ripples(probe_no).shank_id)
+                        amp1 = ripple_amplitude_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                        amp2 = ripple_amplitude_LFP(tidx(1):tidx(end),mchannel);
+                        [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
+                        [~,idx] = max(r);
+                        xcorr_lag_ripples(nchannel,mchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
+                        xcorr_r_ripples(nchannel,mchannel,nevent) = r(lag==0); % xcorr at zero lag
 
-                    phi1 = ripple_phase_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                    phi2 = ripple_phase_LFP(tidx(1):tidx(end),nchannel);
-                    dphi = phi1 - phi2;
-                    % Circular mean of phase differences
-                    pd_ripples(nchannel,nevent) = angle(mean(exp(1i * dphi)));
-                    % phase locking values
-                    plv_ripples(nchannel,nevent) = abs(mean(exp(1i * dphi)));
+                        phi1 = ripple_phase_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                        phi2 = ripple_phase_LFP(tidx(1):tidx(end),mchannel);
+                        dphi = phi1 - phi2;
+                        % Circular mean of phase differences
+                        pd_ripples(nchannel,mchannel,nevent) = angle(mean(exp(1i * dphi)));
+                        % phase locking values
+                        plv_ripples(nchannel,mchannel,nevent) = abs(mean(exp(1i * dphi)));
+                    end
                 end
 
                 for mprobe = 1:max( ripples(probe_no).probe_hemisphere)
@@ -1046,10 +1048,10 @@ for nsession =1:length(experiment_info)
 
                 %%%%%%%%% Phase Locking Value (PLV) during spindles
                 %%%%%%%%%% transition and amplitude cross correlation PER EVENT
-                plv_spindles = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
-                pd_spindles = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
-                xcorr_r_spindles = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
-                xcorr_lag_spindles = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+                plv_spindles = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+                pd_spindles = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+                xcorr_r_spindles = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+                xcorr_lag_spindles = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
 
                 cortex_speed = nan(max(slow_waves(probe_no).probe_hemisphere), length(spindles(probe_no).peaktimes));
                 HPC_speed = nan(max(slow_waves(probe_no).probe_hemisphere), length(spindles(probe_no).peaktimes));
@@ -1058,20 +1060,22 @@ for nsession =1:length(experiment_info)
                     tidx = FindInInterval(tvec,[spindles(probe_no).onset(nevent) spindles(probe_no).offset(nevent)]);
 
                     for nchannel = 1:length(slow_waves(probe_no).shank_id)
-                        amp1 = spindle_amplitude_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                        amp2 = spindle_amplitude_LFP(tidx(1):tidx(end),nchannel);
-                        [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
-                        [~,idx] = max(r);
-                        xcorr_lag_spindles(nchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
-                        xcorr_r_spindles(nchannel,nevent) = r(lag==0); % xcorr at zero lag
+                        for mchannel = 1:length(slow_waves(probe_no).shank_id)
+                            amp1 = spindle_amplitude_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                            amp2 = spindle_amplitude_LFP(tidx(1):tidx(end),mchannel);
+                            [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
+                            [~,idx] = max(r);
+                            xcorr_lag_spindles(nchannel,mchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
+                            xcorr_r_spindles(nchannel,mchannel,nevent) = r(lag==0); % xcorr at zero lag
 
-                        phi1 = spindle_phase_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                        phi2 = spindle_phase_LFP(tidx(1):tidx(end),nchannel);
-                        dphi = phi1 - phi2;
-                        % Circular mean of phase differences
-                        pd_spindles(nchannel,nevent) = angle(mean(exp(1i * dphi)));
-                        % phase locking values
-                        plv_spindles(nchannel,nevent) = abs(mean(exp(1i * dphi)));
+                            phi1 = spindle_phase_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                            phi2 = spindle_phase_LFP(tidx(1):tidx(end),mchannel);
+                            dphi = phi1 - phi2;
+                            % Circular mean of phase differences
+                            pd_spindles(nchannel,mchannel,nevent) = angle(mean(exp(1i * dphi)));
+                            % phase locking values
+                            plv_spindles(nchannel,mchannel,nevent) = abs(mean(exp(1i * dphi)));
+                        end
                     end
 
                     for mprobe = 1:max( ripples(probe_no).probe_hemisphere)
@@ -1282,14 +1286,15 @@ for nsession =1:length(experiment_info)
 
                     %%%%%%%%% Phase Locking Value (PLV) at D-U transition and U-D
                     %%%%%%%%%% transition and amplitude cross correlation PER EVENT
-                    plv_DU = nan(length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
-                    plv_UD = nan(length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
-                    pd_DU = nan(length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
-                    pd_UD = nan(length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
-                    xcorr_r_DU = nan(length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
-                    xcorr_r_UD = nan(length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
-                    xcorr_lag_DU = nan(length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
-                    xcorr_lag_UD = nan(length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
+                    plv_DU = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
+                    plv_UD = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
+                    pd_DU = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
+                    pd_UD = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
+                    xcorr_r_DU = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
+                    xcorr_r_UD = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
+                    xcorr_lag_DU = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(UP_ints(:,1)));
+                    xcorr_lag_UD = nan(length(slow_waves(probe_no).shank_id),length(slow_waves(probe_no).shank_id), length(DOWN_ints(:,1)));
+
                     cortex_speed_UD = nan(max(slow_waves(probe_no).probe_hemisphere), length(DOWN_ints(:,1)));
                     HPC_speed_UD = nan(max(slow_waves(probe_no).probe_hemisphere), length(DOWN_ints(:,1)));
                     cortex_speed_DU = nan(max(slow_waves(probe_no).probe_hemisphere), length(UP_ints(:,1)));
@@ -1308,20 +1313,22 @@ for nsession =1:length(experiment_info)
                         end
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
-                            amp1 = SO_amplitude_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                            amp2 = SO_amplitude_LFP(tidx(1):tidx(end),nchannel);
-                            [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
-                            [~,idx] = max(r);
-                            xcorr_lag_DU(nchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
-                            xcorr_r_DU(nchannel,nevent) = r(lag==0); % xcorr at zero lag
+                            for mchannel = 1:length(slow_waves(probe_no).shank_id)
+                                amp1 = SO_amplitude_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                                amp2 = SO_amplitude_LFP(tidx(1):tidx(end),mchannel);
+                                [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
+                                [~,idx] = max(r);
+                                xcorr_lag_DU(nchannel,mchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
+                                xcorr_r_DU(nchannel,nevent) = r(lag==0); % xcorr at zero lag
 
-                            phi1 = SO_phase_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                            phi2 = SO_phase_LFP(tidx(1):tidx(end),nchannel);
-                            dphi = phi1 - phi2;
-                            % Circular mean of phase differences
-                            pd_DU(nchannel,nevent) = angle(mean(exp(1i * dphi)));
-                            % phase locking values
-                            plv_DU(nchannel,nevent) = abs(mean(exp(1i * dphi)));
+                                phi1 = SO_phase_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                                phi2 = SO_phase_LFP(tidx(1):tidx(end),mchannel);
+                                dphi = phi1 - phi2;
+                                % Circular mean of phase differences
+                                pd_DU(nchannel,mchannel,nevent) = angle(mean(exp(1i * dphi)));
+                                % phase locking values
+                                plv_DU(nchannel,mchannel,nevent) = abs(mean(exp(1i * dphi)));
+                            end
                         end
 
 
@@ -1355,21 +1362,23 @@ for nsession =1:length(experiment_info)
                         end
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
-                            amp1 = SO_amplitude_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                            amp2 = SO_amplitude_LFP(tidx(1):tidx(end),nchannel);
-                            [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
-                            [~,idx] = max(r);
-                            xcorr_lag_UD(nchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
-                            xcorr_r_UD(nchannel,nevent) = r(lag==0); % xcorr at zero lag
+                            for mchannel = 1:length(slow_waves(probe_no).shank_id)
+                                amp1 = SO_amplitude_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                                amp2 = SO_amplitude_LFP(tidx(1):tidx(end),mchannel);
+                                [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
+                                [~,idx] = max(r);
+                                xcorr_lag_UD(nchannel,mchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
+                                xcorr_r_UD(nchannel,mchannel,nevent) = r(lag==0); % xcorr at zero lag
 
 
-                            phi1 = SO_phase_LFP(tidx(1):tidx(end),ref_shank); % reference channel
-                            phi2 = SO_phase_LFP(tidx(1):tidx(end),nchannel);
-                            dphi = phi1 - phi2;
-                            % Circular mean of phase differences
-                            pd_UD(nchannel,nevent) = angle(mean(exp(1i * dphi)));
-                            % phase locking values
-                            plv_UD(nchannel,nevent) = abs(mean(exp(1i * dphi)));
+                                phi1 = SO_phase_LFP(tidx(1):tidx(end),nchannel); % reference channel
+                                phi2 = SO_phase_LFP(tidx(1):tidx(end),mchannel);
+                                dphi = phi1 - phi2;
+                                % Circular mean of phase differences
+                                pd_UD(nchannel,mchannel,nevent) = angle(mean(exp(1i * dphi)));
+                                % phase locking values
+                                plv_UD(nchannel,mchannel,nevent) = abs(mean(exp(1i * dphi)));
+                            end
                         end
 
 
