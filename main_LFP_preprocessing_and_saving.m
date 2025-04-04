@@ -7,10 +7,10 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% LFP preprocess -> Catgt
 
-SUBJECT = 'M25026';
+SUBJECT = 'M25042';
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = 1:length(all_DIR)
+for ndate = 2
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
     session_DIR= dir('M*');

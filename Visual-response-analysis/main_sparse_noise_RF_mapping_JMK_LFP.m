@@ -14,10 +14,11 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M25039'};
+SUBJECTS = {'M25042'};
 
 % SUBJECTS = {'M23153'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,'V1-MEC');
+%experiment_info = experiment_info([2])
 % Stimulus_type = 'Masa2tracks';
 ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'SparseNoise_fullscreen';
@@ -103,14 +104,14 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise
 clear all
-SUBJECTS = {'M25039'};
-Dates = {'20250327'};
+SUBJECTS = {'M25042'};
+Dates = {'20250402'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
 % options = session_info(nsession).probe(1);
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','receptiveFields_LFP.mat'),'RF')
-load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_1','session_info.mat'))
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','receptiveFields_LFP.mat'),'RF')
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},'SparseNoise_2','session_info.mat'))
 % hemisphere_texts = {'Left','Right'}
 
 for nprobe = 1

@@ -97,13 +97,19 @@ if isempty(DIR)
     % syncTimes_ephys.tvec = 1/SampRate(ephys_meta):1/SampRate(ephys_meta):length(syncTimes_ephys.Sync)/SampRate(ephys_meta);
     % 
     % syncTimes_ephys.Sync_interp = interp1(syncTimes_ephys.tvec',syncTimes_ephys.Sync',Nidq.tvec','previous')';
-    if length(syncTimes_ephys.on)<3
-         disp('g file too short for alignment (probably not experimental recording)')
+    if isempty(syncTimes_ephys.on)
+        Nidq.sglxTime = Nidq.tvec;
+        Nidq.warning = 'Nidq Sync Pulse missing';
+        disp('Nidq Sync Pulse missing')
+    elseif length(syncTimes_ephys.on)<3
+        disp('g file too short for alignment (probably not experimental recording)')
         return
+    else
+        [Nidq] = alignNiqdToEphysSyncTimes(Nidq,syncTimes_ephys.on);
+        disp(['Nidq first time is ',num2str(Nidq.sglxTime(1))])
     end
-    [Nidq] = alignNiqdToEphysSyncTimes(Nidq,syncTimes_ephys.on);
-    disp(['Nidq first time is ',num2str(Nidq.sglxTime(1))])
-    
+
+
     %%%
     % Store the spikeglx based event times
     %%% Regular sync pulse (ephys and Nidq)
