@@ -908,7 +908,11 @@ for nsession =1:length(experiment_info)
             cortex_ref_shank = ref_shank;
             spindles(nprobe).best_channel = cortex_ref_shank;
 
-            HPC_ref_shank = ripples(nprobe).best_channel;
+
+            shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+            HPC_ref_shank = hank_id(ripples(probe_no).best_channel);
+            ref_shank= HPC_ref_shank;
+            
             % ripple amplitude
             step_s = 0.02;
             win_s = step_s*2;
@@ -1000,8 +1004,7 @@ for nsession =1:length(experiment_info)
 
 
             %%%%% Spindles
-            ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
-                &slow_waves(probe_no).probe_hemisphere == probe_no);
+            ref_shank = cortex_ref_shank;
             % cortex_ref_shank = ref_shank;
             % spindle amplitude
             step_s = 0.02;
@@ -1115,8 +1118,7 @@ for nsession =1:length(experiment_info)
                     UP_ints = slow_waves(probe_no).UP_ints;
                     DOWN_ints = slow_waves(probe_no).DOWN_ints;
 
-                    ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
-                        &slow_waves(probe_no).probe_hemisphere == probe_no);
+                    ref_shank = cortex_ref_shank;
                     % Amplitude at D-U transition and U-D transition
                     step_s = 0.02;
                     win_s = step_s*2;
