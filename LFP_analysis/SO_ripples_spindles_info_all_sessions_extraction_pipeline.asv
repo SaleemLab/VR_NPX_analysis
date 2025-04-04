@@ -118,19 +118,6 @@ for nsession =1:length(experiment_info)
     ripples = rmfield(ripples, 'detectorinfo');
     spindles = rmfield(spindles, 'detectorinfo');
     slow_waves = rmfield(slow_waves, 'detectorinfo');
-    if isfield(slow_waves,'DOWN_peaks_latency')
-        slow_waves = rmfield(slow_waves, 'DOWN_peaks_latency');
-        slow_waves = rmfield(slow_waves, 'DOWN_traveling');
-        slow_waves = rmfield(slow_waves, 'gammaspikecorr');
-        slow_waves = rmfield(slow_waves, 'deltaspikecorr');
-        slow_waves = rmfield(slow_waves, 'deltagammacorr');        
-    end
-
-
-    if isfield(ripples,'SWR_traveling')
-        ripples = rmfield(ripples, 'SWR_traveling');
-        ripples = rmfield(ripples, 'SWR_latency');
-    end
     % slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
     % slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
     % slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
@@ -236,8 +223,7 @@ for nsession =1:length(experiment_info)
 
             else
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
-                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     A = ripples_all(probe_no).(field_names{iField});
@@ -320,7 +306,7 @@ for nsession =1:length(experiment_info)
 
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
@@ -347,7 +333,7 @@ for nsession =1:length(experiment_info)
                     end
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
 
@@ -866,7 +852,7 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MU
 
 
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','no');
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','baseline');

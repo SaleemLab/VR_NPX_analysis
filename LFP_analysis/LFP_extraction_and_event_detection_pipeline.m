@@ -636,7 +636,7 @@ for nprobe = 1:length(session_info.probe)
             end
         end
         [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).L5(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on');
+            'noise',[],'passband',[9 17],'thresholds',[1 3],'show','on','best_channel',best_channel);
         slow_waves(nprobe) = struct();
     end
 
@@ -651,7 +651,7 @@ for nprobe = 1:length(session_info.probe)
     end
 
     [ripples(probe_no)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-        'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+        'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on','best_channel',best_channel);
 
     if  contains(stimulus_name,'RUN1')|contains(stimulus_name,'RUN2')
         mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('LFP_events_%s',erase(stimulus_name,'Masa2tracks_')),sprintf('Probe%i',probe_no)))

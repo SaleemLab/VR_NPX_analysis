@@ -72,8 +72,7 @@ for nprobe =1:2
     hold on;plot([PSD{nprobe}(IB').ycoord])
     ylim([0 6000])
 
-    if nprobe == 2
-    
+    if nprobe == 1
         [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',channels_selected);
     end
 
@@ -106,8 +105,8 @@ for nprobe =1:2
     %
 
     %
-    if nprobe ==2
-        channel_id = 32;%40
+    if nprobe ==1
+        channel_id = 17;%40
         nshank = 1;%2
         LFP(probe_no).best_HPC(nshank,:) =  raw_LFP(channel_id,:);
         LFP(probe_no).best_HPC_channel(nshank) = PSD{nprobe}(IB(channel_id)).channel;
@@ -140,12 +139,16 @@ for nprobe =1:2
 
     if nprobe == 1
         best_channel = 1;
-        % [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
+%         [~,best_channel]= max(LFP(nprobe).best_HPC_power(:,6));
     elseif nprobe == 2
-        best_channel = 1;
+        best_channel =3;
     end
+
+
     [ripples_temp(nprobe)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-        'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
+        'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on','best_channel',best_channel);
+
+
 %             [ripples_temp(nprobe)] = FindRipples_masa(raw_LFP(32,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
 %                 'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on');
 %     % end
@@ -298,7 +301,7 @@ else
 end
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'spindles')
 
-% save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles')
+% save(fullfile(c,'extracted_spindle_events.mat'),'spindles')
 % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
 % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
 % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')

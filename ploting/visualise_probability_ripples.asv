@@ -105,16 +105,12 @@ for nprobe = 1:2
     binnedArray4{nprobe} =[];
 end
 all_ripples_event=[];
-close all
+
 for nsession = 1:22
 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
-    if length(session_info)>1
-    options = session_info(2).probe(1);
-    else
-options = session_info(1).probe(1);
-    end
+    options = session_info(1).probe(1);
     load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
     load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
     %
@@ -136,7 +132,7 @@ options = session_info(1).probe(1);
     subplot(5,5,nsession)
     plot(sum(binnedArray))
     binnedArray1{1} = [binnedArray1{1}; binnedArray];
-    all_ripples_event = [all_ripples_event; ripples(1).SWS_index];
+    all_ripples_event = [all_ripples_event; ripples(1).];
 
     [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) > threshold2),20,0);
     hold on;plot(sum(binnedArray))

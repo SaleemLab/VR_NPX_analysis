@@ -30,7 +30,7 @@ function [spindles] = FindSpindles_masa(lfp,timevec,varargin)
 %     'thresholds'  thresholds for ripple beginning/end and peak, in multiples
 %                   of the stdev (default = [2 5]); must be integer values
 %     'durations'   min inter-ripple interval and max ripple duration, in ms
-%                   (default = [30 100]). 
+%                   (default = [30 100]).
 %     'minDuration' min ripple duration. Keeping this input nomenclature for backwards
 %                   compatibility
 %     'restrict'    interval used to compute normalization (default = all)
@@ -40,7 +40,7 @@ function [spindles] = FindSpindles_masa(lfp,timevec,varargin)
 %     'noise'       noisy unfiltered channel used to exclude ripple-
 %                   like noise (events also present on this channel are
 %                   discarded)
-%     'passband'    N x 2 matrix of frequencies to filter for ripple detection 
+%     'passband'    N x 2 matrix of frequencies to filter for ripple detection
 %                   (default = [130 200])
 %     'EMGThresh'   0-1 threshold of EMG to exclude noise
 %     'saveMat'     logical (default=false) to save in buzcode format
@@ -53,7 +53,7 @@ function [spindles] = FindSpindles_masa(lfp,timevec,varargin)
 %                   .timestamps        Nx2 matrix of start/stop times for
 %                                      each ripple
 %                   .detectorName      string ID for detector function used
-%                   .peaks             Nx1 matrix of peak power timestamps 
+%                   .peaks             Nx1 matrix of peak power timestamps
 %                   .stdev             standard dev used as threshold
 %                   .noise             candidate ripples that were
 %                                      identified as noise and removed
@@ -95,8 +95,9 @@ addParameter(p,'saveMat',false,@islogical);
 addParameter(p,'plotType',1,@isnumeric)
 addParameter(p,'savepath',[],@isstr)
 addParameter(p,'behaviour',[],@isstruct)
+addParameter(p,'best_channel',[],@isnumeric)
 
-lfp; 
+lfp;
 timevec;
 
 % assign parameters (either defaults or given)
@@ -117,6 +118,7 @@ passband = p.Results.passband;
 EMGThresh = p.Results.EMGThresh;
 savepath = p.Results.savepath;
 behaviour = p.Results.behaviour;
+best_channel = p.Results.best_channel;
 
 filter_type  = 'bandpass';
 filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
@@ -160,7 +162,7 @@ start = find(diff(thresholded)>0);
 stop = find(diff(thresholded)<0);
 % Exclude last spindle if it is incomplete
 if length(stop) == length(start)-1
-	start = start(1:end-1);
+    start = start(1:end-1);
 end
 % Exclude first spindle if it is incomplete
 if length(stop)-1 == length(start)
@@ -168,8 +170,8 @@ if length(stop)-1 == length(start)
 end
 % Correct special case when both first and last spindles are incomplete
 if start(1) > stop(1)
-	stop(1) = [];
-	start(end) = [];
+    stop(1) = [];
+    start(end) = [];
 end
 firstPass = [start,stop];
 if isempty(firstPass)
@@ -178,11 +180,11 @@ if isempty(firstPass)
     spindles.peak_zscore =[];
     spindles.peaktimes = [];
     spindles.detectorinfo = [];
-    
-	disp('Detection by thresholding failed');
-	return
+
+    disp('Detection by thresholding failed');
+    return
 else
-	disp(['Detecting: ' num2str(length(firstPass)) ' spindle events after thresholding.']);
+    disp(['Detecting: ' num2str(length(firstPass)) ' spindle events after thresholding.']);
 end
 
 
@@ -220,13 +222,13 @@ end
 % Detect negative peak position for each spindle
 peakPosition = zeros(size(secondPass,1),1);
 for i=1:size(secondPass,1)
-	[minValue,minIndex] = min(signal(secondPass(i,1):secondPass(i,2)));
-	peakPosition(i) = minIndex + secondPass(i,1) - 1;
+    [minValue,minIndex] = min(signal(secondPass(i,1):secondPass(i,2)));
+    peakPosition(i) = minIndex + secondPass(i,1) - 1;
 end
 
 % Discard spindles that are way too long
 spindles = [timevec(secondPass(:,1)) timevec(peakPosition) ...
-           timevec(secondPass(:,2)) peakNormalizedPower];
+    timevec(secondPass(:,2)) peakNormalizedPower];
 duration = spindles(:,3)-spindles(:,1);
 spindles(duration>maxSpindleDuration/1000,:) = NaN;
 % disp(['Detecting: ' num2str(size(spindles,1)) ' spindle events after discarding short and long events.']);
@@ -243,19 +245,19 @@ if ~isempty(noise)
     noiselfp = filtfilt(b_spindle,1,noise);
     zscored_noise = zscore(abs(hilbert(noise)));
 
-	excluded = logical(zeros(size(spindles,1),1));
-	% Exclude spindles when concomittent noise crosses high detection threshold
-	for i = 1:size(spindles,1)
+    excluded = logical(zeros(size(spindles,1),1));
+    % Exclude spindles when concomittent noise crosses high detection threshold
+    for i = 1:size(spindles,1)
 
         time_index = find(timevec > spindles(i,1) & timevec < spindles(i,3));
 
-		if any(zscored_noise(time_index(1):time_index(2))>5)
-			excluded(i) = 1;
+        if any(zscored_noise(time_index(1):time_index(2))>5)
+            excluded(i) = 1;
         end
-	end
-	bad = spindles(excluded,:);
-	spindles = spindles(~excluded,:);
-	disp(['Detecting: ' num2str(size(spindles,1)) ' spindles events after removing spindle-band noise.']);
+    end
+    bad = spindles(excluded,:);
+    spindles = spindles(~excluded,:);
+    disp(['Detecting: ' num2str(size(spindles,1)) ' spindles events after removing spindle-band noise.']);
 end
 
 
@@ -263,7 +265,7 @@ end
 if strcmp(show,'on')
     if plotType == 1
         figure('Name','Spindle-band filtered LFP');
-    	if ~isempty(noise)
+        if ~isempty(noise)
             subplot(4,1,1)
             plot(timevec,signal)
             title('Spindle filtered signal LFP (9-17Hz)')
@@ -277,8 +279,8 @@ if strcmp(show,'on')
             plot(timevec,zscored_noise)
             title('z-scored Spindle power noise (9-17Hz)')
             set(gca,'TickDir','out','box','off','Color','none','FontSize',12)
-            
-    	else
+
+        else
             subplot(3,1,1)
             plot(timevec,signal)
             title('Spindle filtered signal LFP (9-17Hz)')
@@ -366,7 +368,7 @@ else
     spindles.peaktimes = [];            %peaktimes? could also do these as timestamps and then ripples.ints for start/stops?
     spindles.peak_zscore = [];  %amplitudes?
 end
-
+spindles.best_channel = best_channel;  %best_channel
 % ripples.stdev = sd;
 % if ~isempty(bad)
 %     ripples.noise.times = bad(:,[1 3]);
@@ -397,11 +399,11 @@ end
 function y = Filter0(b,x)
 
 if size(x,1) == 1
-	x = x(:);
+    x = x(:);
 end
 
 if mod(length(b),2)~=1
-	error('filter order should be odd');
+    error('filter order should be odd');
 end
 
 shift = (length(b)-1)/2;
@@ -413,14 +415,14 @@ y = [y0(shift+1:end,:) ; z(1:shift,:)];
 function [U,stdA] = unity(A,sd,restrict)
 
 if ~isempty(restrict),
-	meanA = mean(A(restrict));
-	stdA = std(A(restrict));
+    meanA = mean(A(restrict));
+    stdA = std(A(restrict));
 else
-	meanA = mean(A);
-	stdA = std(A);
+    meanA = mean(A);
+    stdA = std(A);
 end
 if ~isempty(sd),
-	stdA = sd;
+    stdA = sd;
 end
 
 U = (A - meanA)/stdA;

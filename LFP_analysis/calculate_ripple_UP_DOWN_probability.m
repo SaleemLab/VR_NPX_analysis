@@ -4,7 +4,7 @@ p = inputParser;
 addParameter(p,'option','absolute',@ischar);
 addParameter(p,'shuffle_option','time_circular_shift',@ischar);
 addParameter(p,'time_option','onset',@ischar);
-addParameter(p,'time_wondows',[-0.5 0.5],@isnumeric);
+addParameter(p,'time_windows',[-0.5 0.5],@isnumeric);
 addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
@@ -12,11 +12,14 @@ addParameter(p,'duration_threshold',2,@isnumeric);
 parse(p,varargin{:})
 option = p.Results.option;
 time_option = p.Results.time_option;
-time_wondows = p.Results.time_wondows;
+time_windows = p.Results.time_windows;
 time_bin = p.Results.time_bin;
 num_bins = p.Results.num_bins;
 duration_threshold = p.Results.duration_threshold;
 shuffle_option = p.Results.shuffle_option;
+
+timebin_edge = time_windows(1):time_bin:time_windows(end);
+bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
 
 for nprobe = 1:length(slow_waves_all)
     %%%%%%%%%%%%%%% L ripples
@@ -83,7 +86,30 @@ for nprobe = 1:length(slow_waves_all)
             % Ripple probability during normalised UP duration
             % [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
         else
-            [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(DOWN_ints(:,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(DOWN_ints(:,time_index),ripple_peaktimes,time_windows(1):time_bin:time_windows(end),0);
+
+            if ~contains(shuffle_option,'baseline')
+                ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+                timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(ripple_times,1)
+
+                    % Previous DOWN (skip if this is the first ripple)
+                    if i > 1
+                        prev_offset = ripple_times(i-1,2);
+                        % Find peri-time indices within the previous ripple state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
+
+                    % Next DOWN (skip if this is the last ripple)
+                    if i < size(ripple_times,1)
+                        next_onset = ripple_times(i+1,1);
+                        % Find peri-time indices within the next ripple state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
+                end
+            end
         end
 
         binnedArrayDOWN=[binnedArrayDOWN; temp];
@@ -92,7 +118,30 @@ for nprobe = 1:length(slow_waves_all)
         if contains(option,'normalised')
             % [probability(nprobe).L_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
         else
-            [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(UP_ints(:,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).L_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(UP_ints(:,time_index),ripple_peaktimes,time_windows(1):time_bin:time_windows(end),0);
+
+            if ~contains(shuffle_option,'baseline')
+                ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+                timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(ripple_times,1)
+
+                    % Previous DOWN (skip if this is the first ripple)
+                    if i > 1
+                        prev_offset = ripple_times(i-1,2);
+                        % Find peri-time indices within the previous ripple state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
+
+                    % Next DOWN (skip if this is the last ripple)
+                    if i < size(ripple_times,1)
+                        next_onset = ripple_times(i+1,1);
+                        % Find peri-time indices within the next ripple state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
+                end
+            end
         end
 
         binnedArrayUP=[binnedArrayUP; temp];
@@ -118,11 +167,11 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
+        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
+        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
     end
 
     probability(nprobe).L_ripples_DOWN_bootstrap = tempDOWN;
@@ -145,8 +194,8 @@ for nprobe = 1:length(slow_waves_all)
                 temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
             end
 
-            tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-            tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
+            tempUP(iBoot,:) = sum(temp1,1,'omitnan')./sum(~isnan(temp1));
+            tempDOWN(iBoot,:) = sum(temp2,1,'omitnan')./sum(~isnan(temp2));
         end
     end
     toc
@@ -223,7 +272,30 @@ for nprobe = 1:length(slow_waves_all)
             % Ripple probability during normalised UP duration
             % [probability(nprobe).R_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(slow_waves_all(nprobe).DOWN_ints(DOWN_index,:),ripple_times,num_bins,0);
         else
-            [probability(nprobe).R_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(DOWN_ints(:,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
+            [probability(nprobe).R_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(DOWN_ints(:,time_index),ripple_peaktimes,time_windows(1):time_bin:time_windows(end),0);
+            
+            if ~contains(shuffle_option,'baseline')
+                ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
+                timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(ripple_times,1)
+
+                    % Previous DOWN (skip if this is the first ripple)
+                    if i > 1
+                        prev_offset = ripple_times(i-1,2);
+                        % Find peri-time indices within the previous ripple state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
+
+                    % Next DOWN (skip if this is the last ripple)
+                    if i < size(ripple_times,1)
+                        next_onset = ripple_times(i+1,1);
+                        % Find peri-time indices within the next ripple state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
+                end
+            end
         end
 
         binnedArrayDOWN=[binnedArrayDOWN; temp];
@@ -232,9 +304,32 @@ for nprobe = 1:length(slow_waves_all)
         if contains(option,'normalised')
             % [probability(nprobe).R_ripples_UP_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(UP_ints,ripple_times,num_bins,0);
         else
-            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(UP_ints(:,time_index),ripple_times,time_wondows(1):time_bin:time_wondows(end),0);
-        end
+            [probability(nprobe).R_ripples_UP_session(nsession,:),temp,event_index] = calculate_event_probability(UP_ints(:,time_index),ripple_peaktimes,time_windows(1):time_bin:time_windows(end),0);
 
+            if ~contains(shuffle_option,'baseline')
+                ripple_times = [ripples_all(2).onset(ripples_index) ripples_all(2).offset(ripples_index)];
+                timebin_edges_all = ripple_peaktimes + bins_centre;  % Absolute times of peri-event window
+                for i = 1:size(ripple_times,1)
+
+                    % Previous DOWN (skip if this is the first ripple)
+                    if i > 1
+                        prev_offset = ripple_times(i-1,2);
+                        % Find peri-time indices within the previous ripple state
+                        mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                        temp(i, mask_prev) = NaN;
+                    end
+
+                    % Next DOWN (skip if this is the last ripple)
+                    if i < size(ripple_times,1)
+                        next_onset = ripple_times(i+1,1);
+                        % Find peri-time indices within the next ripple state
+                        mask_next = timebin_edges_all(i,:) >= next_onset;
+                        temp(i, mask_next) = NaN;
+                    end
+                end
+            end
+        end
+        
         binnedArrayUP=[binnedArrayUP; temp];
         ripple_index_UP_all = [ripple_index_UP_all;event_index];
         
@@ -254,11 +349,11 @@ for nprobe = 1:length(slow_waves_all)
     for iBoot = 1:1000
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:))/all_ripple_no;
+        tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
 
         s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
         event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:))/all_ripple_no;
+        tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
     end
 
     probability(nprobe).R_ripples_DOWN_bootstrap = tempDOWN;
@@ -281,11 +376,11 @@ for nprobe = 1:length(slow_waves_all)
                 temp2(event_id,:) = binnedArrayDOWN(event_id,bins);
             end
 
-            tempUP(iBoot,:) = sum(temp1,1)/all_ripple_no;
-            tempDOWN(iBoot,:) = sum(temp2,1)/all_ripple_no;
+            tempUP(iBoot,:) = sum(temp1,1,'omitnan')./sum(~isnan(temp1));
+            tempDOWN(iBoot,:) = sum(temp2,1,'omitnan')./sum(~isnan(temp2));
         end
+        toc
     end
-    toc
     
     probability(nprobe).R_ripples_DOWN_shuffled = tempDOWN;
     probability(nprobe).R_ripples_UP_shuffled = tempUP;

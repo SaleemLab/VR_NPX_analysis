@@ -1,9 +1,8 @@
-function plot_UP_DOWN_ripple_probability_baseline()
+function plot_bilateral_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
-
 
 if exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
@@ -52,6 +51,168 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability
 probability_ripples_SO = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'));
 probability_ripples_ripples = probability;
+
+
+colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red for R
+colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue for L
+colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
+
+colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+colour_lines{5} = [;]/256;% 5 purple
+
+
+colour_lines = [44,123,182;215,25,28]/256;
+
+
+% Find reference channel/shank
+cortex_ref_shank = [];
+HPC_ref_shank = [];
+
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel{nsession})...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+
+        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+        [~,idx] = min(abs(ripples_all(probe_no).ripple_peak_amplitude{nsession}' - ripples_all(probe_no).peak_zscore(ripples_all(probe_no).session_count==nsession)));
+        % HPC_ref_shank(nsession,probe_no) = idx;
+        ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+    end
+end
+
+
+%% Plot UP DOWN Left VS Right 
+
+fig = figure('Color','w');
+fig.Position = [450 180 1020 720];
+fig.Name = 'UP DOWN Left and Right Basic properties';
+
+
+% Duration of UP and DOWN
+binEdges = -2:0.1:0.5;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+angleEdges =linspace(-pi, pi, 18+1);
+angelCentre = angleEdges(1:end-1) + diff(angleEdges)/2;
+
+
+UP_duration_L = [];
+DOWN_duration_L = [];
+UP_duration_R = [];
+DOWN_duration_R = [];
+
+UP_phase_L = [];
+DOWN_phase_L = [];
+UP_phase_R = [];
+DOWN_phase_R = [];
+
+delta_peaks_L = [];
+delta_peaks_R = [];
+delta_speed_L = [];
+delta_speed_R = [];
+
+ripples_duration_L = [];
+ripples_duration_R = [];
+ripple_amplitude_L = [];
+ripple_amplitude_R = [];
+ripple_speed_L = [];
+ripple_speed_R = [];
+
+spindle_duration_L = [];
+spindle_duration_R = [];
+spindle_amplitude_L = [];
+spindle_amplitude_R = [];
+
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel{nsession})...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+
+        [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id));
+        [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+    end
+    % UP DOWN
+    UP_duration_L(nsession,:) = histcounts(log10(slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+    DOWN_duration_L(nsession,:) = histcounts(log10(slow_waves_all(1).DOWN_ints(slow_waves_all(1).DOWN_session_count == nsession ,2) - slow_waves_all(1).DOWN_ints(slow_waves_all(1).DOWN_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+
+    UP_duration_R(nsession,:) = histcounts(log10(slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+    DOWN_duration_R(nsession,:) = histcounts(log10(slow_waves_all(2).DOWN_ints(slow_waves_all(2).DOWN_session_count == nsession ,2) - slow_waves_all(2).DOWN_ints(slow_waves_all(2).DOWN_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+
+    UP_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_UP{nsession},angleEdges);
+    DOWN_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_DOWN{nsession},angleEdges);
+    UP_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_UP{nsession},angleEdges);
+    DOWN_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_DOWN{nsession},angleEdges);
+
+    delta_peaks_L(nsession,:) = histcounts(slow_waves_all(1).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,1),:),-1:0.1:5);
+    delta_peaks_R(nsession,:) = histcounts(slow_waves_all(2).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,2),:),-1:0.1:5);
+
+    delta_speed_L(nsession,:)  = histcounts(slow_waves_all(1).cortex_speed_UD(1,slow_waves_all(1).DOWN_session_count == nsession),-20:0.1:20);
+    delta_speed_R(nsession,:)  = histcounts(slow_waves_all(2).cortex_speed_UD(2,slow_waves_all(2).DOWN_session_count == nsession),-20:0.1:20);
+
+    % Ripples
+    ripples_duration_L(nsession,:) = histcounts(ripples_all(1).offset(ripples_all(1).session_count == nsession) - ripples_all(1).onset(ripples_all(1).session_count == nsession),0:0.01:0.2);
+    ripples_duration_R(nsession,:) = histcounts(ripples_all(2).offset(ripples_all(2).session_count == nsession) - ripples_all(2).onset(ripples_all(2).session_count == nsession),0:0.01:0.2);
+    ripple_amplitude_L(nsession,:) = histcounts(ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession),5:0.5:25);
+    ripple_amplitude_R(nsession,:) = histcounts(ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession),5:0.5:25);
+    ripple_speed_L(nsession,:)  = histcounts(ripples_all(1).HPC_speed(1,ripples_all(1).session_count == nsession),-500:10:500);
+    ripple_speed_R(nsession,:)  = histcounts(ripples_all(2).HPC_speed(2,ripples_all(2).session_count == nsession),-500:10:500);
+
+    % Spindles
+    spindle_duration_L(nsession,:) = histcounts(spindles_all(1).offset(spindles_all(1).session_count == nsession) - spindles_all(1).onset(spindles_all(1).session_count == nsession),0:0.05:2);
+    spindle_duration_R(nsession,:) = histcounts(spindles_all(2).offset(spindles_all(2).session_count == nsession) - spindles_all(2).onset(spindles_all(2).session_count == nsession),0:0.05:2);
+    spindle_amplitude_L(nsession,:) = histcounts(spindles_all(1).peak_zscore(spindles_all(1).session_count == nsession),1:0.5:15);
+    spindle_amplitude_R(nsession,:) = histcounts(spindles_all(2).peak_zscore(spindles_all(2).session_count == nsession),1:0.5:15);
+
+end
+
+nexttile
+plot(binCentre,mean(UP_duration_R));hold on
+plot(binCentre,mean(DOWN_duration_R));hold on
+
+nexttile
+grp = [ones(max(ripples_all(1).session_count),1);ones(max(ripples_all(1).session_count),1)*2];
+tst=[INTER_T1_rate_events INTER_T2_rate_events FINAL_RT1_rate_events FINAL_RT2_rate_events]';
+
+% xbe = beeswarm(grp,tst,'sort_style','nosort','colormap',[PP.RUN1T1;PP.RUN1T2;PP.RUN2T1;PP.RUN2T2],'dot_size',2,'corral_style','rand');
+xbe = beeswarm(grp,tst,'sort_style','nosort','colormap',[PP.RUN1T1;PP.RUN1T2;PP.RUN2T1;PP.RUN2T2],'dot_size',2,'overlay_style','sd','corral_style','rand');
+
+yticks([0:0.02:0.06])
+xticks([1:4])
+xticklabels({'POST1 T1','POST1 T2','POST2 T1','POST2 T2'})
+ylabel('Replay rate (events/sec)')
+set(gca,'FontSize',14)
+ylim([0 0.07])
+hold on
+
+tst=[INTER_T1_rate_events; INTER_T2_rate_events; FINAL_RT1_rate_events; FINAL_RT2_rate_events]';
+
+xbe = reshape(xbe,size(tst,1),size(tst,2));
+for i = 1:size(tst,1)
+    plot(xbe(i,[1 2]),tst(i,[1 2]),'Color',[0,0,0,0.2])
+    plot(xbe(i,[3 4]),tst(i,[3 4]),'Color',[0,0,0,0.2])
+end
+
+axis square
+title(sprintf('POST replay rate for both exposures (%s)',rest_option));
+
+
+
+%% Plot UP DOWN ipsilateral vs contralateral
+
+
+
+
+
+
 
 %% Plotting distribution of ripple during normalised duration of UP  (peaktimes)
 probability = probability_normalised;
