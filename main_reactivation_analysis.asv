@@ -26,7 +26,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 4
+for nsession = [1 10]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -288,13 +288,13 @@ for nsession = 4
                 if track_id == 1
                     sig_event_id = find(peak_percentile(1,:)>0.95 & peak_percentile(2,:)<0.95);
                     if isempty(sig_event_id)
-
+                        continue
                     end
                     sampled_event_id = datasample(s,sig_event_id,40);
                 else
                     sig_event_id = find(peak_percentile(2,:)>0.95 & peak_percentile(1,:)<0.95);
-                                      if isempty(sig_event_id)
-
+                    if isempty(sig_event_id)
+                        continue
                     end
                     sampled_event_id = datasample(s,sig_event_id,40);
                 end
