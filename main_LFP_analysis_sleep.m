@@ -912,7 +912,7 @@ for nsession =1:length(experiment_info)
             shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
             HPC_ref_shank = hank_id(ripples(probe_no).best_channel);
             ref_shank= HPC_ref_shank;
-            
+
             % ripple amplitude
             step_s = 0.02;
             win_s = step_s*2;
@@ -939,7 +939,9 @@ for nsession =1:length(experiment_info)
 
             amp_corr = [];
             for nchannel = 1:size(meanAmp,1)
-                amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                for mchannel = 1:size(meanAmp,1)
+                    amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                end
             end
 
             ripples(probe_no).amp_corr = amp_corr;
@@ -1033,7 +1035,9 @@ for nsession =1:length(experiment_info)
 
                 amp_corr = [];
                 for nchannel = 1:size(meanAmp,1)
-                    amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                    for mchannel = 1:size(meanAmp,1)
+                        amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                    end
                 end
 
                 spindles(probe_no).amp_corr = amp_corr;
@@ -1153,9 +1157,11 @@ for nsession =1:length(experiment_info)
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
 
-                    amp_corr=[];
+                    amp_corr = [];
                     for nchannel = 1:size(meanAmp,1)
-                        amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                        for mchannel = 1:size(meanAmp,1)
+                            amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                        end
                     end
 
                     slow_waves(probe_no).amp_corr_DU = amp_corr;
@@ -1180,7 +1186,9 @@ for nsession =1:length(experiment_info)
 
                     amp_corr = [];
                     for nchannel = 1:size(meanAmp,1)
-                        amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                        for mchannel = 1:size(meanAmp,1)
+                            amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                        end
                     end
 
                     slow_waves(probe_no).amp_corr_UD = amp_corr;
@@ -1209,7 +1217,9 @@ for nsession =1:length(experiment_info)
 
                     amp_corr = [];
                     for nchannel = 1:size(meanAmp,1)
-                        amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                        for mchannel = 1:size(meanAmp,1)
+                            amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                        end
                     end
 
                     slow_waves(probe_no).amp_corr_DOWN = amp_corr;
@@ -1247,7 +1257,9 @@ for nsession =1:length(experiment_info)
 
                     amp_corr = [];
                     for nchannel = 1:size(meanAmp,1)
-                        amp_corr(nchannel) = corr(meanAmp(ref_shank,event_tidx)',meanAmp(nchannel,event_tidx)');
+                        for mchannel = 1:size(meanAmp,1)
+                            amp_corr(nchannel,mchannel) = corr(meanAmp(nchannel,event_tidx)',meanAmp(mchannel,event_tidx)');
+                        end
                     end
                     slow_waves(probe_no).amp_corr_UP = amp_corr;
 
