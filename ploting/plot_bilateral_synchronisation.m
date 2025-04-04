@@ -87,10 +87,6 @@ for nsession = 1:max(ripples_all(1).session_count)
     end
 end
 
-aa = ripples_all(probe_no).peak_zscore(ripples_all(probe_no).session_count==nsession);
-bb = ripples_all(probe_no).ripple_peak_amplitude{nsession};
-
-mean(abs(bb - aa'))
 
 %% Plot UP DOWN Left VS Right 
 
@@ -100,27 +96,41 @@ fig.Name = 'UP DOWN Left and Right Basic properties';
 
 
 % Duration of UP and DOWN
-binEdges = 0:0.05:2;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+binEdges = -2:0.1:0.5;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
 
-UP_counts_L = [];
-DOWN_counts_L = [];
-UP_counts_R = [];
-DOWN_counts_R = [];
+angleEdges =linspace(-pi, pi, 18+1);
+angelCentre = angleEdges(1:end-1) + diff(angleEdges)/2;
+
+
+UP_duration_L = [];
+DOWN_duration_L = [];
+UP_duration_R = [];
+DOWN_duration_R = [];
 
 UP_phase_L = [];
 DOWN_phase_L = [];
 UP_phase_R = [];
 DOWN_phase_R = [];
 
-nexttile
+delta_peaks_L = [];
+delta_peaks_R = [];
+delta_speed_L = [];
+delta_speed_R = [];
+
+ripples_duration_L = [];
+ripples_duration_R = [];
+ripple_amplitude_L = [];
+ripple_amplitude_R = [];
+ripple_speed_L = [];
+ripple_speed_R = [];
+
+spindle_duration_L = [];
+spindle_duration_R = [];
+spindle_amplitude_L = [];
+spindle_amplitude_R = [];
+
 for nsession = 1:max(ripples_all(1).session_count)
-    UP_counts_L(nsession,:) = histcounts(slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,1),binEdges);
-    DOWN_counts_L(nsession,:) = histcounts(slow_waves_all(1).DOWN_ints(slow_waves_all(1).DOWN_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).DOWN_session_count == nsession ,1),binEdges);
-
-    UP_counts_R(nsession,:) = histcounts(slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1),binEdges);
-    DOWN_counts_R(nsession,:) = histcounts(slow_waves_all(2).DOWN_ints(slow_waves_all(2).DOWN_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).DOWN_session_count == nsession ,1),binEdges);
-
     for probe_no = 1:2
         cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel{nsession})...
             &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
@@ -130,14 +140,43 @@ for nsession = 1:max(ripples_all(1).session_count)
         [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
 
     end
+    % UP DOWN
+    UP_duration_L(nsession,:) = histcounts(log10(slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+    DOWN_duration_L(nsession,:) = histcounts(log10(slow_waves_all(1).DOWN_ints(slow_waves_all(1).DOWN_session_count == nsession ,2) - slow_waves_all(1).DOWN_ints(slow_waves_all(1).DOWN_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
 
-    UP_phase_L = histcounts(slow_waves_all(1).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1),binEdges);
-    DOWN_phase_L = [];
-    UP_phase_R = [];
-    DOWN_phase_R = [];
+    UP_duration_R(nsession,:) = histcounts(log10(slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+    DOWN_duration_R(nsession,:) = histcounts(log10(slow_waves_all(2).DOWN_ints(slow_waves_all(2).DOWN_session_count == nsession ,2) - slow_waves_all(2).DOWN_ints(slow_waves_all(2).DOWN_session_count == nsession ,1)),-2:0.1:0.5,'Normalization','percentage');
+
+    UP_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_UP{nsession},angleEdges);
+    DOWN_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_DOWN{nsession},angleEdges);
+    UP_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_UP{nsession},angleEdges);
+    DOWN_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_DOWN{nsession},angleEdges);
+
+    delta_peaks_L(nsession,:) = histcounts(slow_waves_all(1).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,1),:),-1:0.1:5);
+    delta_peaks_R(nsession,:) = histcounts(slow_waves_all(2).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,2),:),-1:0.1:5);
+
+    delta_speed_L(nsession,:)  = histcounts(slow_waves_all(1).cortex_speed_UD(1,slow_waves_all(1).DOWN_session_count == nsession),-20:0.1:20);
+    delta_speed_R(nsession,:)  = histcounts(slow_waves_all(2).cortex_speed_UD(2,slow_waves_all(2).DOWN_session_count == nsession),-20:0.1:20);
+
+    % Ripples
+    ripples_duration_L(nsession,:) = histcounts(ripples_all(1).offset(ripples_all(1).session_count == nsession) - ripples_all(1).onset(ripples_all(1).session_count == nsession),0:0.01:0.2);
+    ripples_duration_R(nsession,:) = histcounts(ripples_all(2).offset(ripples_all(2).session_count == nsession) - ripples_all(2).onset(ripples_all(2).session_count == nsession),0:0.01:0.2);
+    ripple_amplitude_L(nsession,:) = histcounts(ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession),5:0.5:25);
+    ripple_amplitude_R(nsession,:) = histcounts(ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession),5:0.5:25);
+    ripple_speed_L(nsession,:)  = histcounts(ripples_all(1).HPC_speed(1,ripples_all(1).session_count == nsession),-500:10:500);
+    ripple_speed_R(nsession,:)  = histcounts(ripples_all(2).HPC_speed(2,ripples_all(2).session_count == nsession),-500:10:500);
+
+    % Spindles
+    spindle_duration_L(nsession,:) = histcounts(spindles_all(1).offset(spindles_all(1).session_count == nsession) - spindles_all(1).onset(spindles_all(1).session_count == nsession),0:0.05:2);
+    spindle_duration_R(nsession,:) = histcounts(spindles_all(2).offset(spindles_all(2).session_count == nsession) - spindles_all(2).onset(spindles_all(2).session_count == nsession),0:0.05:2);
+    spindle_amplitude_L(nsession,:) = histcounts(spindles_all(1).peak_zscore(spindles_all(1).session_count == nsession),1:0.5:15);
+    spindle_amplitude_R(nsession,:) = histcounts(spindles_all(2).peak_zscore(spindles_all(2).session_count == nsession),1:0.5:15);
+
 end
 
-
+nexttile
+plot(binCentre,mean(UP_duration_R));hold on
+plot(binCentre,mean(DOWN_duration_R));hold on
 
 nexttile
 grp = [ones(max(ripples_all(1).session_count),1);ones(max(ripples_all(1).session_count),1)*2];
