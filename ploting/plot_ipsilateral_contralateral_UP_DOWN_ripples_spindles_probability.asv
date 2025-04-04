@@ -1,4 +1,4 @@
-function plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,analysis_folder)
+function plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,analysis_folder)
 
 if isempty(analysis_folder)
     if exist('D:\corticohippocampal_replay')>0
@@ -292,11 +292,7 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
 
-%% Divide UP DOWN and ripples events into unilateral and bilaterally shared events 
-for nprobe = 1:2
-    slow_waves_all(nprobe).DOWN_ints
-
-end
+%% Divide UP DOWN events into unilateral and bilaterally shared events
 
 
 %% plotting Probability of SWR relative to UP and DOWN onset (WHOLE)
