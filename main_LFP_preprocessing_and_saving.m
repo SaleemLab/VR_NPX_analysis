@@ -8,9 +8,13 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 %% LFP preprocess -> Catgt
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 SUBJECT = 'M25026';
 
+=======
+SUBJECT = 'M25002';
+>>>>>>> Stashed changes
 =======
 SUBJECT = 'M25002';
 >>>>>>> Stashed changes
