@@ -52,7 +52,7 @@ BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 Nidq = [];
 td = dir(fullfile(options(1).EPHYS_DATAPATH,'..','*NidqTimes*'));
 if ~isempty(td)
-    load(fullfile(td(1).folder,td(1).name),'Nidq');
+    load(fullfile(td(1).folder,'..',td(1).name),'Nidq');
     syncTimes_ephys = Nidq.bonsai_sync_on;% use upswings currently
     syncPulse_ephys = Nidq.bonsai_sync;
     syncPulse_ephysTimes = Nidq.sglxTime;

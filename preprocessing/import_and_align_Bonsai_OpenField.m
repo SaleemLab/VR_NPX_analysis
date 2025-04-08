@@ -7,17 +7,9 @@ function [behaviour] = import_and_align_Bonsai_OpenField(StimulusName,options)
 bonsai_files_names = options(1).bonsai_files_names;
 
 peripheral_path = bonsai_files_names(contains(bonsai_files_names,'.csv'));
-if length(peripheral_path)>1 % possibly DLC related csv
-    for nfile = 1:length(peripheral_path)
-        if contains(peripheral_path{nfile},'DLC')
-            file_type(nfile) = 0;
-        else
-            file_type(nfile) = 1;
-        end
-    end
-    peripheral_path = peripheral_path{file_type};
-end
 
+DLC_path = bonsai_files_names(contains(bonsai_files_names,'DLC'));
+video_sync_path = bonsai_files_names(contains(bonsai_files_names,'sync'));
 BONSAI_DATAPATH = options(1).BONSAI_DATAPATH;
 % DIR = dir(fullfile(options(1).EPHYS_DATAPATH,'*syncpulseTimes.mat'))
 Nidq = [];
@@ -26,8 +18,8 @@ if ~isempty(td)
     load(fullfile(td.folder,td.name));
     Nidq.on = syncTimes_ephys.on;% use upswings currently
     Nidq.off = syncTimes_ephys.off;% use upswings currently
-    syncPulse_ephys = Nidq.bonsai_sync;
-    syncPulse_ephysTimes = Nidq.sglxTime;
+    syncPulse_ephys = syncTimes_ephys.Sync;
+    syncPulse_ephysTimes = 1/30000:1/30000:length(syncPulse_ephys)/30000;
 else
     error('nidq and ephys sync pulse extraction and alignment not done!')
     return
@@ -37,10 +29,37 @@ frame_sampling_rate = 30; % 30Hz videos
 
 % Import Sleap and sync pulse
 % and synchronise them to async pulse
-this_table = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
-behaviour.frame = this_table(:,16);
-tracking = this_table(:,2:15);
-Sync_pulse = this_table(:,1); %
+DLC_table = readtable(fullfile([BONSAI_DATAPATH,'\',char(DLC_path)]),'PreserveVariableNames', true);
+num_cols = width(DLC_table);
+video_sync_table = readmatrix(fullfile([BONSAI_DATAPATH,'\',char(video_sync_path)]));
+behaviour.frame = table2array(DLC_table(:,1)) + 1;
+% Iterate through each set of (x, y, likelihood) columns for body parts
+tracking_table = nan(size(DLC_table,1),floor(num_cols/3)*2);
+iPart = 0;
+for col = 2:3:num_cols
+    % Extract column names for (x, y, likelihood)
+    iPart = iPart + 1;
+    x_col = col;
+    y_col = col + 1;
+    likelihood_col = col + 2;
+    
+
+
+    % Get the likelihood values
+    likelihood = table2array(DLC_table(:, likelihood_col));
+
+    % Find the rows where likelihood is below 0.6
+    low_confidence = likelihood < 0.5;
+
+    % Replace (x, y) values with NaN where likelihood is low
+    DLC_table{low_confidence, x_col} = NaN;
+    DLC_table{low_confidence, y_col} = NaN;
+    tracking_table(:,iPart*2-1) = table2array(DLC_table(:,x_col));
+    tracking_table(:,iPart*2) = table2array(DLC_table(:,y_col));
+
+end
+tracking = tracking_table;
+Sync_pulse = video_sync_table; %
 behaviour.Sync_pulse = Sync_pulse;
 % peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
 
@@ -52,7 +71,7 @@ baseline_corrected_sync = Sync_pulse-movmean(Sync_pulse,120);
 initial_centroids = [ prctile(baseline_corrected_sync,10);prctile(baseline_corrected_sync,90)];
 peripherals.Sync = kmeans(baseline_corrected_sync,2,'Start', initial_centroids)-1;
 
-peripherals.Time =  behaviour.frame ./ frame_sampling_rate .* 1000;
+peripherals.Time =  behaviour.frame ./ frame_sampling_rate *1000;
 idx_trial_start = find(diff(peripherals.Sync)==1) + 1;
 idx_trial_end = find(diff(peripherals.Sync)==-1) + 1;
 
@@ -127,7 +146,8 @@ for i = 1:size(tracking,2)
 new_tracking(:,i) = interp1(behaviour.sglxTime_original,tracking(ia,i),behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
 end
 behaviour.Sync_pulse = interp1(behaviour.sglxTime_original,Sync_pulse(ia)',behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
-tracking_part_list = {'nose','neck','implant','earR','earL','spine','tail_start'};
+behaviour.Sync = interp1(behaviour.sglxTime_original,peripherals.Sync(ia)',behaviour.sglxTime_original(1):1/60:behaviour.sglxTime_original(end),'linear');
+tracking_part_list = {'nose','neck','L','R','implant','spine','tailS','tailM','tailE'};
 no_parts = length(tracking_part_list);
 for i = 1:no_parts
 behaviour.(tracking_part_list{i}) = new_tracking(:,(i-1)*2+1:i*2)';

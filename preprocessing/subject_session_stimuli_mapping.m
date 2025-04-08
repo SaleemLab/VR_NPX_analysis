@@ -147,8 +147,8 @@ for nsubject = 1:length(SUBJECTS)
 
             else
                 this_stimulus = StimulusName{nstimuli};
-                if isequal(this_stimulus , 'Track')
-                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '_*.csv']));
+                if contains(this_stimulus , 'Track')
+                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*','Track', '_*.csv']));
                 elseif contains(this_stimulus,'Masa2tracks')
                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*','Masa2tracks', '*.csv']));
                     %                 elseif contains(this_stimulus,'Sleep')
@@ -159,10 +159,10 @@ for nsubject = 1:length(SUBJECTS)
             end
 
             %             [~,idx] = sort([bonsai_files.datenum]);
-
-            file_time = extractPattern(bonsai_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
-            bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
-
+            if ~contains(bonsai_files(stimulus_counter(nstimuli)).name,'OpenField')
+                file_time = extractPattern(bonsai_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
+                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
+            end
 
             if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin'])))
 
@@ -211,6 +211,19 @@ for nsubject = 1:length(SUBJECTS)
                 if contains(StimulusName{nstimuli},'Masa2tracks')
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
                         fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),'Masa2tracks');
+                else
+                    if  nameCountMap(StimulusName{nstimuli}) == 1 % if this stimulus only happend once
+                        experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
+                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),StimulusName{nstimuli});
+                    else % if multiple recording on the same day
+                        experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
+                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),[StimulusName{nstimuli},'_',num2str(stimulus_counter(nstimuli))]);
+                    end
+                end
+
+                if contains(StimulusName{nstimuli},'Track')
+                    experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
+                        fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),[StimulusName{nstimuli},'_',num2str(stimulus_counter(nstimuli))]);
                 else
                     if  nameCountMap(StimulusName{nstimuli}) == 1 % if this stimulus only happend once
                         experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
@@ -297,6 +310,7 @@ for i = 1:length(names)
         currentName = 'Masa2tracks';
         %         elseif contains(currentName,'SleepChronic')
         %             currentName = 'SleepChronic';
+
     end
 
     % Check if the stimulus is already in the map

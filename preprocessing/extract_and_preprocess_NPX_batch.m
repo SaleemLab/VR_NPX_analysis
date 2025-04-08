@@ -97,6 +97,7 @@ for nsession =1:length(experiment_info)
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
 %                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
             else
+
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'),'Task_info')
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
@@ -127,6 +128,9 @@ for nsession =1:length(experiment_info)
         segment_frames = table2array(segment_frames_table(:,1));
 
         session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
+        if isempty(session_id)
+            session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SUBJECT,'_',options.SESSION,'_']);
+        end
         session_id=str2num(session_id(1));
         
         if sum(contains(segment_frames,[num2str(session_id),'_g',num2str(options.gFileNum)]))==0

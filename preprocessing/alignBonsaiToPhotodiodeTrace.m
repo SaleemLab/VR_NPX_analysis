@@ -1,8 +1,8 @@
 function [bonsai_data] = alignBonsaiToPhotodiodeTrace(bonsai_data,photodiode_signal,photodiode_tvec)
-
+[bonsai_tvec,ia,ic] = unique(bonsai_data.sglxTime);
 ephys_SR = 1./mean((diff(photodiode_tvec)));
 % Resample bonsai_data.Sync to match syncTimes_ephys
-bonsai_interp = interp1(bonsai_data.sglxTime, bonsai_data.Photodiode, photodiode_tvec, 'previous','extrap');
+bonsai_interp = interp1(bonsai_tvec, bonsai_data.Photodiode(ia), photodiode_tvec, 'previous','extrap');
 bonsai_interp(isnan(bonsai_interp)) = 0;
 
 [r, lags] = xcorr(normalize(bonsai_interp), normalize(photodiode_signal));

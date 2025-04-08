@@ -197,7 +197,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
 % SUBJECT = 'M23087';
-SUBJECTS = {'M25002'};
+SUBJECT = 'M25002';
 % SESSION = '20231212';
 SESSION = '20250213';
 options = 'V1-MEC';
@@ -206,19 +206,15 @@ ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'SparseNoise_fullscreen';
 Stimulus_type = 'Track';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-for nsession =10:length(experiment_info)
-session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 if contains(Stimulus_type,'Masa2tracks')
-%     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
+    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
     for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
         load(fullfile(session_files(n).folder, session_files(n).name))
         extract_and_preprocess_NPX(session_info,Stimulus_type)
     end
 else
-%     load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
     extract_and_preprocess_NPX(session_info,Stimulus_type)
-end
 end
 %% LFP preprocessing
 

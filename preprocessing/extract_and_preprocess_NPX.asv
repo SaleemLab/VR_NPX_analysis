@@ -10,10 +10,10 @@ function extract_and_preprocess_NPX(session_info,Stimulus_type)
 % 2. Stimulus_type
 % Specifiy which stimulus type to process -> go through different
 % extraction function.
-stimulus_name = {session_info.probe(1).StimulusName};
-
+stimulus_name = cell(length(session_info),1);
 for n = 1:length(session_info) % just in case there might be multiple recording for the same stimulus type (e.g. PRE RUN POST Masa2tracks)
-
+    stimulus_name{n,1}
+    
     if str2num(session_info(n).probe(1).SESSION) < 20240401
         % Old Part 1 Align two NPX probes if there are two probes
         if length(session_info(n).probe) >1
@@ -42,24 +42,25 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
     else
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour*.mat"));
     end
-    %         DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     if isempty(DIR)
+        disp('process and extract behavioural data')
         if contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
             if contains(Stimulus_type,'Sleep')
                 [Behaviour] = import_and_align_Bonsai_Sleep(stimulus_name{n},session_info(n).probe);
             else
                 [Behaviour] = import_and_align_Bonsai_OpenField(stimulus_name{n},session_info(n).probe);
             end
-        elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track')
-            %                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
+        elseif contains(Stimulus_type,'Masa2tracks') |contains(Stimulus_type,'Track') 
+%                 [Behaviour,Task_info,Peripherals] = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
 
             if str2num(options(1).SESSION) < 20240401 % if session before 2024/04/01
                 [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai(stimulus_name{n},options);
             else
                 [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai_MatrixRig(stimulus_name{n},options);
             end
-
+            
         elseif contains(Stimulus_type,'Diao')
 
         elseif contains(Stimulus_type,'Edd')
@@ -87,14 +88,15 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
                 sprintf('extracted_peripherals%s.mat',erase(stimulus_name{n},Stimulus_type))),'Peripherals')
         elseif contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
-            %                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
+%                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
         else
+
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'),'Behaviour')
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'),'Task_info')
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_peripherals.mat'),'Peripherals')
         end
     end
-    %
+% 
     % Part 3 extract spike data
     options = session_info(n).probe(1);
     if contains(Stimulus_type,'Masa2tracks')
@@ -104,22 +106,50 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'))
     end
 
+
+    DIR_SORTER = dir(options.SORTER_DATAPATH);
+    DIR_KS = dir(options.KS_DATAPATH);
+
+    if isempty(DIR_SORTER) % if spike interface sorter folder is not present, skip
+          continue
+    end
+    if isempty(dir(options.segment_frames))
+        options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2str(options.probe_id),'segment_frames.csv']);
+    end
+    
+    segment_frames_table = readtable(options.segment_frames);
+    segment_frames = table2array(segment_frames_table(:,1));
+
+    session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SESSION,'_']);
+    if isempty(session_id)
+        session_id=extractAfter(options.EPHYS_DATAPATH,['\',options.SESSION,'\',options.SUBJECT,'_',options.SESSION,'_']);
+    end
+    session_id=str2num(session_id(1));
+    
+    if sum(contains(segment_frames,[num2str(session_id),'_g',num2str(options.gFileNum)]))==0
+        disp('Session without spike sorting is skipped')
+        continue
+    end
+
     for nprobe = 1:length(session_info(n).probe)
         options = session_info(n).probe(nprobe);
         DIR_SORTER = dir(options.SORTER_DATAPATH);
         DIR_KS = dir(options.KS_DATAPATH);
+
         if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
-            temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
+
+            temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort2'));
             if ~isempty(temp)
                 [clusters_ks2(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS2','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
             end
-            temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort3'));
+            temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort3'));
             if ~isempty(temp)
-                [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                [clusters_ks3(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS3_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
             end
-            temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+
+            temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort4'));
             if ~isempty(temp)
-                [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
+                [clusters_ks4(nprobe) chan_config sorted_config] = extract_clusters_NPX(options,'sorter','KS4_original','group','all clusters','tvec',Behaviour.tvec,'SR',mean(1./diff(Behaviour.tvec)));
             end
 
         elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
@@ -132,10 +162,11 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
     %         fields_to_remove = {'spike_count_raw','spike_count_smoothed','zscore_smoothed'};
     %         clusters = rmfield(clusters,fields_to_remove);
     %
-
-    if contains(Stimulus_type,'Masa2tracks')
+    if contains(Stimulus_type,'Masa2tracks') 
         % If Masa2tracks, PRE, RUN and/or POST saved in one folder
         if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
+
+
             temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
             if ~isempty(temp)
                 save(fullfile(options.ANALYSIS_DATAPATH,...
@@ -157,10 +188,10 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
             save(fullfile(options.ANALYSIS_DATAPATH,...
                 sprintf('extracted_clusters%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters')
         end
-        %             save(fullfile(options.ANALYSIS_DATAPATH,...
-        %                 sprintf('extracted_spikes%s.mat',erase(stimulus_name{n},Stimulus_type))),'spikes')
+
     else
         if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
+
             temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
             if ~isempty(temp)
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
@@ -176,12 +207,12 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
                 save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4')
             end
 
-        elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
+         elseif ~isempty(DIR_KS)% elseif original KS3 folder is present
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters.mat'),'clusters')
         end
-        %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spikes.mat'),'spikes')
-    end
 
+    end
+    
     clear clusters_ks2 clusters_ks3
 
 end
