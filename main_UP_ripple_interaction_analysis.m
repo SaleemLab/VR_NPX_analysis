@@ -49,7 +49,7 @@ plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability(slow_waves_a
 
 plot_UP_DOWN_ripple_probability_baseline
 
-
+plot_ipsilateral_contralateral_coupling
 
 % plot_UP_DOWN_spindle_probability
 plot_UP_DOWN_spindle_probability_baseline
