@@ -37,8 +37,8 @@ for nsubject = 1:length(SUBJECTS)
         stimuli_info_table = cell2table(dataCell(2:end,:),"VariableNames",stimuli_info.Properties.VariableNames); % not the best way but works
 
     elseif contains(options,'V1-MEC')
-        stimuli_info = readtable(['Z:\ibn-vision\USERS\Diao\ephys_recording_info\session_stimuli_table_DT_backup'],'Sheet',SUBJECTS{nsubject});
-        dataCell = readcell('Z:\ibn-vision\USERS\Diao\ephys_recording_info\session_stimuli_table_DT_backup','Sheet',SUBJECTS{nsubject});
+        stimuli_info = readtable(['Z:\ibn-vision\USERS\Diao\ephys_recording_info\session_stimuli_table_DT'],'Sheet',SUBJECTS{nsubject});
+        dataCell = readcell('Z:\ibn-vision\USERS\Diao\ephys_recording_info\session_stimuli_table_DT','Sheet',SUBJECTS{nsubject});
         % Convert the cell array to a table
         stimuli_info_table = cell2table(dataCell(2:end,:),"VariableNames",stimuli_info.Properties.VariableNames);
     end

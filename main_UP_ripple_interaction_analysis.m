@@ -42,14 +42,11 @@ sessions_to_process = 1:all_sessions;
 
 %% Plotting basic temporal probability of UP DOWN and ripple
 % plot_UP_DOWN_ripple_probability
-plot_bilateral_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,[],sessions_to_process);
-
-plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability(slow_waves_all,ripples_all,spindles_all,...
-    behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,analysis_folder)
+plot_bilateral_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
 
 plot_UP_DOWN_ripple_probability_baseline
+plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability
 
-plot_ipsilateral_contralateral_coupling
 
 % plot_UP_DOWN_spindle_probability
 plot_UP_DOWN_spindle_probability_baseline

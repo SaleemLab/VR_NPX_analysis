@@ -7,10 +7,14 @@ addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 %% LFP preprocess -> Catgt
 
+<<<<<<< Updated upstream
 SUBJECT = 'M25002';
+=======
+SUBJECT = 'M25026';
+>>>>>>> Stashed changes
 all_DIR= dir(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECT,'ephys','20*'));
 
-for ndate = 1:length(all_DIR)
+for ndate = 14
     cd(fullfile(all_DIR(ndate).folder,all_DIR(ndate).name))
 
     session_DIR= dir('M*');
@@ -318,7 +322,7 @@ DIR = dir(base_folder);
 for nfolder = 1:length(DIR)
     cd(DIR(nfolder).folder)
     if DIR(nfolder).isdir==1 & ~contains(DIR(nfolder).name,'.')
-        ephys_folders = dir(DIR(nfolder).name);W
+        ephys_folders = dir(DIR(nfolder).name);
         cd(DIR(nfolder).name)
 
         for n = 1:length(ephys_folders)
