@@ -21,11 +21,644 @@ load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
 PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 
 
+
+%% MUA during UP-DOWN transition
+
+%%%%% L DOWN
+event_averaging_scale = 50;
+
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name = 'Left UP-DOWN transition MUA activity';
+
+nprobe = 1;
+MUA = PSTH_MUA(nprobe).L_V1_DOWN;
+
+nexttile
+[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral V1')
+
+
+
+nexttile
+MUA = PSTH_MUA(nprobe).L_HPC_DOWN;
+[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral HPC')
+
+
+MUA = PSTH_MUA(nprobe).R_V1_DOWN;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral V1')
+
+
+MUA = PSTH_MUA(nprobe).R_HPC_DOWN;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral HPC')
+
+
+nexttile
+% nprobe = 1;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).L_V1_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).R_V1_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).L_V1_DOWN,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).L_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).L_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('V1 MUA during Left DOWN')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+% nprobe = 1;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).L_HPC_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).R_HPC_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).L_HPC_DOWN,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).L_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).L_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('HPC MUA during Left DOWN')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+%%%% R DOWN
+event_averaging_scale = 50;
+
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name = 'Right UP-DOWN transition MUA activity';
+
+nprobe = 2;
+MUA = PSTH_MUA(nprobe).R_V1_DOWN;
+
+nexttile
+[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral V1')
+
+
+nexttile
+MUA = PSTH_MUA(nprobe).R_HPC_DOWN;
+[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral HPC')
+
+MUA = PSTH_MUA(nprobe).L_V1_DOWN;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral V1')
+
+MUA = PSTH_MUA(nprobe).L_HPC_DOWN;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral HPC')
+
+
+nexttile
+% nprobe = 2;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).R_V1_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).L_V1_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).R_V1_DOWN,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).R_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).R_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('V1 MUA during Right DOWN')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+% nprobe = 2;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).R_HPC_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).L_HPC_DOWN,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).R_HPC_DOWN,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).R_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).R_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('HPC MUA during Right DOWN')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+if exist(fullfile(analysis_folder,'V1-HPC bilateral interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
+
+%% Ripple probability during DOWN-UP transition
+
+%%%%% L UP
+event_averaging_scale = 50;
+
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name = 'Left DOWN-UP transition MUA activity';
+
+nprobe = 1;
+MUA = PSTH_MUA(nprobe).L_V1_UP;
+
+nexttile
+[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral V1')
+
+
+MUA = PSTH_MUA(nprobe).R_V1_UP;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral V1')
+
+
+nexttile
+MUA = PSTH_MUA(nprobe).L_HPC_UP;
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral HPC')
+
+
+MUA = PSTH_MUA(nprobe).R_HPC_UP;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral HPC')
+
+
+nexttile
+nprobe = 1;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).L_V1_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).R_V1_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).L_V1_UP,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).L_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).L_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('V1 MUA during Left UP')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+nprobe = 1;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).L_HPC_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).R_HPC_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).L_HPC_UP,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).L_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).L_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('HPC MUA during Left DOWN')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+%%%% R UP
+event_averaging_scale = 50;
+
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name = 'Right DOWN-UP transition MUA activity';
+
+nprobe = 2;
+MUA = PSTH_MUA(nprobe).R_V1_UP;
+
+nexttile
+[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral V1')
+
+
+MUA = PSTH_MUA(nprobe).L_V1_UP;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral V1')
+
+
+nexttile
+MUA = PSTH_MUA(nprobe).R_HPC_UP;
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Ipsilateral HPC')
+
+
+MUA = PSTH_MUA(nprobe).L_HPC_UP;
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(movmean(MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral HPC')
+
+
+nexttile
+nprobe = 2;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).R_V1_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).L_V1_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).R_V1_UP,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).R_V1_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).R_V1_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('V1 MUA during Right UP')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+nprobe = 2;
+all_DOWN_no = length(probability(nprobe).DOWN_all_index);
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+y = mean(PSTH_MUA(nprobe).R_HPC_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+y = mean(PSTH_MUA(nprobe).L_HPC_UP,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+y = mean(PSTH_MUA_baseline(nprobe).R_HPC_UP,'omitnan');
+LCI = prctile(PSTH_MUA_baseline(nprobe).R_HPC_UP_bootstrap,2.5);
+UCI = prctile(PSTH_MUA_baseline(nprobe).R_HPC_UP_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
+% xline(0,'r')
+title('HPC MUA during Right UP')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+if exist(fullfile(analysis_folder,'V1-HPC bilateral interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 %% MUA during UP
 % probability = probability_psth;
@@ -50,7 +683,7 @@ for nprobe = 1:2
     all_UP_no = size(PSTH_MUA(nprobe).L_V1_UP,1);
     % all_DOWN_no = length(probability(nprobe).DOWN_all_index);
 
-    %%%% Left V1 
+    %%%% Left V1
     nexttile
     x = PSTH_MUA(nprobe).timebins;
     y = mean(PSTH_MUA(nprobe).L_V1_UP_bootstrap);
@@ -60,7 +693,7 @@ for nprobe = 1:2
 
     PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
+    xline(0,'r',LineWidth=1)
     y = mean(PSTH_MUA(nprobe).L_V1_UP_shuffled);
     LCI = prctile(PSTH_MUA(nprobe).L_V1_UP_shuffled,2.5);
     UCI = prctile(PSTH_MUA(nprobe).L_V1_UP_shuffled,97.5);
@@ -84,7 +717,7 @@ for nprobe = 1:2
 
     PLOT = plot(x,y,'Color',colour_lines(4,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(4,:),'FaceAlpha','0.3','LineStyle','none');
-
+    xline(0,'r',LineWidth=1)
     y = mean(PSTH_MUA(nprobe).R_V1_UP_shuffled);
     LCI = prctile(PSTH_MUA(nprobe).R_V1_UP_shuffled,2.5);
     UCI = prctile(PSTH_MUA(nprobe).R_V1_UP_shuffled,97.5);
@@ -110,7 +743,7 @@ for nprobe = 1:2
 
     PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
+    xline(0,'r',LineWidth=1)
     y = mean(PSTH_MUA(nprobe).L_HPC_UP_shuffled);
     LCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_shuffled,2.5);
     UCI = prctile(PSTH_MUA(nprobe).L_HPC_UP_shuffled,97.5);
@@ -135,7 +768,7 @@ for nprobe = 1:2
 
     PLOT = plot(x,y,'Color',colour_lines(3,:));hold on;
     ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(3,:),'FaceAlpha','0.3','LineStyle','none');
-
+    xline(0,'r',LineWidth=1)
     y = mean(PSTH_MUA(nprobe).R_HPC_UP_shuffled);
     LCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_shuffled,2.5);
     UCI = prctile(PSTH_MUA(nprobe).R_HPC_UP_shuffled,97.5);

@@ -30,31 +30,15 @@ probability_normalised_baseline = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_baseline.mat'));
 probability_psth_baseline = probability;
 
-
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 probability_normalised_whole = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
 
-<<<<<<< Updated upstream
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
 probability_normalised = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 probability_psth = probability;
-
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
-probability_SO_SO = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
-probability_SO_SO_contralateral = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
-probability_ripples_SO = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'));
-probability_ripples_ripples = probability;
-=======
 
 %% Ripple distribution in time and in phase
 
@@ -78,7 +62,7 @@ event_averaging_scale = 30;
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 fig = figure('Color','w');
 fig.Position = [350 59 1100 930];
-fig.Name = 'ipsi-contra ripple distribution around DOWN-UP transition';
+fig.Name = 'ipsi-contra ripple distribution around UP-DOWN transition';
 
 nprobe = 1;
 L_ripples = probability(nprobe).L_ripples_DOWN;
@@ -174,7 +158,7 @@ UCI = prctile(probability(nprobe).L_ripples_DOWN_bootstrap,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
+xline(0,'r',LineWidth=1)
 y = mean(probability(nprobe).R_ripples_DOWN,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,2.5);
@@ -213,7 +197,7 @@ UCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
+xline(0,'r',LineWidth=1)
 y = mean(probability(nprobe).L_ripples_DOWN,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(probability(nprobe).L_ripples_DOWN_bootstrap,2.5);
@@ -230,7 +214,6 @@ UCI = prctile(probability_baseline(nprobe).R_ripples_UP_bootstrap,97.5);
 PLOT = plot(x,y,'k');hold on;
 ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 legend(ERROR_SHADE(1:3),{'ipsi ripples','contra ripples','Shuffled'},'Box','off')
-% xline(0,'r')
 title('Probability of ripples during Right DOWN')
 xlabel('Time relative to UP-DOWN transition (s)')
 ylabel('Probability')
@@ -250,7 +233,7 @@ event_averaging_scale = 30;
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 fig = figure('Color','w');
 fig.Position = [350 59 1100 930];
-fig.Name = 'ipsi-contra ripple distribution around UP-DOWN transition';
+fig.Name = 'ipsi-contra ripple distribution around DOWN-UP transition';
 
 nprobe = 1;
 L_ripples = probability(nprobe).L_ripples_UP;
@@ -347,7 +330,7 @@ UCI = prctile(probability(nprobe).L_ripples_UP_bootstrap,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
+xline(0,'r',LineWidth=1)
 y = mean(probability(nprobe).R_ripples_UP,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(probability(nprobe).R_ripples_UP_bootstrap,2.5);
@@ -364,7 +347,7 @@ UCI = prctile(probability_baseline(nprobe).L_ripples_UP_bootstrap,97.5);
 PLOT = plot(x,y,'k');hold on;
 ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 legend(ERROR_SHADE(1:3),{'ipsi ripples','contra ripples','Shuffled'},'Box','off')
-% xline(0,'r')
+
 title('Probability of ripples during left UP')
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('Probability')
@@ -385,7 +368,7 @@ UCI = prctile(probability(nprobe).R_ripples_UP_bootstrap,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
+xline(0,'r',LineWidth=1)
 y = mean(probability(nprobe).L_ripples_UP,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(probability(nprobe).L_ripples_UP_bootstrap,2.5);
@@ -401,7 +384,7 @@ UCI = prctile(probability_baseline(nprobe).R_ripples_UP_bootstrap,97.5);
 PLOT = plot(x,y,'k');hold on;
 ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 legend(ERROR_SHADE(1:3),{'ipsi ripples','contra ripples','Shuffled'},'Box','off')
-% xline(0,'r')
+
 title('Probability of ripples during Right UP')
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('Probability')
