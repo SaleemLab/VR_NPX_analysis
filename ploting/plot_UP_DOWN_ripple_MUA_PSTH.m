@@ -25,6 +25,130 @@ PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 
+%% MUA during DOWN
+colour_lines = [44,123,182;215,25,28]/256;
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name = 'Left UP-DOWN transition MUA activity';
+
+nprobe = 1;
+PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+
+nexttile
+[~,sorted_index] = sort(slow_waves_all(1).DOWN_ints(probability(1).DOWN_all_index,2)-slow_waves_all(1).DOWN_ints(probability(1).DOWN_all_index,1));
+imagesc(movmean(PSTH_MUA(1).L_V1_DOWN(sorted_index,:),50,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Left V1 MUA spiking')
+
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(1).DOWN_ints(probability(1).DOWN_all_index,2)-slow_waves_all(1).DOWN_ints(probability(1).DOWN_all_index,1));
+imagesc(movmean(PSTH_MUA(1).L_HPC_DOWN(sorted_index,:),50,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Left HPC MUA spiking')
+
+
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(1).UP_ints(probability(1).UP_all_index,2)-slow_waves_all(1).UP_ints(probability(1).UP_all_index,1));
+imagesc(movmean(PSTH_MUA(1).R_V1_DOWN(sorted_index,:),50,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Right V1 MUA spiking')
+
+
+nexttile
+% [~,sorted_index] = sort(slow_waves_all(1).UP_ints(probability(1).UP_all_index,2)-slow_waves_all(1).UP_ints(probability(1).UP_all_index,1));
+imagesc(movmean(PSTH_MUA(1).R_HPC_DOWN(sorted_index,:),50,1,'omitnan'))
+xticks([1.5 50.5 100.5 150.5 200.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Right HPC MUA spiking')
+
+
+
+nexttile
+x = PSTH_MUA(nprobe).timebins;
+y = mean(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap);
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+x = PSTH_MUA(nprobe).timebins;
+y = mean(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap);
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_V1_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+x = PSTH_MUA(nprobe).timebins;
+y = mean(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap);
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).L_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+x = PSTH_MUA(nprobe).timebins;
+y = mean(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap);
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,2.5);
+UCI = prctile(PSTH_MUA(nprobe).R_HPC_DOWN_bootstrap,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+sgtitle('Left V1 UP-DOWN transition')
+
+
+if exist(fullfile(analysis_folder,'V1-HPC bilateral interaction')) ==0
+    mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
 %% MUA during UP
