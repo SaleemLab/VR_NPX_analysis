@@ -726,7 +726,7 @@ colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
 colour_lines = [215,25,28;44,123,182]/256;
 
 % sessions_to_process = [1 2 3 6 8 9 10 11 12 13];
-sessions_to_process = 1:all_sessions
+sessions_to_process = 1:all_sessions;
 %%%% P(ripples) during UP DOWN
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','peaktimes')
 probability_normalised = probability;
