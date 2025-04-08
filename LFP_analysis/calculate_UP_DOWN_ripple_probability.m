@@ -84,7 +84,9 @@ for nprobe = 1:length(slow_waves_all)
 
         if contains(option,'normalised')
             % Ripple probability during normalised UP duration
+            tic
             [probability(nprobe).L_ripples_DOWN_session(nsession,:),event_index,normalized_duration,temp] = calculate_relative_event_probability(DOWN_ints,ripple_times,num_bins,0);
+            toc
         else
             [probability(nprobe).L_ripples_DOWN_session(nsession,:),temp,event_index] = calculate_event_probability(ripple_times,DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 

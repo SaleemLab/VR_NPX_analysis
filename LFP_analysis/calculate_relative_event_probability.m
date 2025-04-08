@@ -32,6 +32,10 @@ for i = 1:size(event_A, 1)
     % Normalize event_B times relative to the duration of event_A
     relative_times = (event_B - onset_A) / duration_A;
     relative_times = relative_times(relative_times(:,end)>=0 & relative_times(:,1)<=1,:);
+    
+    if isempty(relative_times)
+        continue
+    end
     % Find event_Bs within this event_A
     % in_window_idx = find(relative_times >= 0 & relative_times < 1);
     % relative_times = relative_times(relative_times >= 0 & relative_times < 1);
