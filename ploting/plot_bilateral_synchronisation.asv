@@ -706,12 +706,24 @@ end
 nfig = figure('Color','w','Name','Left Right V1 UP/DOWN ipsilateral-contralateral difference')
 nfig.Position = [940 100 550 500];
 orient(nfig,'landscape')
+nexttile
+scatter(ipsi_plv{1},contra_plv{1})
+nexttile
+scatter(ipsi_plv{2},contra_plv{2})
+nexttile
+scatter(ipsi_amp_corr{1},contra_amp_corr{1})
+nexttile
+scatter(ipsi_amp_corr{2},contra_amp_corr{2})
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = 0:0.01:1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+plot(binCentre,histcounts(ipsi_plv{1},binEdges),'Color',colour_lines(1,:)); hold on;
+plot(binCentre,histcounts(contra_plv{1},binEdges),'Color',colour_lines(2,:)); hold on;
 
 
 colour_lines = [44,123,182;215,25,28]/256;
-nexttile
-histcounts(ipsi_plv{1},0.5:0.001:1); hold on;
-histogram(contra_plv{1},0.5:0.001:1)
 nexttile
 for nprobe = 1:2
     [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
@@ -721,9 +733,9 @@ for nprobe = 1:2
     UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
-    legend(ERROR_SHADE(1:2),{'Left V1 UP-DOWN','Right V1 UP-DOWN'},'Location','northwest','Box','off')
 end
-    % xline(0,'r')
+legend(ERROR_SHADE(1:2),{'Left V1 UP-DOWN','Right V1 UP-DOWN'},'Location','northwest','Box','off')
+% xline(0,'r')
 % title('Prob of left ripples during DOWN')
 xlabel('UP-DOWN transition')
 ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
@@ -732,11 +744,12 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 nexttile
 for nprobe = 1:2
-      [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
+    [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
     x = 1:length(ipsi_amp_corr{nprobe});
     y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
     LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
     UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 end
 legend(ERROR_SHADE(1:2),{'Left V1 UP-DOWN','Right V1 UP-DOWN'},'Location','northwest','Box','off')

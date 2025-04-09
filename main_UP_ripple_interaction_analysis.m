@@ -44,7 +44,14 @@ sessions_to_process = 1:all_sessions;
 % plot_UP_DOWN_ripple_probability
 plot_bilateral_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
 
+plot_ipsi_contra_UP_DOWN_ripple_spindle_coupling(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+
+plot_ipsi_contra_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+plot_ipsi_contra_UP_DOWN_spindle_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+
+
 plot_UP_DOWN_ripple_probability_baseline
+
 plot_ipsilateral_contralateral_UP_DOWN_ripples_spindles_probability
 
 
@@ -100,9 +107,11 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_psth = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 
-plot_ripple_timing_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA);
-plot_ripple_power_UP;
+% plot_ripple_timing_UP(slow_waves_all,ripples_all,event_info,probability_psth,probability_normalised,probability_psth_whole,probability_normalised_whole,UP_DOWN_ripple_PSTH_MUA);
+% plot_ripple_power_UP;
 
+
+plot_ipsi_contra_ripple_power_UP
 
 
 %% Analyse UP - DOWN transition
