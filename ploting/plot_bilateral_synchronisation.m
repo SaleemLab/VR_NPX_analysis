@@ -47,6 +47,11 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'
 probability_SO_SO = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
 probability_SO_SO_contralateral = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability.mat'));
+probability_SO_SO_contralateral_whole = probability;
+
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
 probability_ripples_SO = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'));
@@ -1623,9 +1628,108 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 %     mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
 % end
 % save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+%% unilateral vs bilateral UP
+nprobe = 1;
+event_averaging_scale = 10;
+
+for nprobe=1:2
+    mprobe = abs(nprobe-3);
+    for nsession = 1:max(ripples_all(1).session_count)
+
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
+
+        ipsi_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        % ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
 
 
-%%
+        ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+
+
+
+        (slow_waves_all(1).UP_session_count == nsession ,2);
+
+        % UP DOWN
+        duration_dist = log10(slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,1));
+        UP_duration_L(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
+
+        duration_dist = log10(slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1));
+        UP_duration_R(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
+
+        duration_dist = log10(slow_waves_all(1).DOWN_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).DOWN_ints(slow_waves_all(1).UP_session_count == nsession ,1));
+        DOWN_duration_L(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
+
+        duration_dist = log10(slow_waves_all(2).DOWN_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).DOWN_ints(slow_waves_all(2).UP_session_count == nsession ,1));
+        DOWN_duration_R(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
+
+        UP_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_UP{nsession}(3,:),angleEdges);
+        DOWN_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_DOWN{nsession}(3,:),angleEdges);
+        UP_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_UP{nsession}(6,:),angleEdges);
+        DOWN_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_DOWN{nsession}(6,:),angleEdges);
+
+
+        delta_peaks_L(nsession,:) = histcounts(slow_waves_all(1).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,1),:),-1:0.2:5);
+        delta_peaks_R(nsession,:) = histcounts(slow_waves_all(2).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,2),:),-1:0.2:5);
+
+        delta_speed_L(nsession,:)  = histcounts(slow_waves_all(1).cortex_speed_UD(1,slow_waves_all(1).DOWN_session_count == nsession),-100:2:100);
+        delta_speed_R(nsession,:)  = histcounts(slow_waves_all(2).cortex_speed_UD(2,slow_waves_all(2).DOWN_session_count == nsession),-100:2:100);
+        %
+        % delta_latency_speed_L(nsession,:) = histcounts(mean(diff(0.00025*slow_waves_all(1).shank_id{nsession}(slow_waves_all(1).probe_hemisphere{nsession} == 1))'./diff(slow_waves_all(1).DOWN_peaktimes{nsession}(slow_waves_all(1).probe_hemisphere{nsession}==1,:))),-0.1:0.005:0.1);
+        % delta_latency_speed_R(nsession,:)  = histcounts(-1*mean(diff(0.00025*slow_waves_all(2).shank_id{nsession}(slow_waves_all(2).probe_hemisphere{nsession} == 2))'./diff(slow_waves_all(2).DOWN_peaktimes{nsession}(slow_waves_all(2).probe_hemisphere{nsession}==2,:))),-0.1:0.005:0.1);
+        %
+        % Ripples
+        ripples_duration_L(nsession,:) = histcounts(ripples_all(1).offset(ripples_all(1).session_count == nsession) - ripples_all(1).onset(ripples_all(1).session_count == nsession),0:0.01:0.2);
+        ripples_duration_R(nsession,:) = histcounts(ripples_all(2).offset(ripples_all(2).session_count == nsession) - ripples_all(2).onset(ripples_all(2).session_count == nsession),0:0.01:0.2);
+        ripple_amplitude_L(nsession,:) = histcounts(ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession),5:0.5:25);
+        ripple_amplitude_R(nsession,:) = histcounts(ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession),5:0.5:25);
+        ripple_speed_L(nsession,:)  = histcounts(ripples_all(1).HPC_speed(1,ripples_all(1).session_count == nsession),-500:10:500);
+        ripple_speed_R(nsession,:)  = histcounts(ripples_all(2).HPC_speed(2,ripples_all(2).session_count == nsession),-500:10:500);
+        ripple_SO_phase_L(nsession,:) = histcounts(ripples_all(1).SO_phase_ripple_peaktime{nsession}(3,:),angleEdges);
+        ripple_SO_phase_R(nsession,:) = histcounts(ripples_all(2).SO_phase_ripple_peaktime{nsession}(6,:),angleEdges);
+        ripple_spindle_phase_L(nsession,:) = histcounts(ripples_all(1).spindle_phase_ripple_peaktime{nsession}(3,:),angleEdges);
+        ripple_spindle_phase_R(nsession,:) = histcounts(ripples_all(2).spindle_phase_ripple_peaktime{nsession}(6,:),angleEdges);
+
+        % Spindles
+        spindle_duration_L(nsession,:) = histcounts(spindles_all(1).offset(spindles_all(1).session_count == nsession) - spindles_all(1).onset(spindles_all(1).session_count == nsession),0:0.05:2);
+        spindle_duration_R(nsession,:) = histcounts(spindles_all(2).offset(spindles_all(2).session_count == nsession) - spindles_all(2).onset(spindles_all(2).session_count == nsession),0:0.05:2);
+        spindle_amplitude_L(nsession,:) = histcounts(spindles_all(1).peak_zscore(spindles_all(1).session_count == nsession),1:0.2:15);
+        spindle_amplitude_R(nsession,:) = histcounts(spindles_all(2).peak_zscore(spindles_all(2).session_count == nsession),1:0.2:15);
+        if ~isempty(spindles_all(1).SO_phase_spindle_onset{nsession})
+            spindle_SO_phase_L(nsession,:) = histcounts(spindles_all(1).SO_phase_spindle_onset{nsession}(3,:),angleEdges);
+        end
+
+        if ~isempty(spindles_all(1).SO_phase_spindle_onset{nsession})
+            spindle_SO_phase_R(nsession,:) = histcounts(spindles_all(2).SO_phase_spindle_onset{nsession}(6,:),angleEdges);
+        end
+    end
+
+end
+
+%% Contra-UP probability
+
+
+nprobe = 1;
+event_averaging_scale = 10;
+probability_UP = probability_SO_SO_contralateral_whole(1).UP_UP; 
+
+nexttile
+[~,sorted_index] = sort(event_info(nprobe).UP_duration);
+% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+imagesc(event_averaging_scale*movmean(probability_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
+xticks([1.5 25.5 50.5 75.5 100.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(50.5,'r',LineWidth=1)
+clim([0 1])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Contralateral UP during left UP')
+
+%% Contra-UP
 
 nexttile
 colour_lines = [74,20,134;0,90,50]/256;
