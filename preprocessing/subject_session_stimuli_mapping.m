@@ -211,17 +211,7 @@ for nsubject = 1:length(SUBJECTS)
                 if contains(StimulusName{nstimuli},'Masa2tracks')
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
                         fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),'Masa2tracks');
-                else
-                    if  nameCountMap(StimulusName{nstimuli}) == 1 % if this stimulus only happend once
-                        experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
-                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),StimulusName{nstimuli});
-                    else % if multiple recording on the same day
-                        experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
-                            fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),[StimulusName{nstimuli},'_',num2str(stimulus_counter(nstimuli))]);
-                    end
-                end
-
-                if contains(StimulusName{nstimuli},'Track')
+                elseif contains(StimulusName{nstimuli},'Track')
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).ANALYSIS_DATAPATH =...
                         fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),[StimulusName{nstimuli},'_',num2str(stimulus_counter(nstimuli))]);
                 else
@@ -233,6 +223,7 @@ for nsubject = 1:length(SUBJECTS)
                             fullfile(DATAPATH,SUBJECTS{nsubject},'analysis',num2str(all_dates_this_animal(nsession)),[StimulusName{nstimuli},'_',num2str(stimulus_counter(nstimuli))]);
                     end
                 end
+
 
                 folderName = findGFolder(EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli));
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).EPHYS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,folderName,[folderName,'_imec',num2str(probe_id(nprobe))]);

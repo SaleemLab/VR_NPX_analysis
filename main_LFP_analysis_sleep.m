@@ -1319,7 +1319,7 @@ for nsession =1:length(experiment_info)
                                 [r,lag] = xcorr(zscore(amp1),zscore(amp2),'coeff');
                                 [~,idx] = max(r);
                                 xcorr_lag_DU(nchannel,mchannel,nevent) = lag(idx)/lfp.samplingRate; % where is max lag
-                                xcorr_r_DU(nchannel,nevent) = r(lag==0); % xcorr at zero lag
+                                xcorr_r_DU(nchannel,mchannel,nevent) = r(lag==0); % xcorr at zero lag
 
                                 phi1 = SO_phase_LFP(tidx(1):tidx(end),nchannel); % reference channel
                                 phi2 = SO_phase_LFP(tidx(1):tidx(end),mchannel);
