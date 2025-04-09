@@ -218,6 +218,10 @@ end
 
 
 
+
+slow_waves_all(1).subject(slow_waves_all(1).UP_session_count(event_info(1).UP_index),:)
+
+
 % Define predictor variables
 % timeToTransition_ripples = time_from_last_ripples{1}{1}(normalised_ripple_duration{1}{1}>0);
 % X = [ripple_L_HPC_MUA{1}(normalised_ripple_duration{1}>0); ripple_power{1}(normalised_ripple_duration{1}>0)]';

@@ -218,6 +218,10 @@ end
 
 
 
+
+subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(slow_waves_all(nprobe).UP_session_count(event_info(nprobe).UP_index),end-1:end)));
+[~, ~, mappedIDs] = unique(subject_id);
+
 % Define predictor variables
 % timeToTransition_ripples = time_from_last_ripples{1}{1}(normalised_ripple_duration{1}{1}>0);
 % X = [ripple_L_HPC_MUA{1}(normalised_ripple_duration{1}>0); ripple_power{1}(normalised_ripple_duration{1}>0)]';
