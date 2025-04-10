@@ -115,9 +115,11 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters=clusters_ks4;
     end
-    ripples = rmfield(ripples, 'detectorinfo');
-    spindles = rmfield(spindles, 'detectorinfo');
-    slow_waves = rmfield(slow_waves, 'detectorinfo');
+    if isfield(slow_waves,'detectorinfo')
+        ripples = rmfield(ripples, 'detectorinfo');
+        spindles = rmfield(spindles, 'detectorinfo');
+        slow_waves = rmfield(slow_waves, 'detectorinfo');
+    end
     if isfield(slow_waves,'DOWN_peaks_latency')
         slow_waves = rmfield(slow_waves, 'DOWN_peaks_latency');
         slow_waves = rmfield(slow_waves, 'DOWN_traveling');

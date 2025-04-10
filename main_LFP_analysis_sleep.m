@@ -574,7 +574,7 @@ for nsession =1:length(experiment_info)
                         [~,temp]=min(abs(midpoint-tvec(tidx(peak_id))));
                         if ~isempty(temp)
                             DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
-                            DOWN_peaks_zscore(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
+                            DOWN_peaks_zscore(nShank,nevent) = SO_amplitude_LFP(tidx(peak_id(temp)),nShank);
                         else
                             DOWN_peaks_shank(nShank,nevent) = nan;
                             DOWN_peaks_zscore(nShank,nevent) = nan;
@@ -639,11 +639,11 @@ for nsession =1:length(experiment_info)
                     %         end
                     %     end
                     % end
-                    % % nexttile
-                    % % hold on;xline(tvec(idx));
-                    % % plot(tvec(tidx),zscored_LFP(tidx,:));
-                    % % % hold on;xline(median(tvec(tidx(1):tidx(end))))
-                    % % xline(DOWN_peaks_shank(:,nevent)')
+                    % nexttile
+                    % hold on;xline(tvec(idx));
+                    % plot(tvec(tidx),zscored_LFP(tidx,:));
+                    % % hold on;xline(median(tvec(tidx(1):tidx(end))))
+                    % xline(DOWN_peaks_shank(:,nevent)','r')
                 end
 
 
@@ -761,7 +761,8 @@ for nsession =1:length(experiment_info)
                 end
 
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
-
+                zscored_LFP = [];
+                zscored_LFP = ripple_amplitude_LFP;
                 for nevent = 1:length(ripples(probe_no).onset)
 
                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
