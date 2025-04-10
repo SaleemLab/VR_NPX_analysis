@@ -166,7 +166,7 @@ for nprobe = 1:2
                 time_from_last_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-max(ripples_all(mprobe).peaktimes(ripples_index));
                 time_from_mean_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-mean(ripples_all(mprobe).peaktimes(ripples_index));
 
-
+ 
                 late_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) > 0.5);
                 early_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) <= 0.5);
 
