@@ -660,12 +660,35 @@ for nprobe = 1:2
         ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
         contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
 
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
 
-        ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
 
-        ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+        
+        if length(ipsi_shank)==1
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} (squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} (squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
+        else
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        end
+
+        if length(contra_shank)==1
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} (squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))'];
+            contra_plv{nprobe} = [contra_plv{nprobe} (squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))'];
+        else
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+            contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        end
 
         temp1 = [];
         temp2 = [];
@@ -674,11 +697,22 @@ for nprobe = 1:2
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
             event_id = datasample(s,ia,size(ia,1));
+            if length(ipsi_shank)==1
+                temp1(iBoot,:)= (squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp3(iBoot,:)= (squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+            else
+                temp1(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp3(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+            end
 
-            temp1(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
-            temp2(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
-            temp3(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
-            temp4(iBoot,:)=  mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            if length(contra_shank)==1
+                temp2(iBoot,:)= (squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp4(iBoot,:)=  (squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            else
+                temp2(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp4(iBoot,:)=  mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            end
+
         end
         % for iBoot = 1:500
         %     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -1045,7 +1079,7 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
-%% Ipsilateral vs contralateral correlation (UP DOWN)
+%% Ipsilateral vs contralateral correlation (DOWN UP)
 probability = probability_psth_whole;
 
 for nprobe = 1:2
@@ -1083,12 +1117,35 @@ for nprobe = 1:2
         ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
         contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
 
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
 
-        ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
 
-        ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+        
+        if length(ipsi_shank)==1
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} (squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} (squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
+        else
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        end
+
+        if length(contra_shank)==1
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} (squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))'];
+            contra_plv{nprobe} = [contra_plv{nprobe} (squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))'];
+        else
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+            contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        end
 
         temp1 = [];
         temp2 = [];
@@ -1097,11 +1154,22 @@ for nprobe = 1:2
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
             event_id = datasample(s,ia,size(ia,1));
+            if length(ipsi_shank)==1
+                temp1(iBoot,:)= (squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp3(iBoot,:)= (squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+            else
+                temp1(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp3(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+            end
 
-            temp1(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
-            temp2(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
-            temp3(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
-            temp4(iBoot,:)=  mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            if length(contra_shank)==1
+                temp2(iBoot,:)= (squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp4(iBoot,:)=  (squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            else
+                temp2(iBoot,:)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp4(iBoot,:)=  mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            end
+
         end
         % for iBoot = 1:500
         %     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -1125,7 +1193,6 @@ for nprobe = 1:2
         contra_plv_bootstrap{nprobe} = [contra_plv_bootstrap{nprobe} temp4];
     end
 end
-
 [p,h,stats] = signrank(ipsi_plv{1},contra_plv{1},'tail','right');
 [p,h,stats] = signrank(ipsi_plv{2},contra_plv{2},'tail','right');
 [p,h,stats] = signrank(ipsi_amp_corr{1},contra_amp_corr{1},'tail','right');
@@ -1929,6 +1996,12 @@ event_averaging_scale = 10;
 
 for nprobe=1:2
     mprobe = abs(nprobe-3);
+
+    ipsi_lag_DU{nprobe} = [];
+    contra_lag_DU{nprobe} = [];
+    ipsi_lag_UD{nprobe} = [];
+    contra_lag_UD{nprobe} = [];
+
     for nsession = 1:max(ripples_all(1).session_count)
 
         [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
@@ -1937,55 +2010,27 @@ for nprobe=1:2
         % ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
         contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
 
+        ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
 
-        ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
 
-        % UP DOWN
-        duration_dist = log10(slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).UP_ints(slow_waves_all(1).UP_session_count == nsession ,1));
-        UP_duration_L(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
+        ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
 
-        duration_dist = log10(slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).UP_ints(slow_waves_all(2).UP_session_count == nsession ,1));
-        UP_duration_R(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
-
-        duration_dist = log10(slow_waves_all(1).DOWN_ints(slow_waves_all(1).UP_session_count == nsession ,2) - slow_waves_all(1).DOWN_ints(slow_waves_all(1).UP_session_count == nsession ,1));
-        DOWN_duration_L(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
-
-        duration_dist = log10(slow_waves_all(2).DOWN_ints(slow_waves_all(2).UP_session_count == nsession ,2) - slow_waves_all(2).DOWN_ints(slow_waves_all(2).UP_session_count == nsession ,1));
-        DOWN_duration_R(nsession,:) = histcounts(duration_dist,binEdges)/length(duration_dist);
-
-        UP_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_UP{nsession}(3,:),angleEdges);
-        DOWN_phase_L(nsession,:) = histcounts(slow_waves_all(1).mean_phase_DOWN{nsession}(3,:),angleEdges);
-        UP_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_UP{nsession}(6,:),angleEdges);
-        DOWN_phase_R(nsession,:) = histcounts(slow_waves_all(2).mean_phase_DOWN{nsession}(6,:),angleEdges);
-
-
-        delta_peaks_L(nsession,:) = histcounts(slow_waves_all(1).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,1),:),-1:0.2:5);
-        delta_peaks_R(nsession,:) = histcounts(slow_waves_all(2).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,2),:),-1:0.2:5);
-
-        delta_speed_L(nsession,:)  = histcounts(slow_waves_all(1).cortex_speed_UD(1,slow_waves_all(1).DOWN_session_count == nsession),-100:2:100);
-        delta_speed_R(nsession,:)  = histcounts(slow_waves_all(2).cortex_speed_UD(2,slow_waves_all(2).DOWN_session_count == nsession),-100:2:100);
         %
         % delta_latency_speed_L(nsession,:) = histcounts(mean(diff(0.00025*slow_waves_all(1).shank_id{nsession}(slow_waves_all(1).probe_hemisphere{nsession} == 1))'./diff(slow_waves_all(1).DOWN_peaktimes{nsession}(slow_waves_all(1).probe_hemisphere{nsession}==1,:))),-0.1:0.005:0.1);
         % delta_latency_speed_R(nsession,:)  = histcounts(-1*mean(diff(0.00025*slow_waves_all(2).shank_id{nsession}(slow_waves_all(2).probe_hemisphere{nsession} == 2))'./diff(slow_waves_all(2).DOWN_peaktimes{nsession}(slow_waves_all(2).probe_hemisphere{nsession}==2,:))),-0.1:0.005:0.1);
         %
         % Ripples
-        ripples_duration_L(nsession,:) = histcounts(ripples_all(1).offset(ripples_all(1).session_count == nsession) - ripples_all(1).onset(ripples_all(1).session_count == nsession),0:0.01:0.2);
-        ripples_duration_R(nsession,:) = histcounts(ripples_all(2).offset(ripples_all(2).session_count == nsession) - ripples_all(2).onset(ripples_all(2).session_count == nsession),0:0.01:0.2);
-        ripple_amplitude_L(nsession,:) = histcounts(ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession),5:0.5:25);
-        ripple_amplitude_R(nsession,:) = histcounts(ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession),5:0.5:25);
-        ripple_speed_L(nsession,:)  = histcounts(ripples_all(1).HPC_speed(1,ripples_all(1).session_count == nsession),-500:10:500);
-        ripple_speed_R(nsession,:)  = histcounts(ripples_all(2).HPC_speed(2,ripples_all(2).session_count == nsession),-500:10:500);
-        ripple_SO_phase_L(nsession,:) = histcounts(ripples_all(1).SO_phase_ripple_peaktime{nsession}(3,:),angleEdges);
-        ripple_SO_phase_R(nsession,:) = histcounts(ripples_all(2).SO_phase_ripple_peaktime{nsession}(6,:),angleEdges);
-        ripple_spindle_phase_L(nsession,:) = histcounts(ripples_all(1).spindle_phase_ripple_peaktime{nsession}(3,:),angleEdges);
-        ripple_spindle_phase_R(nsession,:) = histcounts(ripples_all(2).spindle_phase_ripple_peaktime{nsession}(6,:),angleEdges);
+        % DOWN
+        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
 
-        % Spindles
-        spindle_duration_L(nsession,:) = histcounts(spindles_all(1).offset(spindles_all(1).session_count == nsession) - spindles_all(1).onset(spindles_all(1).session_count == nsession),0:0.05:2);
-        spindle_duration_R(nsession,:) = histcounts(spindles_all(2).offset(spindles_all(2).session_count == nsession) - spindles_all(2).onset(spindles_all(2).session_count == nsession),0:0.05:2);
-        spindle_amplitude_L(nsession,:) = histcounts(spindles_all(1).peak_zscore(spindles_all(1).session_count == nsession),1:0.2:15);
-        spindle_amplitude_R(nsession,:) = histcounts(spindles_all(2).peak_zscore(spindles_all(2).session_count == nsession),1:0.2:15);
+        ipsi_lag_ripples{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        ipsi_lag_ripples{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+
+        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).session_count == sessions_to_process(nsession) & spindles_all(nprobe).SWS_index == 1));
+
         if ~isempty(spindles_all(1).SO_phase_spindle_onset{nsession})
             spindle_SO_phase_L(nsession,:) = histcounts(spindles_all(1).SO_phase_spindle_onset{nsession}(3,:),angleEdges);
         end
