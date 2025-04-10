@@ -537,7 +537,7 @@ for nprobe = 1:2
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
         %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
-        ripple_threshold1 = prctile(ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
 
         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
@@ -579,6 +579,7 @@ for nprobe = 1:2
 %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+        ylabel('Survival probability of UP');
 
         yyaxis right
         % Step 2: Calculate slope using finite differences
@@ -591,46 +592,12 @@ for nprobe = 1:2
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
-        ylabel('Survival Probability of UP');
-        xlim([0 0.5])
+        ylabel('Slope of survival probability of UP');
+        xlim([0 1])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
 sgtitle('Ripple peak power');
-
-% 
-% for nprobe = 1:2
-%     for mprobe = 1:2
-%         subplot(2,2,count)
-%         count = count+1;
-%         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-%         % timeToTransition_ripples = timeToTransition{nprobe};
-%         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
-%         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
-% 
-%         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
-%         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-%         PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-%         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
-% 
-%         hold on;
-%         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
-%         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-%         PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
-%         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
-%         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
-% 
-%         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
-%         xlabel('Time (s)');
-%         ylabel('Survival Probability of UP');
-%         xlim([0 0.5])
-%         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-%     end
-% end
-% sgtitle('Ripple peak power');
-% 
 
 
 %%%%%%%%%%%%% Last Ripple power (1)
@@ -640,31 +607,75 @@ fig(1).Name = 'Last ripple peak power and last ripple to UP-DOWN transition (1 r
 count = 1;
 
 for nprobe = 1:2
-    for mprobe = 1:2
+    %     for mprobe = 1:2
+    for nhemi = 1:2
+        if nhemi == 1
+            mprobe = nprobe;
+        else
+            mprobe = abs(nprobe-3);
+        end
         subplot(2,2,count)
         count = count+1;
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
+        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),75);
 
         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
-        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-        hold on;
-        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
+        hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+        ylabel('Survival probability of UP');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
-        ylabel('Survival Probability of UP');
-        xlim([0 0.5])
+        ylabel('Slope of survival probability of UP');
+        xlim([0 1])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
@@ -678,31 +689,75 @@ fig(1).Name = 'Last ripple power and last ripple to UP-DOWN transition (2 and mo
 count = 1;
 
 for nprobe = 1:2
-    for mprobe = 1:2
+    %     for mprobe = 1:2
+    for nhemi = 1:2
+        if nhemi == 1
+            mprobe = nprobe;
+        else
+            mprobe = abs(nprobe-3);
+        end
         subplot(2,2,count)
         count = count+1;
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
+        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
 
         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
-        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-        hold on;
-        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
+        hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+        ylabel('Survival probability of UP');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
-        ylabel('Survival Probability of UP');
-        xlim([0 0.5])
+        ylabel('Slope of survival probability of UP');
+        xlim([0 1])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
@@ -717,31 +772,75 @@ fig(1).Name = 'First ripple power and last ripple to UP-DOWN transition (2 and m
 count = 1;
 
 for nprobe = 1:2
-    for mprobe = 1:2
+    %     for mprobe = 1:2
+    for nhemi = 1:2
+        if nhemi == 1
+            mprobe = nprobe;
+        else
+            mprobe = abs(nprobe-3);
+        end
         subplot(2,2,count)
         count = count+1;
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
+        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
+        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
         ripple_threshold2 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
 
         [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
-        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-        hold on;
-        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
         y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
-        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
+        hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+        ylabel('Survival probability of UP');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
-        ylabel('Survival Probability of UP');
-        xlim([0 0.5])
+        ylabel('Slope of survival probability of UP');
+        xlim([0 1])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
