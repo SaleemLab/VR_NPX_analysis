@@ -237,17 +237,17 @@ for nprobe = 1:2
                     [~,tidx]= min(abs(temp - ripples_all(mprobe).offset(ripples_index(end))));
                 end
 
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(tidx/2)));
+                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(tidx/2+1):tidx));
 
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(tidx/2)));
+                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(tidx/2+1):tidx));
 
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(tidx/2)));
+                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx));
 
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(tidx/2)));
+                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx));
 
 
             end
@@ -255,17 +255,17 @@ for nprobe = 1:2
             % Cumulative MUA activity (0-99% normalised so that cumulative
             % activity is addictive) during 1st half and 2nd half of UP
 
-            normalised_L_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_L_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+            normalised_L_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(end/2)));
+            normalised_L_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(end/2+1):end));
 
-            normalised_R_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_R_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+            normalised_R_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(end/2)));
+            normalised_R_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(end/2+1):end));
 
-            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(end/2)));
+            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(end/2+1):end));
 
-            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(end/2)));
+            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(end/2+1):end));
         end
     end
 
@@ -315,7 +315,7 @@ subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(slow_waves_all(np
 % colour_lines = [116,196,118;0,90,50;158,154,200;74,20,134]/256; % Green Purple 4 colours
 colour_lines = [116,196,118;158,154,200;0,90,50;74,20,134]/256; % Green Purple 4 colours
 
-colour_lines = [74,20,134;0,90,50;158,154,200;116,196,118]/256; % Green Purple 4 colours
+colour_lines = [158,154,200;116,196,118;74,20,134;0,90,50]/256; % Green Purple 4 colours
 hemisphere = {'L','R'};
 target_hemisphere = {'ipsi','contra'};
 % Plot survival function (Kaplan-Meier estimate)
@@ -438,8 +438,6 @@ sgtitle('Normalised ripple duration');
 
 
 
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
 
 %%%%%%%%%%%%%% Inter-ripple interval
 
@@ -447,7 +445,6 @@ fig(1)=figure;
 fig(1).Position = [800 200 960 780];
 fig(1).Name = 'Inter-ripple interval and last ripple to UP-DOWN transition';
 count = 1;
-
 
 for nprobe = 1:2
     %     for mprobe = 1:2
@@ -462,60 +459,12 @@ for nprobe = 1:2
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
         %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
-        ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
-        ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-        event_id = find(inter_ripple_interval{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>1);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
+        ripple_threshold1 = 0.2;
+        ripple_threshold2 = 0.1;
         yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(inter_ripple_interval{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(inter_ripple_interval{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
         binCenters = binEdges(1:end-1) + diff(binEdges)/2;
         % Interpolate ECDF at desired x values
         y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
@@ -524,31 +473,46 @@ for nprobe = 1:2
         x = binCenters';  % 'previous' for step behavior like ECDF
 
 %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+        yyaxis left
+        hold on;
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(inter_ripple_interval{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','none');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% interval','bottom 25% interval'},'box','off')
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','none');hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
+        legend(ERROR_SHADE(1:2),{'top 25% inter-ripple interval','bottom 25% inter-ripple interval'},'box','off')
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
+        ylabel('Survival Probability of UP');
         xlim([0 0.5])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('Inter-ripple interval');
@@ -560,7 +524,6 @@ fig(1)=figure;
 fig(1).Position = [800 200 960 780];
 fig(1).Name = 'ripple peak power and last ripple to UP-DOWN transition';
 count = 1;
-
 for nprobe = 1:2
     %     for mprobe = 1:2
     for nhemi = 1:2
@@ -576,58 +539,36 @@ for nprobe = 1:2
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
-        event_id = find(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
 
         yyaxis left
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
         x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
+
 %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
-        
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
 
-        event_id = find(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
         yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
         hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
         binCenters = binEdges(1:end-1) + diff(binEdges)/2;
         % Interpolate ECDF at desired x values
         y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
@@ -641,26 +582,19 @@ for nprobe = 1:2
         ylabel('Survival probability of UP');
 
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
         xlabel('Time (s)');
         ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
+        xlim([0 1])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('Ripple peak power');
@@ -687,58 +621,12 @@ for nprobe = 1:2
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}==1),75);
-        event_id = find(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
 
         yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
         binCenters = binEdges(1:end-1) + diff(binEdges)/2;
         % Interpolate ECDF at desired x values
         y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
@@ -746,19 +634,42 @@ for nprobe = 1:2
         UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
         x = binCenters';  % 'previous' for step behavior like ECDF
 
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+        yyaxis right
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ;UCI = diff(UCI) ;LCI = diff(LCI);
+        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}==1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        yyaxis left
+        hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        x = binCenters';  % 'previous' for step behavior like ECDF
+
+        %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
         ylabel('Survival probability of UP');
 
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ;UCI = diff(UCI) ;LCI = diff(LCI);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
@@ -770,8 +681,6 @@ for nprobe = 1:2
         ax = gca;
         ax.YAxis(1).Color = 'k';
         ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('Ripple peak power (1 ripple)');
@@ -798,58 +707,35 @@ for nprobe = 1:2
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
         ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-        event_id = find(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>1);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
 
         yyaxis left
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
         x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
+
 %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
-        
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
-
-        event_id = find(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(last_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
         yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
         hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
         binCenters = binEdges(1:end-1) + diff(binEdges)/2;
         % Interpolate ECDF at desired x values
         y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
@@ -863,13 +749,12 @@ for nprobe = 1:2
         ylabel('Survival probability of UP');
 
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
@@ -881,12 +766,16 @@ for nprobe = 1:2
         ax = gca;
         ax.YAxis(1).Color = 'k';
         ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('Last ripple peak power (2 and more ripples)');
 
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
 
@@ -895,8 +784,6 @@ fig(1)=figure;
 fig(1).Position = [800 200 960 780];
 fig(1).Name = 'First ripple power and last ripple to UP-DOWN transition (2 and more ripples)';
 count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
 
 for nprobe = 1:2
     %     for mprobe = 1:2
@@ -913,58 +800,36 @@ for nprobe = 1:2
         %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
         ripple_threshold1 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
         ripple_threshold2 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-        event_id = find(first_ripple_power{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>1);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
 
         yyaxis left
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
+        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
+        % Interpolate ECDF at desired x values
+        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
         x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
+
 %         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
-        
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
         ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
 
 
-        event_id = find(first_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(first_ripple_power{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1),'Function', 'survivor','Alpha',0.05,'Bounds','on');
         yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
         hold on;
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        binEdges = 0:0.01:2;
         binCenters = binEdges(1:end-1) + diff(binEdges)/2;
         % Interpolate ECDF at desired x values
         y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
@@ -978,13 +843,12 @@ for nprobe = 1:2
         ylabel('Survival probability of UP');
 
         yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
+        % Step 2: Calculate slope using finite differences
+        y = diff(y) ./ diff(x);UCI = diff(UCI) ./ diff(x);LCI = diff(LCI) ./ diff(x);
         y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
         PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
         ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
+
         legend(ERROR_SHADE(1:2),{'top 25% ripple power','bottom 25% ripple power'},'box','off')
 
         title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
@@ -992,12 +856,6 @@ for nprobe = 1:2
         ylabel('Slope of survival probability of UP');
         xlim([0 0.5])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('First ripple peak power');
@@ -1006,921 +864,81 @@ sgtitle('First ripple peak power');
 
 
 
-%%%%%%%%%%%%% First Ripple power (2 or more ripples)
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'First vs Last ripple power and last ripple to UP-DOWN transition (2 and more ripples)';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
-        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
-        % ripple_threshold1 = prctile(first_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
-        % ripple_threshold2 = prctile(last_ripple_power{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-        event_id = find(last_ripple_power{nprobe}{mprobe}>first_ripple_power{nprobe}{mprobe}&ripple_count{nprobe}{mprobe}>1);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(last_ripple_power{nprobe}{mprobe}<first_ripple_power{nprobe}{mprobe}&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'Last > First','Last < First'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('First vs Last ripple peak power');
-
-
-if exist('D:\corticohippocampal_replay')>0
-    analysis_folder = 'D:\corticohippocampal_replay';
-elseif exist('P:\corticohippocampal_replay')>0
-    analysis_folder = 'P:\corticohippocampal_replay';
-end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
-
-
-
 %%%%%%%%%%%%%
 %%%%%%%%%%%%%
-%%%%%%%%%%%%% 
-%%%%%%%%%%%%% Cumulative activity
-
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'L HPC cumulative MUA activity 1st half and last ripple to UP-DOWN transition';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>0,1),25);
-        ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>0,1),75);
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,1)'>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,1)'<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% cumulative MUA','bottom 25% cumulative MUA'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('L HPC 1st half cumulative activity last ripple');
-
-
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'L HPC cumulative MUA activity 2nd half and last ripple to UP-DOWN transition';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>0,2),25);
-        ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>0,2),75);
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,2)'>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,2)'<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% cumulative MUA','bottom 25% cumulative MUA'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('L HPC 2nd half cumulative activity last ripple');
-
-
-%%%%%%%
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'L HPC cumulative MUA activity 2nd half and last ripple to UP-DOWN transition (more than 1 ripples)';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>1,2),25);
-        ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity_half{nprobe}(ripple_count{nprobe}{mprobe}>1,2),75);
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,2)'>=ripple_threshold2&ripple_count{nprobe}{mprobe}>1);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(normalised_L_HPC_MUA_activity_half{nprobe}(:,2)'<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25% MUA peak'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('L HPC 2nd half cumulative activity last ripple (more than 1 ripples)');
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'L HPC cumulative MUA activity 2nd half and last ripple to UP-DOWN transition';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        ripple_threshold1 = prctile(normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0,2),25);
-        ripple_threshold2 = prctile(normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0,2),75);
-
-        event_id = find(normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(:,2)'>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(:,2)'<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25% MUA peak'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('L HPC 2nd half to last ripple MUA cumulative');
-
-
-
-fig(1)=figure;
-fig(1).Position = [800 200 960 780];
-fig(1).Name = 'L HPC cumulative MUA activity 1st half and last ripple to UP-DOWN transition';
-count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-
-for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
-        subplot(2,2,count)
-        count = count+1;
-        timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        ripple_threshold1 = prctile(normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0,1),25);
-        ripple_threshold2 = prctile(normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0,1),75);
-
-        event_id = find(normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(:,1)'>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(:,1)'<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-        hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
-
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25% MUA peak'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
-        xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
-        xlim([0 0.5])
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
-    end
-end
-sgtitle('L HPC 1st half to last ripple MUA cumulative');
-
-
 %%%%%%%%%%%%% L HPC MUA peak during last ripple
 fig(1)=figure;
 fig(1).Position = [800 200 960 780];
 fig(1).Name = 'L HPC MUA peak during last ripple and last ripple to UP-DOWN transition';
 count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
 
 for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
+    for mprobe = 1:2
         subplot(2,2,count)
         count = count+1;
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
-        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
-        ripple_threshold1 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
-        ripple_threshold2 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
-        event_id = find(ripple_R_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        ripple_threshold1 = prctile(ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_L_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(ripple_R_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
         hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_L_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
 
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25% MUA peak'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
         xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
+        ylabel('Survival Probability of UP');
         xlim([0 0.5])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('L HPC last ripple MUA Peak');
 
-
-%%%%%%%%%%%%% L HPC MUA peak during last ripple
+%%%%%%%%%%%%% R HPC MUA peak during last ripple
 fig(1)=figure;
 fig(1).Position = [800 200 960 780];
 fig(1).Name = 'R HPC MUA peak during last ripple and last ripple to UP-DOWN transition';
 count = 1;
-binEdges = 0:0.01:0.5;
-binCenters = binEdges(1:end-1) + diff(binEdges)/2;
 
 for nprobe = 1:2
-    %     for mprobe = 1:2
-    for nhemi = 1:2
-        if nhemi == 1
-            mprobe = nprobe;
-        else
-            mprobe = abs(nprobe-3);
-        end
+    for mprobe = 1:2
         subplot(2,2,count)
         count = count+1;
         timeToTransition_ripples = time_from_last_ripples{nprobe}{mprobe};
-        %         ripple_threshold1 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),25);
-        %         ripple_threshold2 = prctile(inter_ripple_interval{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>2),75);
-        ripple_threshold1 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),25);
-        ripple_threshold2 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>1),75);
-        event_id = find(ripple_R_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2&ripple_count{nprobe}{mprobe}>0);
-       
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        ripple_threshold1 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),25);
+        ripple_threshold2 = prctile(ripple_R_HPC_MUA_peak{nprobe}{mprobe}(ripple_count{nprobe}{mprobe}>0),75);
 
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_HPC_MUA_peak{nprobe}{mprobe}>=ripple_threshold2),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
 
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-        
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi,:));hold on;
-        ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-        event_id = find(ripple_R_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>1);
-
-        y_boot=[];
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-
-            [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
-            temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
-            [temp_x,idx]= unique(temp_x);
-            temp_y = temp_y(idx);
-            y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        end
-
-        yyaxis left
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(y_boot)';
-        LCI = prctile(y_boot,2.5)';
-        UCI = prctile(y_boot,97.5)';
         hold on;
-        binCenters = binEdges(1:end-1) + diff(binEdges)/2;
-        % Interpolate ECDF at desired x values
-        y = interp1(x, y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        LCI = interp1(x, LCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        UCI = interp1(x, UCI, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
-        x = binCenters';  % 'previous' for step behavior like ECDF
+        [y,x,LCI,UCI] = ecdf(timeToTransition_ripples(ripple_R_HPC_MUA_peak{nprobe}{mprobe}<=ripple_threshold1&ripple_count{nprobe}{mprobe}>0),'Function', 'survivor','Alpha',0.05,'Bounds','on');
+        y(isnan(LCI)) = [];x(isnan(LCI)) = [];UCI(isnan(LCI)) = [];LCI(isnan(LCI)) = [];
+        y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+        PLOT = plot(x,y,'Color',colour_lines(nprobe+2,:));hold on;
+        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nprobe+2,:),'FaceAlpha','0.3','LineStyle','none');
+        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25%  MUA peak'},'box','off')
 
-%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        ylabel('Survival probability of UP');
-
-        yyaxis right
-        x = binCenters';  % 'previous' for step behavior like ECDF
-        y = mean(diff(y_boot')')';
-        LCI = prctile(diff(y_boot')',2.5)';
-        UCI = prctile(diff(y_boot')',97.5)';
-        y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
-        PLOT = plot(x,y,'Color',colour_lines(nhemi+2,:),'LineStyle','-');hold on;
-        ERROR_SHADE(2) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(nhemi+2,:),'FaceAlpha','0.3','LineStyle','none');
-        legend(ERROR_SHADE(1:2),{'top 25% MUA peak','bottom 25% MUA peak'},'box','off')
-
-        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},target_hemisphere{nhemi}))
+        title(sprintf('%s V1 UP and %s ripples',hemisphere{nprobe},hemisphere{mprobe}))
         xlabel('Time (s)');
-        ylabel('Slope of survival probability of UP');
+        ylabel('Survival Probability of UP');
         xlim([0 0.5])
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        ax = gca;
-        ax.YAxis(1).Color = 'k';
-        ax.YAxis(2).Color = 'k';
-
-
     end
 end
 sgtitle('R HPC last ripple MUA Peak');
-
 
 %%%%%%%%%%%%% L V1 MUA peak during last ripple
 fig(1)=figure;

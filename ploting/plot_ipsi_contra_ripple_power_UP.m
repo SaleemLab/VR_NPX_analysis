@@ -55,8 +55,8 @@ for nprobe = 1:2
         % ripple power normalised based on
         peak_normalised_all=[];
         for nsession = 1:max(ripples_all(mprobe).session_count)
-            peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
-%             peak_zscore = max(ripples_all(mprobe).SWR_zscore{nsession});
+            % peak_zscore = ripples_all(mprobe).peak_zscore(ripples_all(mprobe).session_count == nsession);
+            peak_zscore = max(ripples_all(mprobe).SWR_zscore{nsession});
             [temp,sortIdx] = sort(peak_zscore);
             percentileRanks = zeros(1,length(peak_zscore));
             percentileRanks(sortIdx) = ((1:length(temp))-0.5)/length(temp);
