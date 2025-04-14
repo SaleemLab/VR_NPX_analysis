@@ -60,6 +60,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probab
 probability_ripples_ripples = probability;
 
 
+colour_lines = [];
 colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red for R
 colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue for L
 colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
