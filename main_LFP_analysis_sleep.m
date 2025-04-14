@@ -1147,16 +1147,22 @@ for nsession =1:length(experiment_info)
                     %%%% DOWN-UP transition
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(UP_ints,1)
-                        % if diff(UP_ints(nevent,:))>0.1
-                        if nevent ==1  | nevent ==size(UP_ints,1)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1)-0.05 UP_ints(nevent,1)+0.05]);
-                        elseif (UP_ints(nevent-1,2)+0.05 < UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 > UP_ints(nevent,2))
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1)-0.05 UP_ints(nevent,1)+0.05]);
-                        elseif  UP_ints(nevent-1,2)+0.05 > UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 > UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent-1,2) UP_ints(nevent,2)+0.05]);
-                        elseif  UP_ints(nevent-1,2)+0.05 < UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 < UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1)-0.05 UP_ints(nevent,2)]);
+                        % Default window: 50 ms before UP onset to 100 ms after
+                        t_start = UP_ints(nevent,1) - 0.05;
+                        t_end   = UP_ints(nevent,1) + 0.1;
+
+                        % Adjust start if overlapping with previous UP offset
+                        if nevent > 1 && t_start < UP_ints(nevent-1,2)
+                            t_start = UP_ints(nevent-1,2);% Clip to previous UP offset
                         end
+
+                        % Adjust end if overlapping with next UP onset
+                        if nevent < size(UP_ints,1) && t_end > UP_ints(nevent+1,1)
+                            t_end = UP_ints(nevent,2); % Clip to current UP offset
+                        end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
 
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
@@ -1176,15 +1182,22 @@ for nsession =1:length(experiment_info)
                     event_index = [];
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(DOWN_ints,1)
-                        if nevent ==1  | nevent ==size(DOWN_ints,1)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,1)+0.05]);
-                        elseif (DOWN_ints(nevent-1,2)+0.05 < DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 > DOWN_ints(nevent,2))
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,1)+0.05]);
-                        elseif  DOWN_ints(nevent-1,2)+0.05 > DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 > DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent-1,2) DOWN_ints(nevent,2)+0.05]);
-                        elseif  DOWN_ints(nevent-1,2)+0.05 < DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 < DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,2)]);
+                        % Default window: 50 ms before DOWN onset to 100 ms after
+                        t_start = DOWN_ints(nevent,1) - 0.05;
+                        t_end   = DOWN_ints(nevent,1) + 0.1;
+
+                        % Adjust start if overlapping with previous DOWN offset
+                        if nevent > 1 && t_start < DOWN_ints(nevent-1,2)
+                            t_start = DOWN_ints(nevent-1,2);% Clip to previous DOWN offset
                         end
+
+                        % Adjust end if overlapping with next DOWN onset
+                        if nevent < size(DOWN_ints,1) && t_end > DOWN_ints(nevent+1,1)
+                            t_end = DOWN_ints(nevent,2); % Clip to current DOWN offset
+                        end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -1208,12 +1221,24 @@ for nsession =1:length(experiment_info)
                     event_index = [];
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(DOWN_ints,1)
-                        if nevent ==1  | nevent ==size(DOWN_ints,1)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1) DOWN_ints(nevent,1)+0.1]);
-                        elseif DOWN_ints(nevent+1,1)-0.1 > DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1) DOWN_ints(nevent,1)+0.1]);
-                        elseif  DOWN_ints(nevent+1,1)-0.1 < DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[DOWN_ints(nevent,1) DOWN_ints(nevent,2)]);
+                        % Default window: 50 ms before DOWN onset to 100 ms after
+                        t_start = DOWN_ints(nevent,1) - 0.05;
+                        t_end   = DOWN_ints(nevent,1) + 0.1;
+
+                        % Adjust start if overlapping with previous DOWN offset
+                        if nevent > 1 && t_start < DOWN_ints(nevent-1,2)
+                            t_start = DOWN_ints(nevent-1,2);% Clip to previous DOWN offset
+                        end
+
+                        % Adjust end if overlapping with next DOWN onset
+                        if nevent < size(DOWN_ints,1) && t_end > DOWN_ints(nevent+1,1)
+                            t_end = DOWN_ints(nevent,2); % Clip to current DOWN offset
+                        end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        for nchannel = 1:length(slow_waves(probe_no).shank_id)
+                            phase_DOWN(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
 
                         event_tidx = [event_tidx tidx(1):tidx(end)];
@@ -1228,20 +1253,6 @@ for nsession =1:length(experiment_info)
                     end
 
                     slow_waves(probe_no).amp_corr_DOWN = amp_corr;
-
-                    for nevent = 1:size(DOWN_ints,1)
-                        if nevent ==1  | nevent ==size(DOWN_ints,1)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1) DOWN_ints(nevent,1)+0.1]);
-                        elseif DOWN_ints(nevent+1,1)-0.1 > DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1) DOWN_ints(nevent,1)+0.1]);
-                        elseif  DOWN_ints(nevent+1,1)-0.1 < DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1) DOWN_ints(nevent,2)]);
-                        end
-
-                        for nchannel = 1:length(slow_waves(probe_no).shank_id)
-                            phase_DOWN(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
-                        end
-                    end
                     slow_waves(probe_no).mean_phase_DOWN = phase_DOWN;
 
                     % UP
@@ -1249,13 +1260,22 @@ for nsession =1:length(experiment_info)
                     event_index = [];
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(UP_ints,1)
-                        if nevent ==1  | nevent ==size(UP_ints,1)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1) UP_ints(nevent,1)+0.1]);
-                        elseif UP_ints(nevent+1,1)-0.1 > UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1) UP_ints(nevent,1)+0.1]);
-                        elseif  UP_ints(nevent+1,1)-0.1 < UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec_interp1,[UP_ints(nevent,1) UP_ints(nevent,2)]);
+                        % Default window: UP onset to 100 ms after
+                        t_start = UP_ints(nevent,1);
+                        t_end   = UP_ints(nevent,1) + 0.1;
+
+                        % Adjust end if overlapping with next UP onset
+                        if nevent < size(UP_ints,1) && t_end > UP_ints(nevent+1,1)
+                            t_end = UP_ints(nevent,2); % Clip to current UP offset
                         end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+
+                        for nchannel = 1:length(slow_waves(probe_no).shank_id)
+                            phase_UP(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
+                        end
+
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -1267,21 +1287,6 @@ for nsession =1:length(experiment_info)
                         end
                     end
                     slow_waves(probe_no).amp_corr_UP = amp_corr;
-
-
-                    for nevent = 1:size(UP_ints,1)
-                        if nevent ==1  | nevent ==size(UP_ints,1)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1) UP_ints(nevent,1)+0.1]);
-                        elseif UP_ints(nevent+1,1)-0.1 > UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1) UP_ints(nevent,1)+0.1]);
-                        elseif  UP_ints(nevent+1,1)-0.1 < UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1) UP_ints(nevent,2)]);
-                        end
-
-                        for nchannel = 1:length(slow_waves(probe_no).shank_id)
-                            phase_UP(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
-                        end
-                    end
                     slow_waves(probe_no).mean_phase_UP = phase_UP;
                     % polarhistogram(phase_DOWN(1,:));hold on;polarhistogram(phase_UP(1,:))
 
@@ -1302,16 +1307,22 @@ for nsession =1:length(experiment_info)
                     HPC_speed_DU = nan(max(slow_waves(probe_no).probe_hemisphere), length(UP_ints(:,1)));
 
                     for nevent = 1:size(UP_ints,1)
-                        % if diff(UP_ints(nevent,:))>0.1
-                        if nevent ==1  | nevent ==size(UP_ints,1)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1)-0.05 UP_ints(nevent,1)+0.05]);
-                        elseif (UP_ints(nevent-1,2)+0.05 < UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 > UP_ints(nevent,2))
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1)-0.05 UP_ints(nevent,1)+0.05]);
-                        elseif  UP_ints(nevent-1,2)+0.05 > UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 > UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent-1,2) UP_ints(nevent,2)+0.05]);
-                        elseif  UP_ints(nevent-1,2)+0.05 < UP_ints(nevent,1) & UP_ints(nevent+1,1)-0.05 < UP_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[UP_ints(nevent,1)-0.05 UP_ints(nevent,2)]);
+                        % Default window: 50 ms before UP onset to 100 ms after
+                        t_start = UP_ints(nevent,1) - 0.05;
+                        t_end   = UP_ints(nevent,1) + 0.1;
+
+                        % Adjust start if overlapping with previous UP offset
+                        if nevent > 1 && t_start < UP_ints(nevent-1,2)
+                            t_start = UP_ints(nevent-1,2);% Clip to previous UP offset
                         end
+
+                        % Adjust end if overlapping with next UP onset
+                        if nevent < size(UP_ints,1) && t_end > UP_ints(nevent+1,1)
+                            t_end = UP_ints(nevent,2); % Clip to current UP offset
+                        end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
@@ -1352,15 +1363,22 @@ for nsession =1:length(experiment_info)
                     end
 
                     for nevent = 1:size(DOWN_ints,1)
-                        if nevent ==1  | nevent ==size(DOWN_ints,1)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,1)+0.05]);
-                        elseif (DOWN_ints(nevent-1,2)+0.05 < DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 > DOWN_ints(nevent,2))
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,1)+0.05]);
-                        elseif  DOWN_ints(nevent-1,2)+0.05 > DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 > DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent-1,2) DOWN_ints(nevent,2)+0.05]);
-                        elseif  DOWN_ints(nevent-1,2)+0.05 < DOWN_ints(nevent,1) & DOWN_ints(nevent+1,1)-0.05 < DOWN_ints(nevent,2)
-                            tidx = FindInInterval(tvec,[DOWN_ints(nevent,1)-0.05 DOWN_ints(nevent,2)]);
+                        % Default window: 50 ms before DOWN onset to 100 ms after
+                        t_start = DOWN_ints(nevent,1) - 0.05;
+                        t_end   = DOWN_ints(nevent,1) + 0.1;
+
+                        % Adjust start if overlapping with previous DOWN offset
+                        if nevent > 1 && t_start < DOWN_ints(nevent-1,2)
+                            t_start = DOWN_ints(nevent-1,2);% Clip to previous DOWN offset
                         end
+
+                        % Adjust end if overlapping with next DOWN onset
+                        if nevent < size(DOWN_ints,1) && t_end > DOWN_ints(nevent+1,1)
+                            t_end = DOWN_ints(nevent,2); % Clip to current DOWN offset
+                        end
+
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
