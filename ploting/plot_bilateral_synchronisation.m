@@ -663,11 +663,13 @@ for nprobe = 1:2
 
         mean_corr_ipsi = [];mean_corr_contra=[];
         for nshank = 1:length(ipsi_shank)
-            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+            % mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
         end
 
         for nshank = 1:length(contra_shank)
-            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+            % mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
         end
 
         [~,id] = max(mean_corr_ipsi);
@@ -773,7 +775,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -807,7 +809,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -911,7 +913,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -945,7 +947,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -1120,11 +1122,13 @@ for nprobe = 1:2
 
         mean_corr_ipsi = [];mean_corr_contra=[];
         for nshank = 1:length(ipsi_shank)
-            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+            % mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
         end
 
         for nshank = 1:length(contra_shank)
-            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+            % mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
         end
 
         [~,id] = max(mean_corr_ipsi);
@@ -1229,7 +1233,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -1263,7 +1267,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -1367,7 +1371,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -1401,7 +1405,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -1684,7 +1688,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -1718,7 +1722,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -1822,7 +1826,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([0 1],[0 1],'k')
 
 mdl = fitlm(data.ipsi_plv,data.contra_plv);
@@ -1856,7 +1860,7 @@ mdl2 = fitlme(data,formula);
 
 hold on
 % arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
-scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.1)
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
 plot([-1 1],[-1 1],'k')
 
 mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
@@ -1984,6 +1988,466 @@ xlabel('ripple events')
 ylabel(sprintf('Cumulative ipsi-contralateral difference\n in ripple power correlation'))
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+%% Ipsilateral vs contralateral correlation (Spindles)
+% HPC_ref_shank
+for nprobe = 1:2
+    ipsi_amp_corr{nprobe} = [];
+    contra_amp_corr{nprobe} = [];
+
+    ipsi_plv{nprobe} = [];
+    contra_plv{nprobe} = [];
+
+    ipsi_amp_corr_bootstrap{nprobe} = [];
+    contra_amp_corr_bootstrap{nprobe} = [];
+
+    ipsi_plv_bootstrap{nprobe} = [];
+    contra_plv_bootstrap{nprobe} = [];
+
+    mprobe = abs(nprobe-3);
+    % ipsi_amp_corr_shuffle{nprobe} = [];
+    % contra_amp_corr_shuffle{nprobe} = [];
+    %
+    % ipsi_plv_shuffle{nprobe} = [];
+    % contra_plv_shuffle{nprobe} = [];
+
+    for nsession = 1:max(spindles_all(nprobe).session_count)
+        % ipsi_amp_corr_bootstrap{nprobe}{nsession} = [];
+        % contra_amp_corr_bootstrap{nprobe}{nsession} = [];
+        %
+        % ipsi_plv_bootstrap{nprobe}{nsession} = [];
+        % contra_plv_bootstrap{nprobe}{nsession} = [];
+
+        % Find UP events with less than 2 seconds and followed by a
+        % DOWN
+        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).session_count == sessions_to_process(nsession) & spindles_all(nprobe).SWS_index == 1));
+
+        if isempty(ia)
+            continue
+        end
+
+        ipsi_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
+
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
+
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
+
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+
+        if length(ipsi_shank)==1
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        else
+            ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+            ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        end
+
+        if length(contra_shank)==1
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+            contra_plv{nprobe} = [contra_plv{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+        else
+            contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+            contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        end
+
+        % if length(contra_amp_corr{nprobe}) ~= length( ipsi_amp_corr{nprobe})
+        % 
+        %     nsession
+        % end
+
+        temp1 = [];
+        temp2 = [];
+        temp3 = [];
+        temp4 = [];
+        for iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,ia,size(ia,1));
+            if length(ipsi_shank)==1
+                temp1(iBoot,:)= squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id));
+                temp3(iBoot,:)= squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id));
+            else
+                temp1(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp3(iBoot,:)= mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+            end
+
+            if length(contra_shank)==1
+                temp2(iBoot,:)= squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id));
+                temp4(iBoot,:)= squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id));
+            else
+                temp2(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp4(iBoot,:)= mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+            end
+           
+        end
+        % for iBoot = 1:500
+        %     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        %     probe_hemisphere = datasample(s,slow_waves_all(nprobe).probe_hemisphere{nsession},size(slow_waves_all(nprobe).probe_hemisphere{nsession},2),'Replace',false);
+        %
+        %     ipsi_shank = find(probe_hemisphere == nprobe);
+        %     ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
+        %     contra_shank = find(probe_hemisphere == mprobe);
+        %
+        %     ipsi_amp_corr_shuffle{nprobe}{nsession}(iBoot,:) = mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,:)));
+        %     contra_amp_corr_shuffle{nprobe}{nsession}(iBoot,:) = mean(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,:)));
+        %
+        %     ipsi_plv_shuffle{nprobe}{nsession}(iBoot,:) =mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,:)));
+        %     contra_plv_shuffle{nprobe}{nsession}(iBoot,:) = mean(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,:)));
+        %
+        % end
+
+        ipsi_amp_corr_bootstrap{nprobe} = [ipsi_amp_corr_bootstrap{nprobe} temp1];
+        contra_amp_corr_bootstrap{nprobe} = [contra_amp_corr_bootstrap{nprobe} temp2];
+        ipsi_plv_bootstrap{nprobe} = [ipsi_plv_bootstrap{nprobe} temp3];
+        contra_plv_bootstrap{nprobe} = [contra_plv_bootstrap{nprobe} temp4];
+    end
+end
+
+
+
+[p,h,stats] = signrank(ipsi_plv{1},contra_plv{1},'tail','right');
+[p,h,stats] = signrank(ipsi_plv{2},contra_plv{2},'tail','right');
+[p,h,stats] = signrank(ipsi_amp_corr{1},contra_amp_corr{1},'tail','right');
+[p,h,stats] = signrank(ipsi_amp_corr{2},contra_amp_corr{2},'tail','right');
+
+probability = probability_ripples_SO_whole;
+nprobe = 1;
+subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(spindles_all(nprobe).session_count(spindles_all(nprobe).SWS_index == 1),end-1:end)));
+[~, ~, mappedIDs] = unique(subject_id);
+dataL = table(ipsi_plv{1}',contra_plv{1}',ipsi_amp_corr{1}',contra_amp_corr{1}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+
+nprobe = 2;
+subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(spindles_all(nprobe).session_count(spindles_all(nprobe).SWS_index == 1),end-1:end)));
+[~, ~, mappedIDs] = unique(subject_id);
+dataR = table(ipsi_plv{2}',contra_plv{2}',ipsi_amp_corr{2}',contra_amp_corr{2}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+
+
+nfig = figure('Color','w','Name','Left Right spindles ipsilateral-contralateral difference')
+nfig.Position = [103 111 1422 840];
+orient(nfig,'landscape')
+
+colour_lines = [44,123,182;215,25,28]/256;
+
+
+%%%%% Left
+data = dataL;
+nprobe =1;
+
+nexttile
+formula = 'contra_plv~  ipsi_plv + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([0 1],[0 1],'k')
+
+mdl = fitlm(data.ipsi_plv,data.contra_plv);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_plv) max(data.ipsi_plv)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi phase locking')
+ylabel('contra phase locking')
+% set(gca,'FontSize',14)
+title('Left spindle');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
+
+nexttile
+formula = 'contra_amp_corr~  ipsi_amp_corr + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-1 1],[-1 1],'k')
+
+mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_amp_corr) max(data.ipsi_amp_corr)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi spindle power correlation')
+ylabel('contra spindle power correlation')
+% set(gca,'FontSize',14)
+title('Left spindle');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
+
+
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = 0:0.01:1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_plv_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_plv_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('phase locking value')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -1:0.01:1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_amp_corr_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_amp_corr_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('spindle power correlation')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+%%%%% Right
+data = dataR;
+nprobe =2;
+
+nexttile
+colour_lines = [44,123,182;215,25,28]/256;
+
+formula = 'contra_plv~  ipsi_plv + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_plv,data.contra_plv,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([0 1],[0 1],'k')
+
+mdl = fitlm(data.ipsi_plv,data.contra_plv);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_plv) max(data.ipsi_plv)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi phase locking')
+ylabel('contra phase locking')
+% set(gca,'FontSize',14)
+title('Right spindle');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
+
+nexttile
+formula = 'contra_amp_corr~  ipsi_amp_corr + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_amp_corr,data.contra_amp_corr,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-1 1],[-1 1],'k')
+
+mdl = fitlm(data.ipsi_amp_corr,data.contra_amp_corr);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_amp_corr) max(data.ipsi_amp_corr)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi spindle power correlation')
+ylabel('contra spindle power correlation')
+% set(gca,'FontSize',14)
+title('Right spindle');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
+
+
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = 0:0.01:1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_plv_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_plv_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('phase locking value')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -1:0.01:1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_amp_corr_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_amp_corr_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('spindle power correlation')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+colour_lines = [44,123,182;215,25,28]/256;
+nexttile
+for nprobe = 1:2
+    [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
+    x = 1:length(ipsi_plv{nprobe});
+    y = mean(cumsum(ipsi_plv_bootstrap{nprobe}(:,sorted_index) - contra_plv_bootstrap{nprobe}(:,sorted_index),2));
+    LCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+    UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+end
+legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
+% xline(0,'r')
+% title('Prob of left ripples during DOWN')
+xlabel('spindle events')
+ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+for nprobe = 1:2
+    [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
+    x = 1:length(ipsi_amp_corr{nprobe});
+    y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
+    LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+    UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+end
+legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
+% xline(0,'r')
+% title('Prob of left ripples during DOWN')
+xlabel('spindle events')
+ylabel(sprintf('Cumulative ipsi-contralateral difference\n in spindle power correlation'))
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
@@ -1991,110 +2455,6 @@ end
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
-%% unilateral vs bilateral UP
-nprobe = 1;
-event_averaging_scale = 10;
-
-for nprobe=1:2
-    mprobe = abs(nprobe-3);
-
-    ipsi_lag_DU{nprobe} = [];
-    contra_lag_DU{nprobe} = [];
-    ipsi_lag_UD{nprobe} = [];
-    contra_lag_UD{nprobe} = [];
-
-    for nsession = 1:max(ripples_all(1).session_count)
-
-        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
-
-        ipsi_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == nprobe);
-        % ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
-        contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
-
-        ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-
-        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
-
-        ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-
-        %
-        % delta_latency_speed_L(nsession,:) = histcounts(mean(diff(0.00025*slow_waves_all(1).shank_id{nsession}(slow_waves_all(1).probe_hemisphere{nsession} == 1))'./diff(slow_waves_all(1).DOWN_peaktimes{nsession}(slow_waves_all(1).probe_hemisphere{nsession}==1,:))),-0.1:0.005:0.1);
-        % delta_latency_speed_R(nsession,:)  = histcounts(-1*mean(diff(0.00025*slow_waves_all(2).shank_id{nsession}(slow_waves_all(2).probe_hemisphere{nsession} == 2))'./diff(slow_waves_all(2).DOWN_peaktimes{nsession}(slow_waves_all(2).probe_hemisphere{nsession}==2,:))),-0.1:0.005:0.1);
-        %
-        % Ripples
-        % DOWN
-        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
-
-        ipsi_lag_ripples{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        ipsi_lag_ripples{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-
-        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).session_count == sessions_to_process(nsession) & spindles_all(nprobe).SWS_index == 1));
-
-        if ~isempty(spindles_all(1).SO_phase_spindle_onset{nsession})
-            spindle_SO_phase_L(nsession,:) = histcounts(spindles_all(1).SO_phase_spindle_onset{nsession}(3,:),angleEdges);
-        end
-
-        if ~isempty(spindles_all(1).SO_phase_spindle_onset{nsession})
-            spindle_SO_phase_R(nsession,:) = histcounts(spindles_all(2).SO_phase_spindle_onset{nsession}(6,:),angleEdges);
-        end
-    end
-
-end
-
-%% Contra-UP probability
-
-
-nprobe = 1;
-event_averaging_scale = 10;
-probability_UP = probability_SO_SO_contralateral_whole(1).UP_UP; 
-
-nexttile
-[~,sorted_index] = sort(event_info(nprobe).UP_duration);
-% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(event_averaging_scale*movmean(probability_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contralateral UP during left UP')
-
-%% Contra-UP
-
-nexttile
-colour_lines = [74,20,134;0,90,50]/256;
-s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
-sampled_events = datasample(s,1:length(ipsi_plv{1}),1000);
-grp = [ones(length(sampled_events),1);ones(length(sampled_events),1)*2];
-tst=[ipsi_plv{1}(sampled_events) contra_plv{1}(sampled_events)]';
-% xbe = beeswarm(grp,tst,'sort_style','nosort','colormap',[PP.RUN1T1;PP.RUN1T2;PP.RUN2T1;PP.RUN2T2],'dot_size',2,'corral_style','rand');
-xbe = beeswarm(grp,tst,'sort_style','nosort','colormap',colour_lines,'dot_size',2,'overlay_style','sd','corral_style','rand');
-
-% yticks([0:0.02:0.06])
-xticks([1:2])
-xticklabels({'POST1 T1','POST1 T2','POST2 T1','POST2 T2'})
-ylabel('Replay rate (events/sec)')
-set(gca,'FontSize',12)
-ylim([0 0.07])
-hold on
-tst=[INTER_T1_rate_events; INTER_T2_rate_events; FINAL_RT1_rate_events; FINAL_RT2_rate_events]';
-
-xbe = reshape(xbe,size(tst,1),size(tst,2));
-for i = 1:size(tst,1)
-    plot(xbe(i,[1 2]),tst(i,[1 2]),'Color',[0,0,0,0.2])
-    plot(xbe(i,[3 4]),tst(i,[3 4]),'Color',[0,0,0,0.2])
-end
-
-
-axis square
-title(sprintf('POST replay rate for both exposures (%s)',rest_option));
 
 
 %% Plot UP DOWN ipsilateral vs contralateral

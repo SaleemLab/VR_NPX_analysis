@@ -344,7 +344,7 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
-%% Ripple probability during DOWN-UP transition
+%% MUA during DOWN-UP transition
 
 %%%%% L UP
 event_averaging_scale = 50;

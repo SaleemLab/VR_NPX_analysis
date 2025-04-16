@@ -1,5 +1,4 @@
-
-function plot_ipsilateral_contralateral_coupling
+function plot_ipsilateral_contralateral_UP_DOWN_spindles_coupling(slow_waves_all,ripples_all,spindles_all)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
