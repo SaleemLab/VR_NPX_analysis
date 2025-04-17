@@ -43,21 +43,22 @@ probability_psth = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
-probability_SO_SO = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
-probability_SO_SO_contralateral = probability;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
+% probability_SO_SO = probability;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
+% probability_SO_SO_contralateral = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability.mat'));
 probability_SO_SO_contralateral_whole = probability;
 
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
-probability_ripples_SO = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'));
-probability_ripples_SO_whole = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'));
-probability_ripples_ripples = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability_whole.mat'));
+probability_ripples_ripples_whole = probability;
 
 
 colour_lines = [];

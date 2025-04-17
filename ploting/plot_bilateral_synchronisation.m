@@ -2455,10 +2455,3 @@ end
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
-
-
-%% Plot UP DOWN ipsilateral vs contralateral
-
-if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
-    mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
-end
