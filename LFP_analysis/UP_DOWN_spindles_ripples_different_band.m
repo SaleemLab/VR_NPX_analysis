@@ -1,4 +1,3 @@
-%% UP DOWN spindles and ripples with different bands
 % pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
 % pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
@@ -16,7 +15,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:15
+for nsession =1:16
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -1118,13 +1117,14 @@ for nsession =1:15
                     spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 
                     for nevent = 1:length(ripples(probe_no).onset)
-                        [~,tidx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
+                        [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
+                        
                         % Phase
                         SO_phase_ripple_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_peaktime(:,nevent) = spindle_phase_LFP(tidx,:);
                         ripple_peak_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
 
-                        [~,tidx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
+                        [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
                         % Phase
                         SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
@@ -1141,12 +1141,12 @@ for nsession =1:15
 
                     if ~isempty(spindles(probe_no).onset)
                         for nevent = 1:length(spindles(probe_no).onset)
-                            [~,tidx]=min(abs(spindles(probe_no).peaktimes(nevent)-tvec));
+                            [~,tidx]=min(abs(tvec-spindles(probe_no).peaktimes(nevent)));
                             % Phase
                             SO_phase_spindle_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                             spindle_peak_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
 
-                            [~,tidx]=min(abs(spindles(probe_no).onset(nevent)-tvec));
+                            [~,tidx]=min(abs(tvec-spindles(probe_no).onset(nevent)));
                             % Phase
                             SO_phase_spindle_onset(:,nevent) = SO_phase_LFP(tidx,:);
                             spindle_onset_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);

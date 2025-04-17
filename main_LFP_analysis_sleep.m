@@ -565,7 +565,6 @@ for nsession =1:length(experiment_info)
                     tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(midpoint-tvec));
 
                     for nShank=1:length(probe_hemisphere) % across shanks from both probes if using two probes
 
@@ -768,7 +767,6 @@ for nsession =1:length(experiment_info)
                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
 
 
                     for nShank=1:length(probe_hemisphere)
@@ -868,7 +866,6 @@ for nsession =1:length(experiment_info)
                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
 
 
                     for nShank=1:length(probe_hemisphere)
@@ -1453,13 +1450,14 @@ for nsession =1:length(experiment_info)
                     spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 
                     for nevent = 1:length(ripples(probe_no).onset)
-                        [~,tidx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
+                        [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
+                        
                         % Phase
                         SO_phase_ripple_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_peaktime(:,nevent) = spindle_phase_LFP(tidx,:);
                         ripple_peak_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
 
-                        [~,tidx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
+                        [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
                         % Phase
                         SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
@@ -1476,12 +1474,12 @@ for nsession =1:length(experiment_info)
 
                     if ~isempty(spindles(probe_no).onset)
                         for nevent = 1:length(spindles(probe_no).onset)
-                            [~,tidx]=min(abs(spindles(probe_no).peaktimes(nevent)-tvec));
+                            [~,tidx]=min(abs(tvec-spindles(probe_no).peaktimes(nevent)));
                             % Phase
                             SO_phase_spindle_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                             spindle_peak_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
 
-                            [~,tidx]=min(abs(spindles(probe_no).onset(nevent)-tvec));
+                            [~,tidx]=min(abs(tvec-spindles(probe_no).onset(nevent)));
                             % Phase
                             SO_phase_spindle_onset(:,nevent) = SO_phase_LFP(tidx,:);
                             spindle_onset_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
