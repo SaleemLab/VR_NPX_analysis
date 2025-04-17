@@ -16,7 +16,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:length(experiment_info)
+for nsession =1:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -119,9 +119,9 @@ for nsession =1:length(experiment_info)
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
         % https://www.nature.com/articles/s41467-019-10327-5 levenstein et
         % al used 0.5 to 8 Hz for slow wave UP DOWN detection
-        filterparms.deltafilter = [5 17];% Delta replaced by theta - spindle band
-        filterparms.spindlesfilter = [20 50];% low gamma band
-        % filterparms.gammafilter = [50 100]; % high gamma band
+        filterparms.deltafilter = [9 17];%spindle band
+        filterparms.spindlesfilter = [20 50];%heuristically defined.  room for improvement here.
+        % filterparms.gammafilter = [100 400];
         % filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
         % filterparms.gammanormwin = 20; %window for gamma normalization (s)
 
@@ -329,8 +329,7 @@ for nsession =1:length(experiment_info)
         tic
         %%%%%%%%%%%% sharp wave direction during ripple peaktimes
         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        filterparms.deltafilter = [5 17];% Delta replaced by theta - spindle band
-        filterparms.spindlesfilter = [20 50];% low gamma band
+        filterparms.deltafilter = [9 17];
 
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
@@ -395,7 +394,7 @@ for nsession =1:length(experiment_info)
 
                     % grab spindles LFP
                     filter_type  = 'bandpass';
-                    passband = [20 50]; % low gamma band to replace spindle band
+                    passband = [20 50];
                     filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
                     norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
                     b_spindle = fir1(filter_order, norm_freq_range,filter_type);
@@ -411,7 +410,7 @@ for nsession =1:length(experiment_info)
 
                     % grab ripples LFP
                     filter_type  = 'bandpass';
-                    passband = [300 600];% high frequency power to replace ripple band
+                    passband = [300 600];
                     filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
                     norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
                     b_ripple = fir1(filter_order, norm_freq_range,filter_type);
@@ -888,13 +887,8 @@ for nsession =1:length(experiment_info)
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(DOWN_ints,1)
                         % Default window: 50 ms before DOWN onset to 100 ms after
-                        t_start = DOWN_ints(nevent,1) - 0.05;
+                        t_start = DOWN_ints(nevent,1);
                         t_end   = DOWN_ints(nevent,1) + 0.1;
-
-                        % Adjust start if overlapping with previous DOWN offset
-                        if nevent > 1 && t_start < DOWN_ints(nevent-1,2)
-                            t_start = DOWN_ints(nevent-1,2);% Clip to previous DOWN offset
-                        end
 
                         % Adjust end if overlapping with next DOWN onset
                         if nevent < size(DOWN_ints,1) && t_end > DOWN_ints(nevent+1,1)
@@ -902,11 +896,13 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             phase_DOWN(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
 
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -936,12 +932,12 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
-
+                        tidx = FindInInterval(tvec, [t_start t_end]);
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             phase_UP(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
 
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -988,7 +984,7 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
@@ -1044,7 +1040,7 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
@@ -1202,6 +1198,7 @@ for nsession =1:length(experiment_info)
         end
     end
 end
+
 
 %%
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
@@ -1696,7 +1693,7 @@ elseif contains(Stimulus_type,'PRE')
     % save(fullfile(analysis_folder,'spindles_all_PRE.mat'),'spindles_all','-v7.3')
     % save(fullfile(analysis_folder,'behavioural_state_merged_all_PRE.mat'),'behavioural_state_merged_all','-v7.3')
 else
-    save(fullfile(analysis_folder,'slow_waves_all.mat'),'slow_waves_all','-v7.3')
+    % save(fullfile(analysis_folder,'slow_waves_all.mat'),'slow_waves_all','-v7.3')
     % save(fullfile(analysis_folder,'ripples_all.mat'),'ripples_all','-v7.3')
     % save(fullfile(analysis_folder,'spindles_all.mat'),'spindles_all','-v7.3')
     % save(fullfile(analysis_folder,'behavioural_state_merged_all.mat'),'behavioural_state_merged_all','-v7.3')
