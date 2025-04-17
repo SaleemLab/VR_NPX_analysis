@@ -42,8 +42,8 @@ for nprobe = 1:length(slow_waves_all)
         % else
         % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
         % end
-        if contains(time_option,'peaktimes')
-            % spindle_times1= ripple_peaktimes1;
+        if contains(time_option,'onset')
+            spindle_times1= spindles_all(nprobe).onset(spindles_index1);
         else
             spindle_times1 = [spindles_all(nprobe).onset(spindles_index1) spindles_all(nprobe).offset(spindles_index1)];
         end
@@ -157,8 +157,8 @@ for nprobe = 1:length(slow_waves_all)
         % else
         % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
         % end
-        if contains(time_option,'peaktimes')
-            % spindle_times1= ripple_peaktimes1;
+        if contains(time_option,'onset')
+            spindle_times1= spindles_all(nprobe).onset(spindles_index1);
         else
             spindle_times1 = [spindles_all(nprobe).onset(spindles_index1) spindles_all(nprobe).offset(spindles_index1)];
         end
@@ -180,7 +180,7 @@ for nprobe = 1:length(slow_waves_all)
 
 
         % Probability of R spindle
-        [probability(nprobe).R_spindles_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times1,spindle_time,time_windows(1):time_bin:time_windows(end),0);
+        [probability(nprobe).R_spindles_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times1,spindle_times,time_windows(1):time_bin:time_windows(end),0);
         % end
 
 

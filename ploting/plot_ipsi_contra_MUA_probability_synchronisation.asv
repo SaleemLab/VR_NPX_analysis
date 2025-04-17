@@ -261,10 +261,8 @@ lags = ipsi_lag_UD{nprobe} - contra_lag_UD{nprobe};
 corrs = ipsi_corr_UD{nprobe} - contra_corr_UD{nprobe};
 plvs = ipsi_plv_UD{nprobe} - contra_plv_UD{nprobe};
 
-scatter3(lags,corrs,plvs,'MarkerEdgeColor','none','MarkerFaceColor','k','MarkerFaceAlpha',0.05)
-xlabel('lag')
-ylabel('corr diff')
-zlabel('plv diff')
+scatter3()
+
 [~,sorted_index]= sort(lags);
 
 

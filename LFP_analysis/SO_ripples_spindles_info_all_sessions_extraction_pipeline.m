@@ -845,14 +845,14 @@ probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,ses
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability_baseline.mat'),'probability');
 
 
-probability = calculate_spindle_spindle_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_whole.mat'),'probability');
-probability = calculate_spindle_spindle_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_whole_baseline.mat'),'probability');
 
-probability = calculate_spindle_spindle_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','peaktimes','time_windows',[-1 1]);
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','onset','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability.mat'),'probability');
-probability = calculate_spindle_spindle_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','peaktimes','shuffle_option','baseline','time_windows',[-1 1]);
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','onset','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_baseline.mat'),'probability');
 
 

@@ -1420,10 +1420,10 @@ for nsession =1:length(experiment_info)
                     slow_waves(probe_no).xcorr_r_DU = xcorr_r_DU;
 
                     slow_waves(probe_no).plv_UD = plv_UD;
-                    slow_waves(probe_no).pd_UD = plv_UD;
+                    slow_waves(probe_no).pd_UD = pd_UD;
 
                     slow_waves(probe_no).plv_DU = plv_DU;
-                    slow_waves(probe_no).pd_DU = plv_DU;
+                    slow_waves(probe_no).pd_DU = pd_DU;
 
                     slow_waves(probe_no).cortex_speed_UD = cortex_speed_UD;
                     slow_waves(probe_no).HPC_speed_UD = HPC_speed_UD;
