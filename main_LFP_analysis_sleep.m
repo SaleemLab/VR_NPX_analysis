@@ -1222,13 +1222,8 @@ for nsession =1:length(experiment_info)
                     % Grab 20ms downsampled idx when events happned
                     for nevent = 1:size(DOWN_ints,1)
                         % Default window: 50 ms before DOWN onset to 100 ms after
-                        t_start = DOWN_ints(nevent,1) - 0.05;
+                        t_start = DOWN_ints(nevent,1);
                         t_end   = DOWN_ints(nevent,1) + 0.1;
-
-                        % Adjust start if overlapping with previous DOWN offset
-                        if nevent > 1 && t_start < DOWN_ints(nevent-1,2)
-                            t_start = DOWN_ints(nevent-1,2);% Clip to previous DOWN offset
-                        end
 
                         % Adjust end if overlapping with next DOWN onset
                         if nevent < size(DOWN_ints,1) && t_end > DOWN_ints(nevent+1,1)
@@ -1236,11 +1231,13 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             phase_DOWN(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
 
+                        % Use final t_start and t_end to extract indices
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -1270,12 +1267,12 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
-
+                        tidx = FindInInterval(tvec, [t_start t_end]);
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             phase_UP(nchannel,nevent)=angle(mean(exp(1i*SO_phase_LFP(tidx(1):tidx(end),nchannel)))); % phase
                         end
 
+                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
                         event_tidx = [event_tidx tidx(1):tidx(end)];
                         event_index = [event_index nevent*ones(size(tidx(1):tidx(end)))];
                     end
@@ -1322,7 +1319,7 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
@@ -1378,7 +1375,7 @@ for nsession =1:length(experiment_info)
                         end
 
                         % Use final t_start and t_end to extract indices
-                        tidx = FindInInterval(tvec_interp1, [t_start t_end]);
+                        tidx = FindInInterval(tvec, [t_start t_end]);
 
                         for nchannel = 1:length(slow_waves(probe_no).shank_id)
                             for mchannel = 1:length(slow_waves(probe_no).shank_id)
