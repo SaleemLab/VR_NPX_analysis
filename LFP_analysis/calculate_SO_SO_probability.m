@@ -54,7 +54,8 @@ for nprobe = 1:length(slow_waves_all)
         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
         UP_index_all = [UP_index_all; UP_index];
 
-
+        DOWN_ints1 = DOWN_ints;
+        UP_ints1 = UP_ints;
         if contains(shuffle_option,'baseline')
             % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
             % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
@@ -80,9 +81,9 @@ for nprobe = 1:length(slow_waves_all)
 
         % Probability of UP During U-D
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,UP_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,UP_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(UP_ints(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(UP_ints1(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -113,9 +114,9 @@ for nprobe = 1:length(slow_waves_all)
 
         % Probability of DOWN During D-U
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,DOWN_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,DOWN_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(DOWN_ints(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(DOWN_ints1(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -146,9 +147,9 @@ for nprobe = 1:length(slow_waves_all)
 
         % Probability of UP During D-U
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,UP_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(UP_ints,UP_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(UP_ints(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(UP_ints1(:,time_index),UP_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 
@@ -179,9 +180,9 @@ for nprobe = 1:length(slow_waves_all)
         
         % Probability of DOWN During U-D
         if contains(option,'normalised')
-            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,DOWN_ints(:,time_index),num_bins,0);
+            [~,~,~,temp] = calculate_relative_event_probability(DOWN_ints,DOWN_ints1(:,time_index),num_bins,0);
         else
-            [~,temp,~] = calculate_event_probability(DOWN_ints(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
+            [~,temp,~] = calculate_event_probability(DOWN_ints1(:,time_index),DOWN_ints(:,1),time_windows(1):time_bin:time_windows(end),0);
 
             timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
 

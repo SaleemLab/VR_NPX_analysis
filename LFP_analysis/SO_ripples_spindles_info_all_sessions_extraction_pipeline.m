@@ -816,12 +816,12 @@ sessions_to_process = 1:all_sessions;
 
 probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole.mat'),'probability');
-probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','shuffle_option','baseline');
+probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole_baseline.mat'),'probability');
 
 probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'),'probability');
-probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','shuffle_option','baseline');
+probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_baseline.mat'),'probability');
 
 probability = calculate_SO_SO_contralateral_probability(slow_waves_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
