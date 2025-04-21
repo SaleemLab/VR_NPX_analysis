@@ -28,14 +28,14 @@ for i = 1 : numel(figlist)
 %         saveas(figlist(i),[save_path,'\figures\png_figs\',name,'.png']);
 %         saveas(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf']);
         exportgraphics(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf'],'ContentType','vector')
-%         exportgraphics(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf'],'ContentType','image')
+        % exportgraphics(figlist(i),[save_path,'\figures\png_figs\',name,'.pdf'],'ContentType','image')
     else 
         disp('not saved in figures folder!')
         saveas(figlist(i),[save_path,'\',name,'.fig']);
 %         saveas(figlist(i),[save_path,'\',name,'.png']);
 %         saveas(figlist(i),[save_path,'\',name,'.pdf']);
         exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','vector')
-        % exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','image')
+         % exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','image')
     end
     close  
 end

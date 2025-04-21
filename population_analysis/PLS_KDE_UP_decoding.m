@@ -1,6 +1,6 @@
-function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_template,position,speed,lap_times,track_ID,spikes_template,event_times,spike_target,options,varargin)
+function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_UP_decoding(tvec_template,position,speed,lap_times,track_ID,spikes_template,event_times,spike_target,options)
 % PLS_KDE_Reactivation_decoding - 1. Perform PLS regression to obtain PLS latent components that are maximised for covariance between track identity and spiking data during RUN, which can be projected to RUN data or Ripple data
-%  2. Use KDE to find probability of track reactivation during ripple based on PLS projection
+%  2. Use KDE to find probability of track reactivation during UP and DOWN based on PLS projection
 %
 % Inputs:
 %   tvec_template   - Time vector template for interpolation.
@@ -27,24 +27,10 @@ function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_tem
 % Example:
 %   [PLS, KDE_RUN, KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_template, position, speed, lap_times, track_ID, spikes_template, event_times, spike_target, options);
 %
-% Default values
-p = inputParser;
-addParameter(p,'PLS',struct(),@isstruct)
-addParameter(p,'KDE_RUN',struct(),@isstruct)
-addParameter(p,'event_type','ripples',@isstr)
-addParameter(p,'time_bin_size_RUN',0.1,@isnumeric)
-addParameter(p,'time_bin_size',0.02,@isnumeric)
-addParameter(p,'time_bin_size_moving',0.01,@isnumeric)
 
-% assign parameters (either defaults or given)
-parse(p,varargin{:});
-KDE_RUN = p.Results.KDE_RUN;
-PLS = p.Results.PLS;
-event_type = p.Results.event_type;
-
-
-
-% Initialize output variables
+    % Initialize output variables
+PLS = struct();
+KDE_RUN = struct();
 KDE_reactivation = struct();
 
 % Define time bin edges
@@ -79,13 +65,10 @@ time_bin_size_moving = 0.01;
 ripples_time_edges=[];
 ripples_id=[];
 for i = 1: length(event_times)
-    event_duration = event_times(i,2) - event_times(i,1);
-    %     event_duration = event_times(i,2) - event_times(i,1);
-
-    if contains(event_type,'ripples')
-        if event_duration <0.1
-            event_duration = 0.1;
-        end
+    event_duration = event_times(i,2) - event_times(i,1)-0.02;
+%     event_duration = event_times(i,2) - event_times(i,1);
+    if event_duration <0.1
+        event_duration = 0.1;
     end
     num_bins = floor(event_duration / time_bin_size_moving);
     timebins_edges = linspace(event_times(i,1), event_times(i,1) + num_bins *  time_bin_size_moving, num_bins+1);
@@ -130,37 +113,112 @@ n_ripples_residuals = zscore(n_ripples - ripple_global_pattern,0,1); % Residuals
 % %     scatter3(n_ripples_shuffled* weights(:, 1),n_ripples_shuffled* weights(:, 2),n_ripples_shuffled* weights(:, 3),15,'k','filled','MarkerFaceAlpha',0.1);hold on
 % 
 % end
+disp('Caclulate PLS during RUN')
 % Combine data and labels
-if isempty(PLS)
-    disp('Caclulate PLS during RUN')
-    % Combine data and labels
-    X = [n(T1_bins,:); n(T2_bins,:)];
-    Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
-    position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
+X = [n(T1_bins,:); n(T2_bins,:)];
+Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
+position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
 
-    [XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(X,Y,3); % 3 components
+[XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(X,Y,3); % 3 components
+[W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
+
+% figure
+% plsScores_Track1 = X(Y == 1,:) * W;
+% plsScores_Track2 = X(Y == 2,:) * W;
+% scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+% scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+
+% Create 10-fold stratified partition
+rng(200)
+numFolds = 10;
+cv = cvpartition(Y, 'KFold', numFolds);
+
+for fold = 1:numFolds
+    tic
+    % Get training and test indices for this fold
+    trainIdx = training(cv, fold); % Logical vector for training samples
+    testIdx = test(cv, fold);     % Logical vector for testing samples
+
+
+    %%%%% Perform PLS regression
+    [XL, YL, XS, YS, beta,PCTVAR] = plsregress(X(trainIdx,:),Y(trainIdx),3); % 3 components
+
+    % Project data onto the PLS components
+
     [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
+    plsScores_Track1 = n(testIdx & Y == 1,:) * W;
+    plsScores_Track2 = n(testIdx & Y == 2,:) * W;
 
-    % figure
-    % plsScores_Track1 = X(Y == 1,:) * W;
-    % plsScores_Track2 = X(Y == 2,:) * W;
-    % scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-    % scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+%     plsScores_train = X*XL; % The PLS latent scores (reduced dimensions)
+%     svmModel = fitcsvm(plsScores_train, Y, 'KernelFunction', 'linear', 'KernelScale', 'auto', 'BoxConstraint', 1);
+%     CVMdl = crossval(svmModel);
 
-    % Create 10-fold stratified partition
-    rng(200)
-    numFolds = 10;
-    cv = cvpartition(Y, 'KFold', numFolds);
+    %            plsScores_Sleep = spikeCounts_Sleep * XL; % Project sleep events
 
+    %     % Visualize first PLS component
+%     figure;
+%     scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+%     scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+%     scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
+
+    % Train SVM on PLS scores
+    plsScores_train = X(trainIdx,:)*W; % The PLS latent scores (reduced dimensions)
+    %     mdl = fitcsvm(plsScores_train, Y(trainIdx), 'KernelFunction', 'linear', 'KernelScale', 'auto', 'BoxConstraint', 1);
+    mdl = fitclinear(plsScores_train, Y(trainIdx), 'Learner', 'logistic', 'Regularization', 'ridge');
+    plsScores_test = X(testIdx,:)* W;
+    predictedTrack = predict(mdl, plsScores_test); % Predict track identity
+%     plot(cumsum(predictedTrack-1));hold on;plot(cumsum(Y(testIdx)-1));
+    
+%     sum(predictedTrack == Y(testIdx))/sum(testIdx)
+
+    temp = position_Z(testIdx);
+    correct_position1 = temp(Y(testIdx)==predictedTrack  & Y(testIdx) == 1);
+    correct_position2 = temp(Y(testIdx)==predictedTrack  & Y(testIdx) == 2);
+    incorrect_position1 = temp(Y(testIdx)~=predictedTrack  & Y(testIdx) == 1);
+    incorrect_position2 = temp(Y(testIdx)~=predictedTrack  & Y(testIdx) == 2);
+
+    % Plot 3D PLS scores with labels
+%     figure;
+%     scatter3(plsScores_test(Y(testIdx)==1, 1), plsScores_test(Y(testIdx)==1, 2), plsScores_test(Y(testIdx)==1, 3), 10,'b','filled','MarkerFaceAlpha',0.1); hold on;% Track 1
+%     scatter3(plsScores_test(Y(testIdx)==2, 1), plsScores_test(Y(testIdx)==2, 2), plsScores_test(Y(testIdx)==2, 3), 10,'r','filled','MarkerFaceAlpha',0.1); % Track 2
+
+
+    PLS.XL{fold} = XL; % Weight for projection
+    PLS.trainIdx{fold} = trainIdx;
+    PLS.testIdx{fold} = testIdx;
+    PLS.correct_position1{fold} = correct_position1;
+    PLS.incorrect_position1{fold} = incorrect_position1;
+    PLS.correct_position2{fold} = correct_position2;
+    PLS.incorrect_position2{fold} = incorrect_position2;
+    PLS.hit_rate(fold) = sum(predictedTrack == Y(testIdx))/sum(testIdx);
+    PLS.XL{fold} = XL; % The weights for the linear combinations of the predictors ( 𝑋 X) to form the latent components.
+    PLS.W{fold} = W; % XL was produced in a way that maximizes covariacne between X and Y, orthonormalized weights for projection.
+    PLS.PCTVAR{fold} = PCTVAR; % variance explaiend
+
+    PLS.X = X;
+    PLS.Y = Y;
+    toc
+end
+
+
+for nshuffle = 1:1000
+    PLS_shuffled.correct_position1{nshuffle} = [];
+    PLS_shuffled.incorrect_position1{nshuffle} = [];
+    PLS_shuffled.correct_position2{nshuffle} = [];
+    PLS_shuffled.incorrect_position2{nshuffle} = [];
+%     tic
     for fold = 1:numFolds
-        tic
+
         % Get training and test indices for this fold
         trainIdx = training(cv, fold); % Logical vector for training samples
         testIdx = test(cv, fold);     % Logical vector for testing samples
 
+        s = RandStream('mrg32k3a','Seed',nshuffle+1000000); % Set random seed for resampling
+        random_cell_index = randperm(s,size(X,2));
+        X_shuffled = X(:,random_cell_index);
 
         %%%%% Perform PLS regression
-        [XL, YL, XS, YS, beta,PCTVAR] = plsregress(X(trainIdx,:),Y(trainIdx),3); % 3 components
+        [XL, YL, XS, YS, beta,PCTVAR] = plsregress(X_shuffled(trainIdx,:),Y(trainIdx),3); % 3 components
 
         % Project data onto the PLS components
 
@@ -181,9 +239,10 @@ if isempty(PLS)
         %     scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
 
         % Train SVM on PLS scores
-        plsScores_train = X(trainIdx,:)*W; % The PLS latent scores (reduced dimensions)
+        plsScores_train = X_shuffled(trainIdx,:)*W; % The PLS latent scores (reduced dimensions)
         %     mdl = fitcsvm(plsScores_train, Y(trainIdx), 'KernelFunction', 'linear', 'KernelScale', 'auto', 'BoxConstraint', 1);
         mdl = fitclinear(plsScores_train, Y(trainIdx), 'Learner', 'logistic', 'Regularization', 'ridge');
+
         plsScores_test = X(testIdx,:)* W;
         predictedTrack = predict(mdl, plsScores_test); % Predict track identity
         %     plot(cumsum(predictedTrack-1));hold on;plot(cumsum(Y(testIdx)-1));
@@ -202,169 +261,79 @@ if isempty(PLS)
         %     scatter3(plsScores_test(Y(testIdx)==2, 1), plsScores_test(Y(testIdx)==2, 2), plsScores_test(Y(testIdx)==2, 3), 10,'r','filled','MarkerFaceAlpha',0.1); % Track 2
 
 
-        PLS.XL{fold} = XL; % Weight for projection
-        PLS.trainIdx{fold} = trainIdx;
-        PLS.testIdx{fold} = testIdx;
-        PLS.correct_position1{fold} = correct_position1;
-        PLS.incorrect_position1{fold} = incorrect_position1;
-        PLS.correct_position2{fold} = correct_position2;
-        PLS.incorrect_position2{fold} = incorrect_position2;
-        PLS.hit_rate(fold) = sum(predictedTrack == Y(testIdx))/sum(testIdx);
-        PLS.XL{fold} = XL; % The weights for the linear combinations of the predictors ( 𝑋 X) to form the latent components.
-        PLS.W{fold} = W; % XL was produced in a way that maximizes covariacne between X and Y, orthonormalized weights for projection.
-        PLS.PCTVAR{fold} = PCTVAR; % variance explaiend
-
-        PLS.X = X;
-        PLS.Y = Y;
-        toc
+        PLS_shuffled.correct_position1{nshuffle} = [PLS_shuffled.correct_position1{nshuffle} correct_position1];
+        PLS_shuffled.incorrect_position1{nshuffle} = [PLS_shuffled.incorrect_position1{nshuffle} incorrect_position1];
+        PLS_shuffled.correct_position2{nshuffle} = [PLS_shuffled.correct_position2{nshuffle} correct_position2];
+        PLS_shuffled.incorrect_position2{nshuffle} = [PLS_shuffled.incorrect_position2{nshuffle} incorrect_position2];
     end
 
-
-    for nshuffle = 1:1000
-        PLS_shuffled.correct_position1{nshuffle} = [];
-        PLS_shuffled.incorrect_position1{nshuffle} = [];
-        PLS_shuffled.correct_position2{nshuffle} = [];
-        PLS_shuffled.incorrect_position2{nshuffle} = [];
-        %     tic
-        for fold = 1:numFolds
-
-            % Get training and test indices for this fold
-            trainIdx = training(cv, fold); % Logical vector for training samples
-            testIdx = test(cv, fold);     % Logical vector for testing samples
-
-            s = RandStream('mrg32k3a','Seed',nshuffle+1000000); % Set random seed for resampling
-            random_cell_index = randperm(s,size(X,2));
-            X_shuffled = X(:,random_cell_index);
-
-            %%%%% Perform PLS regression
-            [XL, YL, XS, YS, beta,PCTVAR] = plsregress(X_shuffled(trainIdx,:),Y(trainIdx),3); % 3 components
-
-            % Project data onto the PLS components
-
-            [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
-            plsScores_Track1 = n(testIdx & Y == 1,:) * W;
-            plsScores_Track2 = n(testIdx & Y == 2,:) * W;
-
-            %     plsScores_train = X*XL; % The PLS latent scores (reduced dimensions)
-            %     svmModel = fitcsvm(plsScores_train, Y, 'KernelFunction', 'linear', 'KernelScale', 'auto', 'BoxConstraint', 1);
-            %     CVMdl = crossval(svmModel);
-
-            %            plsScores_Sleep = spikeCounts_Sleep * XL; % Project sleep events
-
-            %     % Visualize first PLS component
-            %     figure;
-            %     scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-            %     scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
-            %     scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-
-            % Train SVM on PLS scores
-            plsScores_train = X_shuffled(trainIdx,:)*W; % The PLS latent scores (reduced dimensions)
-            %     mdl = fitcsvm(plsScores_train, Y(trainIdx), 'KernelFunction', 'linear', 'KernelScale', 'auto', 'BoxConstraint', 1);
-            mdl = fitclinear(plsScores_train, Y(trainIdx), 'Learner', 'logistic', 'Regularization', 'ridge');
-
-            plsScores_test = X(testIdx,:)* W;
-            predictedTrack = predict(mdl, plsScores_test); % Predict track identity
-            %     plot(cumsum(predictedTrack-1));hold on;plot(cumsum(Y(testIdx)-1));
-
-            %     sum(predictedTrack == Y(testIdx))/sum(testIdx)
-
-            temp = position_Z(testIdx);
-            correct_position1 = temp(Y(testIdx)==predictedTrack  & Y(testIdx) == 1);
-            correct_position2 = temp(Y(testIdx)==predictedTrack  & Y(testIdx) == 2);
-            incorrect_position1 = temp(Y(testIdx)~=predictedTrack  & Y(testIdx) == 1);
-            incorrect_position2 = temp(Y(testIdx)~=predictedTrack  & Y(testIdx) == 2);
-
-            % Plot 3D PLS scores with labels
-            %     figure;
-            %     scatter3(plsScores_test(Y(testIdx)==1, 1), plsScores_test(Y(testIdx)==1, 2), plsScores_test(Y(testIdx)==1, 3), 10,'b','filled','MarkerFaceAlpha',0.1); hold on;% Track 1
-            %     scatter3(plsScores_test(Y(testIdx)==2, 1), plsScores_test(Y(testIdx)==2, 2), plsScores_test(Y(testIdx)==2, 3), 10,'r','filled','MarkerFaceAlpha',0.1); % Track 2
-
-
-            PLS_shuffled.correct_position1{nshuffle} = [PLS_shuffled.correct_position1{nshuffle} correct_position1];
-            PLS_shuffled.incorrect_position1{nshuffle} = [PLS_shuffled.incorrect_position1{nshuffle} incorrect_position1];
-            PLS_shuffled.correct_position2{nshuffle} = [PLS_shuffled.correct_position2{nshuffle} correct_position2];
-            PLS_shuffled.incorrect_position2{nshuffle} = [PLS_shuffled.incorrect_position2{nshuffle} incorrect_position2];
-        end
-
-        %     PLS.hit_rate{nshuffle} = sum(predictedTrack == Y(testIdx))/sum(testIdx);
-        %     toc
-    end
-
-    region_name = {'Left','Right'};
-
-    colour_lines = [215,25,28;44,123,182]/256;
-    title_text = sprintf('%s %s Logistic Ridge regression of PLS components %s',options.SUBJECT,options.SESSION);
-    nfigure = 1;
-    fig(nfigure)=figure;
-    fig(nfigure).Name=title_text;
-    fig(nfigure).Position = [680 482 630 500]
-    % fig(nfigure).Name=sprintf('Logistic Ridge regression of PLS latent components %s',region_name{options.probe_hemisphere});
-
-    x = unique(position_interp1);
-    for fold = 1:numFolds
-        correct_position_distribution1(fold,:) = histcounts(PLS.correct_position1{fold},length(x))./((histcounts(horzcat(PLS.incorrect_position1{fold}),length(x)))+(histcounts(horzcat(PLS.correct_position1{fold}),length(x))));
-    end
-    y = mean(correct_position_distribution1);
-    SE = std(correct_position_distribution1)./sqrt(numFolds);
-    PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-    ERROR_SHADE(1) = patch([x fliplr(x)],[y+SE fliplr(y-SE)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-    for fold = 1:numFolds
-        correct_position_distribution2(fold,:) = histcounts(PLS.correct_position2{fold},length(x))./((histcounts(horzcat(PLS.incorrect_position2{fold}),length(x)))+(histcounts(horzcat(PLS.correct_position2{fold}),length(x))));
-    end
-    y = mean(correct_position_distribution2);
-    SE = std(correct_position_distribution2)./sqrt(numFolds);
-    PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-    ERROR_SHADE(2) = patch([x fliplr(x)],[y+SE fliplr(y-SE)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
-    correct_position_distribution_shuffled=[];
-    for nshuffle = 1:1000
-        correct_position = [PLS_shuffled.correct_position1{nshuffle} PLS_shuffled.correct_position2{nshuffle}];
-        incorrect_position = [PLS_shuffled.incorrect_position1{nshuffle} PLS_shuffled.incorrect_position2{nshuffle}];
-        correct_position_distribution_shuffled(nshuffle,:) = histcounts(correct_position,length(x))./(histcounts(correct_position,length(x))+histcounts(incorrect_position,length(x)));
-    end
-    y = mean(correct_position_distribution_shuffled);
-    CI_U = prctile(correct_position_distribution_shuffled,97.5,1);
-    CI_L = prctile(correct_position_distribution_shuffled,2.5,1);
-    PLOT = plot(x,y,'Color','k');hold on;
-    ERROR_SHADE(3) = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
-    xlabel('Position (cm)')
-    ylabel('Proportion of correct track classification')
-    title(title_text)
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-    %%%%%  Remove data point when track id classification based on PLS
-    %%%%%  regression
-
-    X = [n(T1_bins,:); n(T2_bins,:)];
-    Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
-    position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
-
-    position_bins = unique(position_interp1);
-    [index,Locb] = ismember(position_Z,position_bins(mean(correct_position_distribution1) > CI_U & mean(correct_position_distribution2) > CI_U));
-
-    % Find Bins with 'Good' positions
-    position_Z = position_Z(index);
-    X = zscore(X(index,:));
-    Y = Y(index);
-
-    PLS.good_idx = index;
-    PLS.good_position = unique(position_Z);
-else
-    X = [n(T1_bins,:); n(T2_bins,:)];
-    Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
-    position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
-
-    index = PLS.good_idx;
-    % Find Bins with 'Good' positions
-    position_Z = position_Z(index);
-    X = zscore(X(index,:));
-    Y = Y(index);
+    %     PLS.hit_rate{nshuffle} = sum(predictedTrack == Y(testIdx))/sum(testIdx);
+%     toc
 end
 
+region_name = {'Left','Right'};
+
+colour_lines = [215,25,28;44,123,182]/256;
+title_text = sprintf('%s %s Logistic Ridge regression of PLS components %s',options.SUBJECT,options.SESSION);
+nfigure = 1;
+fig(nfigure)=figure;
+fig(nfigure).Name=title_text;
+fig(nfigure).Position = [680 482 630 500]
+% fig(nfigure).Name=sprintf('Logistic Ridge regression of PLS latent components %s',region_name{options.probe_hemisphere});
+
+x = unique(position_interp1);
+for fold = 1:numFolds
+    correct_position_distribution1(fold,:) = histcounts(PLS.correct_position1{fold},length(x))./((histcounts(horzcat(PLS.incorrect_position1{fold}),length(x)))+(histcounts(horzcat(PLS.correct_position1{fold}),length(x))));
+end
+y = mean(correct_position_distribution1);
+SE = std(correct_position_distribution1)./sqrt(numFolds);
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[y+SE fliplr(y-SE)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+for fold = 1:numFolds
+    correct_position_distribution2(fold,:) = histcounts(PLS.correct_position2{fold},length(x))./((histcounts(horzcat(PLS.incorrect_position2{fold}),length(x)))+(histcounts(horzcat(PLS.correct_position2{fold}),length(x))));
+end
+y = mean(correct_position_distribution2);
+SE = std(correct_position_distribution2)./sqrt(numFolds);
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[y+SE fliplr(y-SE)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+correct_position_distribution_shuffled=[];
+for nshuffle = 1:1000
+    correct_position = [PLS_shuffled.correct_position1{nshuffle} PLS_shuffled.correct_position2{nshuffle}];
+    incorrect_position = [PLS_shuffled.incorrect_position1{nshuffle} PLS_shuffled.incorrect_position2{nshuffle}];
+    correct_position_distribution_shuffled(nshuffle,:) = histcounts(correct_position,length(x))./(histcounts(correct_position,length(x))+histcounts(incorrect_position,length(x)));
+end
+y = mean(correct_position_distribution_shuffled);
+CI_U = prctile(correct_position_distribution_shuffled,97.5,1);
+CI_L = prctile(correct_position_distribution_shuffled,2.5,1);
+PLOT = plot(x,y,'Color','k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
+xlabel('Position (cm)')
+ylabel('Proportion of correct track classification')
+title(title_text)
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+%%%%%  Remove data point when track id classification based on PLS
+%%%%%  regression
+
+X = [n(T1_bins,:); n(T2_bins,:)];
+Y = [ones(sum(T1_bins),1); 2 * ones(sum(T2_bins),1)];
+position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
+
+position_bins = unique(position_interp1);
+[index,Locb] = ismember(position_Z,position_bins(mean(correct_position_distribution1) > CI_U & mean(correct_position_distribution2) > CI_U));
+
+% Find Bins with 'Good' positions
+position_Z = position_Z(index);
+X = zscore(X(index,:));
+Y = Y(index);
+
+PLS.good_idx = index;
+PLS.good_position = unique(position_Z);
 
 
 %%%%% Project PLS weights to ripple data
@@ -458,8 +427,8 @@ scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),
 scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
 plsScores_ripples = n_ripples * W;
 scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-legend('Track 1', 'Track 2',event_type,'Box','off')
-title(sprintf('%s PLS projection',event_type));
+legend('Track 1', 'Track 2','Ripples','Box','off')
+title('ripple PLS projection');
 % legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
 title(title_text)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -473,8 +442,8 @@ scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),
 scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
 plsScores_ripples = n_ripples_residuals * W;
 scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-legend('Track 1', 'Track 2','Event residuals','Box','off')
-title(sprintf('%s PLS projection',event_type));
+legend('Track 1', 'Track 2','Ripples residuals','Box','off')
+title('ripple PLS projection');
 % legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
 title(title_text)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -509,120 +478,117 @@ sgtitle(title_text)
 % legend('Track 1', 'Track 2','Ripples','Ripple (shuffled)');
 % title('PLS-DA Separation');
 
-if isempty(KDE_RUN)
-    disp('Find best bandwidth for KDE of PLS projection')
-    %%%%% Create 10-fold partition for finding best bandwidth for KDE PLS
-    rng(200)
-    numFolds = 10;
-    cv = cvpartition(Y, 'KFold', numFolds);
+disp('Find best bandwidth for KDE of PLS projection')
+%%%%% Create 10-fold partition for finding best bandwidth for KDE PLS
+rng(200)
+numFolds = 10;
+cv = cvpartition(Y, 'KFold', numFolds);
 
-    % KDE for Track 1 and Track 2 with optimized bandwidth
-    Bandwith_list = 0.1:0.1:2;
-    track_separation=[];
-    KDE_RUN = [];
-    % title_text = sprintf('%s %s PLS components KDE RUN ',options.SUBJECT,options.SESSION);
+% KDE for Track 1 and Track 2 with optimized bandwidth
+Bandwith_list = 0.1:0.1:2;
+track_separation=[];
+KDE_RUN = [];
+% title_text = sprintf('%s %s PLS components KDE RUN ',options.SUBJECT,options.SESSION);
 
-    for i = 1:20
-        pdf_T1_CV=[];
-        pdf_T2_CV=[];
-        Y_CV = [];
-        Z_CV = [];
-        for fold = 1:numFolds
-            s = RandStream('mrg32k3a','Seed',fold); % Set random seed for resampling
-            %         random_cell_index = randperm(s,size(n_ripples_residuals,2));
-            %         random_cell_index = randperm(s,size(n_ripples_residuals,2));
-            %         n_ripples_shuffled = n_ripples(:,random_cell_index);
+for i = 1:20
+    pdf_T1_CV=[];
+    pdf_T2_CV=[];
+    Y_CV = [];
+    Z_CV = [];
+    for fold = 1:numFolds
+        s = RandStream('mrg32k3a','Seed',fold); % Set random seed for resampling
+        %         random_cell_index = randperm(s,size(n_ripples_residuals,2));
+        %         random_cell_index = randperm(s,size(n_ripples_residuals,2));
+        %         n_ripples_shuffled = n_ripples(:,random_cell_index);
 
-            % Get training and test indices for this fold
-            trainIdx = training(cv, fold); % Logical vector for training samples
-            testIdx = test(cv, fold);     % Logical vector for testing samples
+        % Get training and test indices for this fold
+        trainIdx = training(cv, fold); % Logical vector for training samples
+        testIdx = test(cv, fold);     % Logical vector for testing samples
 
-            [pdf_T1] = mvksdensity( X(Y == 1 & trainIdx==1,:) * W,X(testIdx,:) * W, 'Bandwidth',Bandwith_list(i)); % Cross-validated bandwidth
-            [pdf_T2] = mvksdensity( X(Y == 2 & trainIdx==1,:) * W,X(testIdx,:) * W, 'Bandwidth', Bandwith_list(i));
+        [pdf_T1] = mvksdensity( X(Y == 1 & trainIdx==1,:) * W,X(testIdx,:) * W, 'Bandwidth',Bandwith_list(i)); % Cross-validated bandwidth
+        [pdf_T2] = mvksdensity( X(Y == 2 & trainIdx==1,:) * W,X(testIdx,:) * W, 'Bandwidth', Bandwith_list(i));
 
-            pdf_T1_CV = [pdf_T1_CV;pdf_T1];
-            pdf_T2_CV = [pdf_T2_CV;pdf_T2];
-            Y_CV = [Y_CV; Y(Y == 1 & testIdx==1) ;Y(Y == 2 & testIdx==1)];% Track ID
-            Z_CV = [Z_CV; position_Z(Y == 1 & testIdx==1)' ;position_Z(Y == 2 & testIdx==1)']; % Position
-            %     [pdf_T1] = mvksdensity( X(Y == 1,:) * W,n_ripples * W, 'Bandwidth',Bindiwith_list(i)); % Cross-validated bandwidth
-            %     [pdf_T2] = mvksdensity( X(Y == 2,:) * W,n_ripples * W, 'Bandwidth', Bindiwith_list(i));
-        end
-        %     pdf_T2_CV = movmedian(pdf_T2_CV,3);
-        %     pdf_T1_CV = movmedian(pdf_T1_CV,3);
-
-        % Compute separability metric (e.g., Bhattacharyya distance)
-        %     separability(i) = -log(sum(sqrt(pdf_T1_CV .* pdf_T2_CV))); % Bhattacharyya distance
-        %     [emd_value] = emd(pdf_T1_CV, pdf_T2_CV, distance_metric);
-
-        RUN_bias = pdf_T1_CV./(pdf_T1_CV+pdf_T2_CV);
-        for nboot = 1:1000
-            s = RandStream('mrg32k3a','Seed',nboot); % Set random seed for resampling
-
-            index = datasample(s,1:length(RUN_bias),length(RUN_bias));
-            data_resampled(nboot,:) = RUN_bias(index);
-            track_label_resampled(nboot,:) = Y_CV(index)-1;
-            [x,y,T,A] = perfcurve(Y_CV(index),RUN_bias(index),1,'XVals',0:0.05:1,'NBoot',1,'BootType','per');
-            %             [X,Y,T,A] = perfcurve(track_label(index),z_log_odds(index),1,'XVals',0:0.05:1);
-
-            FPR = x;
-            TPR(nboot,:) = y(:,1);
-            AUC(nboot) = A(1);
-        end
-
-        KDE_RUN.Bandwidth(i) = Bandwith_list(i);
-        KDE_RUN.AUC(i,:) = AUC;
-        KDE_RUN.FPR = FPR;
-        KDE_RUN.TPR(i,:,:) = TPR;
-
-
-        %     fig(10) = figure(10);
-        %     fig(10).Position = [300 70 1330 895];
-        %     fig(10).Name = [title_text,'T1-T2 bias distribution']
-        %
-        %
-        %     subplot(4,5,i)
-        %     histogram(pdf_T2_CV./(pdf_T1_CV+pdf_T2_CV),0:0.005:1,'EdgeAlpha',0)
-        %     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
-        %     set(gca,"TickDir","out",'box', 'off','Color','none')
-        %     fontsize(gcf,12,"points")
-        %
-        %     fig(11) = figure(11);
-        %     fig(11).Position = [300 70 1330 895];
-        %     fig(11).Name = [title_text,'T1-T2 bias']
-        %
-        %     subplot(4,5,i)
-        %     plot(pdf_T2_CV./(pdf_T1_CV+pdf_T2_CV));hold on;plot(Y_CV-1)
-        %     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
-        %     set(gca,"TickDir","out",'box', 'off','Color','none')
-        %     fontsize(gcf,12,"points")
-        %
-        %     fig(12) = figure(12);
-        %     fig(12).Position = [300 70 1330 895];
-        %     fig(12).Name = [title_text,'T1-T2 bias AUC']
-        %
-        %     subplot(4,5,i)
-        %     hold on
-        %     x = FPR';
-        %     CI_shuffle = prctile(TPR,[2.5 97.5]);
-        % %     plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
-        % %     plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
-        %     x2 = [x, fliplr(x)];
-        %     inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
-        %     h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2,'EdgeColor','r');
-        %
-        %     h(1) = plot([0 1],[0 1],'k--')
-        %     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
-        %     set(gca,"TickDir","out",'box', 'off','Color','none')
-        %     %     legend([h(2) h(1)],{'Real','chance'})
-        %     xlabel('False positive rate')
-        %     ylabel('True positive rate')
-        %     %                 sgtitle('lap z log odds ROC two track discrimination in V1 for left probe')
-        %     fontsize(gcf,12,"points")
+        pdf_T1_CV = [pdf_T1_CV;pdf_T1];
+        pdf_T2_CV = [pdf_T2_CV;pdf_T2];
+        Y_CV = [Y_CV; Y(Y == 1 & testIdx==1) ;Y(Y == 2 & testIdx==1)];% Track ID
+        Z_CV = [Z_CV; position_Z(Y == 1 & testIdx==1)' ;position_Z(Y == 2 & testIdx==1)']; % Position
+        %     [pdf_T1] = mvksdensity( X(Y == 1,:) * W,n_ripples * W, 'Bandwidth',Bindiwith_list(i)); % Cross-validated bandwidth
+        %     [pdf_T2] = mvksdensity( X(Y == 2,:) * W,n_ripples * W, 'Bandwidth', Bindiwith_list(i));
     end
+    %     pdf_T2_CV = movmedian(pdf_T2_CV,3);
+    %     pdf_T1_CV = movmedian(pdf_T1_CV,3);
+
+    % Compute separability metric (e.g., Bhattacharyya distance)
+%     separability(i) = -log(sum(sqrt(pdf_T1_CV .* pdf_T2_CV))); % Bhattacharyya distance
+%     [emd_value] = emd(pdf_T1_CV, pdf_T2_CV, distance_metric);
+
+    RUN_bias = pdf_T1_CV./(pdf_T1_CV+pdf_T2_CV);
+    for nboot = 1:1000
+        s = RandStream('mrg32k3a','Seed',nboot); % Set random seed for resampling
+
+        index = datasample(s,1:length(RUN_bias),length(RUN_bias));
+        data_resampled(nboot,:) = RUN_bias(index);
+        track_label_resampled(nboot,:) = Y_CV(index)-1;
+        [x,y,T,A] = perfcurve(Y_CV(index),RUN_bias(index),1,'XVals',0:0.05:1,'NBoot',1,'BootType','per');
+        %             [X,Y,T,A] = perfcurve(track_label(index),z_log_odds(index),1,'XVals',0:0.05:1);
+
+        FPR = x;
+        TPR(nboot,:) = y(:,1);
+        AUC(nboot) = A(1);
+    end
+
+    KDE_RUN.Bandwidth(i) = Bandwith_list(i);
+    KDE_RUN.AUC(i,:) = AUC;
+    KDE_RUN.FPR = FPR;
+    KDE_RUN.TPR(i,:,:) = TPR;
+
+
+%     fig(10) = figure(10);
+%     fig(10).Position = [300 70 1330 895];
+%     fig(10).Name = [title_text,'T1-T2 bias distribution']
+% 
+% 
+%     subplot(4,5,i)
+%     histogram(pdf_T2_CV./(pdf_T1_CV+pdf_T2_CV),0:0.005:1,'EdgeAlpha',0)
+%     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
+%     set(gca,"TickDir","out",'box', 'off','Color','none')
+%     fontsize(gcf,12,"points")
+% 
+%     fig(11) = figure(11);
+%     fig(11).Position = [300 70 1330 895];
+%     fig(11).Name = [title_text,'T1-T2 bias']
+% 
+%     subplot(4,5,i)
+%     plot(pdf_T2_CV./(pdf_T1_CV+pdf_T2_CV));hold on;plot(Y_CV-1)
+%     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
+%     set(gca,"TickDir","out",'box', 'off','Color','none')
+%     fontsize(gcf,12,"points")
+% 
+%     fig(12) = figure(12);
+%     fig(12).Position = [300 70 1330 895];
+%     fig(12).Name = [title_text,'T1-T2 bias AUC']
+% 
+%     subplot(4,5,i)
+%     hold on
+%     x = FPR';
+%     CI_shuffle = prctile(TPR,[2.5 97.5]);
+% %     plot(x, CI_shuffle(2,:), 'r--', 'LineWidth', 1);
+% %     plot(x, CI_shuffle(1,:), 'r--', 'LineWidth', 1);
+%     x2 = [x, fliplr(x)];
+%     inBetween = [CI_shuffle(1,:), fliplr(CI_shuffle(2,:))];
+%     h(2) = fill(x2, inBetween, 'r','FaceAlpha',0.2,'EdgeColor','r');
+% 
+%     h(1) = plot([0 1],[0 1],'k--')
+%     title(sprintf('AUC %.4f Bandwith %.1f',median(AUC),Bandwith_list(i)))
+%     set(gca,"TickDir","out",'box', 'off','Color','none')
+%     %     legend([h(2) h(1)],{'Real','chance'})
+%     xlabel('False positive rate')
+%     ylabel('True positive rate')
+%     %                 sgtitle('lap z log odds ROC two track discrimination in V1 for left probe')
+%     fontsize(gcf,12,"points")
 end
 
 %%% Best bandwith for KDE based on RUN Track 1 and Track 2 separation
-Bandwith_list = 0.1:0.1:2;
 mean_AUC = median(KDE_RUN.AUC,2);
 AUC_UCI = prctile(KDE_RUN.AUC,97.5,2);
 AUC_LCI = prctile(KDE_RUN.AUC,2.5,2);
@@ -647,10 +613,9 @@ Bandwidth = Bandwith_list(index);
 
 pdf_T1_shuffled = zeros(1000,size(n_ripples_residuals,1));
 pdf_T2_shuffled = zeros(1000,size(n_ripples_residuals,1));
-disp(sprintf('Caclulate Reactivation based on KDE of PLS projection to %s data',event_type));
-
+disp('Caclulate Reactivation based on KDE of PLS projection to ripple data')
 % tic
-parfor nshuffle = 1:10
+parfor nshuffle = 1:1000
     tic
     s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
     random_cell_index = randperm(s,size(n_ripples_residuals,2));
@@ -666,184 +631,104 @@ KDE_bias_event = [];
 KDE_bias = pdf_T1./(pdf_T1+pdf_T2);
 KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
 
-KDE_reactivation = [];
-KDE_reactivation.event_id = ripples_id;
-KDE_reactivation.event_spike_counts = n_ripples;
-KDE_reactivation.event_bins = ripple_bins;
-KDE_reactivation.event_bias = KDE_bias;
-KDE_reactivation.event_T1_probability = pdf_T1;
-KDE_reactivation.event_T2_probability = pdf_T2;
-KDE_reactivation.event_T1_probability_shuffled = pdf_T1_shuffled;
-KDE_reactivation.event_T2_probability_shuffled = pdf_T2_shuffled;
-KDE_reactivation.event_proj = W;
+count=0;
+for nEvent = 1:max(ripples_id)
+    count = count + 1;
+    this_event_bins = find(ripples_id==nEvent);
+%     KDE_bias_shuffled_event(:,nEvent) = mean(KDE_bias_shuffled(:,this_event_bins),2);
+    [KDE_bias_T1_event(nEvent) tidx] = max(KDE_bias(this_event_bins));
+    KDE_bias_shuffled_T1_event(:,nEvent) = KDE_bias_shuffled(:,this_event_bins(tidx));
+    KDE_T1_event_pvalue(nEvent) = sum(KDE_bias_T1_event(nEvent)>KDE_bias_shuffled_T1_event(:,nEvent))/size(KDE_bias_shuffled_T1_event,1);
+    KDE_T1_peak_tidx(nEvent) = this_event_bins(tidx);
 
+    this_event_bins = find(ripples_id==nEvent);
+    %     KDE_bias_shuffled_event(:,nEvent) = mean(KDE_bias_shuffled(:,this_event_bins),2);
+    [KDE_bias_T2_event(nEvent) tidx] = min(KDE_bias(this_event_bins));
+    KDE_bias_shuffled_T2_event(:,nEvent) = KDE_bias_shuffled(:,this_event_bins(tidx));
+    KDE_T2_event_pvalue(nEvent) = sum(KDE_bias_T2_event(nEvent)<KDE_bias_shuffled_T2_event(:,nEvent))/size(KDE_bias_shuffled_T2_event,1);
+    KDE_T2_peak_tidx(nEvent) = this_event_bins(tidx);
 
-
-if contains(event_type,'ripples') % calculate significance for ripple events only
-    count=0;
-    for nEvent = 1:max(ripples_id)
-        count = count + 1;
-        this_event_bins = find(ripples_id==nEvent);
-        %     KDE_bias_shuffled_event(:,nEvent) = mean(KDE_bias_shuffled(:,this_event_bins),2);
-        [KDE_bias_T1_event(nEvent) tidx] = max(KDE_bias(this_event_bins));
-        KDE_bias_shuffled_T1_event(:,nEvent) = KDE_bias_shuffled(:,this_event_bins(tidx));
-        KDE_T1_event_pvalue(nEvent) = sum(KDE_bias_T1_event(nEvent)>KDE_bias_shuffled_T1_event(:,nEvent))/size(KDE_bias_shuffled_T1_event,1);
-        KDE_T1_peak_tidx(nEvent) = this_event_bins(tidx);
-
-        this_event_bins = find(ripples_id==nEvent);
-        %     KDE_bias_shuffled_event(:,nEvent) = mean(KDE_bias_shuffled(:,this_event_bins),2);
-        [KDE_bias_T2_event(nEvent) tidx] = min(KDE_bias(this_event_bins));
-        KDE_bias_shuffled_T2_event(:,nEvent) = KDE_bias_shuffled(:,this_event_bins(tidx));
-        KDE_T2_event_pvalue(nEvent) = sum(KDE_bias_T2_event(nEvent)<KDE_bias_shuffled_T2_event(:,nEvent))/size(KDE_bias_shuffled_T2_event,1);
-        KDE_T2_peak_tidx(nEvent) = this_event_bins(tidx);
-
-        %     KDE_event_bias(nEvent) = sum(KDE_bias(this_event_bins));
-        %     KDE_event_bias_shuffled(:,nEvent) = sum(KDE_bias_shuffled(:,this_event_bins),2);
-        %      sum(KDE_event_bias(nEvent)<KDE_bias_shuffled_T2_event(:,nEvent))/size(KDE_bias_shuffled_T2_event,1);
-    end
-
-
-    KDE_reactivation.event_peak_tidx = KDE_T1_peak_tidx;
-    KDE_reactivation.T2_peak_tidx = KDE_T2_peak_tidx;
-    KDE_reactivation.T1_peak_bias = KDE_bias(KDE_T1_peak_tidx);
-    KDE_reactivation.T2_peak_bias = KDE_bias(KDE_T2_peak_tidx);
-    KDE_reactivation.T1_pvalue = KDE_T1_event_pvalue;
-    KDE_reactivation.T2_pvalue = KDE_T2_event_pvalue;
-
-
-    %%%%% Visualisation of Peak bias distribution
-    nfigure = nfigure+ 1;
-    fig(nfigure) = figure;
-    fig(nfigure).Name=sprintf('KDE peak bias distribution %s %s',region_name{options.probe_hemisphere},event_type);
-
-    subplot(2,2,1)
-    histogram(KDE_bias_T1_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
-    histogram(KDE_bias_shuffled_T1_event,100,'FaceAlpha',0.5,'Normalization','probability')
-    set(gca,"TickDir","out",'box', 'off','Color','none')
-
-    subplot(2,2,2)
-    histogram(KDE_bias_T2_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
-    histogram(KDE_bias_shuffled_T2_event,100,'FaceAlpha',0.5,'Normalization','probability')
-    set(gca,"TickDir","out",'box', 'off','Color','none')
-    fontsize(gcf,12,"points")
-
-    % sum(KDE_T1_event_pvalue >= 0.95 & KDE_T2_event_pvalue >= 0.95)
-    % sum(KDE_T1_event_pvalue >= 0.975)
-    % sum(KDE_T2_event_pvalue >= 0.975)
-
-
-    %%%%% Visualisation of significant T1 and T2 ripple events
-    nfigure = nfigure+ 1;
-    fig(nfigure) = figure;
-    fig(nfigure).Position = [279,55,1800,933];
-    fig(nfigure).Name=sprintf('T1 events KDE bias %s %s',region_name{options.probe_hemisphere},event_type);
-    count = 0
-    for nEvent = find(KDE_T1_event_pvalue >=0.95)
-        count = count + 1;
-        if count < 201
-            this_event_bins = find(ripples_id==nEvent);
-
-            x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
-            subplot(10,20,count)
-            plot(x,(KDE_bias(this_event_bins)),'r')
-            hold on
-            y = mean(KDE_bias_shuffled(:,this_event_bins));
-            CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
-            CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
-            PLOT = plot(x,y,'Color','k');hold on;
-            ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
-            ylim([0 1])
-            set(gca,"TickDir","out",'box', 'off','Color','none')
-        end
-    end
-    fontsize(gcf,10,"points")
-    % Add a common x-label and y-label
-    % Use 'Position' to adjust placement
-    han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
-    han.XLabel.Visible = 'on'; % Turn on visibility for x-label
-    han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-    xlabel(han, 'Time (s)');
-    ylabel(han, 'T1/T2 bias');
-
-
-    fig(nfigure) = figure
-    fig(nfigure).Position = [279,55,1800,933];
-    fig(nfigure).Name=sprintf('T2 events KDE bias %s %s',region_name{options.probe_hemisphere},event_type);
-    count = 0
-    for nEvent = find(KDE_T2_event_pvalue >=0.95)
-        count = count + 1;
-        if count < 201
-            this_event_bins = find(ripples_id==nEvent);
-
-            x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
-            subplot(10,20,count)
-            plot(x,(KDE_bias(this_event_bins)),'r')
-            hold on
-            y = mean(KDE_bias_shuffled(:,this_event_bins));
-            CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
-            CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
-            PLOT = plot(x,y,'Color','k');hold on;
-            ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
-            ylim([0 1])
-            set(gca,"TickDir","out",'box', 'off','Color','none')
-        end
-    end
-    fontsize(gcf,10,"points")
-    % Add a common x-label and y-label
-    % Use 'Position' to adjust placement
-    han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
-    han.XLabel.Visible = 'on'; % Turn on visibility for x-label
-    han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-    xlabel(han, 'Time (s)');
-    ylabel(han, 'T1/T2 bias');
-else
-
-    %%%%% Visualisation of random events without determining reactivation
-    %%%%% significance
-    nfigure = nfigure+ 1;
-    fig(nfigure) = figure;
-    fig(nfigure).Position = [279,55,1800,933];
-    fig(nfigure).Name=sprintf('KDE bias %s %s',region_name{options.probe_hemisphere},event_type);
-    count = 0
-    
-    s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
-    event_index = 1:max(ripples_id);
-
-
-    if length(event_index)>100
-        sampled_event_id = datasample(s,event_index,100,'Replace',false);
-    else
-        sampled_event_id = 1:event_index;
-    end
-    
-    for nEvent = sampled_event_id
-        count = count + 1;
-        if count < 101
-            this_event_bins = find(ripples_id==nEvent);
-
-            x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
-            subplot(10,10,count)
-            plot(x,(KDE_bias(this_event_bins)),'r')
-            hold on
-            y = mean(KDE_bias_shuffled(:,this_event_bins));
-            CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
-            CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
-            PLOT = plot(x,y,'Color','k');hold on;
-            ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
-            ylim([0 1])
-            set(gca,"TickDir","out",'box', 'off','Color','none')
-        end
-    end
-    fontsize(gcf,10,"points")
-    % Add a common x-label and y-label
-    % Use 'Position' to adjust placement
-    han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
-    han.XLabel.Visible = 'on'; % Turn on visibility for x-label
-    han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-    xlabel(han, 'Time (s)');
-    ylabel(han, 'T1/T2 bias');
-
+%     KDE_event_bias(nEvent) = sum(KDE_bias(this_event_bins));
+%     KDE_event_bias_shuffled(:,nEvent) = sum(KDE_bias_shuffled(:,this_event_bins),2);
+%      sum(KDE_event_bias(nEvent)<KDE_bias_shuffled_T2_event(:,nEvent))/size(KDE_bias_shuffled_T2_event,1);
 end
+KDE_reactivation = [];
+KDE_reactivation.ripple_id = ripples_id;
+KDE_reactivation.ripple_spike_counts = n_ripples;
+KDE_reactivation.ripple_bins = ripple_bins;
+KDE_reactivation.ripple_bias = KDE_bias;
+KDE_reactivation.ripple_T1_probability = pdf_T1;
+KDE_reactivation.ripple_T2_probability = pdf_T2;
+
+KDE_reactivation.ripple_proj = W;
+KDE_reactivation.T1_peak_tidx = KDE_T1_peak_tidx;
+KDE_reactivation.T2_peak_tidx = KDE_T2_peak_tidx;
+KDE_reactivation.T1_peak_bias = KDE_bias(KDE_T1_peak_tidx);
+KDE_reactivation.T2_peak_bias = KDE_bias(KDE_T2_peak_tidx);
+KDE_reactivation.T1_pvalue = KDE_T1_event_pvalue;
+KDE_reactivation.T2_pvalue = KDE_T2_event_pvalue;
+
+
+KDE_reactivation.ripple_T1_probability_shuffled = pdf_T1_shuffled;
+KDE_reactivation.ripple_T2_probability_shuffled = pdf_T1_shuffled;
+
+
+
+%%%%% Visualisation of Peak bias distribution
+nfigure = nfigure+ 1;
+fig(nfigure) = figure;
+fig(nfigure).Name=sprintf('KDE peak bias distribution %s ripples',region_name{options.probe_hemisphere});
+
+subplot(2,2,1)
+histogram(KDE_bias_T1_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
+histogram(KDE_bias_shuffled_T1_event,100,'FaceAlpha',0.5,'Normalization','probability')
+set(gca,"TickDir","out",'box', 'off','Color','none')
+
+subplot(2,2,2)
+histogram(KDE_bias_T2_event,100,'FaceAlpha',0.5,'Normalization','probability');hold on
+histogram(KDE_bias_shuffled_T2_event,100,'FaceAlpha',0.5,'Normalization','probability')
+set(gca,"TickDir","out",'box', 'off','Color','none')
+fontsize(gcf,12,"points")
+
+% sum(KDE_T1_event_pvalue >= 0.95 & KDE_T2_event_pvalue >= 0.95)
+% sum(KDE_T1_event_pvalue >= 0.975)
+% sum(KDE_T2_event_pvalue >= 0.975)
+
+
+%%%%% Visualisation of significant T1 and T2 ripple events
+nfigure = nfigure+ 1;
+fig(nfigure) = figure;
+fig(nfigure).Position = [279,55,1800,933];
+fig(nfigure).Name=sprintf('T1 events KDE bias %s UP',region_name{options.probe_hemisphere});
+count = 0
+for nEvent = find(KDE_T1_event_pvalue >=0.95)
+    count = count + 1;
+    if count < 201
+        this_event_bins = find(ripples_id==nEvent);
+
+        x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
+        subplot(10,20,count)
+        plot(x,(KDE_bias(this_event_bins)),'r')
+        hold on
+        y = mean(KDE_bias_shuffled(:,this_event_bins));
+        CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
+        CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
+        PLOT = plot(x,y,'Color','k');hold on;
+        ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
+        ylim([0 1])
+        set(gca,"TickDir","out",'box', 'off','Color','none')
+    end
+end
+fontsize(gcf,10,"points")
+% Add a common x-label and y-label
+% Use 'Position' to adjust placement
+han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+xlabel(han, 'Time (s)');
+ylabel(han, 'T1/T2 bias');
+
+
 
 disp('PLS KDE decoding finished')
 % %%%%%% Visualising single event

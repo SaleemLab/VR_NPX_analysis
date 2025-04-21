@@ -370,7 +370,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession =1:17
+for nsession = 4
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -546,12 +546,13 @@ for nsession =1:17
       end
       clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN
 
+      clear KDE_reactivation_V1 KDE_RUN_V1 PLS_V1 KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN
+
       % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
       time_bin_size=0.02;
 
-      %%%%% HPC
       for nprobe = 1:length(ripples)
-          disp('PLS KDE reactivation for HPC data')
+          disp('Reactivation strength for original data')
           options = session_info(n).probe(nprobe);
           ripple_probe_no = options.probe_id + 1;
 
@@ -559,7 +560,10 @@ for nsession =1:17
               session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
               [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
               session_clusters_RUN.track_ID_all{1},spikes_template,...
-              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options,'event_type','HPC ripples')
+              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
+
+          
+          HPC_clusters_RUN.cluster_id
 
           if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
@@ -574,7 +578,7 @@ for nsession =1:17
               [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
               session_clusters_RUN.track_ID_all{1},spikes_template,...
               [slow_waves(nprobe).UP_ints(:,1) slow_waves(nprobe).UP_ints(:,2)],spikes_sleep,options,...
-              'PLS',PLS(ripple_probe_no),'KDE_RUN',KDE_RUN(ripple_probe_no),'event_type','HPC UP');
+              'PLS',PLS,'KDE_RUN',KDE_RUN);
 
           if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
@@ -589,7 +593,7 @@ for nsession =1:17
               [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
               session_clusters_RUN.track_ID_all{1},spikes_template,...
               [slow_waves(nprobe).DOWN_ints(:,1) slow_waves(nprobe).DOWN_ints(:,2)],spikes_sleep,options,...
-              'PLS',PLS(ripple_probe_no),'KDE_RUN',KDE_RUN(ripple_probe_no),'event_type','HPC DOWN');
+              'PLS',PLS,'KDE_RUN',KDE_RUN);
 
           if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
@@ -598,79 +602,24 @@ for nsession =1:17
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
               save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
           end
-      end
-
-      for nprobe = 1:length(ripples)
-          KDE_reactivation(nprobe).cluster_id = HPC_clusters_RUN.cluster_id;
-          KDE_reactivation_UP(nprobe).cluster_id = HPC_clusters_RUN.cluster_id;
-          KDE_reactivation_DOWN(nprobe).cluster_id = HPC_clusters_RUN.cluster_id;
-      end
-
-      if contains(stimulus_name{n},'Masa2tracks')
-          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS','-v7.3')
-      else
-          save(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation','KDE_RUN','PLS','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_UP.mat'),'KDE_reactivation_UP','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_DOWN.mat'),'KDE_reactivation_DOWN','-v7.3');
-          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-      end
-      clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN
 
 
-      %%%%% V1
-      for nprobe = 1:length(ripples)
-          disp('PLS KDE reactivation for V1 data')
-          options = session_info(n).probe(nprobe);
-          ripple_probe_no = options.probe_id + 1;
 
-          [PLS_V1(ripple_probe_no) KDE_RUN_V1(ripple_probe_no) KDE_reactivation_V1(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+          %%%%% V1
+          [PLS(ripple_probe_no) KDE_RUN(ripple_probe_no) KDE_reactivation(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
               session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
               [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-              session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-              [ripples(nprobe).onset ripples(nprobe).offset],V1_spikes_sleep,options,'event_type','V1 ripples')
+              session_clusters_RUN.track_ID_all{1},spikes_template,...
+              [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options)
 
 
           if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
           else
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
           end
-
-          [~,~,KDE_reactivation_V1_UP(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
-              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-              session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-              [slow_waves(nprobe).UP_ints(:,1) slow_waves(nprobe).UP_ints(:,2)],V1_spikes_sleep,options,...
-              'PLS',PLS_V1(ripple_probe_no),'KDE_RUN',KDE_RUN_V1(ripple_probe_no),'event_type','V1 UP');
-
-
-          if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
-          else
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
-          end
-
-          [~,~,KDE_reactivation_V1_DOWN(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
-              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-              session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-              [slow_waves(nprobe).DOWN_ints(:,1) slow_waves(nprobe).DOWN_ints(:,2)],V1_spikes_sleep,options,...
-              'PLS',PLS_V1(ripple_probe_no),'KDE_RUN',KDE_RUN_V1(ripple_probe_no),'event_type','V1 DOWN');
-
-
-          if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
-          else
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[])
-          end
-      end
 
           %               bins=[];
           %               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
@@ -720,27 +669,16 @@ for nsession =1:17
           %                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
           %
           %               end
-      
-      % end
-
-      for nprobe = 1:length(ripples)
-          KDE_reactivation_V1(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
-          KDE_reactivation_V1_UP(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
-          KDE_reactivation_V1_DOWN(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
       end
+      % end
 
       if contains(stimulus_name{n},'Masa2tracks')
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
           save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS','-v7.3')
       else
-          save(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_reactivation_V1','KDE_RUN_V1','PLS_V1','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'),'KDE_reactivation_V1_UP','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_DOWN.mat'),'KDE_reactivation_V1_DOWN','-v7.3');
+          save(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation','KDE_RUN','PLS','-v7.3');
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
       end
-
-      clear KDE_reactivation_V1 KDE_RUN PLS KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN
-
     end
 end
 
