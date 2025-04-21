@@ -573,8 +573,8 @@ for nsession = 1:max(ripples_all(1).session_count)
 
     end
 end
- 
 
+%% Ripple probabilities during unilaterally biased and bilaterally synchronised UP
 
 
 
