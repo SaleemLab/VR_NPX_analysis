@@ -131,7 +131,7 @@ n_ripples_residuals = zscore(n_ripples - ripple_global_pattern,0,1); % Residuals
 % 
 % end
 % Combine data and labels
-if isempty(PLS)
+if isempty(fieldnames(PLS))
     disp('Caclulate PLS during RUN')
     % Combine data and labels
     X = [n(T1_bins,:); n(T2_bins,:)];
@@ -509,7 +509,7 @@ sgtitle(title_text)
 % legend('Track 1', 'Track 2','Ripples','Ripple (shuffled)');
 % title('PLS-DA Separation');
 
-if isempty(KDE_RUN)
+if  isempty(fieldnames(KDE_RUN))
     disp('Find best bandwidth for KDE of PLS projection')
     %%%%% Create 10-fold partition for finding best bandwidth for KDE PLS
     rng(200)
@@ -650,7 +650,7 @@ pdf_T2_shuffled = zeros(1000,size(n_ripples_residuals,1));
 disp(sprintf('Caclulate Reactivation based on KDE of PLS projection to %s data',event_type));
 
 % tic
-parfor nshuffle = 1:10
+parfor nshuffle = 1:1000
     tic
     s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
     random_cell_index = randperm(s,size(n_ripples_residuals,2));
