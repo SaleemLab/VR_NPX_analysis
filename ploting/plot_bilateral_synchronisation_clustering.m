@@ -248,12 +248,13 @@ end
 
 
 %% Clustering of Left and Right DOWN-UP transition lag vs corr vs plv distribution
-customColors = [
-    0.698, 0.094, 0.169;  % Deep Red
-    0.957, 0.647, 0.510;  % Light Red-Orange
-    0.529, 0.529, 0.529;  % Gray
-    0.102, 0.102, 0.102;  % Near Black
-    ];
+% customColors = [
+%     0.698, 0.094, 0.169;  % Deep Red
+%     0.957, 0.647, 0.510;  % Light Red-Orange
+%     0.529, 0.529, 0.529;  % Gray
+%     0.102, 0.102, 0.102;  % Near Black
+%     ];
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
 
 
 fig = figure('Color','w');
@@ -261,9 +262,6 @@ fig.Position = [30 60 1880 900];
 fig.Name = 'Left and Right DOWN-UP transition lag vs corr vs plv distribution';
 hemisphere_texts = {'Left DOWN-UP transition','Right DOWN-UP transition'}
 
-[slow_waves_all(1).UP_ints(probability(1).UP_all_index,1); slow_waves_all(2).UP_ints(probability(2).UP_all_index,1)]
-
-[ipsi_lag_DU{1} ipsi_lag_DU{2}]
 
 for nprobe = 1:2
     k_cluster(nprobe).DU_idx = [];
@@ -285,6 +283,7 @@ for nprobe = 1:2
         VE(i) = 1 - wss / tss; % or: bss / tss
         % end
     end
+    k_cluster(nprobe).VE_DU = VE;
 
     nexttile
     plot(VE, '-o','Color','k');hold on;
@@ -426,7 +425,8 @@ for nprobe = 1:2
         VE(i) = 1 - wss / tss; % or: bss / tss
         % end
     end
-
+    k_cluster(nprobe).VE_UD = VE;
+    
     nexttile
     plot(VE, '-o','Color','k');hold on;
     xline(min(find(VE>0.85)),'r')
@@ -538,9 +538,11 @@ end
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 %% Clustering of Left and Right ripples lag vs corr vs plv distribution
+customColors = [74,20,134;228,42,168;254,145,198;0,90,50]/256; % Dark Green, light Magenta, light purple, dark purple
+
 
 
 fig = figure('Color','w');
@@ -566,6 +568,7 @@ for nprobe = 1:2
         VE(i) = 1 - wss / tss; % or: bss / tss
         % end
     end
+    k_cluster(nprobe).VE_ripples = VE;
 
     nexttile
     plot(VE, '-o','Color','k');hold on;
@@ -635,6 +638,7 @@ for nprobe = 1:2
     k_cluster(nprobe).silhouette_ripples = true_silhouette;
     k_cluster(nprobe).null_silhouette_ripples = null_silhouettes;
     k_cluster(nprobe).p_silhouette_ripples = p_sil;
+    
     fprintf('Permutation p-value for silhouette score: %.4f\n', p_sil);
 
     % Z = linkage(X, 'ward'); % 'ward', 'average', or 'single'
@@ -690,10 +694,11 @@ end
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 %% Clustering of Left and Right spindles lag vs corr vs plv distribution
 
+customColors = [74,20,134;228,42,168;65,171,93;0,90,50]/256; % dark purple, meganta, light green, dark green
 
 fig = figure('Color','w');
 fig.Position = [30 60 1880 900];
@@ -718,6 +723,7 @@ for nprobe = 1:2
         VE(i) = 1 - wss / tss; % or: bss / tss
         % end
     end
+    k_cluster(nprobe).VE_spindles = VE;
 
     nexttile
     plot(VE, '-o','Color','k');hold on;
@@ -837,7 +843,7 @@ end
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 
 
@@ -863,7 +869,7 @@ for nprobe = 1:2
     DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index);
     ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
     ripple_ints{nprobe}=[ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1) ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
-    % spindle_peaktimes{nprobe}=ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
+    spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
     spindle_ints{nprobe}=[spindles_all(nprobe).onset(spindles_all(nprobe).SWS_index == 1) spindles_all(nprobe).offset(spindles_all(nprobe).SWS_index == 1)];
 
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
@@ -949,6 +955,7 @@ merged_event_info.UP_index = idx;
 merged_event_info.UP_hemisphere_id = hemisphere_id;
 merged_event_info.UP_group_id = [k_cluster(1).DU_idx;k_cluster(2).DU_idx];
 merged_event_info.UP_event_times = [UP_ints{1}(:,1); UP_ints{2}(:,1)];
+merged_event_info.UP_ints = [UP_ints{1}; UP_ints{2}];
 merged_event_info.UP_lag_diff = lags';
 merged_event_info.UP_corr_diff = corrs';
 merged_event_info.UP_plv_diff = plvs';
@@ -1020,6 +1027,7 @@ merged_event_info.DOWN_index = idx;
 merged_event_info.DOWN_hemisphere_id = hemisphere_id;
 merged_event_info.DOWN_group_id = [k_cluster(1).UD_idx;k_cluster(2).UD_idx];
 merged_event_info.DOWN_event_times = [DOWN_ints{1}(:,1); DOWN_ints{2}(:,1)];
+merged_event_info.DOWN_ints = [DOWN_ints{1}; DOWN_ints{2}];
 merged_event_info.DOWN_lag_diff = lags';
 merged_event_info.DOWN_corr_diff = corrs';
 merged_event_info.DOWN_plv_diff = plvs';
@@ -1092,7 +1100,8 @@ idx = idx(keep, :);
 merged_event_info.ripples_index = idx; % based on cluster lag diff distribution
 merged_event_info.ripples_hemisphere_id = hemisphere_id;
 merged_event_info.ripples_group_id = [k_cluster(1).ripples_idx;k_cluster(2).ripples_idx];
-merged_event_info.ripples_event_times = [ripple_peaktimes{1}; ripple_peaktimes{2}];
+merged_event_info.ripples_peaktimes = [ripple_peaktimes{1}; ripple_peaktimes{2}];
+merged_event_info.ripples_ints = [ripple_ints{1}; ripple_ints{2}];
 merged_event_info.ripples_lag_diff = lags';
 merged_event_info.ripples_corr_diff = corrs';
 merged_event_info.ripples_plv_diff = plvs';
@@ -1167,9 +1176,11 @@ merged_event_info.spindles_index = idx;
 merged_event_info.spindles_hemisphere_id = hemisphere_id;
 merged_event_info.spindles_group_id = [k_cluster(1).spindles_idx;k_cluster(2).spindles_idx];
 merged_event_info.spindles_event_times = [spindle_ints{1}(:,1); spindle_ints{2}(:,1)];
+merged_event_info.spindles_peaktimes = [spindle_peaktimes{1}; spindle_peaktimes{2}];
+merged_event_info.spindles_ints = [spindle_ints{1}; spindle_ints{2}];
 merged_event_info.spindles_lag_diff = lags';
 merged_event_info.spindles_corr_diff = corrs';
-merged_event_info.spidnels_plv_diff = plvs';
+merged_event_info.spindles_plv_diff = plvs';
 
 merged_event_info.spindles_lag_index = lag_index';
 

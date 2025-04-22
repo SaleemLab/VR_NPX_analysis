@@ -749,6 +749,378 @@ for nsession =1:17
 end
 
 
+%% Log odds Reactivation and reactivation strength
+
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+% option = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+% [1 2 3 4 9 10 12 14]
+% Stimulus_types_all = {'RUN'};
+% Stimulus_types_all = {'RUN','POST'};
+
+
+for nsession = 2:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
+        elseif contains(stimulus_name{n},'Sleep')
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+
+            clusters=clusters_ks4;
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        end
+        clear CA1_clusters V1_clusters
+
+        mean_FR = [];
+        for ncluster = 1:length(session_clusters.cluster_id)
+            if length(session_clusters.spike_times{ncluster}) > 0
+                mean_FR(ncluster) = length(session_clusters.spike_times{ncluster})...
+                    /(session_clusters.spike_times{ncluster}(end) - session_clusters.spike_times{ncluster}(1));
+            else
+                mean_FR(ncluster) = 0;
+            end
+        end
+
+        % From cell structure back to spike times and spike id
+        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
+        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
+        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
+        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
+
+        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+        session_clusters.spike_id=session_clusters.spike_id(index);
+
+%         params = create_cluster_selection_params('sorting_option','masa');
+        clusters_combined = session_clusters;
+
+
+        % HPC Log odds reactivation decoding
+        decoded_ripple_events_shuffled = [];
+        decoded_ripple_events = [];
+        timebin = 0.02;
+        tic
+
+        spatial_cell_index = find(mean_FR' <= 1 &((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95)));
+        % grab HPC spikes during Sleep
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'HPC');
+        HPC_clusters = select_clusters(clusters_combined,metric_param);
+
+        if length(HPC_clusters)<=15
+            spatial_cell_index = find(mean_FR' <= 2 &((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+                | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95)));
+            % grab HPC spikes during Sleep
+            metric_param =[];
+            metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+            metric_param.region = @(x) contains(x,'HPC');
+            HPC_clusters = select_clusters(clusters_combined,metric_param);
+
+            if length(HPC_clusters)<15
+                spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+                    | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+                % grab HPC spikes during Sleep
+                metric_param =[];
+                metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+                metric_param.region = @(x) contains(x,'HPC');
+                HPC_clusters = select_clusters(clusters_combined,metric_param);
+            end
+        end
+
+        % grab HPC spikes during RUN
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'HPC');
+        HPC_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
+        
+        % grab V1 spikes during Sleep
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters = select_clusters(clusters_combined,metric_param);
+        %         HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
+        %         HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
+
+        % grab V1 spikes during RUN
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
+        % recalculate light-weight version of 'place fields' structure for hippocampal neurons for Bayesian
+        % decoding
+        clear place_fields_BAYESIAN
+        speed = session_clusters_RUN.speed{1};
+        speed(isnan(speed))=0;
+        w = gausswin(9);
+        w = w / sum(w);
+        speed = filtfilt(w,1,speed')';
+        x_window = [0 140];
+        x_bin_width =5;
+        place_fields_BAYESIAN = calculate_spatial_cells(HPC_clusters_RUN,HPC_clusters_RUN.tvec{1},...
+            HPC_clusters_RUN.position{1},speed,HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_window,x_bin_width);
+
+%         spatial_response = calculate_raw_spatial_response(HPC_clusters_RUN.spike_id,HPC_clusters_RUN.cluster_id,HPC_clusters_RUN.spike_times,HPC_clusters_RUN.tvec{1},...
+%             HPC_clusters_RUN.position{1},HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_bin_size);
+
+        clear decoded_ripple_events decoded_ripple_events_shuffled
+        cd(options.ANALYSIS_DATAPATH)
+        % Reactivation log odds decoding
+        for mprobe = 1:length(session_info(n).probe)
+            % probe for ripples
+            ripple_probe_no = session_info(n).probe(mprobe).probe_id + 1;
+            %                 ripple_probe_hemisphere = session_info(n).probe(nprobe).probe_hemisphere;
+
+            replay = ripples(ripple_probe_no);
+            %                 replay.offset = replay.onset(event) + 0.1;
+
+            %                     [place_fields_BAYESIAN,decoded_events,probability_ratio_original] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay,position,[],stimulus_name{n},timebin);
+
+            for event = 1:length(replay.onset)
+                replay1.offset = replay.onset(event)+0.5;
+                replay1.onset = replay.onset(event)-0.5;
+                [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(HPC_clusters,place_fields_BAYESIAN,replay1,[],[],stimulus_name{n},timebin);
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).onset = replay.onset(event);
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).onset = replay.onset(event);
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).offset = replay.offset(event);
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).offset = replay.offset(event);
+
+                for nshuffle = 1:1000
+                    decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
+                    decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
+                end
+                
+                timebins_centre = decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).timebins_edges(1) + timebin/2 : timebin : decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).timebins_edges(end) - timebin/2;
+                % timebins_centre = 
+
+                % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
+                % [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.onset(event)+0.1);
+                data = log(sum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
+                    /sum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
+
+                shuffled_data = log(sum(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin),2)...
+                    ./sum(decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin),2));
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).z_log_odds = (data-mean(shuffled_data))/std(shuffled_data);
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).z_log_odds = (data-mean(shuffled_data))/std(shuffled_data);
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).bayesian_bias = nansum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
+                    /(nansum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
+                    + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
+
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).bayesian_bias = nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin))...
+                    /(nansum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
+                    + nansum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
+
+                % 100ms after ripple onset
+                % time_bin = time_bin(1):time_bin(1)+(0.1/timebin)-1;
+                [peak_log_odds,peak_index]= max(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index))...
+                    ./decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)));
+
+                decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).peak_percentile = ...
+                    sum(peak_log_odds>shuffled_data)/1000;
+                
+
+                [peak_log_odds,peak_index]= min(log(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(time_bin)./...
+                    decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(time_bin)));
+
+                shuffled_data = log(decoded_ripple_events_shuffled(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin(peak_index))...
+                    ./decoded_ripple_events_shuffled(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin(peak_index)));
+
+                decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).peak_percentile = ...
+                    sum(peak_log_odds<shuffled_data)/1000;
+               
+            end
+
+%             % Shuffled log odds
+%             for event = 1:length(replay.onset)
+%                 replay1.offset = replay.onset(event)+0.5;
+%                 replay1.onset = replay.onset(event)-0.5;
+%                 [place_fields_BAYESIAN,decoded_events,~,decoded_events_shuffled] = log_odds_reactivation_analysis(HPC_clusters,place_fields_BAYESIAN,replay1,[],'global_remapped',stimulus_name{n},timebin);
+% 
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).replay = decoded_events(1).replay_events.replay;
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).replay = decoded_events(2).replay_events.replay;
+% 
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability = sum(decoded_events(1).replay_events.replay);
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability = sum(decoded_events(2).replay_events.replay);
+% 
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).spikes = decoded_events(1).replay_events.spikes;
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).spikes = decoded_events(2).replay_events.spikes;
+% 
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(1).replay_events(event).timebins_edges = decoded_events(1).replay_events.timebins_edges;
+%                 decoded_ripple_events_global_remapped(ripple_probe_no).track(2).replay_events(event).timebins_edges = decoded_events(2).replay_events.timebins_edges;
+% 
+%                 for nshuffle = 1:1000
+%                     decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(1).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(1).replay);
+%                     decoded_ripple_events_shuffled_global_remapped(ripple_probe_no).track(2).replay_events(event).summed_probability(nshuffle,:) = sum(decoded_events_shuffled{nshuffle}(2).replay);
+%                 end
+%             end
+        end
+        toc
+        
+        position_bin_size = 5;
+        region_name = {'Left','Right'};
+        nfigure = 1;
+
+        for mprobe = 1:length(decoded_ripple_events)
+            for track_id = 1:2
+                title_text = sprintf('%s %s %s ripple Track %s reactivation',options.SUBJECT,options.SESSION,region_name{mprobe},region_name{track_id});
+
+                fig(nfigure)=figure;
+                fig(nfigure).Name=title_text;
+                fig(nfigure).Position = [114 90 1800 900]
+                
+                peak_percentile = [decoded_ripple_events(mprobe).track(1).replay_events(:).peak_percentile; decoded_ripple_events(mprobe).track(2).replay_events(:).peak_percentile];
+                s = RandStream('mrg32k3a','Seed',track_id+mprobe*10); % Set random seed for resampling
+
+                if track_id == 1
+                    sig_event_id = find(peak_percentile(1,:)>0.95 & peak_percentile(2,:)<0.95);
+                    if isempty(sig_event_id)
+                        continue
+                    end
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                else
+                    sig_event_id = find(peak_percentile(2,:)>0.95 & peak_percentile(1,:)<0.95);
+                    if isempty(sig_event_id)
+                        continue
+                    end
+                    sampled_event_id = datasample(s,sig_event_id,40);
+                end
+
+                if isempty(sampled_event_id)
+                    continue
+                end
+
+                for nevent = 1:length(sampled_event_id)
+                    subplot(5,8,nevent)
+                    event_id = sampled_event_id(nevent);
+
+                    imagesc([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay; decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay])
+                    colormap(flipud(gray))
+                    clim([0.001 max(max([decoded_ripple_events(mprobe).track(1).replay_events(event_id).replay decoded_ripple_events(mprobe).track(2).replay_events(event_id).replay]))/2])
+                    colorbar
+                    xline(25.5,'r')
+                    xline(30.5,'r')
+                    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
+                    yline(140/position_bin_size+0.5,'LineWidth',1,'Color','k','DisplayName','Track 2')
+                    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
+                    event_time_edges = decoded_ripple_events(mprobe).track(1).replay_events(event_id).timebins_edges ;
+
+                    xticks(linspace(1,length(event_time_edges),6))
+                    xticklabels(linspace(event_time_edges(1),event_time_edges(end),6))
+                end
+
+                nfigure = nfigure + 1;
+            end
+        end
+
+        if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures','log_odds_reactivation',sprintf(erase(stimulus_name{n},'Masa2tracks_'))),[])
+        else
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})))
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('log_odds_reactivation%s',stimulus_name{n})),[])
+        end
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_pyramidal%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_pyramidal_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events_shuffled','-v7.3');
+        else
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_pyramidal.mat'),'decoded_ripple_events','-v7.3');
+            %         save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_pyramidal_shuffled.mat'),'decoded_ripple_events_shuffled','-v7.3');
+            %         save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
+        end
+
+%         if contains(stimulus_name{n},'Masa2tracks')
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events','-v7.3');
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('decoded_ripple_events_shuffled%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'decoded_ripple_events_shuffled','-v7.3');
+%         else
+%             save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events','-v7.3');
+%             %         save(sprintf('decoded_ripple_events_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_global_remapped');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'),'decoded_ripple_events_shuffled','-v7.3');
+%             %         save(sprintf('decoded_ripple_events_shuffled_global_remapped%s.mat',erase(stimulus_name{n},'Masa2tracks')),'decoded_ripple_events_shuffled_global_remapped');
+%         end
+        clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped decoded_ripple_events decoded_ripple_events_shuffled
+    end
+end
 
 %% V1 reactivation
 clear all

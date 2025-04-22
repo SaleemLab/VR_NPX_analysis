@@ -27,6 +27,8 @@ end
 % probability_SO_SO = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
 % probability_SO_SO_contralateral = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
@@ -592,19 +594,18 @@ for nprobe=1:2
 end
 
 %% Plot DU transition averaged MUA
-PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_event_info.mat'));
-PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
+% PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+% PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+% PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
 ipsi_V1_MUA = [PSTH_MUA(1).L_V1_UP; PSTH_MUA(2).R_V1_UP];
-contra_V1_MUA = [PSTH_MUA(2).L_V1_UP; PSTH_MUA(1).R_V1_UP];
+contra_V1_MUA = [PSTH_MUA(1).R_V1_UP; PSTH_MUA(2).L_V1_UP];
 
 ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_UP; PSTH_MUA_baseline(2).R_V1_UP];
-contra_V1_MUA_baseline = [PSTH_MUA_baseline(2).L_V1_UP; PSTH_MUA_baseline(1).R_V1_UP];
-
-ipsi_probability = [PSTH_MUA(1).L_V1_UP; PSTH_MUA(2).R_V1_UP];
-contra_probability = [PSTH_MUA(2).L_V1_UP; PSTH_MUA(1).R_V1_UP];
+contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_UP; PSTH_MUA_baseline(2).L_V1_UP];
 
 lag_diff = merged_event_info.UP_lag_diff;
 plv_diff = merged_event_info.UP_plv_diff;
@@ -753,7 +754,7 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
     ylim([-1 0.5])
@@ -801,7 +802,7 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
     ylim([-1 0.5])
 
     % xline(0,'r')
@@ -870,20 +871,20 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
 
-%% Plot DU transition averaged MUA
+%% Plot UD transition averaged MUA
 % PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_event_info.mat'));
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
 ipsi_V1_MUA = [PSTH_MUA(1).L_V1_DOWN; PSTH_MUA(2).R_V1_DOWN];
-contra_V1_MUA = [PSTH_MUA(2).L_V1_DOWN; PSTH_MUA(1).R_V1_DOWN];
+contra_V1_MUA = [PSTH_MUA(1).R_V1_DOWN; PSTH_MUA(2).L_V1_DOWN];
 
 ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_DOWN; PSTH_MUA_baseline(2).R_V1_DOWN];
-contra_V1_MUA_baseline = [PSTH_MUA_baseline(2).L_V1_DOWN; PSTH_MUA_baseline(1).R_V1_DOWN];
+contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_DOWN; PSTH_MUA_baseline(2).L_V1_DOWN];
 
-ipsi_probability = [PSTH_MUA(1).L_V1_DOWN; PSTH_MUA(2).R_V1_DOWN];
-contra_probability = [PSTH_MUA(2).L_V1_DOWN; PSTH_MUA(1).R_V1_DOWN];
+% ipsi_probability = [PSTH_MUA(1).L_V1_DOWN; PSTH_MUA(2).R_V1_DOWN];
+% contra_probability = [PSTH_MUA(2).L_V1_DOWN; PSTH_MUA(1).R_V1_DOWN];
 
 lag_diff = merged_event_info.DOWN_lag_diff;
 plv_diff = merged_event_info.DOWN_plv_diff;
@@ -966,7 +967,7 @@ event_idx{6} = {intersect(find(group_id == 3 & lag_diff <0 ),merged_event_info.D
 
 
 group_name=[];
-group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
+group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
 group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% dominant clusters
 group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% non-dominant clusters
 group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
@@ -1033,7 +1034,7 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
     ylim([-1 0.5])
@@ -1081,7 +1082,7 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
     ylim([-1 0.5])
 
     % xline(0,'r')
@@ -1143,6 +1144,9 @@ for ngroup = 1:length(event_idx)
     
 end
 
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
 
 
 %%
@@ -1158,7 +1162,7 @@ end
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
 ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_ripples; PSTH_MUA(2).R_HPC_ripples];
-contra_HPC_MUA = [PSTH_MUA(2).L_HPC_ripples; PSTH_MUA(1).R_HPC_ripples];
+contra_HPC_MUA = [PSTH_MUA(1).R_HPC_ripples; PSTH_MUA(2).L_HPC_ripples];
 
 ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_ripples; PSTH_MUA_baseline(2).R_HPC_ripples];
 contra_HPC_MUA_baseline = [PSTH_MUA_baseline(2).L_HPC_ripples; PSTH_MUA_baseline(1).R_HPC_ripples];
@@ -1176,7 +1180,7 @@ group_id = merged_event_info.ripples_group_id;
 sync_threshold = mean(abs([event_info(1).ripples_lag_threshold_low event_info(2).ripples_lag_threshold_low event_info(1).ripples_lag_threshold_high event_info(2).ripples_lag_threshold_high]));
 
 colour_lines=[];
-colour_lines = [0,90,50;74,20,134;228,42,168]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+colour_lines = [0,90,50;74,20,134;228,42,168]/256; % Dark Green, Magenta, dark purple
 colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
 % colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
 % colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
@@ -1221,12 +1225,13 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 
 
 event_idx = [];
-event_idx{1} = {find(group_id==1),find(group_id==2),find(group_id==3),find(group_id==4)};
+event_idx{1} = {find(group_id==4),find(group_id==3),find(group_id==2),find(group_id==1)};
 
+% event_idx{1} = {find(group_id==1),find(group_id==2),find(group_id==3),find(group_id==4)};
 
 
 group_name=[];
-group_name{1} = {'contra dominant','low plv diff','high plv diff','ipsi dominant','Shuffled'};
+group_name{1} = {'ipsi dominant','high plv diff','low plv diff','contra dominant','Shuffled'};
 
 title_names = {'Ipsi-contra ripples HPC MUA by four clusters'}
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
@@ -1242,7 +1247,7 @@ for ngroup = 1:length(event_idx)
     fig.Name =title_names{ngroup};
 
     if ngroup ==1
-        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+        colour_lines = [0,90,50;65,171,93;228,42,168;74,20,134]/256; % Dark Green , Magenta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -1252,7 +1257,7 @@ for ngroup = 1:length(event_idx)
     for i = 1:length(event_idx{ngroup})
 
         index =event_idx{ngroup}{i};
-        binnedArray = ipsi_V1_MUA(index,:);
+        binnedArray = ipsi_HPC_MUA(index,:);
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1287,9 +1292,9 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-
+    ylim([-0.5 5])
+    
     % xline(0,'r')
-    ylim([-0.5 0.5])
     title('Ipsi MUA')
     xlabel('Time relative to ripple peaktime (s)')
     ylabel('MUA activity (z)')
@@ -1300,7 +1305,7 @@ for ngroup = 1:length(event_idx)
     for i = 1:length(event_idx{ngroup})
 
         index =event_idx{ngroup}{i};
-        binnedArray = contra_V1_MUA(index,:);
+        binnedArray = contra_HPC_MUA(index,:);
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1335,7 +1340,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 0.5])
+    ylim([-0.5 5])
 
 
     % xline(0,'r')
@@ -1350,7 +1355,7 @@ for ngroup = 1:length(event_idx)
     for i = 1:length(event_idx{ngroup})
 
         index =event_idx{ngroup}{i};
-        binnedArray = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1393,6 +1398,9 @@ for ngroup = 1:length(event_idx)
     xlabel('Time relative to ripple peaktime (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
