@@ -541,7 +541,7 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 %% Clustering of Left and Right ripples lag vs corr vs plv distribution
-customColors = [74,20,134;228,42,168;254,145,198;0,90,50]/256; % Dark Green, light Magenta, light purple, dark purple
+customColors = [74,20,134;228,42,168;254,145,198;0,90,50]/256; % purple, dark magenta, light magenta, green
 
 
 

@@ -968,6 +968,7 @@ event_idx{6} = {intersect(find(group_id == 3 & lag_diff <0 ),merged_event_info.D
 
 group_name=[];
 group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
+group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
 group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% dominant clusters
 group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% non-dominant clusters
 group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
@@ -990,7 +991,7 @@ for ngroup = 1:length(event_idx)
     fig.Name =title_names{ngroup};
 
     if ngroup ==1
-        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -1247,7 +1248,7 @@ for ngroup = 1:length(event_idx)
     fig.Name =title_names{ngroup};
 
     if ngroup ==1
-        colour_lines = [0,90,50;65,171,93;228,42,168;74,20,134]/256; % Dark Green , Magenta, dark purple
+        colour_lines = [0,90,50;254,145,198;228,42,168;74,20,134]/256; % Dark Green , light Magenta, dark mageta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
