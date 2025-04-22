@@ -263,10 +263,10 @@ for nsession = 1:length(experiment_info)
         clusters_combined.spike_id=clusters_combined.spike_id(index);
 
         % Cell with spatial tuning
-        ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
-            | clusters_combined.odd_even_stability(:,2)>0.95);
-%                 ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
-%             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        %         ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
+        %             | clusters_combined.odd_even_stability(:,2)>0.95);
+        ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+            | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         C = clusters_combined.cluster_id(ia);
         
