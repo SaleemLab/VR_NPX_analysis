@@ -593,10 +593,10 @@ for nsession =1:17
 
           if  contains(stimulus_name{n},'RUN1')|contains(stimulus_name{n},'RUN2')
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
           else
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
-              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[],'ContentType','image')
+              save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_DOWN_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[],'ContentType','image')
           end
       end
 
@@ -653,7 +653,7 @@ for nsession =1:17
               mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)))
               save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',erase(stimulus_name{n},'Masa2tracks_')),sprintf('Probe%i',ripple_probe_no)),[])
           else
-              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_ripple_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
+              mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)))
               save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_UP_V1_reactivation%s',stimulus_name{n}),sprintf('Probe%i',ripple_probe_no)),[],'ContentType','image')
           end
 
