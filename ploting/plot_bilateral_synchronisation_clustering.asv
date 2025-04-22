@@ -909,13 +909,13 @@ for nprobe = 1:2
     event_info(nprobe).UP_lag_threshold_low = threshold_low;
     event_info(nprobe).UP_lag_threshold_high = threshold_high;
 
-    event_info(nprobe).UP_lag_diff = lags;
-    event_info(nprobe).UP_corr_diff = corrs ;
-    event_info(nprobe).UP_plv_diff = plvs;
+    event_info(nprobe).UP_lags_diff = lags;
+    event_info(nprobe).UP_corrs_diff = corrs ;
+    event_info(nprobe).UP_plvs_diff = plvs;
 
-    lag_index{nprobe} = zeros(1,length(event_info(nprobe).UP_lag_diff));
-    lag_index{nprobe}(event_info(nprobe).UP_lag_diff< event_info(nprobe).UP_lag_threshold_low) = -1;
-    lag_index{nprobe}(event_info(nprobe).UP_lag_diff> event_info(nprobe).UP_lag_threshold_high) = 1;
+    lag_index{nprobe} = zeros(1,length(event_info(nprobe).UP_lags_diff));
+    lag_index{nprobe}(event_info(nprobe).UP_lags_diff< event_info(nprobe).UP_lag_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).UP_lags_diff> event_info(nprobe).UP_lag_threshold_high) = 1;
 end
 
 
@@ -924,9 +924,9 @@ end
 % Merged events from both hemispheres and remove events that are less than
 % 0.05s apart
 hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
-lags = [event_info(1).UP_lag_diff event_info(2).UP_lag_diff];
-corrs= [event_info(1).UP_corr_diff event_info(2).UP_corr_diff];
-plvs= [event_info(1).UP_plv_diff event_info(2).UP_plv_diff];
+lags = [event_info(1).UP_lags_diff event_info(2).UP_lags_diff];
+corrs= [event_info(1).UP_corrs_diff event_info(2).UP_corrs_diff];
+plvs= [event_info(1).UP_plvs_diff event_info(2).UP_plvs_diff];
 
 lag_index = [lag_index{1} lag_index{2}];
 
@@ -950,8 +950,8 @@ merged_event_info.UP_hemisphere_id = hemisphere_id;
 merged_event_info.UP_group_id = [k_cluster(1).DU_idx;k_cluster(2).DU_idx];
 merged_event_info.UP_event_times = [UP_ints{1}(:,1); UP_ints{2}(:,1)];
 merged_event_info.UP_lag_diff = lags';
-merged_event_info.UP_corr_diff = corrs';
-merged_event_info.UP_plv_diff = plvs';
+merged_event_info.UP_corrs_diff = corrs';
+merged_event_info.UP_plvs_diff = plvs';
 
 merged_event_info.UP_lag_index = lag_index';
 
@@ -981,13 +981,13 @@ for nprobe = 1:2
     event_info(nprobe).DOWN_lag_threshold_low = threshold_low;
     event_info(nprobe).DOWN_lag_threshold_high = threshold_high;
 
-    event_info(nprobe).DOWN_lag_diff = lags;
-    event_info(nprobe).DOWN_corr_diff = corrs ;
-    event_info(nprobe).DOWN_plv_diff = plvs;
+    event_info(nprobe).DOWN_lags_diff = lags;
+    event_info(nprobe).DOWN_corrs_diff = corrs ;
+    event_info(nprobe).DOWN_plvs_diff = plvs;
 
-    lag_index{nprobe} = zeros(1,length(event_info(nprobe).DOWN_lag_diff));
-    lag_index{nprobe}(event_info(nprobe).DOWN_lag_diff< event_info(nprobe).DOWN_lag_threshold_low) = -1;
-    lag_index{nprobe}(event_info(nprobe).DOWN_lag_diff> event_info(nprobe).DOWN_lag_threshold_high) = 1;
+    lag_index{nprobe} = zeros(1,length(event_info(nprobe).DOWN_lags_diff));
+    lag_index{nprobe}(event_info(nprobe).DOWN_lags_diff< event_info(nprobe).DOWN_lag_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).DOWN_lags_diff> event_info(nprobe).DOWN_lag_threshold_high) = 1;
 
 end
 
@@ -996,10 +996,10 @@ end
 % Merged events from both hemispheres and remove events that are less than
 % 0.05s apart
 hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
-lags = [event_info(1).DOWN_lag_diff event_info(2).DOWN_lag_diff];
+lags = [event_info(1).DOWN_lags_diff event_info(2).DOWN_lags_diff];
 lag_index = [lag_index{1} lag_index{2}];
-corrs =  [event_info(1).DOWN_corr_diff event_info(2).DOWN_corr_diff];
-plvs =   [event_info(1).DOWN_plv_diff event_info(2).DOWN_plv_diff];
+corrs =  [event_info(1).DOWN_corrs_diff event_info(2).DOWN_corrs_diff];
+plvs =   [event_info(1).DOWN_plvs_diff event_info(2).DOWN_plvs_diff];
 
 
 [event_times idx] = sort([DOWN_ints{1}(:,1); DOWN_ints{2}(:,1)]);
@@ -1021,8 +1021,8 @@ merged_event_info.DOWN_hemisphere_id = hemisphere_id;
 merged_event_info.DOWN_group_id = [k_cluster(1).UD_idx;k_cluster(2).UD_idx];
 merged_event_info.DOWN_event_times = [DOWN_ints{1}(:,1); DOWN_ints{2}(:,1)];
 merged_event_info.DOWN_lag_diff = lags';
-merged_event_info.DOWN_corr_diff = corrs';
-merged_event_info.DOWN_plv_diff = plvs';
+merged_event_info.DOWN_corrs_diff = corrs';
+merged_event_info.DOWN_plvs_diff = plvs';
 merged_event_info.DOWN_lag_index = lag_index';
 
 
