@@ -182,33 +182,33 @@ for nsubject = 1:length(SUBJECTS)
                     %                 elseif contains(this_stimulus,'Sleep')
                     %                     bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*','Sleep', '*.csv']));
                 else
-                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus, '*.csv']));
+                    bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',this_stimulus, '*.csv']));
                 end
             end
 
             %             [~,idx] = sort([bonsai_files.datenum]);
             if ~contains(bonsai_files(stimulus_counter(nstimuli)).name,'OpenField')
                 file_time = extractPattern(bonsai_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
-                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*.csv']));
+                bonsai_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',file_time,'*.csv']));
             end
 
-            if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin'])))
+            if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',this_stimulus,'*.bin'])))
 
                 % Unfortunately... sometimes bin file time stamp can be 1 or 2
                 % mins later than others....
-                bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',this_stimulus,'*.bin']));
+                bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',this_stimulus,'*.bin']));
                 %                 [~,idx] = sort([bin_files.datenum]);
 
                 file_time1 = extractPattern(bin_files(stimulus_counter(nstimuli)).name); % sometimes the exact seconds can be off for different bonsai files, so search is currently based on hour and minute (may need optimisation);
-                bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time1,'*.bin']));
+                bin_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',file_time1,'*.bin']));
 
                 bonsai_files(size(bonsai_files,1)+1) = bin_files;
             end
 
 
             % Add face data (saved as mat file) if exist
-            if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*proc.mat'])))
-                mat_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH,['*',file_time,'*proc.mat']));
+            if ~isempty(dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',file_time,'*proc.mat'])))
+                mat_files = dir(fullfile(experiment_info(nexperiment).BONSAI_DATAPATH{nstimuli},['*',file_time,'*proc.mat']));
                 bonsai_files(size(bonsai_files,1)+1) = mat_files;
             end
 
@@ -219,6 +219,8 @@ for nsubject = 1:length(SUBJECTS)
             elseif contains(options,'V1-MEC')
                 probe_V1 = str2num(experiment_info(nexperiment).probe_V1{nstimuli});
                 probe_MEC = str2num(experiment_info(nexperiment).probe_MEC{nstimuli});
+            elseif contains(options,'V1-HPC')
+                probe_hemisphere = str2num(experiment_info(nexperiment).probe_hemisphere{nstimuli});    
             end
 
             % If it is normal

@@ -1,4 +1,4 @@
-function experiment_info = subject_session_stimuli_mapping(SUBJECTS,options)
+function experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options)
 % Function used to create basic information about each recording sessions
 % recorded from the animals specified
 
@@ -219,6 +219,8 @@ for nsubject = 1:length(SUBJECTS)
             elseif contains(options,'V1-MEC')
                 probe_V1 = str2num(experiment_info(nexperiment).probe_V1{nstimuli});
                 probe_MEC = str2num(experiment_info(nexperiment).probe_MEC{nstimuli});
+            elseif contains(options,'V1-HPC')
+                probe_hemisphere = str2num(experiment_info(nexperiment).probe_hemisphere{nstimuli});    
             end
 
             % If it is normal

@@ -1,4 +1,6 @@
 %% Putative pipeline for processing chronic NPX1 and NPX2s data recorded from hippocampus and V1
+%% Run this code section-by-section (evaluate selection in command window)
+
 % This is a higher-order multi-purpose pipeline that calls dependent functions for
 % different analysis piepline
 
@@ -11,7 +13,7 @@
 % Go to CellExplorerTest_masa_adapted for cell exploerer pipeline
 
 
-%% Set the data folders and processing parameters
+%% First: Set the data folders and processing parameters
 % addpath(genpath('Z:\ibn-vision\USERS\Masa\code'))
 clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
@@ -27,7 +29,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
 all_SUBJECTS = {'M00013','M00014'};
-all_SUBJECTS = {'M00013'};
+% all_SUBJECTS = {'M00014'};
 
 Error_session_stimuli = [];
 Error_session_date=[];
@@ -129,80 +131,53 @@ for n = 1:length(all_SUBJECTS)
         end
     end
 
-    writetable(stimuli_info,'V:\Ellie\DATA\Ellie_session_stimuli_table.xlsx','Sheet',all_SUBJECTS{n});
+    % writetable(stimuli_info,'V:\Ellie\DATA\Ellie_session_stimuli_table.xlsx','Sheet',all_SUBJECTS{n});
 
 end
 
-%% import and align and store Bonsai and cluster spike data
+%% Second: import and align and store Bonsai and cluster spike data
 clear all
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
-addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
+%addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
-%%%%%% Option 1 use subject_session_stimuli_mapping for all animals you
+%%%%%% Option 1 use subject_session_stimuli_mapping_Ellie for all animals you
 %%%%%% want to process. 
-% SUBJECTS = {'M23017','M23029','M23087','M23153'};
-% SUBJECTS = {'M23028','M23087','M23153'};
-SUBJECTS = {'M24016','M24017','M24018'};
-SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
-options = 'bilateral';
-ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
+SUBJECTS = {'M00013','M00014'};
+options = 'V1-HPC';
+ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
 % Stimulus_type = 'Masa2tracks';
 % Stimulus_type = 'Checkerboard';
 
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
-% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-experiment_info=experiment_info([17 20 33 46 47 56 70 72 73]);
 
-% experiment_info=experiment_info([4 5 6 9]);
-% experiment_info=experiment_info([48 51]);
-% experiment_info=experiment_info(4:5);
-% All_stimuli = {'Checkerboard'}
-% All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
-All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-% All_stimuli = {'Masa2tracks','SparseNoise'}
-% All_stimuli = {'SleepChronic'};
-% All_stimuli = {'Checkerboard','Checkerboard'};
-% All_stimuli = {'Masa2tracks'};
+
+%All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
+
+% All_stimuli = {'SparseNoise'};
+% All_stimuli = {'OP_Tuning'};
+% All_stimuli = {'TRAIN'};
+% All_stimuli = {'DCBA'};
+% All_stimuli = {'OMIT'};
+% All_stimuli = {'E_CD'};
+% All_stimuli = {'ADCD'};
+% All_stimuli = {'lowcontB'};
+% All_stimuli = {'lowcontDsubbingB'};
+% All_stimuli = {'lowcontTRAIN'};
+
+% All_stimuli = {'GAVNIK_ABCD'};
+% All_stimuli = {'GAVNIK_A_CD'};
+% All_stimuli = {'GAVNIK_E_CD'};
+% All_stimuli = {'GAVNIK DCBA'};
+
+% All_stimuli = {'Direction_Tuning'};
+All_stimuli = {'Sleep'}
+
 for n = 1:length(All_stimuli)
-    extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
+    extract_and_preprocess_NPX_batch_Ellie(experiment_info,All_stimuli{n})
 end
 
-SUBJECTS = {'M24017'};
-options = 'bilateral';
-Stimulus_type = 'Checkerboard';
-% Stimulus_type = 'SparseNoise';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-% experiment_info = experiment_info(1);
-extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
-
-Stimulus_type = 'Masa2tracks';
-%%%%%% Option 2 go to specific animal folder to do specific session(s) you
-%%%%%% want to process.
-% SUBJECTS = {'M23017'}
-SUBJECT = 'M23028';
-SESSION = '20230706';
-
-% SUBJECT = 'M23087';
-SUBJECT = 'M23153';
-% SESSION = '20231212';
-SESSION = '20231212';
-options = 'bilateral';
-% Stimulus_type = 'Masa2tracks';
-Stimulus_type = 'Checkerboard';
-Stimulus_type = 'SparseNoise_fullscreen';
-% Stimulus_type = 'Chronic';
-if contains(Stimulus_type,'Masa2tracks')
-    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
-    for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
-        load(fullfile(session_files(n).folder, session_files(n).name))
-        extract_and_preprocess_NPX(session_info,Stimulus_type)
-    end
-else
-    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
-    extract_and_preprocess_NPX(session_info,Stimulus_type)
-end
 %% LFP preprocessing
 
 
@@ -244,7 +219,7 @@ ROOTPATH = 'Z:\ibn-vision';
 
 SUBJECTS = {'M24016'};
 SUBJECTS = {'M24065'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,'bilateral');
 experiment_info = experiment_info(1);
 Stimulus_type= 'Checkerboard_sh1'; 
 Stimulus_type= 'Checkerboard_sh1_half'; 
