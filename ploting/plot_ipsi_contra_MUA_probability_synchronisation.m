@@ -27,6 +27,8 @@ end
 % probability_SO_SO = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
 % probability_SO_SO_contralateral = probability;
+PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
 PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
@@ -661,42 +663,60 @@ end
 ipsi_contra_diff_baseline_bootstrap = temp;
 
 
+
 event_idx = [];
-event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < 0.1 & lag_diff > -0.1 ),merged_event_info.DOWN_index),intersect(find((group_id == 1 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.DOWN_index)};
+% Ipsi-contra UP_DOWN V1 MUA by three clusters
+event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.UP_index),...
+    intersect(find(group_id == 2 & lag_diff < 0.1 & lag_diff > -0.1 ),merged_event_info.UP_index),intersect(find((group_id == 1 & lag_diff < -0.1)|(group_id == 1 & lag_diff > 0.1) ),merged_event_info.UP_index)};
 
+% Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster (different lag diff)
 event_idx{2} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id == 3 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index)};
-
-event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),...
     intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
     intersect(find(group_id == 3 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id == 3 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.UP_index)};
 
+% Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters (different lag diff)
+event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),...
+    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
+    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index)};
+
+% Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged (different lag diff)
 event_idx{4} = {intersect(find(group_id ~= 2 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id ~= 2 &  lag_diff <0 &lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.UP_index),...
     intersect(find(group_id == 2 & lag_diff <sync_threshold & lag_diff >-sync_threshold),merged_event_info.UP_index),...
     intersect(find(group_id ~= 2 & lag_diff>0 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id ~= 2 & lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.UP_index)}
 
-event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),merged_event_info.UP_index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1 & corr_diff <prctile(corr_diff(group_id == 1),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),merged_event_info.UP_index)};
+% Ipsi-contra UP_DOWN V1 MUA by ipsi leading (different corr diff)
+index = intersect(find(lag_diff <prctile(lag_diff(group_id ~= 2& lag_diff <0),50)),merged_event_info.UP_index);
 
-event_idx{6} = {intersect(find(group_id == 3 & lag_diff <0 ),merged_event_info.UP_index),intersect(find(group_id == 3 & lag_diff >0 ),merged_event_info.UP_index),...
+event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
     intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1 & lag_diff <0 ),merged_event_info.UP_index),intersect(find(group_id == 1 & lag_diff >0 ),merged_event_info.UP_index)};
+    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1& corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+
+% Ipsi-contra UP_DOWN V1 MUA by contra leading (different corr diff)
+index = intersect(find(lag_diff >prctile(lag_diff(group_id ~= 2& lag_diff >0),50)),merged_event_info.UP_index);
+
+event_idx{6} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
+    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
+    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+
+% Ipsi-contra UP_DOWN V1 MUA by 3 clusters leading only
+event_idx{7} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),...
+    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
+    intersect(find(group_id == 1 & lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50)),merged_event_info.UP_index)};
+
 
 
 group_name=[];
-group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
-group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% dominant clusters
-group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% non-dominant clusters
+group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
+group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
+group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
 group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
-group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};
+group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
-group_name{6} = {'Ipsi dominant ipsi leading','Ipsi dominant contra leading','Bilaterally synchronised','Contra dominant ipsi leading','Contra dominant contra leading','Shuffled'};% dominant clusters
+title_names = {'Ipsi-contra DOWN_UP V1 MUA by three clusters', 'Ipsi-contra DOWN_UP V1 MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra DOWN_UP V1 MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra DOWN_UP V1 MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra DOWN_UP V1 MUA by ipsi leading (diff corr diff)','Ipsi-contra DOWN_UP V1 MUA by contra leading (diff corr diff)','Ipsi-contra DOWN_UP V1 MUA by three clusters (leading only)'}
 
-title_names = {'Ipsi-contra DOWN-UP V1 MUA by three clusters', 'Ipsi-contra DOWN-UP V1 MUA by dominant clusters + 50% lag diff','Ipsi-contra DOWN-UP V1 MUA by non-dominant clusters + 50% lag diff',...
-    'Ipsi-contra DOWN-UP V1 MUA by cluster 1 and 3 merged + 50% lag diff','Ipsi-contra DOWN-UP V1 MUA by corr diff','Ipsi-contra DOWN-UP V1 MUA by 5 clusters'}
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 % colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
@@ -709,8 +729,8 @@ for ngroup = 1:length(event_idx)
     fig.Position = [70 300 1700 500];
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1
-        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    if ngroup ==1|ngroup ==7
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -941,28 +961,43 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 
 
 event_idx = [];
+% Ipsi-contra UP_DOWN V1 MUA by three clusters
 event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 2 & lag_diff < 0.1 & lag_diff > -0.1 ),merged_event_info.DOWN_index),intersect(find((group_id == 1 & lag_diff < -0.1)|(group_id == 1 & lag_diff > 0.1) ),merged_event_info.DOWN_index)};
 
+% Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster (different lag diff)
 event_idx{2} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 3 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 3 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 3 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.DOWN_index)};
 
+% Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters (different lag diff)
 event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.DOWN_index)};
 
+% Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged (different lag diff)
 event_idx{4} = {intersect(find(group_id ~= 2 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id ~= 2 &  lag_diff <0 &lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 2 & lag_diff <sync_threshold & lag_diff >-sync_threshold),merged_event_info.DOWN_index),...
     intersect(find(group_id ~= 2 & lag_diff>0 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id ~= 2 & lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.DOWN_index)}
 
-event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 1 & corr_diff <prctile(corr_diff(group_id == 1),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),merged_event_info.DOWN_index)};
+% Ipsi-contra UP_DOWN V1 MUA by ipsi leading (different corr diff)
+index = intersect(find(lag_diff <prctile(lag_diff(group_id ~= 2& lag_diff <0),50)),merged_event_info.DOWN_index);
 
-event_idx{6} = {intersect(find(group_id == 3 & lag_diff <0 ),merged_event_info.DOWN_index),intersect(find(group_id == 3 & lag_diff >0 ),merged_event_info.DOWN_index),...
+event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
+    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
+    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1& corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+
+% Ipsi-contra UP_DOWN V1 MUA by contra leading (different corr diff)
+index = intersect(find(lag_diff >prctile(lag_diff(group_id ~= 2& lag_diff >0),50)),merged_event_info.DOWN_index);
+
+event_idx{6} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
+    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
+    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+
+% Ipsi-contra UP_DOWN V1 MUA by 5 clusters
+event_idx{7} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),...
     intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 1 & lag_diff <0 ),merged_event_info.DOWN_index),intersect(find(group_id == 1 & lag_diff >0 ),merged_event_info.DOWN_index)};
+    intersect(find(group_id == 1 & lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50)),merged_event_info.DOWN_index)};
 
 
 
@@ -971,12 +1006,12 @@ group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','S
 group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
 group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
 group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
-group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};
+group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
-group_name{6} = {'Ipsi dominant ipsi leading','Ipsi dominant contra leading','Bilaterally synchronised','Contra dominant ipsi leading','Contra dominant contra leading','Shuffled'};% dominant clusters
-
-title_names = {'Ipsi-contra UP_DOWN V1 MUA by three clusters', 'Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster','Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters',...
-    'Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged + 50% lag diff','Ipsi-contra UP_DOWN V1 MUA by corr diff','Ipsi-contra UP_DOWN V1 MUA by 5 clusters'}
+title_names = {'Ipsi-contra UP_DOWN V1 MUA by three clusters', 'Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra UP_DOWN V1 MUA by ipsi leading (diff corr diff)','Ipsi-contra UP_DOWN V1 MUA by contra leading (diff corr diff)','Ipsi-contra UP_DOWN V1 MUA by three clusters (leading only)'}
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 % colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
@@ -989,7 +1024,7 @@ for ngroup = 1:length(event_idx)
     fig.Position = [70 300 1700 500];
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1
+    if ngroup ==1|ngroup ==7
         colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
@@ -1225,16 +1260,38 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 
 
 event_idx = [];
+% Ipsi-contra ripples HPC MUA by four different clusters
 event_idx{1} = {find(group_id==4),find(group_id==3),find(group_id==2),find(group_id==1)};
 
-% event_idx{1} = {find(group_id==1),find(group_id==2),find(group_id==3),find(group_id==4)};
+% Ipsi-contra ripples HPC MUA by ipsi dominant cluster (different lag diff)
+index = merged_event_info.ripples_index;
+event_idx{2} = {intersect(find(group_id == 4 & lag_diff <prctile(lag_diff(group_id == 4& lag_diff <0),50) ),index),intersect(find(group_id == 4 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 4& lag_diff <0),50) ),index),...
+    intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index),...
+    intersect(find(group_id == 4 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id ==4& lag_diff >0),50) ),index),intersect(find(group_id == 4 &lag_diff >prctile(lag_diff(group_id == 4& lag_diff >0),50) ),index)};
+
+% Ipsi-contra ripples HPC MUA by contra dominant clusters (different lag diff)
+event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),index),...
+    intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index),...
+    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id ==1& lag_diff >0),50) ),index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),index)};
+
+% Ipsi-contra ripples HPC MUA by bilateral clusters (different lag diff)
+index = intersect(merged_event_info.ripples_index,find(group_id == 2 | group_id == 3));
+lag_thresholds = prctile(lag_diff(index),[0 25 50 75 100]);
+
+for n = 1:length(lag_thresholds)-1
+    event_idx{4}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+end
 
 
 group_name=[];
-group_name{1} = {'ipsi dominant','high plv diff','low plv diff','contra dominant','Shuffled'};
-group_name{2} = {'ipsi dominant ipsi leading','ipsi dominant contra leading','bilaterally shared','contra dominant ipsi leading','contra dominant contra leading','Shuffled'};
+group_name{1} = {'Ipsi dominant','Bilateral high plv diff','Bilateral low plv diff','Contra dominant','Shuffled'};
+group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
+group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
+group_name{4} = {'Top 0-25% ipsi leading','Top 25-50% ipsi leading','Top 50-75% ipsi leading','Top 75-100% ipsi leading','Shuffled'};% purely based on lags
 
-title_names = {'Ipsi-contra ripples HPC MUA by four clusters'}
+title_names = {'Ipsi-contra ripples HPC MUA by four clusters', 'Ipsi-contra ripples HPC MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples HPC MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra UP_DOWN V1 MUA by bilateral clusters (different lag diff)'};
+
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 % colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
@@ -1244,10 +1301,10 @@ title_names = {'Ipsi-contra ripples HPC MUA by four clusters'}
 
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
-    fig.Position = [400 150 1300 500];
+    fig.Position = [70 300 1700 500];
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1
+    if ngroup ==1 | ngroup ==4
         colour_lines = [0,90,50;254,145,198;228,42,168;74,20,134]/256; % Dark Green , light Magenta, dark mageta, dark purple
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
@@ -1292,8 +1349,8 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 5])
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.5 5.2])
     xlim([-0.2 0.2])
     
     % xline(0,'r')
@@ -1341,8 +1398,8 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 5])
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.5 5.2])
     xlim([-0.2 0.2])
 
     % xline(0,'r')
@@ -1392,7 +1449,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 0.5])
+    ylim([-0.5 0.85])
     xlim([-0.2 0.2])
 
     % xline(0,'r')

@@ -274,7 +274,7 @@ colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark 
 % colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
 
 
-% Calculate ripples probability with 
+% Calculate ripples probability according to different 
 ripples_times =  merged_event_info.ripples_ints;
 ripples_group_info = merged_event_info.ripples_group_id;
 ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id;

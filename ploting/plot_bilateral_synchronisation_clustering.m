@@ -847,7 +847,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 
 
-%% Compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
 lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
 corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
 plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
