@@ -846,19 +846,6 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 
-
-%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
-
-
-
-
-
-
 %% ipsi-contra events grouping based on lags and clusters
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
@@ -1186,5 +1173,16 @@ merged_event_info.spindles_lag_index = lag_index';
 
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
+corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
+plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
+
+
+
+
+
 
 

@@ -769,6 +769,21 @@ title_names = {'Ipsi-contra DOWN_UP MUA by three clusters', 'Ipsi-contra DOWN_UP
 % colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
 % colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
 
+%%%%%%%%%% Calculate V1 HPC MUA
+
+MUA_PSTH_merged.ipsi_UD_V1 = [];
+MUA_PSTH_merged.contra_UD_V1 = [];
+MUA_PSTH_merged.ipsi_contra_diff_UD_V1 = [];
+MUA_PSTH_merged.ipsi_UD_HPC = [];
+MUA_PSTH_merged.contra_UD_HPC = [];
+MUA_PSTH_merged.ipsi_contra_diff_UD_HPC = [];
+
+for ngroup = 1:length(event_idx)
+
+
+end
+
+%%%%%%%%% Plot DU transition
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
     fig.Position = [350 59 1650 930];
@@ -1485,6 +1500,18 @@ title_names = {'Ipsi-contra UP_DOWN V1 MUA by three clusters', 'Ipsi-contra UP_D
 % 
 % colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
 % colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+MUA_PSTH_merged.ipsi_UD_V1 = [];
+MUA_PSTH_merged.contra_UD_V1 = [];
+MUA_PSTH_merged.ipsi_contra_diff_UD_V1 = [];
+MUA_PSTH_merged.ipsi_UD_HPC = [];
+MUA_PSTH_merged.contra_UD_HPC = [];
+MUA_PSTH_merged.ipsi_contra_diff_UD_HPC = [];
+
+for ngroup = 1:length(event_idx)
+
+
+end
+
 
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
