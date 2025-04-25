@@ -266,6 +266,7 @@ probability_normalised_whole = probability;
 
 
 sync_threshold = mean(abs([event_info(1).UP_lag_threshold_low event_info(2).UP_lag_threshold_low event_info(1).UP_lag_threshold_high event_info(2).UP_lag_threshold_high]));
+sync_threshold1 = mean(abs([event_info(1).ripples_lag_threshold_low event_info(2).UP_lag_threshold_low event_info(1).UP_lag_threshold_high event_info(2).UP_lag_threshold_high]));
 
 colour_lines=[];
 colour_lines = [0,90,50;74,20,134;228,42,168]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple

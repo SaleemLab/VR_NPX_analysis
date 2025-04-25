@@ -602,7 +602,7 @@ end
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
-
+%%%%% V1 MUA
 ipsi_V1_MUA = [PSTH_MUA(1).L_V1_UP; PSTH_MUA(2).R_V1_UP];
 contra_V1_MUA = [PSTH_MUA(1).R_V1_UP; PSTH_MUA(2).L_V1_UP];
 
@@ -650,7 +650,7 @@ end
 
 contra_baseline_bootstrap = temp;
 
-%%% Contra
+%%% Ipsi-Contra baseline
 binnedArray = ipsi_V1_MUA_baseline-contra_V1_MUA_baseline;
 temp=[];
 parfor iBoot = 1:1000
@@ -662,8 +662,53 @@ end
 
 ipsi_contra_diff_baseline_bootstrap = temp;
 
+%%%%% HPC MUA
+ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_UP; PSTH_MUA(2).R_HPC_UP];
+contra_HPC_MUA = [PSTH_MUA(1).R_HPC_UP; PSTH_MUA(2).L_HPC_UP];
+ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
+contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
+
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap1 = temp;
+
+%%% Contra
+binnedArray = contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap1 = temp;
 
 
+
+%%% Ipsi-Contra baseline
+binnedArray = ipsi_HPC_MUA_baseline-contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap1 = temp;
+
+
+%%%%%%%%%%%%% Grouping events
 event_idx = [];
 % Ipsi-contra UP_DOWN V1 MUA by three clusters
 event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.UP_index),...
@@ -714,8 +759,8 @@ group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally
 group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
 group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
-title_names = {'Ipsi-contra DOWN_UP V1 MUA by three clusters', 'Ipsi-contra DOWN_UP V1 MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra DOWN_UP V1 MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra DOWN_UP V1 MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra DOWN_UP V1 MUA by ipsi leading (diff corr diff)','Ipsi-contra DOWN_UP V1 MUA by contra leading (diff corr diff)','Ipsi-contra DOWN_UP V1 MUA by three clusters (leading only)'}
+title_names = {'Ipsi-contra DOWN_UP MUA by three clusters', 'Ipsi-contra DOWN_UP MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra DOWN_UP MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra DOWN_UP MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra DOWN_UP MUA by ipsi leading (diff corr diff)','Ipsi-contra DOWN_UP MUA by contra leading (diff corr diff)','Ipsi-contra DOWN_UP MUA by three clusters (leading only)'}
 
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -726,7 +771,7 @@ title_names = {'Ipsi-contra DOWN_UP V1 MUA by three clusters', 'Ipsi-contra DOWN
 
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
-    fig.Position = [70 300 1700 500];
+    fig.Position = [350 59 1650 930];
     fig.Name =title_names{ngroup};
 
     if ngroup ==1|ngroup ==7
@@ -778,7 +823,7 @@ for ngroup = 1:length(event_idx)
 
     % xline(0,'r')
     ylim([-1 0.5])
-    title('Ipsi MUA')
+    title('V1 Ipsi MUA')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -826,7 +871,7 @@ for ngroup = 1:length(event_idx)
     ylim([-1 0.5])
 
     % xline(0,'r')
-    title('Contra MUA')
+    title('V1 Contra MUA')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -876,15 +921,394 @@ for ngroup = 1:length(event_idx)
 
 
     % xline(0,'r')
-    title('Ipsi-contra MUA diff')
+    title('V1 Ipsi-contra MUA diff')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-    
+
+    %%%%%%% HPC MUA
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+    % xline(0,'r')
+    ylim([-0.3 0.1])
+    title('HPC Ipsi MUA')
+    xlabel('Time relative to DOWN-UP transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap1,2.5);
+    UCI = prctile(contra_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.3 0.1])
+
+    % xline(0,'r')
+    title('HPC Contra MUA')
+    xlabel('Time relative to DOWN-UP transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.3 0.1])
+
+
+    % xline(0,'r')
+    title('HPC Ipsi-contra MUA diff')
+    xlabel('Time relative to DOWN-UP transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
 end
 
 
+%%%%%%%%% All DOWN-UP plots
+
+clear ERROR_SHADE
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name ='All ipsi-contra DOWN-UP MUA';
+
+colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
+
+nexttile
+binnedArray = ipsi_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_V1_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.5])
+
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('V1 MUA')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_V1_MUA-contra_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap-contra_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.5])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('V1 MUA difference')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+binnedArray = ipsi_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_HPC_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.1])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('HPC MUA')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_HPC_MUA-contra_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.1])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('HPC MUA difference')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 %%%%%%%%%%%%%%%%%%%%%%
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
@@ -959,7 +1383,50 @@ end
 
 ipsi_contra_diff_baseline_bootstrap = temp;
 
+%%%%%%%%%%% HPC MUA
+ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_DOWN; PSTH_MUA(2).R_HPC_DOWN];
+contra_HPC_MUA = [PSTH_MUA(1).R_HPC_DOWN; PSTH_MUA(2).L_HPC_DOWN];
+ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_DOWN; PSTH_MUA_baseline(2).R_HPC_DOWN];
+contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_DOWN; PSTH_MUA_baseline(2).L_HPC_DOWN];
 
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap1 = temp;
+
+%%% Contra
+binnedArray = contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap1 = temp;
+
+%%% Ipsi-contra difference
+binnedArray = ipsi_HPC_MUA_baseline-contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap1 = temp;
+
+%%%%%%% Grouping events
 event_idx = [];
 % Ipsi-contra UP_DOWN V1 MUA by three clusters
 event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.DOWN_index),...
@@ -1021,7 +1488,7 @@ title_names = {'Ipsi-contra UP_DOWN V1 MUA by three clusters', 'Ipsi-contra UP_D
 
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
-    fig.Position = [70 300 1700 500];
+    fig.Position = [350 59 1650 930];
     fig.Name =title_names{ngroup};
 
     if ngroup ==1|ngroup ==7
@@ -1073,7 +1540,7 @@ for ngroup = 1:length(event_idx)
 
     % xline(0,'r')
     ylim([-1 0.5])
-    title('Ipsi MUA')
+    title('V1 Ipsi MUA')
     xlabel('Time relative to UP-DOWN transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1121,7 +1588,7 @@ for ngroup = 1:length(event_idx)
     ylim([-1 0.5])
 
     % xline(0,'r')
-    title('Contra MUA')
+    title('V1 Contra MUA')
     xlabel('Time relative to UP-DOWN transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1171,11 +1638,159 @@ for ngroup = 1:length(event_idx)
 
 
     % xline(0,'r')
-    title('Ipsi-contra MUA diff')
+    title('V1 Ipsi-contra MUA diff')
     xlabel('Time relative to UP-DOWN transition (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+    %%%%% HPC MUA
+
+        nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+    % xline(0,'r')
+    ylim([-0.3 0.1])
+
+    title('HPC Ipsi MUA')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap1,2.5);
+    UCI = prctile(contra_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.3 0.1])
+
+    % xline(0,'r')
+    title('HPC Contra MUA')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.3 0.1])
+
+
+    % xline(0,'r')
+    title('HPC Ipsi-contra MUA diff')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     
 end
 
@@ -1183,6 +1798,239 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
+%%%%%%%%% All UP-DOWN plots
+
+clear ERROR_SHADE
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name ='All ipsi-contra UP-DOWN MUA';
+
+colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
+
+nexttile
+binnedArray = ipsi_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_V1_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('V1 MUA')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_V1_MUA-contra_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap-contra_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('V1 MUA difference')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+
+nexttile
+binnedArray = ipsi_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_HPC_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('HPC MUA')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_HPC_MUA-contra_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1-contra_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('HPC MUA difference')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 %%
 %%%%%
@@ -1195,7 +2043,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_event_info.mat'));
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
-
+%%%%%%%%%%%%%%%% HPC spikes
 ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_ripples; PSTH_MUA(2).R_HPC_ripples];
 contra_HPC_MUA = [PSTH_MUA(1).R_HPC_ripples; PSTH_MUA(2).L_HPC_ripples];
 
@@ -1246,7 +2094,7 @@ end
 
 contra_baseline_bootstrap = temp;
 
-%%% Contra
+%%% ipsi contra diff
 binnedArray = ipsi_HPC_MUA_baseline-contra_HPC_MUA_baseline;
 temp=[];
 parfor iBoot = 1:1000
@@ -1258,7 +2106,52 @@ end
 
 ipsi_contra_diff_baseline_bootstrap = temp;
 
+%%%%%%%%%%%%%%%% V1 spikes
+ipsi_V1_MUA = [PSTH_MUA(1).L_V1_ripples; PSTH_MUA(2).R_V1_ripples];
+contra_V1_MUA = [PSTH_MUA(1).R_V1_ripples; PSTH_MUA(2).L_V1_ripples];
+ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_ripples; PSTH_MUA_baseline(2).R_V1_ripples];
+contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_ripples; PSTH_MUA_baseline(2).L_V1_ripples];
 
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap1 = temp;
+
+%%% Contra
+binnedArray = contra_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap1 = temp;
+
+%%% ipsi contra diff
+binnedArray = ipsi_V1_MUA_baseline-contra_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap1 = temp;
+
+
+
+%%%%%%% Event grouping based on ipsi-contra difference features
 event_idx = [];
 % Ipsi-contra ripples HPC MUA by four different clusters
 event_idx{1} = {find(group_id==4),find(group_id==3),find(group_id==2),find(group_id==1)};
@@ -1282,15 +2175,23 @@ for n = 1:length(lag_thresholds)-1
     event_idx{4}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
 end
 
+% Ipsi-contra ripples HPC MUA by lag diff
+index = merged_event_info.ripples_index;
+lag_thresholds = prctile(lag_diff(index),[0 20 40 60 80 100]);
+
+for n = 1:length(lag_thresholds)-1
+    event_idx{5}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+end
 
 group_name=[];
 group_name{1} = {'Ipsi dominant','Bilateral high plv diff','Bilateral low plv diff','Contra dominant','Shuffled'};
 group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
 group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
 group_name{4} = {'Top 0-25% ipsi leading','Top 25-50% ipsi leading','Top 50-75% ipsi leading','Top 75-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{5} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
 
-title_names = {'Ipsi-contra ripples HPC MUA by four clusters', 'Ipsi-contra ripples HPC MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples HPC MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra UP_DOWN V1 MUA by bilateral clusters (different lag diff)'};
+title_names = {'Ipsi-contra ripples MUA by four clusters', 'Ipsi-contra ripples MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra ripples MUA by bilateral clusters (different lag diff)','Ipsi-contra ripples MUA by lag diff'};
 
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -1301,7 +2202,7 @@ title_names = {'Ipsi-contra ripples HPC MUA by four clusters', 'Ipsi-contra ripp
 
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
-    fig.Position = [70 300 1700 500];
+    fig.Position = [350 59 1650 930];
     fig.Name =title_names{ngroup};
 
     if ngroup ==1 | ngroup ==4
@@ -1309,6 +2210,156 @@ for ngroup = 1:length(event_idx)
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.2 0.4])
+    xlim([-0.2 0.2])
+    
+    % xline(0,'r')
+    title('V1 Ipsi MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap1,2.5);
+    UCI = prctile(contra_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.2 0.4])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('V1 Contra MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.2 0.4])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('V1 Ipsi-contra MUA diff')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
 
     nexttile
     clear ERROR_SHADE
@@ -1350,11 +2401,11 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 5.2])
+    ylim([-0.5 5.6])
     xlim([-0.2 0.2])
     
     % xline(0,'r')
-    title('Ipsi MUA')
+    title('HPC Ipsi MUA')
     xlabel('Time relative to ripple peaktime (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1399,11 +2450,11 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.5 5.2])
+    ylim([-0.5 5.6])
     xlim([-0.2 0.2])
 
     % xline(0,'r')
-    title('Contra MUA')
+    title('HPC Contra MUA')
     xlabel('Time relative to ripple peaktime (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1453,7 +2504,7 @@ for ngroup = 1:length(event_idx)
     xlim([-0.2 0.2])
 
     % xline(0,'r')
-    title('Ipsi-contra MUA diff')
+    title('HPC Ipsi-contra MUA diff')
     xlabel('Time relative to ripple peaktime (s)')
     ylabel('MUA activity (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1463,3 +2514,1259 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
+
+
+
+%%%%%%%%% All ripples plots
+
+clear ERROR_SHADE
+fig = figure('Color','w');
+% fig.Position = [350 59 1100 465];
+fig.Position = [350 59 1100 930];
+fig.Name ='ipsi-contra ripples MUA';
+
+colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
+
+nexttile
+binnedArray = ipsi_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_V1_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+ylim([-0.2 0.4])
+xlim([-0.5 0.5])
+
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('V1 MUA')
+xlabel('Time relative to ripple peaktimes (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_V1_MUA-contra_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.1 0.1])
+xlim([-0.5 0.5])
+
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('V1 MUA difference')
+xlabel('Time relative to ripple peaktimes (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+%%%% HPC
+nexttile
+binnedArray = ipsi_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_HPC_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.5 5.6])
+xlim([-0.5 0.5])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('HPC MUA')
+xlabel('Time relative to ripple peaktimes (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_HPC_MUA-contra_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_contra_diff_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_contra_diff_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_contra_diff_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.2 0.4])
+xlim([-0.5 0.5])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('HPC MUA difference')
+xlabel('Time relative to ripple peaktimes (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
+
+%% Calculate Unilateral-bilateral diff in response
+index = merged_event_info.ripples_index;
+bilateral_index = intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index);
+group_name=[];
+group_name{1} = {'Ipsi dominant','Bilateral high plv diff','Bilateral low plv diff','Contra dominant','Shuffled'};
+group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
+group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
+group_name{4} = {'Top 0-25% ipsi leading','Top 25-50% ipsi leading','Top 50-75% ipsi leading','Top 75-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{5} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+
+title_names = {'Ipsi-contra ripples unilateral-bilateral MUA by four clusters', 'Ipsi-contra ripples unilateral-bilateral MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples unilateral-bilateral MUA by contra dominant clusters (different lag diff)',...
+    'Ipsi-contra ripples unilateral-bilateral MUA by bilateral clusters (different lag diff)','Ipsi-contra ripples unilateral-bilateral MUA by lag diff'};
+
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+
+% colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
+% 
+% colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+% colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+for ngroup = 1:length(group_name)
+    fig = figure('Color','w');
+    fig.Position = [350 59 1650 930];
+    fig.Name =title_names{ngroup};
+
+    if ngroup ==1 | ngroup ==4
+        colour_lines = [0,90,50;254,145,198;228,42,168;74,20,134]/256; % Dark Green , light Magenta, dark mageta, dark purple
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:);binnedArray1 = mean(ipsi_V1_MUA(bilateral_index,:),'omitnan');
+        
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.15 0.15])
+    xlim([-0.2 0.2])
+    
+    % xline(0,'r')
+    title('V1 Ipsi MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_V1_MUA(index,:);binnedArray1 = mean(contra_V1_MUA(bilateral_index,:),'omitnan');
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap1,2.5);
+    UCI = prctile(contra_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.15 0.15])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('V1 Contra MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    binnedArray1 = mean(ipsi_V1_MUA(bilateral_index,:)-contra_V1_MUA(bilateral_index,:),'omitnan');
+
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.15 0.15])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('V1 Ipsi-contra MUA diff')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:);binnedArray1 = mean(ipsi_HPC_MUA(bilateral_index,:),'omitnan');
+        
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1.5 0.5])
+    xlim([-0.2 0.2])
+    
+    % xline(0,'r')
+    title('HPC Ipsi MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_HPC_MUA(index,:);binnedArray1 = mean(contra_HPC_MUA(bilateral_index,:),'omitnan');
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap,2.5);
+    UCI = prctile(contra_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1.5 0.5])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('HPC Contra MUA')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    binnedArray1 = mean(ipsi_HPC_MUA(bilateral_index,:)-contra_HPC_MUA(bilateral_index,:),'omitnan');
+
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan')-binnedArray1;
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan')-binnedArray1;
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.85 0.85])
+    xlim([-0.2 0.2])
+
+    % xline(0,'r')
+    title('HPC Ipsi-contra MUA diff')
+    xlabel('Time relative to ripple peaktime (s)')
+    ylabel('Unilateral-Bilateral MUA difference (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
+%%
+%%%%%
+%%%%%
+%%%%%
+%%%%%
+
+%% Plot spindles averaged MUA
+% PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_event_info.mat'));
+% PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+
+ipsi_V1_MUA = [PSTH_MUA(1).L_V1_spindles; PSTH_MUA(2).R_V1_spindles];
+contra_V1_MUA = [PSTH_MUA(1).R_V1_spindles; PSTH_MUA(2).L_V1_spindles];
+
+ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_spindles; PSTH_MUA_baseline(2).R_V1_spindles];
+contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_spindles; PSTH_MUA_baseline(2).L_V1_spindles];
+
+% ipsi_probability = [PSTH_MUA(1).L_V1_DOWN; PSTH_MUA(2).R_V1_DOWN];
+% contra_probability = [PSTH_MUA(2).L_V1_DOWN; PSTH_MUA(1).R_V1_DOWN];
+
+lag_diff = merged_event_info.spindles_lag_diff;
+plv_diff = merged_event_info.spindles_plv_diff;
+corr_diff = merged_event_info.spindles_corr_diff;
+ipsi_lag = [ipsi_lag_spindles{1} ipsi_lag_spindles{2}]';
+contra_lag = [contra_lag_spindles{1} contra_lag_spindles{2}]';
+group_id = merged_event_info.spindles_group_id;
+
+sync_threshold = mean(abs([event_info(1).spindles_threshold_low event_info(2).spindles_threshold_low event_info(1).spindles_threshold_high event_info(2).spindles_threshold_high]));
+
+colour_lines=[];
+colour_lines = [0,90,50;74,20,134;228,42,168]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+% colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+% colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap = temp;
+
+%%% Contra
+binnedArray = contra_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap = temp;
+
+%%% Contra
+binnedArray = ipsi_V1_MUA_baseline-contra_V1_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap = temp;
+
+
+%%%%%%%%%%%%%% HPC spikes
+ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_spindles; PSTH_MUA(2).R_HPC_spindles];
+contra_HPC_MUA = [PSTH_MUA(1).R_HPC_spindles; PSTH_MUA(2).L_HPC_spindles];
+ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_spindles; PSTH_MUA_baseline(2).R_HPC_spindles];
+contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_spindles; PSTH_MUA_baseline(2).L_HPC_spindles];
+
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap1 = temp;
+
+%%% Contra
+binnedArray = contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap1 = temp;
+
+
+
+%%%%%%%%%%%%%%%% grouping events based on ipsi-contra feature difference
+event_idx = [];
+% Ipsi-contra spindles V1 MUA by four clusters
+index = merged_event_info.spindles_index;
+event_idx{1} = {intersect(find(group_id == 4),index),intersect(find(group_id == 3),index),intersect(find(group_id == 2),index),intersect(find(group_id == 1),index)};
+
+% Ipsi-contra spindles V1 MUA by lag diff
+index = merged_event_info.spindles_index;
+
+lag_thresholds = prctile(lag_diff(index),[0 20 40 60 80 100]);
+
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+end
+
+group_name=[];
+group_name{1} = {'Ipsi dominant high lag diff','Ipsi dominant low lag diff','Bilaterally synchronised','Contra dominant','Shuffled'};
+group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+
+title_names = {'Ipsi-contra spindles V1 MUA by four clusters', 'Ipsi-contra spindles V1 MUA by lag diff'};
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+
+% colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
+% 
+% colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+% colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+for ngroup = 1:length(event_idx)
+    fig = figure('Color','w');
+    fig.Position = [70 300 1700 500];
+    fig.Name =title_names{ngroup};
+
+    if ngroup ==1
+        colour_lines = [74,20,134;228,42,168;65,171,93;0,90,50]/256; % dark purple, meganta, light green, dark green
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+    % xline(0,'r')
+    ylim([-1 0.5])
+    title('V1 Ipsi MUA')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap,2.5);
+    UCI = prctile(contra_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1 0.5])
+
+    % xline(0,'r')
+    title('V1 Contra MUA')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1 0.5])
+
+
+    % xline(0,'r')
+    title('V1 Ipsi-contra MUA diff')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+    % xline(0,'r')
+    ylim([-1 0.5])
+    title('HPC Ipsi MUA')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(contra_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(contra_baseline_bootstrap1,2.5);
+    UCI = prctile(contra_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1 0.5])
+
+    % xline(0,'r')
+    title('HPC Contra MUA')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        index =event_idx{ngroup}{i};
+        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+
+        % nprobe = 1;
+        time_wondows = [-1 1];
+        time_bin = 0.01;
+        x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+        temp=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(temp,2.5);
+        UCI = prctile(temp,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+
+    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1 0.5])
+
+
+    % xline(0,'r')
+    title('HPC Ipsi-contra MUA diff')
+    xlabel('Time relative to spindle onset (s)')
+    ylabel('MUA activity (z)')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+
+
+%%%%%%%%% All spindles plots
+clear ERROR_SHADE
+fig = figure('Color','w');
+fig.Position = [350 59 1100 465];
+fig.Name ='ipsi-contra spindles V1 MUA';
+
+colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
+
+nexttile
+binnedArray = ipsi_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_V1_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('V1 MUA')
+xlabel('Time relative to spindle onset (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_V1_MUA-contra_V1_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap-contra_baseline_bootstrap,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,2.5);
+UCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('V1 MUA difference')
+xlabel('Time relative to spindle onset (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = contra_V1_MUA;
+
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
+title('HPC MUA')
+xlabel('Time relative to spindle onset (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+binnedArray = ipsi_HPC_MUA-contra_HPC_MUA;
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(temp,2.5);
+UCI = prctile(temp,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
+UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
+title('HPC MUA difference')
+xlabel('Time relative to spindle onset (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])

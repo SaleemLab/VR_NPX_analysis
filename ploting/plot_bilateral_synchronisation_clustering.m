@@ -1132,16 +1132,16 @@ for nprobe = 1:2
     % threshold_high = prctile(mu2,97.5);
 
     % event_info(nprobe).ripples_group_id = group_id;
-    event_info(nprobe).spindles_boundary_low = threshold_low;
-    event_info(nprobe).spindles_boundary_high = threshold_high;
+    event_info(nprobe).spindles_threshold_low = threshold_low;
+    event_info(nprobe).spindles_threshold_high = threshold_high;
 
     event_info(nprobe).spindles_lag_diff = lags;
     event_info(nprobe).spindles_corr_diff = corrs ;
     event_info(nprobe).spindles_plv_diff = plvs;
 
     lag_index{nprobe} = zeros(1,length(event_info(nprobe).spindles_lag_diff));
-    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff< event_info(nprobe).spindles_boundary_low) = -1;
-    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff> event_info(nprobe).spindles_boundary_high) = 1;
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff< event_info(nprobe).spindles_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff> event_info(nprobe).spindles_threshold_high) = 1;
 
 end
 
@@ -1160,8 +1160,8 @@ plvs =   [event_info(1).spindles_plv_diff event_info(2).spindles_plv_diff];
 merged_event_info.spindles_index_sorted = idx; % all idx based on event times
 
 keep = true(height(event_times), 1);
-merge_threshold = mean([abs(event_info(1).spindles_boundary_low) abs(event_info(2).spindles_boundary_low)...
-    abs(event_info(1).spindles_boundary_high) abs(event_info(2).spindles_boundary_high)]);
+merge_threshold = mean([abs(event_info(1).spindles_threshold_low) abs(event_info(2).spindles_threshold_low)...
+    abs(event_info(1).spindles_threshold_high) abs(event_info(2).spindles_threshold_high)]);
 % merge_threshold = 0.3
 % merge_threshold = 0.01;
 for i = 2:height(event_times)
