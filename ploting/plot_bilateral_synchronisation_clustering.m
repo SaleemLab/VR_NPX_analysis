@@ -1181,6 +1181,15 @@ corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
 plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
 
 
+%%%%%%%% 
+
+
+
+
+
+end
+
+
 
 
 

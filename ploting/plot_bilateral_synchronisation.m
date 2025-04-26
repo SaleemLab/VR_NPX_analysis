@@ -2412,42 +2412,42 @@ xlabel('spindle power correlation')
 ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-
-colour_lines = [44,123,182;215,25,28]/256;
-nexttile
-for nprobe = 1:2
-    [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
-    x = 1:length(ipsi_plv{nprobe});
-    y = mean(cumsum(ipsi_plv_bootstrap{nprobe}(:,sorted_index) - contra_plv_bootstrap{nprobe}(:,sorted_index),2));
-    LCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),2.5);
-    UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
-    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
-end
-legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
-% xline(0,'r')
-% title('Prob of left ripples during DOWN')
-xlabel('spindle events')
-ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-nexttile
-for nprobe = 1:2
-    [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
-    x = 1:length(ipsi_amp_corr{nprobe});
-    y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
-    LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
-    UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
-    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
-end
-legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
-% xline(0,'r')
-% title('Prob of left ripples during DOWN')
-xlabel('spindle events')
-ylabel(sprintf('Cumulative ipsi-contralateral difference\n in spindle power correlation'))
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% colour_lines = [44,123,182;215,25,28]/256;
+% nexttile
+% for nprobe = 1:2
+%     [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
+%     x = 1:length(ipsi_plv{nprobe});
+%     y = mean(cumsum(ipsi_plv_bootstrap{nprobe}(:,sorted_index) - contra_plv_bootstrap{nprobe}(:,sorted_index),2));
+%     LCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+%     UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+%     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+%     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+% end
+% legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
+% % xline(0,'r')
+% % title('Prob of left ripples during DOWN')
+% xlabel('spindle events')
+% ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% 
+% nexttile
+% for nprobe = 1:2
+%     [~,sorted_index] = sort(spindles_all(nprobe).peak_zscore(spindles_all(nprobe).SWS_index == 1));
+%     x = 1:length(ipsi_amp_corr{nprobe});
+%     y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
+%     LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+%     UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+%     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+%     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+% end
+% legend(ERROR_SHADE(1:2),{'Left spindles','Right spindles'},'Location','northwest','Box','off')
+% % xline(0,'r')
+% % title('Prob of left ripples during DOWN')
+% xlabel('spindle events')
+% ylabel(sprintf('Cumulative ipsi-contralateral difference\n in spindle power correlation'))
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
