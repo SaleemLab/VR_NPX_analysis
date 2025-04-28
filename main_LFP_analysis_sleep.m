@@ -483,6 +483,10 @@ for nsession =1:length(experiment_info)
 
             slow_waves(probe_no).DOWN_peaks_zscore = [];
             slow_waves(probe_no).DOWN_peaktimes = [];
+
+            slow_waves(probe_no).DU = [];
+            slow_waves(probe_no).DOWN_peaktimes = [];
+
             % slow_waves(probe_no).DOWN_peaks_latency = [];
             % slow_waves(probe_no).DOWN_traveling = [];
             slow_waves(probe_no).probe_hemisphere = [];

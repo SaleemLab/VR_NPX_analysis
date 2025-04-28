@@ -247,7 +247,6 @@ for nprobe=1:2
     end
 end
 
-
 %% Ripple probabilities during unilaterally biased and bilaterally synchronised UP
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
@@ -275,11 +274,15 @@ colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark 
 % colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
 
 
-% Calculate ripples probability according to different 
+% Calculate ripples probability according to unilateral vs bilateral events
 ripples_times =  merged_event_info.ripples_ints;
 ripples_group_info = merged_event_info.ripples_group_id;
 ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id;
+
+event_times = merged_event_info.UP_ints;
 hemisphere_id = merged_event_info.UP_hemisphere_id;
+lag_diff = merged_event_info.UP_lag_diff;
+group_id = merged_event_info.UP_group_id;
 
 binnedArray=[];
 time_windows = [-1 1];
@@ -289,15 +292,18 @@ bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
 probability_merged = [];
 
 
-for ngroup = 1:max(unique(ripples_group_info))+1
+% Assign ripple hemisphere identity for unilateral and bilateral events
+% according to lags
+for ngroup = 1
     for nprobe = 1:2
-        if ngroup <= max(unique(ripples_group_info)) % first four is ripples by cluster
-            index1 = intersect(find(ripples_group_info == ngroup & ripples_hemisphere_id== nprobe),merged_event_info.ripples_index);%ipsi
-            index2 = intersect(find(ripples_group_info == ngroup & ripples_hemisphere_id~= nprobe),merged_event_info.ripples_index);%contra
-        else % last one is all ripples (merged)
-            index = merged_event_info.ripples_index;
+        if ngroup ==1
+            index1 = intersect(find(ripples_group_info == ngroup & ripples_hemisphere_id== nprobe),merged_event_info.ripples_index);%ipsi leading
+            index2 = intersect(find(ripples_group_info == ngroup & ripples_hemisphere_id~= nprobe),merged_event_info.ripples_index);%contra leading
+            index3 = intersect(find(ripples_group_info == ngroup & ripples_hemisphere_id~= nprobe),merged_event_info.ripples_index);%bilateral
         end
         ints = merged_event_info.UP_ints(hemisphere_id,:);
+
+
         [~,temp,~] = calculate_event_probability(ripples_times(index1,:), ints(:,1), time_windows,0);
         timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
         for i = 1:size(ints,1)
