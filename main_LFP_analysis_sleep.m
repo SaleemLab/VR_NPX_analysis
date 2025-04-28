@@ -484,9 +484,6 @@ for nsession =1:length(experiment_info)
             slow_waves(probe_no).DOWN_peaks_zscore = [];
             slow_waves(probe_no).DOWN_peaktimes = [];
 
-            slow_waves(probe_no).DU = [];
-            slow_waves(probe_no).DOWN_peaktimes = [];
-
             % slow_waves(probe_no).DOWN_peaks_latency = [];
             % slow_waves(probe_no).DOWN_traveling = [];
             slow_waves(probe_no).probe_hemisphere = [];
@@ -566,7 +563,7 @@ for nsession =1:length(experiment_info)
                     midpoint = mean(slow_waves(probe_no).timestamps(nevent));
                     % midpoint = mean(slow_waves(probe_no).DOWN_ints(nevent,:));
 
-                    tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
+                    tidx = FindInInterval(tvec,[midpoint-0.15 midpoint+0.15]);
                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
                     tidx=tidx(1):tidx(end);
 
