@@ -1856,6 +1856,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 % xlabel('DOWN-UP transition')
 % ylabel(sprintf('Cumulative ipsi-contralateral difference\n in delta power correlation'))
 % set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 %% Ipsilateral vs contralateral correlation (Ripple)
 for nprobe = 1:2
@@ -1916,17 +1917,21 @@ for nprobe = 1:2
         if length(ipsi_shank)==1
             ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
             ipsi_plv{nprobe} = [ipsi_plv{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            ipsi_lag{nprobe} = [ipsi_lag{nprobe} (squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
         else
             ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
             ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+            ipsi_lag{nprobe} = [ipsi_lag{nprobe} mean(squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
         end
 
         if length(contra_shank)==1
             contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
             contra_plv{nprobe} = [contra_plv{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+            contra_lag{nprobe} = [contra_lag{nprobe} (squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia)))'];
         else
             contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia)))];
             contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia)))];
+            contra_lag{nprobe} = [contra_lag{nprobe} mean(squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia)))];
         end
 
         % if length(contra_amp_corr{nprobe}) ~= length( ipsi_amp_corr{nprobe})
@@ -1938,25 +1943,31 @@ for nprobe = 1:2
         temp2 = [];
         temp3 = [];
         temp4 = [];
+        temp5 = [];
+        temp6 = [];
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
             event_id = datasample(s,ia,size(ia,1));
             if length(ipsi_shank)==1
                 temp1(iBoot,:)= squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id));
                 temp3(iBoot,:)= squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id));
+                temp5(iBoot,:)= (squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
             else
                 temp1(iBoot,:)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
                 temp3(iBoot,:)= mean(squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp5(iBoot,:)= mean(squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
             end
 
             if length(contra_shank)==1
                 temp2(iBoot,:)= squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id));
                 temp4(iBoot,:)= squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id));
+                temp6(iBoot,:)= (squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id)));
             else
                 temp2(iBoot,:)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id)));
                 temp4(iBoot,:)= mean(squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp6(iBoot,:)= mean(squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,event_id)));
             end
-           
+
         end
         % for iBoot = 1:500
         %     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -1978,6 +1989,8 @@ for nprobe = 1:2
         contra_amp_corr_bootstrap{nprobe} = [contra_amp_corr_bootstrap{nprobe} temp2];
         ipsi_plv_bootstrap{nprobe} = [ipsi_plv_bootstrap{nprobe} temp3];
         contra_plv_bootstrap{nprobe} = [contra_plv_bootstrap{nprobe} temp4];
+        ipsi_lag_bootstrap{nprobe} = [ipsi_lag_bootstrap{nprobe} temp5];
+        contra_lag_bootstrap{nprobe} = [contra_lag_bootstrap{nprobe} temp6];
     end
 end
 
@@ -1988,22 +2001,23 @@ end
 [p,h,stats] = signrank(ipsi_amp_corr{1},contra_amp_corr{1},'tail','right');
 [p,h,stats] = signrank(ipsi_amp_corr{2},contra_amp_corr{2},'tail','right');
 
-probability = probability_ripples_SO_whole;
+% probability = probability_ripples_SO_whole;
 nprobe = 1;
 subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(ripples_all(nprobe).session_count(ripples_all(nprobe).SWS_index == 1),end-1:end)));
 [~, ~, mappedIDs] = unique(subject_id);
-dataL = table(ipsi_plv{1}',contra_plv{1}',ipsi_amp_corr{1}',contra_amp_corr{1}',mappedIDs,...
-    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+dataL = table(ipsi_plv{1}',contra_plv{1}',ipsi_amp_corr{1}',contra_amp_corr{1}',ipsi_lag{1}',contra_lag{1}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','ipsi_lag','contra_lag','animal_label'});
 
 nprobe = 2;
 subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(ripples_all(nprobe).session_count(ripples_all(nprobe).SWS_index == 1),end-1:end)));
 [~, ~, mappedIDs] = unique(subject_id);
-dataR = table(ipsi_plv{2}',contra_plv{2}',ipsi_amp_corr{2}',contra_amp_corr{2}',mappedIDs,...
-    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+dataR = table(ipsi_plv{2}',contra_plv{2}',ipsi_amp_corr{2}',contra_amp_corr{2}',ipsi_lag{2}',contra_lag{2}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','ipsi_lag','contra_lag','animal_label'});
+
 
 
 nfig = figure('Color','w','Name','Left Right ripples ipsilateral-contralateral difference')
-nfig.Position = [103 111 1422 840];
+nfig.Position = [103 111 1650 840];
 orient(nfig,'landscape')
 
 colour_lines = [44,123,182;215,25,28]/256;
@@ -2081,6 +2095,40 @@ else
     axis square
 end
 
+nexttile
+formula = 'contra_lag~  ipsi_lag + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_lag,data.contra_lag,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-0.15 0.15],[-0.15 0.15],'k')
+xlim([-0.1 0.1])
+ylim([-0.1 0.1])
+mdl = fitlm(data.ipsi_lag,data.contra_lag);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_lag) max(data.ipsi_lag)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi lag')
+ylabel('contra lag')
+% set(gca,'FontSize',14)
+title('Left ripples');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
 
 
 nexttile
@@ -2141,6 +2189,38 @@ plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
 ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
 legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
 xlabel('ripple power correlation')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -0.1:0.01:0.1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('ripple lag (s)')
 ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
@@ -2219,6 +2299,40 @@ else
     axis square
 end
 
+nexttile
+formula = 'contra_lag~  ipsi_lag + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_lag,data.contra_lag,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-0.15 0.15],[-0.15 0.15],'k')
+xlim([-0.1 0.1])
+ylim([-0.1 0.1])
+mdl = fitlm(data.ipsi_lag,data.contra_lag);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_lag) max(data.ipsi_lag)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi lag')
+ylabel('contra lag')
+% set(gca,'FontSize',14)
+title('Left ripples');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
 
 
 nexttile
@@ -2283,41 +2397,71 @@ ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-colour_lines = [44,123,182;215,25,28]/256;
 nexttile
-for nprobe = 1:2
-    [~,sorted_index] = sort(ripples_all(nprobe).peak_zscore(ripples_all(nprobe).SWS_index == 1));
-    x = 1:length(ipsi_plv{nprobe});
-    y = mean(cumsum(ipsi_plv_bootstrap{nprobe}(:,sorted_index) - contra_plv_bootstrap{nprobe}(:,sorted_index),2));
-    LCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),2.5);
-    UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
-    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
-end
-legend(ERROR_SHADE(1:2),{'Left ripples','Right ripples'},'Location','northwest','Box','off')
-% xline(0,'r')
-% title('Prob of left ripples during DOWN')
-xlabel('ripple events')
-ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -0.1:0.01:0.1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
 
+ipsi_histcounts=[];
+contra_histcounts=[];
 
-nexttile
-for nprobe = 1:2
-    [~,sorted_index] = sort(ripples_all(nprobe).peak_zscore(ripples_all(nprobe).SWS_index == 1));
-    x = 1:length(ipsi_amp_corr{nprobe});
-    y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
-    LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
-    UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
-    PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
-    ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_lag_bootstrap{nprobe}(iBoot,:),binEdges);
 end
-legend(ERROR_SHADE(1:2),{'Left ripples','Right ripples'},'Location','northwest','Box','off')
-% xline(0,'r')
-% title('Prob of left ripples during DOWN')
-xlabel('ripple events')
-ylabel(sprintf('Cumulative ipsi-contralateral difference\n in ripple power correlation'))
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('ripple lag (s)')
+ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% colour_lines = [44,123,182;215,25,28]/256;
+% nexttile
+% for nprobe = 1:2
+%     [~,sorted_index] = sort(ripples_all(nprobe).peak_zscore(ripples_all(nprobe).SWS_index == 1));
+%     x = 1:length(ipsi_plv{nprobe});
+%     y = mean(cumsum(ipsi_plv_bootstrap{nprobe}(:,sorted_index) - contra_plv_bootstrap{nprobe}(:,sorted_index),2));
+%     LCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+%     UCI = prctile(cumsum((ipsi_plv_bootstrap{nprobe}(:,sorted_index)-contra_plv_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+%     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+%     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+% end
+% legend(ERROR_SHADE(1:2),{'Left ripples','Right ripples'},'Location','northwest','Box','off')
+% % xline(0,'r')
+% % title('Prob of left ripples during DOWN')
+% xlabel('ripple events')
+% ylabel(sprintf('Cumulative ipsi-contralateral difference\n in phase-locking value'))
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% 
+% nexttile
+% for nprobe = 1:2
+%     [~,sorted_index] = sort(ripples_all(nprobe).peak_zscore(ripples_all(nprobe).SWS_index == 1));
+%     x = 1:length(ipsi_amp_corr{nprobe});
+%     y = mean(cumsum(ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index) - contra_amp_corr_bootstrap{nprobe}(:,sorted_index),2));
+%     LCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),2.5);
+%     UCI = prctile(cumsum((ipsi_amp_corr_bootstrap{nprobe}(:,sorted_index)-contra_amp_corr_bootstrap{nprobe}(:,sorted_index)),2),97.5);
+%     PLOT = plot(x,y,'Color',colour_lines(nprobe,:));hold on;
+%     ERROR_SHADE(nprobe) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(nprobe,:),'FaceAlpha','0.3','LineStyle','none');
+% end
+% legend(ERROR_SHADE(1:2),{'Left ripples','Right ripples'},'Location','northwest','Box','off')
+% % xline(0,'r')
+% % title('Prob of left ripples during DOWN')
+% xlabel('ripple events')
+% ylabel(sprintf('Cumulative ipsi-contralateral difference\n in ripple power correlation'))
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 %% Ipsilateral vs contralateral correlation (Spindles)
 % HPC_ref_shank
@@ -2328,11 +2472,17 @@ for nprobe = 1:2
     ipsi_plv{nprobe} = [];
     contra_plv{nprobe} = [];
 
+    ipsi_lag{nprobe} = [];
+    contra_lag{nprobe} = [];
+
     ipsi_amp_corr_bootstrap{nprobe} = [];
     contra_amp_corr_bootstrap{nprobe} = [];
 
     ipsi_plv_bootstrap{nprobe} = [];
     contra_plv_bootstrap{nprobe} = [];
+
+    ipsi_lag_bootstrap{nprobe} = [];
+    contra_lag_bootstrap{nprobe} = [];
 
     mprobe = abs(nprobe-3);
     % ipsi_amp_corr_shuffle{nprobe} = [];
@@ -2377,21 +2527,25 @@ for nprobe = 1:2
         if length(ipsi_shank)==1
             ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
             ipsi_plv{nprobe} = [ipsi_plv{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            ipsi_lag{nprobe} = [ipsi_lag{nprobe} (squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))'];
         else
             ipsi_amp_corr{nprobe} = [ipsi_amp_corr{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
             ipsi_plv{nprobe} = [ipsi_plv{nprobe} mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+            ipsi_lag{nprobe} = [ipsi_lag{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
         end
 
         if length(contra_shank)==1
             contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
             contra_plv{nprobe} = [contra_plv{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+            contra_lag{nprobe} = [contra_lag{nprobe} (squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))'];
         else
             contra_amp_corr{nprobe} = [contra_amp_corr{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
             contra_plv{nprobe} = [contra_plv{nprobe} mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+            contra_lag{nprobe} = [contra_lag{nprobe} mean(squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
         end
 
         % if length(contra_amp_corr{nprobe}) ~= length( ipsi_amp_corr{nprobe})
-        % 
+        %
         %     nsession
         % end
 
@@ -2399,25 +2553,31 @@ for nprobe = 1:2
         temp2 = [];
         temp3 = [];
         temp4 = [];
+        temp5 = [];
+        temp6 = [];
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
             event_id = datasample(s,ia,size(ia,1));
             if length(ipsi_shank)==1
                 temp1(iBoot,:)= squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id));
                 temp3(iBoot,:)= squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id));
+                temp5(iBoot,:)= (squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
             else
                 temp1(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
                 temp3(iBoot,:)= mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
+                temp5(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,event_id)));
             end
 
             if length(contra_shank)==1
                 temp2(iBoot,:)= squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id));
                 temp4(iBoot,:)= squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id));
+                temp6(iBoot,:)= (squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
             else
                 temp2(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
                 temp4(iBoot,:)= mean(squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
+                temp6(iBoot,:)= mean(squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,event_id)));
             end
-           
+
         end
         % for iBoot = 1:500
         %     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -2439,6 +2599,8 @@ for nprobe = 1:2
         contra_amp_corr_bootstrap{nprobe} = [contra_amp_corr_bootstrap{nprobe} temp2];
         ipsi_plv_bootstrap{nprobe} = [ipsi_plv_bootstrap{nprobe} temp3];
         contra_plv_bootstrap{nprobe} = [contra_plv_bootstrap{nprobe} temp4];
+        ipsi_lag_bootstrap{nprobe} = [ipsi_lag_bootstrap{nprobe} temp5];
+        contra_lag_bootstrap{nprobe} = [contra_lag_bootstrap{nprobe} temp6];
     end
 end
 
@@ -2448,19 +2610,22 @@ end
 [p,h,stats] = signrank(ipsi_plv{2},contra_plv{2},'tail','right');
 [p,h,stats] = signrank(ipsi_amp_corr{1},contra_amp_corr{1},'tail','right');
 [p,h,stats] = signrank(ipsi_amp_corr{2},contra_amp_corr{2},'tail','right');
+[p,h,stats] = signrank(ipsi_lag{1},contra_lag{1});
+[p,h,stats] = signrank(ipsi_lag{2},contra_lag{2});
 
-probability = probability_ripples_SO_whole;
+
+% probability = probability_ripples_SO_whole;
 nprobe = 1;
 subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(spindles_all(nprobe).session_count(spindles_all(nprobe).SWS_index == 1),end-1:end)));
 [~, ~, mappedIDs] = unique(subject_id);
-dataL = table(ipsi_plv{1}',contra_plv{1}',ipsi_amp_corr{1}',contra_amp_corr{1}',mappedIDs,...
-    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+dataL = table(ipsi_plv{1}',contra_plv{1}',ipsi_amp_corr{1}',contra_amp_corr{1}',ipsi_lag{1}',contra_lag{1}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','ipsi_lag','contra_lag','animal_label'});
 
 nprobe = 2;
 subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(spindles_all(nprobe).session_count(spindles_all(nprobe).SWS_index == 1),end-1:end)));
 [~, ~, mappedIDs] = unique(subject_id);
-dataR = table(ipsi_plv{2}',contra_plv{2}',ipsi_amp_corr{2}',contra_amp_corr{2}',mappedIDs,...
-    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','animal_label'});
+dataR = table(ipsi_plv{2}',contra_plv{2}',ipsi_amp_corr{2}',contra_amp_corr{2}',ipsi_lag{2}',contra_lag{2}',mappedIDs,...
+    'VariableNames',{'ipsi_plv','contra_plv','ipsi_amp_corr','contra_amp_corr','ipsi_lag','contra_lag','animal_label'});
 
 
 nfig = figure('Color','w','Name','Left Right spindles ipsilateral-contralateral difference')
@@ -2545,6 +2710,42 @@ end
 
 
 nexttile
+formula = 'contra_lag~  ipsi_lag + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_lag,data.contra_lag,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-0.15 0.15],[-0.15 0.15],'k')
+xlim([-0.1 0.1])
+ylim([-0.1 0.1])
+mdl = fitlm(data.ipsi_lag,data.contra_lag);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_lag) max(data.ipsi_lag)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi lag')
+ylabel('contra lag')
+% set(gca,'FontSize',14)
+title('Left spindles');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
+
+
+nexttile
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 binEdges = 0:0.01:1;
 binCentre = binEdges(1:end-1) + diff(binEdges)/2;
@@ -2605,6 +2806,36 @@ xlabel('spindle power correlation')
 ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -0.1:0.01:0.1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('spindle lag (s)')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 %%%%% Right
 data = dataR;
@@ -2681,6 +2912,40 @@ else
 end
 
 
+nexttile
+formula = 'contra_lag~  ipsi_lag + (1|animal_label)';
+mdl2 = fitlme(data,formula);
+
+hold on
+% arrayfun(@(x) scatter(awake_rate(x),awake_theta(x),86,new_cls(x,:),'filled','o'),1:length(awake_theta))
+scatter(data.ipsi_lag,data.contra_lag,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05)
+plot([-0.15 0.15],[-0.15 0.15],'k')
+xlim([-0.1 0.1])
+ylim([-0.1 0.1])
+mdl = fitlm(data.ipsi_lag,data.contra_lag);
+% [pval,F_stat,~] = coefTest(mdl);
+% awake_rate_R2 = mdl.Rsquared.Adjusted;
+x =[min(data.ipsi_lag) max(data.ipsi_lag)];
+b = mdl.Coefficients.Estimate';
+y_est = polyval(fliplr(b),x);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('ipsi lag')
+ylabel('contra lag')
+% set(gca,'FontSize',14)
+title('Right spindles');
+
+f=get(gca,'Children');
+% Mind that order is reversed
+if mdl2.Coefficients.pValue(2) < 0.05
+    plot(x,y_est,':','Color','m','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+
+else
+    plot(x,y_est,':','Color','k','LineWidth',3)
+    text(gca,.5,0.1,sprintf('p = %.2d & R2 = %.3f',mdl2.Coefficients.pValue(2),mdl2.Rsquared.Adjusted),'Units','Normalized','FontName','Arial');
+    axis square
+end
 
 nexttile
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
@@ -2743,6 +3008,36 @@ xlabel('spindle power correlation')
 ylabel('cumulative proportion')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+nexttile
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+binEdges = -0.1:0.01:0.1;
+binCentre = binEdges(1:end-1) + diff(binEdges)/2;
+
+ipsi_histcounts=[];
+contra_histcounts=[];
+
+for iBoot = 1:1000
+    ipsi_histcounts(iBoot,:) = histcounts(ipsi_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+    contra_histcounts(iBoot,:) = histcounts(contra_lag_bootstrap{nprobe}(iBoot,:),binEdges);
+end
+
+x = binCentre;
+y  = cumsum(mean(ipsi_histcounts)/sum(mean(ipsi_histcounts)));
+LCI = cumsum(prctile(ipsi_histcounts,2.5),2)/sum(prctile(ipsi_histcounts,2.5),2);
+UCI = cumsum(prctile(ipsi_histcounts,97.5),2)/sum(prctile(ipsi_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(1,:)); hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+y  = cumsum(mean(contra_histcounts)/sum(mean(contra_histcounts)));
+LCI = cumsum(prctile(contra_histcounts,2.5),2)/sum(prctile(contra_histcounts,2.5),2);
+UCI = cumsum(prctile(contra_histcounts,97.5),2)/sum(prctile(contra_histcounts,97.5),2);
+plot(binCentre,y,'Color',colour_lines(2,:)); hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+legend(ERROR_SHADE(1:2),{'ipsi','contra'},'box', 'off')
+xlabel('spindle lag (s)')
+ylabel('cumulative proportion')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
 % 
 % colour_lines = [44,123,182;215,25,28]/256;
 % nexttile
@@ -2784,5 +3079,5 @@ if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
 end
 
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 

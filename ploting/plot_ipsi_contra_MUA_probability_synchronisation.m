@@ -454,6 +454,10 @@ for nprobe=1:2
     mprobe = abs(nprobe-3);
 
     % UP and DOWN
+
+    ipsi_amp_UD{nprobe} = [];
+    contra_amp_UD{nprobe} = [];
+
     ipsi_lag_DU{nprobe} = [];
     contra_lag_DU{nprobe} = [];
     ipsi_lag_UD{nprobe} = [];
@@ -532,6 +536,9 @@ for nprobe=1:2
         %%%%%% UP -> DOWN
         [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
 
+        ipsi_amp_UD{nprobe} = [ipsi_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(ipsi_shank,ia))];
+        contra_amp_UD{nprobe} = [contra_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(contra_shank,ia))];
+
         ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
         contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
 
@@ -594,6 +601,7 @@ for nprobe=1:2
         contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
     end
 end
+
 
 %% Plot DU transition averaged MUA
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
@@ -1303,7 +1311,7 @@ plv_diff = merged_event_info.DOWN_plv_diff;
 corr_diff = merged_event_info.DOWN_corr_diff;
 ipsi_lag = [ipsi_lag_UD{1} ipsi_lag_UD{2}]';
 contra_lag = [contra_lag_UD{1} contra_lag_UD{2}]';
-group_id = merged_event_info.UP_group_id;
+group_id = merged_event_info.DOWN_group_id;
 
 sync_threshold = mean(abs([event_info(1).DOWN_lag_threshold_low event_info(2).DOWN_lag_threshold_low event_info(1).DOWN_lag_threshold_high event_info(2).DOWN_lag_threshold_high]));
 
