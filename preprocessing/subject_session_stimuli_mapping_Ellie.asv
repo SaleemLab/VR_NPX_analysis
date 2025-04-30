@@ -1,4 +1,4 @@
-function experiment_info = subject_session_stimuli_mapping(SUBJECTS,options)
+function experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options)
 % Function used to create basic information about each recording sessions
 % recorded from the animals specified
 
@@ -258,21 +258,33 @@ for nsubject = 1:length(SUBJECTS)
                 folderName = findGFolder(EPHYS_DATAPATH_temp,experiment_info(nexperiment).gFileNum(nstimuli));
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).EPHYS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,folderName,[folderName,'_imec',num2str(probe_id(nprobe))]);
 
-                if isnan(all_session_id_this_date{nstimuli})
-                    SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,['probe',num2str(probe_id(nprobe))]); % NEW spikeinterface sorter datapath
+                %if isnan(all_session_id_this_date{nstimuli})
+                 %   SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,['probe',num2str(probe_id(nprobe))]); % NEW spikeinterface sorter datapath
+                %else
+                 %   SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,'..',['probe',num2str(probe_id(nprobe))]); % if multiple sessions in one day, spike interface folder still in date folder
+                %end
+                [~, foldername] = fileparts(EPHYS_DATAPATH_temp);
+                if length(foldername) > 8  % e.g., '20250203_01' has more than 8 characters
+                    % It's a session subfolder like '20250203_01', move up one level
+                    date_folder = fileparts(EPHYS_DATAPATH_temp);
                 else
-                    SORTER_DATAPATH =  fullfile(EPHYS_DATAPATH_temp,'..',['probe',num2str(probe_id(nprobe))]); % if multiple sessions in one day, spike interface folder still in date folder
+                    % It's already the date folder like '20250203', no need to move up
+                    date_folder = EPHYS_DATAPATH_temp;
                 end
+                SORTER_DATAPATH = fullfile(date_folder, ['probe', num2str(probe_id(nprobe))]);               
+
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).SORTER_DATAPATH = SORTER_DATAPATH;
+
+
 
                 if ~exist(fullfile(EPHYS_DATAPATH_temp,'kilosort'), 'dir') % Old KS datapath
                     KS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,['kilosort_probe_',num2str(probe_id(nprobe)+1)]); % e.g. imec0 is in kilosort_probe_1 folder
 
                 else
-                    KS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,'kilosort');
-                end
+                 %   KS_DATAPATH = fullfile(EPHYS_DATAPATH_temp,'kilosort');
+                %end
 
-                experiment_info(nexperiment).session(nstimuli).probe(nprobe).KS_DATAPATH = KS_DATAPATH;
+                %experiment_info(nexperiment).session(nstimuli).probe(nprobe).KS_DATAPATH = KS_DATAPATH;
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).gFileNum = experiment_info(nexperiment).gFileNum(nstimuli);
                 experiment_info(nexperiment).session(nstimuli).probe(nprobe).probe_id = probe_id(nprobe);
 
@@ -283,8 +295,8 @@ for nsubject = 1:length(SUBJECTS)
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).probe_MEC = probe_MEC;
                 end
 
-                experiment_info(nexperiment).session(nstimuli).probe(nprobe).MAP_FILE = ...
-                    fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_dates_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id(nprobe)),'.ap_kilosortChanMap.mat']);
+                %experiment_info(nexperiment).session(nstimuli).probe(nprobe).MAP_FILE = ...
+                 %   fullfile(KS_DATAPATH,[SUBJECTS{nsubject},'_',num2str(all_dates_this_animal(nsession)),'_g0','_tcat.imec',num2str(probe_id(nprobe)),'.ap_kilosortChanMap.mat']);
 
                 if contains(StimulusName{nstimuli},'OpenField')
                     experiment_info(nexperiment).session(nstimuli).probe(nprobe).KS_CATGT_FNAME =...

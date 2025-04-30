@@ -59,7 +59,7 @@ for nsession =1:length(experiment_info)
           
             else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc
 
-                [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai_MatrixRig(stimulus_name{n},options);
+                [Behaviour,Task_info,Peripherals]  = import_and_align_visual_stimuli_Bonsai_Ellie(stimulus_name{n},options);
             end
 
             if exist(options.ANALYSIS_DATAPATH) == 0
@@ -91,11 +91,13 @@ for nsession =1:length(experiment_info)
 
 
         DIR_SORTER = dir(options.SORTER_DATAPATH);
-        DIR_KS = dir(options.KS_DATAPATH);
+        %DIR_KS = dir(options.KS_DATAPATH);
 
         if isempty(DIR_SORTER) % if spike interface sorter folder is not present, skip
               continue
         end
+        
+        disp(['Checking path: ', options.segment_frames])
         if isempty(dir(options.segment_frames))
             options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2str(options.probe_id),'segment_frames.csv']);
         end
@@ -117,7 +119,7 @@ for nsession =1:length(experiment_info)
         for nprobe = 1:length(session_info(n).probe)
             options = session_info(n).probe(nprobe);
             DIR_SORTER = dir(options.SORTER_DATAPATH);
-            DIR_KS = dir(options.KS_DATAPATH);
+            %DIR_KS = dir(options.KS_DATAPATH);
 
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
 

@@ -142,7 +142,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %%%%%% Option 1 use subject_session_stimuli_mapping_Ellie for all animals you
 %%%%%% want to process. 
-SUBJECTS = {'M00013','M00014'};
+SUBJECTS = {'M00013', 'M00014'};
 options = 'V1-HPC';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
@@ -157,6 +157,9 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 
 % All_stimuli = {'SparseNoise'};
 % All_stimuli = {'OP_Tuning'};
+
+% All_stimuli = {'Sleep'};
+
 % All_stimuli = {'TRAIN'};
 % All_stimuli = {'DCBA'};
 % All_stimuli = {'OMIT'};
