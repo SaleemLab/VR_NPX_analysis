@@ -93,8 +93,10 @@ end
 %%%%%
 %%%%%
 %%%%%
+
 %% Clustering analysis of bilaterally synchronised and unilaterally biased events
 %% Grabbing ipsi and contra values for UP DOWN
+
 
 probability = probability_psth_whole;
 nprobe = 1;
@@ -104,6 +106,10 @@ for nprobe=1:2
     mprobe = abs(nprobe-3);
 
     % UP and DOWN
+
+    ipsi_amp_UD{nprobe} = [];
+    contra_amp_UD{nprobe} = [];
+
     ipsi_lag_DU{nprobe} = [];
     contra_lag_DU{nprobe} = [];
     ipsi_lag_UD{nprobe} = [];
@@ -181,6 +187,9 @@ for nprobe=1:2
         % contra_corr_DU{nprobe} = [contra_corr_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
         %%%%%% UP -> DOWN
         [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
+
+        ipsi_amp_UD{nprobe} = [ipsi_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(ipsi_shank,ia))];
+        contra_amp_UD{nprobe} = [contra_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(contra_shank,ia))];
 
         ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
         contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
@@ -394,8 +403,6 @@ for nprobe = 1:2
     grid on; % <-- Add this line
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
-
-%
 
 
 %% Clustering of Left and Right UP-DOWN transition lag vs corr vs plv distribution
@@ -846,27 +853,14 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 
-
-%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
-
-
-
-
-
-
 %% ipsi-contra events grouping based on lags and clusters
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 
 % add time for each sessions for later sorting
 for nprobe = 1:2
-    UP_ints{nprobe}=slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index);
-    DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index);
+    UP_ints{nprobe}=slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,:);
+    DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,:);
     ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
     ripple_ints{nprobe}=[ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1) ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
     spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
@@ -1132,16 +1126,16 @@ for nprobe = 1:2
     % threshold_high = prctile(mu2,97.5);
 
     % event_info(nprobe).ripples_group_id = group_id;
-    event_info(nprobe).spindles_boundary_low = threshold_low;
-    event_info(nprobe).spindles_boundary_high = threshold_high;
+    event_info(nprobe).spindles_threshold_low = threshold_low;
+    event_info(nprobe).spindles_threshold_high = threshold_high;
 
     event_info(nprobe).spindles_lag_diff = lags;
     event_info(nprobe).spindles_corr_diff = corrs ;
     event_info(nprobe).spindles_plv_diff = plvs;
 
     lag_index{nprobe} = zeros(1,length(event_info(nprobe).spindles_lag_diff));
-    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff< event_info(nprobe).spindles_boundary_low) = -1;
-    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff> event_info(nprobe).spindles_boundary_high) = 1;
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff< event_info(nprobe).spindles_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff> event_info(nprobe).spindles_threshold_high) = 1;
 
 end
 
@@ -1160,8 +1154,8 @@ plvs =   [event_info(1).spindles_plv_diff event_info(2).spindles_plv_diff];
 merged_event_info.spindles_index_sorted = idx; % all idx based on event times
 
 keep = true(height(event_times), 1);
-merge_threshold = mean([abs(event_info(1).spindles_boundary_low) abs(event_info(2).spindles_boundary_low)...
-    abs(event_info(1).spindles_boundary_high) abs(event_info(2).spindles_boundary_high)]);
+merge_threshold = mean([abs(event_info(1).spindles_threshold_low) abs(event_info(2).spindles_threshold_low)...
+    abs(event_info(1).spindles_threshold_high) abs(event_info(2).spindles_threshold_high)]);
 % merge_threshold = 0.3
 % merge_threshold = 0.01;
 for i = 2:height(event_times)
@@ -1186,5 +1180,125 @@ merged_event_info.spindles_lag_index = lag_index';
 
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+nfig = figure('Color','w','Name','V1 UP-DOWN transition lag diff and corr diff distribution')
+nfig.Position = [103 111 1100 840];
+orient(nfig,'landscape')
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+% subplot(2,3,1)
+% scatter([ipsi_corr_UD{1} ipsi_corr_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+% % subplot(2,2,2)
+% scatter([contra_corr_UD{1} contra_corr_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% xlabel('corr')
+% ylabel('Ipsi-contra corr diff')
+% legend('ipsi','contra','box','off')
+% % set(gca,'FontSize',14)
+% title('UP-DOWN transition corr vs corr diff');
+
+
+subplot(2,2,1)
+scatter([ipsi_amp_UD{1} ipsi_amp_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+scatter([contra_amp_UD{1} contra_amp_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Delta peak amplitude')
+ylabel('Ipsi-contra corr diff')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs corr diff');
+
+subplot(2,2,2)
+ipsi_data = [ipsi_amp_UD{1} ipsi_amp_UD{2}]';
+contra_data = [contra_amp_UD{1} contra_amp_UD{2}]';
+corr_diff_edges = -2:0.1:2;
+x = corr_diff_edges(1)+mean(diff(corr_diff_edges))/2:mean(diff(corr_diff_edges)):corr_diff_edges(end)-mean(diff(corr_diff_edges))/2;
+temp1=[];
+temp2=[];
+temp1_SD=[];
+temp2_SD=[];
+
+for n = 1:length(corr_diff_edges)-1
+    temp1(n)= mean(ipsi_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+    temp2(n)= mean(contra_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+
+    temp1_SD(n)= std(ipsi_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+    temp2_SD(n)= std(contra_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+end
+plot(x,temp1,'Color',colour_lines(1,:));hold on;
+plot(x,temp2,'Color',colour_lines(2,:))
+
+
+UCI = temp1 + temp1_SD;LCI = temp1 - temp1_SD;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+UCI = temp2 + temp2_SD;LCI = temp2 - temp2_SD;
+ERROR_SHADE(2) = patch([x  fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Ipsi-contra corr diff')
+ylabel('Mean amplitude')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs corr diff');
+
+
+
+
+subplot(2,2,3)
+scatter([ipsi_amp_UD{1} ipsi_amp_UD{2}],merged_event_info.DOWN_lag_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+scatter([contra_amp_UD{1} contra_amp_UD{2}],merged_event_info.DOWN_lag_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Delta peak amplitude')
+ylabel('Ipsi-contra lag diff')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs lag diff');
+
+subplot(2,2,4)
+ipsi_data = [ipsi_amp_UD{1} ipsi_amp_UD{2}]';
+contra_data = [contra_amp_UD{1} contra_amp_UD{2}]';
+lag_diff_edges = -0.2:0.01:0.2;
+x = lag_diff_edges(1)+mean(diff(lag_diff_edges))/2:mean(diff(lag_diff_edges)):lag_diff_edges(end);
+temp1=[];
+temp2=[];
+temp1_SD=[];
+temp2_SD=[];
+
+for n = 1:length(lag_diff_edges)-1
+    temp1(n)= mean(ipsi_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+    temp2(n)= mean(contra_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+
+    temp1_SD(n)= std(ipsi_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+    temp2_SD(n)= std(contra_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+end
+plot(x,temp1,'Color',colour_lines(1,:));hold on;
+plot(x,temp2,'Color',colour_lines(2,:))
+
+
+UCI = temp1 + temp1_SD;LCI = temp1 - temp1_SD;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+UCI = temp2 + temp2_SD;LCI = temp2 - temp2_SD;
+ERROR_SHADE(2) = patch([x  fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Ipsi-contra lag diff')
+ylabel('Mean amplitude')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs lag diff');
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+
+
+
+end
+
+
+
+
+
 
 

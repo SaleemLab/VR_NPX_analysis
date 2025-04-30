@@ -1,4 +1,4 @@
-function plot_ipsi_contra_MUA_probability_synchronisation(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,event_info,sessions_to_process)
+function plot_ipsi_contra_MUA_synchronisation_detection_thresholded(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,event_info,sessions_to_process)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -27,8 +27,8 @@ end
 % probability_SO_SO = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
 % probability_SO_SO_contralateral = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
 PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
 PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
@@ -83,363 +83,6 @@ for nsession = 1:max(ripples_all(1).session_count)
 end
 
 
-%% Left and Right ipsi-contra DOWN probability
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole_baseline.mat'));
-probability_SO_SO_whole_baseline = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole.mat'));
-probability_SO_SO_whole = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability_baseline.mat'));
-probability_SO_SO_contralatral_whole_baseline = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability.mat'));
-probability_SO_SO_contralatral_whole = probability;
-
-probability= probability_SO_SO_whole;
-% probability_baseline = probability_SO_SO_whole_baseline;
-
-
-% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
-% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
-colour_lines = [0,90,50;74,20,134]/256; % Green Purple
-fig = figure('Color','w');
-fig.Position = [350 59 1100 930];
-fig.Name = 'ipsi-contra DOWN distribution around UP-DOWN transition';
-
-nprobe = 1;
-event_averaging_scale = 5;
-L_UP = probability_SO_SO_whole(nprobe).DOWN_DOWN;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,1));
-imagesc(30*movmean(L_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi DOWN probability')
-
-
-nprobe = 2;
-R_UP = probability_SO_SO_whole(nprobe).DOWN_DOWN;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,1));
-% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(50*movmean(R_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi DOWN probability')
-
-
-nprobe = 1;
-R_UP = probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,1));
-% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(event_averaging_scale*movmean(R_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contra DOWN probabilty')
-
-
-
-nprobe = 2;
-L_UP = probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability_SO_SO_whole(nprobe).DOWN_all_index,1));
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(event_averaging_scale*movmean(L_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contra DOWN probabilty')
-
-
-nexttile
-nprobe = 1;
-all_DOWN_no = length(probability_SO_SO_whole(nprobe).DOWN_all_index);
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-y = mean(probability_SO_SO_whole(nprobe).DOWN_DOWN,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_whole(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_whole(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-y = mean(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-y = mean(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,'omitnan');
-LCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
-% xline(0,'r')
-title('Probability of DOWN during left DOWN')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Probability')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-nexttile
-nprobe = 2;
-all_DOWN_no = length(probability_SO_SO_whole(nprobe).DOWN_all_index);
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-y = mean(probability_SO_SO_whole(nprobe).DOWN_DOWN,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_whole(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_whole(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-y = mean(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralateral_whole(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-y = mean(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,'omitnan');
-LCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).DOWN_DOWN_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
-title('Probability of DOWN during Right DOWN')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Probability')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-if exist(fullfile(analysis_folder,'V1-HPC bilateral interaction')) ==0
-    mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
-end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
-
-%% Left and Right ipsi-contra UP probability
-% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
-% colour_lines = [44,123,182;215,25,28]/256;% Blue Red
-colour_lines = [0,90,50;74,20,134]/256; % Green Purple
-fig = figure('Color','w');
-fig.Position = [350 59 1100 930];
-fig.Name = 'ipsi-contra UP distribution around DOWN-UP transition';
-
-nprobe = 1;
-event_averaging_scale = 5;
-L_UP = probability_SO_SO_whole(nprobe).UP_UP;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,1));
-imagesc(30*movmean(L_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi UP probability')
-
-
-nprobe = 2;
-R_UP = probability_SO_SO_whole(nprobe).UP_UP;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,1));% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(50*movmean(R_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi UP probability')
-
-
-nprobe = 1;
-R_UP = probability_SO_SO_contralateral_whole(nprobe).UP_UP;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,1));% imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(event_averaging_scale*movmean(R_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contra UP probabilty')
-
-
-
-nprobe = 2;
-L_UP = probability_SO_SO_contralateral_whole(nprobe).UP_UP;
-
-nexttile
-[~,sorted_index] = sort(slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,2)-slow_waves_all(nprobe).UP_ints(probability_SO_SO_whole(nprobe).UP_all_index,1));% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(event_averaging_scale*movmean(L_UP(sorted_index,:),event_averaging_scale,1,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contra UP probabilty')
-
-
-nexttile
-nprobe = 1;
-all_DOWN_no = length(probability_SO_SO_whole(nprobe).UP_all_index);
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-y = mean(probability_SO_SO_whole(nprobe).UP_UP,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_whole(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_whole(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-y = mean(probability_SO_SO_contralateral_whole(nprobe).UP_UP,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_contralateral_whole(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralateral_whole(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-y = mean(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,'omitnan');
-LCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
-% xline(0,'r')
-title('Probability of UP during left UP')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Probability')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-nexttile
-nprobe = 2;
-all_DOWN_no = length(probability_SO_SO_whole(nprobe).UP_all_index);
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-y = mean(probability_SO_SO_whole(nprobe).UP_UP,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_whole(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_whole(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-y = mean(probability_SO_SO_contralateral_whole(nprobe).UP_UP,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability_SO_SO_contralateral_whole(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralateral_whole(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-
-
-y = mean(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,'omitnan');
-LCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,2.5);
-UCI = prctile(probability_SO_SO_contralatral_whole_baseline(nprobe).UP_UP_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-legend(ERROR_SHADE(1:3),{'ipsi','contra','Shuffled'},'Box','off')
-title('Probability of UP during Right UP')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Probability')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-if exist(fullfile(analysis_folder,'V1-HPC bilateral interaction')) ==0
-    mkdir(fullfile(analysis_folder,'V1-HPC bilateral interaction'))
-end
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
-
-
-%%%%%
-%%%%%
-%%%%%
-%%%%%
 %% Grabbing ipsi and contra values
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
@@ -454,6 +97,9 @@ for nprobe=1:2
     mprobe = abs(nprobe-3);
 
     % UP and DOWN
+    ipsi_amp_UD{nprobe} = [];
+    contra_amp_UD{nprobe} = [];
+
     ipsi_lag_DU{nprobe} = [];
     contra_lag_DU{nprobe} = [];
     ipsi_lag_UD{nprobe} = [];
@@ -532,6 +178,9 @@ for nprobe=1:2
         %%%%%% UP -> DOWN
         [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
 
+        ipsi_amp_UD{nprobe} = [ipsi_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(ipsi_shank,ia))];
+        contra_amp_UD{nprobe} = [contra_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(contra_shank,ia))];
+
         ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
         contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
 
@@ -594,6 +243,197 @@ for nprobe=1:2
         contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
     end
 end
+
+%%
+
+
+%% Clustering of DOWN-UP transition lag vs corr vs plv distribution based on overlapping events
+% customColors = [
+%     0.698, 0.094, 0.169;  % Deep Red
+%     0.957, 0.647, 0.510;  % Light Red-Orange
+%     0.529, 0.529, 0.529;  % Gray
+%     0.102, 0.102, 0.102;  % Near Black
+%     ];
+
+
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
+
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+L_idx = find(merged_event_info.UP_hemisphere_id == 1);
+R_idx = find(merged_event_info.UP_hemisphere_id == 2);
+L_ints = merged_event_info.UP_ints(L_idx,:);
+R_ints = merged_event_info.UP_ints(R_idx,:);
+
+windows_threshold = [0.05,0.1,0.2];
+
+for ngroup = 1:4
+
+    % Track indices into merged_event_info.UP_ints
+    ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+    contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+    unique_lags{ngroup} = [];
+    all_lags{ngroup} = [];
+
+    L_overlap_idx{ngroup} = [];
+    R_overlap_idx{ngroup} =[];
+    L_lags{ngroup} = [];
+    R_lags{ngroup} =[];
+    lags = [];
+
+    all_overlap_idx{ngroup} = [];
+    overlap_idx{ngroup} = [];
+    non_overlap_idx{ngroup} = [];
+
+    for iL = 1:size(L_ints,1)
+        % Get current L interval
+
+        L_start = L_ints(iL,1);
+        if ngroup == 4
+            L_end   = L_ints(iL,2);
+        else
+            L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+        end
+        % Check overlap with all R intervals
+        if ngroup == 4
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+        else
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+        end
+
+        if any(is_overlap)
+            overlapping_R = find(is_overlap);
+
+            for j = 1:length(overlapping_R)
+                iR = overlapping_R(j);
+
+                % Store overlapping pair indices
+                L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+            end
+        end
+    end
+
+    % Unique overlap winners
+    lags = [L_lags{ngroup} R_lags{ngroup}];
+    all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+    [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+    % unique_overlap_idx{ngroup} = lags(index);
+    all_lags{ngroup} = lags;
+
+    % Non-overlapping L and R
+    nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+    nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+    non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+
+end
+
+
+
+ints = merged_event_info.UP_ints;
+%%%%%%%%%%%%%%%%
+fig = figure('Color','w');
+fig.Position = [30 60 1200 460];
+fig.Name = 'DOWN-UP transition lag distribution based on detection';
+hemisphere_texts = {'Left DOWN-UP transition','Right DOWN-UP transition'}
+
+% for ngroup = 1:4
+nexttile
+lags = all_lags{end};
+% lags = L_lags{ngroup}
+histogram(lags,-2:0.01:2,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('probability');
+title('DOWN-UP transition lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+% lags = R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1);  % R onset - L onset
+histogram(lags,-2:0.01:2,'EdgeColor','none','Normalization','cdf'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('cumulative probability');
+title('DOWN-UP transition lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'DOWN-UP transition lag vs corr vs plv distribution with overlapping or non-overlapping events';
+hemisphere_texts = {'Left DOWN-UP transition','Right DOWN-UP transition'}
+
+
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:4
+    nexttile
+    X = [merged_event_info.UP_lag_diff(overlap_idx{ngroup}) merged_event_info.UP_corr_diff(overlap_idx{ngroup}) merged_event_info.UP_plv_diff(overlap_idx{ngroup})];
+    idx = merged_event_info.UP_group_id(overlap_idx{ngroup});
+
+    for k = 1:3
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('overlapping DOWN-UP transition (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('overlapping DOWN-UP transition (full win)')
+    end
+
+
+    nexttile
+    X = [merged_event_info.UP_lag_diff(non_overlap_idx{ngroup}) merged_event_info.UP_corr_diff(non_overlap_idx{ngroup}) merged_event_info.UP_plv_diff(non_overlap_idx{ngroup})];
+    idx = merged_event_info.UP_group_id(non_overlap_idx{ngroup});
+    for k = 1:3
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('non-overlapping DOWN-UP transition (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('non-overlapping DOWN-UP transition (full win)')
+    end
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
 
 %% Plot DU transition averaged MUA
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
@@ -708,60 +548,58 @@ end
 ipsi_contra_diff_baseline_bootstrap1 = temp;
 
 
+
+
 %%%%%%%%%%%%% Grouping events
 event_idx = [];
 % Ipsi-contra UP_DOWN V1 MUA by three clusters
-event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < 0.1 & lag_diff > -0.1 ),merged_event_info.UP_index),intersect(find((group_id == 1 & lag_diff < -0.1)|(group_id == 1 & lag_diff > 0.1) ),merged_event_info.UP_index)};
+% lags = [R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1)];  % R onset - L onset
+lags =all_lags{end};
 
-% Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster (different lag diff)
-event_idx{2} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id == 3 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 3 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id == 3 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.UP_index)};
+event_idx{1} = {all_overlap_idx{end}(lags<-0.05),all_overlap_idx{end}(lags<0.05&lags>-0.05),all_overlap_idx{end}(lags>0.05)};
 
-% Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters (different lag diff)
-event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.UP_index)};
+% event_idx{2} = {overlap_idx{end}(lags<prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<-0.05&lags>prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<0.05&lags>-0.05),overlap_idx{end}(lags>0.05&lags<prctile(lags(lags>0.05),50)),overlap_idx{end}(lags>prctile(lags(lags>0.05),50))};
 
-% Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged (different lag diff)
-event_idx{4} = {intersect(find(group_id ~= 2 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.UP_index),intersect(find(group_id ~= 2 &  lag_diff <0 &lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff <sync_threshold & lag_diff >-sync_threshold),merged_event_info.UP_index),...
-    intersect(find(group_id ~= 2 & lag_diff>0 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.UP_index),intersect(find(group_id ~= 2 & lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.UP_index)}
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-% Ipsi-contra UP_DOWN V1 MUA by ipsi leading (different corr diff)
-index = intersect(find(lag_diff <prctile(lag_diff(group_id ~= 2& lag_diff <0),50)),merged_event_info.UP_index);
+lags =all_lags{2};
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{3}{n} =(all_overlap_idx{2}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1& corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lag_thresholds = [-0.2 -0.1 -0.02 0.02 0.1 0.2];
+for n = 1:length(lag_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-% Ipsi-contra UP_DOWN V1 MUA by contra leading (different corr diff)
-index = intersect(find(lag_diff >prctile(lag_diff(group_id ~= 2& lag_diff >0),50)),merged_event_info.UP_index);
-
-event_idx{6} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
-
-% Ipsi-contra UP_DOWN V1 MUA by 3 clusters leading only
-event_idx{7} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.UP_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1 & lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50)),merged_event_info.UP_index)};
-
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.05),all_overlap_idx{end}(lags<0.02&lags>-0.05),all_overlap_idx{end}(lags>0.05&lags<0.2),non_overlap_idx{end}};
 
 
 group_name=[];
-group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
-group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
-group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
-group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
-group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
+group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
+group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+% group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{4} = {'-0.2 to -0.1s','-0.1 to -0.02s','-0.02 to 0.02s','0.02 to 0.1s','0.1 to 0.2s','Shuffled'};% purely based on lags
+group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
 
-title_names = {'Ipsi-contra DOWN_UP MUA by three clusters', 'Ipsi-contra DOWN_UP MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra DOWN_UP MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra DOWN_UP MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra DOWN_UP MUA by ipsi leading (diff corr diff)','Ipsi-contra DOWN_UP MUA by contra leading (diff corr diff)','Ipsi-contra DOWN_UP MUA by three clusters (leading only)'}
+% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
+% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
+title_names = {'Ipsi-contra DOWN_UP MUA by three lags (full windows)', 'Ipsi-contra DOWN_UP MUA by bilateral thresholded lags (full windows)',...
+    'Ipsi-contra DOWN_UP MUA by 5 lags (100ms windows)','Ipsi-contra DOWN_UP MUA by 5 lags (200ms windows)','Ipsi-contra DOWN_UP MUA with non-overlapping'}
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 % colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
@@ -775,16 +613,16 @@ time_wondows = [-1 1];
 time_bin = 0.01;
 x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-MUA_PSTH_merged.x = x;
-MUA_PSTH_merged.ipsi_DU_V1 = [];
-MUA_PSTH_merged.contra_DU_V1 = [];
-MUA_PSTH_merged.ipsi_contra_diff_DU_V1 = [];
+MUA_PSTH_merged_thresholded.x = x;
+MUA_PSTH_merged_thresholded.ipsi_DU_V1 = [];
+MUA_PSTH_merged_thresholded.contra_DU_V1 = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_V1 = [];
 
-MUA_PSTH_merged.ipsi_DU_HPC = [];
-MUA_PSTH_merged.contra_DU_HPC = [];
-MUA_PSTH_merged.ipsi_contra_diff_DU_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_DU_HPC = [];
+MUA_PSTH_merged_thresholded.contra_DU_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_HPC = [];
 
-for ngroup = 1:length(event_idx)+1
+for ngroup = 1:length(event_idx)
 
     group_index = [];
     if ngroup <= length(event_idx)
@@ -822,23 +660,88 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        MUA_PSTH_merged.ipsi_DU_V1{ngroup}{i} = temp1;
-        MUA_PSTH_merged.contra_DU_V1{ngroup}{i} = temp2;
-        MUA_PSTH_merged.ipsi_contra_diff_DU_V1{ngroup}{i} = temp3;
-        MUA_PSTH_merged.ipsi_DU_HPC{ngroup}{i} = temp4;
-        MUA_PSTH_merged.contra_DU_HPC{ngroup}{i} = temp5;
-        MUA_PSTH_merged.ipsi_contra_diff_DU_HPC{ngroup}{i} = temp6;
+        MUA_PSTH_merged_thresholded.ipsi_DU_V1{ngroup}{i} = temp1;
+        MUA_PSTH_merged_thresholded.contra_DU_V1{ngroup}{i} = temp2;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_V1{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_DU_HPC{ngroup}{i} = temp4;
+        MUA_PSTH_merged_thresholded.contra_DU_HPC{ngroup}{i} = temp5;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_HPC{ngroup}{i} = temp6;
     end
 end
 
-MUA_PSTH_merged.ipsi_DU_V1_baseline = ipsi_baseline_bootstrap;
-MUA_PSTH_merged.contra_DU_V1_baseline = contra_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_DU_HPC_baseline = ipsi_baseline_bootstrap1;
-MUA_PSTH_merged.contra_DU_HPC_baseline = contra_baseline_bootstrap1;
-MUA_PSTH_merged.ipsi_contra_diff_DU_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
-MUA_PSTH_merged.DU_groups = [title_names {'all DOWN_UP'}];
-MUA_PSTH_merged.DU_index = [event_idx (1:size(ipsi_V1_MUA,1))'];
+MUA_PSTH_merged_thresholded.ipsi_DU_V1_baseline = ipsi_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.contra_DU_V1_baseline = contra_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_DU_HPC_baseline = ipsi_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.contra_DU_HPC_baseline = contra_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.DU_groups = [title_names];
+MUA_PSTH_merged_thresholded.DU_index = [event_idx];
+
+
+
+colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+
+% nexttile
+% scatter(ipsi_lag(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(1, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(contra_lag(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(3, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(lag_diff(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% 
+% 
+% nexttile
+% scatter(corr_diff(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(plv_diff(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(lag_diff(all_overlap_idx{end}),all_lags{end},'MarkerFaceColor',colour_lines(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% 
+
+%%%%%%%%%%%%% Distribution of detection thresholded events groups
+
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'DOWN-UP transition lag vs corr vs plv distribution with overlapping or non-overlapping event clusters';
+hemisphere_texts = {'Left DOWN-UP transition','Right DOWN-UP transition'}
+
+
+
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:length(event_idx)
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+
+    nexttile
+    clear PLOT
+    for k = 1:length(event_idx{ngroup})
+        X = [lag_diff(event_idx{ngroup}{k}) corr_diff(event_idx{ngroup}{k}) plv_diff(event_idx{ngroup}{k})];
+        hold on
+        PLOT(k) = scatter3( ...
+            X(:, 1), X(:, 2), X(:, 3), ...
+            5, 'MarkerFaceColor',colour_lines(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    title(title_names{ngroup})
+    legend(PLOT(1:end),{group_name{ngroup}{1:end-1}},'box','off')
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
 
 %%%%%%%%% Plot DU transition
 for ngroup = 1:length(event_idx)
@@ -846,8 +749,10 @@ for ngroup = 1:length(event_idx)
     fig.Position = [350 59 1650 930];
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1|ngroup ==7
+    if ngroup ==1
         colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -856,7 +761,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -874,7 +779,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -885,7 +790,7 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-1 0.5])
+    ylim([-1 1])
     title('V1 Ipsi MUA')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('MUA activity (z)')
@@ -895,7 +800,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -913,7 +818,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -921,7 +826,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1 0.5])
+    ylim([-1 1])
 
     % xline(0,'r')
     title('V1 Contra MUA')
@@ -934,7 +839,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -952,7 +857,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -961,7 +866,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([-1 0.5])
+    ylim([-1 1])
 
 
     % xline(0,'r')
@@ -976,7 +881,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -994,7 +899,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1005,7 +910,7 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-0.3 0.1])
+    ylim([-0.3 0.2])
     title('HPC Ipsi MUA')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('MUA activity (z)')
@@ -1015,7 +920,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1033,7 +938,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1043,7 +948,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.3 0.1])
+    ylim([-0.3 0.2])
 
     % xline(0,'r')
     title('HPC Contra MUA')
@@ -1056,7 +961,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1074,7 +979,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1084,7 +989,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([-0.3 0.1])
+    ylim([-0.3 0.2])
 
 
     % xline(0,'r')
@@ -1094,191 +999,193 @@ for ngroup = 1:length(event_idx)
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+%% Clustering of UP-DOWN transition lag vs corr vs plv distribution based on overlapping events
+% customColors = [
+%     0.698, 0.094, 0.169;  % Deep Red
+%     0.957, 0.647, 0.510;  % Light Red-Orange
+%     0.529, 0.529, 0.529;  % Gray
+%     0.102, 0.102, 0.102;  % Near Black
+%     ];
 
 
-%%%%%%%%% All DOWN-UP plots
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
 
-clear ERROR_SHADE
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+L_idx = find(merged_event_info.DOWN_hemisphere_id == 1);
+R_idx = find(merged_event_info.DOWN_hemisphere_id == 2);
+L_ints = merged_event_info.DOWN_ints(L_idx,:);
+R_ints = merged_event_info.DOWN_ints(R_idx,:);
+
+windows_threshold = [0.05,0.1,0.2];
+
+for ngroup = 1:4
+
+    % Track indices into merged_event_info.UP_ints
+    ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+    contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+    unique_lags{ngroup} = [];
+    all_lags{ngroup} = [];
+
+    L_overlap_idx{ngroup} = [];
+    R_overlap_idx{ngroup} =[];
+    L_lags{ngroup} = [];
+    R_lags{ngroup} =[];
+    lags = [];
+
+    all_overlap_idx{ngroup} = [];
+    overlap_idx{ngroup} = [];
+    non_overlap_idx{ngroup} = [];
+
+    for iL = 1:size(L_ints,1)
+        % Get current L interval
+
+        L_start = L_ints(iL,1);
+        if ngroup == 4
+            L_end   = L_ints(iL,2);
+        else
+            L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+        end
+        % Check overlap with all R intervals
+        if ngroup == 4
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+        else
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+        end
+
+        if any(is_overlap)
+            overlapping_R = find(is_overlap);
+
+            for j = 1:length(overlapping_R)
+                iR = overlapping_R(j);
+
+                % Store overlapping pair indices
+                L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+            end
+        end
+    end
+
+    % Unique overlap winners
+    lags = [L_lags{ngroup} R_lags{ngroup}];
+    all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+    [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+    % unique_overlap_idx{ngroup} = lags(index);
+    all_lags{ngroup} = lags;
+
+    % Non-overlapping L and R
+    nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+    nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+    non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+
+end
+
+
+
+ints = merged_event_info.DOWN_ints;
+
+
+%%%%%%%%%%%%%%%%
 fig = figure('Color','w');
-fig.Position = [350 59 1100 930];
-fig.Name ='All ipsi-contra DOWN-UP MUA';
+fig.Position = [30 60 1200 460];
+fig.Name = 'UP-DOWN transition lag distribution based on detection';
+hemisphere_texts = {'Left UP-DOWN transition','Right UP-DOWN transition'}
 
-colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
-
+% for ngroup = 1:4
 nexttile
-binnedArray = MUA_PSTH_merged.ipsi_DU_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-
-binnedArray = MUA_PSTH_merged.contra_DU_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_DU_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-1 0.5])
-
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('V1 MUA')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('MUA activity (z)')
+lags = all_lags{end};
+histogram(lags,-0.5:0.01:0.5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('probability');
+title('UP-DOWN transition lag distribution based on detection');
+grid on;
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 nexttile
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-1 0.5])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('V1 MUA difference')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('ipsi-contra MUA activity (z)')
+% lags = R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1);  % R onset - L onset
+histogram(lags,-0.5:0.01:0.5,'EdgeColor','none','Normalization','cdf'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('cumulative probability');
+title('UP-DOWN transition lag distribution based on detection');
+grid on;
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
 
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_DU_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-binnedArray = MUA_PSTH_merged.contra_DU_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_DU_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.1])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('HPC MUA')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray =  MUA_PSTH_merged.ipsi_contra_diff_DU_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.1])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('HPC MUA difference')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-%%%%%%%%%%%%%%%%%%%%%%
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
 
 
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'UP-DOWN transition lag vs corr vs plv distribution with overlapping or non-overlapping events';
+% hemisphere_texts = {'Left DOWN-UP transition','Right DOWN-UP transition'}
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:4
+    nexttile
+    X = [merged_event_info.DOWN_lag_diff(overlap_idx{ngroup}) merged_event_info.DOWN_corr_diff(overlap_idx{ngroup}) merged_event_info.DOWN_plv_diff(overlap_idx{ngroup})];
+    idx = merged_event_info.DOWN_group_id(overlap_idx{ngroup});
+
+    for k = 1:3
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('overlapping UP-DOWN transition (%.2f sec windows)',windows_threshold(ngroup)))
+    else
+        title('overlapping UP-DOWN transition (full windows)')
+    end
+
+
+    nexttile
+    X = [merged_event_info.DOWN_lag_diff(non_overlap_idx{ngroup}) merged_event_info.DOWN_corr_diff(non_overlap_idx{ngroup}) merged_event_info.DOWN_plv_diff(non_overlap_idx{ngroup})];
+    idx = merged_event_info.DOWN_group_id(non_overlap_idx{ngroup});
+
+    for k = 1:3
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('non-overlapping  UP-DOWN transition (%.2f sec windows)',windows_threshold(ngroup)))
+    else
+        title('non-overlapping UP-DOWN transition (full windows)')
+    end
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 
 
@@ -1303,7 +1210,7 @@ plv_diff = merged_event_info.DOWN_plv_diff;
 corr_diff = merged_event_info.DOWN_corr_diff;
 ipsi_lag = [ipsi_lag_UD{1} ipsi_lag_UD{2}]';
 contra_lag = [contra_lag_UD{1} contra_lag_UD{2}]';
-group_id = merged_event_info.UP_group_id;
+% group_id = merged_event_info.UP_group_id;
 
 sync_threshold = mean(abs([event_info(1).DOWN_lag_threshold_low event_info(2).DOWN_lag_threshold_low event_info(1).DOWN_lag_threshold_high event_info(2).DOWN_lag_threshold_high]));
 
@@ -1394,65 +1301,57 @@ end
 
 ipsi_contra_diff_baseline_bootstrap1 = temp;
 
-%%%%%%% Grouping events
+%%%%%%%%%%%%% Grouping events
 event_idx = [];
 % Ipsi-contra UP_DOWN V1 MUA by three clusters
-event_idx{1} = {intersect(find((group_id == 3 & lag_diff < -0.1)|(group_id == 3 & lag_diff > 0.1) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < 0.1 & lag_diff > -0.1 ),merged_event_info.DOWN_index),intersect(find((group_id == 1 & lag_diff < -0.1)|(group_id == 1 & lag_diff > 0.1) ),merged_event_info.DOWN_index)};
+% lags = [R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1)];  % R onset - L onset
+lags =all_lags{end};
 
-% Ipsi-contra UP_DOWN V1 MUA by ipsi dominant cluster (different lag diff)
-event_idx{2} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 3 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 3 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 3 &lag_diff >prctile(lag_diff(group_id == 3& lag_diff >0),50) ),merged_event_info.DOWN_index)};
+event_idx{1} = {all_overlap_idx{end}(lags<-0.05),all_overlap_idx{end}(lags<0.05&lags>-0.05),all_overlap_idx{end}(lags>0.05)};
 
-% Ipsi-contra UP_DOWN V1 MUA by contra dominant clusters (different lag diff)
-event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),merged_event_info.DOWN_index)};
+% event_idx{2} = {overlap_idx{end}(lags<prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<-0.05&lags>prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<0.05&lags>-0.05),overlap_idx{end}(lags>0.05&lags<prctile(lags(lags>0.05),50)),overlap_idx{end}(lags>prctile(lags(lags>0.05),50))};
 
-% Ipsi-contra UP_DOWN V1 MUA by cluster 1 and 3 merged (different lag diff)
-event_idx{4} = {intersect(find(group_id ~= 2 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.DOWN_index),intersect(find(group_id ~= 2 &  lag_diff <0 &lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff <0),50) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff <sync_threshold & lag_diff >-sync_threshold),merged_event_info.DOWN_index),...
-    intersect(find(group_id ~= 2 & lag_diff>0 & lag_diff <prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.DOWN_index),intersect(find(group_id ~= 2 & lag_diff >prctile(lag_diff(group_id ~= 2 & lag_diff >0),50) ),merged_event_info.DOWN_index)};
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-% Ipsi-contra UP_DOWN V1 MUA by ipsi leading (different corr diff)
-index = intersect(find(lag_diff <prctile(lag_diff(group_id ~= 2& lag_diff <0),50)),merged_event_info.DOWN_index);
+lags =all_lags{2};
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{3}{n} =(all_overlap_idx{2}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-event_idx{5} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1& corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lag_thresholds = [-0.2 -0.1 -0.02 0.02 0.1 0.2];
+for n = 1:length(lag_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
 
-% Ipsi-contra UP_DOWN V1 MUA by contra leading (different corr diff)
-index = intersect(find(lag_diff >prctile(lag_diff(group_id ~= 2& lag_diff >0),50)),merged_event_info.DOWN_index);
-
-event_idx{6} = {intersect(find(group_id == 3 & corr_diff >prctile(corr_diff(group_id == 3),50) ),index),intersect(find(group_id == 3 & corr_diff <prctile(corr_diff(group_id == 3),50) ),index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.UP_index),...
-    intersect(find(group_id == 1& corr_diff <prctile(corr_diff(group_id == 1),50) ),index),intersect(find(group_id == 1 & corr_diff >prctile(corr_diff(group_id == 1),50) ),index)};
-
-% Ipsi-contra UP_DOWN V1 MUA by 5 clusters
-event_idx{7} = {intersect(find(group_id == 3 & lag_diff <prctile(lag_diff(group_id == 3& lag_diff <0),50) ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 2 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),merged_event_info.DOWN_index),...
-    intersect(find(group_id == 1 & lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50)),merged_event_info.DOWN_index)};
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.05),all_overlap_idx{end}(lags<0.02&lags>-0.05),all_overlap_idx{end}(lags>0.05&lags<0.2),non_overlap_idx{end}};
 
 
 
 group_name=[];
-group_name{1} = {'Ipsi dominant','Bilaterally synchronised','Contra dominant','Shuffled'};
-group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
-group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
-group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
-group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
+group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
+group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+% group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{4} = {'-0.2 to -0.1s','-0.1 to -0.02s','-0.02 to 0.02s','0.02 to 0.1s','0.1 to 0.2s','Shuffled'};% purely based on lags
+group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
 
-title_names = {'Ipsi-contra UP_DOWN MUA by three clusters', 'Ipsi-contra UP_DOWN MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra UP_DOWN MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra UP_DOWN MUA by cluster 1 and 3 merged (different lag diff)','Ipsi-contra UP_DOWN MUA by ipsi leading (diff corr diff)','Ipsi-contra UP_DOWN MUA by contra leading (diff corr diff)','Ipsi-contra UP_DOWN MUA by three clusters (leading only)'}
-% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
+% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
-% colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
-% 
-% colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-% colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+title_names = {'Ipsi-contra UP_DOWN MUA by three lags (full windows)', 'Ipsi-contra UP_DOWN MUA by bilateral thresholded lags (full windows)',...
+    'Ipsi-contra UP_DOWN MUA by 5 lags (100ms windows)','Ipsi-contra UP_DOWN MUA by 5 lags (200ms windows)','Ipsi-contra UP_DOWN MUA with non-overlapping'}
 
 %%%%%%%%%% Calculate bootstrapped MUA
 
@@ -1460,16 +1359,16 @@ time_wondows = [-1 1];
 time_bin = 0.01;
 x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-MUA_PSTH_merged.x = x;
-MUA_PSTH_merged.ipsi_UD_V1 = [];
-MUA_PSTH_merged.contra_UD_V1 = [];
-MUA_PSTH_merged.ipsi_contra_diff_UD_V1 = [];
+MUA_PSTH_merged_thresholded.x = x;
+MUA_PSTH_merged_thresholded.ipsi_UD_V1 = [];
+MUA_PSTH_merged_thresholded.contra_UD_V1 = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_V1 = [];
 
-MUA_PSTH_merged.ipsi_UD_HPC = [];
-MUA_PSTH_merged.contra_UD_HPC = [];
-MUA_PSTH_merged.ipsi_contra_diff_UD_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_UD_HPC = [];
+MUA_PSTH_merged_thresholded.contra_UD_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_HPC = [];
 
-for ngroup = 1:length(event_idx)+1
+for ngroup = 1:length(event_idx)
 
     group_index = [];
     if ngroup <= length(event_idx)
@@ -1507,33 +1406,79 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        MUA_PSTH_merged.ipsi_UD_V1{ngroup}{i} = temp1;
-        MUA_PSTH_merged.contra_UD_V1{ngroup}{i} = temp2;
-        MUA_PSTH_merged.ipsi_contra_diff_UD_V1{ngroup}{i} = temp3;
-        MUA_PSTH_merged.ipsi_UD_HPC{ngroup}{i} = temp4;
-        MUA_PSTH_merged.contra_UD_HPC{ngroup}{i} = temp5;
-        MUA_PSTH_merged.ipsi_contra_diff_UD_HPC{ngroup}{i} = temp6;
+        MUA_PSTH_merged_thresholded.ipsi_UD_V1{ngroup}{i} = temp1;
+        MUA_PSTH_merged_thresholded.contra_UD_V1{ngroup}{i} = temp2;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_V1{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_UD_HPC{ngroup}{i} = temp4;
+        MUA_PSTH_merged_thresholded.contra_UD_HPC{ngroup}{i} = temp5;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_HPC{ngroup}{i} = temp6;
     end
 end
 
-MUA_PSTH_merged.ipsi_UD_V1_baseline = ipsi_baseline_bootstrap;
-MUA_PSTH_merged.contra_UD_V1_baseline = contra_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_contra_diff_UD_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_UD_HPC_baseline = ipsi_baseline_bootstrap1;
-MUA_PSTH_merged.contra_UD_HPC_baseline = contra_baseline_bootstrap1;
-MUA_PSTH_merged.ipsi_contra_diff_UD_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
-MUA_PSTH_merged.UD_groups = [title_names {'all UP_DOWN'}];
-MUA_PSTH_merged.UD_index = [event_idx (1:size(ipsi_V1_MUA,1))'];
+MUA_PSTH_merged_thresholded.ipsi_UD_V1_baseline = ipsi_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.contra_UD_V1_baseline = contra_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_UD_HPC_baseline = ipsi_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.contra_UD_HPC_baseline = contra_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.UD_groups = [title_names];
+MUA_PSTH_merged_thresholded.UD_index = [event_idx];
+
+%%%%%%%%%%%%% Distribution of detection thresholded events groups
+
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'UP-DOWN transition lag vs corr vs plv distribution with overlapping or non-overlapping event clusters';
+hemisphere_texts = {'Left UP-DOWN transition','Right UP-DOWN transition'}
+
+
+
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:length(event_idx)
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+
+    nexttile
+    clear PLOT
+    for k = 1:length(event_idx{ngroup})
+        X = [lag_diff(event_idx{ngroup}{k}) corr_diff(event_idx{ngroup}{k}) plv_diff(event_idx{ngroup}{k})];
+        hold on
+        PLOT(k) = scatter3( ...
+            X(:, 1), X(:, 2), X(:, 3), ...
+            5, 'MarkerFaceColor',colour_lines(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.24 0.24])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    title(title_names{ngroup})
+    legend(PLOT(1:end),{group_name{ngroup}{1:end-1}},'box','off')
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
 
 
 %%%%%%%%% Plot UD transition
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
-    fig.Position = [350 59 1650 930];
+    fig.Position = [350 59 1650 930]; 
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1|ngroup ==7
+    if ngroup ==1
         colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -1542,7 +1487,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_UD_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_UD_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1560,7 +1505,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_UD_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_UD_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1568,10 +1513,10 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-1 0.5])
+    ylim([-1 0.7])
     title('V1 Ipsi MUA')
     xlabel('Time relative to UP-DOWN transition (s)')
     ylabel('MUA activity (z)')
@@ -1581,7 +1526,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_UD_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_UD_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1599,15 +1544,15 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_UD_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_UD_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
     UCI = prctile(binnedArray,97.5);
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1 0.5])
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-1 0.7])
 
     % xline(0,'r')
     title('V1 Contra MUA')
@@ -1620,7 +1565,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1638,7 +1583,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1647,8 +1592,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([-1 0.5])
-
+    ylim([-1 0.7])
 
     % xline(0,'r')
     title('V1 Ipsi-contra MUA diff')
@@ -1662,7 +1606,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_UD_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_UD_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1680,7 +1624,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_UD_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_UD_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1691,7 +1635,7 @@ for ngroup = 1:length(event_idx)
     %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-0.2 0.3])
+    ylim([-0.3 0.7])
     title('HPC Ipsi MUA')
     xlabel('Time relative to UP-DOWN transition (s)')
     ylabel('MUA activity (z)')
@@ -1701,7 +1645,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_UD_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_UD_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1719,7 +1663,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_UD_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_UD_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1728,9 +1672,8 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-ylim([-0.2 0.3])
-
+    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([-0.3 0.7])
     % xline(0,'r')
     title('HPC Contra MUA')
     xlabel('Time relative to UP-DOWN transition (s)')
@@ -1742,7 +1685,7 @@ ylim([-0.2 0.3])
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -1760,7 +1703,7 @@ ylim([-0.2 0.3])
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_UD_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1770,7 +1713,7 @@ ylim([-0.2 0.3])
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([-0.2 0.3])
+    ylim([-0.2 0.7])
 
 
     % xline(0,'r')
@@ -1782,187 +1725,205 @@ ylim([-0.2 0.3])
 end
 
 
-%%%%%%%%% All DOWN-UP plots
-
-clear ERROR_SHADE
-fig = figure('Color','w');
-fig.Position = [350 59 1100 930];
-fig.Name ='All ipsi-contra UP-DOWN MUA';
-
-colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_UD_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-
-binnedArray = MUA_PSTH_merged.contra_UD_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_UD_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-1 0.5])
-
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('V1 MUA')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-1 0.5])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('V1 MUA difference')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_UD_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-binnedArray = MUA_PSTH_merged.contra_UD_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_UD_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.2 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('HPC MUA')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray =  MUA_PSTH_merged.ipsi_contra_diff_UD_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_UD_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.2 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('HPC MUA difference')
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-%%%%%%%%%%%%%%%%%%%%%%
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
+
+
+
+%% Clustering of ripples lag vs corr vs plv distribution based on overlapping events
+% customColors = [
+%     0.698, 0.094, 0.169;  % Deep Red
+%     0.957, 0.647, 0.510;  % Light Red-Orange
+%     0.529, 0.529, 0.529;  % Gray
+%     0.102, 0.102, 0.102;  % Near Black
+%     ];
+
+
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
+
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+L_idx = find(merged_event_info.ripples_hemisphere_id == 1);
+R_idx = find(merged_event_info.ripples_hemisphere_id == 2);
+L_ints = merged_event_info.ripples_ints(L_idx,:);
+R_ints = merged_event_info.ripples_ints(R_idx,:);
+
+windows_threshold = [0.01,0.05,0.1];
+
+for ngroup = 1:4
+
+    % Track indices into merged_event_info.UP_ints
+    ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+    contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+    unique_lags{ngroup} = [];
+    all_lags{ngroup} = [];
+
+    L_overlap_idx{ngroup} = [];
+    R_overlap_idx{ngroup} =[];
+    L_lags{ngroup} = [];
+    R_lags{ngroup} =[];
+    lags = [];
+
+    all_overlap_idx{ngroup} = [];
+    overlap_idx{ngroup} = [];
+    non_overlap_idx{ngroup} = [];
+
+    for iL = 1:size(L_ints,1)
+        % Get current L interval
+
+        L_start = L_ints(iL,1);
+        if ngroup == 4
+            L_end   = L_ints(iL,2);
+        else
+            L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+        end
+        % Check overlap with all R intervals
+        if ngroup == 4
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+        else
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+        end
+
+        if any(is_overlap)
+            overlapping_R = find(is_overlap);
+
+            for j = 1:length(overlapping_R)
+                iR = overlapping_R(j);
+
+                % Store overlapping pair indices
+                L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+            end
+        end
+    end
+
+    % Unique overlap winners
+    lags = [L_lags{ngroup} R_lags{ngroup}];
+    all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+    [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+    % unique_overlap_idx{ngroup} = lags(index);
+    all_lags{ngroup} = lags;
+
+    % Non-overlapping L and R
+    nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+    nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+    non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+
+end
+
+
+% ints = merged_event_info.UP_ints;
+%%%%%%%%%%%%%%%%
+fig = figure('Color','w');
+fig.Position = [30 60 1200 460];
+fig.Name = 'ripples lag distribution based on detection';
+hemisphere_texts = {'Left ripples','Right ripples'}
+
+% for ngroup = 1:4
+nexttile
+lags = all_lags{end}; 
+histogram(lags,-0.1:0.002:0.1,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('probability');
+title('ripples lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+% lags = R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1);  % R onset - L onset
+histogram(lags,-0.1:0.002:0.1,'EdgeColor','none','Normalization','cdf'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('cumulative probability');
+title('ripples lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+
+customColors = [74,20,134;228,42,168;254,145,198;0,90,50]/256; % purple, dark magenta, light magenta, green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'Ripples transition lag vs corr vs plv distribution with overlapping or non-overlapping events';
+hemisphere_texts = {'Left Ripples','Right Ripples'}
+
+
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:4
+    nexttile
+    X = [merged_event_info.ripples_lag_diff(overlap_idx{ngroup}) merged_event_info.ripples_corr_diff(overlap_idx{ngroup}) merged_event_info.ripples_plv_diff(overlap_idx{ngroup})];
+    idx = merged_event_info.ripples_group_id(overlap_idx{ngroup});
+
+    for k = 1:4
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.05 0.05])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('overlapping ripples (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('overlapping ripples (full win)')
+    end
+
+
+    nexttile
+    X = [merged_event_info.ripples_lag_diff(non_overlap_idx{ngroup}) merged_event_info.ripples_corr_diff(non_overlap_idx{ngroup}) merged_event_info.ripples_plv_diff(non_overlap_idx{ngroup})];
+    idx = merged_event_info.ripples_group_id(non_overlap_idx{ngroup});
+    for k = 1:4
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            5, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.05 0.05])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('non-overlapping Ripples transition (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('non-overlapping ripples (full win)')
+    end
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
+% 
+% ipsi_lag_ripples
+% nexttile
+% scatter(all_lags{end},merged_event_info.ripples_lag_diff(all_overlap_idx{end}),5, 'MarkerFaceColor',customColors(1, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(all_lags{end},contra_lag(all_overlap_idx{end}),5, 'MarkerFaceColor',customColors(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% nexttile
+% scatter(all_lags{end},contra_corr_ripples(all_overlap_idx{end}),5, 'MarkerFaceColor',customColors(3, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
+% 
+% scatter(all_lags{end},ipsi_lag(all_overlap_idx{end}),5, 'MarkerFaceColor',customColors(3, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1)
 
 %%
 %%%%%
@@ -2081,49 +2042,59 @@ end
 
 ipsi_contra_diff_baseline_bootstrap1 = temp;
 
+merged_event_info.ripples_lag_diff(ll_overlap_idx{end})
 
 
 %%%%%%% Event grouping based on ipsi-contra difference features
 event_idx = [];
 % Ipsi-contra ripples HPC MUA by four different clusters
-event_idx{1} = {find(group_id==4),find(group_id==3),find(group_id==2),find(group_id==1)};
 
-% Ipsi-contra ripples HPC MUA by ipsi dominant cluster (different lag diff)
-index = merged_event_info.ripples_index;
-event_idx{2} = {intersect(find(group_id == 4 & lag_diff <prctile(lag_diff(group_id == 4& lag_diff <0),50) ),index),intersect(find(group_id == 4 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 4& lag_diff <0),50) ),index),...
-    intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index),...
-    intersect(find(group_id == 4 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id ==4& lag_diff >0),50) ),index),intersect(find(group_id == 4 &lag_diff >prctile(lag_diff(group_id == 4& lag_diff >0),50) ),index)};
+lags =all_lags{end};
 
-% Ipsi-contra ripples HPC MUA by contra dominant clusters (different lag diff)
-event_idx{3} = {intersect(find(group_id == 1 & lag_diff <prctile(lag_diff(group_id == 1& lag_diff <0),50) ),index),intersect(find(group_id == 1 & lag_diff <0 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff <0),50) ),index),...
-    intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index),...
-    intersect(find(group_id == 1 & lag_diff>0 &lag_diff <prctile(lag_diff(group_id ==1& lag_diff >0),50) ),index),intersect(find(group_id == 1 &lag_diff >prctile(lag_diff(group_id == 1& lag_diff >0),50) ),index)};
+event_idx{1} = {all_overlap_idx{end}(lags<-0.005),all_overlap_idx{end}(lags<0.005&lags>-0.005),all_overlap_idx{end}(lags>0.005)};
 
-% Ipsi-contra ripples HPC MUA by bilateral clusters (different lag diff)
-index = intersect(merged_event_info.ripples_index,find(group_id == 2 | group_id == 3));
-lag_thresholds = prctile(lag_diff(index),[0 25 50 75 100]);
+% event_idx{2} = {overlap_idx{end}(lags<prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<-0.05&lags>prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<0.05&lags>-0.05),overlap_idx{end}(lags>0.05&lags<prctile(lags(lags>0.05),50)),overlap_idx{end}(lags>prctile(lags(lags>0.05),50))};
 
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
 for n = 1:length(lag_thresholds)-1
-    event_idx{4}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+    event_idx{2}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
 end
 
-% Ipsi-contra ripples HPC MUA by lag diff
-index = merged_event_info.ripples_index;
-lag_thresholds = prctile(lag_diff(index),[0 20 40 60 80 100]);
-
+lags =all_lags{2};
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
 for n = 1:length(lag_thresholds)-1
-    event_idx{5}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+    event_idx{3}{n} =(all_overlap_idx{2}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
 end
+
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lag_thresholds = [-0.05 -0.02 -0.005 0.005 0.02 0.05];
+for n = 1:length(lag_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.005),all_overlap_idx{end}(lags<0.02&lags>-0.005),all_overlap_idx{end}(lags>0.005&lags<0.2),non_overlap_idx{end}};
+
 
 group_name=[];
-group_name{1} = {'Ipsi dominant','Bilateral high plv diff','Bilateral low plv diff','Contra dominant','Shuffled'};
-group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
-group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
-group_name{4} = {'Top 0-25% ipsi leading','Top 25-50% ipsi leading','Top 50-75% ipsi leading','Top 75-100% ipsi leading','Shuffled'};% purely based on lags
-group_name{5} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
+group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+% group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{4} = {'-0.05 to -0.02s','-0.02 to -0.005s','-0.005 to 0.005s','0.005 to 0.02s','0.02 to 0.05s','Shuffled'};% purely based on lags
+group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
 
-title_names = {'Ipsi-contra ripples MUA by four clusters', 'Ipsi-contra ripples MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra ripples MUA by bilateral clusters (different lag diff)','Ipsi-contra ripples MUA by lag diff'};
+% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
+% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
+
+title_names = {'Ipsi-contra ripples MUA by three lags (full windows)', 'Ipsi-contra ripples MUA by bilateral thresholded lags (full windows)',...
+    'Ipsi-contra ripples MUA by 5 lags percentile (100ms windows)','Ipsi-contra ripples MUA by 5 lags (50ms windows)','Ipsi-contra ripples MUA with non-overlapping'}
 
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -2138,14 +2109,14 @@ time_wondows = [-1 1];
 time_bin = 0.01;
 x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-MUA_PSTH_merged.x = x;
-MUA_PSTH_merged.ipsi_ripples_V1 = [];
-MUA_PSTH_merged.contra_ripples_V1 = [];
-MUA_PSTH_merged.ipsi_contra_diff_ripples_V1 = [];
+MUA_PSTH_merged_thresholded.x = x;
+MUA_PSTH_merged_thresholded.ipsi_ripples_V1 = [];
+MUA_PSTH_merged_thresholded.contra_ripples_V1 = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1 = [];
 
-MUA_PSTH_merged.ipsi_ripples_HPC = [];
-MUA_PSTH_merged.contra_ripples_HPC = [];
-MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_ripples_HPC = [];
+MUA_PSTH_merged_thresholded.contra_ripples_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC = [];
 
 for ngroup = 1:length(event_idx)+1
 
@@ -2185,41 +2156,87 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        MUA_PSTH_merged.ipsi_ripples_V1{ngroup}{i} = temp1;
-        MUA_PSTH_merged.contra_ripples_V1{ngroup}{i} = temp2;
-        MUA_PSTH_merged.ipsi_contra_diff_ripples_V1{ngroup}{i} = temp3;
-        MUA_PSTH_merged.ipsi_ripples_HPC{ngroup}{i} = temp4;
-        MUA_PSTH_merged.contra_ripples_HPC{ngroup}{i} = temp5;
-        MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC{ngroup}{i} = temp6;
+        MUA_PSTH_merged_thresholded.ipsi_ripples_V1{ngroup}{i} = temp1;
+        MUA_PSTH_merged_thresholded.contra_ripples_V1{ngroup}{i} = temp2;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_ripples_HPC{ngroup}{i} = temp4;
+        MUA_PSTH_merged_thresholded.contra_ripples_HPC{ngroup}{i} = temp5;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC{ngroup}{i} = temp6;
     end
 end
 
-MUA_PSTH_merged.ipsi_ripples_V1_baseline = ipsi_baseline_bootstrap1;
-MUA_PSTH_merged.contra_ripples_V1_baseline = contra_baseline_bootstrap1;
-MUA_PSTH_merged.ipsi_contra_diff_ripples_V1_baseline = ipsi_contra_diff_baseline_bootstrap1;
-MUA_PSTH_merged.ipsi_ripples_HPC_baseline = ipsi_baseline_bootstrap;
-MUA_PSTH_merged.contra_ripples_HPC_baseline = contra_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC_baseline = ipsi_contra_diff_baseline_bootstrap;
-MUA_PSTH_merged.ripples_groups = [title_names {'all ripples'}];
-MUA_PSTH_merged.ripples_index = [event_idx (1:size(ipsi_V1_MUA,1))'];
+MUA_PSTH_merged_thresholded.ipsi_ripples_V1_baseline = ipsi_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.contra_ripples_V1_baseline = contra_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1_baseline = ipsi_contra_diff_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_ripples_HPC_baseline = ipsi_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.contra_ripples_HPC_baseline = contra_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC_baseline = ipsi_contra_diff_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ripples_groups = [title_names];
+MUA_PSTH_merged_thresholded.ripples_index = [event_idx];
 
 
+%%%%%%%%%%%%% Distribution of detection thresholded events groups
+
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'ripples lag vs corr vs plv distribution with overlapping or non-overlapping event clusters';
+
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 for ngroup = 1:length(event_idx)
-    fig = figure('Color','w');
-    fig.Position = [350 59 1650 930];
-    fig.Name =title_names{ngroup};
-
-    if ngroup ==1 | ngroup ==4
-        colour_lines = [0,90,50;254,145,198;228,42,168;74,20,134]/256; % Dark Green , light Magenta, dark mageta, dark purple
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
 
     nexttile
+    clear PLOT
+    for k = 1:length(event_idx{ngroup})
+        X = [lag_diff(event_idx{ngroup}{k}) corr_diff(event_idx{ngroup}{k}) plv_diff(event_idx{ngroup}{k})];
+        hold on
+        PLOT(k) = scatter3( ...
+            X(:, 1), X(:, 2), X(:, 3), ...
+            5, 'MarkerFaceColor',colour_lines(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.05 0.05])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    title(title_names{ngroup})
+    legend(PLOT(1:end),{group_name{ngroup}{1:end-1}},'box','off')
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
+
+%%%%%%%%% Plot ripples MUA
+for ngroup = 1:length(event_idx)
+    fig = figure('Color','w');
+    fig.Position = [350 59 1650 930];
+    fig.Name =title_names{ngroup};
+
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+
+
+    nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_ripples_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2237,7 +2254,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_ripples_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2259,7 +2276,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_ripples_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2277,7 +2294,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_ripples_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2300,7 +2317,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2318,7 +2335,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2342,7 +2359,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_ripples_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2360,7 +2377,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_ripples_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2382,7 +2399,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_ripples_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2400,7 +2417,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_ripples_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2424,7 +2441,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2442,7 +2459,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -2466,209 +2483,25 @@ end
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
-
-
-%%%%%%%%% All ripples plots
-
-clear ERROR_SHADE
-fig = figure('Color','w');
-% fig.Position = [350 59 1100 465];
-fig.Position = [350 59 1100 930];
-fig.Name ='ipsi-contra ripples MUA';
-
-colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_ripples_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-
-binnedArray = MUA_PSTH_merged.contra_ripples_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_UD_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-xlim([-0.5 0.5])
-ylim([-0.2 0.4])
-
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('V1 MUA')
-xlabel('Time relative to ripple peaktimes (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-xlim([-0.5 0.5])
-ylim([-0.2 0.4])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('V1 MUA difference')
-xlabel('Time relative to ripple peaktimes (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_ripples_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-binnedArray = MUA_PSTH_merged.contra_UD_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-binnedArray = MUA_PSTH_merged.ipsi_ripples_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-xlim([-0.5 0.5])
-ylim([-0.5 5.6])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
-title('HPC MUA')
-xlabel('Time relative to ripple peaktimes (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray =  MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-xlim([-0.5 0.5])
-ylim([-0.2 0.4])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('HPC MUA difference')
-xlabel('Time relative to ripple peaktimes (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-%%%%%%%%%%%%%%%%%%%%%%
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
-
-
 %% Calculate Unilateral-bilateral diff in response
 index = merged_event_info.ripples_index;
-bilateral_index = intersect(find(group_id == 2 | group_id == 3 & lag_diff < sync_threshold & lag_diff > -sync_threshold ),index);
-group_name=[];
-group_name{1} = {'Ipsi dominant','Bilateral high plv diff','Bilateral low plv diff','Contra dominant','Shuffled'};
-group_name{2} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% ipsi dominant clusters
-group_name{3} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% contra dominant clusters
-group_name{4} = {'Top 0-25% ipsi leading','Top 25-50% ipsi leading','Top 50-75% ipsi leading','Top 75-100% ipsi leading','Shuffled'};% purely based on lags
-group_name{5} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+bilateral_index = all_overlap_idx{end}(lags<0.005&lags>-0.005);
 
-title_names = {'Ipsi-contra ripples unilateral-bilateral MUA by four clusters', 'Ipsi-contra ripples unilateral-bilateral MUA by ipsi dominant cluster (different lag diff)','Ipsi-contra ripples unilateral-bilateral MUA by contra dominant clusters (different lag diff)',...
-    'Ipsi-contra ripples unilateral-bilateral MUA by bilateral clusters (different lag diff)','Ipsi-contra ripples unilateral-bilateral MUA by lag diff'};
+group_name=[];
+group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
+group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+% group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{4} = {'-0.05 to -0.02s','-0.02 to -0.005s','-0.005 to 0.005s','0.005 to 0.02s','0.02 to 0.05s','Shuffled'};% purely based on lags
+group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
+
+% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
+% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
+
+title_names = {'Ipsi-contra ripples unilateral-bilateral MUA by three lags (full windows)', 'Ipsi-contra ripples unilateral-bilateral MUA by bilateral thresholded lags (full windows)',...
+    'Ipsi-contra ripples unilateral-bilateral MUA by 5 lags percentile (100ms windows)','Ipsi-contra ripples unilateral-bilateral MUA by 5 lags (50ms windows)','Ipsi-contra ripples unilateral-bilateral MUA with non-overlapping'}
 
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -2682,8 +2515,10 @@ for ngroup = 1:length(group_name)
     fig.Position = [350 59 1650 930];
     fig.Name =title_names{ngroup};
 
-    if ngroup ==1 | ngroup ==4
-        colour_lines = [0,90,50;254,145,198;228,42,168;74,20,134]/256; % Dark Green , light Magenta, dark mageta, dark purple
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
@@ -2902,6 +2737,190 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 %%%%%
 %%%%%
 
+%% Clustering of spindles lag vs corr vs plv distribution based on overlapping events
+% customColors = [
+%     0.698, 0.094, 0.169;  % Deep Red
+%     0.957, 0.647, 0.510;  % Light Red-Orange
+%     0.529, 0.529, 0.529;  % Gray
+%     0.102, 0.102, 0.102;  % Near Black
+%     ];
+
+
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
+
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+L_idx = find(merged_event_info.spindles_hemisphere_id == 1);
+R_idx = find(merged_event_info.spindles_hemisphere_id == 2);
+L_ints = merged_event_info.spindles_ints(L_idx,:);
+R_ints = merged_event_info.spindles_ints(R_idx,:);
+
+windows_threshold = [0.01,0.05,0.1];
+
+for ngroup = 1:4
+
+    % Track indices into merged_event_info.UP_ints
+    ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+    contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+    unique_lags{ngroup} = [];
+    all_lags{ngroup} = [];
+
+    L_overlap_idx{ngroup} = [];
+    R_overlap_idx{ngroup} =[];
+    L_lags{ngroup} = [];
+    R_lags{ngroup} =[];
+    lags = [];
+
+    all_overlap_idx{ngroup} = [];
+    overlap_idx{ngroup} = [];
+    non_overlap_idx{ngroup} = [];
+
+    for iL = 1:size(L_ints,1)
+        % Get current L interval
+
+        L_start = L_ints(iL,1);
+        if ngroup == 4
+            L_end   = L_ints(iL,2);
+        else
+            L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+        end
+        % Check overlap with all R intervals
+        if ngroup == 4
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+        else
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+        end
+
+        if any(is_overlap)
+            overlapping_R = find(is_overlap);
+
+            for j = 1:length(overlapping_R)
+                iR = overlapping_R(j);
+
+                % Store overlapping pair indices
+                L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+            end
+        end
+    end
+
+    % Unique overlap winners
+    lags = [L_lags{ngroup} R_lags{ngroup}];
+    all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+    [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+    % unique_overlap_idx{ngroup} = lags(index);
+    all_lags{ngroup} = lags;
+
+    % Non-overlapping L and R
+    nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+    nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+    non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+
+end
+
+
+% ints = merged_event_info.UP_ints;
+%%%%%%%%%%%%%%%%
+fig = figure('Color','w');
+fig.Position = [30 60 1200 460];
+fig.Name = 'spindles lag distribution based on detection';
+hemisphere_texts = {'Left spindles','Right spindles'}
+
+% for ngroup = 1:4
+nexttile
+lags = all_lags{end}; 
+histogram(lags,-1:0.01:1,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('probability');
+title('spindles lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+% lags = R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1);  % R onset - L onset
+histogram(lags,-1:0.01:1,'EdgeColor','none','Normalization','cdf'); % You can change 50 to control bin numbers
+xlabel('Lag (seconds)');  % or whatever unit your times are
+ylabel('cumulative probability');
+title('spindles lag distribution based on detection');
+grid on;
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+customColors = [74,20,134;228,42,168;254,145,198;0,90,50]/256; % purple, dark magenta, light magenta, green
+
+
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'Spindles transition lag vs corr vs plv distribution with overlapping or non-overlapping events';
+hemisphere_texts = {'Left spindles','Right spindles'}
+
+
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+for ngroup = 1:4
+    nexttile
+    X = [merged_event_info.spindles_lag_diff(overlap_idx{ngroup}) merged_event_info.spindles_corr_diff(overlap_idx{ngroup}) merged_event_info.spindles_plv_diff(overlap_idx{ngroup})];
+    idx = merged_event_info.spindles_group_id(overlap_idx{ngroup});
+
+    for k = 1:4
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            20, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.8 0.8])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('overlapping spindles (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('overlapping spindles (full win)')
+    end
+
+
+    nexttile
+    X = [merged_event_info.spindles_lag_diff(non_overlap_idx{ngroup}) merged_event_info.spindles_corr_diff(non_overlap_idx{ngroup}) merged_event_info.spindles_plv_diff(non_overlap_idx{ngroup})];
+    idx = merged_event_info.spindles_group_id(non_overlap_idx{ngroup});
+    for k = 1:4
+        hold on
+        scatter3( ...
+            X(idx == k, 1), X(idx == k, 2), X(idx == k, 3), ...
+            20, 'MarkerFaceColor',customColors(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.8 0.8])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    if ngroup <4
+        title(sprintf('non-overlapping spindles transition (%.2f sec win)',windows_threshold(ngroup)))
+    else
+        title('non-overlapping spindles (full win)')
+    end
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
 %% Plot spindles averaged MUA
 % PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
@@ -3004,32 +3023,53 @@ contra_baseline_bootstrap1 = temp;
 
 
 
-%%%%%%%%%%%%%%%% grouping events based on ipsi-contra feature difference
+%%%%%%%%%%%%% Grouping events
 event_idx = [];
-% Ipsi-contra spindles V1 MUA by four clusters
-index = merged_event_info.spindles_index;
-event_idx{1} = {intersect(find(group_id == 4),index),intersect(find(group_id == 3),index),intersect(find(group_id == 2),index),intersect(find(group_id == 1),index)};
+% Ipsi-contra UP_DOWN V1 MUA by three clusters
+% lags = [R_ints(R_overlap_idx{end},1) - L_ints(L_overlap_idx{end},1)];  % R onset - L onset
+lags =all_lags{end};
 
-% Ipsi-contra spindles V1 MUA by lag diff
-index = merged_event_info.spindles_index;
+event_idx{1} = {all_overlap_idx{end}(lags<-0.1),all_overlap_idx{end}(lags<0.1&lags>-0.1),all_overlap_idx{end}(lags>0.1)};
 
-lag_thresholds = prctile(lag_diff(index),[0 20 40 60 80 100]);
+% event_idx{2} = {overlap_idx{end}(lags<prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<-0.05&lags>prctile(lags(lags<-0.05),50)),overlap_idx{end}(lags<0.05&lags>-0.05),overlap_idx{end}(lags>0.05&lags<prctile(lags(lags>0.05),50)),overlap_idx{end}(lags>prctile(lags(lags>0.05),50))};
 
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = [-0.2]
 for n = 1:length(lag_thresholds)-1
-    event_idx{2}{n} =intersect(find(lag_diff>lag_thresholds(n)&lag_diff <lag_thresholds(n+1)),index);
+    event_idx{2}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
 end
 
+
+event_idx{3} = {all_overlap_idx{end},non_overlap_idx{end}};
+
+
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lag_thresholds = [-0.2 -0.1 -0.02 0.02 0.1 0.2];
+for n = 1:length(lag_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+lags =all_lags{end};
+% lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.1),all_overlap_idx{end}(lags<0.1&lags>-0.1),all_overlap_idx{end}(lags>0.1&lags<0.2),non_overlap_idx{end}};
+
+
 group_name=[];
-group_name{1} = {'Ipsi dominant high lag diff','Ipsi dominant low lag diff','Bilaterally synchronised','Contra dominant','Shuffled'};
+group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
 group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{3} = {'overlapping','non-overlapping','Shuffled'};% purely based on lags
+% group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
+group_name{4} = {'-0.2 to -0.1s','-0.1 to -0.02s','-0.02 to 0.02s','0.02 to 0.1s','0.1 to 0.2s','Shuffled'};% purely based on lags
+group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
 
-title_names = {'Ipsi-contra spindles V1 MUA by four clusters', 'Ipsi-contra spindles V1 MUA by lag diff'};
-% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
+% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
+% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
-% colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
-% 
-% colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-% colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+title_names = {'Ipsi-contra spindles MUA by three lags (full windows)', 'Ipsi-contra spindles MUA by bilateral thresholded lags (full windows)',...
+    'Ipsi-contra spindles MUA by overlapping and non-overlapping','Ipsi-contra spindles MUA by 5 lags (200ms windows)','Ipsi-contra spindles MUA with non-overlapping'}
 
 %%%%%%%%%% Calculate bootstrapped MUA
 
@@ -3037,14 +3077,14 @@ time_wondows = [-1 1];
 time_bin = 0.01;
 x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-MUA_PSTH_merged.x = x;
-MUA_PSTH_merged.ipsi_spindles_V1 = [];
-MUA_PSTH_merged.contra_spindles_V1 = [];
-MUA_PSTH_merged.ipsi_contra_diff_spindles_V1 = [];
+MUA_PSTH_merged_thresholded.x = x;
+MUA_PSTMUA_PSTH_merged_thresholdedH_merged.ipsi_spindles_V1 = [];
+MUA_PSTH_merged_thresholded.contra_spindles_V1 = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_V1 = [];
 
-MUA_PSTH_merged.ipsi_spindles_HPC = [];
-MUA_PSTH_merged.contra_spindles_HPC = [];
-MUA_PSTH_merged.ipsi_contra_diff_spindles_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_spindles_HPC = [];
+MUA_PSTH_merged_thresholded.contra_spindles_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_HPC = [];
 
 for ngroup = 1:length(event_idx)+1
 
@@ -3084,41 +3124,90 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        MUA_PSTH_merged.ipsi_spindles_V1{ngroup}{i} = temp1;
-        MUA_PSTH_merged.contra_spindles_V1{ngroup}{i} = temp2;
-        MUA_PSTH_merged.ipsi_contra_diff_spindles_V1{ngroup}{i} = temp3;
-        MUA_PSTH_merged.ipsi_spindles_HPC{ngroup}{i} = temp4;
-        MUA_PSTH_merged.contra_spindles_HPC{ngroup}{i} = temp5;
-        MUA_PSTH_merged.ipsi_contra_diff_spindles_HPC{ngroup}{i} = temp6;
+        MUA_PSTH_merged_thresholded.ipsi_spindles_V1{ngroup}{i} = temp1;
+        MUA_PSTH_merged_thresholded.contra_spindles_V1{ngroup}{i} = temp2;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_V1{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_spindles_HPC{ngroup}{i} = temp4;
+        MUA_PSTH_merged_thresholded.contra_spindles_HPC{ngroup}{i} = temp5;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_HPC{ngroup}{i} = temp6;
     end
 end
 
-MUA_PSTH_merged.ipsi_spindles_V1_baseline = ipsi_baseline_bootstrap;
-MUA_PSTH_merged.contra_spindles_V1_baseline = contra_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_contra_diff_spindles_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
-MUA_PSTH_merged.ipsi_spindles_HPC_baseline = ipsi_baseline_bootstrap1;
-MUA_PSTH_merged.contra_spindles_HPC_baseline = contra_baseline_bootstrap1;
-MUA_PSTH_merged.ipsi_contra_diff_spindles_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
-MUA_PSTH_merged.spindles_groups = [title_names {'all spindles'}];
-MUA_PSTH_merged.spindles_index = [event_idx (1:size(ipsi_V1_MUA,1))'];
+MUA_PSTH_merged_thresholded.ipsi_spindles_V1_baseline = ipsi_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.contra_spindles_V1_baseline = contra_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_spindles_HPC_baseline = ipsi_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.contra_spindles_HPC_baseline = contra_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.spindles_groups = [title_names];
+MUA_PSTH_merged_thresholded.spindles_index = [event_idx];
+
+%%%%%%%%%%%%% Distribution of detection thresholded events groups
+
+customColors = [74,20,134;228,42,168;0,90,50]/256; % dark purple, magenta and dark green
 
 
+fig = figure('Color','w');
+fig.Position = [30 60 1880 900];
+fig.Name = 'spindles transition lag vs corr vs plv distribution with overlapping or non-overlapping event clusters';
+hemisphere_texts = {'Left spindles transition','Right spindles transition'}
+
+
+
+% colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 for ngroup = 1:length(event_idx)
-    fig = figure('Color','w');
-    fig.Position = [70 300 1700 500];
-    fig.Name =title_names{ngroup};
-
     if ngroup ==1
-        colour_lines = [74,20,134;228,42,168;65,171,93;0,90,50]/256; % dark purple, meganta, light green, dark green
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    elseif ngroup ==3
+        colour_lines = [228,42,168;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     else
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
     end
 
     nexttile
+    clear PLOT
+    for k = 1:length(event_idx{ngroup})
+        X = [lag_diff(event_idx{ngroup}{k}) corr_diff(event_idx{ngroup}{k}) plv_diff(event_idx{ngroup}{k})];
+        hold on
+        PLOT(k) = scatter3( ...
+            X(:, 1), X(:, 2), X(:, 3), ...
+            20, 'MarkerFaceColor',colour_lines(k, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.1 ...
+            );
+    end
+    xlim([-0.8 0.8])
+    view([-20 60]); % <-- Add this line for better 3D perspective
+    grid on; % <-- Add this line
+    xlabel('ipsi-contra lag')
+    ylabel('ipsi-contra corr diff')
+    zlabel('ipsi-contra plv diff')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    title(title_names{ngroup})
+    legend(PLOT(1:end),{group_name{ngroup}{1:end-1}},'box','off')
+end
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
+%%%%%%%%%%%%%% plot spindles
+for ngroup = 1:length(event_idx)
+    fig = figure('Color','w');
+    fig.Position = [350 59 1650 930];
+    fig.Name =title_names{ngroup};
+
+    if ngroup ==1
+        colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    elseif ngroup ==5
+        colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    elseif ngroup ==3
+        colour_lines = [228,42,168;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    else
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    end
+    nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_spindles_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_spindles_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -3136,7 +3225,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_spindles_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_spindles_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -3147,7 +3236,7 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-1 0.5])
+    ylim([-0.3 0.6])
     title('V1 Ipsi MUA')
     xlabel('Time relative to spindle onset (s)')
     ylabel('MUA activity (z)')
@@ -3157,7 +3246,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_spindles_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.contra_spindles_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -3175,7 +3264,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_spindles_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.contra_spindles_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -3184,7 +3273,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.3 0.3])
+    ylim([-0.3 0.6])
 
     % xline(0,'r')
     title('V1 Contra MUA')
@@ -3197,7 +3286,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_spindles_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -3215,7 +3304,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_spindles_V1_baseline;
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -3223,8 +3312,8 @@ for ngroup = 1:length(event_idx)
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box' 'off')
-    ylim([-0.3 0.3])
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
+    ylim([-0.3 0.6])
 
 
     % xline(0,'r')
@@ -3239,26 +3328,17 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        index =event_idx{ngroup}{i};
-        binnedArray = ipsi_HPC_MUA(index,:);
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_spindles_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
         time_bin = 0.01;
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-        temp=[];
-        parfor iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-        end
 
         y = mean(binnedArray,'omitnan');
-        LCI = prctile(temp,2.5);
-        UCI = prctile(temp,97.5);
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
@@ -3266,18 +3346,15 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-
-    y = mean(ipsi_baseline_bootstrap1,'omitnan');
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_spindles_HPC_baseline;
+    y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-    LCI = prctile(ipsi_baseline_bootstrap1,2.5);
-    UCI = prctile(ipsi_baseline_bootstrap1,97.5);
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-
-    % xline(0,'r')
-    ylim([-1 0.5])
+    ylim([-0.3 0.6])
     title('HPC Ipsi MUA')
     xlabel('Time relative to spindle onset (s)')
     ylabel('MUA activity (z)')
@@ -3287,26 +3364,17 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        index =event_idx{ngroup}{i};
-        binnedArray = contra_HPC_MUA(index,:);
+        binnedArray = MUA_PSTH_merged_thresholded.contra_spindles_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
         time_bin = 0.01;
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-        temp=[];
-        parfor iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-        end
 
         y = mean(binnedArray,'omitnan');
-        LCI = prctile(temp,2.5);
-        UCI = prctile(temp,97.5);
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
@@ -3314,16 +3382,16 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-
-    y = mean(contra_baseline_bootstrap1,'omitnan');
+    binnedArray = MUA_PSTH_merged_thresholded.contra_spindles_HPC_baseline;
+    y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-    LCI = prctile(contra_baseline_bootstrap1,2.5);
-    UCI = prctile(contra_baseline_bootstrap1,97.5);
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1 0.5])
+    ylim([-0.3 0.6])
+
 
     % xline(0,'r')
     title('HPC Contra MUA')
@@ -3336,26 +3404,17 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        index =event_idx{ngroup}{i};
-        binnedArray = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
         time_bin = 0.01;
         x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
-        %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-        temp=[];
-        parfor iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-            temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-        end
 
         y = mean(binnedArray,'omitnan');
-        LCI = prctile(temp,2.5);
-        UCI = prctile(temp,97.5);
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
@@ -3363,16 +3422,16 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-
-    y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
+    binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_spindles_HPC_baseline;
+    y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-    LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
-    UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
 
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1 0.5])
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
+    ylim([-0.3 0.6])
 
 
     % xline(0,'r')
@@ -3384,241 +3443,11 @@ end
 
 
 
-%%%%%%%%% All spindles plots
-clear ERROR_SHADE
-fig = figure('Color','w');
-fig.Position = [350 59 1100 465];
-fig.Name ='ipsi-contra spindles V1 MUA';
-
-colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
-
-nexttile
-binnedArray = ipsi_V1_MUA;
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-binnedArray = contra_V1_MUA;
-
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-y = mean(ipsi_baseline_bootstrap,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(ipsi_baseline_bootstrap,2.5);
-UCI = prctile(ipsi_baseline_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
-title('V1 MUA')
-xlabel('Time relative to spindle onset (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray = ipsi_V1_MUA-contra_V1_MUA;
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-y = mean(ipsi_baseline_bootstrap-contra_baseline_bootstrap,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,2.5);
-UCI = prctile(ipsi_baseline_bootstrap-contra_baseline_bootstrap,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
-title('V1 MUA difference')
-xlabel('Time relative to spindle onset (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray = ipsi_HPC_MUA;
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-binnedArray = contra_V1_MUA;
-
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-y = mean(ipsi_baseline_bootstrap1,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(ipsi_baseline_bootstrap1,2.5);
-UCI = prctile(ipsi_baseline_bootstrap1,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'})
-title('HPC MUA')
-xlabel('Time relative to spindle onset (s)')
-ylabel('MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-binnedArray = ipsi_HPC_MUA-contra_HPC_MUA;
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(temp,2.5);
-UCI = prctile(temp,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-y = mean(ipsi_contra_diff_baseline_bootstrap1,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(ipsi_contra_diff_baseline_bootstrap1,2.5);
-UCI = prctile(ipsi_contra_diff_baseline_bootstrap1,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-0.3 0.3])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'})
-title('HPC MUA difference')
-xlabel('Time relative to spindle onset (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
 
 
 
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged.mat'),'MUA_PSTH_merged');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
 

@@ -1,4 +1,4 @@
-function plot_ipsi_contra_UP_DOWN_spindles_coupling(slow_waves_all,ripples_all,spindles_all)
+function plot_ipsi_contra_UP_DOWN_spindles_coupling_detection_thresholded(slow_waves_all,ripples_all,spindles_all)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -92,161 +92,100 @@ for nsession = 1:max(ripples_all(1).session_count)
 end
 
 
-%% Grabbing ipsi and contra values
+%% Grouping of DOWN-UP and UP-DOWN and ripples based on 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
 
-probability = probability_psth_whole;
-nprobe = 1;
-event_averaging_scale = 10;
-% extract plv, amp corr and lag (latency)
-for nprobe=1:2
-    mprobe = abs(nprobe-3);
 
-    % UP and DOWN
-    ipsi_lag_DU{nprobe} = [];
-    contra_lag_DU{nprobe} = [];
-    ipsi_lag_UD{nprobe} = [];
-    contra_lag_UD{nprobe} = [];
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
 
-    ipsi_corr_DU{nprobe} = [];
-    contra_corr_DU{nprobe} = [];
-    ipsi_corr_UD{nprobe} = [];
-    contra_corr_UD{nprobe} = [];
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+L_idx = find(merged_event_info.UP_hemisphere_id == 1);
+R_idx = find(merged_event_info.UP_hemisphere_id == 2);
+L_ints = merged_event_info.UP_ints(L_idx,:);
+R_ints = merged_event_info.UP_ints(R_idx,:);
 
-    ipsi_plv_DU{nprobe} = [];
-    contra_plv_DU{nprobe} = [];
-    ipsi_plv_UD{nprobe} = [];
-    contra_plv_UD{nprobe} = [];
+windows_threshold = [0.05,0.1,0.2];
 
-    % ripples
-    ipsi_lag_ripples{nprobe} = [];
-    contra_lag_ripples{nprobe} = [];
+for ngroup = 1:4
 
-    ipsi_corr_ripples{nprobe} = [];
-    contra_corr_ripples{nprobe} = [];
+    % Track indices into merged_event_info.UP_ints
+    ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+    contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+    unique_lags{ngroup} = [];
+    all_lags{ngroup} = [];
 
-    ipsi_plv_ripples{nprobe} = [];
-    contra_plv_ripples{nprobe} = [];
+    L_overlap_idx{ngroup} = [];
+    R_overlap_idx{ngroup} =[];
+    L_lags{ngroup} = [];
+    R_lags{ngroup} =[];
+    lags = [];
 
-    % spindles
-    ipsi_lag_spindles{nprobe} = [];
-    contra_lag_spindles{nprobe} = [];
+    all_overlap_idx{ngroup} = [];
+    overlap_idx{ngroup} = [];
+    non_overlap_idx{ngroup} = [];
 
-    ipsi_corr_spindles{nprobe} = [];
-    contra_corr_spindles{nprobe} = [];
+    for iL = 1:size(L_ints,1)
+        % Get current L interval
 
-    ipsi_plv_spindles{nprobe} = [];
-    contra_plv_spindles{nprobe} = [];
-
-    for nsession = 1:max(ripples_all(1).session_count)
-
-        %%%%%% DOWN -> UP
-        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
-
-        ipsi_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == nprobe);
-        ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
-        contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
-
-        mean_corr_ipsi = [];mean_corr_contra=[];
-        for nshank = 1:length(ipsi_shank)
-            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        L_start = L_ints(iL,1);
+        if ngroup == 4
+            L_end   = L_ints(iL,2);
+        else
+            L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+        end
+        % Check overlap with all R intervals
+        if ngroup == 4
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+        else
+            is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
         end
 
-        for nshank = 1:length(contra_shank)
-            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        if any(is_overlap)
+            overlapping_R = find(is_overlap);
+
+            for j = 1:length(overlapping_R)
+                iR = overlapping_R(j);
+
+                % Store overlapping pair indices
+                L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+            end
         end
-
-        [~,id] = max(mean_corr_ipsi);
-        ipsi_shank = ipsi_shank(id);
-        [~,id] = max(mean_corr_contra);
-        contra_shank = contra_shank(id);
-
-        ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_plv_DU{nprobe} = [ipsi_plv_DU{nprobe} squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_plv_DU{nprobe} = [contra_plv_DU{nprobe} squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_corr_DU{nprobe} = [ipsi_corr_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_corr_DU{nprobe} = [contra_corr_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        % ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        % contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        % 
-        % ipsi_plv_DU{nprobe} = [ipsi_plv_DU{nprobe} min(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        % contra_plv_DU{nprobe} = [contra_plv_DU{nprobe} min(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        % 
-        % ipsi_corr_DU{nprobe} = [ipsi_corr_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        % contra_corr_DU{nprobe} = [contra_corr_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        %%%%%% UP -> DOWN
-        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
-
-        ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_plv_UD{nprobe} = [ipsi_plv_UD{nprobe} squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_plv_UD{nprobe} = [contra_plv_UD{nprobe} squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_corr_UD{nprobe} = [ipsi_corr_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_corr_UD{nprobe} = [contra_corr_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        % ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        % contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        % 
-        % ipsi_plv_UD{nprobe} = [ipsi_plv_UD{nprobe} min(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        % contra_plv_UD{nprobe} = [contra_plv_UD{nprobe} min(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        % 
-        % ipsi_corr_UD{nprobe} = [ipsi_corr_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
-        % contra_corr_UD{nprobe} = [contra_corr_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
-        %%%%% Spindles
-        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).session_count == sessions_to_process(nsession) & spindles_all(nprobe).SWS_index == 1));
-
-        if ~isempty(ia)
-            ipsi_lag_spindles{nprobe} = [ipsi_lag_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-            contra_lag_spindles{nprobe} = [contra_lag_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-            ipsi_plv_spindles{nprobe} = [ipsi_plv_spindles{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-            contra_plv_spindles{nprobe} = [contra_plv_spindles{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-            ipsi_corr_spindles{nprobe} = [ipsi_corr_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-            contra_corr_spindles{nprobe} = [contra_corr_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
-        end
-
-        %%%%% Ripples
-        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
-        ipsi_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == nprobe);
-        ipsi_shank(ipsi_shank==HPC_ref_shank(nsession,nprobe))=[];
-        contra_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == mprobe);
-
-        mean_corr_ipsi = [];mean_corr_contra=[];
-        for nshank = 1:length(ipsi_shank)
-            mean_corr_ipsi(nshank) = mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
-        end
-
-        for nshank = 1:length(contra_shank)
-            mean_corr_contra(nshank)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
-        end
-
-        [~,id] = max(mean_corr_ipsi);
-        ipsi_shank = ipsi_shank(id);
-        [~,id] = max(mean_corr_contra);
-        contra_shank = contra_shank(id);
-
-
-        ipsi_lag_ripples{nprobe} = [ipsi_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_lag_ripples{nprobe} = [contra_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_plv_ripples{nprobe} = [ipsi_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_plv_ripples{nprobe} = [contra_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
-
-        ipsi_corr_ripples{nprobe} = [ipsi_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
-        contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
     end
-end
 
+    % Unique overlap winners
+    lags = [L_lags{ngroup} R_lags{ngroup}];
+    all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+    [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+    % unique_overlap_idx{ngroup} = lags(index);
+    all_lags{ngroup} = lags;
+
+    % Non-overlapping L and R
+    nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+    nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+    non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+
+end
+% 
+% 
+% probability = probability_psth_whole;
+%%
 
 %% Ripple probabilities during unilaterally biased and bilaterally synchronised UP
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
