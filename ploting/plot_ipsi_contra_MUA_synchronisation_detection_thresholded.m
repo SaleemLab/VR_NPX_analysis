@@ -263,6 +263,8 @@ R_overlap_idx = [];
 overlap_idx = [];
 non_overlap_idx = [];
 merged_idx = [];
+all_lags = [];
+all_overlap_idx=[];
 % for nsession = 1:max(slow_waves_all.UP_session_count)
 
 %     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
@@ -2042,7 +2044,7 @@ end
 
 ipsi_contra_diff_baseline_bootstrap1 = temp;
 
-merged_event_info.ripples_lag_diff(ll_overlap_idx{end})
+% merged_event_info.ripples_lag_diff(ll_overlap_idx{end})
 
 
 %%%%%%% Event grouping based on ipsi-contra difference features
@@ -2077,7 +2079,7 @@ end
 
 lags =all_lags{end};
 % lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
-event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.005),all_overlap_idx{end}(lags<0.02&lags>-0.005),all_overlap_idx{end}(lags>0.005&lags<0.2),non_overlap_idx{end}};
+event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.005),all_overlap_idx{end}(lags<0.005&lags>-0.005),all_overlap_idx{end}(lags>0.005&lags<0.2),non_overlap_idx{end}};
 
 
 group_name=[];
@@ -2524,13 +2526,12 @@ for ngroup = 1:length(group_name)
     end
 
 
-
     nexttile
     clear ERROR_SHADE
     binnedArray1 = mean(ipsi_V1_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_ripples_V1{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_V1{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2563,7 +2564,7 @@ for ngroup = 1:length(group_name)
     binnedArray1 = mean(contra_V1_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_ripples_V1{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_V1{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2597,7 +2598,7 @@ for ngroup = 1:length(group_name)
     binnedArray1 = mean(ipsi_V1_MUA(bilateral_index,:)-contra_V1_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_V1{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_V1{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2630,7 +2631,7 @@ for ngroup = 1:length(group_name)
     binnedArray1 = mean(ipsi_HPC_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_ripples_HPC{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_ripples_HPC{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2650,7 +2651,7 @@ for ngroup = 1:length(group_name)
     PLOT = plot([-1 1],[0 0],'k');hold on;
 
     %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1.5 0.7])
+    ylim([-2 0.7])
     xlim([-0.2 0.2])
 
     % xline(0,'r')
@@ -2664,7 +2665,7 @@ for ngroup = 1:length(group_name)
     binnedArray1 = mean(contra_HPC_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_ripples_HPC{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.contra_ripples_HPC{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -2683,7 +2684,7 @@ for ngroup = 1:length(group_name)
 
     PLOT = plot([-1 1],[0 0],'k');hold on;
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-1.5 0.7])
+    ylim([-2 0.7])
     xlim([-0.2 0.2])
 
     % xline(0,'r')
@@ -2698,7 +2699,7 @@ for ngroup = 1:length(group_name)
     binnedArray1 = mean(ipsi_HPC_MUA(bilateral_index,:)-contra_HPC_MUA(bilateral_index,:),'omitnan');
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_ripples_HPC{ngroup}{i}-binnedArray1;
+        binnedArray = MUA_PSTH_merged_thresholded.ipsi_contra_diff_ripples_HPC{ngroup}{i}-binnedArray1;
 
         % nprobe = 1;
         time_wondows = [-1 1];
