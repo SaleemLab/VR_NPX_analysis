@@ -26,7 +26,7 @@
 %   Uses the following libraries, which are included in the folder
 %   https://billkarsh.github.io/SpikeGLX/ - SpikeGLX_Datafile_Tools
 %
-function [stimData,eyeData,photodiodeData,stimTimes] = import_and_align_bonsai_logs_Ellie(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options)
+function [stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs_Ellie(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options)
 
 % Step 1: Get stimulus times and data parameters
 if ~strcmp(options.paradigm,'photodiode_timestamp')
@@ -56,7 +56,7 @@ end
 
 % Step 2: import behavioural / eye etc
 
-% Wheel data
+% peripherals
 peripherals= [];
 thisTable = readtable(PERIPHERALS_DATAPATH,'Delimiter',{',','=','{','}','(',')'});
 thisTable = rmmissing(thisTable,1); % Remove nan due to delimiter
@@ -135,6 +135,40 @@ pd_ON_OFF = photodiode.Photodiode_smoothed >= mean(photodiode.Photodiode); % fin
 pd_ON = find(diff(pd_ON_OFF) == 1); % Find ON
 pd_OFF = find(diff(pd_ON_OFF) == -1); % Find OFF
 
+% Remove any photodiode transitions that occur >5 seconds after the last transition (PD fluctuations can occur when turning off Bonsai)
+% Convert indices to SpikeGLX time
+pd_ON_times = photodiode.sglxTime(pd_ON);
+pd_OFF_times = photodiode.sglxTime(pd_OFF);
+%pd_ON_times = Nidq.sglxTime(pd_ON);
+%pd_OFF_times = Nidq.sglxTime(pd_OFF);
+
+% Find time differences between consecutive transitions
+pd_ON_diffs = diff(pd_ON_times);
+pd_OFF_diffs = diff(pd_OFF_times);
+
+%%%%% Keep only transitions where the time difference is <= 5 seconds
+valid_ON_idx = [true; pd_ON_diffs <= 5];  % Keep first transition and filter the rest
+valid_OFF_idx = [true; pd_OFF_diffs <= 5];
+%valid_ON_idx = [true, pd_ON_diffs <= 5];  % Keep first transition and filter the rest
+%valid_OFF_idx = [true, pd_OFF_diffs <= 5];
+% Find the last valid ON transition
+last_valid_ON = find(valid_ON_idx, 1, 'last');
+
+% Remove any transitions occurring more than 5 seconds after the last valid ON
+valid_ON_idx((last_valid_ON + 1):end) = false;
+valid_OFF_idx((last_valid_ON + 1):end) = false;
+
+% Apply filtering
+pd_ON = pd_ON(valid_ON_idx);
+pd_OFF = pd_OFF(valid_OFF_idx);
+
+% Convert back to SpikeGLX time
+pd_ON_times = photodiode.sglxTime(pd_ON);
+pd_OFF_times = photodiode.sglxTime(pd_OFF);
+%pd_ON_times = Nidq.sglxTime(pd_ON);
+%pd_OFF_times = Nidq.sglxTime(pd_OFF);
+
+% Now calculate the duration (in number of samples taken during the presentation) of each ON presentation
 if length(pd_ON) == length(pd_OFF)
     block_length = abs(pd_ON-pd_OFF);
 elseif length(pd_ON)>length(pd_OFF)
@@ -148,6 +182,14 @@ else
 end
 
 blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per second so a block size should be quite large
+
+% Remove the last pd_ON transition if there is a mismatch (since pd_ON is one greater than pd_OFF)
+if length(pd_ON) > length(pd_OFF)
+    pd_ON = pd_ON(1:end-1); % Remove the last ON transition
+end
+
+% Ensure blocks_ind is valid within the length of pd_OFF (now pd_ON and pd_OFF are aligned)
+blocks_ind = blocks_ind(1:min(end, length(pd_OFF))); % Trim blocks_ind to match pd_OFF length
 
    % plot(photodiode.sglxTime,photodiode.Photodiode_smoothed); hold on; scatter(photodiode.sglxTime(pd_OFF(blocks_ind)),50,'b');
    % scatter(photodiode.sglxTime(pd_ON(blocks_ind)),50,'r');
@@ -221,8 +263,8 @@ switch(lower(StimulusName))
 
         end
 
-    case {'staticgratings','staticgratings_short','staticgratings_long'}
-        stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend');
+    case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'staticgratings','staticgratings_short','staticgratings_long'}
+        stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend'); %cases where a stimulus is on the screen only when the quad is white
     case 'grey'
         stimTimes = photodiodeData.stim_on.sglxTime;
     case {'oriadapt','posadapt'}

@@ -155,8 +155,12 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 
 %All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 
+% All_stimuli = {'Sleep'};
+
 % All_stimuli = {'SparseNoise'};
+
 % All_stimuli = {'OP_Tuning'};
+% All_stimuli = {'Direction_Tuning'};
 % All_stimuli = {'TRAIN'};
 % All_stimuli = {'DCBA'};
 % All_stimuli = {'OMIT'};
@@ -171,8 +175,8 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % All_stimuli = {'GAVNIK_E_CD'};
 % All_stimuli = {'GAVNIK DCBA'};
 
-% All_stimuli = {'Direction_Tuning'};
-All_stimuli = {'TRAIN'}
+All_stimuli = {'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
+All_stimuli = {'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
 
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch_Ellie(experiment_info,All_stimuli{n})

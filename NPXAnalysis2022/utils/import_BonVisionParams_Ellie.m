@@ -110,14 +110,20 @@ switch(StimulusName)
         grid_size = [8 16];
         datatable = import_BonVisionParamsSparseNoise_bin(filepath,grid_size);
 
-    case {'TRAIN'}
+    case {'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'...
+            'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'...
+            'OP_Tuning', 'Direction_Tuning'}
         thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
         varCols = [4 14 20 22];    % % Extract the relevant columns (4 contains delay, 14 contains Contrast
         % 20 contains the grating Orientation/Direction, 22 contains the ArduinoTime of presentation)
         varNames = {'Delay','Contrast','Orientation','Time'};
         datatable = thisTable(:,varCols);
         datatable.Properties.VariableNames = varNames;
-        datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
+        % Remove the last row (the last 'stimulus') because the PD doesn't go off
+        % after this stimulus
+        datatable(end, :) = [];
+
+        %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
         
 
         

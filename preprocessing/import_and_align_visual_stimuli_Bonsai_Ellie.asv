@@ -154,13 +154,13 @@ behaviour.tvec = behaviour.sglxTime;% standard timevec used for all behaviour re
 % behaviour.camera_frame_count = resample(peripherals.EyeFrameCount,peripherals.sglxTime,60)';
 behaviour.camera_frame_count = interp1(eyeData.sglxTime,eyeData.VideoFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
 % behaviour.wheel_reference_timestamp = peripherals.Time;% probably not needed....
-behaviour.arduino_time_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.sync_pulse_sixtyHz = interp1(eyeData.sglxTime,eyeData.LEDAsync,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.pupil_X_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilCentroid_X,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.pupil_Y_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilCentroid_Y,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.pupil_area_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilArea,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.pupil_majlen_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilMajLength,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
-behaviour.pupil_minlen_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilMinLength,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.arduino_time_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.sync_pulse_sixtyHz = interp1(eyeData.sglxTime,eyeData.LEDAsync(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.pupil_X_sixtyHz = interp1(eyeData.sglxTime,eyeData.PupilCentroid_X(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.pupil_Y_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.pupil_area_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.pupil_majlen_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+behaviour.pupil_minlen_sixtyHz = interp1(eyeData.sglxTime,eyeData.ArduinoTime(ia),peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
 
 
 %% eye data
@@ -216,7 +216,7 @@ if ~isempty(stimData.Properties.VariableNames)
 end
 
 switch(StimulusName)
-    case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
+    case {'TRAIN'}
         task_info.stim_delay = stimData.Delay;
         task_info.stim_contrast = stimData.Contrast;
         task_info.stim_orientation = stimData.Orientation;

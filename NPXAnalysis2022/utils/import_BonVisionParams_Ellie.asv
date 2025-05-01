@@ -117,7 +117,7 @@ switch(StimulusName)
         varNames = {'Delay','Contrast','Orientation','Time'};
         datatable = thisTable(:,varCols);
         datatable.Properties.VariableNames = varNames;
-        datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
+        %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
         
 
         

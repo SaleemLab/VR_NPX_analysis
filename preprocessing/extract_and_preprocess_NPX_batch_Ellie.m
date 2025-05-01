@@ -11,8 +11,10 @@ function extract_and_preprocess_NPX_batch_Ellie(experiment_info,Stimulus_type)
 % extraction function.
 
 for nsession =1:length(experiment_info)
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    %session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
+    %stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName, Stimulus_type));
 
     if isempty(stimulus_name) % If stimulus not existing for this session
         continue
@@ -29,7 +31,7 @@ for nsession =1:length(experiment_info)
         else % New Part 1 Extract Nidq sync pulse and event times and ephys sync pulse
             % Currently not using CatGT and Tprime
             options = session_info(n).probe(1);
-            extract_and_align_nidq_signals(options);
+            extract_and_align_nidq_signals_Ellie(options);
             EPHYS_parent_folder = cd(fullfile(options.EPHYS_DATAPATH,'..','..'));
             preprocess_and_save_LFP(options)
 
