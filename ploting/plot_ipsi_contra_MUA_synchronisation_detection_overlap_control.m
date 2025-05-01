@@ -82,7 +82,7 @@ for nsession = 1:max(ripples_all(1).session_count)
     end
 end
 
-
+% PSTH_MUA
 %%%%%
 %%%%%
 %%%%%
@@ -94,7 +94,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged.mat'),'MUA_PSTH_merged');
 
 MUA_PSTH_merged_overlap_control = MUA_PSTH_merged;
-
+clear MUA_PSTH_merged
 
 probability = probability_psth_whole;
 nprobe = 1;
@@ -511,8 +511,8 @@ for ngroup = 1:length(event_idx)+1
 end
 
 
-MUA_PSTH_merged_overlap_control.DU_groups = [title_names {'all DOWN_UP'}];
-MUA_PSTH_merged_overlap_control.DU_index = [event_idx (1:size(ipsi_V1_MUA,1))'];
+MUA_PSTH_merged_overlap_control.DU_groups = [title_names];
+MUA_PSTH_merged_overlap_control.DU_index = [event_idx];
 
 %%%%%%%%% Plot DU transition
 for ngroup = 1:length(event_idx)
@@ -530,7 +530,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.ipsi_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -548,7 +548,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.ipsi_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -569,7 +569,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.contra_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -587,7 +587,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.contra_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -608,7 +608,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.ipsi_contra_diff_DU_V1{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -626,7 +626,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.ipsi_contra_diff_DU_V1_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -650,7 +650,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.ipsi_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -668,7 +668,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.ipsi_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -689,7 +689,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.contra_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.contra_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -707,7 +707,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.contra_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.contra_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -730,7 +730,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_HPC{ngroup}{i};
+        binnedArray = MUA_PSTH_merged_overlap_control.ipsi_contra_diff_DU_HPC{ngroup}{i};
 
         % nprobe = 1;
         time_wondows = [-1 1];
@@ -748,7 +748,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_HPC_baseline;
+    binnedArray = MUA_PSTH_merged_overlap_control.ipsi_contra_diff_DU_HPC_baseline;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
