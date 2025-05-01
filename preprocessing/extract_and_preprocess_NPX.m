@@ -61,8 +61,8 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
                 [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai_MatrixRig(stimulus_name{n},options);
             end
             
-        elseif contains(Stimulus_type,'Diao')
-
+        elseif contains(Stimulus_type,'DotMotion')
+                [Behaviour,Task_info,Peripherals]  = import_and_align_dot_motion_Bonsai_MatrixRig(options);
         elseif contains(Stimulus_type,'Edd')
 
         else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc

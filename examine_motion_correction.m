@@ -1,7 +1,7 @@
 %% This script shows you how to look the motion estimated by spikeinterface in your recordings
-mouse = 'M25026';
+mouse = 'M25002';
 base_folder = 'Z:\ibn-vision\DATA\SUBJECTS';
-date = '20250306';
+date = '20250215';
 
 
 % Define recording folder
