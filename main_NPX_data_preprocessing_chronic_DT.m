@@ -31,7 +31,7 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % all_SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 
 % all_SUBJECTS = {'M24062'};
-all_SUBJECTS = {'M25002'};
+all_SUBJECTS = {'M25026'};
 Error_session_stimuli = [];
 Error_session_date=[];
 Error_session_subject=[];
@@ -180,7 +180,7 @@ for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch(experiment_info,All_stimuli{n})
 end
 
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25026'};
 options = 'V1-MEC';
 Stimulus_type = 'OpenField';
 % Stimulus_type = 'SparseNoise';
@@ -188,7 +188,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % experiment_info = experiment_info(1);
 extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
-SUBJECTS = {'M25002'};
+SUBJECTS = {'M25026'};
 options = 'V1-MEC';
 Stimulus_type = 'Track';
 % Stimulus_type = 'SparseNoise';
@@ -196,8 +196,16 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 % experiment_info = experiment_info(1);
 extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
-% SUBJECT = 'M23087';
 SUBJECTS = {'M25002'};
+options = 'V1-MEC';
+Stimulus_type = 'SparseNoise';
+% Stimulus_type = 'SparseNoise';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
+% experiment_info = experiment_info(1);
+extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
+
+% SUBJECT = 'M23087';
+SUBJECTS = {'M25026'};
 % SESSION = '20231212';
 SESSION = '20250213';
 options = 'V1-MEC';
@@ -205,9 +213,9 @@ ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'Masa2tracks';
 % Stimulus_type = 'Checkerboard';
 % Stimulus_type = 'SparseNoise_fullscreen';
-Stimulus_type = 'Track';
+Stimulus_type = 'DotMotion';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-for nsession =10:length(experiment_info)
+for nsession =1:length(experiment_info)
 session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 if contains(Stimulus_type,'Masa2tracks')
 %     session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));

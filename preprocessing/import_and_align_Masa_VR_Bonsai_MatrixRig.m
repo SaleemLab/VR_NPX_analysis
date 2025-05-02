@@ -84,7 +84,18 @@ end
 
 % [peripherals] = alignBonsaiToEphysSyncPulse(peripherals,syncPulse_ephys,syncPulse_ephysTimes);
 peripherals = import_bonsai_peripherals(fullfile([BONSAI_DATAPATH,'\',char(peripheral_path)]));
+if isempty(peripherals)
+    % to be done
 
+    % generate distance from nidq wheel log
+    distance = generate_wheel_log_from_nidq(Nidq.wheel_forward,Nidq.wheel_backward);
+    % align trial info and reward using nidq data
+    sglxTime = align_A_time_to_B_time(reward.left_on,Nidq.reward_left_on);
+    
+    % recompute speed and animal position for each trial
+
+    % fill in for all behaviour and task_info structs
+else
 if sum(peripherals.Sync>0) <= 0 % no sync pulse detected so align photodiode to nidq in sglx time and then align peripehrals to photodiode sglxtime
     'warning!!! sync pulse missing'
     if exist('photodiode_path','var') && ~isempty(photodiode_path)
@@ -132,6 +143,7 @@ else
         photodiode = []; photodiode_sync = [];
     end
 end
+
 % eyeData = import_bonsai_eyedata(fullfile([BONSAI_DATAPATH,'\',char(EYEDATA_DATAPATH)]));
 % [eyeData] = alignBonsaiToEphysSyncTimes(eyeData,syncTimes_ephys);
 eyeData = [];
@@ -518,7 +530,7 @@ behaviour.position(find(behaviour.wheel_position >= -141 & behaviour.wheel_posit
 behaviour.track_ID(find(behaviour.wheel_position >= -141 & behaviour.wheel_position < 10)) = 2;
 
 behaviour.position(behaviour.position>140) = 140;
-
+end
 % %% wheel Photodiode
 % behaviour.Photodiode = peripherals.Photodiode;
 

@@ -1,8 +1,7 @@
-% function [stimulusData,eyeData,wheelData,photodiodeData,stimTimes] = import_and_align_bonsai_logs(EPHYS_DATAPATH,TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH,EYEDATA_DATAPATH)
-%
+% function [stimulusData,eyeData,wheelData,photodiodeData,stimTimes] = importAndAlignBonsaiLogs(EPHYS_DATAPATH,TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH,EYEDATA_DATAPATH)
+% 
 % Program to import bonsai logs and eye data and align to ePhys data
-% Modified from [stimulusData,eyeData,wheelData,photodiodeData,stimTimes] = importAndAlignBonsaiLogs(EPHYS_DATAPATH,TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH,EYEDATA_DATAPATH)
-% Now called import_and_align_bonsai_logs (just for differentiation)
+% 
 % inputs : EPHYS_DATAPATH, TRIALDATA_DATAPATH, PERIPHERALS_DATAPATH, EYEDATA_DATAPATH
 % outputs: stimulusData,eyeData,wheelData,photodiodeData (photdiode data derived from the
 %               peripherals dataset)
@@ -15,41 +14,64 @@
 %                       (SpikeGLX_Datafile_Tools) to read the async pulse from the ephys file
 %           FR 09/06/2022 changed how PD was being read due to stimuli
 %           adjustment issues
-%           MT 19/01/2024 wheelData is now just peripherals
 % Dependencies:
 %   import_bonsai_peripherals
 %   import_bonsai_eyedata
 %   import_BonVisionParams
-%   import_processWheelEphys (currently disabled)
+%   import_processWheelEphys
 %   alignBonsaiAndEphysData
 %
 %   Uses the following libraries, which are included in the folder
 %   https://billkarsh.github.io/SpikeGLX/ - SpikeGLX_Datafile_Tools
-%
-function [stimData,eyeData,wheelData,photodiodeData,stimTimes] = import_and_align_bonsai_logs_MatrixRig(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options)
+%   
+function   [behaviour,task_info,peripherals] = import_and_align_dot_motion_Bonsai_MatrixRig(options)
 
-% Step 1: Get stimulus times and data parameters
-if ~strcmp(options.paradigm,'photodiode_timestamp')
-    [stimData,StimulusName] = import_BonVisionParams(TRIALDATA_DATAPATH);
-else % If based on photodiode timestamp in case trial info not saved properly
-    % Parse for one of the following stimulus names (you can add to the list here, and to the switch case below)
-    specialFileTypes = {'StaticGratings_short','StaticGratings_long','StaticGratings','DriftingGratings','SparseNoise','SparseNoise_fullscreen',...
-        'StaticTF','Grey','GratingsPhase','OriAdapt','PosAdapt','DriftingTF','Checkerboard','FullScreenFlash'};
-    % See if there is a match within the file name that indicates that this is
-    % from the special list
-    StimulusTypeMatcher = zeros(1,length(specialFileTypes));
-    for tt = 1:length(specialFileTypes)
-        StimulusTypeMatcher(tt) = contains(TRIALDATA_DATAPATH,specialFileTypes{tt});
-    end
-    if length(find(StimulusTypeMatcher)) == 1
-        StimulusName = specialFileTypes{find(StimulusTypeMatcher)};
-    elseif contains(filepath,'SparseNoise_fullscreen') == 1 % If equal SparseNoise_fullscreen
-        StimulusName = 'SparseNoise_fullscreen';
-    end
 
-    stimData = [];
-    stimData.Properties.VariableNames = [];
+EPHYS_DATAPATH = options.EPHYS_DATAPATH;
+
+if isfield(options,'bonsai_files_names')
+    PERIPHERALS_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'Wheel'))));
+    TRIALDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'Trial'))));
+    PHOTODIODE_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'Photodiode'))));
+    EYEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'Video'))));% Old eye log
+    DLC_EYEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'DLC'))));% new eye log
+    FACEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'proc'))));% face data;
+else
+    PERIPHERALS_DATAPATH = options.PERIPHERALS_DATAPATH;
+    EYEDATA_DATAPATH = options.EYEDATA_DATAPATH;
+    TRIALDATA_DATAPATH = options.TRIALDATA_DATAPATH;
 end
+
+
+
+%%%%%
+% Set defaults
+if ~isfield(options,'verboseFlag') || isempty(options.verboseFlag)
+    verboseFlag = 1;
+else
+    verboseFlag = options.verboseFlag;
+end
+
+if ~isfield(options,'otherMetrics') || isempty(options.otherMetrics)
+    otherMetrics = {'wheelspeed','pupilarea'};
+else
+    otherMetrics = options.otherMetrics;
+end
+
+%%%%%
+% Step 1: Extract relevant data from wheel, pupil and stimulus files and
+% sync different timebases
+if verboseFlag
+    fprintf('\n\tImporting stimulus, peripherals, eye and photodiode data from \n\t\t%s and \n\t\t%s and \n\t\t%s and \n\t\t%s...',TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH)
+end
+tstart = tic;
+
+%[stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs_MatrixRig(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options);
+% [stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,[],options);
+% Step 1: Get stimulus times and data parameters
+stimData = [];
+
+
 
 % Step 2: import behavioural / eye etc
 
@@ -188,6 +210,7 @@ if photodiodeData.stim_off.sglxTime(end) > Nidq.sglxTime(end)
     if length(pd_ON) == length(pd_OFF)
         block_length = abs(pd_ON-pd_OFF);
     elseif length(pd_ON)>length(pd_OFF)
+        block_length = [];
         for i = 1:length(pd_OFF)
             block_length(i) = abs(pd_ON(i) - pd_OFF(i));
         end
@@ -218,76 +241,146 @@ end
 % wheelData.sglxTime = wheelData.Time;
 
 % Step 6: extract stimulus times
-switch(lower(StimulusName))
-    case {'sparsenoise','sparsenoise_fullscreen','checkerboard'}
-        stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend');
-        %         fprintf('\n\tUsing both photodiode upward and downward transitions as timestamps for stimulus timing')
-        if contains(StimulusName,'SparseNoise')
-            
-            average_stim_duration = (stimTimes(end)-stimTimes(1))/size(stimData,1);
-            stim_id = (find(diff(stimTimes)>average_stim_duration*2));
 
-            if isempty(stim_id)
-                
-            elseif length(stim_id) == 1 % if happended once we can remove all the stimuli stime between these two points (happens rarely)
-                stimData(stim_id:stim_id+size(stimData,1)-length(stimTimes)-1,:)=[];
-            elseif length(stim_id) <4 % if happended few times we can remove all the stimuli stime between these two points (happens rarely)
-                stimData(stim_id(1):end,:)=[];
-                stimTimes(stim_id:end)=[];
-            end
+     stimTimes = photodiodeData.stim_on.sglxTime;
 
-        end
-
-    case {'staticgratings','staticgratings_short','staticgratings_long'}
-        stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend');
-    case 'grey'
-        stimTimes = photodiodeData.stim_on.sglxTime;
-    case {'oriadapt','posadapt'}
-        %         PD_timestamps = zeros(1,length(photodiodeData.stim_on.bonsaiTime)+length(photodiodeData.stim_off.bonsaiTime));
-        %         PD_timestamps(1:2:length(photodiodeData.stim_off.bonsaiTime)*2) = photodiodeData.stim_off.bonsaiTime;
-        %         PD_timestamps(2:2:length(photodiodeData.stim_on.bonsaiTime)*2) = photodiodeData.stim_on.bonsaiTime;
-        %
-        %         OE_ts = zeros(1,length(photodiodeData.stim_on.sglxTime)+length(photodiodeData.stim_off.sglxTime));
-        %         OE_ts(1:2:length(photodiodeData.stim_off.sglxTime)*2) = photodiodeData.stim_off.sglxTime;
-        %         OE_ts(2:2:length(photodiodeData.stim_on.sglxTime)*2) = photodiodeData.stim_on.sglxTime;
-
-        PD_timestamps = photodiodeData.stim_on.bonsaiTime;
-
-        OE_ts = photodiodeData.stim_on.sglxTime;
-
-        % Do the correction for every photodiode reversal
-        stimTimes = stimData.Time./1000;
-
-        for i=1:length(PD_timestamps)-1
-            bonsai_ts = PD_timestamps(i);
-            oe_ts = OE_ts(i);
-            offset(i) = bonsai_ts-oe_ts;
-            if i==1
-                inds = find(stimData.Time./1000<=PD_timestamps(i));
-                stimTimes(inds) = stimTimes(inds)-offset(i);
-            end
-            inds = find(stimData.Time./1000>=PD_timestamps(i) & stimData.Time./1000<PD_timestamps(i+1));
-            stimTimes(inds) = stimTimes(inds)-offset(i);
-        end
-        i = length(PD_timestamps);
-        bonsai_ts = PD_timestamps(i);
-        oe_ts = OE_ts(i);
-        offset(i) = bonsai_ts-oe_ts;
-        inds = find(stimData.Time./1000>PD_timestamps(i));
-        stimTimes(inds) = stimTimes(inds)-offset(i);
-        stimData.stimTimes = stimTimes;
-
-
-    otherwise
-        % Either use the stimulus times from the stimulus log or photodiode
-        %
-        % For use of stimulus logged times...
-        % stimTimes = stimData.sglxTime;
-        % fprintf('\n\tUsing stimulus logged times as timestamps for stimulus timing')
-        %
-        % For use times from the photodiode upswing
-        stimTimes = photodiodeData.stim_on.sglxTime;
-        fprintf('\n\tUsing photodiode upward transitions as timestamps for stimulus timing')
-end
 fprintf('\n'); warning('Havent yet enabled checking of number of stimulus expected vs number of photodiode changes'); fprintf('\n');
 
+if ~isempty(DLC_EYEDATA_DATAPATH)
+    eye_data_raw = readmatrix(DLC_EYEDATA_DATAPATH);
+    [pupil_ellipse,new_tracking_points_coordinates] = eye_data_conversion(eye_data_raw);
+end
+
+if ~isempty(FACEDATA_DATAPATH)
+    facedata = load(FACEDATA_DATAPATH); % load face energy data
+    if ~isfield(facedata,'motion_1')
+        facedata = [];
+        FACEDATA_DATAPATH = [];
+    end
+end
+
+basicDataLoadTime = toc(tstart);
+
+if verboseFlag
+    fprintf('\n\t\tTook %3.1fs to load Bonsai wheel and eye data',basicDataLoadTime)
+end
+
+%%%%%%
+%%%%%%
+% For now, many reduntant variables are saved. Will remove soon
+% Only resampled at 60Hz would be saved
+behaviour = [];
+
+
+if length(peripherals.sglxTime) > length(unique(peripherals.sglxTime))
+    [C,ia,ic] = unique(peripherals.sglxTime);
+    unique_id = find(diff(ic)==0);
+    peripherals.sglxTime(unique_id+1)=nan;% make repeated values -> nan
+end
+
+all_fields = fieldnames(peripherals);
+
+temp = peripherals.sglxTime;
+for i = 1:length(all_fields)
+    if length(peripherals.(all_fields{i})) == length(temp)
+        peripherals.(all_fields{i})(isnan(temp))=[];
+    end
+end
+
+if length(eyeData.sglxTime) > length(unique(eyeData.sglxTime))
+    [C,ia,ic] = unique(eyeData.sglxTime);
+    unique_id = find(diff(ic)==0);
+    eyeData.sglxTime(unique_id+1)=nan;% make repeated values -> nan
+end
+
+all_fields = fieldnames(eyeData);
+temp = eyeData.sglxTime;
+
+for i = 1:length(all_fields)
+    if length(eyeData.(all_fields{i})) == length(temp)
+        eyeData.(all_fields{i})(isnan(temp))=[];
+    end
+end
+
+
+
+
+%% wheel frame
+% behaviour.wheel_frame_count = resample(peripherals.FrameNumber,peripherals.sglxTime,60)';
+behaviour.wheel_frame_count = interp1(peripherals.sglxTime,peripherals.RenderFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
+
+%% wheel spikeGLX time (Use this for ephys)
+% behaviour.sglxTime = resample(peripherals.sglxTime,peripherals.sglxTime,60)';
+behaviour.sglxTime = interp1(peripherals.sglxTime,peripherals.sglxTime,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+
+% behaviour.sglxTime_uncorrected = resample(peripherals.sglxTime,peripherals.corrected_sglxTime,60)';
+behaviour.tvec = behaviour.sglxTime;% standard timevec used for all behaviour related analysis
+
+%% eye camera frame count
+% behaviour.camera_frame_count = resample(peripherals.EyeFrameCount,peripherals.sglxTime,60)';
+behaviour.camera_frame_count = interp1(eyeData.sglxTime,eyeData.VideoFrameCount,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'previous');
+% behaviour.wheel_reference_timestamp = peripherals.Time;% probably not needed....
+
+%% eye data
+if ~isempty(DLC_EYEDATA_DATAPATH)
+    behaviour.eye_coordinates  = new_tracking_points_coordinates(behaviour.camera_frame_count+1,:);% bonsai eye camera frame and DLC frame is 0 based hence adding 1
+    behaviour.pupil_size =  pupil_ellipse(behaviour.camera_frame_count+1,6)';
+    behaviour.pupil_movement_angle =  pupil_ellipse(behaviour.camera_frame_count+1,8)';
+    behaviour.pupil_movement_distance =  pupil_ellipse(behaviour.camera_frame_count+1,7)';
+end
+
+%% facemap - face motion energy and SVD
+if ~isempty(FACEDATA_DATAPATH)
+    behaviour.face_motion_enegy = facedata.motion_1(behaviour.camera_frame_count+1); % total motion energt
+    behaviour.face_motion_SVD = facedata.motSVD_1(behaviour.camera_frame_count+1,1:100); % 1st 100 SVD face energy variable (temporal component)
+    behaviour.face_motion_mask = facedata.motMask_1(:,1:100); % Mask (spatial component) 1st 100
+end
+%% wheel raw input
+behaviour.wheel_raw_input = interp1(peripherals.sglxTime,peripherals.Wheel,peripherals.sglxTime(1):1/60:peripherals.sglxTime(end),'linear');
+
+% Not needed
+% %% wheel left lick
+% behaviour.wheel_lick_L = peripherals.LickL;
+% 
+% %% wheel right lick
+% behaviour.wheel_lick_R = peripherals.LickR;
+
+% %% wheel quad state
+% behaviour.wheel_quad_state = peripherals.QuadState;
+
+%% Wheel speed
+% Real speed based on wheel raw input
+% For actual speed related analysis, This should be used.
+
+tick_to_cm_conversion = 3.1415*20/1024; % radius 20 cm and one circle is 1024 ticks;
+speed = [0 diff(behaviour.wheel_raw_input*tick_to_cm_conversion)];
+speed(speed<-100) = 0;% big change in speed often due to teleportation or wheel tick resetting
+speed(speed>100) = 0;
+behaviour.speed = speed./([0 diff(behaviour.sglxTime)]);% 
+
+%% task_info
+% Unlike behavour, task_info will save all the meta info about the task
+% such as lap start time, lick time, reward delivery time in discrete time
+% rather than continuous timeseries.
+
+task_info = [];
+% Task info about the onset of stimuli and/or stimuli info
+task_info.stim_onset = stimTimes;% Stimulus onset time
+
+
+
+if  ~isempty(photodiodeData)
+    task_info.pd_on.sglxTime = photodiodeData.stim_on.sglxTime';
+    task_info.pd_off.sglxTime = photodiodeData.stim_off.sglxTime';
+    if isfield(photodiodeData,'photodiode_failure')
+        behaviour.photodiode_failure = photodiodeData.photodiode_failure;
+    end
+    if isfield(photodiodeData,'warning')
+        task_info.warning = photodiodeData.warning;
+    end
+else % if photodiode empty
+    behaviour.photodiode_failure = 1;
+end
+trial_param = readtable(TRIALDATA_DATAPATH);
+task_info.dot_velocity = trial_param.VelX1(1:length(stimTimes));
+end
