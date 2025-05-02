@@ -140,22 +140,22 @@ classdef NPadmin
                     channel = electrode - bank*384;  % starting at 1
                     
                     kcoords.chanMap(n,1) = channel;
-                    
+                    %%%%%%%%%%% 02/05/2025 Updated M.T
                     if isOdd(electrode)
                         if isOdd(row)
-                            kcoords.xcoords(n,1) = 43;
+                            kcoords.xcoords(n,1) = 27;% was 43
                         else
-                            kcoords.xcoords(n,1) = 59;
+                            kcoords.xcoords(n,1) = 11;% was 59
                         end
                     else
                         if isOdd(row)
-                            kcoords.xcoords(n,1) = 11;
+                            kcoords.xcoords(n,1) = 59;% was 11
                         else
-                            kcoords.xcoords(n,1) = 27;
+                            kcoords.xcoords(n,1) = 43;% was 27
                         end
                         
                     end
-                    kcoords.ycoords(n,1) = row * 20;
+                    kcoords.ycoords(n,1) = row * 20-20;
                 end
                 
             elseif config.type == 24 | config.type == 2013 | config.type == 2014
@@ -183,6 +183,7 @@ classdef NPadmin
                     kcoords.chanMap(n,1) = config.channels(n);
                     row = ceil(electrode/2);
                     kcoords.ycoords(n,1) = row * 15;
+                    % Updated 2025 M.T
                     if isOdd(electrode)
                         kcoords.xcoords(n,1) = 27 + ((shank-1)*250);
                     else
