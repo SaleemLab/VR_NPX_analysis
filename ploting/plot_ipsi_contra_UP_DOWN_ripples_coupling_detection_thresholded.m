@@ -283,6 +283,9 @@ lag_thresholds = mean(abs(prctile(ripples_lag_diff,[40 60])));
 % lag_thresholds = mean(abs(prctile(ripples_all_lags,[30])));
 % 
 
+probability_psth_whole
+
+%%
 %%%%%%%%%% Based on detection lag
 probability_merged = [];
 
@@ -753,51 +756,6 @@ lags =merged_event_info.UP_lags_all{end};
 % group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
 
-%%%%%%%%%%%
-ipsi_probability = [probability_merged(1).L_ripples_UP; probability_merged(2).R_ripples_UP];
-contra_probability = [probability_merged(1).R_ripples_UP; probability_merged(2).L_ripples_UP];
-
-ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_UP; probability_psth_whole_baseline(2).R_ripples_UP];
-contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_UP; probability_psth_whole_baseline(2).L_ripples_UP];
-
-%%%%% calculate shuffled MUA baseline
-%%% Ipsi
-binnedArray = ipsi_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_baseline_bootstrap = temp;
-
-%%% Contra
-binnedArray = contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-contra_baseline_bootstrap = temp;
-
-%%% Contra
-binnedArray = ipsi_probability_baseline-contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_contra_diff_baseline_bootstrap = temp;
-
-
 %%%%%%%%%%%%% Grouping events
 event_idx = [];
 % 1- ipsi leading 2 - contra leading 3 - bilateral 4 - unilateral
@@ -855,53 +813,100 @@ end
 % sum(event_pairs_UP{4}{4}{1})
 % sum(event_pairs_UP{4}{4}{2})
 
-figure
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-nexttile
-plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));
-title('Unilateral ripples during bilateral UP')
-legend('ipsi','contra')
+% figure
+% time_wondows = [-1 1];
+% time_bin = 0.02;
+% x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+% nexttile
+% plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));
+% title('Unilateral ripples during bilateral UP')
+% legend('ipsi','contra')
+% 
+% nexttile
+% plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));
+% title('Unilateral ripples during bilateral DOWN')
+% legend('ipsi','contra')
+% 
+% nexttile
+% plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
+% title('Unilateral ripples during unilateral UP')
+% legend('ipsi','contra')
+% 
+% nexttile
+% plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
+% title('Unilateral ripples during unilateral DOWN')
+% legend('ipsi','contra')
+% 
+% 
+% 
+% figure
+% time_wondows = [-1 1];
+% time_bin = 0.02;
+% x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+% nexttile
+% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));
+% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
+% title('Bilateral ripples during UP')
+% legend('bilateral','ipsi','contra')
+% 
+% nexttile
+% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
+% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));
+% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
+% title('Bilateral ripples during DOWN')
+% legend('bilateral','ipsi','contra')
 
-nexttile
-plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));
-title('Unilateral ripples during bilateral DOWN')
-legend('ipsi','contra')
-
-nexttile
-plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
-title('Unilateral ripples during unilateral UP')
-legend('ipsi','contra')
-
-nexttile
-plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
-title('Unilateral ripples during unilateral DOWN')
-legend('ipsi','contra')
 
 
+%%%%%%%%%%%
+ipsi_probability = [probability_merged(1).L_ripples_UP; probability_merged(2).R_ripples_UP];
+contra_probability = [probability_merged(1).R_ripples_UP; probability_merged(2).L_ripples_UP];
 
-figure
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-nexttile
-plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));
-plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
-title('Bilateral ripples during UP')
-legend('bilateral','ipsi','contra')
+ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_UP; probability_psth_whole_baseline(2).R_ripples_UP];
+contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_UP; probability_psth_whole_baseline(2).L_ripples_UP];
 
-nexttile
-plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
-plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));
-plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
-title('Bilateral ripples during DOWN')
-legend('bilateral','ipsi','contra')
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap = temp;
+
+%%% Contra
+binnedArray = contra_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap = temp;
+
+%%% Contra
+binnedArray = ipsi_probability_baseline-contra_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap = temp;
+
 
 %%%%%%%%%% Calculate bootstrapped MUA
 time_wondows = [-1 1];
@@ -914,12 +919,12 @@ probability_merged.x = x;
 for i = 1:length(event_idx)
     index =event_idx{i};
 
-    binnedArray1 = ipsi_V1_MUA(index,:);
-    binnedArray2 = contra_V1_MUA(index,:);
-    binnedArray3 = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
-    binnedArray4 = ipsi_HPC_MUA(index,:);
-    binnedArray5 = contra_HPC_MUA(index,:);
-    binnedArray6 = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
+    binnedArray1 = ipsi_probability(index,:);
+    binnedArray2 = contra_probability(index,:);
+%     binnedArray3 = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+%     binnedArray4 = ipsi_HPC_MUA(index,:);
+%     binnedArray5 = contra_HPC_MUA(index,:);
+%     binnedArray6 = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
 
     temp1=[];
     temp2=[];
