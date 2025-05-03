@@ -150,14 +150,12 @@ ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
-% experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+%experiment_info=experiment_info([16]); %FOR DEBUGGING, CAN LIMIT TO A PARTICULAR LINE OF experiment_info
 
 
 %All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
 
-% All_stimuli = {'Sleep'};
-
-% All_stimuli = {'SparseNoise'};
+% All_stimuli = {'SparseNoise', 'SparseNoise_1', 'SparseNoise_2'};
 
 % All_stimuli = {'OP_Tuning'};
 % All_stimuli = {'Direction_Tuning'};
@@ -175,8 +173,9 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % All_stimuli = {'GAVNIK_E_CD'};
 % All_stimuli = {'GAVNIK DCBA'};
 
-%All_stimuli = {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
-All_stimuli = {'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
+%All_stimuli = {'GAVNIK_E_CD', 'GAVNIK_A_CD', 'GAVNIK DCBA', 'GAVNIK_ABCD', 'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'}
+% All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'};
+All_stimuli = {'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'};
 
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch_Ellie(experiment_info,All_stimuli{n})

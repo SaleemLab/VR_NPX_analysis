@@ -35,18 +35,29 @@ if ~exist('filepath','var') || isempty(filepath)
 end
 
 % Parse for one of the following stimulus names (you can add to the list here, and to the switch case below)
-specialFileTypes = {'StaticGratings','DriftingGratings','SparseNoise_fullscreen','StaticTF','Grey','GratingsPhase'...,
-        'OriAdapt','PosAdapt','DriftingTF','Checkerboard',... 
-        'SparseNoise','OP_Tuning','Direction_Tuning',...
-        'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN',... 
+specialFileTypes = {'StaticGratings','DriftingGratings','SparseNoise_fullscreen','StaticTF','Grey','GratingsPhase', ...
+        'OriAdapt','PosAdapt','DriftingTF','Checkerboard', ... 
+        'SparseNoise','OP_Tuning','Direction_Tuning', ...
+        'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', ... 
         'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'};
 
 % See if there is a match within the file name that indicates that this is
 % from the special list
 StimulusTypeMatcher = zeros(1,length(specialFileTypes));
-for tt = 1:length(specialFileTypes)
-    StimulusTypeMatcher(tt) = contains(filepath,specialFileTypes{tt});
+[~, filename, ~] = fileparts(filepath);
+
+% Extract tag between subject ID and _StimulusParams
+stimPattern = regexp(filename, '^[^_]+_(.*)_StimulusParams', 'tokens');
+if ~isempty(stimPattern)
+    stimulusTag = strtrim(stimPattern{1}{1});
+else
+    stimulusTag = '';
 end
+
+for tt = 1:length(specialFileTypes)
+    StimulusTypeMatcher(tt) = strcmp(stimulusTag, specialFileTypes{tt});
+end
+
 if length(find(StimulusTypeMatcher)) == 1
     StimulusName = specialFileTypes{find(StimulusTypeMatcher)};
 elseif contains(filepath,'SparseNoise_fullscreen') == 1 % If equal SparseNoise_fullscreen
@@ -110,8 +121,7 @@ switch(StimulusName)
         grid_size = [8 16];
         datatable = import_BonVisionParamsSparseNoise_bin(filepath,grid_size);
 
-    case {'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN'...
-            'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'...
+    case {'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', ...
             'OP_Tuning', 'Direction_Tuning'}
         thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
         varCols = [4 14 20 22];    % % Extract the relevant columns (4 contains delay, 14 contains Contrast
@@ -122,9 +132,53 @@ switch(StimulusName)
         % Remove the last row (the last 'stimulus') because the PD doesn't go off
         % after this stimulus
         datatable(end, :) = [];
-
         %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
         
+    case {'GAVNIK_ABCD', 'GAVNIK DCBA'} % Orientation value is "grey" for interstimulus grey screen.
+        thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
+        varCols = [1 3];    % % Extract the relevant columns (1 contains Orienation, 3 contains the ArduinoTime of presentation)
+        varNames = {'Orientation','Time'};
+        datatable = thisTable(:,varCols);
+        datatable.Properties.VariableNames = varNames;
+        %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
+        
+        % Remove rows where Orientation is NaN
+        datatable = datatable(~isnan(datatable.Orientation), :);
+        
+        
+    case {'GAVNIK_A_CD', 'GAVNIK_E_CD'} % Orientation value is "grey" for interstimulus grey screen.
+        % Orientation is "omission" for omitted second element
+        thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
+        varCols = [1 3];    % % Extract the relevant columns (1 contains Orienation, 3 contains the ArduinoTime of presentation)
+        varNames = {'Orientation','Time'};
+        datatable = thisTable(:,varCols);
+        datatable.Properties.VariableNames = varNames;
+        %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
+        
+        % Deal with NaNs in Orientation column
+        stim_orientations = datatable.Orientation;
+        original_orientations = stim_orientations;  % Preserve original before modifying
+
+        % Find indices where NaN occurs
+        nan_indices = isnan(stim_orientations);
+        % Create a logical mask to keep track of which values to remove
+        remove_mask = false(size(stim_orientations));
+
+        % Loop through stim_orientations to modify NaNs
+        for i = 1:length(stim_orientations)
+            if nan_indices(i)
+                if i > 3 && isnan(original_orientations(i-3))
+                    remove_mask(i) = true;  % Remove NaN if 3 steps earlier was also NaN (i.e. Remove NaN where it was "grey"
+                else
+                    stim_orientations(i) = 0;  % Otherwise, replace NaN with 0 (i.e. where NaN was "omission" of second element)
+                end
+            end
+        end
+
+        % Apply the cleaned orientations back to the table
+        datatable.Orientation = stim_orientations;
+        % Remove rows marked for removal
+        datatable(remove_mask, :) = [];
 
         
     case {'StaticTF','DriftingTF'}

@@ -41,9 +41,20 @@ else % If based on photodiode timestamp in case trial info not saved properly
     % See if there is a match within the file name that indicates that this is
     % from the special list
     StimulusTypeMatcher = zeros(1,length(specialFileTypes));
-    for tt = 1:length(specialFileTypes)
-        StimulusTypeMatcher(tt) = contains(TRIALDATA_DATAPATH,specialFileTypes{tt});
+    [~, filename, ~] = fileparts(TRIALDATA_DATAPATH);
+    
+    % Extract tag between subject ID and _StimulusParams
+    stimPattern = regexp(filename, '^[^_]+_(.*)_StimulusParams', 'tokens');
+    if ~isempty(stimPattern)
+        stimulusTag = strtrim(stimPattern{1}{1});
+    else
+        stimulusTag = '';
     end
+
+    for tt = 1:length(specialFileTypes)
+        StimulusTypeMatcher(tt) = strcmp(stimulusTag, specialFileTypes{tt});
+    end
+    
     if length(find(StimulusTypeMatcher)) == 1
         StimulusName = specialFileTypes{find(StimulusTypeMatcher)};
     elseif contains(filepath,'SparseNoise_fullscreen') == 1 % If equal SparseNoise_fullscreen
@@ -126,47 +137,100 @@ peripherals.sglxTime = interp1(photodiode.ArduinoTime(ia),photodiode.sglxTime(ia
 eyeData.sglxTime = interp1(photodiode.ArduinoTime(ia),photodiode.sglxTime(ia),eyeData.ArduinoTime,'previous');
 %wheelData = peripherals;
 
+disp(['StimulusName: ', StimulusName]);
+switch(StimulusName)
+    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'} % for GAVNIK stimuli, the PD quad begins grey, goes white for first stim A, black for second B,
+            % white for third C, black for fourth D and then grey for the greyscreen period between the sequences of four stimuli
+        
+        % Compute the trailing moving median (of the current value and the four values prior)
+        photodiode_median = movmedian(photodiode.Photodiode, [4 0]);
 
-% extract stimuli time based on photodiode timestamp
+        % Initialize transition markers
+        pd_ON_OFF = zeros(size(photodiode.Photodiode));
 
-photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',5);
+        % Threshold conditions
+        up_condition_1 = (photodiode_median < 280 & photodiode_median > 220);  
+        up_condition_2 = (photodiode_median < 110);
+        down_condition = (photodiode_median > 380);
 
-pd_ON_OFF = photodiode.Photodiode_smoothed >= mean(photodiode.Photodiode); % find ON and OFF
-pd_ON = find(diff(pd_ON_OFF) == 1); % Find ON
-pd_OFF = find(diff(pd_ON_OFF) == -1); % Find OFF
+        % Track the last detected transition
+        last_transition = -1;  % -1 means no transition detected yet
+        state = 0;  % - 0 = off state, 1 = on state
 
-% Remove any photodiode transitions that occur >5 seconds after the last transition (PD fluctuations can occur when turning off Bonsai)
-% Convert indices to SpikeGLX time
-pd_ON_times = photodiode.sglxTime(pd_ON);
-pd_OFF_times = photodiode.sglxTime(pd_OFF);
-%pd_ON_times = Nidq.sglxTime(pd_ON);
-%pd_OFF_times = Nidq.sglxTime(pd_OFF);
+        % Loop through the signal to detect transitions
+        for i = 1:length(photodiode.Photodiode)-50 % Ensure index is within bounds
+        % Check upward transitions (only if last transition was NOT up)
+            if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+2:i+3) > 350)) || ...% if coming from grey quad and the next value and three subsequent values exceed 280
+                                          (up_condition_2(i) && all(photodiode.Photodiode(i+5:i+7) > 350))) % if coming from black quad and the values of positions 4-7 ahead exceed 350 (i.e. when the quad is going to white but not grey, an upswing will be detected).
+                pd_ON_OFF(i) = 1;
+                state = 1;          % Set state to ON
+                last_transition = 1;  % Mark last transition as UP
+                disp(['UP Transition at ', num2str(i)]);  % Debugging output
+            end
 
-% Find time differences between consecutive transitions
-pd_ON_diffs = diff(pd_ON_times);
-pd_OFF_diffs = diff(pd_OFF_times);
+            % Keep the state as 1 until a downswing is detected
+            if state == 1
+                pd_ON_OFF(i) = 1;  % Keep state as 1 (ON)
+            end
 
-%%%%% Keep only transitions where the time difference is <= 5 seconds
-valid_ON_idx = [true; pd_ON_diffs <= 5];  % Keep first transition and filter the rest
-valid_OFF_idx = [true; pd_OFF_diffs <= 5];
-%valid_ON_idx = [true, pd_ON_diffs <= 5];  % Keep first transition and filter the rest
-%valid_OFF_idx = [true, pd_OFF_diffs <= 5];
-% Find the last valid ON transition
-last_valid_ON = find(valid_ON_idx, 1, 'last');
+            % Check downward transitions (only if last transition was NOT down)
+            if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < 400))
+                pd_ON_OFF(i) = 0;
+                state = 0;          % Set state to OFF
+                last_transition = 0;  % Mark last transition as DOWN
+                disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
+            end
+    
+        end
 
-% Remove any transitions occurring more than 5 seconds after the last valid ON
-valid_ON_idx((last_valid_ON + 1):end) = false;
-valid_OFF_idx((last_valid_ON + 1):end) = false;
+        % Extract ON and OFF transition indices
+        pd_ON = find(diff(pd_ON_OFF) == 1);  % Find the indices of ON transitions
+        pd_OFF = find(diff(pd_ON_OFF) == -1);  % Find the indices of OFF transitions
+        %pd_ON_times = Nidq.sglxTime(pd_ON);
+        %pd_OFF_times = Nidq.sglxTime(pd_OFF);
 
-% Apply filtering
-pd_ON = pd_ON(valid_ON_idx);
-pd_OFF = pd_OFF(valid_OFF_idx);
+    otherwise
+        photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',5);
 
-% Convert back to SpikeGLX time
-pd_ON_times = photodiode.sglxTime(pd_ON);
-pd_OFF_times = photodiode.sglxTime(pd_OFF);
-%pd_ON_times = Nidq.sglxTime(pd_ON);
-%pd_OFF_times = Nidq.sglxTime(pd_OFF);
+        pd_ON_OFF = photodiode.Photodiode_smoothed >= mean(photodiode.Photodiode); % find ON and OFF
+        pd_ON = find(diff(pd_ON_OFF) == 1); % Find ON
+        pd_OFF = find(diff(pd_ON_OFF) == -1); % Find OFF
+
+        % Remove any photodiode transitions that occur >5 seconds after the last transition (PD fluctuations can occur when turning off Bonsai)
+        % Convert indices to SpikeGLX time
+        pd_ON_times = photodiode.sglxTime(pd_ON);
+        pd_OFF_times = photodiode.sglxTime(pd_OFF);
+        %pd_ON_times = Nidq.sglxTime(pd_ON);
+        %pd_OFF_times = Nidq.sglxTime(pd_OFF);
+
+        % Find time differences between consecutive transitions
+        pd_ON_diffs = diff(pd_ON_times);
+        pd_OFF_diffs = diff(pd_OFF_times);
+
+        %%%%% Keep only transitions where the time difference is <= 5 seconds
+        valid_ON_idx = [true; pd_ON_diffs <= 5];  % Keep first transition and filter the rest
+        valid_OFF_idx = [true; pd_OFF_diffs <= 5];
+        %valid_ON_idx = [true, pd_ON_diffs <= 5];  % Keep first transition and filter the rest
+        %valid_OFF_idx = [true, pd_OFF_diffs <= 5];
+        % Find the last valid ON transition
+        last_valid_ON = find(valid_ON_idx, 1, 'last');
+
+        % Remove any transitions occurring more than 5 seconds after the last valid ON
+        valid_ON_idx((last_valid_ON + 1):end) = false;
+        valid_OFF_idx((last_valid_ON + 1):end) = false;
+
+        % Apply filtering
+        pd_ON = pd_ON(valid_ON_idx);
+        pd_OFF = pd_OFF(valid_OFF_idx);
+
+        % Convert back to SpikeGLX time
+        pd_ON_times = photodiode.sglxTime(pd_ON);
+        pd_OFF_times = photodiode.sglxTime(pd_OFF);
+        %pd_ON_times = Nidq.sglxTime(pd_ON);
+        %pd_OFF_times = Nidq.sglxTime(pd_OFF);
+
+end
+
 
 % Now calculate the duration (in number of samples taken during the presentation) of each ON presentation
 if length(pd_ON) == length(pd_OFF)
@@ -243,7 +307,8 @@ end
 % wheelData.sglxTime = wheelData.Time;
 
 % Step 6: extract stimulus times
-switch(lower(StimulusName))
+disp(['StimulusName: ', StimulusName]);
+switch(StimulusName)
     case {'sparsenoise','sparsenoise_fullscreen','checkerboard'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend');
         %         fprintf('\n\tUsing both photodiode upward and downward transitions as timestamps for stimulus timing')
@@ -265,6 +330,10 @@ switch(lower(StimulusName))
 
     case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'staticgratings','staticgratings_short','staticgratings_long'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend'); %cases where a stimulus is on the screen only when the quad is white
+    
+    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'}
+        stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend'); % Sort the concatenated array in ascending (i.e. chronological) order
+    
     case 'grey'
         stimTimes = photodiodeData.stim_on.sglxTime;
     case {'oriadapt','posadapt'}

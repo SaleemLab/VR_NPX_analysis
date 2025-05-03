@@ -221,6 +221,9 @@ switch(StimulusName)
         task_info.stim_contrast = stimData.Contrast;
         task_info.stim_orientation = stimData.Orientation;
 
+    case {'GAVNIK_ABCD', 'GAVNIK DCBA', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}
+        task_info.stim_orientation = stimData.Orientation;
+        
     case {'StaticGratings_short'}
         task_info.stim_orientation = readmatrix('X:\ibn-vision\CODE\DEV\BONSAI\Diao\dome_dual_DT\Grating_trials_short.CSV');
     case {'StaticGratings_long'}
