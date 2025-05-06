@@ -587,6 +587,14 @@ lags =all_lags{end};
 event_idx{5} = {all_overlap_idx{end}(lags>-0.2&lags<-0.05),all_overlap_idx{end}(lags<0.02&lags>-0.05),all_overlap_idx{end}(lags>0.05&lags<0.2),non_overlap_idx{end}};
 
 
+lags =all_lags{end}>=-0.15 & all_lags{end}<=0.15;
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags{end};
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{6}{n} =(all_overlap_idx{end}(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
 group_name=[];
 group_name{1} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Shuffled'};
 group_name{2} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
@@ -594,14 +602,14 @@ group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% 
 % group_name{4} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
 group_name{4} = {'-0.2 to -0.1s','-0.1 to -0.02s','-0.02 to 0.02s','0.02 to 0.1s','0.1 to 0.2s','Shuffled'};% purely based on lags
 group_name{5} = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
-
+group_name{6} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};% purely based on lags
 % group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
 % group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
 % group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
 % group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
 
 title_names = {'Ipsi-contra DOWN_UP MUA by three lags (full windows)', 'Ipsi-contra DOWN_UP MUA by bilateral thresholded lags (full windows)',...
-    'Ipsi-contra DOWN_UP MUA by 5 lags (100ms windows)','Ipsi-contra DOWN_UP MUA by 5 lags (200ms windows)','Ipsi-contra DOWN_UP MUA with non-overlapping'}
+    'Ipsi-contra DOWN_UP MUA by 5 lags (100ms windows)','Ipsi-contra DOWN_UP MUA by 5 lags (200ms windows)','Ipsi-contra DOWN_UP MUA with non-overlapping','Ipsi-contra DOWN_UP MUA by 5 lags (150ms windows)'}
 % colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 % colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
