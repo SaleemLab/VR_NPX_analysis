@@ -1018,6 +1018,8 @@ L_overlap_idx = [];
 R_overlap_idx = [];
 overlap_idx = [];
 non_overlap_idx = [];
+all_lags= [];
+all_overlap_idx = [];
 % for nsession = 1:max(slow_waves_all.UP_session_count)
 
 %     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
