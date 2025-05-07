@@ -370,7 +370,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession =1:17
+for nsession =17
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -527,9 +527,20 @@ for nsession =1:17
       spikes_sleep(:,1) = HPC_clusters.spike_times;
       spikes_sleep(:,2) = HPC_clusters.spike_id;
 
-      for iCell = 1:length(HPC_clusters_RUN.cluster_id)
-          spikes_template(spikes_template(:,2)== HPC_clusters_RUN.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
-          spikes_sleep(spikes_sleep(:,2)== HPC_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
+      unique_sleep_cluster_id = unique(HPC_clusters.spike_id);
+      unique_RUN_cluster_id = unique(HPC_clusters_RUN.spike_id);
+
+      if length(unique_RUN_cluster_id)~=length(unique_sleep_cluster_id)
+          [index1,index2] = ismember(unique_RUN_cluster_id,unique_sleep_cluster_id);
+          unique_clusters = unique_RUN_cluster_id(index);
+
+          spikes_template(~ismember(spikes_template(:,2),unique_clusters),:) = [];
+          spikes_sleep(~ismember(spikes_sleep(:,2),unique_clusters),:) = [];
+      end
+
+      for iCell = 1:length(unique_clusters)
+          spikes_template(spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+          spikes_sleep(spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
       end
 
       V1_spikes_template=[];
@@ -540,9 +551,20 @@ for nsession =1:17
       V1_spikes_sleep(:,1) = V1_clusters.spike_times;
       V1_spikes_sleep(:,2) = V1_clusters.spike_id;
 
-      for iCell = 1:length(V1_clusters_RUN.cluster_id)
-          V1_spikes_template(V1_spikes_template(:,2)== V1_clusters_RUN.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
-          V1_spikes_sleep(V1_spikes_sleep(:,2)== V1_clusters.cluster_id(iCell),2)=iCell;% swap cell id to start from 1
+      unique_sleep_cluster_id = unique(V1_clusters.spike_id);
+      unique_RUN_cluster_id = unique(V1_clusters_RUN.spike_id);
+        
+      if length(unique_RUN_cluster_id)~=length(unique_sleep_cluster_id)
+          [index1,index2] = ismember(unique_RUN_cluster_id,unique_sleep_cluster_id);
+          unique_clusters = unique_RUN_cluster_id(index);
+            
+          V1_spikes_template(~ismember(V1_spikes_template(:,2),unique_clusters),:) = [];
+          V1_spikes_sleep(~ismember(V1_spikes_sleep(:,2),unique_clusters),:) = [];
+      end
+
+      for iCell = 1:length(unique_clusters)
+          V1_spikes_template(V1_spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+          V1_spikes_sleep(V1_spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
       end
       clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN
 
