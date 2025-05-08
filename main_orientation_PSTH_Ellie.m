@@ -1,0 +1,86 @@
+%%% For analysis of unit spiking in response to visual stimuli
+
+addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
+
+%% setting metrics to screen good clusters
+clear all
+params = create_cluster_selection_params('sorting_option','ellie');
+
+SUBJECTS = {'M00013','M00014'};
+option = 'V1-HPC';
+experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
+
+Stimulus_type = 'TRAIN';
+%nprobe = 1;
+
+%base_folder='V:\Ellie\DATA\SUBJECTS';
+
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN')
+
+%clusters_probe = select_clusters(clusters(nprobe),params); %only look at good clusters
+
+
+%[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikeTimes, eventTimes, window, psthBinSize);
+
+
+%Stimulus_type = 'TRAIN';
+for nsession = 4 % row number of recording date in "experiment_info" 
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    % SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % % find right date number based on all experiment dates of the subject
+    % iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters = clusters_ks4;
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+
+        all_orientations = unique(Task_info.stim_orientation);
+        %Task_info.stim_onset
+        
+       
+        params = create_cluster_selection_params('sorting_option','ellie');
+        %params.orientation_tuned = ...
+        psthBinSize = 0.001;
+
+        for nprobe = 1:length(clusters)
+            selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters
+            cluster_id = selected_clusters(nprobe).cluster_id;
+            
+            for nCluster = 1:length(cluster_id)
+                
+                spike_times_this_cluster = selected_clusters(nprobe).spike_times(selected_clusters(nprobe).spike_id == cluster_id(nCluster));
+                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.150], 0.00);
+             
+
+                for ori = 1:length(all_orientations)
+                    % [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.150 0.150], 0.001);
+                    
+                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.150 0.150], psthBinSize);
+                    nexttile
+                    % plot(rasterX,rasterY)
+                    imagesc(binnedArray)
+                    colorbar
+                    colormap(flipud('gray'))
+                    title(sprintf('Orientation %.2f',all_orientations(ori)))
+                end
+            end
+
+        end
+
+
+
+    end
+
+end
+
+%clusters_probe = select_clusters(clusters(nprobe),params); %only look at good clusters
+
+
+%[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikeTimes, eventTimes, window, psthBinSize);
