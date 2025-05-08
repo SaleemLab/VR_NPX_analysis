@@ -27,6 +27,8 @@ end
 % probability_SO_SO = probability;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
 % probability_SO_SO_contralateral = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'))
+
 PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
@@ -1105,13 +1107,76 @@ end
 
 
 %%%%%%%%% All DOWN-UP plots
+event_averaging_scale = 30;
+event_times = merged_event_info.UP_ints;
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
 
 clear ERROR_SHADE
 fig = figure('Color','w');
-fig.Position = [350 59 1100 930];
-fig.Name ='All ipsi-contra DOWN-UP MUA';
+% fig.Position = [350 59 1100 930];
+fig.Position = [350 59 1650 930];
+fig.Name ='Left-Right combined ipsi-contra DOWN-UP MUA';
 
-colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
+colour_lines = [0,90,50;74,20,134]/256; 
+
+
+
+nexttile
+imagesc(movmean(ipsi_V1_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi V1')
+
+nexttile
+imagesc(movmean(ipsi_HPC_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi HPC')
+
+nexttile
+imagesc(movmean(contra_V1_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra V1')
+
+nexttile
+imagesc(movmean(contra_HPC_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra HPC')
 
 nexttile
 binnedArray = MUA_PSTH_merged.ipsi_DU_V1{end}{1};
@@ -1164,40 +1229,6 @@ xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('MUA activity (z)')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-nexttile
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1{end}{1};
-% nprobe = 1;
-time_wondows = [-1 1];
-time_bin = 0.01;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
-y = mean(binnedArray,'omitnan');
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
-ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
-
-% baseline
-
-binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline;
-y = mean(binnedArray,'omitnan');
-%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(binnedArray,2.5);
-UCI = prctile(binnedArray,97.5);
-
-PLOT = plot(x,y,'k');hold on;
-ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
-
-ylim([-1 0.5])
-
-% xline(0,'r')
-legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
-title('V1 MUA difference')
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('ipsi-contra MUA activity (z)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
 
@@ -1249,6 +1280,153 @@ xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('MUA activity (z)')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
+
+
+clear ERROR_SHADE
+fig = figure('Color','w');
+fig.Position = [350 59 1100 930];
+fig.Name ='Left-Right combined ipsi-contra DOWN-UP MUA diff';
+
+
+nexttile
+binnedArray = MUA_PSTH_merged.ipsi_DU_V1{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+
+binnedArray = MUA_PSTH_merged.contra_DU_V1{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = MUA_PSTH_merged.ipsi_DU_V1_baseline;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.5])
+
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+title('V1 MUA')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+
+nexttile
+binnedArray = MUA_PSTH_merged.ipsi_DU_HPC{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = MUA_PSTH_merged.contra_DU_HPC{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = MUA_PSTH_merged.ipsi_DU_HPC_baseline;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.3 0.1])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+title('HPC MUA')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+
+binnedArray = MUA_PSTH_merged.ipsi_contra_diff_DU_V1_baseline;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.5])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:2)],{'ipsi-contra diff','shuffled'},'box','off')
+title('V1 MUA difference')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('ipsi-contra MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
 nexttile
 binnedArray =  MUA_PSTH_merged.ipsi_contra_diff_DU_HPC{end}{1};
 % nprobe = 1;
@@ -1283,6 +1461,9 @@ title('HPC MUA difference')
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('ipsi-contra MUA activity (z)')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[])
 
@@ -1789,13 +1970,187 @@ ylim([-0.2 0.3])
 
 end
 
+%%%%%%%%% All UP-DOWN plots
+event_averaging_scale = 30;
+event_times = merged_event_info.DOWN_ints;
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
 
-%%%%%%%%% All DOWN-UP plots
+clear ERROR_SHADE
+fig = figure('Color','w');
+% fig.Position = [350 59 1100 930];
+fig.Position = [350 59 1650 930];
+fig.Name ='Left-Right combined ipsi-contra UP-DOWN MUA';
+
+colour_lines = [0,90,50;74,20,134]/256; 
+
+
+
+nexttile
+imagesc(movmean(ipsi_V1_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi V1')
+
+nexttile
+imagesc(movmean(ipsi_HPC_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi HPC')
+
+nexttile
+imagesc(movmean(contra_V1_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra V1')
+
+nexttile
+imagesc(movmean(contra_HPC_MUA(sorted_index,:),event_averaging_scale,1,'omitnan'))
+
+xticks([1.5 50.5 100.5 150.5 200.5])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(100.5,'r',LineWidth=1)
+clim([-2 2])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra HPC')
+
+
+nexttile
+binnedArray = MUA_PSTH_merged.ipsi_UD_V1{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+
+binnedArray = MUA_PSTH_merged.contra_UD_V1{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = MUA_PSTH_merged.ipsi_UD_V1_baseline;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-1 0.5])
+
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+title('V1 MUA')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+nexttile
+binnedArray = MUA_PSTH_merged.ipsi_UD_HPC{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = MUA_PSTH_merged.contra_UD_HPC{end}{1};
+% nprobe = 1;
+time_wondows = [-1 1];
+time_bin = 0.01;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = MUA_PSTH_merged.ipsi_UD_HPC_baseline;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+
+ylim([-0.2 0.3])
+
+% xline(0,'r')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+title('HPC MUA')
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('MUA activity (z)')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
 
 clear ERROR_SHADE
 fig = figure('Color','w');
 fig.Position = [350 59 1100 930];
-fig.Name ='All ipsi-contra UP-DOWN MUA';
+fig.Name ='Left-Right combined ipsi-contra UP-DOWN MUA diff';
 
 colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
 
@@ -2482,7 +2837,7 @@ clear ERROR_SHADE
 fig = figure('Color','w');
 % fig.Position = [350 59 1100 465];
 fig.Position = [350 59 1100 930];
-fig.Name ='ipsi-contra ripples MUA';
+fig.Name ='Left-Right combined ipsi-contra ripples MUA';
 
 colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green
 
@@ -3368,7 +3723,7 @@ clear ERROR_SHADE
 fig = figure('Color','w');
 % fig.Position = [350 59 1100 465];
 fig.Position = [350 59 1100 930];
-fig.Name ='ipsi-contra spindles V1 MUA';
+fig.Name ='Left-Right combined ipsi-contra spindles MUA';
 
 
 colour_lines = [0,90,50;74,20,134]/256; % dark purple, meganta, light green, dark green

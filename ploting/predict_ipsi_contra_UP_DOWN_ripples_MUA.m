@@ -508,6 +508,27 @@ output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MU
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
 
 
+
+%%%%%%%%%%%% Plot
+index = 1:size(ipsi_V1_MUA,1);
+% lag_index = (abs(lags)<=2);
+output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),ripples_info,...
+    'plot_option',1,'output',output,'subject_id',subject_id(index));
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
+index = all_overlap_idx(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),ripples_info,...
+    'plot_option',1,'output',output,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+
+
+
+
+%%
+
 %%
 %%%%%%%%%%%%%% Survival
 [b, logl, H, stats] = coxphfit(abs(lags(lag_index)'), ripples_info.ipsi_time_from_last_ripples_UP(index)', 'Strata', subject_id);

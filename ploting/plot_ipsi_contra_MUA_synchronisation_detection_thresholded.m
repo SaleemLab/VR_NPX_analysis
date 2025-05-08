@@ -35,23 +35,6 @@ PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
-probability_SO_SO_contralateral = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
-probability_SO_SO = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability.mat'));
-probability_SO_SO_contralateral_whole = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole.mat'));
-probability_SO_SO_whole = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability_whole.mat'));
-probability_ripples_ripples_whole = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-probability_normalised_whole = probability_normalised;
 
 colour_lines = [];
 colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red for R
