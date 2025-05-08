@@ -21,28 +21,9 @@ end
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
 probability_normalised_whole_baseline = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
-probability_psth_whole_baseline = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_baseline.mat'));
-probability_normalised_baseline = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_baseline.mat'));
-probability_psth_baseline = probability;
-
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 probability_normalised_whole = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-probability_psth_whole = probability;
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
-probability_normalised = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
-probability_psth = probability;
-
-PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
-PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
 % %%%%%%%
 % % Phase-amplitude coupling
@@ -97,7 +78,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
 
 
 %%%%%%%%%%%%% Overlaps

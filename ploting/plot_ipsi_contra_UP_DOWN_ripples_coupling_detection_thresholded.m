@@ -909,7 +909,7 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
-lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+lags =all_lags(all_lags>=-0.1 & all_lags<=0.1);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
 lags =all_lags;
 
@@ -925,7 +925,7 @@ group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% 
 
 title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
 title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows lagging only)';
-title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
+title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (100ms windows)';
 
 
 
