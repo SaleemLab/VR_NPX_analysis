@@ -1,4 +1,4 @@
-function plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thresholded(slow_waves_all,ripples_all,spindles_all)
+function plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thres_norm(slow_waves_all,ripples_all,spindles_all)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -900,11 +900,32 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
-group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
-title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
+lags =all_lags(all_lags>=0 & all_lags<=0.15);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags;
 
-group_name{2} = {'0-20% lag','20-40% lag','40-60% lag','0-20% lag','0-20% lag','Shuffled'};
-title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{3}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+
+title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows lagging only)';
+title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
 
 
 
@@ -1023,8 +1044,11 @@ for ngroup = 1:length(event_idx)
     % elseif ngroup ==5
     %     colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     % else
+    if ngroup ~=2
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
-    % end
+    else
+        colour_lines = [228,42,168;190,36,160;151,31,151;112,26,142;74,20,134]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
+    end
 
     nexttile
     clear ERROR_SHADE

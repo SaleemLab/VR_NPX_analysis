@@ -888,16 +888,46 @@ non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
 all_lags =merged_event_info.UP_lags_all{end};
 
 
+
+
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
 lags =all_lags;
-group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
-title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
 
 % lag_thresholds = [-0.2]
 for n = 1:length(lag_thresholds)-1
     event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
 end
+
+
+lags =all_lags(all_lags>=0 & all_lags<=0.15);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags;
+
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{3}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+
+title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows lagging only)';
+title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
+
+
 
 %%%%%%%%%%%%%%%%%%%%%
 ipsi_probability = [probability_psth_whole(1).L_ripples_UP; probability_psth_whole(2).R_ripples_UP];
@@ -995,7 +1025,7 @@ end
 probability_merged.ipsi_ripples_baseline_UP = ipsi_baseline_bootstrap;
 probability_merged.contra_ripples_baseline_UP = contra_baseline_bootstrap;
 probability_merged.ipsi_contra_diff_ripples_baseline_UP = ipsi_contra_diff_baseline_bootstrap;
-probability_merged.ripples_UP_groups = [title_names 'All ripples’'];
+probability_merged.ripples_UP_groups = [title_names 'All DOWN-UP'];
 probability_merged.ripples_UP_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
@@ -1014,8 +1044,11 @@ for ngroup = 1:length(event_idx)
     % elseif ngroup ==5
     %     colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     % else
-    % colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
-    % end
+    if ngroup ~=2
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    else
+        colour_lines = [228,42,168;190,36,160;151,31,151;112,26,142;74,20,134]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
+    end
 
     nexttile
     clear ERROR_SHADE
@@ -1044,7 +1077,7 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([-0.1 0.1])
+    ylim([0 0.08])
     title('ipsi ripples')
     xlabel('Time relative to DOWN-UP transition (s)')
     ylabel('Probability')
@@ -1074,7 +1107,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([-0.1 0.1])
+    ylim([0 0.08])
 
     % xline(0,'r')
     title('contra ripples')
@@ -1108,16 +1141,458 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([0 1])
+    ylim([-0.04 0.04])
 
 
     % xline(0,'r')
-    title('V1 Ipsi-contra MUA diff')
+    title('Ipsi-contra diff')
     xlabel('Time relative to DOWN-UP transition (s)')
-    ylabel('MUA activity (z)')
+    ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
 
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%%%%%%%%%% All DOWN UP rpples
+event_averaging_scale = 30;
+
+% for ngroup = 1:length(event_idx)
+ngroup = 2;
+fig = figure('Color','w');
+fig.Position = [350 59 1650 465];
+fig.Name = 'Left-Right combined ipsi contra ripple distribution around DOWN-UP transition'
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+
+
+nexttile
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
+imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+xticks([1.5 25.5 50.5 75.5 100.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(50.5,'r',LineWidth=1)
+clim([0 1])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi ripples')
+
+nexttile
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
+imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+xticks([1.5 25.5 50.5 75.5 100.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(50.5,'r',LineWidth=1)
+clim([0 1])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Event sorted by UP duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra ripples')
+
+nexttile
+clear ERROR_SHADE
+
+binnedArray = probability_merged.ipsi_ripples_UP{end}{1};
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = probability_merged.contra_ripples_UP{end}{1};
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = probability_merged.ipsi_ripples_baseline_UP;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+% xline(0,'r')
+ylim([0 0.06])
+% title('ipsi ripples')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Probability')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+
+
+
+
+%% Ipsi and contra ripple probabilities during UP DOWN transition with different bilateral synchrony
+
+%%%%% DOWN info
+event_times = merged_event_info.DOWN_ints;
+hemisphere_id = merged_event_info.DOWN_hemisphere_id;
+% lag_diff = merged_event_info.UP_lag_diff;
+% group_id = merged_event_info.UP_group_id;
+all_overlap_idx = merged_event_info.DOWN_overlap_idx_all{end};
+non_overlap_idx = merged_event_info.DOWN_non_overlap_idx{end};
+all_lags =merged_event_info.DOWN_lags_all{end};
+
+
+lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+% lag_thresholds = prctile(abs(lags),[0 20 40 60 80 100]);
+lags =all_lags;
+group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+title_names{1} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows)';
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+lag_thresholds = prctile(abs(lags),[0 20 40 60 80 100]);
+lags =all_lags;
+group_name{2} = {'Top 0-20% lag','Top 20-40% lag','Top 40-60% lag','Top 60-80% lag','Top 80-100% lag','Shuffled'};
+title_names{2} = 'Ipsi-contra UP_DOWN ripples by 5 absolute lags (150ms windows)';
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%
+ipsi_probability = [probability_psth_whole(1).L_ripples_DOWN; probability_psth_whole(2).R_ripples_DOWN];
+contra_probability = [probability_psth_whole(1).R_ripples_DOWN; probability_psth_whole(2).L_ripples_DOWN];
+
+ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_DOWN; probability_psth_whole_baseline(2).R_ripples_DOWN];
+contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_DOWN; probability_psth_whole_baseline(2).L_ripples_DOWN];
+
+%%%%% calculate shuffled baseline
+%%% Ipsi
+binnedArray = ipsi_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap = temp;
+
+%%% Contra
+binnedArray = contra_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap = temp;
+
+%%% Ipsi-Contra baseline
+binnedArray = ipsi_probability_baseline-contra_probability_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap = temp;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% Calculate bootstrapped MUA
+
+% clear probability_merged
+time_wondows = [-1 1];
+time_bin = 0.02;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+probability_merged.x = x;
+probability_merged.ipsi_ripples_DOWN = [];
+probability_merged.contra_ripples_DOWN = [];
+probability_merged.ipsi_contra_diff_ripples_DOWN = [];
+
+for ngroup = 1:length(event_idx)+1
+
+    group_index = [];
+    if ngroup <= length(event_idx)
+        group_index = event_idx{ngroup};
+
+    else
+        group_index{1} = (1:size(ipsi_probability,1))';
+    end
+
+    for i = 1:length(group_index)
+        index =group_index{i};
+
+        binnedArray1 = ipsi_probability(index,:);
+        binnedArray2 = contra_probability(index,:);
+        binnedArray3 = binnedArray1-binnedArray2;
+
+        temp1=[];
+        temp2=[];
+        temp3=[];
+        parfor iBoot = 1:1000
+            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+            event_id = datasample(s,1:size(binnedArray1,1),size(binnedArray1,1));
+            temp1(iBoot,:) =  mean(binnedArray1(event_id,:),'omitnan');
+            temp2(iBoot,:) =  mean(binnedArray2(event_id,:),'omitnan');
+            temp3(iBoot,:) =  mean(binnedArray3(event_id,:),'omitnan');
+            % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+        end
+
+        probability_merged.ipsi_ripples_DOWN{ngroup}{i} = temp1;
+        probability_merged.contra_ripples_DOWN{ngroup}{i} = temp2;
+        probability_merged.ipsi_contra_diff_ripples_DOWN{ngroup}{i} = temp3;
+    end
+end
+
+
+probability_merged.ipsi_ripples_baseline_DOWN = ipsi_baseline_bootstrap;
+probability_merged.contra_ripples_baseline_DOWN = contra_baseline_bootstrap;
+probability_merged.ipsi_contra_diff_ripples_baseline_DOWN = ipsi_contra_diff_baseline_bootstrap;
+probability_merged.ripples_DOWN_groups = [title_names 'All UP-DOWN’'];
+probability_merged.ripples_DOWN_index = [event_idx {(1:size(ipsi_probability,1))'}];
+
+
+time_wondows = [-1 1];
+time_bin = 0.02;
+x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+
+%%%%%%%%% Plot DU transition
+for ngroup = 1:length(event_idx)
+    fig = figure('Color','w');
+    fig.Position = [350 59 1650 465];
+    fig.Name =title_names{ngroup};
+
+    % if ngroup ==1
+    %     colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
+    % elseif ngroup ==5
+    % colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
+    % else
+    colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    % end
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        binnedArray = probability_merged.ipsi_ripples_DOWN{ngroup}{i};
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+    binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+    y = mean(binnedArray,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+    % xline(0,'r')
+    ylim([0 0.17])
+    title('ipsi ripples')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        binnedArray = probability_merged.contra_ripples_DOWN{ngroup}{i};
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+    binnedArray = probability_merged.contra_ripples_baseline_DOWN;
+    y = mean(binnedArray,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+    ylim([0 0.17])
+
+    % xline(0,'r')
+    title('contra ripples')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    nexttile
+    clear ERROR_SHADE
+    for i = 1:length(event_idx{ngroup})
+
+        binnedArray = probability_merged.ipsi_contra_diff_ripples_DOWN{ngroup}{i};
+
+        y = mean(binnedArray,'omitnan');
+        LCI = prctile(binnedArray,2.5);
+        UCI = prctile(binnedArray,97.5);
+
+        PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
+        ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
+        xline(0,'r',LineWidth=1)
+    end
+
+    % baseline
+    binnedArray = probability_merged.ipsi_contra_diff_ripples_baseline_DOWN;
+    y = mean(binnedArray,'omitnan');
+    %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+    LCI = prctile(binnedArray,2.5);
+    UCI = prctile(binnedArray,97.5);
+
+    PLOT = plot(x,y,'k');hold on;
+    ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+    legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
+    ylim([0 0.03])
+
+
+    % xline(0,'r')
+    title('Ipsi-contra diff')
+    xlabel('Time relative to UP-DOWN transition (s)')
+    ylabel('Probability')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+end
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%%%%%%%%%% All DOWN UP rpples
+event_averaging_scale = 30;
+
+% for ngroup = 1:length(event_idx)
+ngroup = 2;
+fig = figure('Color','w');
+fig.Position = [350 59 1650 465];
+fig.Name = 'Left-Right combined ipsi contra ripple distribution around UP-DOWN transition'
+
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+
+
+nexttile
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
+imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+xticks([1.5 25.5 50.5 75.5 100.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(50.5,'r',LineWidth=1)
+clim([0 1])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('ipsi ripples')
+
+nexttile
+duration = event_times(:,2) - event_times(:,1);
+[~,sorted_index] = sort(duration);
+imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+xticks([1.5 25.5 50.5 75.5 100.5])
+% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+xticklabels([-1 -0.5 0 0.5 1])
+xline(50.5,'r',LineWidth=1)
+clim([0 1])
+colorbar
+colormap(flipud(gray))
+xlabel('Time relative to UP-DOWN transition (s)')
+ylabel('Event sorted by DOWN duration')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('contra ripples')
+
+nexttile
+clear ERROR_SHADE
+
+binnedArray = probability_merged.ipsi_ripples_DOWN{end}{1};
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+binnedArray = probability_merged.contra_ripples_DOWN{end}{1};
+y = mean(binnedArray,'omitnan');
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+xline(0,'r',LineWidth=1)
+
+% baseline
+binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+y = mean(binnedArray,'omitnan');
+%     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
+LCI = prctile(binnedArray,2.5);
+UCI = prctile(binnedArray,97.5);
+
+PLOT = plot(x,y,'k');hold on;
+ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
+%     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
+
+% xline(0,'r')
+ylim([0 0.09])
+% title('ipsi ripples')
+xlabel('Time relative to DOWN-UP transition (s)')
+ylabel('Probability')
+legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
