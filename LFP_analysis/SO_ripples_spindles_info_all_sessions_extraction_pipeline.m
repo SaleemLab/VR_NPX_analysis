@@ -590,7 +590,15 @@ for nsession =1:length(experiment_info)
 
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_SO.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'));
+
+
     end
 
     % put all ripples in one struct

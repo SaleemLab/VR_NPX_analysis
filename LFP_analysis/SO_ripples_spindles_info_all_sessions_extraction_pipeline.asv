@@ -115,9 +115,24 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters=clusters_ks4;
     end
-    ripples = rmfield(ripples, 'detectorinfo');
-    spindles = rmfield(spindles, 'detectorinfo');
-    slow_waves = rmfield(slow_waves, 'detectorinfo');
+    if isfield(slow_waves,'detectorinfo')
+        ripples = rmfield(ripples, 'detectorinfo');
+        spindles = rmfield(spindles, 'detectorinfo');
+        slow_waves = rmfield(slow_waves, 'detectorinfo');
+    end
+    if isfield(slow_waves,'DOWN_peaks_latency')
+        slow_waves = rmfield(slow_waves, 'DOWN_peaks_latency');
+        slow_waves = rmfield(slow_waves, 'DOWN_traveling');
+        slow_waves = rmfield(slow_waves, 'gammaspikecorr');
+        slow_waves = rmfield(slow_waves, 'deltaspikecorr');
+        slow_waves = rmfield(slow_waves, 'deltagammacorr');        
+    end
+
+
+    if isfield(ripples,'SWR_traveling')
+        ripples = rmfield(ripples, 'SWR_traveling');
+        ripples = rmfield(ripples, 'SWR_latency');
+    end
     % slow_waves_markov = rmfield(slow_waves_markov, 'NREM_t');
     % slow_waves_markov = rmfield(slow_waves_markov, 'spike_count');
     % slow_waves_markov = rmfield(slow_waves_markov, 'alpha_t');
@@ -223,7 +238,8 @@ for nsession =1:length(experiment_info)
 
             else
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     A = ripples_all(probe_no).(field_names{iField});
@@ -306,7 +322,7 @@ for nsession =1:length(experiment_info)
 
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
@@ -333,7 +349,7 @@ for nsession =1:length(experiment_info)
                     end
                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-                        'xcoord','best_channel','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
 
@@ -574,7 +590,15 @@ for nsession =1:length(experiment_info)
 
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_SO.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'));
+
+
     end
 
     % put all ripples in one struct
@@ -712,7 +736,7 @@ colour_lines = [215,25,28;253,174,97;171,217,233;44,123,182]/256;
 colour_lines = [215,25,28;44,123,182]/256;
 
 % sessions_to_process = [1 2 3 6 8 9 10 11 12 13];
-sessions_to_process = 1:all_sessions
+sessions_to_process = 1:all_sessions;
 %%%% P(ripples) during UP DOWN
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','peaktimes')
 probability_normalised = probability;
@@ -800,12 +824,12 @@ sessions_to_process = 1:all_sessions;
 
 probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole.mat'),'probability');
-probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','shuffle_option','baseline');
+probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_whole_baseline.mat'),'probability');
 
 probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'),'probability');
-probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','shuffle_option','baseline');
+probability = calculate_SO_SO_probability(slow_waves_all,sessions_to_process,'time_option','onset','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability_baseline.mat'),'probability');
 
 probability = calculate_SO_SO_contralateral_probability(slow_waves_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
@@ -823,10 +847,21 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probab
 probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability_whole_baseline.mat'),'probability');
 
-probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','onset','time_windows',[-1 1]);
+probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','peaktimes','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'),'probability');
-probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','onset','shuffle_option','baseline','time_windows',[-1 1]);
+probability = calculate_ripple_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'time_option','peaktimes','shuffle_option','baseline','time_windows',[-1 1]);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability_baseline.mat'),'probability');
+
+
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','whole','time_windows',[-1 1]);
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_whole.mat'),'probability');
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','whole','shuffle_option','baseline','time_windows',[-1 1]);
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_whole_baseline.mat'),'probability');
+
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','onset','time_windows',[-1 1]);
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability.mat'),'probability');
+probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'time_option','onset','shuffle_option','baseline','time_windows',[-1 1]);
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_spindles_probability_baseline.mat'),'probability');
 
 
 %% Extract key information
@@ -852,7 +887,7 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MU
 
 
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
-    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA');
+    (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','no');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'),'UP_DOWN_relative_PSTH_MUA');
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','baseline');
