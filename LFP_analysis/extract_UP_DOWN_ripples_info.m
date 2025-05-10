@@ -108,11 +108,11 @@ for nsession = 1:length(sessions_to_process)
     DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
     DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
 
-    % if contains(option,'UD')
-    [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
-    % elseif contains(option,'DU')
-    [C,ia,ib] = intersect(UP_ints(:,1),DOWN_ints(:,2));
-    % end
+    if contains(option,'UD')
+        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+    elseif contains(option,'DU')
+        [C,ia,ib] = intersect(UP_ints(:,1),DOWN_ints(:,2));
+    end
 
     % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
     UP_index = UP_index(ia);

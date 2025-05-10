@@ -175,674 +175,6 @@ for n = 1:4
 end
 
 
-% 
-% 
-% probability = probability_psth_whole;
-%% Compare LFP based and detection based lags
-colour_lines = [0,90,50;228,42,168;74,20,134;81 81 81]/256; % Dark Green, Magenta, dark purple
-scatter(merged_event_info.UP_lags_all{end},merged_event_info.UP_lag_diff(merged_event_info.UP_overlap_idx_all{end}),5,'MarkerFaceColor',colour_lines(2, :),'MarkerEdgeColor','none','MarkerFaceAlpha',0.01)
-
-fig = figure('Color','w');
-fig.Position = [30 60 1200 900];
-fig.Name = 'All events overlapping vs non-overlapping events lag corr plv distribution';
-
-for n = 1:4
-    nexttile
-    histogram(merged_event_info.(sprintf('%s_lag_diff',event_types{n}))(merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})){end}),-0.2:0.005:0.2,'FaceColor',colour_lines(2, :),'EdgeColor','none','Normalization','probability');hold on;
-    histogram(merged_event_info.(sprintf('%s_lag_diff',event_types{n}))(merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})){end}),-0.2:0.005:0.2,'FaceColor',colour_lines(4, :),'EdgeColor','none','Normalization','probability');hold on;
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-    title(sprintf('%s lag diff',event_types{n}))
-
-    nexttile
-    histogram(merged_event_info.(sprintf('%s_corr_diff',event_types{n}))(merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})){end}),-2:0.02:2,'FaceColor',colour_lines(2, :),'EdgeColor','none','Normalization','probability');hold on;
-    histogram(merged_event_info.(sprintf('%s_corr_diff',event_types{n}))(merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})){end}),-2:0.02:2,'FaceColor',colour_lines(4, :),'EdgeColor','none','Normalization','probability');hold on;
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    title(sprintf('%s corr diff',event_types{n}))
-
-
-    nexttile
-    histogram(merged_event_info.(sprintf('%s_plv_diff',event_types{n}))(merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})){end}),-1:0.01:1,'FaceColor',colour_lines(2, :),'EdgeColor','none','Normalization','probability');hold on;
-    histogram(merged_event_info.(sprintf('%s_plv_diff',event_types{n}))(merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})){end}),-1:0.01:1,'FaceColor',colour_lines(4, :),'EdgeColor','none','Normalization','probability');hold on;
-    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-    title(sprintf('%s plv diff',event_types{n}))
-
-end
-legend('Overlapping','Non-overlapping','box','off')
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
-
-
-% 
-% merged_event_info.ripples_lags_all{end}
-% merged_event_info.ripples_lag_diff(merged_event_info.ripples_overlap_idx_all{end})
-
-
-%% Ripple probabilities during unilaterally biased and bilaterally synchronised UP
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-probability_psth_whole = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
-probability_psth_whole = probability;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-probability_normalised_whole = probability;
-
-% Calculate ripples probability according to unilateral vs bilateral events
-%%%%% Ripple info
-ripples_times =  merged_event_info.ripples_ints;
-ripples_group_info = merged_event_info.ripples_group_id;
-ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id;
-ripples_lag_diff = merged_event_info.ripples_lag_diff;
-ripples_all_overlap_idx = merged_event_info.ripples_overlap_idx_all{end};
-ripples_non_overlap_idx = merged_event_info.ripples_non_overlap_idx{end};
-ripples_all_lags =merged_event_info.ripples_lags_all{end};
-
-
-%%%%% UP info
-event_times = merged_event_info.UP_ints;
-hemisphere_id = merged_event_info.UP_hemisphere_id;
-% lag_diff = merged_event_info.UP_lag_diff;
-% group_id = merged_event_info.UP_group_id;
-all_overlap_idx = merged_event_info.UP_overlap_idx_all{end};
-non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
-all_lags =merged_event_info.UP_lags_all{end};
-
-
-binnedArray=[];
-time_windows = [-1 1];
-time_bin = 0.02;
-timebin_edge = time_windows(1):time_bin:time_windows(end);
-bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
-probability_merged = [];
-
-% lag_thresholds = (abs(prctile(all_lags(all_lags>-0.2&all_lags<0.2),[0:10:100])));
-% 
-% lag_thresholds = (abs(prctile(ripples_all_lags,[0:10:100])));
-% 
-lag_thresholds = mean(abs(prctile(ripples_lag_diff,[40 60])));
-% % 
-% lag_thresholds = mean(abs(prctile(ripples_all_lags,[30])));
-% 
-
-probability_psth_whole
-
-%%
-%%%%%%%%%% Based on detection lag
-probability_merged = [];
-
-index=[];
-
-for nprobe = 1:2
-    index{1}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags<-0.005& ripples_all_lags>-0.02),find(ripples_hemisphere_id == nprobe))';% leading
-    index{2}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags>0.005 & ripples_all_lags<0.02),find(ripples_hemisphere_id == nprobe))';% lagging
-    index{3}{nprobe} = ripples_all_overlap_idx(ripples_all_lags<=0&ripples_all_lags>-0.005); % bilaterally synchronised
-    index{4}{nprobe} = [intersect(ripples_all_overlap_idx(ripples_all_lags<-0.02 | ripples_all_lags>0.02),find(ripples_hemisphere_id == nprobe))' intersect(ripples_non_overlap_idx,find(ripples_hemisphere_id == nprobe))']; % unilateral
-end
-group_name = {'ipsi_leading_ripple','contra_leading_ripple','bilateral_ripple','unilateral_ripple'};
-
-for ngroup = 1:length(index)
-    tic
-    event_times = merged_event_info.UP_ints;
-    hemisphere_id = merged_event_info.UP_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_event_probability(ripples_times(index{ngroup}{mprobe},:), ints(:,1), time_windows(1):time_bin:time_windows(end),0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-  
-    % 1 - ipsi and 2 - contra
-    probability_merged(1).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_merged(2).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-
-    % DOWN
-    event_times = merged_event_info.DOWN_ints;
-    hemisphere_id = merged_event_info.DOWN_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_event_probability(ripples_times(index{ngroup}{mprobe},:), ints(:,1), time_windows(1):time_bin:time_windows(end),0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-
-    % 1 - ipsi and 2 - contra
-    probability_merged(1).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_merged(2).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-    % bootstrap distribution
-    for nprobe = 1:2
-        binnedArrayUP = probability_merged(nprobe).(sprintf('%s_UP',group_name{ngroup}));
-        binnedArrayDOWN = probability_merged(nprobe).(sprintf('%s_DOWN',group_name{ngroup}));
-        tempUP = [];
-        tempDOWN = [];
-
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-            tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
-
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-            tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
-        end
-
-        probability_merged(nprobe).(sprintf('%s_UP_bootstrap',group_name{ngroup})) = tempUP;
-        probability_merged(nprobe).(sprintf('%s_DOWN_bootstrap',group_name{ngroup})) = tempDOWN;
-    end
-    toc
-end
-
-
-
-num_bins = 20;
-probability_normalised_merged = [];
-for ngroup = 1:length(index)
-    tic
-    event_times = merged_event_info.UP_ints;
-    hemisphere_id = merged_event_info.UP_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_relative_event_probability(ints,ripples_times(index{ngroup}{mprobe},:),num_bins,0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-  
-    % 1 - ipsi and 2 - contra
-    probability_normalised_merged(1).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_normalised_merged(2).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-
-    % DOWN
-    event_times = merged_event_info.DOWN_ints;
-    hemisphere_id = merged_event_info.DOWN_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-
-            [~,temp{nprobe}{mprobe},~] = calculate_relative_event_probability(ints,ripples_times(index{ngroup}{mprobe},:),num_bins,0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-
-    % 1 - ipsi and 2 - contra
-    probability_normalised_merged(1).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_normalised_merged(2).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-    % bootstrap distribution
-    for nprobe = 1:2
-        binnedArrayUP = probability_normalised_merged(nprobe).(sprintf('%s_UP',group_name{ngroup}));
-        binnedArrayDOWN = probability_normalised_merged(nprobe).(sprintf('%s_DOWN',group_name{ngroup}));
-        tempUP = [];
-        tempDOWN = [];
-
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-            tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
-
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-            tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
-        end
-
-        probability_normalised_merged(nprobe).(sprintf('%s_UP_bootstrap',group_name{ngroup})) = tempUP;
-        probability_normalised_merged(nprobe).(sprintf('%s_DOWN_bootstrap',group_name{ngroup})) = tempDOWN;
-    end
-    toc
-end
-
-
-% end
-
-% probability_merged = merged_probability_psth_whole;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged.mat'),'probability_merged');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged.mat'),'probability_normalised_merged');
-
-
-
-
-%%%%%%%%% LFP based lag
-
-index=[];
-probability_merged = [];
-for nprobe = 1:2
-    lag_thresholds = (prctile(ripples_lag_diff,[12.5 37.5]));
-    index{1}{nprobe} = intersect(find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-    lag_thresholds = (prctile(ripples_lag_diff,[62.5 87.5]));
-    index{2}{nprobe} = intersect(find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-    lag_thresholds = (prctile(ripples_lag_diff,[37.5 62.5]));
-    index{3}{nprobe} = find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)); % bilaterally synchronised
-    lag_thresholds = (prctile(ripples_lag_diff,[12.5 87.5]));
-    index{4}{nprobe} = intersect(find(ripples_lag_diff<lag_thresholds(1) | ripples_lag_diff>lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-end
-group_name = {'ipsi_leading_ripple','contra_leading_ripple','bilateral_ripple','unilateral_ripple'};
-
-for ngroup = 1:length(index)
-    event_times = merged_event_info.UP_ints;
-    hemisphere_id = merged_event_info.UP_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_event_probability(ripples_times(index{ngroup}{mprobe},:), ints(:,1), time_windows(1):time_bin:time_windows(end),0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-  
-    % 1 - ipsi and 2 - contra
-    probability_merged(1).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_merged(2).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-
-    % DOWN
-    event_times = merged_event_info.DOWN_ints;
-    hemisphere_id = merged_event_info.DOWN_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_event_probability(ripples_times(index{ngroup}{mprobe},:), ints(:,1), time_windows(1):time_bin:time_windows(end),0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-
-    % 1 - ipsi and 2 - contra
-    probability_merged(1).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_merged(2).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-    % bootstrap distribution
-    for nprobe = 1:2
-        binnedArrayUP = probability_merged(nprobe).(sprintf('%s_UP',group_name{ngroup}));
-        binnedArrayDOWN = probability_merged(nprobe).(sprintf('%s_DOWN',group_name{ngroup}));
-        tempUP = [];
-        tempDOWN = [];
-
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-            tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
-
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-            tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
-        end
-
-        probability_merged(nprobe).(sprintf('%s_UP_bootstrap',group_name{ngroup})) = tempUP;
-        probability_merged(nprobe).(sprintf('%s_DOWN_bootstrap',group_name{ngroup})) = tempDOWN;
-    end
-
-end
-
-
-
-num_bins = 20;
-probability_normalised_merged = [];
-for ngroup = 1:length(index)
-    event_times = merged_event_info.UP_ints;
-    hemisphere_id = merged_event_info.UP_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-            [~,temp{nprobe}{mprobe},~] = calculate_relative_event_probability(ints,ripples_times(index{ngroup}{mprobe},:),num_bins,0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-
-
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-  
-    % 1 - ipsi and 2 - contra
-    probability_normalised_merged(1).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_normalised_merged(2).(sprintf('%s_UP',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-
-    % DOWN
-    event_times = merged_event_info.DOWN_ints;
-    hemisphere_id = merged_event_info.DOWN_hemisphere_id;
-    temp = [];
-    for nprobe = 1:2
-        ints = event_times(hemisphere_id==nprobe,:);
-        for mprobe = 1:2
-
-            [~,temp{nprobe}{mprobe},~] = calculate_relative_event_probability(ints,ripples_times(index{ngroup}{mprobe},:),num_bins,0);
-            timebin_edges_all = ints(:,1) + bins_centre;  % Absolute times of peri-event window
-            for i = 1:size(ints,1)
-                % Previous DOWN (skip if this is the first UP)
-                if i > 1
-                    prev_offset = ints(i-1,2);
-                    % Find peri-time indices within the previous UP state
-                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
-                    temp{nprobe}{mprobe}(i, mask_prev) = NaN;
-                end
-
-                % Next DOWN (skip if this is the last UP)
-                if i < size(ints,1)
-                    next_onset = ints(i+1,1);
-                    % Find peri-time indices within the next UP state
-                    mask_next = timebin_edges_all(i,:) >= next_onset;
-                    temp{nprobe}{mprobe}(i, mask_next) = NaN;
-                end
-            end
-            % probability_merged(nprobe).(sprintf('%s_index',group_name{ngroup})) = temp;
-        end
-    end
-
-    % 1 - ipsi and 2 - contra
-    probability_normalised_merged(1).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{1}; temp{2}{2}];
-    probability_normalised_merged(2).(sprintf('%s_DOWN',group_name{ngroup})) = [temp{1}{2}; temp{2}{1}];
-
-    % bootstrap distribution
-    for nprobe = 1:2
-        binnedArrayUP = probability_normalised_merged(nprobe).(sprintf('%s_UP',group_name{ngroup}));
-        binnedArrayDOWN = probability_normalised_merged(nprobe).(sprintf('%s_DOWN',group_name{ngroup}));
-        tempUP = [];
-        tempDOWN = [];
-
-        for iBoot = 1:1000
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayUP,1),size(binnedArrayUP,1));
-            tempUP(iBoot,:) = sum(binnedArrayUP(event_id,:),'omitnan')./sum(~isnan(binnedArrayUP(event_id,:)));
-
-            s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-            event_id = datasample(s,1:size(binnedArrayDOWN,1),size(binnedArrayDOWN,1));
-            tempDOWN(iBoot,:) = sum(binnedArrayDOWN(event_id,:),'omitnan')./sum(~isnan(binnedArrayDOWN(event_id,:)));
-        end
-
-        probability_normalised_merged(nprobe).(sprintf('%s_UP_bootstrap',group_name{ngroup})) = tempUP;
-        probability_normalised_merged(nprobe).(sprintf('%s_DOWN_bootstrap',group_name{ngroup})) = tempDOWN;
-    end
-
-end
-
-
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged_LFP_lag.mat'),'probability_merged');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged_LFP_lag.mat'),'probability_normalised_merged');
-
-
-%% Grouping DOWN/UP events based on lags
-% UP DOWN based on detection lags 
-% Putatively use 0.05s as threshold for bilateral shared
-% 0.2s as threshold for bilaterally coordinated but with unilaterally biased
-% > 0.2s and/or non overlapping events 
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged_LFP_lag.mat'),'probability_merged');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged_LFP_lag.mat'),'probability_normalised_merged');
-probability_merged_LFP_lag = probability_merged;
-probability_normalised_merged_LFP_lag = probability_normalised_merged;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged.mat'),'probability_merged');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged.mat'),'probability_normalised_merged');
-
-
-%%%%% UP info
-event_times = merged_event_info.UP_ints;
-hemisphere_id = merged_event_info.UP_hemisphere_id;
-% lag_diff = merged_event_info.UP_lag_diff;
-% group_id = merged_event_info.UP_group_id;
-all_overlap_idx = merged_event_info.UP_overlap_idx_all{end};
-non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
-lags =merged_event_info.UP_lags_all{end};
-
-% lags =all_lags{end};
-
-
-
-% group_name{4} = {'Top 50% ipsi leading','Bottom 50% ipsi leading','Bilaterally synchronised','Bottom 50% contra leading','Top 50% contra leading','Shuffled'};% purely based on lags exlcuding cluster 2
-% group_name{5} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-% group_name{6} = {'Top 50% ipsi dominant','Bottom 50% ipsi dominant','Bilaterally synchronised','Bottom 50% contra dominant','Top 50% contra dominant','Shuffled'};% clusters corr
-% group_name{7} = {'Ipsi dominant ipsi leading','Bilaterally synchronised','Contra dominant contra leading','Shuffled'};
-
-
-%%%%%%%%%%%%% Grouping events
-event_idx = [];
-% 1- ipsi leading 2 - contra leading 3 - bilateral 4 - unilateral
-lag_thresholds = prctile(lags,[0:5:100]);
-event_idx = {all_overlap_idx(lags>-0.2&lags<-0.05),all_overlap_idx(lags<0.05&lags>-0.05),all_overlap_idx(lags>0.05&lags<0.2),non_overlap_idx};
-
-group_name = {'Ipsi leading','Bilaterally synchronised','Contra leading','Non-overlapping','Shuffled'};
-
-
-%%%%%%%%%% Ripple-UP event pairs
-event_pairs_UP = [];
-event_pairs_DOWN = [];
-group_name = {'Ipsi leading','Bilaterally synchronised','Contra leading','Unilateral'};
-
-for n = 1:length(event_idx)
-    for nprobe = 1:2 % 1 is ipsi and 2 is contra
-        event_pairs_UP{n}{2}{nprobe} =any(probability_merged(nprobe).bilateral_ripple_UP(event_idx{n},:),2);
-        event_pairs_DOWN{n}{2}{nprobe} = any(probability_merged(nprobe).bilateral_ripple_DOWN(event_idx{n},:),2);
-
-        event_pairs_UP{n}{1}{nprobe} =any(probability_merged(nprobe).ipsi_leading_ripple_UP(event_idx{n},:),2);
-        event_pairs_DOWN{n}{1}{nprobe} = any(probability_merged(nprobe).ipsi_leading_ripple_DOWN(event_idx{n},:),2);
-
-
-        event_pairs_UP{n}{3}{nprobe} =any(probability_merged(nprobe).contra_leading_ripple_UP(event_idx{n},:),2);
-        event_pairs_DOWN{n}{3}{nprobe} = any(probability_merged(nprobe).contra_leading_ripple_DOWN(event_idx{n},:),2);
-
-        event_pairs_UP{n}{4}{nprobe} =any(probability_merged(nprobe).unilateral_ripple_UP(event_idx{n},:),2);
-        event_pairs_DOWN{n}{4}{nprobe} = any(probability_merged(nprobe).unilateral_ripple_DOWN(event_idx{n},:),2);
-    end
-end
-
-% bilateral UP -bilateral ripples
-
-index=[];
-
-for nprobe = 1:2
-    index{1}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags<-0.005& ripples_all_lags>-0.02),find(ripples_hemisphere_id == nprobe))';% leading
-    index{2}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags>0.005 & ripples_all_lags<0.02),find(ripples_hemisphere_id == nprobe))';% lagging
-    index{3}{nprobe} = ripples_all_overlap_idx(ripples_all_lags<=0&ripples_all_lags>-0.005); % bilaterally synchronised
-    index{4}{nprobe} = [intersect(ripples_all_overlap_idx(ripples_all_lags<-0.02 | ripples_all_lags>0.02),find(ripples_hemisphere_id == nprobe))' intersect(ripples_non_overlap_idx,find(ripples_hemisphere_id == nprobe))']; % unilateral
-end
-
-% sum(event_pairs_UP{2}{2}{1})/length(index{3}{1})
-% % sum(event_pairs_UP{2}{2}{2})
-% 
-% % ipsi leading UP -ipsi leading ripples
-% sum(event_pairs_UP{1}{1}{1})/length(index{1}{1})
-% sum(event_pairs_UP{1}{1}{2})
-% 
-% 
-% % unilateral events
-% sum(event_pairs_UP{4}{4}{1})/length(index{4}{1})
-% sum(event_pairs_UP{4}{4}{2})
-% 
-% sum(event_pairs_UP{4}{4}{1})
-% sum(event_pairs_UP{4}{4}{2})
-
-% figure
-% time_wondows = [-1 1];
-% time_bin = 0.02;
-% x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-% nexttile
-% plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));
-% title('Unilateral ripples during bilateral UP')
-% legend('ipsi','contra')
-% 
-% nexttile
-% plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));
-% title('Unilateral ripples during bilateral DOWN')
-% legend('ipsi','contra')
-% 
-% nexttile
-% plot(x,mean(probability_merged(1).unilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(2).unilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
-% title('Unilateral ripples during unilateral UP')
-% legend('ipsi','contra')
-% 
-% nexttile
-% plot(x,mean(probability_merged(1).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(2).unilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
-% title('Unilateral ripples during unilateral DOWN')
-% legend('ipsi','contra')
-% 
-% 
-% 
-% figure
-% time_wondows = [-1 1];
-% time_bin = 0.02;
-% x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-% nexttile
-% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{2}{2}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{1},:),'omitnan'));
-% plot(x,mean(probability_merged(1).bilateral_ripple_UP(event_pairs_UP{4}{4}{2},:),'omitnan'));
-% title('Bilateral ripples during UP')
-% legend('bilateral','ipsi','contra')
-% 
-% nexttile
-% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{2}{2}{1},:),'omitnan'));hold on;
-% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{1},:),'omitnan'));
-% plot(x,mean(probability_merged(1).bilateral_ripple_DOWN(event_pairs_DOWN{4}{4}{2},:),'omitnan'));
-% title('Bilateral ripples during DOWN')
-% legend('bilateral','ipsi','contra')
-
-
 %% Ipsi and contra ripple probabilities during DOWN UP with different bilateral synchrony
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
@@ -857,9 +189,46 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_normalised_whole_baseline = probability_normalised;
 
 
-
-
+Delta_peaks_zscore_UD = [];
+Delta_peaks_zscore_DU = [];
+SWpeakmag_UD = [];
+SWpeakmag_DU = [];
+index = [];
 %%%%% UP info
+UP_index_all = [event_info(1).UP_index; event_info(2).UP_index];
+DOWN_index_all = [event_info(1).DOWN_index; event_info(2).DOWN_index];
+
+for nprobe = 1:2
+    for nsession = 1:max(slow_waves_all(1).UP_session_count)
+
+        % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
+        % Find DOWN before UP
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index);
+
+        Delta_peaks_zscore_UD = [Delta_peaks_zscore_UD;...
+            slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        SWpeakmag_UD = [SWpeakmag_UD;...
+            slow_waves_all(nprobe).SWpeakmag(C)];
+
+        % Find DOWN before UP
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+
+        Delta_peaks_zscore_DU = [Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index)];
+
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+
+        temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+
+        SWpeakmag_DU = [SWpeakmag_DU;...
+            slow_waves_all(nprobe).SWpeakmag(temp(ia))];
+    end
+end
+% scatter( slow_waves_all(1).SWpeakmag(slow_waves_all(1).DOWN_session_count == nsession),slow_waves_all(1).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,1),:))
+% hold on
+% scatter(slow_waves_all(1).SWpeakmag(slow_waves_all(1).DOWN_session_count == nsession)',max(slow_waves_all(1).DOWN_peaks_zscore{nsession}(slow_waves_all(1).probe_hemisphere{nsession}==1,:)))
+
+
 event_times = merged_event_info.UP_ints;
 hemisphere_id = merged_event_info.UP_hemisphere_id;
 % lag_diff = merged_event_info.UP_lag_diff;
@@ -869,7 +238,7 @@ non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
 all_lags =merged_event_info.UP_lags_all{end};
 
 
-
+event_idx = [];
 
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
@@ -881,9 +250,11 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
-lags =all_lags(all_lags>=0 & all_lags<=0.15);
+lags =abs(all_lags(abs(all_lags)>=0 & abs(all_lags)<=0.15));
+
+% lags =all_lags(all_lags>=0 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
-lags =all_lags;
+lags =abs(all_lags);
 
 for n = 1:length(lag_thresholds)-1
     event_idx{2}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
@@ -900,22 +271,46 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
+% lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+power_thresholds = prctile(SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15);
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
+end
+
+
+power_thresholds = prctile(SWpeakmag_DU,[0 20 40 60 80 100]);
+delta_power =SWpeakmag_DU;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{5}{n} =(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
+end
+
+
 group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
 group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
+group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 
-title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
-title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows lagging only)';
-title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
+
+title_names{1} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows abs lag)';
+title_names{3} = 'Ipsi-contra normalised UP ripple probability by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra normalised UP ripple probability by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra normalised UP ripple probability by 5 powers (All events)';
 
 
 
 %%%%%%%%%%%%%%%%%%%%%
-ipsi_probability = [probability_psth_whole(1).L_ripples_UP; probability_psth_whole(2).R_ripples_UP];
-contra_probability = [probability_psth_whole(1).R_ripples_UP; probability_psth_whole(2).L_ripples_UP];
+ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
+contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
 
-ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_UP; probability_psth_whole_baseline(2).R_ripples_UP];
-contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_UP; probability_psth_whole_baseline(2).L_ripples_UP];
+ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_ripples_UP; probability_normalised_whole_baseline(2).R_ripples_UP];
+contra_probability_baseline = [probability_normalised_whole_baseline(1).R_ripples_UP; probability_normalised_whole_baseline(2).L_ripples_UP];
 
 %%%%% calculate shuffled baseline
 %%% Ipsi
@@ -958,10 +353,10 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 %%%%%%%%%% Calculate bootstrapped MUA
 
 % clear probability_merged
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
-
+% time_wondows = [-1 1];
+% time_bin = 0.02;
+num_bins=20;
+x = linspace(0,1,num_bins);
 probability_merged.x = x;
 probability_merged.ipsi_ripples_UP = [];
 probability_merged.contra_ripples_UP = [];
@@ -1010,11 +405,12 @@ probability_merged.ripples_UP_groups = [title_names 'All DOWN-UP'];
 probability_merged.ripples_UP_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+% time_wondows = [-1 1];
+% time_bin = 0.02;
+num_bins=20;
+x = linspace(0,1,num_bins);
 
-%%%%%%%%% Plot DU transition
+%%%%%%%%% Plot normalised UP
 for ngroup = 1:length(event_idx)
     fig = figure('Color','w');
     fig.Position = [350 59 1650 465];
@@ -1025,12 +421,17 @@ for ngroup = 1:length(event_idx)
     % elseif ngroup ==5
     %     colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
     % else
-    if ngroup ~=2
+    if ngroup ==1  | ngroup ==3
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
-    else
-        colour_lines = [228,42,168;190,36,160;151,31,151;112,26,142;74,20,134]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
+    elseif ngroup==2
+        colour_lines = [228,42,168;222,119,174;184,225,134;127,188,65;0,90,50]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
     end
 
+
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1043,7 +444,7 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
@@ -1058,12 +459,17 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([0 0.08])
+    ylim([0 0.11])
     title('ipsi ripples')
-    xlabel('Time relative to DOWN-UP transition (s)')
+    xlabel('Normalised duration of UP')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
+    if ngroup >3
+        % colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1076,7 +482,7 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
@@ -1088,15 +494,19 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([0 0.08])
+    ylim([0 0.11])
 
     % xline(0,'r')
     title('contra ripples')
-    xlabel('Time relative to DOWN-UP transition (s)')
+    xlabel('Normalised duration of UP')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1109,7 +519,7 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
@@ -1127,7 +537,7 @@ for ngroup = 1:length(event_idx)
 
     % xline(0,'r')
     title('Ipsi-contra diff')
-    xlabel('Time relative to DOWN-UP transition (s)')
+    xlabel('Normalised duration of UP')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
@@ -1137,50 +547,51 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%% All DOWN UP rpples
-event_averaging_scale = 30;
+event_averaging_scale = 10;
+x = linspace(0,1,20);
 
 % for ngroup = 1:length(event_idx)
 ngroup = 2;
 fig = figure('Color','w');
-fig.Position = [350 59 1650 465];
-fig.Name = 'Left-Right combined ipsi contra ripple distribution around DOWN-UP transition'
+fig.Position = [350 59 1650/3 465];
+fig.Name = 'Left-Right combined Ipsi-contra normalised UP ripple probability'
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 
-nexttile
-duration = event_times(:,2) - event_times(:,1);
-[~,sorted_index] = sort(duration);
-imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('ipsi ripples')
-
-nexttile
-duration = event_times(:,2) - event_times(:,1);
-[~,sorted_index] = sort(duration);
-imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to DOWN-UP transition (s)')
-ylabel('Event sorted by UP duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('contra ripples')
+% nexttile
+% duration = event_times(:,2) - event_times(:,1);
+% [~,sorted_index] = sort(duration);
+% imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+% xticks([0.5 4.5 8.5 12.5 16.5 20.5])
+% % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+% xticklabels([0 0.2 0.4 0.6 0.8 1])
+% xline(50.5,'r',LineWidth=1)
+% clim([0 1])
+% colorbar
+% colormap(flipud(gray))
+% xlabel('Normalised duration of UP')
+% ylabel('Event sorted by UP duration')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% title('ipsi ripples')
+% 
+% nexttile
+% duration = event_times(:,2) - event_times(:,1);
+% [~,sorted_index] = sort(duration);
+% imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+% xticks([0.5 4.5 8.5 12.5 16.5 20.5])
+% % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+% xticklabels([0 0.2 0.4 0.6 0.8 1])
+% xline(50.5,'r',LineWidth=1)
+% clim([0 1])
+% colorbar
+% colormap(flipud(gray))
+% xlabel('Normalised duration of UP')
+% ylabel('Event sorted by UP duration')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% title('contra ripples')
 
 nexttile
 clear ERROR_SHADE
@@ -1192,7 +603,7 @@ UCI = prctile(binnedArray,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
+% xline(0,'r',LineWidth=1)
 
 binnedArray = probability_merged.contra_ripples_UP{end}{1};
 y = mean(binnedArray,'omitnan');
@@ -1201,7 +612,7 @@ UCI = prctile(binnedArray,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
+% xline(0,'r',LineWidth=1)
 
 % baseline
 binnedArray = probability_merged.ipsi_ripples_baseline_UP;
@@ -1215,9 +626,9 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
 % xline(0,'r')
-ylim([0 0.06])
+ylim([0 0.09])
 % title('ipsi ripples')
-xlabel('Time relative to DOWN-UP transition (s)')
+xlabel('Normalised duration of UP')
 ylabel('Probability')
 legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -1240,35 +651,78 @@ non_overlap_idx = merged_event_info.DOWN_non_overlap_idx{end};
 all_lags =merged_event_info.DOWN_lags_all{end};
 
 
+event_idx = [];
+
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
-% lag_thresholds = prctile(abs(lags),[0 20 40 60 80 100]);
 lags =all_lags;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+lags =abs(all_lags(abs(all_lags)>=0 & abs(all_lags)<=0.15));
+
+% lags =all_lags(all_lags>=0 & all_lags<=0.15);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =abs(all_lags);
+
+for n = 1:length(lag_thresholds)-1
+    event_idx{2}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
+lags =all_lags;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(lag_thresholds)-1
+    event_idx{3}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
+end
+
+
+% lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+power_thresholds = prctile(SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15);
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
+end
+
+
+power_thresholds = prctile(SWpeakmag_UD,[0 20 40 60 80 100]);
+delta_power =SWpeakmag_UD;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{5}{n} =(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
+end
+
+
 group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
-title_names{1} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows)';
+group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
+group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
+group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 
-% lag_thresholds = [-0.2]
-for n = 1:length(lag_thresholds)-1
-    event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
-end
 
-lag_thresholds = prctile(abs(lags),[0 20 40 60 80 100]);
-lags =all_lags;
-group_name{2} = {'Top 0-20% lag','Top 20-40% lag','Top 40-60% lag','Top 60-80% lag','Top 80-100% lag','Shuffled'};
-title_names{2} = 'Ipsi-contra UP_DOWN ripples by 5 absolute lags (150ms windows)';
-
-% lag_thresholds = [-0.2]
-for n = 1:length(lag_thresholds)-1
-    event_idx{1}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
-end
+title_names{1} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (150ms windows abs lag)';
+title_names{3} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra normalised DOWN ripple probability by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra normalised DOWN ripple probability by 5 powers (All events)';
 
 
 %%%%%%%%%%%%%%%%%%%%%
-ipsi_probability = [probability_psth_whole(1).L_ripples_DOWN; probability_psth_whole(2).R_ripples_DOWN];
-contra_probability = [probability_psth_whole(1).R_ripples_DOWN; probability_psth_whole(2).L_ripples_DOWN];
+ipsi_probability = [probability_normalised_whole(1).L_ripples_DOWN; probability_normalised_whole(2).R_ripples_DOWN];
+contra_probability = [probability_normalised_whole(1).R_ripples_DOWN; probability_normalised_whole(2).L_ripples_DOWN];
 
-ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_DOWN; probability_psth_whole_baseline(2).R_ripples_DOWN];
-contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_DOWN; probability_psth_whole_baseline(2).L_ripples_DOWN];
+ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_ripples_DOWN; probability_normalised_whole_baseline(2).R_ripples_DOWN];
+contra_probability_baseline = [probability_normalised_whole_baseline(1).R_ripples_DOWN; probability_normalised_whole_baseline(2).L_ripples_DOWN];
 
 %%%%% calculate shuffled baseline
 %%% Ipsi
@@ -1311,9 +765,8 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 %%%%%%%%%% Calculate bootstrapped MUA
 
 % clear probability_merged
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+num_bins=20;
+x = linspace(0,1,num_bins);
 
 probability_merged.x = x;
 probability_merged.ipsi_ripples_DOWN = [];
@@ -1363,9 +816,8 @@ probability_merged.ripples_DOWN_groups = [title_names 'All UP-DOWN’'];
 probability_merged.ripples_DOWN_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
-time_wondows = [-1 1];
-time_bin = 0.02;
-x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
+num_bins=20;
+x = linspace(0,1,num_bins);
 
 %%%%%%%%% Plot DU transition
 for ngroup = 1:length(event_idx)
@@ -1373,14 +825,16 @@ for ngroup = 1:length(event_idx)
     fig.Position = [350 59 1650 465];
     fig.Name =title_names{ngroup};
 
-    % if ngroup ==1
-    %     colour_lines = [0,90,50;228,42,168;74,20,134]/256; % Dark Green, Magenta, dark purple
-    % elseif ngroup ==5
-    % colour_lines = [0,90,50;228,42,168;74,20,134;82,82,82]/256; % Dark Green, Magenta, dark purple and gray
-    % else
-    colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
-    % end
+    if ngroup ==1  | ngroup ==3
+        colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
+    elseif ngroup==2
+        colour_lines = [228,42,168;222,119,174;184,225,134;127,188,65;0,90,50]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
+    end
 
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1410,10 +864,15 @@ for ngroup = 1:length(event_idx)
     % xline(0,'r')
     ylim([0 0.17])
     title('ipsi ripples')
-    xlabel('Time relative to UP-DOWN transition (s)')
+    xlabel('Normalised duration of DOWN')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
+    if ngroup >3
+        % colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1442,11 +901,14 @@ for ngroup = 1:length(event_idx)
 
     % xline(0,'r')
     title('contra ripples')
-    xlabel('Time relative to UP-DOWN transition (s)')
+    xlabel('Normalised duration of DOWN')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1472,12 +934,12 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([0 0.03])
+    ylim([-0.03 0.03])
 
 
     % xline(0,'r')
     title('Ipsi-contra diff')
-    xlabel('Time relative to UP-DOWN transition (s)')
+    xlabel('Normalised duration of DOWN')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
@@ -1495,45 +957,46 @@ event_averaging_scale = 30;
 % for ngroup = 1:length(event_idx)
 ngroup = 2;
 fig = figure('Color','w');
-fig.Position = [350 59 1650 465];
-fig.Name = 'Left-Right combined ipsi contra ripple distribution around UP-DOWN transition'
+fig.Position = [350 59 1650/3 465];
+fig.Name = 'Left-Right combined Ipsi-contra normalised DOWN ripple probability'
+
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 
-nexttile
-duration = event_times(:,2) - event_times(:,1);
-[~,sorted_index] = sort(duration);
-imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('ipsi ripples')
-
-nexttile
-duration = event_times(:,2) - event_times(:,1);
-[~,sorted_index] = sort(duration);
-imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
-% xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
-xline(50.5,'r',LineWidth=1)
-clim([0 1])
-colorbar
-colormap(flipud(gray))
-xlabel('Time relative to UP-DOWN transition (s)')
-ylabel('Event sorted by DOWN duration')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('contra ripples')
+% nexttile
+% duration = event_times(:,2) - event_times(:,1);
+% [~,sorted_index] = sort(duration);
+% imagesc(event_averaging_scale*movmean(ipsi_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+% xticks([0.5 4.5 8.5 12.5 16.5 20.5])
+% % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+% xticklabels([0 0.2 0.4 0.6 0.8 1])
+% xline(50.5,'r',LineWidth=1)
+% clim([0 1])
+% colorbar
+% colormap(flipud(gray))
+% xlabel('Normalised duration of DOWN')
+% ylabel('Event sorted by DOWN duration')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% title('ipsi ripples')
+% 
+% nexttile
+% duration = event_times(:,2) - event_times(:,1);
+% [~,sorted_index] = sort(duration);
+% imagesc(event_averaging_scale*movmean(contra_probability(sorted_index,:),event_averaging_scale,1,'omitnan'))
+% % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
+% xticks([0.5 4.5 8.5 12.5 16.5 20.5])
+% % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
+% xticklabels([0 0.2 0.4 0.6 0.8 1])
+% xline(50.5,'r',LineWidth=1)
+% clim([0 1])
+% colorbar
+% colormap(flipud(gray))
+% xlabel('Normalised duration of DOWN')
+% ylabel('Event sorted by DOWN duration')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% title('contra ripples')
 
 nexttile
 clear ERROR_SHADE
@@ -1545,7 +1008,7 @@ UCI = prctile(binnedArray,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
+% xline(0,'r',LineWidth=1)
 
 binnedArray = probability_merged.contra_ripples_DOWN{end}{1};
 y = mean(binnedArray,'omitnan');
@@ -1554,7 +1017,7 @@ UCI = prctile(binnedArray,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
-xline(0,'r',LineWidth=1)
+% xline(0,'r',LineWidth=1)
 
 % baseline
 binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
@@ -1570,13 +1033,14 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 % xline(0,'r')
 ylim([0 0.09])
 % title('ipsi ripples')
-xlabel('Time relative to DOWN-UP transition (s)')
+xlabel('Normalised duration of DOWN')
 ylabel('Probability')
 legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_probability_merged_normalised.mat'),'probability_merged')
 
 %%
 
