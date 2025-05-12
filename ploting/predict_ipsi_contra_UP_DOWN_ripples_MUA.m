@@ -189,11 +189,75 @@ end
 %% Grouping DOWN/UP events and ripples based on lags
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'));
+spindle_probability_psth_whole = probability;
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
 probability_psth_whole_baseline = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 probability_normalised_whole = probability;
+
+
+% probability = []
+ipsi_Delta_peaks_zscore_UD = [];
+ipsi_Delta_peaks_zscore_DU = [];
+SWpeakmag_UD = [];
+SWpeakmag_DU = [];
+
+contra_Delta_peaks_zscore_UD = [];
+contra_Delta_peaks_zscore_DU = [];
+
+index = [];
+%%%%% UP info
+% UP_index_all = [probability(1).UP_index; probability(2).UP_index];
+% DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
+
+for nprobe = 1:2
+    for nsession = 1:max(slow_waves_all(1).UP_session_count)
+
+        % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
+
+        ipsi_Delta_peaks_zscore_UD = [ipsi_Delta_peaks_zscore_UD;...
+            slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        SWpeakmag_UD = [SWpeakmag_UD;...
+            slow_waves_all(nprobe).SWpeakmag(C)];
+
+        % Find DOWN before UP
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        ipsi_Delta_peaks_zscore_DU = [ipsi_Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
+
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+
+        SWpeakmag_DU = [SWpeakmag_DU;...
+            slow_waves_all(nprobe).SWpeakmag(temp(ia))];
+
+
+
+        % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
+
+        contra_Delta_peaks_zscore_UD = [contra_Delta_peaks_zscore_UD;...
+            slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,abs(nprobe-3)),ia)'];
+
+        % Find DOWN before UP
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        contra_Delta_peaks_zscore_DU = [contra_Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,abs(nprobe-3)),ia)'];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
+
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+    end
+end
 
 % Calculate ripples probability according to unilateral vs bilateral events
 %%%%% Ripple info
@@ -340,61 +404,26 @@ for i = 1:length(varnames)
     ripples_info.(['contra_' varname '_UP']) = [R_var{1}, L_var{2}];
 end
 
+varnames = {
+    'ipsi_Delta_peaks_zscore_UD'
+    'ipsi_Delta_peaks_zscore_DU'
+    'SWpeakmag_UD'
+    'SWpeakmag_DU'
+    'contra_Delta_peaks_zscore_UD'
+    'contra_Delta_peaks_zscore_DU'
+    };
 
-%%%%% UP info
-event_times = merged_event_info.UP_ints;
-hemisphere_id = merged_event_info.UP_hemisphere_id;
-% lag_diff = merged_event_info.UP_lag_diff;
-% group_id = merged_event_info.UP_group_id;
-all_overlap_idx = merged_event_info.UP_overlap_idx_all{end};
-non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
-all_lags =merged_event_info.UP_lags_all{end};
-
-%%%%%%%%%% Based on detection lag
-probability_merged = [];
-
-index=[];
-
-for nprobe = 1:2
-    index{1}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags<-0.005& ripples_all_lags>-0.02),find(ripples_hemisphere_id == nprobe))';% leading
-    index{2}{nprobe} = intersect(ripples_all_overlap_idx(ripples_all_lags>0.005 & ripples_all_lags<0.02),find(ripples_hemisphere_id == nprobe))';% lagging
-    index{3}{nprobe} = ripples_all_overlap_idx(ripples_all_lags<=0&ripples_all_lags>-0.005); % bilaterally synchronised
-    index{4}{nprobe} = [intersect(ripples_all_overlap_idx(ripples_all_lags<-0.02 | ripples_all_lags>0.02),find(ripples_hemisphere_id == nprobe))' intersect(ripples_non_overlap_idx,find(ripples_hemisphere_id == nprobe))']; % unilateral
+% Loop through each variable name
+for i = 1:length(varnames)
+    varname = varnames{i};
+    temp =eval(varname);
+    ripples_info.(varname) = temp;
 end
-group_name = {'ipsi_leading_ripple','contra_leading_ripple','bilateral_ripple','unilateral_ripple'};
 
 
 
-%%%%%%%%% LFP based lag
-
-index=[];
-probability_merged = [];
-for nprobe = 1:2
-    lag_thresholds = (prctile(ripples_lag_diff,[12.5 37.5]));
-    index{1}{nprobe} = intersect(find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-    lag_thresholds = (prctile(ripples_lag_diff,[62.5 87.5]));
-    index{2}{nprobe} = intersect(find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-    lag_thresholds = (prctile(ripples_lag_diff,[37.5 62.5]));
-    index{3}{nprobe} = find(ripples_lag_diff>lag_thresholds(1) & ripples_lag_diff<lag_thresholds(2)); % bilaterally synchronised
-    lag_thresholds = (prctile(ripples_lag_diff,[12.5 87.5]));
-    index{4}{nprobe} = intersect(find(ripples_lag_diff<lag_thresholds(1) | ripples_lag_diff>lag_thresholds(2)),find(ripples_hemisphere_id == nprobe))';% leading
-end
-group_name = {'ipsi_leading_ripple','contra_leading_ripple','bilateral_ripple','unilateral_ripple'};
 
 
-
-% UP DOWN based on detection lags 
-% Putatively use 0.05s as threshold for bilateral shared
-% 0.2s as threshold for bilaterally coordinated but with unilaterally biased
-% > 0.2s and/or non overlapping events 
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged_LFP_lag.mat'),'probability_merged');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged_LFP_lag.mat'),'probability_normalised_merged');
-probability_merged_LFP_lag = probability_merged;
-probability_normalised_merged_LFP_lag = probability_normalised_merged;
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_merged.mat'),'probability_merged');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_merged.mat'),'probability_normalised_merged');
 
 
 %%%%% UP info
@@ -434,6 +463,9 @@ contra_probability = [probability_psth_whole(1).R_ripples_UP; probability_psth_w
 ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_UP; probability_psth_whole_baseline(2).R_ripples_UP];
 contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_UP; probability_psth_whole_baseline(2).L_ripples_UP];
 
+%%%%%%%%%%% spindles
+ipsi_spindle_probability = [spindle_probability_psth_whole(1).L_spindles_UP; spindle_probability_psth_whole(2).R_spindles_UP];
+contra_spindle_probability = [spindle_probability_psth_whole(1).R_spindles_UP; spindle_probability_psth_whole(2).L_spindles_UP];
 
 %%%%%%%%%% Predict HPC MUA and ripples during DOWN-UP transition based on
 %%%%%%%%%% V1 DOWN UP bilateral synchrony and magnitude
@@ -453,6 +485,8 @@ index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
 output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),ripples_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','V1synchrony_HPCexcitation_output.mat'),'output');
+
+output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),ripples_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
 
 
 %%

@@ -875,22 +875,22 @@ probability_normalised_whole = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
 probability_normalised_whole_baseline = probability_normalised;
 
-
+% probability = []
 Delta_peaks_zscore_UD = [];
 Delta_peaks_zscore_DU = [];
 SWpeakmag_UD = [];
 SWpeakmag_DU = [];
 index = [];
 %%%%% UP info
-UP_index_all = [event_info(1).UP_index; event_info(2).UP_index];
-DOWN_index_all = [event_info(1).DOWN_index; event_info(2).DOWN_index];
+UP_index_all = [probability(1).UP_index; probability(2).UP_index];
+DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
 
 for nprobe = 1:2
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
 
         % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
-        % Find DOWN before UP
-        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index);
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
 
         Delta_peaks_zscore_UD = [Delta_peaks_zscore_UD;...
             slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
@@ -898,12 +898,12 @@ for nprobe = 1:2
             slow_waves_all(nprobe).SWpeakmag(C)];
 
         % Find DOWN before UP
-        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
 
         Delta_peaks_zscore_DU = [Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
-        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index)];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
 
-        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
 
         temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
 
@@ -968,15 +968,18 @@ end
 % lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
 power_thresholds = prctile(SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
 delta_power =SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15);
+% power_thresholds = prctile(Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15);
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
     event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
 end
 
-
 power_thresholds = prctile(SWpeakmag_DU,[0 20 40 60 80 100]);
 delta_power =SWpeakmag_DU;
+% power_thresholds = prctile(Delta_peaks_zscore_DU,[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU;
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1

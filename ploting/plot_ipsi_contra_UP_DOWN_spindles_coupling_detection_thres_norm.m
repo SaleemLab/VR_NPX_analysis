@@ -1,4 +1,4 @@
-function plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thres_norm(slow_waves_all,ripples_all,spindles_all)
+function plot_ipsi_contra_UP_DOWN_spindles_coupling_detection_thres_norm(slow_waves_all,ripples_all,spindles_all)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -19,10 +19,16 @@ end
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_whole_baseline.mat'));
 probability_normalised_whole_baseline = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole_baseline.mat'));
+probability_psth_whole_baseline = probability;
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_whole.mat'));
 probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'));
+probability_psth_whole = probability;
 
 
 % %%%%%%%
@@ -83,6 +89,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 
 %%%%%%%%%%%%% Overlaps
 % Initialize output
+all_lags=[];
 L_overlap_idx = [];
 R_overlap_idx = [];
 overlap_idx = [];
@@ -177,18 +184,6 @@ end
 
 %% Ipsi and contra ripple probabilities during DOWN UP with different bilateral synchrony
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-probability_psth_whole = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
-probability_psth_whole_baseline = probability;
-
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-probability_normalised_whole = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
-probability_normalised_whole_baseline = probability_normalised;
-
-
 
 % probability = []
 Delta_peaks_zscore_UD = [];
@@ -197,8 +192,8 @@ SWpeakmag_UD = [];
 SWpeakmag_DU = [];
 index = [];
 %%%%% UP info
-UP_index_all = [probability(1).UP_index; probability(2).UP_index];
-DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
+% UP_index_all = [probability(1).UP_index; probability(2).UP_index];
+% DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
 
 for nprobe = 1:2
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
@@ -299,20 +294,20 @@ group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','
 group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 
 
-title_names{1} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows)';
-title_names{2} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows abs lag)';
-title_names{3} = 'Ipsi-contra normalised UP ripple probability by 5 lags (50ms windows)';
-title_names{4} = 'Ipsi-contra normalised UP ripple probability by 5 powers (150ms windows)';
-title_names{5} = 'Ipsi-contra normalised UP ripple probability by 5 powers (All events)';
+title_names{1} = 'Ipsi-contra normalised UP spindle probability by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra normalised UP spindle probability by 5 lags (150ms windows abs lag)';
+title_names{3} = 'Ipsi-contra normalised UP spindle probability by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra normalised UP spindle probability by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra normalised UP spindle probability by 5 powers (All events)';
 
 
 
 %%%%%%%%%%%%%%%%%%%%%
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
+ipsi_probability = [probability_normalised_whole(1).L_spindles_UP; probability_normalised_whole(2).R_spindles_UP];
+contra_probability = [probability_normalised_whole(1).R_spindles_UP; probability_normalised_whole(2).L_spindles_UP];
 
-ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_ripples_UP; probability_normalised_whole_baseline(2).R_ripples_UP];
-contra_probability_baseline = [probability_normalised_whole_baseline(1).R_ripples_UP; probability_normalised_whole_baseline(2).L_ripples_UP];
+ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_spindles_UP; probability_normalised_whole_baseline(2).R_spindles_UP];
+contra_probability_baseline = [probability_normalised_whole_baseline(1).R_spindles_UP; probability_normalised_whole_baseline(2).L_spindles_UP];
 
 %%%%% calculate shuffled baseline
 %%% Ipsi
@@ -360,9 +355,9 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 num_bins=20;
 x = linspace(0,1,num_bins);
 probability_merged.x = x;
-probability_merged.ipsi_ripples_UP = [];
-probability_merged.contra_ripples_UP = [];
-probability_merged.ipsi_contra_diff_ripples_UP = [];
+probability_merged.ipsi_spindles_UP = [];
+probability_merged.contra_spindles_UP = [];
+probability_merged.ipsi_contra_diff_spindles_UP = [];
 
 for ngroup = 1:length(event_idx)+1
 
@@ -393,18 +388,18 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        probability_merged.ipsi_ripples_UP{ngroup}{i} = temp1;
-        probability_merged.contra_ripples_UP{ngroup}{i} = temp2;
-        probability_merged.ipsi_contra_diff_ripples_UP{ngroup}{i} = temp3;
+        probability_merged.ipsi_spindles_UP{ngroup}{i} = temp1;
+        probability_merged.contra_spindles_UP{ngroup}{i} = temp2;
+        probability_merged.ipsi_contra_diff_spindles_UP{ngroup}{i} = temp3;
     end
 end
 
 
-probability_merged.ipsi_ripples_baseline_UP = ipsi_baseline_bootstrap;
-probability_merged.contra_ripples_baseline_UP = contra_baseline_bootstrap;
-probability_merged.ipsi_contra_diff_ripples_baseline_UP = ipsi_contra_diff_baseline_bootstrap;
-probability_merged.ripples_UP_groups = [title_names 'All DOWN-UP'];
-probability_merged.ripples_UP_index = [event_idx {(1:size(ipsi_probability,1))'}];
+probability_merged.ipsi_spindles_baseline_UP = ipsi_baseline_bootstrap;
+probability_merged.contra_spindles_baseline_UP = contra_baseline_bootstrap;
+probability_merged.ipsi_contra_diff_spindles_baseline_UP = ipsi_contra_diff_baseline_bootstrap;
+probability_merged.spindles_UP_groups = [title_names 'All UP'];
+probability_merged.spindles_UP_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
 % time_wondows = [-1 1];
@@ -438,7 +433,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.ipsi_ripples_UP{ngroup}{i};
+        binnedArray = probability_merged.ipsi_spindles_UP{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -450,7 +445,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_ripples_baseline_UP;
+    binnedArray = probability_merged.ipsi_spindles_baseline_UP;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -461,8 +456,8 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([0 0.11])
-    title('ipsi ripples')
+    ylim([0 0.07])
+    title('ipsi spindles')
     xlabel('Normalised duration of UP')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -476,7 +471,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.contra_ripples_UP{ngroup}{i};
+        binnedArray = probability_merged.contra_spindles_UP{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -488,7 +483,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.contra_ripples_baseline_UP;
+    binnedArray = probability_merged.contra_spindles_baseline_UP;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -496,10 +491,10 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([0 0.11])
+    ylim([0 0.07])
 
     % xline(0,'r')
-    title('contra ripples')
+    title('contra spindles')
     xlabel('Normalised duration of UP')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -513,7 +508,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.ipsi_contra_diff_ripples_UP{ngroup}{i};
+        binnedArray = probability_merged.ipsi_contra_diff_spindles_UP{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -525,7 +520,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_contra_diff_ripples_baseline_UP;
+    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_UP;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -556,7 +551,7 @@ x = linspace(0,1,20);
 ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650/3 465];
-fig.Name = 'Left-Right combined Ipsi-contra normalised UP ripple probability'
+fig.Name = 'Left-Right combined Ipsi-contra normalised UP spindle probability'
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -598,7 +593,7 @@ colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 nexttile
 clear ERROR_SHADE
 
-binnedArray = probability_merged.ipsi_ripples_UP{end}{1};
+binnedArray = probability_merged.ipsi_spindles_UP{end}{1};
 y = mean(binnedArray,'omitnan');
 LCI = prctile(binnedArray,2.5);
 UCI = prctile(binnedArray,97.5);
@@ -607,7 +602,7 @@ PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
 % xline(0,'r',LineWidth=1)
 
-binnedArray = probability_merged.contra_ripples_UP{end}{1};
+binnedArray = probability_merged.contra_spindles_UP{end}{1};
 y = mean(binnedArray,'omitnan');
 LCI = prctile(binnedArray,2.5);
 UCI = prctile(binnedArray,97.5);
@@ -617,7 +612,7 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 % xline(0,'r',LineWidth=1)
 
 % baseline
-binnedArray = probability_merged.ipsi_ripples_baseline_UP;
+binnedArray = probability_merged.ipsi_spindles_baseline_UP;
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
@@ -628,7 +623,7 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
 % xline(0,'r')
-ylim([0 0.09])
+ylim([0.02 0.045])
 % title('ipsi ripples')
 xlabel('Normalised duration of UP')
 ylabel('Probability')
@@ -712,19 +707,19 @@ group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','
 group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 
 
-title_names{1} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (150ms windows)';
-title_names{2} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (150ms windows abs lag)';
-title_names{3} = 'Ipsi-contra normalised DOWN ripple probability by 5 lags (50ms windows)';
-title_names{4} = 'Ipsi-contra normalised DOWN ripple probability by 5 powers (150ms windows)';
-title_names{5} = 'Ipsi-contra normalised DOWN ripple probability by 5 powers (All events)';
+title_names{1} = 'Ipsi-contra normalised DOWN spindle probability by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra normalised DOWN spindle probability by 5 lags (150ms windows abs lag)';
+title_names{3} = 'Ipsi-contra normalised DOWN spindle probability by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra normalised DOWN spindle probability by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra normalised DOWN spindle probability by 5 powers (All events)';
 
 
 %%%%%%%%%%%%%%%%%%%%%
-ipsi_probability = [probability_normalised_whole(1).L_ripples_DOWN; probability_normalised_whole(2).R_ripples_DOWN];
-contra_probability = [probability_normalised_whole(1).R_ripples_DOWN; probability_normalised_whole(2).L_ripples_DOWN];
+ipsi_probability = [probability_normalised_whole(1).L_spindles_DOWN; probability_normalised_whole(2).R_spindles_DOWN];
+contra_probability = [probability_normalised_whole(1).R_spindles_DOWN; probability_normalised_whole(2).L_spindles_DOWN];
 
-ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_ripples_DOWN; probability_normalised_whole_baseline(2).R_ripples_DOWN];
-contra_probability_baseline = [probability_normalised_whole_baseline(1).R_ripples_DOWN; probability_normalised_whole_baseline(2).L_ripples_DOWN];
+ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_spindles_DOWN; probability_normalised_whole_baseline(2).R_spindles_DOWN];
+contra_probability_baseline = [probability_normalised_whole_baseline(1).R_spindles_DOWN; probability_normalised_whole_baseline(2).L_spindles_DOWN];
 
 %%%%% calculate shuffled baseline
 %%% Ipsi
@@ -771,9 +766,9 @@ num_bins=20;
 x = linspace(0,1,num_bins);
 
 probability_merged.x = x;
-probability_merged.ipsi_ripples_DOWN = [];
-probability_merged.contra_ripples_DOWN = [];
-probability_merged.ipsi_contra_diff_ripples_DOWN = [];
+probability_merged.ipsi_spindles_DOWN = [];
+probability_merged.contra_spindles_DOWN = [];
+probability_merged.ipsi_contra_diff_spindles_DOWN = [];
 
 for ngroup = 1:length(event_idx)+1
 
@@ -804,18 +799,18 @@ for ngroup = 1:length(event_idx)+1
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        probability_merged.ipsi_ripples_DOWN{ngroup}{i} = temp1;
-        probability_merged.contra_ripples_DOWN{ngroup}{i} = temp2;
-        probability_merged.ipsi_contra_diff_ripples_DOWN{ngroup}{i} = temp3;
+        probability_merged.ipsi_spindles_DOWN{ngroup}{i} = temp1;
+        probability_merged.contra_spindles_DOWN{ngroup}{i} = temp2;
+        probability_merged.ipsi_contra_diff_spindles_DOWN{ngroup}{i} = temp3;
     end
 end
 
 
-probability_merged.ipsi_ripples_baseline_DOWN = ipsi_baseline_bootstrap;
-probability_merged.contra_ripples_baseline_DOWN = contra_baseline_bootstrap;
-probability_merged.ipsi_contra_diff_ripples_baseline_DOWN = ipsi_contra_diff_baseline_bootstrap;
-probability_merged.ripples_DOWN_groups = [title_names 'All UP-DOWN’'];
-probability_merged.ripples_DOWN_index = [event_idx {(1:size(ipsi_probability,1))'}];
+probability_merged.ipsi_spindles_baseline_DOWN = ipsi_baseline_bootstrap;
+probability_merged.contra_spindles_baseline_DOWN = contra_baseline_bootstrap;
+probability_merged.ipsi_contra_diff_spindles_baseline_DOWN = ipsi_contra_diff_baseline_bootstrap;
+probability_merged.spindles_DOWN_groups = [title_names 'All DOWN’'];
+probability_merged.spindles_DOWN_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
 num_bins=20;
@@ -841,7 +836,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.ipsi_ripples_DOWN{ngroup}{i};
+        binnedArray = probability_merged.ipsi_spindles_DOWN{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -849,11 +844,11 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+    binnedArray = probability_merged.ipsi_spindles_baseline_DOWN;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -864,8 +859,8 @@ for ngroup = 1:length(event_idx)
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
     % xline(0,'r')
-    ylim([0 0.17])
-    title('ipsi ripples')
+    ylim([0 0.07])
+    title('ipsi spindles')
     xlabel('Normalised duration of DOWN')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -879,7 +874,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.contra_ripples_DOWN{ngroup}{i};
+        binnedArray = probability_merged.contra_spindles_DOWN{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -887,11 +882,11 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
-    binnedArray = probability_merged.contra_ripples_baseline_DOWN;
+    binnedArray = probability_merged.contra_spindles_baseline_DOWN;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -899,10 +894,10 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
-    ylim([0 0.17])
+    ylim([0 0.07])
 
     % xline(0,'r')
-    title('contra ripples')
+    title('contra spindles')
     xlabel('Normalised duration of DOWN')
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
@@ -915,7 +910,7 @@ for ngroup = 1:length(event_idx)
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
 
-        binnedArray = probability_merged.ipsi_contra_diff_ripples_DOWN{ngroup}{i};
+        binnedArray = probability_merged.ipsi_contra_diff_spindles_DOWN{ngroup}{i};
 
         y = mean(binnedArray,'omitnan');
         LCI = prctile(binnedArray,2.5);
@@ -923,11 +918,11 @@ for ngroup = 1:length(event_idx)
 
         PLOT = plot(x,y,'Color',colour_lines(i,:));hold on;
         ERROR_SHADE(i) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(i,:),'FaceAlpha','0.3','LineStyle','none');
-        xline(0,'r',LineWidth=1)
+        % xline(0,'r',LineWidth=1)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_contra_diff_ripples_baseline_DOWN;
+    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_DOWN;
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -960,7 +955,7 @@ event_averaging_scale = 30;
 ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650/3 465];
-fig.Name = 'Left-Right combined Ipsi-contra normalised DOWN ripple probability'
+fig.Name = 'Left-Right combined Ipsi-contra normalised DOWN spindle probability'
 
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
@@ -1003,7 +998,7 @@ colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 nexttile
 clear ERROR_SHADE
 
-binnedArray = probability_merged.ipsi_ripples_DOWN{end}{1};
+binnedArray = probability_merged.ipsi_spindles_DOWN{end}{1};
 y = mean(binnedArray,'omitnan');
 LCI = prctile(binnedArray,2.5);
 UCI = prctile(binnedArray,97.5);
@@ -1012,7 +1007,7 @@ PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
 % xline(0,'r',LineWidth=1)
 
-binnedArray = probability_merged.contra_ripples_DOWN{end}{1};
+binnedArray = probability_merged.contra_spindles_DOWN{end}{1};
 y = mean(binnedArray,'omitnan');
 LCI = prctile(binnedArray,2.5);
 UCI = prctile(binnedArray,97.5);
@@ -1022,7 +1017,7 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 % xline(0,'r',LineWidth=1)
 
 % baseline
-binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+binnedArray = probability_merged.ipsi_spindles_baseline_DOWN;
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
@@ -1033,7 +1028,7 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 %     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}})
 
 % xline(0,'r')
-ylim([0 0.09])
+ylim([0.02 0.045])
 % title('ipsi ripples')
 xlabel('Normalised duration of DOWN')
 ylabel('Probability')
@@ -1042,25 +1037,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
-save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_probability_merged_normalised.mat'),'probability_merged')
-
-%%
-
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_spindles_probability_merged_normalised.mat'),'probability_merged')
 
 
-%% Visualise and compare first vs final ripples in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
-
-% SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 end

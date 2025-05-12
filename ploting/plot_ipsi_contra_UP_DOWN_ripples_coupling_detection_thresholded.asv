@@ -875,22 +875,22 @@ probability_normalised_whole = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
 probability_normalised_whole_baseline = probability_normalised;
 
-
+% probability = []
 Delta_peaks_zscore_UD = [];
 Delta_peaks_zscore_DU = [];
 SWpeakmag_UD = [];
 SWpeakmag_DU = [];
 index = [];
 %%%%% UP info
-UP_index_all = [event_info(1).UP_index; event_info(2).UP_index];
-DOWN_index_all = [event_info(1).DOWN_index; event_info(2).DOWN_index];
+UP_index_all = [probability(1).UP_index; probability(2).UP_index];
+DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
 
 for nprobe = 1:2
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
 
         % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
-        % Find DOWN before UP
-        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index);
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
 
         Delta_peaks_zscore_UD = [Delta_peaks_zscore_UD;...
             slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
@@ -898,12 +898,12 @@ for nprobe = 1:2
             slow_waves_all(nprobe).SWpeakmag(C)];
 
         % Find DOWN before UP
-        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
 
         Delta_peaks_zscore_DU = [Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
-        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),event_info(nprobe).DOWN_index)];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
 
-        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),event_info(nprobe).UP_index),1));
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
 
         temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
 
@@ -968,15 +968,18 @@ end
 % lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
 power_thresholds = prctile(SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
 delta_power =SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15);
+% power_thresholds = prctile(Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15);
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
     event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
 end
 
-
 power_thresholds = prctile(SWpeakmag_DU,[0 20 40 60 80 100]);
 delta_power =SWpeakmag_DU;
+% power_thresholds = prctile(Delta_peaks_zscore_DU,[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU;
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
@@ -992,9 +995,9 @@ group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','
 
 title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
 title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows abs)';
-title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (100ms windows)';
-title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 powers (150ms windows)';
-title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 powers (All events)';
+title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra DOWN_UP ripples by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra DOWN_UP ripples by 5 powers (All events)';
 
 
 
@@ -1195,7 +1198,8 @@ for ngroup = 1:length(event_idx)
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-if ngroup >3
+
+    if ngroup >3
         colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
         % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
     end
@@ -1346,6 +1350,7 @@ all_lags =merged_event_info.DOWN_lags_all{end};
 
 
 event_idx = [];
+
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
 lags =all_lags;
@@ -1356,16 +1361,18 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
-lags =all_lags(all_lags>=0 & all_lags<=0.15);
+lags =abs(all_lags(abs(all_lags)>=0 & abs(all_lags)<=0.15));
+
+% lags =all_lags(all_lags>=0 & all_lags<=0.15);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
-lags =all_lags;
+lags =abs(all_lags);
 
 for n = 1:length(lag_thresholds)-1
     event_idx{2}{n} =(all_overlap_idx(lags>lag_thresholds(n)&lags <lag_thresholds(n+1)));
 end
 
 
-lags =all_lags(all_lags>=-0.1 & all_lags<=0.1);
+lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
 lag_thresholds = prctile(lags,[0 20 40 60 80 100]);
 lags =all_lags;
 
@@ -1375,13 +1382,38 @@ for n = 1:length(lag_thresholds)-1
 end
 
 
+% lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
+power_thresholds = prctile(SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15);
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
+end
+
+
+power_thresholds = prctile(SWpeakmag_UD,[0 20 40 60 80 100]);
+delta_power =SWpeakmag_UD;
+
+% lag_thresholds = [-0.2]
+for n = 1:length(power_thresholds)-1
+    event_idx{5}{n} =(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
+end
+
+
+
 group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
 group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
+group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
+group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
+
 
 title_names{1} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows)';
-title_names{2} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows lagging only)';
-title_names{3} = 'Ipsi-contra UP_DOWN ripples by 5 lags (100ms windows)';
+title_names{2} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows abs)';
+title_names{3} = 'Ipsi-contra UP_DOWN ripples by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra UP_DOWN ripple probability by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra UP_DOWN ripple probability by 5 powers (All events)';
 
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -1494,12 +1526,17 @@ for ngroup = 1:length(event_idx)
     fig.Position = [350 59 1650 465];
     fig.Name =title_names{ngroup};
 
-    if ngroup ~=2
+    if ngroup ==1  | ngroup ==3
         colour_lines = [0,90,50;65,171,93;228,42,168;128,125,186;74,20,134]/256; % Dark Green, Light Geen, Magenta, light purple, dark purple
-    else
-        colour_lines = [228,42,168;190,36,160;151,31,151;112,26,142;74,20,134]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
+    elseif ngroup==2
+        colour_lines = [228,42,168;222,119,174;184,225,134;127,188,65;0,90,50]/256; % From magenta to dark purple to indicate globally synchrnous to ipsi lagging
     end
 
+
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1533,6 +1570,11 @@ for ngroup = 1:length(event_idx)
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+    if ngroup >3
+        % colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
+
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1565,7 +1607,10 @@ for ngroup = 1:length(event_idx)
     ylabel('Probability')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-
+    if ngroup >3
+        colour_lines = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for
+        % colour_lines = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for
+    end
     nexttile
     clear ERROR_SHADE
     for i = 1:length(event_idx{ngroup})
@@ -1591,7 +1636,7 @@ for ngroup = 1:length(event_idx)
     PLOT = plot(x,y,'k');hold on;
     ERROR_SHADE(length(ERROR_SHADE)+1) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
     legend([ERROR_SHADE(1:end)],{group_name{ngroup}{1:end}},'box','off')
-    ylim([0 0.03])
+    ylim([-0.03 0.03])
 
 
     % xline(0,'r')
@@ -1608,7 +1653,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-%%%%%%%%%%%% All DOWN UP rpples
+%%%%%%%%%%%% All UP DOWN rpples
 event_averaging_scale = 30;
 
 % for ngroup = 1:length(event_idx)
