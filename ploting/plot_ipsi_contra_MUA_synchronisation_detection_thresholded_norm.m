@@ -1,4 +1,4 @@
-function plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thres_norm(slow_waves_all,ripples_all,spindles_all)
+function plot_ipsi_contra_MUA_synchronisation_detection_thresholded_norm(slow_waves_all,ripples_all,spindles_all)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -19,10 +19,10 @@ end
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
-probability_normalised_whole_baseline = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA.mat'));
+PSTH_MUA = UP_DOWN_relative_PSTH_MUA;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_relative_PSTH_MUA;
 
 
 % %%%%%%%
@@ -175,19 +175,7 @@ for n = 1:4
 end
 
 
-%% Ipsi and contra ripple probabilities during DOWN UP with different bilateral synchrony
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-probability_psth_whole = probability;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
-probability_psth_whole_baseline = probability;
-
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
-probability_normalised_whole = probability_normalised;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
-probability_normalised_whole_baseline = probability_normalised;
-
+%% Ipsi and contra MUA during normalised DOWN UP with different bilateral synchrony
 
 
 % probability = []
@@ -197,9 +185,6 @@ SWpeakmag_UD = [];
 SWpeakmag_DU = [];
 index = [];
 %%%%% UP info
-UP_index_all = [probability(1).UP_index; probability(2).UP_index];
-DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
-
 for nprobe = 1:2
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
 
@@ -319,25 +304,32 @@ group_name{6} = {'0-20% duration','20-40% duration','40-60% duration','60-80% du
 group_name{7} = {'0-20% duration','20-40% duration','40-60% duration','60-80% duration','80-100% duration','Shuffled'};
 
 
-title_names{1} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows)';
-title_names{2} = 'Ipsi-contra normalised UP ripple probability by 5 lags (150ms windows abs lag)';
-title_names{3} = 'Ipsi-contra normalised UP ripple probability by 5 lags (50ms windows)';
-title_names{4} = 'Ipsi-contra normalised UP ripple probability by 5 powers (150ms windows)';
-title_names{5} = 'Ipsi-contra normalised UP ripple probability by 5 powers (All events)';
-title_names{6} = 'Ipsi-contra normalised UP ripple probability by 5 duration (All events)';
-title_names{7} = 'Ipsi-contra normalised UP ripple probability by 5 duration (150ms events)';
+title_names{1} = 'Ipsi-contra normalised UP MUA by 5 lags (150ms windows)';
+title_names{2} = 'Ipsi-contra normalised UP MUA by 5 lags (150ms windows abs lag)';
+title_names{3} = 'Ipsi-contra normalised UP MUA by 5 lags (50ms windows)';
+title_names{4} = 'Ipsi-contra normalised UP MUA by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra normalised UP MUA by 5 powers (All events)';
+title_names{6} = 'Ipsi-contra normalised UP MUA by 5 duration (All events)';
+title_names{7} = 'Ipsi-contra normalised UP MUA by 5 duration (150ms events)';
 
 
 %%%%%%%%%%%%%%%%%%%%%
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
+ipsi_V1_MUA = [PSTH_MUA(1).L_V1_UP; PSTH_MUA(2).R_V1_UP];
+contra_V1_MUA = [PSTH_MUA(1).R_V1_UP; PSTH_MUA(2).L_V1_UP];
 
-ipsi_probability_baseline = [probability_normalised_whole_baseline(1).L_ripples_UP; probability_normalised_whole_baseline(2).R_ripples_UP];
-contra_probability_baseline = [probability_normalised_whole_baseline(1).R_ripples_UP; probability_normalised_whole_baseline(2).L_ripples_UP];
+ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_UP; PSTH_MUA_baseline(2).R_V1_UP];
+contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_UP; PSTH_MUA_baseline(2).L_V1_UP];
 
-%%%%% calculate shuffled baseline
+
+ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_UP; PSTH_MUA(2).R_HPC_UP];
+contra_HPC_MUA = [PSTH_MUA(1).R_HPC_UP; PSTH_MUA(2).L_HPC_UP];
+ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
+contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% V1
+%%%%% calculate shuffled MUA baseline
 %%% Ipsi
-binnedArray = ipsi_probability_baseline;
+binnedArray = ipsi_V1_MUA_baseline;
 temp=[];
 parfor iBoot = 1:1000
     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -349,7 +341,7 @@ end
 ipsi_baseline_bootstrap = temp;
 
 %%% Contra
-binnedArray = contra_probability_baseline;
+binnedArray = contra_V1_MUA_baseline;
 temp=[];
 parfor iBoot = 1:1000
     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -361,7 +353,7 @@ end
 contra_baseline_bootstrap = temp;
 
 %%% Ipsi-Contra baseline
-binnedArray = ipsi_probability_baseline-contra_probability_baseline;
+binnedArray = ipsi_V1_MUA_baseline-contra_V1_MUA_baseline;
 temp=[];
 parfor iBoot = 1:1000
     s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
@@ -372,6 +364,47 @@ end
 
 ipsi_contra_diff_baseline_bootstrap = temp;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% HPC
+%%%%% calculate shuffled MUA baseline
+%%% Ipsi
+binnedArray = ipsi_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_baseline_bootstrap1 = temp;
+
+%%% Contra
+binnedArray = contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+contra_baseline_bootstrap1 = temp;
+
+
+
+%%% Ipsi-Contra baseline
+binnedArray = ipsi_HPC_MUA_baseline-contra_HPC_MUA_baseline;
+temp=[];
+parfor iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+end
+
+ipsi_contra_diff_baseline_bootstrap1 = temp;
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% Calculate bootstrapped MUA
 
@@ -380,10 +413,15 @@ ipsi_contra_diff_baseline_bootstrap = temp;
 % time_bin = 0.02;
 num_bins=20;
 x = linspace(0,1,num_bins);
-probability_merged.x = x;
-probability_merged.ipsi_ripples_UP = [];
-probability_merged.contra_ripples_UP = [];
-probability_merged.ipsi_contra_diff_ripples_UP = [];
+MUA_PSTH_merged_thresholded.x = x;
+MUA_PSTH_merged_thresholded.ipsi_UP_V1 = [];
+MUA_PSTH_merged_thresholded.contra_UP_V1 = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_V1 = [];
+
+MUA_PSTH_merged_thresholded.ipsi_UP_HPC = [];
+MUA_PSTH_merged_thresholded.contra_UP_HPC = [];
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_HPC = [];
+
 
 for ngroup = 1:length(event_idx)+1
 
@@ -392,40 +430,55 @@ for ngroup = 1:length(event_idx)+1
         group_index = event_idx{ngroup};
 
     else
-        group_index{1} = (1:size(ipsi_probability,1))';
+        group_index{1} = (1:size(ipsi_V1_MUA,1))';
     end
 
     for i = 1:length(group_index)
         index =group_index{i};
 
-        binnedArray1 = ipsi_probability(index,:);
-        binnedArray2 = contra_probability(index,:);
-        binnedArray3 = binnedArray1-binnedArray2;
+        binnedArray1 = ipsi_V1_MUA(index,:);
+        binnedArray2 = contra_V1_MUA(index,:);
+        binnedArray3 = ipsi_V1_MUA(index,:)-contra_V1_MUA(index,:);
+        binnedArray4 = ipsi_HPC_MUA(index,:);
+        binnedArray5 = contra_HPC_MUA(index,:);
+        binnedArray6 = ipsi_HPC_MUA(index,:)-contra_HPC_MUA(index,:);
 
         temp1=[];
         temp2=[];
         temp3=[];
+        temp4=[];
+        temp5=[];
+        temp6=[];
         parfor iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
             event_id = datasample(s,1:size(binnedArray1,1),size(binnedArray1,1));
             temp1(iBoot,:) =  mean(binnedArray1(event_id,:),'omitnan');
             temp2(iBoot,:) =  mean(binnedArray2(event_id,:),'omitnan');
             temp3(iBoot,:) =  mean(binnedArray3(event_id,:),'omitnan');
+            temp4(iBoot,:) =  mean(binnedArray4(event_id,:),'omitnan');
+            temp5(iBoot,:) =  mean(binnedArray5(event_id,:),'omitnan');
+            temp6(iBoot,:) =  mean(binnedArray6(event_id,:),'omitnan');
             % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
         end
 
-        probability_merged.ipsi_ripples_UP{ngroup}{i} = temp1;
-        probability_merged.contra_ripples_UP{ngroup}{i} = temp2;
-        probability_merged.ipsi_contra_diff_ripples_UP{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_UP_V1{ngroup}{i} = temp1;
+        MUA_PSTH_merged_thresholded.contra_UP_V1{ngroup}{i} = temp2;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_V1{ngroup}{i} = temp3;
+        MUA_PSTH_merged_thresholded.ipsi_UP_HPC{ngroup}{i} = temp4;
+        MUA_PSTH_merged_thresholded.contra_UP_HPC{ngroup}{i} = temp5;
+        MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_HPC{ngroup}{i} = temp6;
     end
 end
 
+MUA_PSTH_merged_thresholded.ipsi_UP_V1_baseline = ipsi_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.contra_UP_V1_baseline = contra_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_V1_baseline = ipsi_contra_diff_baseline_bootstrap;
+MUA_PSTH_merged_thresholded.ipsi_UP_HPC_baseline = ipsi_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.contra_UP_HPC_baseline = contra_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.ipsi_contra_diff_UP_HPC_baseline = ipsi_contra_diff_baseline_bootstrap1;
+MUA_PSTH_merged_thresholded.UP_groups = [title_names 'All UP'];
+MUA_PSTH_merged_thresholded.UP_index = [event_idx {(1:size(ipsi_V1_MUA,1))'}];
 
-probability_merged.ipsi_ripples_baseline_UP = ipsi_baseline_bootstrap;
-probability_merged.contra_ripples_baseline_UP = contra_baseline_bootstrap;
-probability_merged.ipsi_contra_diff_ripples_baseline_UP = ipsi_contra_diff_baseline_bootstrap;
-probability_merged.ripples_UP_groups = [title_names 'All DOWN-UP'];
-probability_merged.ripples_UP_index = [event_idx {(1:size(ipsi_probability,1))'}];
 
 
 % time_wondows = [-1 1];
@@ -485,7 +538,7 @@ for ngroup = 1:length(event_idx)
     ylim([0 0.11])
     title('ipsi ripples')
     xlabel('Normalised duration of UP')
-    ylabel('Probability')
+    ylabel('MUA (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
@@ -522,7 +575,7 @@ for ngroup = 1:length(event_idx)
     % xline(0,'r')
     title('contra ripples')
     xlabel('Normalised duration of UP')
-    ylabel('Probability')
+    ylabel('MUA (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
@@ -561,7 +614,7 @@ for ngroup = 1:length(event_idx)
     % xline(0,'r')
     title('Ipsi-contra diff')
     xlabel('Normalised duration of UP')
-    ylabel('Probability')
+    ylabel('MUA (z)')
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
 
@@ -577,7 +630,7 @@ x = linspace(0,1,20);
 ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650/3 465];
-fig.Name = 'Left-Right combined Ipsi-contra normalised UP ripple probability'
+fig.Name = 'Left-Right combined Ipsi-contra normalised UP MUA'
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 

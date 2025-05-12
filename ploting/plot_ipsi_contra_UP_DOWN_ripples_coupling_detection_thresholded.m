@@ -97,8 +97,6 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
-
 
 %%%%%%%%%%%%% Overlaps
 % Initialize output
@@ -882,8 +880,8 @@ SWpeakmag_UD = [];
 SWpeakmag_DU = [];
 index = [];
 %%%%% UP info
-UP_index_all = [probability(1).UP_index; probability(2).UP_index];
-DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
+% UP_index_all = [probability(1).UP_index; probability(2).UP_index];
+% DOWN_index_all = [probability(1).DOWN_index; probability(2).DOWN_index];
 
 for nprobe = 1:2
     for nsession = 1:max(slow_waves_all(1).UP_session_count)
@@ -923,15 +921,6 @@ all_lags =merged_event_info.UP_lags_all{end};
 
 
 
-event_times = merged_event_info.UP_ints;
-hemisphere_id = merged_event_info.UP_hemisphere_id;
-% lag_diff = merged_event_info.UP_lag_diff;
-% group_id = merged_event_info.UP_group_id;
-all_overlap_idx = merged_event_info.UP_overlap_idx_all{end};
-non_overlap_idx = merged_event_info.UP_non_overlap_idx{end};
-all_lags =merged_event_info.UP_lags_all{end};
-
-
 event_idx = [];
 
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
@@ -966,14 +955,14 @@ end
 
 
 % lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
-power_thresholds = prctile(SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
-delta_power =SWpeakmag_DU(all_lags>=-0.15 & all_lags<=0.15);
+power_thresholds = prctile(SWpeakmag_DU(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_DU;
 % power_thresholds = prctile(Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
 % delta_power =Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15);
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
-    event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
+    event_idx{4}{n} =intersect(all_overlap_idx(abs(all_lags)<=0.15),find(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
 end
 
 power_thresholds = prctile(SWpeakmag_DU,[0 20 40 60 80 100]);
@@ -987,18 +976,36 @@ for n = 1:length(power_thresholds)-1
 end
 
 
+Duration = [event_info(1).previous_DOWN_duration; event_info(2).previous_DOWN_duration];
+duration_thresholds = prctile(Duration,[0 20 40 60 80 100]);
+
+for n = 1:length(duration_thresholds)-1
+    event_idx{6}{n} =find(Duration>duration_thresholds(n)&Duration <duration_thresholds(n+1));
+end
+
+
+Duration = [event_info(1).previous_DOWN_duration; event_info(2).previous_DOWN_duration];
+duration_thresholds = prctile(Duration(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+
+for n = 1:length(duration_thresholds)-1
+    event_idx{7}{n} =intersect(all_overlap_idx(abs(all_lags)<=0.15),find(Duration>duration_thresholds(n)&Duration <duration_thresholds(n+1)));
+end
+
 group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
 group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
+group_name{6} = {'0-20% duration','20-40% duration','40-60% duration','60-80% duration','80-100% duration','Shuffled'};
+group_name{7} = {'0-20% duration','20-40% duration','40-60% duration','60-80% duration','80-100% duration','Shuffled'};
 
 title_names{1} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows)';
 title_names{2} = 'Ipsi-contra DOWN_UP ripples by 5 lags (150ms windows abs)';
 title_names{3} = 'Ipsi-contra DOWN_UP ripples by 5 lags (50ms windows)';
 title_names{4} = 'Ipsi-contra DOWN_UP ripples by 5 powers (150ms windows)';
 title_names{5} = 'Ipsi-contra DOWN_UP ripples by 5 powers (All events)';
-
+title_names{6} = 'Ipsi-contra DOWN_UP ripples by 5 duration (All windows)';
+title_names{7} = 'Ipsi-contra DOWN_UP ripples by 5 duration (150ms events)';
 
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -1383,17 +1390,20 @@ end
 
 
 % lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
-power_thresholds = prctile(SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
-delta_power =SWpeakmag_UD(all_lags>=-0.15 & all_lags<=0.15);
+power_thresholds = prctile(SWpeakmag_UD(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_UD;
+% power_thresholds = prctile(Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15);
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
-    event_idx{4}{n} =(all_overlap_idx(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
+    event_idx{4}{n} =intersect(all_overlap_idx(abs(all_lags)<=0.15),find(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
 end
-
 
 power_thresholds = prctile(SWpeakmag_UD,[0 20 40 60 80 100]);
 delta_power =SWpeakmag_UD;
+% power_thresholds = prctile(Delta_peaks_zscore_DU,[0 20 40 60 80 100]);
+% delta_power =Delta_peaks_zscore_DU;
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
@@ -1401,20 +1411,36 @@ for n = 1:length(power_thresholds)-1
 end
 
 
+Duration = [event_info(1).next_DOWN_duration; event_info(2).next_DOWN_duration];
+duration_thresholds = prctile(Duration,[0 20 40 60 80 100]);
+
+for n = 1:length(duration_thresholds)-1
+    event_idx{6}{n} =find(Duration>duration_thresholds(n)&Duration <duration_thresholds(n+1));
+end
+
+
+Duration = [event_info(1).next_DOWN_duration; event_info(2).next_DOWN_duration];
+duration_thresholds = prctile(Duration(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+
+for n = 1:length(duration_thresholds)-1
+    event_idx{7}{n} =intersect(all_overlap_idx(abs(all_lags)<=0.15),find(Duration>duration_thresholds(n)&Duration <duration_thresholds(n+1)));
+end
 
 group_name{1} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{2} = {'0-20% lagging','20-40% lagging','40-60% lagging','60-80% lagging','80-100% lagging','Shuffled'};
 group_name{3} = {'Top 0-20% ipsi leading','Top 20-40% ipsi leading','Top 40-60% ipsi leading','Top 60-80% ipsi leading','Top 80-100% ipsi leading','Shuffled'};
 group_name{4} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
 group_name{5} = {'0-20% delta power','20-40% delta power','40-60% delta power','60-80% delta power','80-100% delta power','Shuffled'};
-
+group_name{6} = {'0-20% duration','20-40% duration','40-60% duration','60-80% duration','80-100% duration','Shuffled'};
+group_name{7} = {'0-20% duration','20-40% duration','40-60% duration','60-80% duration','80-100% duration','Shuffled'};
 
 title_names{1} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows)';
 title_names{2} = 'Ipsi-contra UP_DOWN ripples by 5 lags (150ms windows abs)';
 title_names{3} = 'Ipsi-contra UP_DOWN ripples by 5 lags (50ms windows)';
-title_names{4} = 'Ipsi-contra UP_DOWN ripple probability by 5 powers (150ms windows)';
-title_names{5} = 'Ipsi-contra UP_DOWN ripple probability by 5 powers (All events)';
-
+title_names{4} = 'Ipsi-contra UP_DOWN ripples by 5 powers (150ms windows)';
+title_names{5} = 'Ipsi-contra UP_DOWN ripples by 5 powers (All events)';
+title_names{6} = 'Ipsi-contra UP_DOWN ripples by 5 duration (All windows)';
+title_names{7} = 'Ipsi-contra UP_DOWN ripples by 5 duration (150ms events)';
 
 %%%%%%%%%%%%%%%%%%%%%
 ipsi_probability = [probability_psth_whole(1).L_ripples_DOWN; probability_psth_whole(2).R_ripples_DOWN];
