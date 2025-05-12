@@ -166,13 +166,54 @@ for nsession =70
         CA1_LFP_filtered=[];
         LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
         for nprobe = 1:length(session_clusters_RUN.probe_hemisphere)
-
             probe_no=session_clusters_RUN.probe_hemisphere(nprobe);
-            slow_waves(probe_no).best_channel
 
-            cortex_LFP{probe_no} = LFP(probe_no).best_V1(good_channels(best_channel),:);
+            if isfield(LFP(probe_no),'best_V1')                
 
-            passband = [0.5 17];
+                if ~isempty(LFP(probe_no).best_V1)
+                    bad_channels=[];
+                    all_shanks = 1:size(LFP(probe_no).best_V1_power,1);
+                    for nshank = 1:size(LFP(probe_no).best_V1_power,1)
+                        bad_channels(nshank,:) = LFP(probe_no).best_V1_power(nshank,:)>3*mean(LFP(probe_no).best_V1_power(all_shanks~=nshank,:));
+                    end
+                    bad_channels = sum(bad_channels,2)>4;
+                    [~,best_channel]=max(LFP(probe_no).best_V1_power(~bad_channels,1));
+                    good_channels = find(~bad_channels);
+                    cortex_LFP{probe_no} = LFP(probe_no).best_V1(good_channels(best_channel),:);
+
+                else
+                    bad_channels=[];
+                    all_shanks = 1:size(LFP(probe_no).L4_power,1);
+                    for nshank = 1:size(LFP(probe_no).L4_power,1)
+                        bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
+                    end
+                    bad_channels = sum(bad_channels,2)>4;
+                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                    good_channels = find(~bad_channels);
+                    cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
+                end
+
+            elseif isfield(LFP(probe_no),'L4')
+                if ~isempty(LFP(probe_no).L4)
+                    bad_channels=[];
+                    all_shanks = 1:size(LFP(probe_no).L4_power,1);
+                    for nshank = 1:size(LFP(probe_no).L4_power,1)
+                        bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
+                    end
+                    bad_channels = sum(bad_channels,2)>4;
+                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
+                    good_channels = find(~bad_channels);
+                    cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
+                else
+                    cortex_LFP = [];
+                    disp('cortex LFP is missing')
+                end
+
+            elseif isfield(LFP(probe_no),'MEC')
+
+            end
+
+            passband = [1 17];
             filter_type  = 'bandpass';
             filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
             norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved

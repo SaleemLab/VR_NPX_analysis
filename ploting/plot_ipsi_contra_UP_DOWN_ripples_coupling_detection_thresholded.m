@@ -39,11 +39,6 @@ probability_normalised = probability_normalised;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 probability_psth = probability;
 
-PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
-PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
-
 % %%%%%%%
 % % Phase-amplitude coupling
 % nBins = 18;
