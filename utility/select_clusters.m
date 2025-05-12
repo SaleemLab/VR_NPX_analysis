@@ -15,6 +15,8 @@ if nargin < 2
     params.amplitude_cv_range = @(x) x<=0.7;
 end
 selected_clusters = struct();
+
+excluded_clusters_by_metric = struct(); % 1/3 initialise log of filtered out clusters
 all_metrics = fieldnames(params);
 cluster_filter_index = ones(size(clusters.cluster_id));
 for iMetric = 1:size(all_metrics,1)
@@ -25,6 +27,9 @@ for iMetric = 1:size(all_metrics,1)
         end
     end
     disp([num2str(sum(temp_cluster_index)), ' clusters satisfy threshold of ',all_metrics{iMetric}])
+
+    failed = ~temp_cluster_index; % 2a/3 store cluster IDs that failed this metric
+    excluded_clusters_by_metric.(all_metrics{iMetric}) = clusters.cluster_id(failed); % 2b/3 store cluster IDs that failed this metric
     cluster_filter_index = cluster_filter_index &temp_cluster_index;
 end
 disp(['Overall ',num2str(sum(cluster_filter_index)), ' clusters satisfy all metrics specified'])
@@ -70,4 +75,6 @@ for iField = 1:size(all_cluster_fields,1)
         selected_clusters.(all_cluster_fields{iField}) = temp_cluster_field(cluster_filter_index,:);
     end
 end
+
+selected_clusters.excluded_by_metric = excluded_clusters_by_metric; % 3/3
 selected_clusters.params = params;% Save the parameters that were used for selection.

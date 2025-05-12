@@ -48,7 +48,7 @@ elseif contains(sorting_option,'ellie')
     params.amplitude_cutoff = @(x) x<=0.1; %0.01 if strict and removes lots of units. A histogram of a unit's spike amplitudes should have a Gaussian distribution. 
     % Deviations from this distribution are used to estimate the number of spikes missing from the unit (false negative rate). The upper tail of the distribution is used to estimate the fraction of spikes missing from the lower tail). Can be computed on chunks for a long recording as drift can impact amplitudes and hence the normalness of the distribution. 
     params.amplitude_median = @(x) abs(x)>20; %IBL 50 but bombcell 20. Larger value = larger signal, better unit.
-    params.sliding_rp_violation = @(x) x<=0.1; % chosen as 10% at IBL. Refractory period violations, similar to ISI violations; 0.1 = 10% of the expected number of violations under chance firing.
+    params.sliding_rp_violation = @(x) x<=0.1; % IBL uses 10%. Refractory period violations, similar to ISI violations but the sliding window allows inclusion of cells with burst firing (useful for HPC); 0.1 = 10% of the expected number of violations under chance firing.
     params.num_negative_peaks = @(x) x<=1;
     params.num_positive_peaks = @(x) x<=2;
     params.peak_to_valley = @(x) x<=0.0008 & x>= 0.0001; % Peters et al 2022 % the duration between negative and positive peaks
