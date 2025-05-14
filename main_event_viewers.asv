@@ -14,7 +14,7 @@ Stimulus_type = 'Sleep';
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
 
-for nsession =70
+for nsession =6
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -162,58 +162,20 @@ for nsession =70
         cortex_LFP=[];
         CA1_LFP=[];
         cortex_LFP_filtered=[];
+        cortex_LFP_SO_filtered=[];
         CA1_LFP_ripple_filtered=[];
         CA1_LFP_filtered=[];
         LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
+
         for nprobe = 1:length(session_clusters_RUN.probe_hemisphere)
+
             probe_no=session_clusters_RUN.probe_hemisphere(nprobe);
 
-            if isfield(LFP(probe_no),'best_V1')                
 
-                if ~isempty(LFP(probe_no).best_V1)
-                    bad_channels=[];
-                    all_shanks = 1:size(LFP(probe_no).best_V1_power,1);
-                    for nshank = 1:size(LFP(probe_no).best_V1_power,1)
-                        bad_channels(nshank,:) = LFP(probe_no).best_V1_power(nshank,:)>3*mean(LFP(probe_no).best_V1_power(all_shanks~=nshank,:));
-                    end
-                    bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).best_V1_power(~bad_channels,1));
-                    good_channels = find(~bad_channels);
-                    cortex_LFP{probe_no} = LFP(probe_no).best_V1(good_channels(best_channel),:);
 
-                else
-                    bad_channels=[];
-                    all_shanks = 1:size(LFP(probe_no).L4_power,1);
-                    for nshank = 1:size(LFP(probe_no).L4_power,1)
-                        bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
-                    end
-                    bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
-                    good_channels = find(~bad_channels);
-                    cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
-                end
+            cortex_LFP{probe_no} = LFP(probe_no).best_V1(LFP(probe_no).best_V1_channel ==  slow_waves(probe_no).best_channel,:);
 
-            elseif isfield(LFP(probe_no),'L4')
-                if ~isempty(LFP(probe_no).L4)
-                    bad_channels=[];
-                    all_shanks = 1:size(LFP(probe_no).L4_power,1);
-                    for nshank = 1:size(LFP(probe_no).L4_power,1)
-                        bad_channels(nshank,:) = LFP(probe_no).L4_power(nshank,:)>3*mean(LFP(probe_no).L4_power(all_shanks~=nshank,:));
-                    end
-                    bad_channels = sum(bad_channels,2)>4;
-                    [~,best_channel]=max(LFP(probe_no).L4_power(~bad_channels,1));
-                    good_channels = find(~bad_channels);
-                    cortex_LFP{probe_no} = LFP(probe_no).L4(good_channels(best_channel),:);
-                else
-                    cortex_LFP = [];
-                    disp('cortex LFP is missing')
-                end
-
-            elseif isfield(LFP(probe_no),'MEC')
-
-            end
-
-            passband = [1 17];
+            passband = [0.5 17];
             filter_type  = 'bandpass';
             filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
             norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
@@ -221,37 +183,36 @@ for nsession =70
             cortex_LFP_filtered{probe_no} = filtfilt(b_ripple,1,cortex_LFP{probe_no});
             %         cortex_LFP{probe_no} = zscore(abs(hilbert(signal)));
 
-            if isfield(LFP(probe_no),'CA1')
-                bad_channels=[];
-                all_shanks = 1:size(LFP(probe_no).CA1_power,1);
-                for nshank = 1:size(LFP(probe_no).CA1_power,1)
-                    bad_channels(nshank,:) = LFP(probe_no).CA1_power(nshank,:)>3*mean(LFP(probe_no).CA1_power(all_shanks~=nshank,:));
-                end
-                bad_channels = sum(bad_channels,2)>4;
-                
-                [~,best_channel]=max(LFP(probe_no).CA1_power(~bad_channels,6));
-                good_channels = find(~bad_channels);
+            passband = [0.5 4];
+            filter_type  = 'bandpass';
+            filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+            norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+            b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+            cortex_LFP_SO_filtered{probe_no} = filtfilt(b_ripple,1,cortex_LFP{probe_no});
+            %         cortex_LFP{probe_no} = zscore(abs(hilbert(signal)));
 
-                CA1_LFP{probe_no} = LFP(probe_no).CA1(good_channels(best_channel),:);
-                
-                passband = [0.5 300];
-                filter_type  = 'bandpass';
-                filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
-                norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-                signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
-                %         zscored_ripple = zscore(abs(hilbert(signal)));
-                CA1_LFP_filtered{probe_no}=signal;
 
-                passband = [150 300];
-                filter_type  = 'bandpass';
-                filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
-                norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-                signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
-                %         zscored_ripple = zscore(abs(hilbert(signal)));
-                CA1_LFP_ripple_filtered{probe_no}=signal;
-            end
+
+            CA1_LFP{probe_no} = LFP(probe_no).best_HPC(ripples(probe_no).best_channel,:);
+
+            passband = [0.5 300];
+            filter_type  = 'bandpass';
+            filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+            norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+            b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+            signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
+            %         zscored_ripple = zscore(abs(hilbert(signal)));
+            CA1_LFP_filtered{probe_no}=signal;
+
+            passband = [150 300];
+            filter_type  = 'bandpass';
+            filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
+            norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+            b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+            signal = filtfilt(b_ripple,1,CA1_LFP{probe_no});
+            %         zscored_ripple = zscore(abs(hilbert(signal)));
+            CA1_LFP_ripple_filtered{probe_no}=signal;
+
         end
 
        
@@ -303,13 +264,27 @@ for nsession =70
         Behaviour.mobility_zscore=zscore(Behaviour.mobility_zscore);
         Behaviour.mobility = mobility_thresholded;
 
+
+
+        %
+        %         %%%%%  Sleep detection
+        %
+        %         speedTreshold = 1;
+        %         speed = double(session_clusters.mobility_thresholded{1});
+        %         speed = interp1(Behaviour.tvec,speed,tvec,'linear');
+        %
+        %         [freezing,quietWake,SWS,REM,movement] = detect_behavioural_states_masa(...
+        %             [tvec' LFP(probe_no).best_V1(LFP(probe_no).best_V1_channel ==  slow_waves(probe_no).best_channel,:)'],[tvec' LFP(probe_no).best_HPC(ripples(probe_no).best_channel,:)'],...
+        %             [tvec' speed'],speedTreshold);
+
+
         %%% Get spike counts
 
         tvec = LFP(1).tvec;
         tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
         CA1_spike_counts=[];
         V1_spike_counts=[];
-        w = gausswin(0.02*1/mean(diff(tvec)));
+        w = gausswin(0.05*1/mean(diff(tvec)));
         w = w / sum(w);
 
         % [NREM_status,interval,~] = InIntervals(tvec,behavioural_state_merged.SWS);
@@ -332,579 +307,459 @@ for nsession =70
         nprobe = 2
         LFP_SR = 1/mean(diff(LFP(nprobe).tvec));
 
-        [s,f,t] = stft(cortex_LFP{1},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
+        [s,f,t] = stft(cortex_LFP{2},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
         %         index = find(f<20);
-        index = find(f>1 & f<20);
+        index = find(f>1 & f<30);
         %         sss= abs(s).^2;
-        S_mag_smoothed_V1 = imgaussfilt(abs(s(index,:)), 10); % Gaussian smoothing with sigma=2
+%         S_mag_smoothed_V1 = imgaussfilt(abs(s(index,:)), 20); % Gaussian smoothing with sigma=2
+        S_mag_smoothed_V1 = abs(s(index,:));
+        S_mag_smoothed_V1 = movmedian(S_mag_smoothed_V1,20,2);
+        S_mag_smoothed_V1 = movmedian(S_mag_smoothed_V1,20,1);
 
-        [s,f,t] = stft(CA1_LFP{1},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
-        index = find(f>1 & f<20);
+        [s,f,t] = stft(CA1_LFP{2},LFP_SR,'Window',hann(LFP_SR),'FrequencyRange','onesided','FFTLength',10*round(LFP_SR));
+        index = find(f>1 & f<30);
         %         sss= abs(s).^2;
-        S_mag_smoothed_HPC = imgaussfilt(abs(s(index,:)), 10); % Gaussian smoothing with sigma=2
+%         S_mag_smoothed_HPC = imgaussfilt(abs(s(index,:)),20); % Gaussian smoothing with sigma=2
+        S_mag_smoothed_HPC = abs(s(index,:));
+        S_mag_smoothed_HPC = movmedian(S_mag_smoothed_HPC,20,2);
+        S_mag_smoothed_HPC = movmedian(S_mag_smoothed_HPC,20,1);
+% 
+%         % Interpolate to log-frequency scale
+%         f_log = logspace(log10(min(f(index))), log10(max(f(index))), 200);  % log scale
+%         S_log_V1 = interp1(f(index), S_mag_smoothed_V1, f_log, 'linear', 'extrap');
+% 
+%         S_log_HPC = interp1(f(index), S_mag_smoothed_HPC, f_log, 'linear', 'extrap');
+% 
 
 
 
+        freq_orig = f(index);         % size: [N_freq]
+        time_orig = t;                % size: [1 x N_time]
+        S_orig = S_mag_smoothed_V1;   % size: [N_freq x N_time]
 
-        tindex = find(t>behavioural_state(1).REM(1,1)-100 & t<behavioural_state(1).REM(1,1)+200);
+        % Define new target grids
+        %         f_log = logspace(log10(min(freq_orig)), log10(max(freq_orig)), 200);  % log-freq axis
+        f_log = 2 .^ linspace(log2(min(freq_orig)), log2(max(freq_orig)), 200);
+        S_log_V1 = interp1(freq_orig, S_mag_smoothed_V1, f_log, 'linear', 'extrap');
+        S_log_HPC = interp1(freq_orig, S_mag_smoothed_HPC, f_log, 'linear', 'extrap');
 
-        figure
-        subplot(3,1,1)
-        imagesc(t(tindex), f(index), S_mag_smoothed_V1(:,tindex));
 
+
+        tindex = find(t>behavioural_state_merged.REM(2,1)-290 & t<behavioural_state_merged.REM(2,1)+300);
+% tindex = 1:length(t);
+
+        theta_delta_ratio = mean(S_mag_smoothed_HPC(f>4 & f<12,:),1)./mean(S_mag_smoothed_HPC(f>0.5 & f<4,:),1);
+
+
+
+        fig = figure;
+        fig.Name = 'NREM and REM sleep scoring based on V1 and HPC LFP';
+        fig.Position = [880 110 950 840];
+        subplot(4,1,1)
+        imagesc(t(tindex), freq_orig, S_mag_smoothed_V1(:,tindex));
+        set(gca, 'YDir', 'normal');               % Ensure Y-axis increases upward
         %         set(gca,YScale="log",...
         %             YDir="reverse",View=[0 300])
         %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
-        clim([prctile(reshape(S_mag_smoothed,1,[]),1) prctile(reshape(S_mag_smoothed,1,[]),99)])
+        clim([prctile(reshape(S_mag_smoothed_V1,1,[]),1) prctile(reshape(S_mag_smoothed_V1,1,[]),90)])
         colorbar
         colormap(flipud(bone))
         hold on
 
-        yline(f(min(find(f>1&f<3))),'r')
-        yline(f(max(find(f>1&f<3))),'r')
+        yl = ylim;
+        hold on
+        for nevent = 1:size(behavioural_state_merged.SWS,1)
+            x_start = behavioural_state_merged.SWS(nevent,1);
+            x_end = behavioural_state_merged.SWS(nevent,2);
+            fill([x_start x_end x_end x_start], ...
+                [yl(1) yl(1) yl(2) yl(2)], ...
+                'r', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+        end
+
+%         yline(f(min(find(f>0.5&f<4))),'r')
+%         yline(f(max(find(f>0.5&f<4))),'r')
+        ylabel('Frequency (Hz)')
         title('V1 LFP Time frequency plot')
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-        subplot(3,1,2)
-        imagesc(t(tindex), f(index), S_mag_smoothed_HPC(:,tindex));
-
+        subplot(4,1,2)
+        imagesc(t(tindex), freq_orig, S_mag_smoothed_HPC(:,tindex));
+        set(gca, 'YDir', 'normal');               % Ensure Y-axis increases upward
         %         set(gca,YScale="log",...
         %             YDir="reverse",View=[0 300])
         %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
-        clim([prctile(reshape(S_mag_smoothed_HPC,1,[]),1) prctile(reshape(S_mag_smoothed_HPC,1,[]),99)])
+        clim([prctile(reshape(S_mag_smoothed_HPC,1,[]),1) prctile(reshape(S_mag_smoothed_HPC,1,[]),90)])
         colorbar
         colormap(flipud(bone))
         hold on
 
-        yline(f(min(find(f>4&f<10))),'r')
-        yline(f(max(find(f>4&f<10))),'r')
+%         yline(f(min(find(f>4&f<12))),'b')
+%         yline(f(max(find(f>4&f<12))),'b')
 
-        xline(min(t(t>behavioural_state(1).REM(1,1))),'k')
-        xline(max(t(t<behavioural_state(1).REM(1,2))),'k')
+        yl = ylim;
+        for nevent = 1:size(behavioural_state_merged.REM,1)
+            x_start = behavioural_state_merged.REM(nevent,1);
+            x_end = behavioural_state_merged.REM(nevent,2);
+            fill([x_start x_end x_end x_start], ...
+                [yl(1) yl(1) yl(2) yl(2)], ...
+                'b', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+        end
+
+        ylabel('Frequency (Hz)')
         title('HPC LFP Time frequency plot')
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-        subplot(3,1,3)
+        subplot(4,1,3)
+        plot(t(tindex),theta_delta_ratio(tindex),'k')
+        yl = ylim;
+        hold on
+        for nevent = 1:size(behavioural_state_merged.REM,1)
+            x_start = behavioural_state_merged.REM(nevent,1);
+            x_end = behavioural_state_merged.REM(nevent,2);
+            fill([x_start x_end x_end x_start], ...
+                [yl(1) yl(1) yl(2) yl(2)], ...
+                'b', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+        end
+        xlim([t(tindex(1)) t(tindex(end))])
+        colorbar
+        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        ylabel('Theta/Delta ratio')
+
+        subplot(4,1,4)
         interp1_mobility = interp1(Behaviour.tvec,Behaviour.mobility_zscore,t(tindex));
-        plot(t(tindex),interp1_mobility)
+        plot(t(tindex),interp1_mobility,'k')
         xlabel('Time(s)')
         ylabel('Mobility zscored')
-        for nevent =1:size(behavioural_state(1).SWS,1)
-            xline(min(t(t>behavioural_state(1).SWS(nevent,1))),'r')
-            xline(max(t(t<behavioural_state(1).SWS(nevent,2))),'b')
+        yl = ylim;
+        hold on
+        for nevent = 1:size(behavioural_state_merged.SWS,1)
+            x_start = behavioural_state_merged.SWS(nevent,1);
+            x_end = behavioural_state_merged.SWS(nevent,2);
+            fill([x_start x_end x_end x_start], ...
+                [yl(1) yl(1) yl(2) yl(2)], ...
+                'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+        end
+        hold on
+        for nevent = 1:size(behavioural_state_merged.REM,1)
+            x_start = behavioural_state_merged.REM(nevent,1);
+            x_end = behavioural_state_merged.REM(nevent,2);
+            fill([x_start x_end x_end x_start], ...
+                [yl(1) yl(1) yl(2) yl(2)], ...
+                'b', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
         end
         xlim([min(t(tindex)) max(t(tindex))])
         colorbar
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-
-        %%%%%% Sleep TF plot
-        
-        tindex = 1:length(t);
-
-        figure
-        subplot(3,1,1)
-        imagesc(t(tindex), f(index), S_mag_smoothed_V1(:,tindex));
-
-        %         set(gca,YScale="log",...
-        %             YDir="reverse",View=[0 300])
-        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
-        clim([prctile(reshape(S_mag_smoothed,1,[]),1) prctile(reshape(S_mag_smoothed,1,[]),99)])
-        colorbar
-        colormap(flipud(bone))
-        hold on
-
-        yline(f(min(find(f>1&f<3))),'r')
-        yline(f(max(find(f>1&f<3))),'r')
-        xlabel('Time(s)')
-        ylabel('Frqeuncy')
-        title('V1 LFP Time frequency plot')
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        subplot(3,1,2)
-        imagesc(t(tindex), f(index), S_mag_smoothed_HPC(:,tindex));
-
-        %         set(gca,YScale="log",...
-        %             YDir="reverse",View=[0 300])
-        %         clim([min(reshape(abs(s).^2,1,[])) max(reshape(abs(s).^2,1,[]))])
-        clim([prctile(reshape(S_mag_smoothed_HPC,1,[]),1) prctile(reshape(S_mag_smoothed_HPC,1,[]),99)])
-        colorbar
-        colormap(flipud(bone))
-        hold on
-
-        yline(f(min(find(f>4&f<10))),'r')
-        yline(f(max(find(f>4&f<10))),'r')
-%         for nevent =1:size(behavioural_state(1).REM,1)
-%             xline(min(t(t>behavioural_state(1).REM(nevent,1))),'r')
-%             xline(max(t(t<behavioural_state(1).REM(nevent,2))),'b')
-%         end
-        xlabel('Time(s)')
-        ylabel('Frqeuncy')
-        title('HPC LFP Time frequency plot')
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        subplot(3,1,3)
-        interp1_mobility = interp1(Behaviour.tvec,Behaviour.mobility_zscore,t(tindex));
-        plot(t(tindex),interp1_mobility)
-        xlabel('Time(s)')
-        ylabel('Mobility zscored')
-        for nevent =1:size(behavioural_state(1).SWS,1)
-            xline(min(t(t>behavioural_state(1).SWS(nevent,1))),'r')
-            xline(max(t(t<behavioural_state(1).SWS(nevent,2))),'b')
-        end
-        xlim([min(t(tindex)) max(t(tindex))])
-        colorbar
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','figure'),[],'ContentType','vector')
 
 
       
 
         %%%%%% peri ripple LFP and spiking
         for nprobe = 1:2
-            [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,1) slow_waves(1).UP_ints(:,1)+0.2]);
+            [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,1) slow_waves(1).UP_ints(:,1)+0.3]);
             ripples(nprobe).DOWN_UP_transition_onset = ripples(nprobe).onset(ripples(nprobe).DOWN_UP_transition_index)';
         end
 
         for nprobe = 1:2
-            [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,2)-0.4 slow_waves(1).UP_ints(:,2)+0.1]);
+            [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).UP_ints(:,2)-0.4 slow_waves(1).UP_ints(:,2)+0.3]);
             ripples(nprobe).UP_DOWN_transition_onset = ripples(nprobe).onset(ripples(nprobe).UP_DOWN_transition_index)';
         end
 
-% slow_waves = [];
+        % slow_waves = [];
 
-        event_times = [spindles(1).onset(spindles(1).peak_zscore>4) spindles(1).offset(spindles(1).peak_zscore>4)];
-        %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
-        tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
+        %         event_times = [spindles(1).onset(spindles(1).peak_zscore>4) spindles(1).offset(spindles(1).peak_zscore>4)];
+        %         %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
+        %         tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
+        %
+        %         count = 1;
+        %         nevent =1:48;
+        %         for count = 1:48
+        %             subplot(7,7,count)
+        %             tindex = find(tvec>event_times(nevent(count),1)-0.2 & tvec<event_times(nevent(count),2)+0.2);
+        %             plot(tvec(tindex),cortex_LFP_filtered{1}(tindex),'k','LineWidth',1.5)
+        %             ylim([min(cortex_LFP_filtered{1}(tindex))-50 max(cortex_LFP_filtered{1}(tindex))+50])
+        %         end
+        %
+        %
+        %
+        %
+        %         nevent =200
+        %         event_times = [ripples(1).UP_DOWN_transition_onset' ripples(1).UP_DOWN_transition_offset];
+        %         %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
+        %         tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
+        %
+        %
+        %         count = 1;
+        %         nevent =200:225;
+        %         for count = 1:25
+        %             subplot(5,5,count)
+        %             tindex = find(tvec>event_times(nevent(count),1)-0.05 & tvec<event_times(nevent(count),2)+0.05);
+        %             plot(tvec(tindex),LFP(1).best_HPC(1,tindex),'k','LineWidth',1.5)
+        %             ylim([min(LFP(1).best_HPC(1,tindex))-50 max(LFP(1).best_HPC(1,tindex))+50])
+        %         end
+%         event_times = [ripples(1).onset(ripples(1).UP_DOWN_transition_index ==1 & ripples(1).peak_zscore>10) ripples(1).offset(ripples(1).UP_DOWN_transition_index ==1 & ripples(1).peak_zscore>10)];
 
-        count = 1;
-        nevent =1:48;
-        for count = 1:48
-            subplot(7,7,count)
-            tindex = find(tvec>event_times(nevent(count),1)-0.2 & tvec<event_times(nevent(count),2)+0.2);
-            plot(tvec(tindex),cortex_LFP_filtered{1}(tindex),'k','LineWidth',1.5)
-            ylim([min(cortex_LFP_filtered{1}(tindex))-50 max(cortex_LFP_filtered{1}(tindex))+50])
+        % Get relevant ripple onset times
+        down_up_onsets = ripples(1).onset(ripples(1).DOWN_UP_transition_index == 1 & ripples(1).peak_zscore > 5);
+        up_down_onsets = ripples(1).onset(ripples(1).UP_DOWN_transition_index == 1 & ripples(1).peak_zscore > 5);
+
+        threshold = 0.5;  % 300 ms in seconds
+        event_times = [];
+
+        for i = 1:length(down_up_onsets)
+            % Look for UP_DOWN events that come after this DOWN_UP within 300ms
+            dt = up_down_onsets - down_up_onsets(i);
+            idx = find(dt > 0 & dt <= threshold);
+
+            for j = 1:length(idx)
+                event_times = [event_times; down_up_onsets(i), up_down_onsets(idx(j))];
+            end
         end
-
-
-
-
-        nevent =200
-        event_times = [ripples(1).UP_DOWN_transition_onset' ripples(1).UP_DOWN_transition_offset];
-        %         tindex = find(tvec>ripples(1).UP_DOWN_transition_onset(min(nevent))-0.5 & tvec<ripples(1).UP_DOWN_transition_onset(max(nevent))+0.5);
-        tindex = find(tvec>event_times(min(nevent),1)-0.1 & tvec<event_times(max(nevent),2)+0.1);
-
-
-        count = 1;
-        nevent =200:225;
-        for count = 1:25
-            subplot(5,5,count)
-            tindex = find(tvec>event_times(nevent(count),1)-0.05 & tvec<event_times(nevent(count),2)+0.05);
-            plot(tvec(tindex),LFP(1).best_HPC(1,tindex),'k','LineWidth',1.5)
-            ylim([min(LFP(1).best_HPC(1,tindex))-50 max(LFP(1).best_HPC(1,tindex))+50])
-        end
-
-        figure
-        subplot(3,1,1)
-        plot(tvec(tindex),2*cortex_LFP_filtered{1}(tindex)+1500,'r')
-        hold on
-        plot(tvec(tindex),2*cortex_LFP_filtered{2}(tindex)+2500,'b')
-        hold on;
-        plot(tvec(tindex),LFP(1).best_HPC(1,tindex)+800,'k')
-        % plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
-        plot(tvec(tindex),CA1_LFP_ripple_filtered{1}(tindex)*2,'k')
-  
-        for n = nevent
-            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
-            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
-            %             xline(min(tvec(tvec>event_times(n,2))),'b')
-            %             xline(max(tvec(tvec<event_times(n,1))),'r')
-            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
-                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
-                2500],...
-                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
-        end
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        subplot(3,1,2)
-        %         CA1_spike_counts{3} = zscore(CA1_spike_counts{1}+CA1_spike_counts{2});
-        %         V1_spike_counts{3} = zscore(V1_spike_counts{1}+V1_spike_counts{2});
-
-        plot(tvec(tindex),2*V1_spike_counts{1}(tindex)+2,'r')
-        hold on
-        plot(tvec(tindex),2*V1_spike_counts{2}(tindex),'b')
-        title('V1 spiking')
-        for n = nevent
-            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
-            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
-            %             xline(min(tvec(tvec>event_times(n,2))),'b')
-            %             xline(max(tvec(tvec<event_times(n,1))),'r')
-            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
-                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
-                2+max(V1_spike_counts{1}(tindex))],...
-                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
-        end
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-        subplot(3,1,3)
-        plot(tvec(tindex),CA1_spike_counts{1}(tindex)+3,'r')
-        hold on
-        plot(tvec(tindex),CA1_spike_counts{2}(tindex),'b')
-        title('HPC spiking')
-        for n = nevent
-            %             xline(min(tvec(tvec>ripples(1).UP_DOWN_transition_onset(n))),'b')
-            %             xline(max(tvec(tvec<ripples(1).UP_DOWN_transition_onset(n))),'r')
-            rectangle('Position',[min(tvec(tvec>event_times(n,1))) -0.5 ...
-                min(tvec(tvec>event_times(n,2)))-max(tvec(tvec<event_times(n,1))),...
-                3+max(CA1_spike_counts{1}(tindex))],...
-                'FaceColor',[1 0 0 0.2],'EdgeColor','none')
-
-            %             xline(min(tvec(tvec>event_times(n,2))),'b')
-            %             xline(max(tvec(tvec<event_times(n,1))),'r')
-        end
-        set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
 
 
         
+        ripple_times = [ripples(1).SWS_onset ripples(1).SWS_offset];
+        ripple_times = [ripples(1).SWS_onset ripples(1).SWS_offset];
+        UP_times = slow_waves(1).UP_ints;
+        DOWN_times = slow_waves(1).DOWN_ints;
+        DOWN_times2 = slow_waves(2).DOWN_ints;
+
+        nevent = 3;
+        %         nevent = 101:104;
+        colour_lines = [0,90,50;74,20,134]/256;
+
+        spike_data = {V1_spikes{1},V1_spikes{2},HPC_spikes{1},HPC_spikes{2}};
+        region_names = {'Left V1','Right V1','Left HPC','Right HPC'};
+
+
+        for nfig = 5
+            tindex = find(tvec>event_times(min(nfig),1)-0.8 & tvec<event_times(max(nfig),2)+0.8);
+            fig = figure;
+            fig.Position = [740 130 440 850]
+            fig.Name = sprintf('raster raw race during UP DOWN ripples %i',nfig)
+            
+            time_bins =  tvec(tindex(1)):0.001: tvec(tindex(end));
+            num_bins = length(time_bins);
+            
+
+            % Map each neuron ID to a row index
+
+            for nregion = 1:4
+                subplot(4,1,nregion)
+                neuron_ids = unique(spike_data{nregion}(:,1));
+                num_neurons = length(neuron_ids);
+                neuron_map = containers.Map(neuron_ids, 1:num_neurons);
+
+                % Initialize raster matrix
+                raster_matrix = zeros(num_neurons, num_bins);
+
+                % Fill raster matrix
+                for i = 1:size(spike_data{nregion}, 1)
+                    neuron = spike_data{nregion}(i,1);
+                    time = spike_data{nregion}(i,2);
+
+                    if time >= start_time && time <= end_time
+                        row = neuron_map(neuron);
+                        col = floor((time - start_time)/bin_size) + 1;
+                        raster_matrix(row, col) = 1;
+                    end
+                end
+
+                imagesc(time_bins, 1:num_neurons, raster_matrix);
+
+                % Custom RGB color for spikes (e.g., red)
+                if nregion == 1|nregion == 3
+                    spike_rgb = colour_lines(1,:);  % green
+                else
+                    spike_rgb = colour_lines(2,:);  % pu
+                end
+                bg_rgb = [1 1 1];     % white background
+
+                colormap([bg_rgb; spike_rgb]);  % 0 = white, 1 = red
+                colorbar off;
+
+                xlabel('Time (ms)');
+                ylabel('Neuron');
+                yticks(1:num_neurons);
+                yticklabels(neuron_ids);
+                title(region_names{nregion})
+            end
+
+
+            fig = figure;
+            fig.Position = [740 130 440 850]
+            fig.Name = sprintf('LFP and MUA raw race during UP DOWN ripples %i',nfig)
+
+            subplot(5,1,[1 2 3])
+            plot(tvec(tindex),4*cortex_LFP_SO_filtered{1}(tindex)+4000,'Color',colour_lines(1,:))
+            hold on
+            plot(tvec(tindex),6*cortex_LFP_SO_filtered{2}(tindex)+3000,'Color',colour_lines(2,:))
+            hold on;
+            plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+2000,'Color',colour_lines(1,:))
+            % plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
+            plot(tvec(tindex),CA1_LFP_ripple_filtered{1}(tindex)*2+1500,'Color',colour_lines(1,:))
+
+            plot(tvec(tindex),2*CA1_LFP_filtered{2}(tindex)+500,'Color',colour_lines(2,:))
+            % plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
+            plot(tvec(tindex),CA1_LFP_ripple_filtered{2}(tindex)*3,'Color',colour_lines(2,:))
+
+
+            yl = ylim;
+            this_colour = colour_lines(1,:);
+            for iEvent = 1:size(DOWN_times,1)
+                x_start = DOWN_times(iEvent,1);
+                x_end = DOWN_times(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                    'FaceColor','b', ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+%             for iEvent = 1:size(UP_times,1)
+%                 x_start = UP_times(iEvent,1);
+%                 x_end = UP_times(iEvent,2);
+%                 x_rect = [x_start x_end x_end x_start];
+%                 y_rect = [yl(1) yl(1) yl(2) yl(2)];
+%                 patch('XData', x_rect, ...
+%                     'YData', y_rect, ...
+%                     'FaceColor','r', ...
+%                     'FaceAlpha', 0.2, ...
+%                     'EdgeColor', 'none');
+%             end
+
+            yl = ylim;
+            this_colour = colour_lines(1,:);
+            for iEvent = 1:size(DOWN_times2,1)
+                x_start = DOWN_times2(iEvent,1);
+                x_end = DOWN_times2(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                    'FaceColor', colour_lines(2,:), ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+            for iEvent = 1:size(ripple_times,1)
+                x_start = ripple_times(iEvent,1);
+                x_end = ripple_times(iEvent,2);
+                fill([x_start x_end x_end x_start], ...
+                    [yl(1) yl(1) yl(2) yl(2)], ...
+                    'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+            end
+            %             for iEvent = 1:size(UP_times,1)
+            %                 x_start = UP_times(iEvent,1);
+            %                 x_end = UP_times(iEvent,2);
+            %                 fill([x_start x_end x_end x_start], ...
+            %                     [yl(1) yl(1) yl(2) yl(2)], ...
+            %                     'r', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+            %             end
+
+            xlim([tvec(tindex(1)) tvec(tindex(end))])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            subplot(5,1,4)
+            %         CA1_spike_counts{3} = zscore(CA1_spike_counts{1}+CA1_spike_counts{2});
+            %         V1_spike_counts{3} = zscore(V1_spike_counts{1}+V1_spike_counts{2});
+
+            plot(tvec(tindex),2*V1_spike_counts{1}(tindex)+2,'Color',colour_lines(1,:))
+            hold on
+            plot(tvec(tindex),2*V1_spike_counts{2}(tindex),'Color',colour_lines(2,:))
+            title('V1 spiking')
+            yl = ylim;
+
+            for iEvent = 1:size(DOWN_times,1)
+                x_start = DOWN_times(iEvent,1);
+                x_end = DOWN_times(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                      'FaceColor','b', ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+            yl = ylim;
+            this_colour = colour_lines(1,:);
+            for iEvent = 1:size(DOWN_times2,1)
+                x_start = DOWN_times2(iEvent,1);
+                x_end = DOWN_times2(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                    'FaceColor', colour_lines(2,:), ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+            for iEvent = 1:size(ripple_times,1)
+                x_start = ripple_times(iEvent,1);
+                x_end = ripple_times(iEvent,2);
+                fill([x_start x_end x_end x_start], ...
+                    [yl(1) yl(1) yl(2) yl(2)], ...
+                    'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+            end
+
+
+            xlim([tvec(tindex(1)) tvec(tindex(end))])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+            subplot(5,1,5)
+            plot(tvec(tindex),CA1_spike_counts{1}(tindex)+3,'Color',colour_lines(1,:))
+            hold on
+            plot(tvec(tindex),CA1_spike_counts{2}(tindex),'Color',colour_lines(2,:))
+            title('HPC spiking')
+            yl = ylim;
+
+
+            for iEvent = 1:size(DOWN_times,1)
+                x_start = DOWN_times(iEvent,1);
+                x_end = DOWN_times(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                      'FaceColor','b', ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+            yl = ylim;
+            this_colour = colour_lines(1,:);
+            for iEvent = 1:size(DOWN_times2,1)
+                x_start = DOWN_times2(iEvent,1);
+                x_end = DOWN_times2(iEvent,2);
+                x_rect = [x_start x_end x_end x_start];
+                y_rect = [yl(1) yl(1) yl(2) yl(2)];
+                patch('XData', x_rect, ...
+                    'YData', y_rect, ...
+                    'FaceColor', colour_lines(2,:), ...
+                    'FaceAlpha', 0.2, ...
+                    'EdgeColor', 'none');
+            end
+
+            for iEvent = 1:size(ripple_times,1)
+                x_start = ripple_times(iEvent,1);
+                x_end = ripple_times(iEvent,2);
+                fill([x_start x_end x_end x_start], ...
+                    [yl(1) yl(1) yl(2) yl(2)], ...
+                    'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+            end
+            xlim([tvec(tindex(1)) tvec(tindex(end))])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        end
+
+        save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','Raw trace M24016'),[],'ContentType','vector')
+
     end
 
 end
-
-zero_meaned_log_odds = [decoded_ripple_events(1).track(1).replay_events(:).z_log_odds] - mean([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
-histogram(zero_meaned_log_odds,100)
-
-
-% histogram([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds],100)
-find(zero_meaned_log_odds<-1)
-find(zero_meaned_log_odds>1)
-
-zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
-T2_events = find(zero_meaned_log_odds<-1);
-figure
-count=1;
-for event = 1:5:length(T2_events)
-
-    subplot(5,5,count)
-    T1_data = decoded_ripple_events(1).track(1).replay_events(T2_events(event));
-    T2_data = decoded_ripple_events(1).track(2).replay_events(T2_events(event));
-
-    timebins = T1_data.timebins_edges(1:end-1);
-    imagesc(timebins,...
-        [1:2*size(T2_data.replay,1)],...
-        [T1_data.replay; T2_data.replay])
-    hold on
-    colormap(flipud(gray))
-    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/5)
-    yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
-    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
-
-
-    [b,index]=min(abs(T1_data.onset-timebins));
-    xline(timebins(index)-mean(diff(timebins)/2))
-    [b,index]=min(abs(T1_data.offset-timebins));
-    xline(timebins(index)-mean(diff(timebins)/2))
-    count = count + 1;
-end
-
-
-T1_events = find(zero_meaned_log_odds>1);
-figure
-count = 1;
-for event = 1:length(T1_events)
-    subplot(5,5,count)
-    T1_data = decoded_ripple_events(1).track(1).replay_events(T1_events(event));
-    T2_data = decoded_ripple_events(1).track(2).replay_events(T1_events(event));
-
-    timebins = T1_data.timebins_edges(1:end-1);
-    imagesc(timebins,...
-        [1:2*size(size(T2_data.replay,1))],...
-        [T1_data.replay; T2_data.replay])
-    colormap(flipud(gray))
-    yticks([30 50 70 90 110 140 170 190 210 230 250 280]/10)
-    yline(14.5,'LineWidth',2,'Color','k','DisplayName','Track 2')
-    yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
-
-    hold on
-    [b,index]=min(abs(T1_data.onset-timebins));
-    xline(timebins(index)-mean(diff(timebins)/2))
-    [b,index]=min(abs(T1_data.offset-timebins));
-    xline(timebins(index)-mean(diff(timebins)/2))
-    count = count + 1;
-end
-
-%% 
-figure
-nexttile
-%         plot_perievent_event_histogram(ripples(2).SWS_peaktimes,ripples(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right ripple')
-time_wondows = [-2 2];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes,ripples(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
-title('Probability of Left ripple during Right HPC')
-ylabel('probability')
-xlabel('Time(s)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-%         plot_perievent_event_histogram(slow_waves(2).ints.UP(:,1),slow_waves(1).ints.UP(:,1),'twin',[-1 1],'event_name','Right UP events')
-time_wondows = [-2 2];
-time_bin = 0.02;
-probabilities = calculate_event_probability(slow_waves(1).ints.UP(:,1),slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
-title('Probability of UP state from Left V1 during Right V1 Upstates')
-title('Up state from Left V1 relative to Up state from Right V1')
-ylabel('probability')
-xlabel('Time(s)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-%         plot_perievent_event_histogram(spindles(2).SWS_peaktimes,spindles(1).SWS_peaktimes,'twin',[-1 1],'event_name','Right spindles events')
-time_wondows = [-2 2];
-time_bin = 0.05;
-probabilities = calculate_event_probability(spindles(1).SWS_peaktimes,spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
-title('Probability of left spindles during right spindles')
-title('Spindles from Left V1 relative to Spindles from Right V1')
-ylabel('probability')
-xlabel('Time(s)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-%         plot_perievent_event_histogram(V1_reactivations(2).SWS_onset,V1_reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right V1 populational burtsting events')
-time_wondows = [-2 2];
-time_bin = 0.02;
-probabilities = calculate_event_probability(V1_reactivations(1).SWS_onset,V1_reactivations(2).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
-title('Probability of left V1 bursting during right V1 bursting')
-ylabel('probability')
-xlabel('Time(s)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-%         plot_perievent_event_histogram(reactivations(2).SWS_onset,reactivations(1).SWS_onset,'twin',[-1 1],'event_name','Right HPC populational burtsting events')
-time_wondows = [-2 2];
-time_bin = 0.02;
-probabilities = calculate_event_probability(reactivations(2).SWS_onset,reactivations(1).SWS_onset, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,3))
-title('Probability of left HPC bursting during right HPC bursting')
-ylabel('probability')
-xlabel('Time(s)')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-sgtitle('Left and Right events Synchronisation')
-
-
-figure
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples during UP states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples during DOWN states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples during UP states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(1).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples relative to DOWN states')
-sgtitle('Left V1')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-sgtitle('Left V1 slow waves and HPC interaction')
-
-figure
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples relative to UP states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples relative to DOWN states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.UP(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples relative to UP states')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, slow_waves(2).ints.DOWN(:,1), [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples relative to DOWN states')
-sgtitle('Right V1')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-sgtitle('Right V1 slow waves and HPC interaction')
-
-
-figure
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, spindles(1).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples during Left spindles')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, spindles(1).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples during Left spindles')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-probabilities = calculate_event_probability(ripples(1).SWS_peaktimes, spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Left ripples during Right spindles')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-time_wondows = [-1 1];
-time_bin = 0.02;
-probabilities = calculate_event_probability(ripples(2).SWS_peaktimes, spindles(2).SWS_peaktimes, [time_wondows(1):time_bin:time_wondows(2)])
-plot([time_wondows(1)+time_bin/2:time_bin:time_wondows(2)-time_bin/2],smooth(probabilities,5))
-title('probability of Right ripples during Right spindles')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-sgtitle('V1 spindles and HPC interaction')
-
-% Spike relative to events
-
-spatial_cell_index = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
-    | clusters_combined.odd_even_stability(:,2)>0.95);
-
-metric_param =[];
-metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-metric_param.region = @(x) contains(x,'V1_L');
-[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-all_spikes{1}=[selected_clusters.spike_id selected_clusters.spike_times];
-
-metric_param.region = @(x) contains(x,'V1_R');
-[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-all_spikes{2}=[selected_clusters.spike_id selected_clusters.spike_times];
-
-metric_param.region = @(x) contains(x,'HPC');
-[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-all_spikes{3}=[selected_clusters.spike_id selected_clusters.spike_times];
-group_name = {'V1_L','V1_R','HPC'};
-
-% UP
-plot_perievent_spiketime_histogram(all_spikes,slow_waves(1).ints.UP(:,1),'group','by cell zscore','group_name',group_name,'event_name','left UP onset','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,slow_waves(1).ints.UP(:,1),'group','by region','group_name',group_name,'event_name','left UP onset','twin',[-1 1])
-
-plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by cell zscore','group_name',group_name,'event_name','right UP onset','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,slow_waves(2).ints.UP(:,1),'group','by region','group_name',group_name,'event_name','right UP onset','twin',[-1 1])
-
-% Ripples
-plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,ripples(1).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,ripples(2).SWS_peaktimes,'group','by region','group_name',group_name,'event_name','Right Ripples','twin',[-1 1])
-
-
-plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,ripples(1).awake_peaktimes,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-
-% Ripples
-metric_param =[];
-metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-metric_param.region = @(x) contains(x,'V1');
-[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-
-ia = find(cluster_id);
-C = clusters_combined.cluster_id(ia)
-event_id = [ones(1,length(ripples(1).SWS_peaktimes))];
-event_times = [ripples(1).SWS_peaktimes];
-plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
-    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-    'event_id',event_id,'event_label','ripple','place_fields',place_fields,'plot_option','by time');
-
-%
-
-for nprobe = 1:2
-    [ripples(nprobe).DOWN_UP_transition_offset,ripples(nprobe).DOWN_UP_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.DOWN(:,1) slow_waves(1).ints.DOWN(:,2)]);
-    ripples(nprobe).DOWN_UP_transition_onset = ripples(nprobe).onset(ripples(nprobe).DOWN_UP_transition_index)';
-end
-
-for nprobe = 1:2
-    [ripples(nprobe).UP_DOWN_transition_offset,ripples(nprobe).UP_DOWN_transition_index] = RestrictInts(ripples(nprobe).offset,[slow_waves(1).ints.UP(:,1) slow_waves(1).ints.UP(:,1)+0.15]);
-    ripples(nprobe).UP_DOWN_transition_onset = ripples(nprobe).onset(ripples(nprobe).UP_DOWN_transition_index)';
-end
-
-T1_events = ripples(nprobe).DOWN_UP_transition_onset'; 
-T2_events = ripples(nprobe).UP_DOWN_transition_onset';
-
-slow_waves(1).ints.UP(:,1)
-
-find(V1_reactivations(2).ripple_peak(V1_reactivations(2).SWS_index)>=3)
-
-zero_meaned_log_odds = zscore([decoded_ripple_events(1).track(1).replay_events(:).z_log_odds]);
-
-T2_events = ripples(2).peaktimes(find(zero_meaned_log_odds<-1));
-[T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
-
-T1_events = ripples(2).peaktimes(find(zero_meaned_log_odds>1));
-[T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
-
-
-
-
-T2_events = ripples(2).peaktimes(...
-    find(reactivation_strength(2).track(1).strength_percentile>0.95 & reactivation_strength(2).track(2).strength_percentile<0.95));
-[T2_events,~] = RestrictInts(T2_events,behavioural_state(1).SWS);
-
-T1_events = ripples(2).peaktimes(...
-    find(reactivation_strength(2).track(1).strength_percentile<0.95 & reactivation_strength(2).track(2).strength_percentile>0.95));
-[T1_events,~] = RestrictInts(T1_events,behavioural_state(1).SWS);
-
-%         T1_events = ripples(1).peaktimes(find(zero_meaned_log_odds>0.5));
-plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by cell zscore','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-plot_perievent_spiketime_histogram(all_spikes,T2_events,'group','by region','group_name',group_name,'event_name','Left Ripples','twin',[-1 1])
-
-
-metric_param =[];
-metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-metric_param.region = @(x) contains(x,'V1');
-[selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-ia = find(cluster_id);
-%         ia = ia((41:60));
-C = clusters_combined.cluster_id(ia);
-
-event_id = [ones(1,length(T1_events)) 2*ones(1,length(T2_events))];
-event_times = [T1_events; T2_events];
-[event_times,index] = sort(event_times);
-event_id=event_id(index);
-
-plot_perievent_spiketimes(clusters_combined.spike_times,clusters_combined.spike_id,[],[],[5 1],[-1 1],0.02,...
-    'unit_depth',clusters_combined.peak_depth(ia),'unit_region',clusters_combined.region(ia),'unit_id',C,'event_times',event_times,...
-    'event_id',event_id,'event_label','ripple T1','place_fields',place_fields,'plot_option','by time');
-
 
