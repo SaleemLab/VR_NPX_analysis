@@ -232,11 +232,11 @@ clear colour_lines
 colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
 colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
 
-probe_hemisphere_texts = {'Probability of left V1 UP-DOWN during ripples with different power','Probability of right V1 UP-DOWN during ripples with different power'};
+probe_hemisphere_texts = {'Probability of ipsi-contra V1 UP-DOWN during ripples with different power','Probability of ipsi-contra V1 UP-DOWN during ripples with different power'};
 % probe_hemisphere_texts = {'Probability of WHOLE ripples during left V1 normalised UP-DOWN duration','Probability of WHOLE ripples during right V1 normalised UP-DOWN duration'};
 probability_SO_ripples_power = [];
 % colour_lines = [215,25,28;44,123,182]/256;
-for nprobe = 1:2
+for nprobe = 1:1
 
     fig(nprobe)=figure;
     fig(nprobe).Position = [982 50 700 950];
