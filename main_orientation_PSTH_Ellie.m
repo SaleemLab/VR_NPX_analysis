@@ -4,23 +4,30 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
-L4_depth_range = 4510:4650; % 1/4. um. Set for each SESSION based on CSD +/- 70um
+% Choose your probe depth of interest
+L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
+CA1_depth_range = 3660:3960; % 2/5. um. Set for each SESSION based on PSD; 300um around Ripple power "bump"
+depth_for_analysis = 'V1' % choose 'L4' or 'V1' or 'CA1'
+
 SUBJECTS = {'M00013'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
-%%%2/4
-Stimulus_type = 'GAVNIK_ABCD'; 
-plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+%%% 3/5
+Stimulus_type = 'OMIT'; 
+plot_choice = 'single_units'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
+z_score_period = 'first30secs'; % z score either over 'entire_session' or 'first30secs' (for every stimulus recording
+% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250221\GAVNIK_ABCD') %3/4 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250207\OMIT') % 4/5 files will be saved here in the cd
 
-for nsession = 15 %4/4 row number of recording date in "experiment_info" 
+
+for nsession = 8 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -43,49 +50,87 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
        
         params = create_cluster_selection_params('sorting_option','ellie');
         %params.orientation_tuned = ...
-        psthBinSize = 0.01;
+        psthBinSize = 0.01; % but use 1ms for raster plots
+        
+        switch depth_for_analysis
+            case 'L4' 
+                depth_range = L4_depth_range;
+            case 'V1'
+                depth_range = V1_depth_range;
+            case 'CA1' 
+                depth_range = CA1_depth_range;
+        end
 
-        if contains(Stimulus_type, 'OP_Tuning') && contains(plot_type, 'raster')
+        if contains(Stimulus_type, 'OP_Tuning') && contains(plot_type, 'raster') 
+            % For M00013, the OP_Tuning stimulus was 150ms, with 150ms grey screen between stimuli, and took 24 different directions, moving at 2Hz
+            % For M00014 (and beyond), the OP_Tuning stimulus was 67ms (but Bonsai typically keeps it on 84ms, 1 frame longer), with 17ms grey screen 
+            % between stimuli (but Bonsai typically keeps it grey 34ms, 1 frame longer), and took 12 different static orientations
+            
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
 
-                V1_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(V1_depth_range) & peak_depths <= max(V1_depth_range);
-                    V1_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    V1_selected_clusters(np).cluster_id = V1_cluster_ids;
-                    V1_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, V1_cluster_ids));
-                    V1_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, V1_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
 
-                cluster_id = V1_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
-                time_edges = 0:psthBinSize:max(V1_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                cluster_id = depth_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
+                
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
 
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+                
                 ori_response = [];
                 z_binnedArray = [];
 
                 for nCluster = 1:length(cluster_id) % loop through each good cluster
                 
-                    spike_times_this_cluster = V1_selected_clusters(nprobe).spike_times(V1_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.150], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
-             
-                    fig(nCluster)=figure; % open a figure window
-                    fig(nCluster).Name=sprintf('Orientation response V1 Cluster %i',cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
-                    fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
-               
-                    for ori = 1:length(all_orientations) % loop through each unique stimulus orientation shown to the mouse during this task
-                        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.150 0.150], 0.001); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
+                    %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.150], psthBinSize/10); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
                     
+                    % Compute appropriate histogram counts for z-scoring
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(spike_times_this_cluster, time_edges);
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges);
+                    end
+
+                    fig(nCluster)=figure; % open a figure window
+                    fig(nCluster).Name=sprintf('Orientation response %s Cluster %i', depth_for_analysis, cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
+                    fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
+                    
+
+                    for ori = 1:length(all_orientations) % loop through each unique stimulus orientation shown to the mouse during this task
+                        if isequal(session_info(n).probe(1).SUBJECT, 'M00013')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.15 0.150], psthBinSize/10); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around stimulus onset
+                        else
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.05 0.120], psthBinSize/10); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around stimulus onset
+                        end
                         nexttile % opens a subplot tile
                         plot(rasterX,rasterY,'k','LineWidth',1) % plot the spiking raster for the current orientation
                         xline(0,'r',LineWidth=1) % put a vertical red line at time zero (stimulus onset)
-                        xlim([-0.15 0.15])
+                        if isequal(session_info(n).probe(1).SUBJECT, 'M00013')
+                            xlim([-0.15 0.150])
+                        else
+                            xlim([-0.05 0.120])
+                        end
+
                         ylim([0 sum(Task_info.stim_orientation==all_orientations(ori))]) % set the max y coord to be the total # trials with this orientation
                         % imagesc(binnedArray)
                         % xticks([1.5 10.5 15.5 20.5 30.5])
@@ -95,11 +140,15 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                         % colormap(flipud(gray))
                         title(sprintf('Orientation %d%s',round(rad2deg(all_orientations(ori))), char(176)))
                         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+                       
+                        if isequal(session_info(n).probe(1).SUBJECT, 'M00013')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.150 0.150], psthBinSize);
+                        else
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.05 0.120], psthBinSize);
+                        end
 
-                        spikecounts_cluster = histcounts(spike_times_this_cluster,time_edges); % count the spikes from this cluster that fall into each time bin
-
-                        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==all_orientations(ori)), [-0.150 0.150], psthBinSize);
-                        z_binnedArray{nCluster}{ori} = (binnedArray - mean(spikecounts_cluster))./std(spikecounts_cluster); %z-score normalisation of the binned Array for this orientation: subtracts the mean and divides by the s.d. of the spike count histogram for the whole session
+                        z_binnedArray{nCluster}{ori} = (binnedArray - mean(zscore_counts))./std(zscore_counts);
+                        
                         % hold on
                         % plot(bins,mean(z_binnedArray));
              
@@ -131,11 +180,15 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     % hold on;
                     errorbar(round(rad2deg(all_orientations)),mean_response,se_response,se_response) %plot the mean of max z-scored firing (y-axis) in response to each orientation (x-axis)
                     % with error bars showing SE above and below mean z-scored max response for each orientation
-                    xlim([-20 360]) % x-axis runs from -20 to 360 degrees
-                    % legend(PLOT(1:end),{num2str(round(rad2deg(all_orientations)))},'box','off')
+                    if isequal(session_info(n).probe(1).SUBJECT, 'M00013')
+                        xlim([-20 370]) % x-axis runs from -20 across 360 degrees
+                    else
+                        xlim([-20 190]) % x-axis runs from -20 across 180 degrees
+                    end
+                        % legend(PLOT(1:end),{num2str(round(rad2deg(all_orientations)))},'box','off')
                     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-                    sgtitle(sprintf('Orientation response Cluster %i',cluster_id(nCluster)))
-                    exportgraphics(fig(nCluster), sprintf('V1_Cluster_%i.pdf', cluster_id(nCluster))); %save as a pdf in cd 
+                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'none');
+                    exportgraphics(fig(nCluster), sprintf('%s_Cluster_%i.pdf', depth_for_analysis, cluster_id(nCluster))); %save as a pdf in cd 
                 end
 
                 %save_all_figures(save_path,[],'ContentType',ContentType)
@@ -143,95 +196,154 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
             end
         end
 
-        if (contains(Stimulus_type, 'TRAIN') || contains(Stimulus_type, 'GAVNIK_ABCD')) &&...
-           contains(plot_choice, 'single_units') 
+
+
+
+        if contains(Stimulus_type, 'TRAIN') && contains(plot_choice, 'single_units') 
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depths
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
 
-                cluster_id = L4_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
-                time_edges = 0:psthBinSize:max(L4_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                cluster_id = depth_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
+                
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+                
                 ori_response = [];
                 z_binnedArray = [];
 
-                for nCluster = 1:length(cluster_id) % loop through each good cluster in L4
+                for nCluster = 1:length(cluster_id) % loop through each good cluster in selected depth
                 
-                    spike_times_this_cluster = L4_selected_clusters(nprobe).spike_times(L4_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.30], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
-             
+                    
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(spike_times_this_cluster, time_edges); % use all spike times
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges); % use just baseline spikes
+                    end
+
                     fig(nCluster)=figure; % open a figure window
-                    fig(nCluster).Name=sprintf('Grating responses Cluster %i',cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
+                    fig(nCluster).Name=sprintf('%s Grating responses Cluster %i', Stimulus_type, cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
                     fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
                 
-                    tiledlayout(4,1); % vertical layout (4 rows × 1 column)
+                    tiledlayout(5,1); % vertical layout (5 rows × 1 column)
                     % Extract ordered orientations based on presentation sequence
-                    ordered_oris = unique(Task_info.stim_orientation, 'stable'); % radians
-
+                    ordered_oris = unique(Task_info.stim_orientation, 'stable'); % radians for TRAIN but degrees for GAVNIK
+                    
                     for ori = 1:length(ordered_oris)  
 
-                        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], 0.001); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
-                        spikecounts_cluster = histcounts(spike_times_this_cluster,time_edges); % count the spikes from this cluster that fall into each time bin
-
                         if contains(plot_type, 'raster')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], psthBinSize/10); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
                             nexttile % opens a subplot tile
                             plot(rasterX,rasterY,'k','LineWidth',1) % plot the spiking raster for the current orientation
                             xline(0,'r',LineWidth=1) % put a vertical red line at time zero (stimulus onset)
                             xlim([-0.15 0.30])
                             ylim([0 sum(Task_info.stim_orientation==ordered_oris(ori))]) % set the max y coord to be the total # trials with this orientation
+                            ylabel('Trial');
                             % imagesc(binnedArray)
                             % xticks([1.5 10.5 15.5 20.5 30.5])
                             % xticklabels([-0.150 -0.050 0 0.050 0.150])
                             % xline(15.5,'r',LineWidth=1)
                             % colorbar
                             % colormap(flipud(gray))
-                            title(sprintf('Direction %d%s',round(rad2deg(ordered_oris(ori))), char(176)))
+                            title(sprintf('Direction %d%s', round(ordered_oris(ori)), char(176)))
                             set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
                         end
                         
                         
                         if contains(plot_type, 'FR')
-
-                            mean_trace = mean(binnedArray, 1);
-                            z_trace = (mean_trace - mean(spikecounts_cluster)) / std(spikecounts_cluster);
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], psthBinSize); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                            
+                            mean_trace = mean(binnedArray, 1); %here binned array is just for this orientation
+                            z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %dynamically z-scores to baseline period or entire session depending on definition of z_score_period
                             nexttile;
                             plot(bins, z_trace, 'k', 'LineWidth', 1.5);
                             xline(0, 'r', 'LineWidth', 1);
                             xlim([-0.15 0.30]);
                             ylabel('Z-scored FR');
-                            title(sprintf('Direction %d%s', round(rad2deg(ordered_oris(ori))), char(176)));
+                            
+                            title(sprintf('Direction %d%s', round(ordered_oris(ori)), char(176)));
                             set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                         end
 
                         %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], psthBinSize);
-                        z_binnedArray{nCluster}{ori} = (binnedArray - mean(spikecounts_cluster))./std(spikecounts_cluster); %z-score normalisation of the binned Array for this orientation: subtracts the mean and divides by the s.d. of the spike count histogram for the whole session
+                        z_binnedArray{nCluster}{ori} = (binnedArray - mean(zscore_counts)) ./ std(zscore_counts); %z-score normalisation of the binned Array for this orientation: subtracts the mean and divides by the s.d. of the spike count histogram for the baseline period or whole session, depending on definition of z_score_period
                         % hold on
                         % plot(bins,mean(z_binnedArray));
              
                         % time_selected 
                     
                     end
-                                    
-                    sgtitle(sprintf('Response of V1 L4 Cluster %i',cluster_id(nCluster)))
-                    if contains(plot_type, 'raster')
-                        exportgraphics(fig(nCluster), sprintf('V1_L4_Cluster_%i_raster.pdf', cluster_id(nCluster))); %save as a pdf in cd
+                    
+                    % === Extra tile for post-stimulus activity for 4th orientation ===
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'FR')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+                        [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize);
+                        
+                        mean_trace_long = mean(binnedArray_long, 1);
+                        z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+
+                        nexttile;
+                        plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        xticks(0:0.05:0.75);
+                        ylabel('Z-scored FR');
+                        
+                        title(sprintf('Direction %d%s (Extended to show post-stimulus oscillations)', round(rad2deg(ordered_oris(4))), char(176)));
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                     end
                     
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'raster')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+    
+                        [~, ~, rasterX_long, rasterY_long, ~, ~] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize/10);
+    
+                        nexttile;
+                        plot(rasterX_long, rasterY_long, 'k', 'LineWidth', 1);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        ylim([0 sum(Task_info.stim_orientation == ordered_oris(4))]);
+                        xticks(0:0.05:0.75);
+                        
+                        title(sprintf('Direction %d%s (Extended to show post-stimulus oscillations)', round(rad2deg(ordered_oris(4))), char(176)));
+                        ylabel('Trial');
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    end
+
+
+                    % Sanitize Stimulus_type for filenames
+                    safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
+                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)));
+
+                    if contains(plot_type, 'raster')
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
+                    end
+
                     if contains(plot_type, 'FR')
-                        exportgraphics(fig(nCluster), sprintf('V1_L4_Cluster_%i_FR.pdf', cluster_id(nCluster))); %save as a pdf in cd 
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_FR.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
                     end
                 end
 
@@ -246,33 +358,52 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
                 
-                 % Combine spike times for all L4 clusters (i.e., for curated MUA)
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+                
+
+                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
                 all_spike_times = [];
                 all_spike_ids = [];
-                for np = 1:length(L4_selected_clusters)
-                    all_spike_times = [all_spike_times; L4_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; L4_selected_clusters(np).spike_id];
+                for np = 1:length(depth_selected_clusters)
+                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
                 end
+                
+                % Compute appropriate histogram counts for z-scoring
+                if contains(z_score_period, 'entire_session')
+                    zscore_counts = histcounts(all_spike_times, time_edges);
+                elseif contains(z_score_period, 'first30secs')
+                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
+                end
+                    
 
                 ordered_oris = unique(Task_info.stim_orientation, 'stable');
                                               
                 fig = figure;
-                fig.Name = sprintf('Aggregate activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range));
+                fig.Name = sprintf('Aggregate activity: %s depth range %d–%d μm', depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
                 tiledlayout(5,1);
 
@@ -281,9 +412,9 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
 
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.150 0.30], psthBinSize);
                     
-                    spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times)); % session-wide spike counts in each bin
+                    
                     mean_trace = mean(binnedArray, 1); % average over trials
-                    z_trace = (mean_trace - mean(spikecounts_all)) / std(spikecounts_all); % z-score using session-wide stats
+                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
 
                     nexttile;
                     plot(bins, z_trace, 'k', 'LineWidth', 1.5);
@@ -296,14 +427,13 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                 end
 
                 % Extra tile to show post-stimulus oscillations following final stim in seq
-                if contains(Stimulus_type, 'TRAIN') && length(ordered_oris) >= 4
+                if length(ordered_oris) >= 4
                     stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
 
                     [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
     
-                    spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times));
                     mean_trace_long = mean(binnedArray_long, 1);
-                    z_trace_long = (mean_trace_long - mean(spikecounts_all)) / std(spikecounts_all);
+                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
 
                     nexttile;
                     plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
@@ -315,39 +445,55 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('Aggregate single unit activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range)));
-                
-                save_path = fullfile(pwd, 'Aggregate single unit V1 L4 FRs.pdf');
-                saveas(fig, save_path);
+                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                filename = sprintf('%s - Aggregate single unit %s FRs.pdf', Stimulus_type, depth_for_analysis);
+                save_path = fullfile(pwd, filename);
             end
         end
 
         
-        if contains(Stimulus_type, 'OMIT') || contains(Stimulus_type, 'E_CD') && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+        if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
                 
-                 % Combine spike times for all L4 clusters (i.e., for curated MUA)
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+
+                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
                 all_spike_times = [];
                 all_spike_ids = [];
-                for np = 1:length(L4_selected_clusters)
-                    all_spike_times = [all_spike_times; L4_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; L4_selected_clusters(np).spike_id];
+                for np = 1:length(depth_selected_clusters)
+                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
+                end
+
+                % Compute appropriate histogram counts for z-scoring
+                if contains(z_score_period, 'entire_session')
+                    zscore_counts = histcounts(all_spike_times, time_edges);
+                elseif contains(z_score_period, 'first30secs')
+                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                 end
 
                 ordered_oris = unique(Task_info.stim_orientation, 'stable');
@@ -359,14 +505,14 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                 stim_onsets = Task_info.stim_onset;
 
                 fig = figure;
-                fig.Name = sprintf('Aggregate activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range));
+                fig.Name = sprintf('Aggregate activity: %s depth range %d–%d μm', depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
                 tiledlayout(4,1);
 
                 % Session-wide stats for z-scoring
-                spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times));
-                mu = mean(spikecounts_all);
-                sigma = std(spikecounts_all);
+                
+                mu = mean(zscore_counts);
+                sigma = std(zscore_counts);
 
                 for stim_pos = 1:sequence_length  % go through each of the 4 stimulus positions
                     blue_onsets = [];
@@ -467,32 +613,32 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     legend([p1 p2], {blue_label, red_label}, 'Location', 'northeast');
                     legend boxoff;
                 end
-
-                sgtitle(sprintf('Aggregate single unit activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range)));                                                                   
-                save_path = fullfile(pwd, 'Aggregate single unit V1 L4 FRs.pdf');
-                saveas(fig, save_path);
+                          
+                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', depth_for_analysis, Stimulus_type, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                filename = sprintf('%s - Aggregate single unit %s FRs.pdf', Stimulus_type, depth_for_analysis);
+                save_path = fullfile(pwd, filename);
             end
         end
 
 
         
-        if contains(Stimulus_type, 'OMIT') || contains(Stimulus_type, 'E_CD') && contains(plot_choice, 'single_units') && contains(plot_type, 'FR')
+        if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')) && contains(plot_choice, 'single_units') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
                 
                 % Each set of 4 stimuli makes a "trial" (i.e., sequence repeats every 4 stimuli)
@@ -501,20 +647,37 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                 stim_contrasts = Task_info.stim_contrast;
                 stim_onsets = Task_info.stim_onset;
 
-                cluster_ids = L4_selected_clusters(nprobe).cluster_id;
+                cluster_ids = depth_selected_clusters(nprobe).cluster_id;
+
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+
                 for nCluster = 1:length(cluster_ids)
                     cluster_id = cluster_ids(nCluster);
-                    spike_times_this_cluster = L4_selected_clusters(nprobe).spike_times(L4_selected_clusters(nprobe).spike_id == cluster_id);
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id);
+                    
+                    % Compute appropriate histogram counts for z-scoring
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(spike_times_this_cluster, time_edges);
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges);
+                    end
 
                     fig = figure;
-                    fig.Name = sprintf('Response V1 L4 Cluster %i', cluster_id);
+                    fig.Name = sprintf('Response %s Cluster %i', depth_for_analysis, cluster_id);
                     fig.Position = [114 90 770 650];
-                    tiledlayout(4,1);
+                    tiledlayout(5,1);
 
                     % Session-wide stats for z-scoring
-                    spikecounts_cluster = histcounts(spike_times_this_cluster, 0:psthBinSize:max(spike_times_this_cluster));
-                    mu = mean(spikecounts_cluster);
-                    sigma = std(spikecounts_cluster);
+                    mu = mean(zscore_counts);
+                    sigma = std(zscore_counts);
 
                     for stim_pos = 1:sequence_length  % go through each of the 4 stimulus positions
                         blue_onsets = [];
@@ -609,9 +772,61 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                         legend boxoff;
                         set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                     end
+                    
+                    % === 5th subplot: Extended response to final stimulus (stim_pos = 4) ===
+                    stim_pos = 4;  % last stimulus position
+                    blue_onsets = [];
+                    red_onsets = [];
 
-                    sgtitle(sprintf('Response of V1 L4 Cluster %i', cluster_id));                                                                   
-                    saveas(fig, sprintf('V1_L4_Cluster_%i_FR.pdf', cluster_id)); %saveas saves to cd
+                    for i = stim_pos:sequence_length:length(stim_contrasts)
+                        curr = i;
+                        prev = i - 1;
+                        next = i + 1;
+                        twoback = i - 2;
+                    
+                        has_zero_surround = false;
+                        if prev >= 1 && stim_contrasts(prev) == 0, has_zero_surround = true; end
+                        if next <= length(stim_contrasts) && stim_contrasts(next) == 0, has_zero_surround = true; end
+                        if twoback >= 1 && stim_contrasts(twoback) == 0, has_zero_surround = true; end
+                        if stim_contrasts(curr) == 0, has_zero_surround = true; end
+                    
+                        if has_zero_surround
+                            red_onsets(end+1) = stim_onsets(curr);
+                        else
+                            blue_onsets(end+1) = stim_onsets(curr);
+                        end
+                    end
+                    
+                    nexttile;
+                    if contains(plot_type, 'FR')
+                        % Longer PSTH window for extended post-stimulus response
+                        long_window = [-0.02 0.75]; 
+                        [~, bins_long, ~, ~, ~, binned_red_long] = psthAndBA(spike_times_this_cluster, red_onsets, long_window, psthBinSize);
+                        [~, ~, ~, ~, ~, binned_blue_long] = psthAndBA(spike_times_this_cluster, blue_onsets, long_window, psthBinSize);
+                    
+                        z_red_long = (mean(binned_red_long,1) - mu) / sigma;
+                        z_blue_long = (mean(binned_blue_long,1) - mu) / sigma;
+                    
+                        p1 = plot(bins_long, z_blue_long, 'b', 'LineWidth', 1.5); hold on;
+                        if contains(Stimulus_type, 'OMIT')
+                            p2 = plot(bins_long, z_red_long, 'r', 'LineWidth', 1.5);
+                        elseif contains(Stimulus_type, 'E_CD')
+                            p2 = plot(bins_long, z_red_long, 'g', 'LineWidth', 1.5);
+                        end
+                        xline(0,'k','LineWidth',1);
+                        xlim(long_window);
+                        xticks(0:0.05:0.75);
+                        ylabel('Z-scored FR');
+                        title(sprintf('Stimulus %d (Extended to show post-stimulus oscillations)', stim_pos));
+                        legend([p1 p2], {'Blue', 'Red'}, 'Location', 'northeast'); legend boxoff;
+                    
+                    end
+                    
+                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+
+
+                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id));
+                    saveas(fig, sprintf('%s_%s_Cluster_%i_FR.pdf', Stimulus_type, depth_for_analysis, cluster_id)); %saveas saves to cd
                 end
             end
         end
@@ -623,27 +838,45 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
                 
-                 % Combine spike times for all L4 clusters (i.e., for curated MUA)
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+
+
+                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
                 all_spike_times = [];
                 all_spike_ids = [];
-                for np = 1:length(L4_selected_clusters)
-                    all_spike_times = [all_spike_times; L4_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; L4_selected_clusters(np).spike_id];
+                for np = 1:length(depth_selected_clusters)
+                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
+                end
+
+                % Compute appropriate histogram counts for z-scoring
+                if contains(z_score_period, 'entire_session')
+                    zscore_counts = histcounts(all_spike_times, time_edges);
+                elseif contains(z_score_period, 'first30secs')
+                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                 end
 
                 % Define expected normal and reversed orientation sequences
@@ -675,14 +908,13 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                 end
 
                 fig = figure;
-                fig.Name = sprintf('Aggregate activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range));
+                fig.Name = sprintf('Aggregate activity: %s depth range %d–%d μm', depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
                 tiledlayout(4,1);
 
-                % Session-wide stats
-                spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times));
-                mu = mean(spikecounts_all);
-                sigma = std(spikecounts_all);
+                % baseline or Session-wide stats
+                mu = mean(zscore_counts);
+                sigma = std(zscore_counts);
 
                 for pos = 1:sequence_length
                     % Normal trials (blue)
@@ -712,44 +944,62 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('DCBA aggregate single unit activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range)));
-                
-                save_path = fullfile(pwd, 'Aggregate single unit V1 L4 FRs.pdf');
+                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+
+                filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
+                save_path = fullfile(pwd, filename);
                 saveas(fig, save_path);
             end
         end
 
         
-        if contains(Stimulus_type, 'GAVNIK_ABCD') && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+        if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK DCBA')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
-                L4_selected_clusters = selected_clusters; % initialize with same structure
+                depth_selected_clusters = selected_clusters; % initialize with same structure
                 for np = 1:length(clusters)
                     sc = selected_clusters(np);
                     peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
 
-                    % Find cluster_ids within L4 depth range
-                    keep_mask = peak_depths >= min(L4_depth_range) & peak_depths <= max(L4_depth_range);
-                    L4_cluster_ids = sc.cluster_id(keep_mask);
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
 
-                    % Keep only spike times and IDs for L4 clusters
-                    L4_selected_clusters(np).cluster_id = L4_cluster_ids;
-                    L4_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, L4_cluster_ids));
-                    L4_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, L4_cluster_ids));
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
                 end
                 
-                 % Combine spike times for all L4 clusters (i.e., for curated MUA)
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+
+                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
                 all_spike_times = [];
                 all_spike_ids = [];
-                for np = 1:length(L4_selected_clusters)
-                    all_spike_times = [all_spike_times; L4_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; L4_selected_clusters(np).spike_id];
+                for np = 1:length(depth_selected_clusters)
+                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
+                end
+
+                % Compute appropriate histogram counts for z-scoring
+                if contains(z_score_period, 'entire_session')
+                    zscore_counts = histcounts(all_spike_times, time_edges);
+                elseif contains(z_score_period, 'first30secs')
+                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                 end
 
                 ordered_oris = unique(Task_info.stim_orientation, 'stable');               
                 fig = figure;
-                fig.Name = sprintf('Aggregate activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range));
+                fig.Name = sprintf('%s: Aggregate activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
                 tiledlayout(5,1);
 
@@ -758,9 +1008,8 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
 
                     [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.17], psthBinSize);
                     
-                    spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times)); % session-wide spike counts in each bin
                     mean_trace = mean(binnedArray, 1); % average over trials
-                    z_trace = (mean_trace - mean(spikecounts_all)) / std(spikecounts_all); % z-score using session-wide stats
+                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); % z-score using session-wide stats
 
                     nexttile;
                     plot(bins, z_trace, 'k', 'LineWidth', 1.5);
@@ -768,24 +1017,19 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     xlim([-0.02 0.17]);
                     xticks([0, 0.05, 0.1, 0.15]);
                     ylabel('Z-scored FR');
-                    if contains(Stimulus_type, 'GAVNIK_ABCD')
-                        ori_deg = round(ordered_oris(ori));
-                    else
-                        ori_deg = round(rad2deg(ordered_oris(ori)));
-                    end
-                    title(sprintf('Direction %d%s', ori_deg, char(176)));
+                    ori_deg = round(ordered_oris(ori));
+                    title(sprintf('Orientation %d%s', ori_deg, char(176)));
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
                 % Extra tile to show post-stimulus oscillations following final stim in seq
-                if contains(Stimulus_type, 'GAVNIK_ABCD') && length(ordered_oris) >= 4
+                if length(ordered_oris) >= 4
                     stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
 
                     [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
     
-                    spikecounts_all = histcounts(all_spike_times, 0:psthBinSize:max(all_spike_times));
                     mean_trace_long = mean(binnedArray_long, 1);
-                    z_trace_long = (mean_trace_long - mean(spikecounts_all)) / std(spikecounts_all);
+                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
 
                     nexttile;
                     plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
@@ -793,18 +1037,448 @@ for nsession = 15 %4/4 row number of recording date in "experiment_info"
                     xlim([-0.02 0.75]);
                     xticks(0:0.05:0.75);
                     ylabel('Z-scored FR');
-                    title(sprintf('Direction %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                    title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('Aggregate single unit activity: V1 L4 depth range %d–%d μm', min(L4_depth_range), max(L4_depth_range)));
-                
-                save_path = fullfile(pwd, 'Aggregate single unit V1 L4 FRs.pdf');
+                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+
+                filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
+                save_path = fullfile(pwd, filename);
                 saveas(fig, save_path);
             end
         end
 
+
+
+        if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK_DCBA')) &&...
+           contains(plot_choice, 'single_units') 
+            for nprobe = 1:length(clusters)
+                selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
+                
+                depth_selected_clusters = selected_clusters; % initialize with same structure
+                for np = 1:length(clusters)
+                    sc = selected_clusters(np);
+                    peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
+
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
+
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
+                end
+
+                cluster_id = depth_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
+                
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times);
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+                
+                ori_response = [];
+                z_binnedArray = [];
+
+                for nCluster = 1:length(cluster_id) % loop through each good cluster at selected depth
+                
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
+                    %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.30], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                    
+                    % Compute appropriate histogram counts for z-scoring
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(spike_times_this_cluster, time_edges);
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges);
+                    end    
+
+                    fig(nCluster)=figure; % open a figure window
+                    fig(nCluster).Name=sprintf('%s Grating responses Cluster %i', Stimulus_type, cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
+                    fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
+                
+                    tiledlayout(5,1); % vertical layout (5 rows × 1 column)
+                    % Extract ordered orientations based on presentation sequence
+                    ordered_oris = unique(Task_info.stim_orientation, 'stable'); % radians for TRAIN but degrees for GAVNIK
+                    
+                    for ori = 1:length(ordered_oris)  
+
+                        if contains(plot_type, 'raster')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.02 0.17], psthBinSize/10); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                            nexttile % opens a subplot tile
+                            plot(rasterX,rasterY,'k','LineWidth',1) % plot the spiking raster for the current orientation
+                            xline(0,'r',LineWidth=1) % put a vertical red line at time zero (stimulus onset)
+                            xlim([-0.02 0.17])
+                            xticks([0, 0.05, 0.1, 0.15]);
+                            ylim([0 sum(Task_info.stim_orientation==ordered_oris(ori))]) % set the max y coord to be the total # trials with this orientation
+                            ylabel('Trial');
+                            % imagesc(binnedArray)
+                            % xticks([1.5 10.5 15.5 20.5 30.5])
+                            % xticklabels([-0.150 -0.050 0 0.050 0.150])
+                            % xline(15.5,'r',LineWidth=1)
+                            % colorbar
+                            % colormap(flipud(gray))
+                            
+                            title(sprintf('Orientation %d%s', round(ordered_oris(ori)), char(176)));
+                            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+                        end
+                        
+                        
+                        if contains(plot_type, 'FR')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.02 0.17], psthBinSize); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                            mean_trace = mean(binnedArray, 1);
+                            z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts);
+                            nexttile;
+                            plot(bins, z_trace, 'k', 'LineWidth', 1.5);
+                            xline(0, 'r', 'LineWidth', 1);
+                            xlim([-0.02 0.17]);
+                            xticks([0, 0.05, 0.1, 0.15]);
+                            ylabel('Z-scored FR');
+                            
+                            title(sprintf('Orientation %d%s', round(ordered_oris(ori)), char(176)));                            
+                            set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                        end
+
+                        %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], psthBinSize);
+                        %z_binnedArray{nCluster}{ori} = (binnedArray - mean(spikecounts_cluster))./std(spikecounts_cluster); %z-score normalisation of the binned Array for this orientation: subtracts the mean and divides by the s.d. of the spike count histogram for the whole session
+                        % hold on
+                        % plot(bins,mean(z_binnedArray));
+             
+                        % time_selected 
+                    
+                    end
+                    
+                    % === Extra tile for post-stimulus activity for 4th orientation ===
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'FR')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+                        [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize);
+                        
+                        mean_trace_long = mean(binnedArray_long, 1);
+                        z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+
+                        nexttile;
+                        plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        xticks(0:0.05:0.75);
+                        ylabel('Z-scored FR');
+                        
+                        title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    end
+                    
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'raster')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+    
+                        [~, ~, rasterX_long, rasterY_long, ~, ~] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize/10);
+    
+                        nexttile;
+                        plot(rasterX_long, rasterY_long, 'k', 'LineWidth', 1);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        ylim([0 sum(Task_info.stim_orientation == ordered_oris(4))]);
+                        xticks(0:0.05:0.75);
+                        
+                        title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                        ylabel('Trial');
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    end
+
+
+                    % Sanitize Stimulus_type for filenames
+                    safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
+                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'None');
+
+                    if contains(plot_type, 'raster')
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
+                    end
+
+                    if contains(plot_type, 'FR')
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_FR.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
+                    end
+                end
+
+                %save_all_figures(save_path,[],'ContentType',ContentType)
+            end
+        end
+
+
         
+        if (contains(Stimulus_type, 'GAVNIK_A_CD') || contains(Stimulus_type, 'GAVNIK_E_CD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+            for nprobe = 1:length(clusters)
+                selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
+                
+                depth_selected_clusters = selected_clusters; % initialize with same structure
+                for np = 1:length(clusters)
+                    sc = selected_clusters(np);
+                    peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
+
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
+
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
+                end
+                
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+
+                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
+                all_spike_times = [];
+                all_spike_ids = [];
+                for np = 1:length(depth_selected_clusters)
+                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
+                end
+                
+                % Compute appropriate histogram counts for z-scoring
+                if contains(z_score_period, 'entire_session')
+                    zscore_counts = histcounts(all_spike_times, time_edges);
+                elseif contains(z_score_period, 'first30secs')
+                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
+                end
+
+
+                ordered_oris = unique(Task_info.stim_orientation, 'stable');               
+                fig = figure;
+                fig.Name = sprintf('%s: Aggregate activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range));
+                fig.Position = [114 90 770 650];
+                tiledlayout(5,1);
+
+                for ori = 1:length(ordered_oris)
+                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
+
+                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.17], psthBinSize);
+                    
+                    mean_trace = mean(binnedArray, 1); % average over trials
+                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); % from each trial-averaged timebin of spikes, deduct the mean spikes per timebin in the reference period (baseline or entire session)
+
+                    nexttile;
+                    plot(bins, z_trace, 'k', 'LineWidth', 1.5);
+                    xline(0,'r', 'LineWidth', 1);
+                    xlim([-0.02 0.17]);
+                    xticks([0, 0.05, 0.1, 0.15]);
+                    ylabel('Z-scored FR');
+                    
+                    ori_deg = round(ordered_oris(ori));
+                    if ori == 2
+                        title('Grey screen'); % in the GAVNIK_A_CD and GAVNIK_E_CD conditions, the second stimulus is absent
+                    else
+                        title(sprintf('Orientation %d%s', ori_deg, char(176)));
+                    end
+
+                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                end
+
+                % Extra tile to show post-stimulus oscillations following final stim in seq
+                if length(ordered_oris) >= 4
+                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+
+                    [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
+    
+                    mean_trace_long = mean(binnedArray_long, 1);
+                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+
+                    nexttile;
+                    plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
+                    xline(0,'r', 'LineWidth', 1);
+                    xlim([-0.02 0.75]);
+                    xticks(0:0.05:0.75);
+                    ylabel('Z-scored FR');
+                    title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                end
+
+                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                
+                filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
+                save_path = fullfile(pwd, filename);
+                saveas(fig, save_path);
+            end
+        end
+
+
+        
+        if (contains(Stimulus_type, 'GAVNIK_A_CD') || contains(Stimulus_type, 'GAVNIK_E_CD')) &&...
+           contains(plot_choice, 'single_units') 
+            for nprobe = 1:length(clusters)
+                selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
+                
+                depth_selected_clusters = selected_clusters; % initialize with same structure
+                for np = 1:length(clusters)
+                    sc = selected_clusters(np);
+                    peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
+
+                    % Find cluster_ids within selected depth range
+                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                    depth_cluster_ids = sc.cluster_id(keep_mask);
+
+                    % Keep only spike times and IDs for clusters at selected depth
+                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
+                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
+                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
+                end
+
+                cluster_id = depth_selected_clusters(nprobe).cluster_id; % cluster_ids of units which pass the set parameters [NB these are one count higher than per zero-based pythonic SI output cluster IDs...]
+                
+                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
+
+                % Define time_edges depending on z_score_period
+                if contains(z_score_period, 'entire_session')
+                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times);
+                elseif contains(z_score_period, 'first30secs')
+                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
+                end
+                
+                ori_response = [];
+                z_binnedArray = [];
+
+                for nCluster = 1:length(cluster_id) % loop through each good cluster at selected depth
+                
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
+                    %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.30], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+             
+                    % Compute appropriate histogram counts for z-scoring
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(spike_times_this_cluster, time_edges);
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges);
+                    end
+
+                    fig(nCluster)=figure; % open a figure window
+                    fig(nCluster).Name=sprintf('%s Grating responses Cluster %i', Stimulus_type, cluster_id(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
+                    fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
+                
+                    tiledlayout(5,1); % vertical layout (5 rows × 1 column)
+                    % Extract ordered orientations based on presentation sequence
+                    ordered_oris = unique(Task_info.stim_orientation, 'stable'); % radians for TRAIN but degrees for GAVNIK
+                    
+                    for ori = 1:length(ordered_oris)  
+
+                        if contains(plot_type, 'raster')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.02 0.17], psthBinSize/10); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                            nexttile % opens a subplot tile
+                            plot(rasterX,rasterY,'k','LineWidth',1) % plot the spiking raster for the current orientation
+                            xline(0,'r',LineWidth=1) % put a vertical red line at time zero (stimulus onset)
+                            xlim([-0.02 0.17])
+                            xticks([0, 0.05, 0.1, 0.15]);
+                            ylim([0 sum(Task_info.stim_orientation==ordered_oris(ori))]) % set the max y coord to be the total # trials with this orientation
+                            ylabel('Trial');
+                            % imagesc(binnedArray)
+                            % xticks([1.5 10.5 15.5 20.5 30.5])
+                            % xticklabels([-0.150 -0.050 0 0.050 0.150])
+                            % xline(15.5,'r',LineWidth=1)
+                            % colorbar
+                            % colormap(flipud(gray))
+                            
+                            if ori == 2
+                                title('Grey screen'); % in the GAVNIK_A_CD and GAVNIK_E_CD conditions, the second stimulus is absent
+                            else
+                                title(sprintf('Orientation %d%s', round(ordered_oris(ori)), char(176)));
+                            end
+                            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+                        end
+                        
+                        
+                        if contains(plot_type, 'FR')
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.02 0.17], psthBinSize); % for this orientation, gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
+                            
+                            mean_trace = mean(binnedArray, 1);
+                            z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts);
+                            nexttile;
+                            plot(bins, z_trace, 'k', 'LineWidth', 1.5);
+                            xline(0, 'r', 'LineWidth', 1);
+                            xlim([-0.02 0.17]);
+                            xticks([0, 0.05, 0.1, 0.15]);
+                            ylabel('Z-scored FR');
+                            if ori == 2
+                                title('Grey screen'); % in the GAVNIK_A_CD and GAVNIK_E_CD conditions, the second stimulus is absent
+                            else
+                                title(sprintf('Orientation %d%s', round(ordered_oris(ori)), char(176)));
+                            end
+                            
+                            set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                        end
+
+                        %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset(Task_info.stim_orientation==ordered_oris(ori)), [-0.150 0.30], psthBinSize);
+                        %z_binnedArray{nCluster}{ori} = (binnedArray - mean(spikecounts_cluster))./std(spikecounts_cluster); %z-score normalisation of the binned Array for this orientation: subtracts the mean and divides by the s.d. of the spike count histogram for the whole session
+                        % hold on
+                        % plot(bins,mean(z_binnedArray));
+             
+                        % time_selected 
+                    
+                    end
+                    
+                    % === Extra tile for post-stimulus activity for 4th orientation ===
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'FR')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+                        [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize);
+                        mean_trace_long = mean(binnedArray_long, 1);
+                        z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+
+                        nexttile;
+                        plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        xticks(0:0.05:0.75);
+                        ylabel('Z-scored FR');
+                        
+                        title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    end
+                    
+                    if length(ordered_oris) >= 4 && contains(plot_type, 'raster')
+                        stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+    
+                        [~, ~, rasterX_long, rasterY_long, ~, ~] = psthAndBA(spike_times_this_cluster, stim_onsets, [-0.02 0.75], psthBinSize/10);
+    
+                        nexttile;
+                        plot(rasterX_long, rasterY_long, 'k', 'LineWidth', 1);
+                        xline(0, 'r', 'LineWidth', 1);
+                        xlim([-0.02 0.75]);
+                        ylim([0 sum(Task_info.stim_orientation == ordered_oris(4))]);
+                        xticks(0:0.05:0.75);
+                        
+                        title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
+                        ylabel('Trial');
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    end
+
+
+                    % Sanitize Stimulus_type for filenames
+                    safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
+                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'None');
+
+                    if contains(plot_type, 'raster')
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
+                    end
+
+                    if contains(plot_type, 'FR')
+                        exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_FR.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
+                    end
+                end
+
+                %save_all_figures(save_path,[],'ContentType',ContentType)
+            end
+        end
+
+
     end
 end
 
