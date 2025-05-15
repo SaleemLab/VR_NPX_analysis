@@ -570,7 +570,7 @@ for nsession =22
           V1_spikes_template(V1_spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
           V1_spikes_sleep(V1_spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
       end
-      clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN unique_clusters 
+      clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN
 
       % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
       time_bin_size=0.02;

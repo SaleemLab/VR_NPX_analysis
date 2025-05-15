@@ -179,8 +179,6 @@ for nprobe = 1:2
     DOWN_bias_V1_all{nprobe} = down_bias_all;
 end
 
-KDE_reactivation_PSTH.V1_UP = [UP_bias_V1_all{1} UP_bias_V1_all{2}];
-KDE_reactivation_PSTH.V1_DOWN = [DOWN_bias_V1_all{1} DOWN_bias_V1_all{2}];
-
+[]
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
