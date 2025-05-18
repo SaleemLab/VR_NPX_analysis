@@ -5,10 +5,11 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4440:4580; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
-CA1_depth_range = 3660:3960; % 2/5. um. Set for each SESSION based on PSD; 300um around Ripple power "bump"
-depth_for_analysis = 'V1' % choose 'L4' or 'V1' or 'CA1'
+CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
+depth_for_analysis = 'L4'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1'
 
 SUBJECTS = {'M00013'};
 
@@ -17,17 +18,17 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'OMIT'; 
-plot_choice = 'single_units'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+Stimulus_type = 'TRAIN'; 
+plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'first30secs'; % z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250207\OMIT') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN') % 4/5 files will be saved here in the cd
 
 
-for nsession = 8 %5/5 row number of recording date in "experiment_info" 
+for nsession = 4 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -37,6 +38,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
+        subject_number = session_info(n).probe(1).SUBJECT;
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
 
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
@@ -59,9 +61,11 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 depth_range = V1_depth_range;
             case 'CA1' 
                 depth_range = CA1_depth_range;
+            case 'Sub_CA1'
+                depth_range = Sub_CA1_depth_range;
         end
 
-        if contains(Stimulus_type, 'OP_Tuning') && contains(plot_type, 'raster') 
+        if contains(Stimulus_type, 'OP_Tuning') 
             % For M00013, the OP_Tuning stimulus was 150ms, with 150ms grey screen between stimuli, and took 24 different directions, moving at 2Hz
             % For M00014 (and beyond), the OP_Tuning stimulus was 67ms (but Bonsai typically keeps it on 84ms, 1 frame longer), with 17ms grey screen 
             % between stimuli (but Bonsai typically keeps it grey 34ms, 1 frame longer), and took 12 different static orientations
@@ -187,7 +191,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     end
                         % legend(PLOT(1:end),{num2str(round(rad2deg(all_orientations)))},'box','off')
                     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'none');
+                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
+                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'none');
                     exportgraphics(fig(nCluster), sprintf('%s_Cluster_%i.pdf', depth_for_analysis, cluster_id(nCluster))); %save as a pdf in cd 
                 end
 
@@ -268,7 +273,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                             % xline(15.5,'r',LineWidth=1)
                             % colorbar
                             % colormap(flipud(gray))
-                            title(sprintf('Direction %d%s', round(ordered_oris(ori)), char(176)))
+                            title(sprintf('Direction %d%s', round(rad2deg(ordered_oris(ori))), char(176)))
                             set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
                         end
                         
@@ -284,7 +289,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                             xlim([-0.15 0.30]);
                             ylabel('Z-scored FR');
                             
-                            title(sprintf('Direction %d%s', round(ordered_oris(ori)), char(176)));
+                            title(sprintf('Direction %d%s', round(rad2deg(ordered_oris(ori))), char(176)));
                             set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                         end
 
@@ -336,7 +341,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
 
                     % Sanitize Stimulus_type for filenames
                     safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
-                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)));
+                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
+                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'none');
 
                     if contains(plot_type, 'raster')
                         exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
@@ -405,53 +411,108 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 fig = figure;
                 fig.Name = sprintf('Aggregate activity: %s depth range %d–%d μm', depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
-                tiledlayout(5,1);
+                %tiledlayout(5,1);
 
-                for ori = 1:length(ordered_oris)
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
-
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.150 0.30], psthBinSize);
+                %for ori = 1:length(ordered_oris)
+                ori = 1; % make plots from onset of first stim in sequence
                     
-                    
-                    mean_trace = mean(binnedArray, 1); % average over trials
-                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
+                stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
 
-                    nexttile;
-                    plot(bins, z_trace, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.15 0.30]);
-                    ylabel('Z-scored FR');
-                    ori_deg = round(rad2deg(ordered_oris(ori)));
-                    title(sprintf('Direction %d%s', ori_deg, char(176)));
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                    %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.150 0.30], psthBinSize);
+                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.30 1.8], psthBinSize);    
+                    
+                mean_trace = mean(binnedArray, 1); % average over trials
+                z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
+                
+                %    nexttile;
+                plot(bins, z_trace, 'b', 'LineWidth', 1.5);
+                
+                % Define 150 ms windows after time zero and calc. the peak and mean FR              
+                window_starts = 0:0.15:1.35;
+                window_ends = 0.15:0.15:1.5;
+                peak_zFR_by_window = zeros(1, length(window_starts)); % preallocate
+                mean_zFR_by_window = zeros(1, length(window_starts)); % preallocate
+                peak_to_mean_zFR_by_window = zeros(1, length(window_starts)); % preallocate
+                ylim([-1 8]);
+                yl = ylim; % Get y-axis limits for text placement
+                
+                for i = 1:length(window_starts)
+                    % Find indices of bins within current window
+                    idx_in_window = bins >= window_starts(i) & bins < window_ends(i);                    
+                    peak_zFR_by_window(i) = max(z_trace(idx_in_window));
+                    mean_zFR_by_window(i) = mean(z_trace(idx_in_window));
+                    peak_to_mean_zFR_by_window(i) = peak_zFR_by_window(i)/mean_zFR_by_window(i);
+
+                    % Plot the mean zFR value in the middle of the window
+                    window_midpoint = (window_starts(i) + window_ends(i)) / 2;
+                    text(window_midpoint, yl(2)*0.9, ...
+                        sprintf('%.1f, %.1f', peak_zFR_by_window(i), mean_zFR_by_window(i)), 'HorizontalAlignment', 'center', ...
+                        'FontSize', 10, 'Color', 'k');
                 end
+
+                                % Define grey intervals
+                grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
+                
+                hold on; % Make sure current plot stays visible
+                
+                % Get current y-axis limits for full vertical shading
+                yl = ylim;
+                
+                % Shade each interval
+                for i = 1:size(grey_intervals, 1)
+                    x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                    y = [yl(1), yl(1), yl(2), yl(2)];
+                    fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.3, 'EdgeColor', 'none'); % grey color with transparency
+                end
+
+                xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.30, 'k', (sprintf('B onset; %d%s', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.60, 'k', (sprintf('C onset; %d%s', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.90, 'k', (sprintf('D onset; %d%s', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+
+                xlim([-0.5 2.0]);
+                xticks(-0.4:0.2:1.8);
+                xlabel('Time (s) since onset of A')
+                ylabel('Z-scored FR');
+                %ori_deg = round(rad2deg(ordered_oris(ori)));
+                %title(sprintf('Direction %d%s', ori_deg, char(176)));
+                 %   set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                %end
 
                 % Extra tile to show post-stimulus oscillations following final stim in seq
-                if length(ordered_oris) >= 4
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+                %if length(ordered_oris) >= 4
+                 %   stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
 
-                    [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
+                  %  [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
     
-                    mean_trace_long = mean(binnedArray_long, 1);
-                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+                   % mean_trace_long = mean(binnedArray_long, 1);
+                    %z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
 
-                    nexttile;
-                    plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.02 0.75]);
-                    xticks(0:0.05:0.75);
-                    ylabel('Z-scored FR');
-                    title(sprintf('Direction %d%s (Extended to show post-stimulus oscillations)', ori_deg, char(176)));
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                end
+                    %nexttile;
+                    %plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
+                    %xline(0,'r', 'LineWidth', 1);
+                    %xlim([-0.02 0.75]);
+                    %xticks(0:0.05:0.75);
+                    %ylabel('Z-scored FR');
+                    %title(sprintf('Direction %d%s (Extended to show post-stimulus oscillations)', ori_deg, char(176)));
+                    %set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                %end
 
-                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
-                filename = sprintf('%s - Aggregate single unit %s FRs.pdf', Stimulus_type, depth_for_analysis);
+                sgtitle(sprintf('%s %d - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, experiment_info(nsession).date, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                filename = sprintf('%s - Aggregate single unit %s FRs.png', Stimulus_type, depth_for_analysis);
                 save_path = fullfile(pwd, filename);
+                exportgraphics(fig, save_path);  % Add this line
+
+                % Also save as .fig
+                fig_filename = sprintf('%s - Aggregate single unit %s FRs.fig', Stimulus_type, depth_for_analysis);
+                fig_save_path = fullfile(pwd, fig_filename);
+                savefig(fig, fig_save_path);
             end
         end
 
         
+
+
         if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
@@ -614,15 +675,16 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     legend boxoff;
                 end
                           
-                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', depth_for_analysis, Stimulus_type, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
                 filename = sprintf('%s - Aggregate single unit %s FRs.pdf', Stimulus_type, depth_for_analysis);
                 save_path = fullfile(pwd, filename);
             end
         end
 
 
+
         
-        if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')) && contains(plot_choice, 'single_units') && contains(plot_type, 'FR')
+        if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')) && contains(plot_choice, 'single_units') 
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
@@ -647,7 +709,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 stim_contrasts = Task_info.stim_contrast;
                 stim_onsets = Task_info.stim_onset;
 
-                cluster_ids = depth_selected_clusters(nprobe).cluster_id;
+                cluster_id = depth_selected_clusters(nprobe).cluster_id;
 
                 baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
 
@@ -658,9 +720,9 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     time_edges = baseline_window(1):psthBinSize:baseline_window(2);
                 end
 
-                for nCluster = 1:length(cluster_ids)
-                    cluster_id = cluster_ids(nCluster);
-                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id);
+                for nCluster = 1:length(cluster_id)
+                    
+                    spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster));
                     
                     % Compute appropriate histogram counts for z-scoring
                     if contains(z_score_period, 'entire_session')
@@ -671,9 +733,9 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     end
 
                     fig = figure;
-                    fig.Name = sprintf('Response %s Cluster %i', depth_for_analysis, cluster_id);
+                    fig.Name = sprintf('Response %s Cluster %i', depth_for_analysis, cluster_id(nCluster));
                     fig.Position = [114 90 770 650];
-                    tiledlayout(5,1);
+                    tiledlayout(5,3);
 
                     % Session-wide stats for z-scoring
                     mu = mean(zscore_counts);
@@ -723,6 +785,34 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                         % Z-score
                         z_red = (mean(binned_red,1) - mu) / sigma;
                         z_blue = (mean(binned_blue,1) - mu) / sigma;
+                        
+                        % Set raster window
+                        rasterWindow = [-0.15 0.30];
+                        
+                        % Get raster for blue
+                        [~, ~, rasterX_blue, rasterY_blue, ~, ~] = psthAndBA(spike_times_this_cluster, blue_onsets, rasterWindow, psthBinSize/10);
+                        nexttile;
+                        plot(rasterX_blue, rasterY_blue, 'b', 'LineWidth', 1);
+                        xline(0, 'k', 'LineWidth', 1);
+                        xlim(rasterWindow);
+                        ylim([0 length(blue_onsets)]);
+                        ylabel('Trial');
+                        title(sprintf('Stim %d: raster', stim_pos));
+                        set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                        
+                        % Get raster for red (or green if E_CD)
+                        [~, ~, rasterX_red, rasterY_red, ~, ~] = psthAndBA(spike_times_this_cluster, red_onsets, rasterWindow, psthBinSize/10);
+                        nexttile;
+                        color_raster = 'r';
+                        if contains(Stimulus_type, 'E_CD'), color_raster = 'g'; end
+                        plot(rasterX_red, rasterY_red, color_raster, 'LineWidth', 1);
+                        xline(0, 'k', 'LineWidth', 1);
+                        xlim(rasterWindow);
+                        ylim([0 length(red_onsets)]);
+                        ylabel('Trial');
+                        title(sprintf('Stim %d: raster', stim_pos));
+                        set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 12);
+
 
                         % Plot both traces
                         % Get orientation/contrast for legend
@@ -797,36 +887,35 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                         end
                     end
                     
-                    nexttile;
-                    if contains(plot_type, 'FR')
-                        % Longer PSTH window for extended post-stimulus response
-                        long_window = [-0.02 0.75]; 
-                        [~, bins_long, ~, ~, ~, binned_red_long] = psthAndBA(spike_times_this_cluster, red_onsets, long_window, psthBinSize);
-                        [~, ~, ~, ~, ~, binned_blue_long] = psthAndBA(spike_times_this_cluster, blue_onsets, long_window, psthBinSize);
+                    nexttile([1 3]);
                     
-                        z_red_long = (mean(binned_red_long,1) - mu) / sigma;
-                        z_blue_long = (mean(binned_blue_long,1) - mu) / sigma;
+                    % Longer PSTH window for extended post-stimulus response
+                    long_window = [-0.02 0.75]; 
+                    [~, bins_long, ~, ~, ~, binned_red_long] = psthAndBA(spike_times_this_cluster, red_onsets, long_window, psthBinSize);
+                    [~, ~, ~, ~, ~, binned_blue_long] = psthAndBA(spike_times_this_cluster, blue_onsets, long_window, psthBinSize);
                     
-                        p1 = plot(bins_long, z_blue_long, 'b', 'LineWidth', 1.5); hold on;
-                        if contains(Stimulus_type, 'OMIT')
-                            p2 = plot(bins_long, z_red_long, 'r', 'LineWidth', 1.5);
-                        elseif contains(Stimulus_type, 'E_CD')
-                            p2 = plot(bins_long, z_red_long, 'g', 'LineWidth', 1.5);
-                        end
-                        xline(0,'k','LineWidth',1);
-                        xlim(long_window);
-                        xticks(0:0.05:0.75);
-                        ylabel('Z-scored FR');
-                        title(sprintf('Stimulus %d (Extended to show post-stimulus oscillations)', stim_pos));
-                        legend([p1 p2], {'Blue', 'Red'}, 'Location', 'northeast'); legend boxoff;
+                    z_red_long = (mean(binned_red_long,1) - mu) / sigma;
+                    z_blue_long = (mean(binned_blue_long,1) - mu) / sigma;
                     
+                    p1 = plot(bins_long, z_blue_long, 'b', 'LineWidth', 1.5); hold on;
+                    if contains(Stimulus_type, 'OMIT')
+                        p2 = plot(bins_long, z_red_long, 'r', 'LineWidth', 1.5);
+                    elseif contains(Stimulus_type, 'E_CD')
+                        p2 = plot(bins_long, z_red_long, 'g', 'LineWidth', 1.5);
                     end
+                    xline(0,'k','LineWidth',1);
+                    xlim(long_window);
+                    xticks(0:0.05:0.75);
+                    ylabel('Z-scored FR');
+                    title(sprintf('Stimulus %d (Extended to show post-stimulus oscillations)', stim_pos));
+                    legend([p1 p2], {'Blue', 'Red'}, 'Location', 'northeast'); legend boxoff;
+                    
+                   
                     
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-
-
-                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id));
-                    saveas(fig, sprintf('%s_%s_Cluster_%i_FR.pdf', Stimulus_type, depth_for_analysis, cluster_id)); %saveas saves to cd
+                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
+                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'none');
+                    saveas(fig, sprintf('%s_%s_Cluster_%i_FR.pdf', Stimulus_type, depth_for_analysis, cluster_id(nCluster))); %saveas saves to cd
                 end
             end
         end
@@ -880,7 +969,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 end
 
                 % Define expected normal and reversed orientation sequences
-                normal_sequence = [180, 225, 0, 135];
+                normal_sequence = round(rad2deg(unique(Task_info.stim_orientation, 'stable')))'; % test blocks per my protocol always begin with the trained sequence
                 reversed_sequence = fliplr(normal_sequence);
 
                 sequence_length = 4;
@@ -944,7 +1033,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
 
                 filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
                 save_path = fullfile(pwd, filename);
@@ -953,6 +1042,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
         end
 
         
+
+
         if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK DCBA')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
@@ -1041,13 +1132,14 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
 
                 filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
                 save_path = fullfile(pwd, filename);
                 saveas(fig, save_path);
             end
         end
+
 
 
 
@@ -1192,7 +1284,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
 
                     % Sanitize Stimulus_type for filenames
                     safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
-                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'None');
+                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
+                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'None');
 
                     if contains(plot_type, 'raster')
                         exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
@@ -1206,6 +1299,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 %save_all_figures(save_path,[],'ContentType',ContentType)
             end
         end
+
 
 
         
@@ -1304,13 +1398,14 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
                 end
 
-                sgtitle(sprintf('%s: Aggregate single unit activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
                 
                 filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
                 save_path = fullfile(pwd, filename);
                 saveas(fig, save_path);
             end
         end
+
 
 
         
@@ -1463,7 +1558,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
 
                     % Sanitize Stimulus_type for filenames
                     safeStimulusType = regexprep(Stimulus_type, '[:\\/*?"<>| ]', '_');
-                    sgtitle(sprintf('%s: Response of %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'None');
+                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
+                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'None');
 
                     if contains(plot_type, 'raster')
                         exportgraphics(fig(nCluster), sprintf('%s_%s_Cluster_%i_raster.pdf', safeStimulusType, depth_for_analysis, cluster_id(nCluster)));
