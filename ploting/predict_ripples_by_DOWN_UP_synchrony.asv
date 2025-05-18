@@ -88,6 +88,9 @@ if isempty(output)
     contra_ripple_lag = nan(length(DOWN_UP_index),1);
     ipsi_time_from_last_ripple = nan(length(DOWN_UP_index),1);
     contra_time_from_last_ripple = nan(length(DOWN_UP_index),1);
+    ipsi_Delta_peaks_zscore_DU = nan(length(DOWN_UP_index),1);
+    contra_Delta_peaks_zscore_DU = nan(length(DOWN_UP_index),1);
+
 
     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_last_ripples_power_UP(DOWN_UP_index(ipsiRipples_cat))';
     contra_ripple_power(contraRipples_cat) = ripples_info.contra_last_ripples_power_UP(DOWN_UP_index(contraRipples_cat))';
@@ -95,6 +98,9 @@ if isempty(output)
     contra_ripple_lag(contraRipples_cat) = abs(ripples_info.contra_last_ripples_lag_UP(DOWN_UP_index(contraRipples_cat))');
     ipsi_time_from_last_ripple(ipsiRipples_cat) = abs(ripples_info.ipsi_time_from_last_ripples_UP(DOWN_UP_index(ipsiRipples_cat))');
     contra_time_from_last_ripple(contraRipples_cat) = abs(ripples_info.contra_time_from_last_ripples_UP(DOWN_UP_index(contraRipples_cat))');
+
+    ipsi_Delta_peaks_zscore_DU = abs(ripples_info.ipsi_Delta_peaks_zscore_DU(DOWN_UP_index)');
+    contra_Delta_peaks_zscore_DU = abs(ripples_info.contra_Delta_peaks_zscore_DU(DOWN_UP_index)');
 
     ripples_index = find(ipsiRipples_cat==1 | contraRipples_cat==1);
     
@@ -113,10 +119,11 @@ if isempty(output)
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             zscore(ipsiHPC_cat(index)), zscore(contraHPC_cat(index)), ...
             zscore(ipsiV1_cat(index)), zscore(contraV1_cat(index)), ...
+            normalize(ipsi_Delta_peaks_zscore_DU(index))',  normalize(contra_Delta_peaks_zscore_DU(index))', ...
             zscore(DOWN_UP_lag(index)), categorical(subject_id(index)), ...
             'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
             'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC', ...
-            'ipsiV1','contraV1','DOWN_UP_lag','subjectID'});
+            'ipsiV1','contraV1','ipsiDelta','contraDelta','DOWN_UP_lag','subjectID'});
 
         % Model list
         modelList = {
@@ -129,6 +136,8 @@ if isempty(output)
             'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
             'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
 
+            'ipsiPower ~ DOWN_UP_lag + ipsiDelta + contraDelta + (1|subjectID)';
+            'contraPower ~ DOWN_UP_lag + (1|subjectID)';
 %             'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
 %             'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
 
@@ -183,10 +192,11 @@ if isempty(output)
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             zscore(ipsiHPC_cat(index)), zscore(contraHPC_cat(index)), ...
             zscore(ipsiV1_cat(index)), zscore(contraV1_cat(index)), ...
+            normalize(ipsi_Delta_peaks_zscore_DU(index))',  normalize(contra_Delta_peaks_zscore_DU(index))', ...
             zscore(DOWN_UP_lag(index)), categorical(subject_id(index)), ...
             'VariableNames', {'ipsiLag','contraLag','ipsiPower','contraPower', ...
             'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC', ...
-            'ipsiV1','contraV1','DOWN_UP_lag','subjectID'});
+            'ipsiV1','contraV1','ipsiDelta','contraDelta','DOWN_UP_lag','subjectID'});
 
         % Define model list (only one for now)
         modelList = {
@@ -195,6 +205,12 @@ if isempty(output)
 
             'ipsiOccurance ~ DOWN_UP_lag  + (1|subjectID)';
             'contraOccurance ~ DOWN_UP_lag  + (1|subjectID)';
+
+            'ipsiOccurance ~ ipsiDelta*contraDelta  + (1|subjectID)';
+            'contraOccurance ~ ipsiDelta*contraDelta   + (1|subjectID)';
+
+            'ipsiOccurance ~ DOWN_UP_lag*ipsiDelta*contraDelta  + (1|subjectID)';
+            'contraOccurance ~ DOWN_UP_lag*ipsiDelta*contraDelta   + (1|subjectID)';
 
             'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
             'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
@@ -252,7 +268,7 @@ if isempty(output)
             % Combine the fields
 
             combined_output(iBoot).(thisField) = [output(iBoot).(thisField); output2(iBoot).(thisField)];
-            en
+
         end
     end
 

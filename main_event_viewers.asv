@@ -539,25 +539,14 @@ for nsession =6
             fig = figure;
             fig.Position = [740 130 440 850]
             fig.Name = sprintf('raster raw race during UP DOWN ripples %i',nfig)
+            
+            time_bins =  tvec(tindex(1)):0.001: tvec(tindex(end));
+            num_bins = length(time_bins);
+            
 
-
-
-
-
+            % Map each neuron ID to a row index
 
             for nregion = 1:4
-                % Map each neuron ID to a row index
-                start_time = tvec(tindex(1));
-                end_time = tvec(tindex(end));
-%                 if nregion <3
-                    bin_size = 0.005; % 1 ms resolution
-%                 else
-%                     bin_size = 0.005; % 1 ms resolution
-%                 end
-                time_bins =  tvec(tindex(1)):bin_size: tvec(tindex(end));
-                num_bins = length(time_bins);
-                
-
                 subplot(4,1,nregion)
                 neuron_ids = unique(spike_data{nregion}(:,1));
                 num_neurons = length(neuron_ids);
@@ -579,49 +568,23 @@ for nsession =6
                 end
 
                 imagesc(time_bins, 1:num_neurons, raster_matrix);
+
                 % Custom RGB color for spikes (e.g., red)
-                bg_rgb = [1 1 1];     % white background
                 if nregion == 1|nregion == 3
-                    spike_rgb = colour_lines(1,:)  % green
+                    spike_rgb = colour_lines(1,:);  % green
                 else
-                    spike_rgb = colour_lines(2,:) % purple
+                    spike_rgb = colour_lines(2,:);  % pu
                 end
-                colormap(gca, [bg_rgb; spike_rgb]);
+                bg_rgb = [1 1 1];     % white background
 
+                colormap([bg_rgb; spike_rgb]);  % 0 = white, 1 = red
                 colorbar off;
-                hold on
-                yl = ylim;
-                for iEvent = 1:size(DOWN_times,1)
-                    x_start = DOWN_times(iEvent,1);
-                    x_end = DOWN_times(iEvent,2);
-                    x_rect = [x_start x_end x_end x_start];
-                    y_rect = [yl(1) yl(1) yl(2) yl(2)];
-                    patch('XData', x_rect, ...
-                        'YData', y_rect, ...
-                        'FaceColor','b', ...
-                        'FaceAlpha', 0.2, ...
-                        'EdgeColor', 'none');
-                end
-            
-                hold on
-                for iEvent = 1:size(ripple_times,1)
-                    x_start = ripple_times(iEvent,1);
-                    x_end = ripple_times(iEvent,2);
-                    fill([x_start x_end x_end x_start], ...
-                        [yl(1) yl(1) yl(2) yl(2)], ...
-                        'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
-                end
-
 
                 xlabel('Time (ms)');
                 ylabel('Neuron');
-%                 yticks(1:num_neurons);
-%                 yticklabels(neuron_ids);
+                yticks(1:num_neurons);
+                yticklabels(neuron_ids);
                 title(region_names{nregion})
-
-
-                xlim([tvec(tindex(1)) tvec(tindex(end))])
-                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
             end
 
 
