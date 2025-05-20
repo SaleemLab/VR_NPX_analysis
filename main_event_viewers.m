@@ -346,6 +346,7 @@ for nsession =6
 
 
         tindex = find(t>behavioural_state_merged.REM(2,1)-290 & t<behavioural_state_merged.REM(2,1)+300);
+        tindex = find(t>4200 & t<5500)
 % tindex = 1:length(t);
 
         theta_delta_ratio = mean(S_mag_smoothed_HPC(f>4 & f<12,:),1)./mean(S_mag_smoothed_HPC(f>0.5 & f<4,:),1);
@@ -544,15 +545,24 @@ for nsession =6
 
 
 
+            %         colour_lines = [0,90,50;74,20,134]/256;
+            colour_lines = [...
+                0.5000, 0.6768, 0.5984;  % lighter green
+                0.6445, 0.5391, 0.7617   % lighter purple
+                ];
+            colour_lines = [...
+                0.7000, 0.7886, 0.7492;  % even lighter green
+                0.7571, 0.7373, 0.8809   % even lighter purple
+                ];
 
             for nregion = 1:4
                 % Map each neuron ID to a row index
                 start_time = tvec(tindex(1));
                 end_time = tvec(tindex(end));
 %                 if nregion <3
-                    bin_size = 0.005; % 1 ms resolution
+%                     bin_size = 0.01; % 1 ms resolution
 %                 else
-%                     bin_size = 0.005; % 1 ms resolution
+                    bin_size = 0.005; % 1 ms resolution
 %                 end
                 time_bins =  tvec(tindex(1)):bin_size: tvec(tindex(end));
                 num_bins = length(time_bins);
@@ -577,8 +587,28 @@ for nsession =6
                         raster_matrix(row, col) = 1;
                     end
                 end
+                % Remove neurons (rows) that did not fire at all
+                firing_neurons_mask = any(raster_matrix, 2);  % True for firing neurons
+                raster_matrix = raster_matrix(firing_neurons_mask, :);
+                num_active = size(raster_matrix, 1);
 
-                imagesc(time_bins, 1:num_neurons, raster_matrix);
+                % Pad with blank rows at random positions to reach 60 rows
+                desired_rows = 65;
+                num_pad = desired_rows - num_active;
+                pad_matrix = zeros(num_pad, num_bins);
+
+                % Randomly choose positions to insert blank rows
+                insert_idx = sort(randperm(desired_rows, num_pad));
+                new_raster = zeros(desired_rows, num_bins);
+
+                active_idx = setdiff(1:desired_rows, insert_idx);
+
+                % Fill new raster
+                new_raster(active_idx, :) = raster_matrix;
+                % Blank rows already zero
+                raster_matrix = new_raster;
+
+                imagesc(time_bins, 1:size(raster_matrix,1), raster_matrix);
                 % Custom RGB color for spikes (e.g., red)
                 bg_rgb = [1 1 1];     % white background
                 if nregion == 1|nregion == 3
@@ -624,6 +654,8 @@ for nsession =6
                 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
             end
 
+
+            colour_lines = [0,90,50;74,20,134]/256;
 
             fig = figure;
             fig.Position = [740 130 440 850]
