@@ -18,17 +18,18 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'ADCD'; 
+Stimulus_type = 'GAVNIK_ABCD'; 
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
-z_score_period = 'first30secs'; % z score either over 'entire_session' or 'first30secs' (for every stimulus recording
-% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus)
+z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
+% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
+% to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250210\ADCD') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250221\GAVNIK_ABCD') % 4/5 files will be saved here in the cd
 
 
-for nsession = 9 %5/5 row number of recording date in "experiment_info" 
+for nsession = 15 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -395,16 +396,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 for np = 1:length(depth_selected_clusters)
                     all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
                     all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
-                end
-                
-                % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
-                    zscore_counts = histcounts(all_spike_times, time_edges);
-                elseif contains(z_score_period, 'first30secs')
-                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
-                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
-                end
-                    
+                end                  
 
                 ordered_oris = unique(Task_info.stim_orientation, 'stable');
                                               
@@ -421,29 +413,79 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.150 0.30], psthBinSize);
                 [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.30 1.8], psthBinSize);    
                     
-                mean_trace = mean(binnedArray, 1); % average over trials
-                z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
-                
-                %    nexttile;
-                plot(bins, z_trace, 'b', 'LineWidth', 1.5);
-                
-                % Define 150 ms windows after time zero and calc. the peak and mean FR              
-                window_starts = 0:0.15:1.35;
-                window_ends = 0.15:0.15:1.5;
-                peak_zFR_by_window = zeros(1, length(window_starts)); % preallocate
-                mean_zFR_by_window = zeros(1, length(window_starts)); % preallocate
-                peak_to_mean_zFR_by_window = zeros(1, length(window_starts)); % preallocate
-                ylim([-1 8]);
-                yl = ylim; % Get y-axis limits for text placement
-                
-                for i = 1:length(window_starts)
-                    % Find indices of bins within current window
-                    idx_in_window = bins >= window_starts(i) & bins < window_ends(i);                    
-                    peak_zFR_by_window(i) = max(z_trace(idx_in_window));
-                    mean_zFR_by_window(i) = mean(z_trace(idx_in_window));
-                    peak_to_mean_zFR_by_window(i) = peak_zFR_by_window(i)/mean_zFR_by_window(i);
+                mean_trace = mean(binnedArray, 1); % average binned firing over trials
+
+                if contains(z_score_period, 'none')
+                    % Plot raw mean firing rate trace
+                    plot(bins, mean_trace, 'b', 'LineWidth', 1.5);
+                    ylabel('Mean firing rate (Hz)');
+                    ylim ([0 16]);
+                else
+                    % Compute appropriate histogram counts for z-scoring
+                    if contains(z_score_period, 'entire_session')
+                        zscore_counts = histcounts(all_spike_times, time_edges);
+                        hold on;
+                        ylim([-1 6]);
+                        ylabel('Z-scored FR (z-scored over entire session)');
+                    elseif contains(z_score_period, 'first30secs')
+                        baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
+                        zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
+                        hold on;
+                        ylim([-1 8]);
+                        ylabel('Z-scored FR (z-scored over first 30s baseline)');
+                    end
+
+                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
+
+                    plot(bins, z_trace, 'b', 'LineWidth', 1.5);
+                    
                 end
 
+                % Define windows after time zero and calc. the peak and mean FR              
+                %window_starts = 0:0.15:1.35;
+                stim_window_starts = 0:0.3:0.9;
+                stim_window_ends = 0.15:0.3:1.05;
+                grey_window_starts = [0.2 0.5 0.8 1.1 1.2 1.4]; % look from 50ms after stim offset except at 1.2s (when there would be a stimulus if there was a fifth stimulus)
+                %window_ends = 0.15:0.15:1.5;
+                grey_window_ends = [0.3 0.6 0.9 1.2 1.35 1.5]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
+                peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                                
+                yl = ylim; % Get y-axis limits for text placement
+                    
+                for i = 1:length(stim_window_starts)
+                    if contains(z_score_period, 'none')
+                        % Find indices of bins within current window
+                        idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
+                        peak_FR_by_stimwindow(i) = max(mean_trace(idx_in_stimwindow));
+                        mean_FR_by_stimwindow(i) = mean(mean_trace(idx_in_stimwindow));
+                        
+                    else
+                        % Find indices of bins within current window
+                        idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
+                        peak_FR_by_stimwindow(i) = max(z_trace(idx_in_stimwindow));
+                        mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));
+                        
+                    end
+                end
+                
+                for i = 1:length(grey_window_starts)
+                    if contains(z_score_period, 'none')
+                        % Find indices of bins within current window
+                        idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
+                        peak_FR_by_greywindow(i) = max(mean_trace(idx_in_greywindow));
+                        mean_FR_by_greywindow(i) = mean(mean_trace(idx_in_greywindow));
+                        
+                    else
+                        % Find indices of bins within current window
+                        idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
+                        peak_FR_by_greywindow(i) = max(z_trace(idx_in_greywindow));
+                        mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
+                        
+                    end
+                end
                                 % Define grey intervals
                 grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
                 
@@ -467,9 +509,8 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 xlim([-0.5 2.0]);
                 xticks(-0.4:0.2:1.8);
                 xlabel('Time (s) since onset of A')
-                ylabel('Z-scored FR');
-                
-                sgtitle(sprintf('%s %d - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, experiment_info(nsession).date, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none', 'FontSize', 12);
+                                
+                sgtitle(sprintf('%s day %d - %s - Aggregate single unit activity: %s depth range %d–%d μm', subject_number, experiment_info(nsession).date, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none', 'FontSize', 12);
                 filename = sprintf('%s - Aggregate single unit %s FRs.png', Stimulus_type, depth_for_analysis);
                 save_path = fullfile(pwd, filename);
                 exportgraphics(fig, save_path);  % Add this line
@@ -539,7 +580,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 fig = figure;
                 fig.Name = sprintf('Aggregate activity: %s depth range %d–%d μm', depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
-                tiledlayout(4,1);
+                %tiledlayout(4,1);
 
                 % Session-wide stats for z-scoring
                 
@@ -632,7 +673,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 hold on; % Make sure current plot stays visible
                 
                 % Get current y-axis limits for full vertical shading
-                ylim([-1 8]);
+                ylim([-1 6]);
                 yl = ylim;
                 
                 % Shade each interval
@@ -1008,7 +1049,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 hold on; % Make sure current plot stays visible
                 
                 % Get current y-axis limits for full vertical shading
-                ylim([-1 8]);
+                ylim([-1 6]);
                 yl = ylim;
                 
                 % Shade each interval
@@ -1094,51 +1135,79 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 fig = figure;
                 fig.Name = sprintf('%s: Aggregate activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range));
                 fig.Position = [114 90 770 650];
-                tiledlayout(5,1);
+                
+                ori = 1;
+                stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
 
-                for ori = 1:length(ordered_oris)
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
-
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.17], psthBinSize);
+                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.35], psthBinSize);
                     
-                    mean_trace = mean(binnedArray, 1); % average over trials
-                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); % z-score using session-wide stats
+                mean_trace = mean(binnedArray, 1); % average over trials
+                z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); % z-score using session-wide stats
 
-                    nexttile;
-                    plot(bins, z_trace, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.02 0.17]);
-                    xticks([0, 0.05, 0.1, 0.15]);
-                    ylabel('Z-scored FR');
-                    ori_deg = round(ordered_oris(ori));
-                    title(sprintf('Orientation %d%s', ori_deg, char(176)));
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                plot(bins, z_trace, 'b', 'LineWidth', 1.5);
+
+                 % Define windows after time zero and calc. the peak and mean FR              
+                stim_window_starts = 0:0.15:0.45;
+                stim_window_ends = 0.15:0.15:0.6;
+                grey_window_starts = 0.6:0.15:1.2; % look in each 150ms window
+                grey_window_ends = 0.75:0.15:1.35; % look in each 150ms window
+                peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                                                  
+                for i = 1:length(stim_window_starts)
+                    % Find indices of bins within current window
+                    idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
+                    peak_FR_by_stimwindow(i) = max(z_trace(idx_in_stimwindow));
+                    mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));                    
+                end
+                
+                for i = 1:length(grey_window_starts)
+                    % Find indices of bins within current window
+                    idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
+                    peak_FR_by_greywindow(i) = max(z_trace(idx_in_greywindow));
+                    mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
+                end
+                
+                % Define grey intervals
+                grey_intervals = [-0.5 0; 0.6 1.5];
+                
+                hold on; % Make sure current plot stays visible
+                
+                % Get current y-axis limits for full vertical shading
+                ylim([-1 5]);
+                yl = ylim;
+                
+                % Shade each interval
+                for i = 1:size(grey_intervals, 1)
+                    x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                    y = [yl(1), yl(1), yl(2), yl(2)];
+                    fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.3, 'EdgeColor', 'none'); % grey color with transparency
                 end
 
-                % Extra tile to show post-stimulus oscillations following final stim in seq
-                if length(ordered_oris) >= 4
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
+                xline(0, 'k', (sprintf('A onset; %d%s', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.15, 'k', (sprintf('B onset; %d%s', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.30, 'k', (sprintf('C onset; %d%s', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
+                xline(0.45, 'k', (sprintf('D onset; %d%s', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left');
 
-                    [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
-    
-                    mean_trace_long = mean(binnedArray_long, 1);
-                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
+                xlim([-0.5 1.5]);
+                xticks(-0.4:0.2:1.4);
+                ylabel('Z-scored FR');
+                xlabel('Time since onset of A (s)')
+                set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                
+                sgtitle(sprintf('%s - %s day %d - Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, experiment_info(nsession).date, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
 
-                    nexttile;
-                    plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.02 0.75]);
-                    xticks(0:0.05:0.75);
-                    ylabel('Z-scored FR');
-                    title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                end
-
-                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
-
-                filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
+                filename = sprintf('%s - Aggregate single unit %s FRs.png', Stimulus_type, depth_for_analysis);
                 save_path = fullfile(pwd, filename);
-                saveas(fig, save_path);
+                exportgraphics(fig, save_path);  
+
+                % Also save as .fig
+                fig_filename = sprintf('%s - Aggregate single unit %s FRs.fig', Stimulus_type, depth_for_analysis);
+                fig_save_path = fullfile(pwd, fig_filename);
+                savefig(fig, fig_save_path);
+
             end
         end
 
