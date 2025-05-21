@@ -987,6 +987,12 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 
+
+PSTH_MUA_1ms = calculate_UP_DOWN_ripple_PSTH...
+    (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','PSTH_MUA_1ms.mat'),'PSTH_MUA_1ms');
+
+
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
