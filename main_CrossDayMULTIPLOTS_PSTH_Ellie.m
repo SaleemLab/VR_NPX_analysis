@@ -308,7 +308,7 @@ for nsession = sessions_to_plot
         
 
 
-        if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK DCBA')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+        if contains(Stimulus_type, 'GAVNIK_ABCD') && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 
@@ -535,115 +535,7 @@ for nsession = sessions_to_plot
 
         end
                     
-         
-
-
-
-        
-        
-        if (contains(Stimulus_type, 'GAVNIK_A_CD') || contains(Stimulus_type, 'GAVNIK_E_CD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
-            for nprobe = 1:length(clusters)
-                selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
-                
-                depth_selected_clusters = selected_clusters; % initialize with same structure
-                for np = 1:length(clusters)
-                    sc = selected_clusters(np);
-                    peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
-
-                    % Find cluster_ids within selected depth range
-                    keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
-                    depth_cluster_ids = sc.cluster_id(keep_mask);
-
-                    % Keep only spike times and IDs for clusters at selected depth
-                    depth_selected_clusters(np).cluster_id = depth_cluster_ids;
-                    depth_selected_clusters(np).spike_times = sc.spike_times(ismember(sc.spike_id, depth_cluster_ids));
-                    depth_selected_clusters(np).spike_id = sc.spike_id(ismember(sc.spike_id, depth_cluster_ids));
-                end
-                
-                baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
-
-                % Define time_edges depending on z_score_period
-                if contains(z_score_period, 'entire_session')
-                    time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
-                elseif contains(z_score_period, 'first30secs')
-                    time_edges = baseline_window(1):psthBinSize:baseline_window(2);
-                end
-
-                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
-                all_spike_times = [];
-                all_spike_ids = [];
-                for np = 1:length(depth_selected_clusters)
-                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
-                end
-                
-                % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
-                    zscore_counts = histcounts(all_spike_times, time_edges);
-                elseif contains(z_score_period, 'first30secs')
-                    baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
-                    zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
-                end
-
-
-                ordered_oris = unique(Task_info.stim_orientation, 'stable');               
-                fig = figure;
-                fig.Name = sprintf('%s: Aggregate activity: %s depth range %d–%d μm', Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range));
-                fig.Position = [114 90 770 650];
-                tiledlayout(5,1);
-
-                for ori = 1:length(ordered_oris)
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
-
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.17], psthBinSize);
-                    
-                    mean_trace = mean(binnedArray, 1); % average over trials
-                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); % from each trial-averaged timebin of spikes, deduct the mean spikes per timebin in the reference period (baseline or entire session)
-
-                    nexttile;
-                    plot(bins, z_trace, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.02 0.17]);
-                    xticks([0, 0.05, 0.1, 0.15]);
-                    ylabel('Z-scored FR');
-                    
-                    ori_deg = round(ordered_oris(ori));
-                    if ori == 2
-                        title('Grey screen'); % in the GAVNIK_A_CD and GAVNIK_E_CD conditions, the second stimulus is absent
-                    else
-                        title(sprintf('Orientation %d%s', ori_deg, char(176)));
-                    end
-
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                end
-
-                % Extra tile to show post-stimulus oscillations following final stim in seq
-                if length(ordered_oris) >= 4
-                    stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(4));
-
-                    [~, bins_long, ~, ~, ~, binnedArray_long] = psthAndBA(all_spike_times, stim_onsets, [-0.02 0.75], psthBinSize);
-    
-                    mean_trace_long = mean(binnedArray_long, 1);
-                    z_trace_long = (mean_trace_long - mean(zscore_counts)) / std(zscore_counts);
-
-                    nexttile;
-                    plot(bins_long, z_trace_long, 'k', 'LineWidth', 1.5);
-                    xline(0,'r', 'LineWidth', 1);
-                    xlim([-0.02 0.75]);
-                    xticks(0:0.05:0.75);
-                    ylabel('Z-scored FR');
-                    title(sprintf('Orientation %d%s (Extended to show post-stimulus oscillations)', round(ordered_oris(4)), char(176)));
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                end
-
-                sgtitle(sprintf('%s - %s: Aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
-                
-                filename = sprintf('Aggregate single unit %s FRs.pdf', depth_for_analysis);
-                save_path = fullfile(pwd, filename);
-                saveas(fig, save_path);
-            end
-        end
-       
+               
     end
 end
 hold off;
