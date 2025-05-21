@@ -370,12 +370,12 @@ for nsession = sessions_to_plot
                 else % Compute appropriate histogram counts for z-scoring
                     if contains(z_score_period, 'entire_session')
                         zscore_counts = histcounts(all_spike_times, time_edges);
-                        ylabel('Z-scored FR (z-scored over entire session)');
+                        ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
                         ylim([-1 5]);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
                         zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
-                        ylabel('Z-scored FR (z-scored over first 30s baseline)');
+                        ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
                         ylim([-1 8]);
                     end
                     z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
@@ -428,9 +428,10 @@ for nsession = sessions_to_plot
                 
                 xlim([-0.5 1.5]);
                 xticks(-0.4:0.2:1.4);
-                xlabel('Time (s) since onset of A')
+                set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
+                xlabel('Time (s) since onset of A', 'FontSize', 14)
                 
-                legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast');
+                legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'FontSize', 14);
                 hold on;                
             end
                     % Define grey intervals
@@ -446,10 +447,10 @@ for nsession = sessions_to_plot
                 fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
             end
 
-            xline(0, 'k', (sprintf('A %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off');
-            xline(0.15, 'k', (sprintf('B %d%s onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off');
-            xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off');
-            xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off');
+            xline(0, 'k', (sprintf('A %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+            xline(0.15, 'k', (sprintf('B %d%s onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+            xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+            xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
 
             sgtitle(sprintf('%s - %s: Aggregate L4 single unit activity across days', subject_number, Stimulus_type), 'Interpreter', 'none');
             filename = sprintf('%s - %s - Multiplot L4 FRs across %d days.png', subject_number, Stimulus_type, length(sessions_to_plot));
@@ -522,10 +523,12 @@ for nsession = sessions_to_plot
             end
             
             xticks(1:num_sessions);
-            xticklabels(arrayfun(@(x) sprintf('Day %d', experiment_info(x).date), sessions_to_plot, 'UniformOutput', false));
-            ylabel('Cumulative FR');
+            xlim([-1 10])
+            ylabel(sprintf('Z-scored FR (z-scored over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 14);
+            xlabel('Training Day', 'FontSize', 14)
+            set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
             sgtitle(sprintf('%s - %s: L4 Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type), 'Interpreter', 'none');
-            legend({'Stim Peak', 'Stim Mean', 'Grey Peak', 'Grey Mean'}, 'Location', 'northwest');
+            legend({'Stim Peak', 'Stim Mean', 'Grey Peak', 'Grey Mean'}, 'Location', 'northeast', 'FontSize', 14);
             grid on;
 
             % Save bar chart figure

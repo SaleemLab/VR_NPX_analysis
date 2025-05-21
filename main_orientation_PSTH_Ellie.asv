@@ -682,13 +682,10 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                     y = [yl(1), yl(1), yl(2), yl(2)];
                     fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.3, 'EdgeColor', 'none'); % grey color with transparency
                 end
-                
-                if strcmp(Stimulus_type, 'OMIT')
-                    xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
-                end
+
+                xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 if strcmp(Stimulus_type, 'E_CD')
-                    xline(0, 'k', (sprintf('E %d%s onset', round(rad2deg(ordered_oris(5))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14); % E is always 5th orientation presented as E_CD is never the first sequence
-                end    
+    
                 xline(0.30, 'k', (sprintf('B %d%s or grey onset', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 xline(0.90, 'k', (sprintf('D %d%s onset', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
@@ -700,12 +697,8 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                 set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
 
                     % Make legend labels
-                if strcmp(Stimulus_type, 'OMIT')
-                    legend(sprintf('ABCD (%dx)', size(blue_onsets, 2)), sprintf('A_CD (%dx)', size(red_onsets, 2)), 'Location', 'northeast', 'FontSize', 14, 'Interpreter', 'none');
-                end    
-                if strcmp(Stimulus_type, 'E_CD')
-                    legend(sprintf('ABCD (%dx)', size(blue_onsets, 2)), sprintf('%s (%dx)', Stimulus_type, size(red_onsets, 2)), 'Location', 'northeast', 'FontSize', 14, 'Interpreter', 'none');              
-                end          
+                legend(sprintf('ABCD (%dx)', size(blue_onsets, 2)), sprintf('%s (%dx)', Stimulus_type, size(red_onsets, 2)), 'Location', 'northeast', 'FontSize', 14, 'Interpreter', 'none');              
+                          
                 sgtitle(sprintf('%s - %s - aggregate single unit activity: %s depth range %d–%d μm', subject_number, Stimulus_type, depth_for_analysis, min(depth_range), max(depth_range)), 'Interpreter', 'none');
                 filename = sprintf('%s %s %s Aggregate single unit FRs.png', subject_number, Stimulus_type, depth_for_analysis);
                 save_path = fullfile(pwd, filename);
