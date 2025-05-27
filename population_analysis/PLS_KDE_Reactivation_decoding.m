@@ -637,6 +637,11 @@ for i = 1:size(KDE_RUN.AUC,1)
     CI_narrowness(i) = AUC_UCI(i) - AUC_LCI(i) ;
 end
 [~,index] = max(mean_AUC);% Bandwith that leads to maximum separation between tracks
+
+if index == 1 % if first binwitdh (it can be too local)
+    mean_AUC(1)=nan;
+    [~,index] = max(mean_AUC);% Bandwith that leads to maximum separation between tracks
+end
 Bandwidth = Bandwith_list(index);
 
 
