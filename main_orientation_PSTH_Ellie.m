@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4480:4620; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
 CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
 Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
@@ -18,18 +18,18 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'E_CD'; 
-plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+Stimulus_type = 'OMIT'; 
+plot_choice = 'single_units'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250211\E_CD') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250207\OMIT') % 4/5 files will be saved here in the cd
 
 
-for nsession = 10 %5/5 row number of recording date in "experiment_info" 
+for nsession = 8 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -687,7 +687,7 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                     xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 end
                 if strcmp(Stimulus_type, 'E_CD')
-                    xline(0, 'k', (sprintf('E %d%s onset', round(rad2deg(ordered_oris(5))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14); % E is always 5th orientation presented as E_CD is never the first sequence
+                    xline(0, 'k', (sprintf('Novel E %d%s onset', round(rad2deg(ordered_oris(5))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14); % E is always 5th orientation presented as E_CD is never the first sequence
                 end    
                 xline(0.30, 'k', (sprintf('B %d%s or grey onset', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
@@ -768,16 +768,11 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                         zscore_counts = histcounts(baseline_spikes, time_edges);
                     end
 
-                    fig = figure;
-                    fig.Name = sprintf('Response %s Cluster %i', depth_for_analysis, cluster_id(nCluster));
-                    fig.Position = [114 90 770 650];
-                    tiledlayout(5,3);
-
                     % Session-wide stats for z-scoring
                     mu = mean(zscore_counts);
                     sigma = std(zscore_counts);
 
-                    for stim_pos = 1:sequence_length  % go through each of the 4 stimulus positions
+                   for stim_pos = 1 % make charts from onset of first stimulus in sequence
                         blue_onsets = [];
                         red_onsets = [];
 
@@ -815,42 +810,77 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                         end
 
                         % Compute PSTHs for red and blue
-                        [~, bins, ~, ~, ~, binned_red] = psthAndBA(spike_times_this_cluster, red_onsets, [-0.15 0.30], psthBinSize);
-                        [~, ~, ~, ~, ~, binned_blue] = psthAndBA(spike_times_this_cluster, blue_onsets, [-0.15 0.30], psthBinSize);
+                        [~, bins, ~, ~, ~, binned_red] = psthAndBA(spike_times_this_cluster, red_onsets, [-0.3 1.8], psthBinSize);
+                        [~, ~, ~, ~, ~, binned_blue] = psthAndBA(spike_times_this_cluster, blue_onsets, [-0.3 1.8], psthBinSize);
 
                         % Z-score
                         z_red = (mean(binned_red,1) - mu) / sigma;
                         z_blue = (mean(binned_blue,1) - mu) / sigma;
                         
+                        fig1 = figure; %fig1 is for raster plots
+                        fig1.Name = sprintf('%s - Spiking raster %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster));
+                        fig1.Position = [114 90 770 650];
+                        
+                        tiledlayout(100, 1); %Use tiledlayout with weighted row heights so the plot for the blue condition (160 trials) can be 4x taller than that for the red condition (40 trials)
+                        
                         % Set raster window
-                        rasterWindow = [-0.15 0.30];
+                        rasterWindow = [-0.3 1.80];
                         
                         % Get raster for blue
                         [~, ~, rasterX_blue, rasterY_blue, ~, ~] = psthAndBA(spike_times_this_cluster, blue_onsets, rasterWindow, psthBinSize/10);
-                        nexttile;
-                        plot(rasterX_blue, rasterY_blue, 'b', 'LineWidth', 1);
-                        xline(0, 'k', 'LineWidth', 1);
-                        xlim(rasterWindow);
-                        ylim([0 length(blue_onsets)]);
-                        ylabel('Trial');
-                        title(sprintf('Stim %d: raster', stim_pos));
-                        set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 14);
+                        nexttile([74 1]); 
                         
+                        plot(rasterX_blue, rasterY_blue, 'b');
+                        xlim([-0.5 2]);
+                        xticks(-0.4:0.2:1.8);
+                        xlabel('Time (s)');
+                        ylim([0 length(blue_onsets)]);
+                        ylabel('ABCD Trial');
+                        set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 14);
+
+                        ordered_oris = unique(Task_info.stim_orientation, 'stable'); % orientations in order of first appearance (NB an ABCD trial always starts the block) radians for TRAIN but degrees for GAVNIK
+                        xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.30, 'k', (sprintf('B %d%s onset', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.90, 'k', (sprintf('D %d%s onset', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                                    
                         % Get raster for red (or green if E_CD)
                         [~, ~, rasterX_red, rasterY_red, ~, ~] = psthAndBA(spike_times_this_cluster, red_onsets, rasterWindow, psthBinSize/10);
-                        nexttile;
+                        nexttile([26 1]); 
+                        
                         color_raster = 'r';
                         if contains(Stimulus_type, 'E_CD'), color_raster = 'g'; end
-                        plot(rasterX_red, rasterY_red, color_raster, 'LineWidth', 1);
-                        xline(0, 'k', 'LineWidth', 1);
-                        xlim(rasterWindow);
+                        plot(rasterX_red, rasterY_red, 'Color', color_raster);
+                        xlim([-0.5 2]);
+                        xticks(-0.4:0.2:1.8);
+                        xlabel('Time (s)');
                         ylim([0 length(red_onsets)]);
-                        ylabel('Trial');
-                        title(sprintf('Stim %d: raster', stim_pos));
+                        ylabel('Test Trial');
                         set(gca, 'TickDir', 'out', 'box', 'off', 'Color', 'none', 'FontSize', 14);
+                                              
+                        if contains(Stimulus_type, 'E_CD')
+                            firststim = 'E';
+                            firstori = 5;
+                        elseif contains(Stimulus_type, 'OMIT')
+                            firststim = 'A';
+                            firstori = 1;
+                        end
 
+                        xline(0, 'k', (sprintf('%s %d%s onset', firststim, round(rad2deg(ordered_oris(firstori))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.30, 'k', (sprintf('grey onset')), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.90, 'k', (sprintf('D %d%s onset', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                             
+                        sgtitle(sprintf('%s - ABCD vs Omission condition: Raster plots %s Cluster %i', subject_number, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'none');
+                        
+                        fig_filename1 = sprintf('%s - %s - %s Cluster_%i_raster.fig', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster));
+                        savefig(fig1, fullfile(pwd, fig_filename1));
 
                         % Plot both traces
+                        fig2 = figure; %fig2 is for FR traces
+                        fig2.Name = sprintf('%s FR response %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster));
+                        fig2.Position = [114 90 770 650];
+                        
                         % Get orientation/contrast for legend
                         curr_idx_list = stim_pos:sequence_length:length(stim_oris);
                         red_idxs = false(size(curr_idx_list));
@@ -880,8 +910,8 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                         contrast_red = unique(stim_contrasts(curr_idx_list(red_idxs)));
 
                         % Format legend labels
-                        blue_label = sprintf('%d° (contrast %d)', round(rad2deg(ori_blue)), round(contrast_blue));
-                        red_label = sprintf('%d° (contrast %d)', round(rad2deg(ori_red)), round(contrast_red));
+                        blue_label = sprintf('ABCD %dx', length(blue_onsets));
+                        red_label = sprintf('%s %dx', Stimulus_type, length(red_onsets));
                         % Plot
                         nexttile;
                         p1 = plot(bins, z_blue, 'b', 'LineWidth', 1.5); hold on;
@@ -891,67 +921,50 @@ for nsession = 10 %5/5 row number of recording date in "experiment_info"
                             p2 = plot(bins, z_red, 'g', 'LineWidth', 1.5);
                         end
                         xline(0,'k','LineWidth',1);
-                        xlim([-0.15 0.30]);
-                        ylabel('Z-scored FR');
-                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+                        xlim([-0.5 2]);
+                        xticks(-0.4:0.2:1.8);
+                        xlabel('Time (s)');
+                        
+                        if contains(z_score_period, 'entire_session')
+                            ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
+                        elseif contains(z_score_period, 'first30secs')
+                            ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
+                        end
+
                         legend([p1 p2], {blue_label, red_label}, 'Location', 'northeast');  
                         legend boxoff;
-                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                    end
-                    
-                    % === 5th subplot: Extended response to final stimulus (stim_pos = 4) ===
-                    stim_pos = 4;  % last stimulus position
-                    blue_onsets = [];
-                    red_onsets = [];
+                        set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
 
-                    for i = stim_pos:sequence_length:length(stim_contrasts)
-                        curr = i;
-                        prev = i - 1;
-                        next = i + 1;
-                        twoback = i - 2;
-                    
-                        has_zero_surround = false;
-                        if prev >= 1 && stim_contrasts(prev) == 0, has_zero_surround = true; end
-                        if next <= length(stim_contrasts) && stim_contrasts(next) == 0, has_zero_surround = true; end
-                        if twoback >= 1 && stim_contrasts(twoback) == 0, has_zero_surround = true; end
-                        if stim_contrasts(curr) == 0, has_zero_surround = true; end
-                    
-                        if has_zero_surround
-                            red_onsets(end+1) = stim_onsets(curr);
-                        else
-                            blue_onsets(end+1) = stim_onsets(curr);
+                                % Define grey intervals
+                        grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
+                            
+                                      
+                        % Get current y-axis limits for full vertical shading
+                        yl = ylim;
+                            
+                        % Shade each interval
+                        for i = 1:size(grey_intervals, 1)
+                            x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                            y = [yl(1), yl(1), yl(2), yl(2)];
+                            fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                         end
-                    end
-                    
-                    nexttile([1 3]);
-                    
-                    % Longer PSTH window for extended post-stimulus response
-                    long_window = [-0.02 0.75]; 
-                    [~, bins_long, ~, ~, ~, binned_red_long] = psthAndBA(spike_times_this_cluster, red_onsets, long_window, psthBinSize);
-                    [~, ~, ~, ~, ~, binned_blue_long] = psthAndBA(spike_times_this_cluster, blue_onsets, long_window, psthBinSize);
-                    
-                    z_red_long = (mean(binned_red_long,1) - mu) / sigma;
-                    z_blue_long = (mean(binned_blue_long,1) - mu) / sigma;
-                    
-                    p1 = plot(bins_long, z_blue_long, 'b', 'LineWidth', 1.5); hold on;
-                    if contains(Stimulus_type, 'OMIT')
-                        p2 = plot(bins_long, z_red_long, 'r', 'LineWidth', 1.5);
-                    elseif contains(Stimulus_type, 'E_CD')
-                        p2 = plot(bins_long, z_red_long, 'g', 'LineWidth', 1.5);
-                    end
-                    xline(0,'k','LineWidth',1);
-                    xlim(long_window);
-                    xticks(0:0.05:0.75);
-                    ylabel('Z-scored FR');
-                    title(sprintf('Stimulus %d (Extended to show post-stimulus oscillations)', stim_pos));
-                    legend([p1 p2], {'Blue', 'Red'}, 'Location', 'northeast'); legend boxoff;
-                    
-                   
-                    
-                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
-                    cluster_depth = clusters(nprobe).peak_depth(cluster_id(nCluster));
-                    sgtitle(sprintf('%s - %s: Response of %s Cluster %i (%.0f µm)', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster), cluster_depth), 'Interpreter', 'none');
-                    saveas(fig, sprintf('%s_%s_Cluster_%i_FR.pdf', Stimulus_type, depth_for_analysis, cluster_id(nCluster))); %saveas saves to cd
+                        
+                        if contains(Stimulus_type, 'E_CD')
+                            firststim = sprintf('or E %d%s onset', round(rad2deg(ordered_oris(5))), char(176));
+                        elseif contains(Stimulus_type, 'OMIT')
+                            firststim = 'onset';
+                        end
+
+                        xline(0, 'k', (sprintf('A %d%s %s', round(rad2deg(ordered_oris(1))), char(176), firststim)), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.30, 'k', (sprintf('B %d%s or grey onset', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0.90, 'k', (sprintf('D %d%s onset', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                             
+                        sgtitle(sprintf('%s - %s: FR %s Cluster %i', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster)), 'Interpreter', 'none');
+                        fig_filename2 = sprintf('%s - %s - %s Cluster_%i_FR.fig', subject_number, Stimulus_type, depth_for_analysis, cluster_id(nCluster));
+                        savefig(fig2, fullfile(pwd, fig_filename2));
+
+                    end                               
                 end
             end
         end

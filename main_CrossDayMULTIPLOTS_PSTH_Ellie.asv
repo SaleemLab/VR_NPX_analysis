@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-session_specific_L4 = {4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640;}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+session_specific_L4 = {4, 4440:4580;  8, 4500:4640;}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 % 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; %% M00013 TRAIN
 % 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650; %% M00013 GAVNIK
 SUBJECTS = {'M00013'};
@@ -22,7 +22,7 @@ z_score_period = 'entire_session'; % 'none' = no z scoring or z score either ove
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis') % 3/5 files will be saved here in the cd
 
-sessions_to_plot = [4, 5, 6, 7, 8]; %4/5 row numbers of recording dates in "experiment_info" 11, 12, 13, 14, 15
+sessions_to_plot = [4, 5, 6, 7 8]; %4/5 row numbers of recording dates in "experiment_info" 11, 12, 13, 14, 15
 colors = [
     1.0,  0.8,  0.0;  % 1st group - golden yellow (1,0, 1.0, 0.0 for pure yellow)
     0.4,  0.8,  0.0;  % 2nd group - yellow-green (more yellowish)

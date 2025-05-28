@@ -16,7 +16,6 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
 Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
-plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'entire_session'; % 'none' = no z scoring or z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
@@ -88,7 +87,7 @@ for nsession = sessions_to_plot
                     
     
             if contains(Stimulus_types{2}, 'GAVNIK DCBA') % only make this plot if GAVNIK DCBA is present
-                if (contains(Stimulus_type, 'GAVNIK DCBA') || contains(Stimulus_type, 'GAVNIK_ABCD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+                if (contains(Stimulus_type, 'GAVNIK DCBA') || contains(Stimulus_type, 'GAVNIK_ABCD')) && contains(plot_type, 'FR')
                     for nprobe = 1:length(clusters)
                         selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                         
@@ -248,7 +247,7 @@ for nsession = sessions_to_plot
 
         
         if contains(Stimulus_types{2}, 'GAVNIK_A_CD') % only make this plot if GAVNIK_A_CD is present
-            if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK_A_CD') || contains(Stimulus_type, 'GAVNIK_E_CD')) && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
+            if (contains(Stimulus_type, 'GAVNIK_ABCD') || contains(Stimulus_type, 'GAVNIK_A_CD') || contains(Stimulus_type, 'GAVNIK_E_CD')) && contains(plot_type, 'FR')
                 for nprobe = 1:length(clusters)
                     selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                     
@@ -402,7 +401,7 @@ for nsession = sessions_to_plot
                 fig_filename = sprintf('%s L4 FRs %s vs %s vs %s.fig', subject_number, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
                 fig_save_path = fullfile(pwd, fig_filename);
                 savefig(fig1, fig_save_path);
-                
+
             end
         end
     end
