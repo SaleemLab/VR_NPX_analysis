@@ -1,4 +1,4 @@
-function [place_fields_BAYESIAN decoded_replay_events,probability_ratio_original,decoded_replay_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay,position,modify,stimulus_name,timebin)
+function [place_fields_BAYESIAN decoded_replay_events,probability_ratio_original,decoded_replay_events_shuffled] = log_odds_reactivation_analysis(clusters,place_fields_BAYESIAN,replay,position,modify,stimulus_name,timebin,varargin)
 % Input:
 % Clusters
 % place_fields_BAYESIAN
@@ -6,8 +6,15 @@ function [place_fields_BAYESIAN decoded_replay_events,probability_ratio_original
 
 %%% Decoded Track Replay Structure
 % Extracts spikes for each replay event and decodes it. Saves in a
-% structure called repay_track. Inside each field (each track) the replay events are saved.
+% structure called replay_track. Inside each field (each track) the replay events are saved.
 % Loads: extracted_replay_events, extracted_clusters and extracted_place_fields_BAYESIAN
+
+
+shuffle_option = 1;
+if ~isempty(varargin)
+    shuffle_option = varargin{1}; 
+end
+
 
 % REPLAY EVENTS STRUCTURE
 %replay_events is an empty template for replay event analysis.
@@ -136,12 +143,11 @@ replayEvents_bayesian_spike_count = create_spike_count_masa(place_fields_BAYESIA
 fprintf('Decoding %s...\n',modify)
 
 bayesian_spike_count = replayEvents_bayesian_spike_count;
-if contains(stimulus_name,'RUN')|contains(stimulus_name,'Track')
-    estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
-else
+% if contains(stimulus_name,'RUN')|contains(stimulus_name,'Track')
+%     estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
+% else
     estimated_position = bayesian_decoding_POST(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
-%      estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
-end
+% end
 % Save in structure
 
 for i = 1 : num_replay_events
@@ -165,27 +171,32 @@ for event = 1:length(estimated_position(1).replay_events)
     probability_ratio_original{1}(2,event) = estimated_position(2).replay_events(event).probability_ratio;
 end
 
-fprintf('ratemap shuffle %s...\n',modify)
 
-parfor nshuffle = 1:1000
-    estimated_position_ratemap_shuffled = [];
-    if contains(stimulus_name,'RUN')
-        estimated_position_ratemap_shuffled = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,'ratemap shuffle',modify,nshuffle,timebin);
-    else
+if shuffle_option == 1
+    fprintf('ratemap shuffle %s...\n',modify)
+
+    parfor nshuffle = 1:1000
+        estimated_position_ratemap_shuffled = [];
+        %     if contains(stimulus_name,'RUN')
+        %         estimated_position_ratemap_shuffled = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,'ratemap shuffle',modify,nshuffle,timebin);
+        %     else
         estimated_position_ratemap_shuffled = bayesian_decoding_POST(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,'ratemap shuffle',modify,nshuffle,timebin);
+        %     end
+        %         estimated_position_ratemap_shuffled = log_odds_bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,place_cell_index,timebin,[],'ratemap shuffle','','N');
+        for event = 1:length(estimated_position_ratemap_shuffled(1).replay_events)
+            ratemap_shuffled_probability_ratio{nshuffle}(1,event,1) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio;
+            ratemap_shuffled_probability_ratio{nshuffle}(2,event,1) = (estimated_position_ratemap_shuffled(2).replay_events(event).probability_ratio);
+            %             ratemap_shuffled_probability_ratio{nshuffle}(1,event,2) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_first;
+            %             ratemap_shuffled_probability_ratio{nshuffle}(2,event,2) = 1/(estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_first);
+            %             ratemap_shuffled_probability_ratio{nshuffle}(1,event,3) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_second;
+            %             ratemap_shuffled_probability_ratio{nshuffle}(2,event,3) = 1/(estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_second);
+        end
+        decoded_replay_events_shuffled{nshuffle} = estimated_position_ratemap_shuffled;
     end
-    %         estimated_position_ratemap_shuffled = log_odds_bayesian_decoding(place_fields_BAYESIAN,bayesian_spike_count,place_cell_index,timebin,[],'ratemap shuffle','','N');
-    for event = 1:length(estimated_position_ratemap_shuffled(1).replay_events)
-        ratemap_shuffled_probability_ratio{nshuffle}(1,event,1) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio;
-        ratemap_shuffled_probability_ratio{nshuffle}(2,event,1) = (estimated_position_ratemap_shuffled(2).replay_events(event).probability_ratio);
-        %             ratemap_shuffled_probability_ratio{nshuffle}(1,event,2) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_first;
-        %             ratemap_shuffled_probability_ratio{nshuffle}(2,event,2) = 1/(estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_first);
-        %             ratemap_shuffled_probability_ratio{nshuffle}(1,event,3) = estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_second;
-        %             ratemap_shuffled_probability_ratio{nshuffle}(2,event,3) = 1/(estimated_position_ratemap_shuffled(1).replay_events(event).probability_ratio_second);
-    end
-    decoded_replay_events_shuffled{nshuffle} = estimated_position_ratemap_shuffled;
-end
 
-probability_ratio_original{2} = ratemap_shuffled_probability_ratio;
+    probability_ratio_original{2} = ratemap_shuffled_probability_ratio;
+else
+    decoded_replay_events_shuffled = [];
+end
 
 end
