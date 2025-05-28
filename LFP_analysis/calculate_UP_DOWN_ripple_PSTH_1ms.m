@@ -119,6 +119,9 @@ for nprobe = 1:length(slow_waves_all)
         % w = gausswin(0.03*1/mean(diff(tvec_interp1))); % Smoothed with σ = 30 ms
         w = w / sum(w);
 
+        
+
+        % merged_sorted = sortrows([slow_waves_all(nprobe).UP_ints(UP_index,:); slow_waves_all(nprobe).DOWN_ints(DOWN_index,:)], 1);
         [status,interval,index] = InIntervals(tvec_interp1,NREMInts);
 
         % Mainly used for zscore
@@ -141,7 +144,9 @@ for nprobe = 1:length(slow_waves_all)
                 % V1 MUA UP
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, UP_ints(:,1), time_windows, timebin_size);
                 temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
-                temp = filtfilt(w,2,temp')';
+                % temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -175,6 +180,8 @@ for nprobe = 1:length(slow_waves_all)
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, DOWN_ints(:,1), time_windows, timebin_size);
                 temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -206,6 +213,8 @@ for nprobe = 1:length(slow_waves_all)
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, ripple_peaktimes, time_windows, timebin_size);
                 temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     ripple_times = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
@@ -237,6 +246,8 @@ for nprobe = 1:length(slow_waves_all)
                     [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).V1_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
                     temp = (temp-mean(V1_spike_counts{mprobe}(status)))./std(V1_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                     temp = filtfilt(w,2,temp')';
+                    % w1 = gausswin(3);
+                    % temp = filtfilt(w1,2,temp);
 
                     if ~contains(shuffle_option,'baseline')
                         spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
@@ -269,6 +280,8 @@ for nprobe = 1:length(slow_waves_all)
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, UP_ints(:,1), time_windows, timebin_size);
                 temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = UP_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -303,6 +316,9 @@ for nprobe = 1:length(slow_waves_all)
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, DOWN_ints(:,1), time_windows, timebin_size);
                 temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
+
 
                 if ~contains(shuffle_option,'baseline')
                     timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
@@ -335,6 +351,8 @@ for nprobe = 1:length(slow_waves_all)
                 [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, ripple_peaktimes, time_windows, timebin_size);
                 temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                 temp = filtfilt(w,2,temp')';
+                % w1 = gausswin(3);
+                % temp = filtfilt(w1,2,temp);
 
                 if ~contains(shuffle_option,'baseline')
                     ripple_times = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
@@ -367,6 +385,8 @@ for nprobe = 1:length(slow_waves_all)
                     [psth, bins, ~, ~, ~, temp] = psthAndBA(slow_waves_all(mprobe).HPC_MUA_spiketimes{nsession}, spindle_onset, time_windows, timebin_size);
                     temp = (temp-mean(HPC_spike_counts{mprobe}(status)))./std(HPC_spike_counts{mprobe}(status));% zscore relative to spike count during sleep
                     temp = filtfilt(w,2,temp')';
+                    % w1 = gausswin(3);
+                    % temp = filtfilt(w1,2,temp);
 
                     if ~contains(shuffle_option,'baseline')
                         spindle_times = [spindles_all(nprobe).onset(spindles_index) spindles_all(nprobe).offset(spindles_index)];
