@@ -1,4 +1,4 @@
-function analyse_UP_DOWN_transition(event_info,ripples_all,spindles_all,slow_waves_all)
+function predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all)
 
 % if exist('D:\corticohippocampal_replay')>0
 %     analysis_folder = 'D:\corticohippocampal_replay';

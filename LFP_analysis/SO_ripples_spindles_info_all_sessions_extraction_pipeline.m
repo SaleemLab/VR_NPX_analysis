@@ -862,6 +862,35 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probabilit
 probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'),'probability');
 
+
+%%%% P(spindles) during ripples
+probability = calculate_ripple_spindle_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','whole','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'),'probability');
+
+probability = calculate_ripple_spindle_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','onset','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability.mat'),'probability');
+
+probability = calculate_ripple_spindle_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'shuffle_option','baseline','option','absolute', 'time_option','whole','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole_baseline.mat'),'probability');
+
+probability = calculate_ripple_spindle_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'shuffle_option','baseline','option','absolute', 'time_option','onset','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_baseline.mat'),'probability');
+
+
+%%%% P(ripples) during spindles
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','whole','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole.mat'),'probability');
+
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','onset','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability.mat'),'probability');
+
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'shuffle_option','baseline','option','absolute', 'time_option','whole','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole_baseline.mat'),'probability');
+
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'shuffle_option','baseline','option','absolute', 'time_option','onset','time_windows',[-1 1])
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_baseline.mat'),'probability');
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% baseline shuffle (-3s before each UP or DOWN events)
 %%%% P(ripples) during UP DOWN
@@ -899,6 +928,8 @@ probability_normalised = probability;
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_normalised_whole_baseline.mat'),'probability_normalised');
 probability = calculate_UP_DOWN_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1],'shuffle_option','baseline')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole_baseline.mat'),'probability');
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Probability of UP during DOWN and DOWN during UP
