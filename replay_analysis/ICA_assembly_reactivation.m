@@ -63,10 +63,81 @@ position_interp1 = interp1(tvec_template,position,timevec_edge_RUN);
 position_interp1(isnan(position_interp1))=0;
 position_interp1 = discretize(position_interp1,28)*5;
 
+n_pos_bins = length(unique(position_interp1));
+position_edges = min(position_interp1)-mean(diff(unique(position_interp1)))/2:mean(diff(unique(position_interp1))):max(position_interp1)+mean(diff(unique(position_interp1)))/2;
+
 
 [T1_bins,~,index] = InIntervals(timevec_edge_RUN',lap_times(track_ID==1,:));
-[T2_bins,~,index] = InIntervals(timevec_edge_RUN',lap_times(track_ID==2,:));
-[~,~,~,~,~,n] = ActivityTemplates(spikes_template,'bins',bins);
+T1_index = find(T1_bins);
+[T2_bins,~,T2_index] = InIntervals(timevec_edge_RUN',lap_times(track_ID==2,:));
+T2_index = find(T2_bins);
+[templates,correlations,time_projection,weights,variance,n] = ActivityTemplates(spikes_template,'bins',bins([T1_index; T2_index],:));
+
+abs_weights = abs(weights);
+members = false(size(abs_weights));  % Logical array to store membership
+
+
+nfigure = 1;
+fig(nfigure)=figure;
+fig(nfigure).Name='ICA cell assembly weights'; 
+fig(nfigure).Position = [680 482 630 500]
+
+for nComp = 1:size(abs_weights,2)
+    w = abs_weights(:, nComp);                    % Weights for one component
+    norm_w = w / max(w);                      % Normalize to 0–1 (graythresh expects this)
+    thresh = graythresh(norm_w);              % Otsu threshold (normalized)
+    real_thresh = thresh * max(w);            % Rescale back to real weight
+    members(:,nComp) = w > real_thresh;          % Determine membership
+    nexttile
+    barh(weights(:,nComp),'EdgeColor','none','FaceColor','k','FaceAlpha',0.2)
+    hold on
+    barh(weights(:,nComp).*members(:,nComp),'EdgeColor','none','FaceColor','r','FaceAlpha',1)
+    title(sprintf('Component %i',nComp))
+    xlabel('weight')
+    ylabel('cell')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+    weights(:,nComp) = weights(:,nComp).*members(:,nComp);
+end
+
+%%%%%% Project to track specific data
+figure
+zscored_strength = [];
+for nComp = 1:size(weights,2)
+    [strength,dN] = ReactivationStrength(spikes_template,weights(members(:,nComp),nComp),'bins',bins);
+
+    zscored_strength(nComp,:) = strength(:,2) - mean(strength([find(T1_bins); find(T2_bins)],2))./std(strength([find(T1_bins); find(T2_bins)],2));
+
+    nexttile
+    plot(strength(T1_bins,1),zscored_strength(nComp,T1_bins),'b');
+    hold on
+    plot(strength(T2_bins,1),zscored_strength(nComp,T2_bins),'r');
+
+
+
+    [counts,edges,bin] = histcounts(position_interp1(T1_bins), position_edges);
+    index = find(T1_bins);
+    for nbin = 1:length(position_edges)
+        T1_mean_strength(nComp,nbin) = mean(zscored_strength(index(bin==nbin)));
+    end
+
+    [counts,edges,bin] = histcounts(position_interp1(T2_bins), position_edges);
+    index = find(T2_bins);
+    for nbin = 1:length(position_edges)
+        T2_mean_strength(nComp,nbin) = mean(zscored_strength(index(bin==nbin)));
+    end
+end
+
+figure
+subplot(2,2,1)
+plot(T1_mean_strength')
+subplot(2,2,2)
+plot(T2_mean_strength')
+subplot(2,2,3)
+plot(T1_mean_strength'-T2_mean_strength')
+
+%%%%%% Project to ripple data
 
 time_bin_size=0.02;
 time_bin_size_moving = 0.01;
