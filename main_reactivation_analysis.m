@@ -331,7 +331,7 @@ for nsession = 11:22
 
                 % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
                 % [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
-                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event)+0.01);
                 data = log(sum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     /sum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
@@ -427,7 +427,7 @@ for nsession = 11:22
                 timebins_centre = decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).timebins_edges(1) + timebin/2 : timebin : decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).timebins_edges(end) - timebin/2;
 
                 % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
-                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                 [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event)+0.01);
                 data = log(sum(decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     /sum(decoded_ripple_events_V1(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
