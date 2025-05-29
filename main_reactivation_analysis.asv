@@ -123,7 +123,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 11:22
+for nsession = 1:7
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -331,7 +331,7 @@ for nsession = 11:22
 
                 % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
                 % [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
-                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event)+0.01);
                 data = log(sum(decoded_ripple_events(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     /sum(decoded_ripple_events(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
@@ -427,7 +427,7 @@ for nsession = 11:22
                 timebins_centre = decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).timebins_edges(1) + timebin/2 : timebin : decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).timebins_edges(end) - timebin/2;
 
                 % Calculate Log odds and bayesian bias during ripples (decoding was done for -0.5s to 0.5s, but default log odds only done for time bins during ripples)
-                [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event));
+                 [~,time_bin]=find(timebins_centre>=replay.onset(event)& timebins_centre<=replay.offset(event)+0.01);
                 data = log(sum(decoded_ripple_events_V1(ripple_probe_no).track(1).replay_events(event).summed_probability(:,time_bin))...
                     /sum(decoded_ripple_events_V1(ripple_probe_no).track(2).replay_events(event).summed_probability(:,time_bin)));
 
@@ -487,17 +487,17 @@ for nsession = 11:22
                 s = RandStream('mrg32k3a','Seed',track_id+mprobe*10); % Set random seed for resampling
 
                 if track_id == 1
-                    sig_event_id = find(replay_log_odds(1,>1);
+                    sig_event_id = find(replay_log_odds>1);
                 else
-                    sig_event_id = find(replay_log_odds(2,:)<-1);
+                    sig_event_id = find(replay_log_odds<-1);
                 end
 
                 
                 if isempty(sig_event_id) | length(sig_event_id)<20
                     if track_id == 1
-                        sig_event_id = find(replay_log_odds(1,:)>0.5);
+                        sig_event_id = find(replay_log_odds>0.5);
                     else
-                        sig_event_id = find(replay_log_odds(2,:)<-0.5);
+                        sig_event_id = find(replay_log_odds<-0.5);
                     end
                 end
 
@@ -553,17 +553,17 @@ for nsession = 11:22
                 s = RandStream('mrg32k3a','Seed',track_id+mprobe*10); % Set random seed for resampling
 
                 if track_id == 1
-                    sig_event_id = find(replay_log_odds(1,:)>1);
+                    sig_event_id = find(replay_log_odds>1);
                 else
-                    sig_event_id = find(replay_log_odds(2,:)<-1);
+                    sig_event_id = find(replay_log_odds<-1);
                 end
 
-                
+
                 if isempty(sig_event_id) | length(sig_event_id)<20
                     if track_id == 1
-                        sig_event_id = find(replay_log_odds(1,:)>0.5);
+                        sig_event_id = find(replay_log_odds>0.5);
                     else
-                        sig_event_id = find(replay_log_odds(2,:)<-0.5);
+                        sig_event_id = find(replay_log_odds<-0.5);
                     end
                 end
 
@@ -590,7 +590,7 @@ for nsession = 11:22
                     clim([0.001 max(max([decoded_matrix]))/2])
                     colorbar
                     xline(25.5,'r')
-                    xline(25.5+ceil((decoded_ripple_events_V1.track(1).replay_events.offset-decoded_ripple_events_V1.track(1).replay_events.onset)/timebin),'r')
+                    xline(25.5+ceil((decoded_ripple_events_V1(mprobe).track(1).replay_events(event_id).offset-decoded_ripple_events_V1(mprobe).track(1).replay_events(event_id).onset)/timebin),'r')
                     yticks([30 50 70 90 110 140 170 190 210 230 250 280]/position_bin_size)
                     yline(140/position_bin_size+0.5,'LineWidth',1,'Color','k','DisplayName','Track 2')
                     yticklabels([30 50 70 90 110 140 30 50 70 90 110 140])
