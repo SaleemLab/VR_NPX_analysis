@@ -123,7 +123,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 1:7
+for nsession = 15:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -279,9 +279,15 @@ for nsession = 1:7
         % find bins with low within-track stability and high across-track
         % similarity for better and stable discrimination
 
-        bad_bins = position_bins((sum(PPvector_HPC.pval(:,across_tracks_pairs)<0.05.*PPvector_HPC.population_vector(:,across_tracks_pairs)>0,2) +...
-            sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2))>0);
+        bad_bins = position_bins(sum((PPvector_HPC.pval(:,across_tracks_pairs)<0.05).*(PPvector_HPC.population_vector(:,across_tracks_pairs)>0),2) +...
+            sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+
+        if length(good_bins)<10
+            bad_bins = position_bins(sum((PPvector_HPC.population_vector(:,across_tracks_pairs)>0.3).*(PPvector_HPC.population_vector(:,across_tracks_pairs)>0),2) +...
+                sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
+            good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+        end
 
         clear decoded_ripple_events decoded_ripple_events_shuffled
         cd(options.ANALYSIS_DATAPATH)
@@ -373,6 +379,8 @@ for nsession = 1:7
 
             decoded_ripple_events(mprobe).x_bin_centres = place_fields_BAYESIAN(1).x_bin_centres;
             decoded_ripple_events(mprobe).good_bins = good_bins;
+            decoded_ripple_events(mprobe).PV_corr =   PPvector_HPC.population_vector;
+            decoded_ripple_events(mprobe).PV_corr_pval =   PPvector_HPC.pval;
         end
 
 
@@ -467,6 +475,8 @@ for nsession = 1:7
 
             decoded_ripple_events_V1(mprobe).x_bin_centres = place_fields_BAYESIAN(1).x_bin_centres;
             decoded_ripple_events_V1(mprobe).good_bins = good_bins;
+            decoded_ripple_events_V1(mprobe).PV_corr =   PPvector_V1.population_vector;
+            decoded_ripple_events_V1(mprobe).PV_corr_pval =   PPvector_V1.pval;
         end
         toc
         
