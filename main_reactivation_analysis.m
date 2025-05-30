@@ -283,10 +283,29 @@ for nsession = 15:22
             sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
 
+        PV_thresholds = [];
         if length(good_bins)<5
-            bad_bins = position_bins(sum((PPvector_HPC.population_vector(:,across_tracks_pairs)>0.3).*(PPvector_HPC.population_vector(:,across_tracks_pairs)>0),2) +...
-                sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
-            good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+            PV_thresholds = 0.3:0.05:0.5;
+            for i = 1:length(PV_thresholds)
+                PV_threshold = PV_thresholds(i);
+
+                % Identify bad bins
+                bad_bins = position_bins( ...
+                    sum((PPvector_HPC.population_vector(:,across_tracks_pairs) > PV_threshold) .* ...
+                    (PPvector_HPC.population_vector(:,across_tracks_pairs) > 0), 2) + ...
+                    sum(PPvector_HPC.pval(:,within_tracks_pairs) > 0.05, 2) > 0);
+
+                % Histogram to count which bins are "bad"
+                bin_hist = histcounts(bad_bins, 0:x_bin_width:140);
+
+                % Good bins: those not present in bad_bins
+                good_bins = find(bin_hist < 1);
+
+                % Exit condition
+                if length(good_bins) >= 5
+                    break;
+                end
+            end
         end
 
         clear decoded_ripple_events decoded_ripple_events_shuffled
@@ -381,6 +400,8 @@ for nsession = 15:22
             decoded_ripple_events(mprobe).good_bins = good_bins;
             decoded_ripple_events(mprobe).PV_corr =   PPvector_HPC.population_vector;
             decoded_ripple_events(mprobe).PV_corr_pval =   PPvector_HPC.pval;
+            decoded_ripple_events(mprobe).PV_threshold =   PV_threshold; % empty if based on cell id distribution
+            
         end
 
 
@@ -392,10 +413,29 @@ for nsession = 15:22
             sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
 
+        PV_thresholds = [];
         if length(good_bins)<5
-            bad_bins = position_bins(sum((PPvector_V1.population_vector(:,across_tracks_pairs)>0.3).*(PPvector_V1.population_vector(:,across_tracks_pairs)>0),2) +...
-                sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
-            good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+            PV_thresholds = 0.3:0.05:0.5;
+            for i = 1:length(PV_thresholds)
+                PV_threshold = PV_thresholds(i);
+
+                % Identify bad bins
+                bad_bins = position_bins( ...
+                    sum((PPvector_V1.population_vector(:,across_tracks_pairs) > PV_threshold) .* ...
+                    (PPvector_V1.population_vector(:,across_tracks_pairs) > 0), 2) + ...
+                    sum(PPvector_V1.pval(:,within_tracks_pairs) > 0.05, 2) > 0);
+
+                % Histogram to count which bins are "bad"
+                bin_hist = histcounts(bad_bins, 0:x_bin_width:140);
+
+                % Good bins: those not present in bad_bins
+                good_bins = find(bin_hist < 1);
+
+                % Exit condition
+                if length(good_bins) >= 5
+                    break;
+                end
+            end
         end
 
         clear decoded_ripple_events_V1 decoded_ripple_events_V1_shuffled
@@ -483,6 +523,8 @@ for nsession = 15:22
             decoded_ripple_events_V1(mprobe).good_bins = good_bins;
             decoded_ripple_events_V1(mprobe).PV_corr =   PPvector_V1.population_vector;
             decoded_ripple_events_V1(mprobe).PV_corr_pval =   PPvector_V1.pval;
+            decoded_ripple_events_V1(mprobe).PV_threshold =   PV_threshold; % empty if based on cell id distribution
+
         end
         toc
         
