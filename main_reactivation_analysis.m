@@ -283,7 +283,7 @@ for nsession = 15:22
             sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
 
-        if length(good_bins)<10
+        if length(good_bins)<5
             bad_bins = position_bins(sum((PPvector_HPC.population_vector(:,across_tracks_pairs)>0.3).*(PPvector_HPC.population_vector(:,across_tracks_pairs)>0),2) +...
                 sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
             good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
@@ -388,9 +388,15 @@ for nsession = 15:22
         place_fields_BAYESIAN = calculate_spatial_cells(V1_clusters_RUN,HPC_clusters_RUN.tvec{1},...
             HPC_clusters_RUN.position{1},speed,HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_window,x_bin_width);
 
-        bad_bins = position_bins((sum(PPvector_V1.pval(:,across_tracks_pairs)<0.05.*PPvector_V1.population_vector(:,across_tracks_pairs)>0,2) +...
-            sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2))>0);
+        bad_bins = position_bins(sum((PPvector_V1.pval(:,across_tracks_pairs)<0.05).*(PPvector_V1.population_vector(:,across_tracks_pairs)>0),2) +...
+            sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+
+        if length(good_bins)<5
+            bad_bins = position_bins(sum((PPvector_V1.population_vector(:,across_tracks_pairs)>0.3).*(PPvector_V1.population_vector(:,across_tracks_pairs)>0),2) +...
+                sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
+            good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+        end
 
         clear decoded_ripple_events_V1 decoded_ripple_events_V1_shuffled
         cd(options.ANALYSIS_DATAPATH)
