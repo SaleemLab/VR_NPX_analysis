@@ -22,37 +22,35 @@ shuffle_option = p.Results.shuffle_option;
 timebin_edge = time_windows(1):time_bin:time_windows(end);
 bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
 
-for nprobe = 1:length(ripples_all)
-    for hemi = 1:2 % hemi 1 = L spindle, 2 = R spindle
-        spindle_index_all = [];
-        binnedArray = [];
+for hemi = 1:2 % hemi 1 = L spindle, 2 = R spindle
+    L_binnedArray = [];
+    R_binnedArray = [];
+    L_ripple_index_all = [];
+    R_ripple_index_all = [];
 
-        for nsession = 1:length(sessions_to_process)
-            session_id = sessions_to_process(nsession);
+    for nsession = 1:length(sessions_to_process)
+        session_id = sessions_to_process(nsession);
 
-            spindle_index = find(spindles_all(hemi).session_count == session_id & spindles_all(hemi).SWS_index == 1);
-            if isempty(spindle_index), continue; end
+        spindle_index = find(spindles_all(hemi).session_count == session_id & spindles_all(hemi).SWS_index == 1);
+        if isempty(spindle_index), continue; end
 
+        spindle_times = spindles_all(hemi).onset(spindle_index);
 
-            spindle_times = spindles_all(hemi).onset(spindle_index);
+        if contains(shuffle_option,'baseline')
+            spindle_times = spindle_times - 3;
+        end
 
-            if contains(shuffle_option,'baseline')
-                spindle_times = spindle_times - 3;
-            end
-
-            % Get ripples for this probe
-            ripples_index = find(ripples_all(nprobe).session_count == session_id & ripples_all(nprobe).SWS_index == 1);
-
+        for ripple_hemi = 1:2 % ripple source: 1 = L ripple, 2 = R ripple
+            ripples_index = find(ripples_all(ripple_hemi).session_count == session_id & ripples_all(ripple_hemi).SWS_index == 1);
             if isempty(ripples_index), continue; end
 
             if contains(time_option,'onset')
-                ripple_times = ripples_all(nprobe).peaktimes(ripples_index);
+                ripple_times = ripples_all(ripple_hemi).peaktimes(ripples_index);
             elseif contains(time_option,'peaktimes')
-                ripple_times = ripples_all(nprobe).onset(ripples_index);
+                ripple_times = ripples_all(ripple_hemi).onset(ripples_index);
             else
-                ripple_times = [ripples_all(nprobe).onset(ripples_index) ripples_all(nprobe).offset(ripples_index)];
+                ripple_times = [ripples_all(ripple_hemi).onset(ripples_index) ripples_all(ripple_hemi).offset(ripples_index)];
             end
-
 
             [prob, temp, event_index] = calculate_event_probability(ripple_times, spindle_times, timebin_edge, 0);
 
@@ -72,40 +70,55 @@ for nprobe = 1:length(ripples_all)
                 end
             end
 
-            binnedArray = [binnedArray; temp];
-            spindle_index_all = [spindle_index_all; event_index];
+            if ripple_hemi == 1
+                L_binnedArray = [L_binnedArray; temp];
+                L_ripple_index_all = [L_ripple_index_all; event_index];
+            else
+                R_binnedArray = [R_binnedArray; temp];
+                R_ripple_index_all = [R_ripple_index_all; event_index];
+            end
         end
+    end
 
-        tag = ["L","R"];
-        spindle_label = tag{hemi};
+    tag = ["L","R"];
+    spindle_label = tag{hemi};
 
-        probability(nprobe).([spindle_label '_ripple']) = binnedArray;
-        probability(nprobe).([spindle_label '_ripple_index']) = spindle_index_all;
-        probability(nprobe).([spindle_label '_spindle_no']) = sum(spindles_all(hemi).SWS_index == 1);
+    probability(hemi).L_ripple = L_binnedArray;
+    probability(hemi).R_ripple = R_binnedArray;
+    probability(hemi).L_ripple_index = L_ripple_index_all;
+    probability(hemi).R_ripple_index = R_ripple_index_all;
+    probability(hemi).spindle_no = sum(spindles_all(hemi).SWS_index == 1);
 
-        % Bootstrap
+    % Bootstrap
+    for s = {'L', 'R'}
+        side = s{1};
+        tempArray = probability(hemi).([side '_ripple']);
         tempBoot = [];
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot);
-            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-            tempBoot(iBoot,:) = sum(binnedArray(event_id,:), 'omitnan') ./ sum(~isnan(binnedArray(event_id,:)));
+            event_id = datasample(s,1:size(tempArray,1),size(tempArray,1));
+            tempBoot(iBoot,:) = sum(tempArray(event_id,:), 'omitnan') ./ sum(~isnan(tempArray(event_id,:)));
         end
-        probability(nprobe).([spindle_label '_ripple_bootstrap']) = tempBoot;
+        probability(hemi).([side '_ripple_bootstrap']) = tempBoot;
+    end
 
-        % Shuffle
-        if contains(shuffle_option,'time_circular_shift')
+    % Shuffle
+    if contains(shuffle_option,'time_circular_shift')
+        for s = {'L', 'R'}
+            side = s{1};
+            tempArray = probability(hemi).([side '_ripple']);
             tempShuf = [];
             for iBoot = 1:1000
-                temp1 = zeros(size(binnedArray));
-                parfor event_id = 1:size(binnedArray,1)
+                temp1 = zeros(size(tempArray));
+                parfor event_id = 1:size(tempArray,1)
                     s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id);
-                    shift = datasample(s,1:size(binnedArray,2),1);
-                    bins = circshift(1:size(binnedArray,2), shift);
-                    temp1(event_id,:) = binnedArray(event_id,bins);
+                    shift = datasample(s,1:size(tempArray,2),1);
+                    bins = circshift(1:size(tempArray,2), shift);
+                    temp1(event_id,:) = tempArray(event_id,bins);
                 end
                 tempShuf(iBoot,:) = sum(temp1,1,'omitnan') ./ sum(~isnan(temp1));
             end
-            probability(nprobe).([spindle_label '_ripple_shuffled']) = tempShuf;
+            probability(hemi).([side '_ripple_shuffled']) = tempShuf;
         end
     end
 end

@@ -6,8 +6,8 @@ addParameter(p, 'nBoot', 1000);
 addParameter(p, 'output', []);
 addParameter(p, 'plot_option', 0);
 addParameter(p, 'subject_id', 0);
-addParameter(p, 'DOWN_UP_lag', []);
-addParameter(p, 'DOWN_UP_index', []);
+% addParameter(p, 'DOWN_UP_lag', []);
+% addParameter(p, 'DOWN_UP_index', []);
 % addParameter(p, 'ripples_info', []);
 % addParameter(p, 'ripples_power', []);
 parse(p, varargin{:});
@@ -16,8 +16,8 @@ nPerm = p.Results.nPerm;
 nBoot = p.Results.nBoot;
 output = p.Results.output;
 subject_id = p.Results.subject_id;
-DOWN_UP_lag = p.Results.DOWN_UP_lag;
-DOWN_UP_index = p.Results.DOWN_UP_index;
+% DOWN_UP_lag = p.Results.DOWN_UP_lag;
+% DOWN_UP_index = p.Results.DOWN_UP_index;
 plot_option = p.Results.plot_option;
 % ripples_info = p.Results.ripples_info;
 % ripples_power = p.Results.ripples_power;
@@ -74,7 +74,7 @@ if isempty(output)
     % contraHPC_cat = contraHPC_cat(validIdx);
     ipsiRipples_cat = ipsiRipples_cat;
     contraRipples_cat = contraRipples_cat;
-    DOWN_UP_index = DOWN_UP_index;
+    DOWN_UP_index = 1:length(ipsi_ripples);
 
     %     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_first_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
     %     contra_ripple_power(contraRipples_cat) = ripples_info.contra_first_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
@@ -122,16 +122,13 @@ if isempty(output)
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             normalize(ipsi_Delta_peaks_zscore_DU(index))',  normalize(contra_Delta_peaks_zscore_DU(index))', ...
             normalize(DOWN_duration(index)),ipsi_spindles(index),contra_spindles(index), ...
-            zscore(DOWN_UP_lag(index)), categorical(subject_id(index)), ...
+            categorical(subject_id(index)), ...
             'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
             'ipsiOccurance','contraOccurance', ...
-            'ipsiDelta','contraDelta','downDuration','ipsiSpindle','contraSpindle','DOWN_UP_lag','subjectID'});
+            'ipsiDelta','contraDelta','downDuration','ipsiSpindle','contraSpindle','subjectID'});
 
         % Model list
         modelList = {
-            'ipsiPower ~ DOWN_UP_lag  (1|subjectID)';
-            'contraPower ~ DOWN_UP_lag + (1|subjectID)';
-
             'ipsiPower ~ ipsiDelta  (1|subjectID)';
             'contraPower ~ ipsiDelta + (1|subjectID)';
 
@@ -143,9 +140,6 @@ if isempty(output)
 
             'ipsiPower ~ ipsiDelta + downDuration + ipsiSpindle + (1|subjectID)';
             'contraPower ~ ipsiDelta + downDuration + ipsiSpindle + (1|subjectID)';
-
-            'ipsiPower ~ DOWN_UP_lag + ipsiDelta + downDuration + ipsiSpindle + (1|subjectID)';
-            'contraPower ~ DOWN_UP_lag + ipsiDelta + downDuration + ipsiSpindle + (1|subjectID)';
 %             'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
 %             'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
 
@@ -200,15 +194,13 @@ if isempty(output)
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             normalize(ipsi_Delta_peaks_zscore_DU(index))',  normalize(contra_Delta_peaks_zscore_DU(index))', ...
             normalize(DOWN_duration(index)),ipsi_spindles(index),contra_spindles(index), ...
-            zscore(DOWN_UP_lag(index)), categorical(subject_id(index)), ...
+            categorical(subject_id(index)), ...
             'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
             'ipsiOccurance','contraOccurance', ...
-            'ipsiDelta','contraDelta','downDuration','ipsiSpindle','contraSpindle','DOWN_UP_lag','subjectID'});
+            'ipsiDelta','contraDelta','downDuration','ipsiSpindle','contraSpindle','subjectID'});
 
         % Define model list (only one for now)
         modelList = {
-            'ipsiOccurance ~ DOWN_UP_lag  (1|subjectID)';
-            'contraOccurance ~ DOWN_UP_lag + (1|subjectID)';
 
             'ipsiOccurance ~ ipsiDelta  (1|subjectID)';
             'contraOccurance ~ ipsiDelta + (1|subjectID)';

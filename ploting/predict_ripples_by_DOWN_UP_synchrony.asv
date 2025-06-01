@@ -1,4 +1,4 @@
-function output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA,contra_V1_MUA,ipsi_HPC_MUA,contra_HPC_MUA,ipsi_ripples,contra_ripples,ripples_info,varargin)
+function output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA,contra_V1_MUA,ipsi_HPC_MUA,contra_HPC_MUA,ipsi_ripples,contra_ripples,UP_DOWN_info,varargin)
 % SETTINGS
 p = inputParser;
 addParameter(p, 'nPerm', 1000);
@@ -37,6 +37,7 @@ if isempty(output)
     nTimes = length(timeVec);
 
     %% 1. Linear regression
+    %%%%%% Windows
     key_window_idx1 = find(timeVec < 0 & timeVec >= -0.05);
     key_window_idx2 = find(timeVec > 0 & timeVec <= 0.1);
 
@@ -45,10 +46,10 @@ if isempty(output)
 %     ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')'-min(ipsi_HPC_MUA(:, key_window_idx1)')' ;
 %     contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:, key_window_idx1)')';
 
-    ipsiV1_key = mean(ipsi_V1_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_V1_MUA(:, key_window_idx1)',"omitnan")' ;
-    contraV1_key = mean(contra_V1_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_V1_MUA(:, key_window_idx1)',"omitnan")';
-    ipsiHPC_key = mean(ipsi_HPC_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_HPC_MUA(:, key_window_idx1)',"omitnan")' ;
-    contraHPC_key = mean(contra_HPC_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_HPC_MUA(:, key_window_idx1)',"omitnan")';
+    % ipsiV1_key = mean(ipsi_V1_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_V1_MUA(:, key_window_idx1)',"omitnan")' ;
+    % contraV1_key = mean(contra_V1_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_V1_MUA(:, key_window_idx1)',"omitnan")';
+    % ipsiHPC_key = mean(ipsi_HPC_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_HPC_MUA(:, key_window_idx1)',"omitnan")' ;
+    % contraHPC_key = mean(contra_HPC_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_HPC_MUA(:, key_window_idx1)',"omitnan")';
     %     combinedV1_key = mean((ipsi_V1_MUA_norm(:, key_window_idx)+contra_V1_MUA_norm(:, key_window_idx)),2,'omitnan');
 
     %%%% HPC ripples
@@ -58,22 +59,22 @@ if isempty(output)
     ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
     contraRipples_key =sum(contra_ripples(:,key_window_idx2),2)>0 ;
 
-    ipsiV1_cat = ipsiV1_key(:);
-    contraV1_cat = contraV1_key(:);
-    ipsiHPC_cat = ipsiHPC_key(:);
-    contraHPC_cat = contraHPC_key(:);
+    % ipsiV1_cat = ipsiV1_key(:);
+    % contraV1_cat = contraV1_key(:);
+    % ipsiHPC_cat = ipsiHPC_key(:);
+    % contraHPC_cat = contraHPC_key(:);
     ipsiRipples_cat = ipsiRipples_key(:);
     contraRipples_cat = contraRipples_key(:);
     %     combinedV1_cat = combinedV1_key(:);
 
-    validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
-    ipsiV1_cat = ipsiV1_cat(validIdx);
-    contraV1_cat = contraV1_cat(validIdx);
-    ipsiHPC_cat = ipsiHPC_cat(validIdx);
-    contraHPC_cat = contraHPC_cat(validIdx);
-    ipsiRipples_cat = ipsiRipples_cat(validIdx);
-    contraRipples_cat = contraRipples_cat(validIdx);
-    DOWN_UP_index = DOWN_UP_index(validIdx);
+    % validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
+    % ipsiV1_cat = ipsiV1_cat(validIdx);
+    % contraV1_cat = contraV1_cat(validIdx);
+    % ipsiHPC_cat = ipsiHPC_cat(validIdx);
+    % contraHPC_cat = contraHPC_cat(validIdx);
+    ipsiRipples_cat = ipsiRipples_cat;
+    contraRipples_cat = contraRipples_cat;
+    DOWN_UP_index = DOWN_UP_index;
 
     %     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_first_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
     %     contra_ripple_power(contraRipples_cat) = ripples_info.contra_first_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
@@ -88,19 +89,22 @@ if isempty(output)
     contra_ripple_lag = nan(length(DOWN_UP_index),1);
     ipsi_time_from_last_ripple = nan(length(DOWN_UP_index),1);
     contra_time_from_last_ripple = nan(length(DOWN_UP_index),1);
-    ipsi_Delta_peaks_zscore_DU = nan(length(DOWN_UP_index),1);
-    contra_Delta_peaks_zscore_DU = nan(length(DOWN_UP_index),1);
 
 
-    ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_last_ripples_power_UP(DOWN_UP_index(ipsiRipples_cat))';
-    contra_ripple_power(contraRipples_cat) = ripples_info.contra_last_ripples_power_UP(DOWN_UP_index(contraRipples_cat))';
-    ipsi_ripple_lag(ipsiRipples_cat) = abs(ripples_info.ipsi_last_ripples_lag_UP(DOWN_UP_index(ipsiRipples_cat))');
-    contra_ripple_lag(contraRipples_cat) = abs(ripples_info.contra_last_ripples_lag_UP(DOWN_UP_index(contraRipples_cat))');
-    ipsi_time_from_last_ripple(ipsiRipples_cat) = abs(ripples_info.ipsi_time_from_last_ripples_UP(DOWN_UP_index(ipsiRipples_cat))');
-    contra_time_from_last_ripple(contraRipples_cat) = abs(ripples_info.contra_time_from_last_ripples_UP(DOWN_UP_index(contraRipples_cat))');
 
-    ipsi_Delta_peaks_zscore_DU = abs(ripples_info.ipsi_Delta_peaks_zscore_DU(DOWN_UP_index)');
-    contra_Delta_peaks_zscore_DU = abs(ripples_info.contra_Delta_peaks_zscore_DU(DOWN_UP_index)');
+    ipsi_ripple_power(ipsiRipples_cat) = UP_DOWN_info.ipsi_last_ripples_power_UP(DOWN_UP_index(ipsiRipples_cat))';
+    contra_ripple_power(contraRipples_cat) = UP_DOWN_info.contra_last_ripples_power_UP(DOWN_UP_index(contraRipples_cat))';
+    ipsi_ripple_lag(ipsiRipples_cat) = abs(UP_DOWN_info.ipsi_last_ripples_lag_UP(DOWN_UP_index(ipsiRipples_cat))');
+    contra_ripple_lag(contraRipples_cat) = abs(UP_DOWN_info.contra_last_ripples_lag_UP(DOWN_UP_index(contraRipples_cat))');
+    ipsi_time_from_last_ripple(ipsiRipples_cat) = abs(UP_DOWN_info.ipsi_time_from_last_ripples_UP(DOWN_UP_index(ipsiRipples_cat))');
+    contra_time_from_last_ripple(contraRipples_cat) = abs(UP_DOWN_info.contra_time_from_last_ripples_UP(DOWN_UP_index(contraRipples_cat))');
+
+
+    ipsi_Delta_peaks_zscore_DU = abs(UP_DOWN_info.ipsi_Delta_peaks_zscore_DU(DOWN_UP_index)');
+    contra_Delta_peaks_zscore_DU = abs(UP_DOWN_info.contra_Delta_peaks_zscore_DU(DOWN_UP_index)');
+    previous_DOWN_duration = UP_DOWN_info.previous_DOWN_duration(DOWN_UP_index);
+    ipsi_spindle = double(sum(UP_DOWN_info.ipsi_spindles_UP(DOWN_UP_index,:),2,'omitnan')>0);
+    contra_spindle = double(sum(UP_DOWN_info.contra_spindles_UP(DOWN_UP_index,:),2,'omitnan')>0);
 
     ripples_index = find(ipsiRipples_cat==1 | contraRipples_cat==1);
     
@@ -117,27 +121,34 @@ if isempty(output)
         tbl = table(normalize(ipsi_time_from_last_ripple(index)),normalize(contra_time_from_last_ripple(index)),normalize(ipsi_ripple_lag(index)), normalize(contra_ripple_lag(index)), ...
             normalize(ipsi_ripple_power(index)), normalize(contra_ripple_power(index)), ...
             ipsiRipples_cat(index), contraRipples_cat(index), ...
-            zscore(ipsiHPC_cat(index)), zscore(contraHPC_cat(index)), ...
-            zscore(ipsiV1_cat(index)), zscore(contraV1_cat(index)), ...
             normalize(ipsi_Delta_peaks_zscore_DU(index))',  normalize(contra_Delta_peaks_zscore_DU(index))', ...
+            normalize(previous_DOWN_duration(index)),  normalize(ipsi_spindle(index)), normalize(contra_spindle(index)), ...            
             zscore(DOWN_UP_lag(index)), categorical(subject_id(index)), ...
             'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
-            'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC', ...
-            'ipsiV1','contraV1','ipsiDelta','contraDelta','DOWN_UP_lag','subjectID'});
+            'ipsiOccurance','contraOccurance', ...
+            'ipsiDelta','contraDelta','downDuration','ipsiSpindle','contraSpindle','DOWN_UP_lag','subjectID'});
 
         % Model list
         modelList = {
-            'ipsiPower ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
-            'contraPower ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
-
-            'ipsiHPC ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
-            'contraHPC ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
-
-            'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
-            'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
-
-            'ipsiPower ~ DOWN_UP_lag + ipsiDelta + contraDelta + (1|subjectID)';
+            % 'ipsiPower ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
+            % 'contraPower ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
+            % 'ipsiHPC ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
+            % 'contraHPC ~ ipsiV1 + contraV1 + ipsiV1*contraV1 + (1|subjectID)';
+            % 'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
+            % 'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
+            'ipsiPower ~ DOWN_UP_lag + (1|subjectID)';
             'contraPower ~ DOWN_UP_lag + (1|subjectID)';
+
+            'ipsiPower ~ ipsiSpindle + (1|subjectID)';
+            'contraPower ~ ipsiSpindle + (1|subjectID)';
+
+            'ipsiPower ~ downDuration + (1|subjectID)';
+            'contraPower ~ downDuration + (1|subjectID)';
+
+            'ipsiPower ~ ipsiDelta + (1|subjectID)';
+            'ipsiPower ~ contraDelta + (1|subjectID)';
+
+            'ipsiPower ~ DOWN_UP_lag + ipsiDelta + contraDelta + downDuration + (1|subjectID)';
 %             'ipsiHPC ~ DOWN_UP_lag + (1|subjectID)';
 %             'contraHPC ~ DOWN_UP_lag + (1|subjectID)';
 
