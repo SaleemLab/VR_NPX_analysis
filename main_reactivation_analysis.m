@@ -123,7 +123,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 15:22
+for nsession = 1:5
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -284,6 +284,7 @@ for nsession = 15:22
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
 
         PV_thresholds = [];
+        PV_threshold = [];
         if length(good_bins)<5
             PV_thresholds = 0.3:0.05:0.5;
             for i = 1:length(PV_thresholds)
@@ -414,6 +415,7 @@ for nsession = 15:22
         good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
 
         PV_thresholds = [];
+        PV_threshold = [];
         if length(good_bins)<5
             PV_thresholds = 0.3:0.05:0.5;
             for i = 1:length(PV_thresholds)
