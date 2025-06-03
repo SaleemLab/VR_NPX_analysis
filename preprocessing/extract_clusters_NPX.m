@@ -343,7 +343,7 @@ else % if KS2 and KS3
                     SUA_spike_time = [SUA_spike_time; these_spike_times{good_units_index(unit)}];
                     SUA_spike_id = [SUA_spike_id; cluster_id(good_units_index(unit))*ones(length(these_spike_times{good_units_index(unit)}),1)];
 
-                    SUA_spike_count_raw(count,:) = histcounts(these_spike_times{good_units_index(unit)},time_bins_edges);
+%                     SUA_spike_count_raw(count,:) = histcounts(these_spike_times{good_units_index(unit)},time_bins_edges);
                     %                         SUA_spike_count_smoothed(count,:) = filtfilt(w,1,histcounts(these_spike_times{good_units_index(unit)},time_bins_edges));
                     %                         SUA_zscore(count,:) = zscore(SUA_spike_count_smoothed(count,:));
 

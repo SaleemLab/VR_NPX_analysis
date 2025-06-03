@@ -205,7 +205,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
 extract_and_preprocess_NPX_batch(experiment_info,Stimulus_type)
 
 % SUBJECT = 'M23087';
-SUBJECTS = {'M25072'};
+SUBJECTS = {'M25026'};
 % SESSION = '20231212';
 SESSION = '20250213';
 options = 'V1-MEC';
