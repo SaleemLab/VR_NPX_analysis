@@ -1,4 +1,4 @@
-function output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA,contra_V1_MUA,ipsi_HPC_MUA,contra_HPC_MUA,ipsi_ripples,contra_ripples,ripples_info,varargin)
+function output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA,contra_V1_MUA,ipsi_HPC_MUA,contra_HPC_MUA,ipsi_ripples,contra_ripples,UP_DOWN_info,varargin)
 % predict_HPC_MUA_DOWN_UP
 % Predict hippocampal ripple occurance and ripple power and ripple
 % synchrony during DOWN-UP transitions using ipsi and contra V1 MUA and
@@ -30,101 +30,120 @@ plot_option = p.Results.plot_option;
 % ripples_info = p.Results.ripples_info;
 % ripples_power = p.Results.ripples_power;
 
-if isempty(output)
-    % Time settings
-    time_windows = [-1,1];
-    time_bin = 0.01;
-    timebin_edge = time_windows(1):time_bin:time_windows(end);
-    timeVec = timebin_edge(1:end-1) + time_bin/2; % centers
 
-    time_bin = 0.02;
-    timebin_edge_prob = time_windows(1):time_bin:time_windows(end);
-    timeVec_prob = timebin_edge_prob(1:end-1) + time_bin/2; % centers
+% Time settings
+time_windows = [-1,1];
+time_bin = 0.01;
+timebin_edge = time_windows(1):time_bin:time_windows(end);
+timeVec = timebin_edge(1:end-1) + time_bin/2; % centers
+
+time_bin = 0.02;
+timebin_edge_prob = time_windows(1):time_bin:time_windows(end);
+timeVec_prob = timebin_edge_prob(1:end-1) + time_bin/2; % centers
 
 
-    nTimes = length(timeVec);
+nTimes = length(timeVec);
 
-    %% 1. Linear regression
-    key_window_idx2 = find(timeVec < 0 & timeVec >= -0.05);
-    key_window_idx1 = find(timeVec > 0 & timeVec <= 0.05);
+%% 1. Linear regression
+key_window_idx2 = find(timeVec < 0 & timeVec >= -0.05);
+key_window_idx1 = find(timeVec > 0 & timeVec <= 0.05);
 
-%     ipsiV1_key = max(ipsi_V1_MUA(:, key_window_idx2)')'-min(ipsi_V1_MUA(:, key_window_idx1)')' ;
-%     contraV1_key = max(contra_V1_MUA(:, key_window_idx2)')' - min(contra_V1_MUA(:, key_window_idx1)')';
-%     ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')'-min(ipsi_HPC_MUA(:, key_window_idx1)')' ;
-%     contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:, key_window_idx1)')';
+ipsiV1_key = max(ipsi_V1_MUA(:, key_window_idx2)')'-min(ipsi_V1_MUA(:, key_window_idx1)')' ;
+contraV1_key = max(contra_V1_MUA(:, key_window_idx2)')' - min(contra_V1_MUA(:, key_window_idx1)')';
+ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')'-min(ipsi_HPC_MUA(:, key_window_idx1)')' ;
+contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:, key_window_idx1)')';
 
-    ipsiV1_key = mean(ipsi_V1_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_V1_MUA(:, key_window_idx1)',"omitnan")' ;
-    contraV1_key = mean(contra_V1_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_V1_MUA(:, key_window_idx1)',"omitnan")';
-    ipsiHPC_key = mean(ipsi_HPC_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_HPC_MUA(:, key_window_idx1)',"omitnan")' ;
-    contraHPC_key = mean(contra_HPC_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_HPC_MUA(:, key_window_idx1)',"omitnan")';
-    %     combinedV1_key = mean((ipsi_V1_MUA_norm(:, key_window_idx)+contra_V1_MUA_norm(:, key_window_idx)),2,'omitnan');
+% ipsiV1_key = mean(ipsi_V1_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_V1_MUA(:, key_window_idx1)',"omitnan")' ;
+% contraV1_key = mean(contra_V1_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_V1_MUA(:, key_window_idx1)',"omitnan")';
+% ipsiHPC_key = mean(ipsi_HPC_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_HPC_MUA(:, key_window_idx1)',"omitnan")' ;
+% contraHPC_key = mean(contra_HPC_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_HPC_MUA(:, key_window_idx1)',"omitnan")';
+%     combinedV1_key = mean((ipsi_V1_MUA_norm(:, key_window_idx)+contra_V1_MUA_norm(:, key_window_idx)),2,'omitnan');
 
-    %%%% HPC ripples
-    key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.05);
+%%%% HPC ripples
+key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.05);
 %     key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.1);
 
-    ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
-    contraRipples_key =sum(contra_ripples(:,key_window_idx2),2)>0 ;
+ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
+contraRipples_key =sum(contra_ripples(:,key_window_idx2),2)>0 ;
 
-    ipsiV1_cat = ipsiV1_key(:);
-    contraV1_cat = contraV1_key(:);
-    ipsiHPC_cat = ipsiHPC_key(:);
-    contraHPC_cat = contraHPC_key(:);
-    ipsiRipples_cat = ipsiRipples_key(:);
-    contraRipples_cat = contraRipples_key(:);
-    %     combinedV1_cat = combinedV1_key(:);
+ipsiV1_cat = ipsiV1_key(:);
+contraV1_cat = contraV1_key(:);
+ipsiHPC_cat = ipsiHPC_key(:);
+contraHPC_cat = contraHPC_key(:);
+ipsiRipples_cat = ipsiRipples_key(:);
+contraRipples_cat = contraRipples_key(:);
+%     combinedV1_cat = combinedV1_key(:);
 
-    validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
-    ipsiV1_cat = ipsiV1_cat(validIdx);
-    contraV1_cat = contraV1_cat(validIdx);
-    ipsiHPC_cat = ipsiHPC_cat(validIdx);
-    contraHPC_cat = contraHPC_cat(validIdx);
-    ipsiRipples_cat = ipsiRipples_cat(validIdx);
-    contraRipples_cat = contraRipples_cat(validIdx);
-    UP_DOWN_index = UP_DOWN_index(validIdx);
+validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
+ipsiV1_cat = ipsiV1_cat(validIdx);
+contraV1_cat = contraV1_cat(validIdx);
+ipsiHPC_cat = ipsiHPC_cat(validIdx);
+contraHPC_cat = contraHPC_cat(validIdx);
+ipsiRipples_cat = ipsiRipples_cat(validIdx);
+contraRipples_cat = contraRipples_cat(validIdx);
+UP_DOWN_index = UP_DOWN_index(validIdx);
 
-    %     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_first_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
-    %     contra_ripple_power(contraRipples_cat) = ripples_info.contra_first_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
-    %     ipsi_ripple_lag(ipsiRipples_cat) = abs(ripples_info.ipsi_first_ripples_lag_UP(UP_DOWN_index(ipsiRipples_cat))');
-    %     contra_ripple_lag(contraRipples_cat) = abs(ripples_info.contra_first_ripples_lag_UP(UP_DOWN_index(contraRipples_cat))');
+%     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_first_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
+%     contra_ripple_power(contraRipples_cat) = ripples_info.contra_first_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
+%     ipsi_ripple_lag(ipsiRipples_cat) = abs(ripples_info.ipsi_first_ripples_lag_UP(UP_DOWN_index(ipsiRipples_cat))');
+%     contra_ripple_lag(contraRipples_cat) = abs(ripples_info.contra_first_ripples_lag_UP(UP_DOWN_index(contraRipples_cat))');
 
 
-    ipsi_ripple_power = nan(length(UP_DOWN_index),1);
-    contra_ripple_power = nan(length(UP_DOWN_index),1);
-    % ripple_lag = nan(length(DOWN_UP_index),1);
-    ipsi_ripple_lag = nan(length(UP_DOWN_index),1);
-    contra_ripple_lag = nan(length(UP_DOWN_index),1);
-    ipsi_time_from_last_ripple = nan(length(UP_DOWN_index),1);
-    contra_time_from_last_ripple = nan(length(UP_DOWN_index),1);
+ipsi_ripple_power = nan(length(UP_DOWN_index),1);
+contra_ripple_power = nan(length(UP_DOWN_index),1);
+ipsi_ripple_duration = nan(length(UP_DOWN_index),1);
+contra_ripple_duration = nan(length(UP_DOWN_index),1);
+% ripple_lag = nan(length(DOWN_UP_index),1);
+ipsi_ripple_lag = nan(length(UP_DOWN_index),1);
+contra_ripple_lag = nan(length(UP_DOWN_index),1);
+ipsi_time_from_last_ripple = nan(length(UP_DOWN_index),1);
+contra_time_from_last_ripple = nan(length(UP_DOWN_index),1);
+ipsi_Delta_peaks_zscore_UD = nan(length(UP_DOWN_index),1);
+contra_Delta_peaks_zscore_UD = nan(length(UP_DOWN_index),1);
 
-    ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_last_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
-    contra_ripple_power(contraRipples_cat) = ripples_info.contra_last_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
-    ipsi_ripple_lag(ipsiRipples_cat) = abs(ripples_info.ipsi_last_ripples_lag_UP(UP_DOWN_index(ipsiRipples_cat))');
-    contra_ripple_lag(contraRipples_cat) = abs(ripples_info.contra_last_ripples_lag_UP(UP_DOWN_index(contraRipples_cat))');
-    ipsi_time_from_last_ripple(ipsiRipples_cat) = abs(ripples_info.ipsi_time_from_last_ripples_UP(UP_DOWN_index(ipsiRipples_cat))');
-    contra_time_from_last_ripple(contraRipples_cat) = abs(ripples_info.contra_time_from_last_ripples_UP(UP_DOWN_index(contraRipples_cat))');
 
-    ripples_index = find(ipsiRipples_cat==1 | contraRipples_cat==1);
-    
-    
-% [b, logl, H, stats] = coxphfit(UP_DOWN_lag(index), ipsi_time_from_last_ripple(index), 'Strata', subject_id(index));
+ipsi_ripple_power(ipsiRipples_cat) = UP_DOWN_info.ipsi_last_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
+contra_ripple_power(contraRipples_cat) = UP_DOWN_info.contra_last_ripples_power_UP(UP_DOWN_index(contraRipples_cat))';
+ipsi_ripple_duration(ipsiRipples_cat) = UP_DOWN_info.ipsi_last_ripples_duration_UP(UP_DOWN_index(ipsiRipples_cat))';
+contra_ripple_duration(contraRipples_cat) = UP_DOWN_info.contra_last_ripples_duration_UP(UP_DOWN_index(contraRipples_cat))';
+ipsi_ripple_lag(ipsiRipples_cat) = abs(UP_DOWN_info.ipsi_last_ripples_lag_diff_UP(UP_DOWN_index(ipsiRipples_cat))');
+contra_ripple_lag(contraRipples_cat) = abs(UP_DOWN_info.contra_last_ripples_lag_diff_UP(UP_DOWN_index(contraRipples_cat))');
+ipsi_time_from_last_ripple(ipsiRipples_cat) = abs(UP_DOWN_info.ipsi_time_from_last_ripples_UP(UP_DOWN_index(ipsiRipples_cat))');
+contra_time_from_last_ripple(contraRipples_cat) = abs(UP_DOWN_info.contra_time_from_last_ripples_UP(UP_DOWN_index(contraRipples_cat))');
 
-%     clear output
+
+ipsi_Delta_peaks_zscore_UD = (UP_DOWN_info.SWpeakmag_UD(UP_DOWN_index)');
+contra_Delta_peaks_zscore_UD = (UP_DOWN_info.contra_Delta_peaks_zscore_UD(UP_DOWN_index)');
+DOWN_duration = UP_DOWN_info.next_DOWN_duration(UP_DOWN_index);
+ipsi_spindles = double(sum(UP_DOWN_info.ipsi_spindles_DOWN(UP_DOWN_index,:),2,'omitnan')>0);
+contra_spindles = double(sum(UP_DOWN_info.contra_spindles_DOWN(UP_DOWN_index,:),2,'omitnan')>0);
+
+
+ripples_index = find(ipsiRipples_cat==1 | contraRipples_cat==1);
+
+if isempty(output)
+    % [b, logl, H, stats] = coxphfit(UP_DOWN_lag(index), ipsi_time_from_last_ripple(index), 'Strata', subject_id(index));
+
+    clear output
     %%%%%%%% All other models
     parfor iBoot = 1:nBoot
         tic
         s = RandStream('philox4x32_10', 'Seed', iBoot);
         index = randsample(s, ripples_index, size(ripples_index,1), true);
-
-        tbl = table(normalize(ipsi_time_from_last_ripple(index)),normalize(contra_time_from_last_ripple(index)),normalize(ipsi_ripple_lag(index)), normalize(contra_ripple_lag(index)), ...
+        % index = randsample(s, size(UP_DOWN_index,2), size(UP_DOWN_index,2), true);
+        tbl = table(normalize(ipsi_ripple_duration(index)),normalize(contra_ripple_duration(index)),normalize(ipsi_ripple_lag(index)), normalize(contra_ripple_lag(index)), ...
             normalize(ipsi_ripple_power(index)), normalize(contra_ripple_power(index)), ...
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             zscore(ipsiHPC_cat(index)), zscore(contraHPC_cat(index)), ...
             zscore(ipsiV1_cat(index)), zscore(contraV1_cat(index)), ...
+            normalize(ipsi_Delta_peaks_zscore_UD(index))',  normalize(contra_Delta_peaks_zscore_UD(index))', ...
+            normalize(DOWN_duration(index)),ipsi_spindles(index),contra_spindles(index), ...
             zscore(UP_DOWN_lag(index)), categorical(subject_id(index)), ...
             'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
-            'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC', ...
-            'ipsiV1','contraV1','UP_DOWN_lag','subjectID'});
+            'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC','ipsiV1','contraV1','ipsiDelta','contraDelta', ...
+            'downDuration','ipsiSpindle','contraSpindle', ...
+            'UP_DOWN_lag','subjectID'});
+
 
         % Model list
         modelList = {
@@ -135,15 +154,35 @@ if isempty(output)
             'ipsiV1 ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)';
             'ipsiV1 ~ ipsiHPC + (1|subjectID)';
             'ipsiV1 ~ contraHPC + (1|subjectID)';
+            'ipsiV1 ~ ipsiLag + (1|subjectID)';
+            'ipsiV1 ~ ipsiDuration + (1|subjectID)';
+
 
             'UP_DOWN_lag ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)';
             'UP_DOWN_lag ~ ipsiHPC + (1|subjectID)';
             'UP_DOWN_lag ~ contraHPC + (1|subjectID)';
 
-            'UP_DOWN_lag ~ ipsiPower + contraPower + (1|subjectID)'
+            'UP_DOWN_lag ~ ipsiPower + contraPower + ipsiPower*contraPower + (1|subjectID)';
+            'UP_DOWN_lag ~ ipsiPower + (1|subjectID)';
+            'UP_DOWN_lag ~ contraPower + (1|subjectID)';
+            'UP_DOWN_lag ~ ipsiLag + (1|subjectID)';
+            'UP_DOWN_lag ~ ipsiDuration + (1|subjectID)';
 
-%             'ipsiDuration ~ ipsiPower + contraPower + ipsiPower*contraPower + (1|subjectID)'
-%             'ipsiDuration ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)'
+
+            'ipsiDelta ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)';
+            'ipsiDelta ~ ipsiHPC + (1|subjectID)';
+            'ipsiDelta ~ contraHPC + (1|subjectID)';
+
+            'ipsiDelta ~ ipsiPower + contraPower + ipsiPower*contraPower + (1|subjectID)';
+            'ipsiDelta ~ ipsiPower + (1|subjectID)';
+            'ipsiDelta ~ contraPower + (1|subjectID)';
+
+            'ipsiDelta ~ ipsiLag + (1|subjectID)';
+            'ipsiDelta ~ ipsiDuration + (1|subjectID)';
+
+
+            %             'ipsiDuration ~ ipsiPower + contraPower + ipsiPower*contraPower + (1|subjectID)'
+            %             'ipsiDuration ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)'
             };
 
         nModels = numel(modelList);
@@ -186,17 +225,20 @@ if isempty(output)
     parfor iBoot = 1:nBoot
         tic
         s = RandStream('philox4x32_10', 'Seed', iBoot);
-        index = randsample(s, size(UP_DOWN_lag,1), size(UP_DOWN_lag,1), true);
-%         index = intersect(index,ripples_index)
-        tbl = table(normalize(ipsi_ripple_lag(index)), normalize(contra_ripple_lag(index)), ...
+        index = randsample(s, size(UP_DOWN_index,2), size(UP_DOWN_index,2), true);
+        %         index = intersect(index,ripples_index)
+        tbl = table(normalize(ipsi_ripple_duration(index)),normalize(contra_ripple_duration(index)),normalize(ipsi_ripple_lag(index)), normalize(contra_ripple_lag(index)), ...
             normalize(ipsi_ripple_power(index)), normalize(contra_ripple_power(index)), ...
             ipsiRipples_cat(index), contraRipples_cat(index), ...
             zscore(ipsiHPC_cat(index)), zscore(contraHPC_cat(index)), ...
             zscore(ipsiV1_cat(index)), zscore(contraV1_cat(index)), ...
+            normalize(ipsi_Delta_peaks_zscore_UD(index))',  normalize(contra_Delta_peaks_zscore_UD(index))', ...
+            normalize(DOWN_duration(index)),ipsi_spindles(index),contra_spindles(index), ...
             zscore(UP_DOWN_lag(index)), categorical(subject_id(index)), ...
-            'VariableNames', {'ipsiLag','contraLag','ipsiPower','contraPower', ...
-            'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC', ...
-            'ipsiV1','contraV1','UP_DOWN_lag','subjectID'});
+            'VariableNames', {'ipsiDuration','contraDuration','ipsiLag','contraLag','ipsiPower','contraPower', ...
+            'ipsiOccurance','contraOccurance','ipsiHPC','contraHPC','ipsiV1','contraV1','ipsiDelta','contraDelta', ...
+            'downDuration','ipsiSpindle','contraSpindle', ...
+            'UP_DOWN_lag','subjectID'});
 
         % Define model list (only one for now)
         modelList = {
@@ -208,7 +250,10 @@ if isempty(output)
             'UP_DOWN_lag ~ ipsiOccurance  + (1|subjectID)';
             'UP_DOWN_lag ~ contraOccurance  + (1|subjectID)';
             'UP_DOWN_lag ~ ipsiOccurance+ contraOccurance  + (1|subjectID)';
-            'UP_DOWN_lag ~ ipsiHPC + contraHPC + ipsiHPC*contraHPC + (1|subjectID)'
+
+            'ipsiDelta ~ ipsiOccurance + (1|subjectID)';
+            'ipsiDelta ~ contraOccurance + (1|subjectID)';
+            'ipsiDelta ~ ipsiOccurance + contraOccurance + ipsiOccurance*contraOccurance + (1|subjectID)';
             };
 
         nModels = numel(modelList);
@@ -245,7 +290,7 @@ if isempty(output)
         toc
     end
 
-    
+
 
     nBoot = numel(output2); % number of bootstraps
 
@@ -414,83 +459,86 @@ if plot_option == 1
 
 
 
+
 % 
-% % 
-% % colour_lines = []
-% % colour_lines{1} = [
-% %     0.6289, 0.8477, 0.6055;
-% %     0.5617, 0.8172, 0.5672;
-% %     0.4945, 0.7867, 0.5289;
-% %     0.4273, 0.7562, 0.4906;
-% %     0.3602, 0.7257, 0.4523;
-% %     0.3056, 0.6654, 0.4066;
-% %     0.2510, 0.6051, 0.3609;
-% %     0.1965, 0.5448, 0.3152;
-% %     0.1419, 0.4844, 0.2695;
-% %     0.0874, 0.4241, 0.2238;
-% % ];
-% % 
-% % colour_lines{2} = [
-% %     0.7344, 0.7383, 0.8594;
-% %     0.6914, 0.6969, 0.8359;
-% %     0.6484, 0.6555, 0.8125;
-% %     0.6055, 0.6141, 0.7891;
-% %     0.5625, 0.5727, 0.7656;
-% %     0.5156, 0.5098, 0.7344;
-% %     0.4688, 0.4470, 0.7031;
-% %     0.4219, 0.3841, 0.6719;
-% %     0.3750, 0.3213, 0.6406;
-% %     0.3281, 0.2584, 0.6094
-% % ];
-% colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-% colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+% colour_lines = []
+% colour_lines{1} = [
+%     0.6289, 0.8477, 0.6055;
+%     0.5617, 0.8172, 0.5672;
+%     0.4945, 0.7867, 0.5289;
+%     0.4273, 0.7562, 0.4906;
+%     0.3602, 0.7257, 0.4523;
+%     0.3056, 0.6654, 0.4066;
+%     0.2510, 0.6051, 0.3609;
+%     0.1965, 0.5448, 0.3152;
+%     0.1419, 0.4844, 0.2695;
+%     0.0874, 0.4241, 0.2238;
+% ];
 % 
-% % ipsiRipples_cat+contraRipples_cat > 0
-% 
-% figure
-% nexttile
-% amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 1),[0:20:100]);
-% 
-% % amp_threshold = [0:1:5];
-% % amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 0),[0:20:100]);
-% % amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
-% 
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(ipsi_V1_MUA(ipsiRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
-% title('ipsi HPC Ripples')
-% 
+% colour_lines{2} = [
+%     0.7344, 0.7383, 0.8594;
+%     0.6914, 0.6969, 0.8359;
+%     0.6484, 0.6555, 0.8125;
+%     0.6055, 0.6141, 0.7891;
+%     0.5625, 0.5727, 0.7656;
+%     0.5156, 0.5098, 0.7344;
+%     0.4688, 0.4470, 0.7031;
+%     0.4219, 0.3841, 0.6719;
+%     0.3750, 0.3213, 0.6406;
+%     0.3281, 0.2584, 0.6094
+% ];
+colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+% ipsiRipples_cat+contraRipples_cat > 0
+
+figure
+nexttile
+amp_threshold = prctile(ipsi_Delta_peaks_zscore_UD,[0:20:100]);
+
+% amp_threshold = [0:1:5];
+% amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 0),[0:20:100]);
+% amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
+
+for ngroup = 1:length(amp_threshold)-1
+    hold on
+    %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    plot(timeVec,nanmean(ipsi_V1_MUA(ipsiRipples_cat == 1&ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+
+    % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
+
+end
+title('ipsi V1 MUA')
+
+nexttile
+for ngroup = 1:length(amp_threshold)-1
+    hold on
+    plot(timeVec,nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 1&ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+
+    mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1),:));
+
+end
+title('ipsi HPC MUA')
+
+amp_threshold = prctile(ipsi_Delta_peaks_zscore_UD,[0:1:100]);
+
+nexttile
+for ngroup = 1:length(amp_threshold)-1
+    hold on
+
+    %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    % plot(timeVec_prob,nanmean(ipsi_ripples(ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
+    % imagesc(movmedian(ipsi_ripples(ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1),:),15,1,'omitnan'));
+    % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
+    ripple_count(ngroup)=sum(ipsiRipples_key(ipsi_Delta_peaks_zscore_UD>amp_threshold(ngroup)&ipsi_Delta_peaks_zscore_UD<amp_threshold(ngroup+1)));
+end
+legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
+title('ipsi HPC Ripples')
+
 % 
 % nexttile
 % amp_threshold = prctile(ipsiV1_cat(contraRipples_cat == 1),[0:20:100]);

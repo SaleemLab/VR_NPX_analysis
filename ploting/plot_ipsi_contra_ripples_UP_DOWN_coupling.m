@@ -25,35 +25,6 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability
 probability_psth_whole = probability;
 
 
-% %%%%%%%
-% % Phase-amplitude coupling
-% nBins = 18;
-% edges = linspace(-pi, pi, nBins+1);
-% 
-% for nchannel = 1:size(SO_phase_ripples,1)
-%     for mchannel = 1:size(ripple_peak_amplitude,1)
-%         % Phase-amplitude coupling
-%         SO_phase_ripples(:,nevent) = ripple_peak_amplitude(tidx,:);
-%         spindle_phase_ripples(:,nevent) = ripple_peak_amplitude(tidx,:);
-% 
-% 
-%         [~,~,binIdx] = histcounts(SO_phase_ripples(nchannel,:), edges);
-%         % Mean amplitude in each phase bin
-%         ampByPhase = accumarray(binIdx(binIdx>0), rippleAmp(binIdx>0), [nBins 1], @mean);
-%         p = ampByPhase / sum(ampByPhase); % normalize to get probability distribution
-%     end
-% end
-% if exist(fullfile(analysis_folder,'V1-HPC sleep interaction')) ==0
-%     mkdir(fullfile(analysis_folder,'V1-HPC sleep interaction'))
-% end
-% save_all_figures(fullfile(analysis_folder,'V1-HPC sleep interaction'),[])
-
-
-% SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
-
-
 % Find reference channel/shank
 cortex_ref_shank = [];
 HPC_ref_shank = [];

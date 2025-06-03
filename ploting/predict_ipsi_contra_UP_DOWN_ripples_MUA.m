@@ -5,7 +5,9 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
 
 
-if exist('D:\corticohippocampal_replay')>0
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
@@ -181,6 +183,60 @@ for n = 1:4
     merged_event_info.(sprintf('%s_lags_all',event_types{n})) = all_lags;
 end
 
+%%%% lag based on LFP
+probability = probability_psth_whole;
+nprobe = 1;
+event_averaging_scale = 10;
+% extract plv, amp corr and lag (latency)
+for nprobe=1:2
+    mprobe = abs(nprobe-3);
+
+  
+    % ripples
+    ipsi_lag_ripples{nprobe} = [];
+    contra_lag_ripples{nprobe} = [];
+
+    ipsi_corr_ripples{nprobe} = [];
+    contra_corr_ripples{nprobe} = [];
+
+    ipsi_plv_ripples{nprobe} = [];
+    contra_plv_ripples{nprobe} = [];
+
+    for nsession = 1:max(ripples_all(1).session_count)
+
+  
+        %%%%% Ripples
+        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
+        ipsi_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        ipsi_shank(ipsi_shank==HPC_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == mprobe);
+
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
+
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
+
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+
+
+        ipsi_lag_ripples{nprobe} = [ipsi_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_lag_ripples{nprobe} = [contra_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_plv_ripples{nprobe} = [ipsi_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_plv_ripples{nprobe} = [contra_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_corr_ripples{nprobe} = [ipsi_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+    end
+end
+
 
 %% Ripples and spindles features and UP DOWN features during UP/DOWN
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
@@ -263,7 +319,7 @@ ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id;
 ripples_original_index = [find(ripples_all(1).SWS_index); find(ripples_all(2).SWS_index)];
 
 
-ripples_lag_diff = merged_event_info.ripples_lag_diff;
+ripples_lag_diff = [contra_lag_ripples{1} contra_lag_ripples{2}]';
 ripples_all_overlap_idx = merged_event_info.ripples_overlap_idx_all{end};
 ripples_non_overlap_idx = merged_event_info.ripples_non_overlap_idx{end};
 ripples_all_lags =merged_event_info.ripples_lags_all{end};
@@ -271,112 +327,8 @@ ripples_all_lags =merged_event_info.ripples_lags_all{end};
 % merged_event_info.ripples_index_sorted
 
 %%%%%%%%%%%%%% Grab ripple info during UP
-L_first_ripples_power = [];
-L_first_ripples_lag = [];
-L_first_ripples_lag_diff = [];
-
-L_last_ripples_power = [];
-L_last_ripples_lag = [];
-L_last_ripples_lag_diff = [];
-
-L_last_ripples_lag_diff = [];
-R_last_ripples_lag_diff = [];
-
-L_time_from_last_ripples=[];
-R_time_from_last_ripples=[];
-
-L_ripple_counts = [];
-R_ripple_counts = [];
-
-R_first_ripples_power = [];
-R_first_ripples_lag = [];
-R_first_ripples_lags_diff = [];
-
-R_last_ripples_power = [];
-R_last_ripples_lag = [];
-R_last_ripples_lags_diff = [];
-
-for nprobe = 1:2
-
-
-    unique(event_info(nprobe).L_ripple_normalised_UP_duration(:,2));
-    for nevent = 1:length(probability_psth_whole(nprobe).UP_all_index)
-        ripples_index = find(probability_psth_whole(nprobe).UP_all_index(nevent)==event_info(nprobe).L_ripple_normalised_UP_duration(:,2));
-        if isempty(ripples_index) ==0
-            L_time_from_last_ripples{nprobe}(nevent) =slow_waves_all(nprobe).UP_ints(probability_psth_whole(nprobe).UP_all_index(nevent),2) - ripples_all(1).peaktimes(event_info(nprobe).L_ripple_normalised_UP_duration(ripples_index(end),1));
-
-            L_ripple_counts{nprobe}(nevent) = length(ripples_index);
-
-            L_first_ripples_power{nprobe}(nevent) = ripples_all(1).peak_zscore(event_info(nprobe).L_ripple_normalised_UP_duration(ripples_index(end),1));
-            L_last_ripples_power{nprobe}(nevent) = ripples_all(1).peak_zscore(event_info(nprobe).L_ripple_normalised_UP_duration(ripples_index(end),1));
-
-
-            ripples_index = event_info(nprobe).L_ripple_normalised_UP_duration(ripples_index,1);
-            L_first_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == 1));
-            L_last_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == 1));
-
-            [C,ia,ib] = intersect(ripples_all_overlap_idx,find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == 1));
-            if ~isempty(C)
-                L_first_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
-            end
-
-            [C,ia,ib] = intersect(ripples_all_overlap_idx,find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == 1));
-            if ~isempty(C)
-                L_last_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
-            end
-        else
-            L_time_from_last_ripples{nprobe}(nevent) = 0;
-            L_ripple_counts{nprobe}(nevent) = 0;
-            L_first_ripples_lag_diff{nprobe}(nevent) = nan;
-            L_first_ripples_lag{nprobe}(nevent) = nan;
-            L_first_ripples_power{nprobe}(nevent) = nan;
-
-            L_last_ripples_lag_diff{nprobe}(nevent) = nan;
-            L_last_ripples_lag{nprobe}(nevent) = nan;
-            L_last_ripples_power{nprobe}(nevent) = nan;
-        end
-    end
-
-    for nevent = 1:length(probability_psth_whole(nprobe).UP_all_index)
-        ripples_index = find(probability_psth_whole(nprobe).UP_all_index(nevent)==event_info(nprobe).R_ripple_normalised_UP_duration(:,2));
-        if isempty(ripples_index) ==0
-            R_time_from_last_ripples{nprobe}(nevent) = slow_waves_all(nprobe).UP_ints(probability_psth_whole(nprobe).UP_all_index(nevent),2) - ripples_all(2).peaktimes(event_info(nprobe).R_ripple_normalised_UP_duration(ripples_index(1),1)) ;
-
-            R_ripple_counts{nprobe}(nevent) = length(ripples_index);
-
-            R_first_ripples_power{nprobe}(nevent) = ripples_all(2).peak_zscore(event_info(nprobe).R_ripple_normalised_UP_duration(ripples_index(1),1));
-            R_last_ripples_power{nprobe}(nevent) = ripples_all(2).peak_zscore(event_info(nprobe).R_ripple_normalised_UP_duration(ripples_index(end),1));
-
-            ripples_index = event_info(nprobe).R_ripple_normalised_UP_duration(ripples_index,1);
-            R_first_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == 2));
-            R_last_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == 2));
-
-            [C,ia,ib] = intersect(ripples_all_overlap_idx,find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == 2));
-            if ~isempty(C)
-                R_first_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
-            end
-
-            [C,ia,ib] = intersect(ripples_all_overlap_idx,find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == 2));
-            if ~isempty(C)
-                R_last_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
-            end
-        else
-            R_time_from_last_ripples{nprobe}(nevent)= 0;
-            R_ripple_counts{nprobe}(nevent) = 0;
-            R_first_ripples_lag_diff{nprobe}(nevent) = nan;
-            R_first_ripples_lag{nprobe}(nevent) = nan;
-            R_first_ripples_power{nprobe}(nevent) = nan;
-
-            R_last_ripples_lag_diff{nprobe}(nevent) = nan;
-            R_last_ripples_lag{nprobe}(nevent) = nan;
-            R_last_ripples_power{nprobe}(nevent) = nan;
-        end
-    end
-end
-
-%%%%% Grab ripples info
-UP_DOWN_info=[];
-ripples_info=[];
+hemi_labels = {'L', 'R'};
+region_labels = {'L_V1','R_V1','L_HPC','R_HPC'};
 varnames = {
     'time_from_last_ripples'
     'first_ripples_power'
@@ -386,20 +338,204 @@ varnames = {
     'first_ripples_lag_diff'
     'last_ripples_lag_diff'
     'ripple_counts'
-    };
+    'ripples_duration'
+    'first_ripples_duration'
+    'last_ripples_duration'
+};
 
-% Loop through each variable name
+% Init data_struct
+for h = 1:2
+    hemi = hemi_labels{h};
+    for v = 1:length(varnames)
+        data_struct.(hemi).(varnames{v}) = cell(1,2);
+    end
+    for r = 1:length(region_labels)
+        reg = region_labels{r};
+        data_struct.(hemi).(['ripple_' reg '_MUA_cumulative']) = cell(1,2);
+        data_struct.(hemi).(['normalised_ripple_' reg '_MUA_cumulative']) = cell(1,2);
+        data_struct.(hemi).(['first_ripple_' reg '_MUA_peak']) = cell(1,2);
+        data_struct.(hemi).(['last_ripple_' reg '_MUA_peak']) = cell(1,2);
+    end
+end
+
+for r = 1:length(region_labels)
+    reg = region_labels{r};
+    data_struct.([reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['normalised_' reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['first_half_' reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['second_half_' reg '_MUA_cumulative']) = cell(1,2);
+end
+
+
+varnames = fieldnames(data_struct.L);
+
+% Main loop
+for nprobe = 1:2
+    UP_indices = probability_psth_whole(nprobe).UP_all_index;
+    for h = 1:2
+        hemi = hemi_labels{h};
+        ripple_idx = h;
+        ripple_data = ripples_all(ripple_idx);
+        ripple_norm_dur = event_info(nprobe).([hemi '_ripple_normalised_UP_duration']);
+
+        for nevent = 1:length(UP_indices)
+            up_idx = UP_indices(nevent);
+
+            % --- Always store UP-wide MUA metrics ---
+            up_duration = event_info(nprobe).UP_duration(nevent);
+            for r = 1:length(region_labels)
+                reg = region_labels{r};
+                trace = event_info(nprobe).([reg '_MUA_UP']){nevent};
+                npoints = length(trace);
+                half_idx = floor(npoints/2);
+                cum_sum = sum(trace);
+                data_struct.([reg '_MUA_cumulative']){nprobe}(nevent) = cum_sum;
+                data_struct.(['normalised_' reg '_MUA_cumulative']){nprobe}(nevent) = cum_sum / up_duration;
+                data_struct.(['first_half_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(trace(1:half_idx)) / (up_duration/2);
+                data_struct.(['second_half_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(trace(half_idx+1:end)) / (up_duration/2);
+            end
+
+            % --- Ripple-based metrics (only if ripples exist in this UP) ---
+            event_index = find(up_idx == ripple_norm_dur(:,2));
+            if ~isempty(event_index)
+                ripples_index = ripple_norm_dur(event_index, 1);
+                onset = ripple_data.onset(ripples_index);
+                offset = ripple_data.offset(ripples_index);
+                duration = offset - onset;
+
+                data_struct.(hemi).first_ripples_duration{nprobe}(nevent) = offset(1) - onset(1);
+                data_struct.(hemi).last_ripples_duration{nprobe}(nevent) = offset(end) - onset(end);
+                data_struct.(hemi).ripples_duration{nprobe}(nevent) = sum(duration);
+                data_struct.(hemi).ripple_counts{nprobe}(nevent) = length(ripples_index);
+                data_struct.(hemi).time_from_last_ripples{nprobe}(nevent) = ...
+                    slow_waves_all(nprobe).UP_ints(up_idx,2) - ripple_data.peaktimes(ripples_index(end));
+
+                data_struct.(hemi).first_ripples_power{nprobe}(nevent) = ripple_data.peak_zscore(ripples_index(1));
+                data_struct.(hemi).last_ripples_power{nprobe}(nevent) = ripple_data.peak_zscore(ripples_index(end));
+
+                idx1 = find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == ripple_idx);
+                idx2 = find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == ripple_idx);
+                data_struct.(hemi).first_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(idx1);
+                data_struct.(hemi).last_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(idx2);
+
+                [C, ia] = intersect(ripples_all_overlap_idx, idx1);
+                if ~isempty(C)
+                    data_struct.(hemi).first_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
+                end
+                [C, ia] = intersect(ripples_all_overlap_idx, idx2);
+                if ~isempty(C)
+                    data_struct.(hemi).last_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
+                end
+
+                % MUA from event_info
+                for r = 1:length(region_labels)
+                    reg = region_labels{r};  % 'L_V1', 'R_HPC', etc.
+                    region_hemi = strcmp(reg(1), 'R') + 1;  % 1 = L, 2 = R
+                    region_type = reg(3:end);              % 'V1' or 'HPC'
+
+                    data_struct.(hemi).(['ripple_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(event_info(nprobe).([hemi '_ripple_' region_type '_MUA_cumulative_UP'])(event_index, region_hemi));
+                    data_struct.(hemi).(['normalised_ripple_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(event_info(nprobe).([hemi '_ripple_' region_type '_MUA_cumulative_UP'])(event_index, region_hemi)) ./ sum(duration);
+
+                    data_struct.(hemi).(['first_ripple_' reg '_MUA_peak']){nprobe}(nevent) = event_info(nprobe).([hemi '_ripple_' region_type '_MUA_peak_UP'])(event_index(1), region_hemi);
+                    data_struct.(hemi).(['last_ripple_' reg '_MUA_peak']){nprobe}(nevent) = event_info(nprobe).([hemi '_ripple_' region_type '_MUA_peak_UP'])(event_index(end), region_hemi);
+                end
+            else
+                data_struct.(hemi).time_from_last_ripples{nprobe}(nevent) = 0;
+                for v = 1:length(varnames)
+                    data_struct.(hemi).(varnames{v}){nprobe}(nevent) = nan;
+                end
+                for r = 1:length(region_labels)
+                    reg = region_labels{r};
+                    for suffix = {'ripple_', 'normalised_ripple_', 'first_ripple_', 'last_ripple_'}
+                        fname = [suffix{1} reg '_MUA_cumulative'];
+                        if contains(fname, 'peak')
+                            fname = strrep(fname, '_cumulative', '_peak');
+                        end
+                        data_struct.(hemi).(fname){nprobe}(nevent) = nan;
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Build UP_DOWN_info
+UP_DOWN_info = struct();
+varnames = fieldnames(data_struct.L);
 for i = 1:length(varnames)
     varname = varnames{i};
-
-    % Build L and R variable names dynamically
-    L_var = eval(['L_' varname]);
-    R_var = eval(['R_' varname]);
-    
-    % Create ipsi and contra versions
-    UP_DOWN_info.(['ipsi_' varname '_UP']) = [L_var{1}, R_var{2}];
-    UP_DOWN_info.(['contra_' varname '_UP']) = [R_var{1}, L_var{2}];
+    if ~contains(varname,'MUA')
+        L_var = data_struct.L.(varname);
+        R_var = data_struct.R.(varname);
+        UP_DOWN_info.(['ipsi_' varname '_UP']) = [L_var{1}, R_var{2}];
+        UP_DOWN_info.(['contra_' varname '_UP']) = [R_var{1}, L_var{2}];
+    end
 end
+
+% ripple_<hemi>_<region>_MUA_<type>
+ripple_regions = {'V1', 'HPC'};
+ripple_mua_suffixes = {
+    'ripple_%s_MUA_cumulative'
+    'normalised_ripple_%s_MUA_cumulative'
+    'first_ripple_%s_MUA_peak'
+    'last_ripple_%s_MUA_peak'
+    'first_ripple_%s_MUA_cumulative'
+    'last_ripple_%s_MUA_cumulative'
+};
+
+
+for i = 1:length(ripple_regions)
+    region = ripple_regions{i};
+    for j = 1:length(ripple_mua_suffixes)
+        suffix_template = ripple_mua_suffixes{j};
+
+        % Build field names for L and R
+        L_field = sprintf(suffix_template, ['L_' region]);
+        R_field = sprintf(suffix_template, ['R_' region]);
+
+        % Build output variable name
+        var_base = strrep(suffix_template, '%s', region);
+        ipsi_name = ['ipsi_' var_base '_UP'];
+        contra_name = ['contra_' var_base '_UP'];
+
+        % Assign
+        UP_DOWN_info.(ipsi_name) = [data_struct.L.(L_field){1}, data_struct.R.(R_field){2}];
+        UP_DOWN_info.(contra_name) = [data_struct.R.(R_field){1}, data_struct.L.(L_field){2}];
+    end
+end
+
+
+% <prefix>_<hemi>_<region>_MUA_<type>
+global_regions = {'V1', 'HPC'};
+global_prefixes = {'', 'normalised_', 'first_half_', 'second_half_'};
+
+for i = 1:length(global_regions)
+    region = global_regions{i};
+    for j = 1:length(global_prefixes)
+        prefix = global_prefixes{j};
+
+        L_field = [prefix 'L_' region '_MUA_cumulative'];
+        R_field = [prefix 'R_' region '_MUA_cumulative'];
+
+        base_name = [prefix region '_MUA_cumulative_UP'];
+        UP_DOWN_info.(['ipsi_' base_name]) = [data_struct.(L_field){1}, data_struct.(R_field){2}];
+        UP_DOWN_info.(['contra_' base_name]) = [data_struct.(R_field){1}, data_struct.(L_field){2}];
+    end
+end
+
+
+% Cleanup
+clear hemi_labels region_labels varnames data_struct
+clear h r v f i C ia ripple_idx
+clear hemi reg suffix fname field
+clear nprobe nevent up_idx up_duration npoints half_idx cum_sum trace
+clear UP_indices ripple_norm_dur ripple_data
+clear event_index ripples_index onset offset duration vals MUA_cum MUA_peak
+clear idx1 idx2
+clear ripple_regions ripple_types global_regions global_prefixes
+clear region prefix base_name L_field R_field ipsi_name contra_name
+
+
 
 %%%%% Grab DOWN/UP info
 varnames = {
@@ -481,16 +617,22 @@ contra_probability = [probability_psth_whole(1).R_ripples_UP; probability_psth_w
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
 output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','DUsynchrony_Ripples_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
 
-output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'subject_id',subject_id(index));
+
+
+output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id);
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
 
 
-
-
-output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
-
+%%%%%%%%%%%%%%%%%%% Plotting
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
+% output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
+%     ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1);
+% 
+% 
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
+% output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1);
 
 %%
 
@@ -549,22 +691,22 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_ou
 %%%%%%%%%%%% Plot
 index = 1:size(ipsi_V1_MUA,1);
 % lag_index = (abs(lags)<=2);
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
 output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'plot_option',1,'output',output,'subject_id',subject_id(index));
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+    'output',output,'plot_option',1,'subject_id',subject_id(index));
 
 
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
 output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'plot_option',1,'output',output,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
 
 
 
+%% Predicts DOWN probability and V1 MUA based on Ripple power
 
-%%
+
 
 %%
 %%%%%%%%%%%%%% Survival
