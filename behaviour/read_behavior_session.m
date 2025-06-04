@@ -1,0 +1,199 @@
+function [behaviour] = read_behavior_session(session_path)
+%read_behavior_session Extracts behavior data from a single session folder.
+% Version 10: Handles multiple 'wheel_position' formats, including both
+% 'Position=-1086.546}' and 'Position=(200'.
+
+    % --- HELPER FUNCTIONS ---
+    function num_matrix = parse_raw_table(data_table)
+        if isempty(data_table) || isempty(data_table.Properties.VariableNames); num_matrix = []; return; end
+        [num_rows, num_cols] = size(data_table); num_matrix = NaN(num_rows, num_cols);
+        try
+            for i = 1:num_cols
+                column_data = data_table{:, i};
+                if isnumeric(column_data); num_matrix(:, i) = column_data;
+                elseif iscell(column_data); cleaned_strings = strrep(strrep(strtrim(column_data),'(',''),')',''); num_matrix(:, i) = str2double(cleaned_strings); end
+            end
+        catch ME; fprintf('  -> ERROR during raw table parsing: %s\n', ME.message); num_matrix = []; end
+    end
+
+    function pos_val = extract_position_value(str)
+        % Robustly extracts position values from multiple known formats.
+        if contains(str, '=(')
+            % Handles new format: e.g., 'Position=(200'
+            token = regexp(str, '=\(([\-?0-9\.]+)', 'tokens', 'once');
+        else
+            % Handles older formats: e.g., '{Position=-1086.546'}' or 'Position=-1086.546}'
+            token = regexp(str, '.*?=([\-?0-9\.]+)', 'tokens', 'once');
+        end
+        if ~isempty(token); pos_val = str2double(token{1}); else; pos_val = NaN; end
+    end
+
+    function [track_ID_all, lap_ID_all, start_time_all] = infer_trials_from_position(position, time)
+        TRACK1_START = -1140; TRACK2_START = -140; POS_TOLERANCE = 5; JUMP_THRESHOLD = 100; DEBOUNCE_SAMPLES = 10;
+        track_ID_all = []; lap_ID_all = []; start_time_all = [];
+        pos_diff = diff(position);
+        is_in_zone1 = (position > (TRACK1_START - POS_TOLERANCE)) & (position < (TRACK1_START + POS_TOLERANCE));
+        is_in_zone2 = (position > (TRACK2_START - POS_TOLERANCE)) & (position < (TRACK2_START + POS_TOLERANCE));
+        is_a_jump = [false; pos_diff < -JUMP_THRESHOLD];
+        potential_starts = find((is_in_zone1 | is_in_zone2) & is_a_jump);
+        if isempty(potential_starts); return; end
+        start_indices = []; last_start_index = -inf;
+        for i = 1:length(potential_starts)
+            idx = potential_starts(i);
+            if (idx - last_start_index) > DEBOUNCE_SAMPLES; start_indices(end+1) = idx; last_start_index = idx; end
+        end
+        if isempty(start_indices); return; end
+        start_positions = position(start_indices);
+        track_ID_all = ones(size(start_positions));
+        track_ID_all(abs(start_positions - TRACK2_START) < POS_TOLERANCE*2) = 2;
+        start_time_all = time(start_indices);
+        lap_ID_all = zeros(length(track_ID_all), 1);
+        lap_ID_all(track_ID_all == 1) = 1:sum(track_ID_all == 1);
+        lap_ID_all(track_ID_all == 2) = 1:sum(track_ID_all == 2);
+    end
+    % --- END HELPER FUNCTIONS ---
+
+    behaviour = struct('wheel_frame',[],'wheel_time',[],'wheel_computer_time',[],'wheel_raw_input',[],'wheel_lick_L',[],'wheel_lick_R',[],'wheel_quad_state',[],'wheel_eye_frame_count',[],'wheel_reference_timestamp',[],'wheel_arduino_read_time',[],'wheel_position',[],'reward_type',[],'reward_delivery_time',[],'track1_count',[],'track2_count',[],'track1_performance',[],'track2_performance',[],'reward_position',[],'lick_state',[],'lick_time',[],'lick_track_ID',[],'lick_track1_count',[],'lick_track2_count',[],'lick_position',[],'track_ID_all',[],'lap_ID_all',[],'start_time_all',[],'manual_reward_LR',[],'manual_reward_track_ID',[],'manual_reward_time',[],'manual_reward_lap',[],'manual_reward_position',[]);
+
+    %% 1. Find all relevant CSV files
+    all_files.wheel = dir(fullfile(session_path, '*WheelLog*.csv'));
+    all_files.lick = dir(fullfile(session_path, '*Lick_Performance*.csv'));
+    all_files.trial = dir(fullfile(session_path, '*Trial_info*.csv'));
+    all_files.manual_reward = dir(fullfile(session_path, '*Manual_reward*.csv'));
+    temp_reward_files = dir(fullfile(session_path, '*Reward*.csv'));
+    all_files.reward = temp_reward_files(~startsWith({temp_reward_files.name}, 'Manual_'));
+
+    if isempty(all_files.wheel) || isempty(all_files.reward) || isempty(all_files.lick)
+        fprintf('  -> WARNING: Missing essential Wheel, Reward, or Lick files.\n'); return;
+    end
+    
+    file_id_pattern = '\d{4}-\d{2}-\d{2}T\d{2}_\d{2}_\d{2}';
+    parse_dt = @(f) datetime(regexp(f.name, file_id_pattern, 'match', 'once'), 'InputFormat', 'yyyy-MM-dd''T''HH_mm_ss', 'TimeZone', 'local');
+    try
+        all_files.reward_dt = arrayfun(parse_dt, all_files.reward);
+        all_files.lick_dt   = arrayfun(parse_dt, all_files.lick);
+        all_files.wheel_dt  = arrayfun(parse_dt, all_files.wheel);
+        if ~isempty(all_files.trial); all_files.trial_dt  = arrayfun(parse_dt, all_files.trial); end
+        if ~isempty(all_files.manual_reward); all_files.manual_reward_dt = arrayfun(parse_dt, all_files.manual_reward); end
+    catch; fprintf('  -> WARNING: Failed to parse datetime from a filename.\n'); return; end
+
+    max_wheel_size = -1;
+    best_file_set = struct('reward', [], 'lick', [], 'wheel', [], 'trial', [], 'manual_reward', []);
+    time_tolerance = minutes(2);
+
+    for i = 1:length(all_files.wheel)
+        current_wheel_file = all_files.wheel(i); current_wheel_dt = all_files.wheel_dt(i);
+        [~, lick_idx] = min(abs(current_wheel_dt - all_files.lick_dt));
+        [~, reward_idx] = min(abs(current_wheel_dt - all_files.reward_dt));
+        
+        is_valid = ~isempty(lick_idx) && abs(current_wheel_dt - all_files.lick_dt(lick_idx)) < time_tolerance && ...
+                   ~isempty(reward_idx) && abs(current_wheel_dt - all_files.reward_dt(reward_idx)) < time_tolerance;
+
+        if is_valid && current_wheel_file.bytes > max_wheel_size
+            max_wheel_size = current_wheel_file.bytes;
+            best_file_set.wheel = current_wheel_file;
+            best_file_set.lick = all_files.lick(lick_idx);
+            best_file_set.reward = all_files.reward(reward_idx);
+            
+            if ~isempty(all_files.trial); [~, trial_idx] = min(abs(current_wheel_dt - all_files.trial_dt)); if abs(current_wheel_dt - all_files.trial_dt(trial_idx)) < time_tolerance; best_file_set.trial = all_files.trial(trial_idx); else; best_file_set.trial = []; end; else; best_file_set.trial = []; end
+            if ~isempty(all_files.manual_reward); [~, mr_idx] = min(abs(current_wheel_dt - all_files.manual_reward_dt)); if abs(current_wheel_dt - all_files.manual_reward_dt(mr_idx)) < time_tolerance; best_file_set.manual_reward = all_files.manual_reward(mr_idx); else; best_file_set.manual_reward = []; end; else; best_file_set.manual_reward = []; end
+        end
+    end
+    
+    %% 2. Load data from the chosen file set
+    if isempty(best_file_set.wheel) || isempty(best_file_set.reward); fprintf('  -> WARNING: Could not find a complete, valid data set.\n'); return; end
+    
+    fprintf('  -> Using data set anchored by WheelLog file: %s\n', best_file_set.wheel.name);
+    try
+        if ~isempty(best_file_set.trial); opts = detectImportOptions(fullfile(best_file_set.trial.folder, best_file_set.trial.name), 'ReadVariableNames', false, 'Delimiter', ','); trial_info = readtable(fullfile(best_file_set.trial.folder, best_file_set.trial.name), opts); else; trial_info = []; end
+        if ~isempty(best_file_set.manual_reward); opts = detectImportOptions(fullfile(best_file_set.manual_reward.folder, best_file_set.manual_reward.name), 'ReadVariableNames', false, 'Delimiter', ','); manual_reward = readtable(fullfile(best_file_set.manual_reward.folder, best_file_set.manual_reward.name), opts); else; manual_reward = []; end
+        opts = detectImportOptions(fullfile(best_file_set.wheel.folder, best_file_set.wheel.name), 'ReadVariableNames', false, 'Delimiter', ','); wheel_log = readtable(fullfile(best_file_set.wheel.folder, best_file_set.wheel.name), opts);
+        opts = detectImportOptions(fullfile(best_file_set.lick.folder, best_file_set.lick.name), 'ReadVariableNames', false, 'Delimiter', ','); lick_performance = readtable(fullfile(best_file_set.lick.folder, best_file_set.lick.name), opts);
+        opts = detectImportOptions(fullfile(best_file_set.reward.folder, best_file_set.reward.name), 'ReadVariableNames', false, 'Delimiter', ','); reward = readtable(fullfile(best_file_set.reward.folder, best_file_set.reward.name), opts);
+    catch ME; fprintf('  -> ERROR: Failed to read a CSV file. %s\n', ME.message); return; end
+
+    %% 3. Process Wheel Log Data
+    if ~isempty(wheel_log)
+        extract_keyed_val = @(str) str2double(regexp(str, '.*?=([\-?0-9\.]+)', 'tokens', 'once'));
+        behaviour.wheel_frame = wheel_log.Var1; behaviour.wheel_time = wheel_log.Var2; behaviour.wheel_computer_time = wheel_log.Var3;
+        behaviour.wheel_raw_input = cellfun(extract_keyed_val, wheel_log.Var4); behaviour.wheel_lick_L = cellfun(extract_keyed_val, wheel_log.Var5);
+        behaviour.wheel_lick_R = cellfun(extract_keyed_val, wheel_log.Var6); behaviour.wheel_quad_state = cellfun(extract_keyed_val, wheel_log.Var7);
+        behaviour.wheel_eye_frame_count = cellfun(extract_keyed_val, wheel_log.Var8); behaviour.wheel_reference_timestamp = cellfun(extract_keyed_val, wheel_log.Var9);
+        behaviour.wheel_arduino_read_time = behaviour.wheel_reference_timestamp; 
+        % Use the new robust function for the position column
+        behaviour.wheel_position = cellfun(@extract_position_value, wheel_log.Var10);
+    end
+
+    %% 4. Parse and Process Raw Numeric Data
+    reward_raw = parse_raw_table(reward);
+    lick_raw = parse_raw_table(lick_performance);
+    
+    if ~isempty(reward_raw)
+        behaviour.reward_type = reward_raw(:,1);
+        if ~isempty(behaviour.reward_type) && behaviour.reward_type(1) == 0; reward_raw(1,:) = []; if isempty(reward_raw); return; end; behaviour.reward_type = reward_raw(:,1); end
+        reward_delivery_time_raw = reward_raw(:,2); behaviour.track1_count = reward_raw(:,3); behaviour.track2_count = reward_raw(:,4);
+        behaviour.track1_performance = reward_raw(:,5); behaviour.track2_performance = reward_raw(:,6);
+        if size(reward_raw, 2) >= 7; behaviour.reward_position = reward_raw(:,7); end
+        if best_file_set.lick.datenum > datenum('14-June-2023 13:00:00'); ref_times = behaviour.wheel_reference_timestamp; else; ref_times = behaviour.wheel_eye_frame_count; end
+        event_indices = discretize(reward_delivery_time_raw, ref_times); behaviour.reward_delivery_time = NaN(size(reward_delivery_time_raw));
+        valid_events = ~isnan(event_indices); behaviour.reward_delivery_time(valid_events) = behaviour.wheel_time(event_indices(valid_events));
+    end
+
+    if ~isempty(lick_raw) && ~(size(lick_raw, 1) == 1 && lick_raw(1, 1) == 0)
+        behaviour.lick_state = lick_raw(:,1);
+        if ~isempty(behaviour.lick_state) && behaviour.lick_state(1) == 0; lick_raw(1,:) = []; behaviour.lick_state = lick_raw(:,1); end
+        if ~isempty(lick_raw)
+            lick_time_raw = lick_raw(:,2); behaviour.lick_track_ID = lick_raw(:,3); behaviour.lick_track1_count = lick_raw(:,4);
+            if size(lick_raw, 2) >= 5; behaviour.lick_track2_count = lick_raw(:,5); end; if size(lick_raw, 2) >= 6; behaviour.lick_position = lick_raw(:,6); end
+            if best_file_set.lick.datenum > datenum('14-June-2023 13:00:00'); ref_times_lick = behaviour.wheel_arduino_read_time; else; ref_times_lick = behaviour.wheel_eye_frame_count; end
+            event_indices = discretize(lick_time_raw, ref_times_lick); behaviour.lick_time = NaN(size(lick_time_raw));
+            valid_events = ~isnan(event_indices); behaviour.lick_time(valid_events) = behaviour.wheel_time(event_indices(valid_events));
+        end
+    end
+
+    %% 5. Process Trial Info (from file OR by inference)
+    if ~isempty(trial_info)
+        fprintf('  -> Using Trial_info file to get trial data.\n');
+        trial_raw = parse_raw_table(trial_info);
+        if ~isempty(trial_raw)
+            behaviour.track_ID_all = trial_raw(:,1); valid_trials = behaviour.track_ID_all ~= 0;
+            behaviour.track_ID_all = behaviour.track_ID_all(valid_trials);
+            if size(trial_raw,2) > 1; start_time_raw = trial_raw(valid_trials, 2); else; start_time_raw = []; end
+            behaviour.lap_ID_all = zeros(length(behaviour.track_ID_all),1);
+            behaviour.lap_ID_all(behaviour.track_ID_all == 1) = 1:sum(behaviour.track_ID_all == 1);
+            behaviour.lap_ID_all(behaviour.track_ID_all == 2) = 1:sum(behaviour.track_ID_all == 2);
+            if ~isempty(start_time_raw)
+                if best_file_set.trial.datenum > datenum('10-June-2023 05:00:00'); ref_times_start = behaviour.wheel_arduino_read_time; else; ref_times_start = behaviour.wheel_eye_frame_count; end
+                event_indices = discretize(start_time_raw, ref_times_start);
+                behaviour.start_time_all = NaN(size(start_time_raw));
+                valid_events = ~isnan(event_indices); behaviour.start_time_all(valid_events) = behaviour.wheel_time(event_indices(valid_events));
+            end
+        end
+    else
+        fprintf('  -> Trial_info not found. Inferring trials from wheel position...\n');
+        if isfield(behaviour, 'wheel_position') && ~isempty(behaviour.wheel_position)
+            [inferred_track_ID, inferred_lap_ID, inferred_start_time] = infer_trials_from_position(behaviour.wheel_position, behaviour.wheel_time);
+            if ~isempty(inferred_track_ID)
+                behaviour.track_ID_all = inferred_track_ID; behaviour.lap_ID_all = inferred_lap_ID; behaviour.start_time_all = inferred_start_time;
+                fprintf('  -> Successfully inferred %d trials.\n', length(inferred_track_ID));
+            else; fprintf('  -> No valid trials could be inferred.\n'); end
+        else; fprintf('  -> WARNING: Cannot infer trials, wheel position data is missing.\n'); end
+    end
+    
+    %% 6. Process Manual Reward Data (optional)
+    manual_reward_raw = parse_raw_table(manual_reward);
+    if ~isempty(manual_reward_raw)
+        fprintf('  -> Processing Manual_reward file.\n');
+        behaviour.manual_reward_LR = manual_reward_raw(:,1);
+        behaviour.manual_reward_track_ID = manual_reward_raw(:,2);
+        manual_reward_time_raw = manual_reward_raw(:,3);
+        behaviour.manual_reward_lap = manual_reward_raw(:,4);
+        if size(manual_reward_raw, 2) >= 6; behaviour.manual_reward_position = manual_reward_raw(:,6); end
+        
+        ref_times_manual = behaviour.wheel_arduino_read_time;
+        event_indices = discretize(manual_reward_time_raw, ref_times_manual);
+        behaviour.manual_reward_time = NaN(size(manual_reward_time_raw));
+        valid_events = ~isnan(event_indices);
+        behaviour.manual_reward_time(valid_events) = behaviour.wheel_time(event_indices(valid_events));
+    end
+end

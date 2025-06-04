@@ -107,7 +107,7 @@ if sum(peripherals.Sync>0) <= 0 % no sync pulse detected so align photodiode to 
         photodiode = rmfield(photodiode,{'T','S','P'});
         % no sync pulse
 
-        baseline_corrected_PD_nidq = Nidq.photodiode-movmean(Nidq.photodiode,120);
+        baseline_corrected_PD_nidq = Nidq.photodiode-movmean(Nidq.photodiode,10000);
         initial_centroids = [ prctile(baseline_corrected_PD_nidq,10);prctile(baseline_corrected_PD_nidq,90)];
         PD_nidq_kmean = kmeans(baseline_corrected_PD_nidq',2,'Start', initial_centroids)-1;
         PD_nidq_onset = double([0;diff(PD_nidq_kmean)] > 0);
@@ -117,10 +117,11 @@ if sum(peripherals.Sync>0) <= 0 % no sync pulse detected so align photodiode to 
         PD_bonsai_kmean = kmeans(baseline_corrected_PD_bonsai,2,'Start', initial_centroids)-1;
         PD_bonsai_onset = double([0;diff(PD_bonsai_kmean)] > 0);
         
-        photodiode.sglxTime = align_A_time_to_B_time(PD_bonsai_onset,photodiode.FrameTime,PD_nidq_onset,Nidq.sglxTime);
+        photodiode.sglxTime = align_A_time_to_B_time(PD_bonsai_onset,photodiode.Time./1000,PD_nidq_onset,Nidq.sglxTime);
 %         photodiode.sglxTime = align_A_time_to_B_time(photodiode.Photodiode,photodiode.Time./1000,Nidq.photodiode,Nidq.sglxTime);
-        peripherals.sglxTime = align_A_time_to_B_time(peripherals.Photodiode,peripherals.Time./1000,photodiode.Photodiode,photodiode.sglxTime);
-        
+        peripherals.sglxTime = align_A_time_to_B_time(peripherals.Photodiode,peripherals.FrameTime,photodiode.Photodiode,photodiode.sglxTime);
+        photodiode.sglxTime = linspace(photodiode.sglxTime(1),photodiode.sglxTime(end),length(photodiode.sglxTime));
+        peripherals.sglxTime = linspace(peripherals.sglxTime(1),peripherals.sglxTime(end),length(peripherals.sglxTime));
 
     else
         photodiode = []; photodiode_sync = [];

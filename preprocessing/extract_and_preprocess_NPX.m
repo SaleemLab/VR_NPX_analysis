@@ -1,5 +1,7 @@
-function extract_and_preprocess_NPX(session_info,Stimulus_type)
-
+function extract_and_preprocess_NPX(session_info,Stimulus_type,overwrite)
+if nargin < 3
+    overwrite = false;
+end
 % Function to import and align bonsai data and spike data
 % This is a batch processing version of extract_and_preprocess_NPX function
 
@@ -44,7 +46,7 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
     end
     % DIR = [];%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    if isempty(DIR)
+    if isempty(DIR) || overwrite
         disp('process and extract behavioural data')
         if contains(Stimulus_type,'OpenField')|contains(Stimulus_type,'Sleep')
             if contains(Stimulus_type,'Sleep')
