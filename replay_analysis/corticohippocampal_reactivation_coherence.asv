@@ -1,0 +1,1194 @@
+%% Loading extracted SO ripples spindles info for plotting and analysis 
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
+
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+
+load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
+load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
+
+sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+%% Extract key information for DOWN UP, ripples and spindles
+ 
+%%%%%%% Find reference channel/shank
+cortex_ref_shank = [];
+HPC_ref_shank = [];
+
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+        shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
+
+    end
+end
+
+
+%%%% Grouping of DOWN-UP and UP-DOWN and ripples based on detetcion lags
+
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+all_lags = [];
+all_overlap_idx=[];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
+
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+event_types = {'UP','DOWN','ripples','spindles'};
+for n = 1:4
+ 
+    L_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 1);
+    R_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 2);
+    L_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(L_idx,:);
+    R_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(R_idx,:);
+
+    windows_threshold = [0.05,0.1,0.2];
+
+    for ngroup = 1:4
+
+        % Track indices into merged_event_info.UP_ints
+        ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+        contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+        unique_lags{ngroup} = [];
+        all_lags{ngroup} = [];
+
+        L_overlap_idx{ngroup} = [];
+        R_overlap_idx{ngroup} =[];
+        L_lags{ngroup} = [];
+        R_lags{ngroup} =[];
+        lags = [];
+
+        all_overlap_idx{ngroup} = [];
+        overlap_idx{ngroup} = [];
+        non_overlap_idx{ngroup} = [];
+
+        for iL = 1:size(L_ints,1)
+            % Get current L interval
+
+            L_start = L_ints(iL,1);
+            if ngroup == 4
+                L_end   = L_ints(iL,2);
+            else
+                L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+            end
+            % Check overlap with all R intervals
+            if ngroup == 4
+                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+            else
+                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+            end
+
+            if any(is_overlap)
+                overlapping_R = find(is_overlap);
+
+                for j = 1:length(overlapping_R)
+                    iR = overlapping_R(j);
+
+                    % Store overlapping pair indices
+                    L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                    R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                    L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                    R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+                end
+            end
+        end
+
+        % Unique overlap winners
+        lags = [L_lags{ngroup} R_lags{ngroup}];
+        all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+        [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+        % unique_overlap_idx{ngroup} = lags(index);
+        all_lags{ngroup} = lags;
+
+        % Non-overlapping L and R
+        nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+        nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+        non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+    end
+
+
+    merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})) = all_overlap_idx;
+    % (sprintf('%s_lags_all',event_types{n}))
+    merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})) = non_overlap_idx;
+    merged_event_info. (sprintf('%s_overlap_idx',event_types{n})) = overlap_idx;
+    merged_event_info.(sprintf('%s_lags_all',event_types{n})) = all_lags;
+end
+
+%%%% lag based on LFP
+probability = probability_psth_whole;
+nprobe = 1;
+event_averaging_scale = 10;
+% extract plv, amp corr and lag (latency)
+for nprobe=1:2
+    mprobe = abs(nprobe-3);
+
+  
+    % ripples
+    ipsi_lag_ripples{nprobe} = [];
+    contra_lag_ripples{nprobe} = [];
+
+    ipsi_corr_ripples{nprobe} = [];
+    contra_corr_ripples{nprobe} = [];
+
+    ipsi_plv_ripples{nprobe} = [];
+    contra_plv_ripples{nprobe} = [];
+
+    for nsession = 1:max(ripples_all(1).session_count)
+
+  
+        %%%%% Ripples
+        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
+        ipsi_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        ipsi_shank(ipsi_shank==HPC_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == mprobe);
+
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
+
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
+
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+
+
+        ipsi_lag_ripples{nprobe} = [ipsi_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_lag_ripples{nprobe} = [contra_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_plv_ripples{nprobe} = [ipsi_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_plv_ripples{nprobe} = [contra_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_corr_ripples{nprobe} = [ipsi_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+    end
+end
+
+
+%%% Ripples and spindles features and UP DOWN features during UP/DOWN
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'));
+spindle_probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
+probability_psth_whole_baseline = probability;
+
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+% probability_normalised_whole = probability;
+
+
+%%%%%%% Get DU and UP delta power
+%%%%%%% DOWN and UP info
+ipsi_Delta_peaks_zscore_UD = [];
+ipsi_Delta_peaks_zscore_DU = [];
+SWpeakmag_UD = [];
+SWpeakmag_DU = [];
+
+contra_Delta_peaks_zscore_UD = [];
+contra_Delta_peaks_zscore_DU = [];
+
+index = [];
+
+for nprobe = 1:2
+    for nsession = 1:max(slow_waves_all(1).UP_session_count)
+
+        % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
+
+        ipsi_Delta_peaks_zscore_UD = [ipsi_Delta_peaks_zscore_UD;...
+            slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        SWpeakmag_UD = [SWpeakmag_UD;...
+            slow_waves_all(nprobe).SWpeakmag(C)];
+
+        % Find DOWN before UP
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        ipsi_Delta_peaks_zscore_DU = [ipsi_Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,nprobe),ia)'];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
+
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+
+        SWpeakmag_DU = [SWpeakmag_DU;...
+            slow_waves_all(nprobe).SWpeakmag(temp(ia))];
+
+
+
+        % slow_waves_all(1).SWpeakmag(slow_waves_all(1).UP_session_count == nsession)
+        % Find DOWN
+        [C,ia,ib]  =intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index);
+
+        contra_Delta_peaks_zscore_UD = [contra_Delta_peaks_zscore_UD;...
+            slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,abs(nprobe-3)),ia)'];
+
+        % Find DOWN before UP
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        contra_Delta_peaks_zscore_DU = [contra_Delta_peaks_zscore_DU; slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(cortex_ref_shank(nsession,abs(nprobe-3)),ia)'];
+        index = [index; intersect(find(slow_waves_all(nprobe).DOWN_session_count == nsession),probability(nprobe).DOWN_all_index)];
+
+        [C,ia,ib]  = intersect(slow_waves_all(nprobe).DOWN_ints(slow_waves_all(nprobe).DOWN_session_count == nsession,2), slow_waves_all(nprobe).UP_ints(intersect(find(slow_waves_all(nprobe).UP_session_count == nsession),probability(nprobe).UP_all_index),1));
+
+        temp = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+    end
+end
+
+% Calculate ripples probability according to unilateral vs bilateral events
+%%%%% Ripple info
+ripples_times =  merged_event_info.ripples_ints;
+ripples_group_info = merged_event_info.ripples_group_id;
+ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id;
+ripples_original_index = [find(ripples_all(1).SWS_index); find(ripples_all(2).SWS_index)];
+
+
+ripples_lag_diff = [contra_lag_ripples{1} contra_lag_ripples{2}]';
+ripples_all_overlap_idx = merged_event_info.ripples_overlap_idx_all{end};
+ripples_non_overlap_idx = merged_event_info.ripples_non_overlap_idx{end};
+ripples_all_lags =merged_event_info.ripples_lags_all{end};
+
+% merged_event_info.ripples_index_sorted
+
+%%%%%%%%%%%%%% Grab ripple info during UP
+hemi_labels = {'L', 'R'};
+region_labels = {'L_V1','R_V1','L_HPC','R_HPC'};
+varnames = {
+    'time_from_last_ripples'
+    'first_ripples_power'
+    'last_ripples_power'
+    'first_ripples_lag'
+    'last_ripples_lag'
+    'first_ripples_lag_diff'
+    'last_ripples_lag_diff'
+    'ripple_counts'
+    'ripples_duration'
+    'first_ripples_duration'
+    'last_ripples_duration'
+};
+
+% Init data_struct
+for h = 1:2
+    hemi = hemi_labels{h};
+    for v = 1:length(varnames)
+        data_struct.(hemi).(varnames{v}) = cell(1,2);
+    end
+    for r = 1:length(region_labels)
+        reg = region_labels{r};
+        data_struct.(hemi).(['ripple_' reg '_MUA_cumulative']) = cell(1,2);
+        data_struct.(hemi).(['normalised_ripple_' reg '_MUA_cumulative']) = cell(1,2);
+        data_struct.(hemi).(['first_ripple_' reg '_MUA_peak']) = cell(1,2);
+        data_struct.(hemi).(['last_ripple_' reg '_MUA_peak']) = cell(1,2);
+    end
+end
+
+for r = 1:length(region_labels)
+    reg = region_labels{r};
+    data_struct.([reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['normalised_' reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['first_half_' reg '_MUA_cumulative']) = cell(1,2);
+    data_struct.(['second_half_' reg '_MUA_cumulative']) = cell(1,2);
+end
+
+
+varnames = fieldnames(data_struct.L);
+
+% Main loop
+for nprobe = 1:2
+    UP_indices = probability_psth_whole(nprobe).UP_all_index;
+    for h = 1:2
+        hemi = hemi_labels{h};
+        ripple_idx = h;
+        ripple_data = ripples_all(ripple_idx);
+        ripple_norm_dur = event_info(nprobe).([hemi '_ripple_normalised_UP_duration']);
+
+        for nevent = 1:length(UP_indices)
+            up_idx = UP_indices(nevent);
+
+            % --- Always store UP-wide MUA metrics ---
+            up_duration = event_info(nprobe).UP_duration(nevent);
+            for r = 1:length(region_labels)
+                reg = region_labels{r};
+                trace = event_info(nprobe).([reg '_MUA_UP']){nevent};
+                npoints = length(trace);
+                half_idx = floor(npoints/2);
+                cum_sum = sum(trace);
+                data_struct.([reg '_MUA_cumulative']){nprobe}(nevent) = cum_sum;
+                data_struct.(['normalised_' reg '_MUA_cumulative']){nprobe}(nevent) = cum_sum / up_duration;
+                data_struct.(['first_half_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(trace(1:half_idx)) / (up_duration/2);
+                data_struct.(['second_half_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(trace(half_idx+1:end)) / (up_duration/2);
+            end
+
+            % --- Ripple-based metrics (only if ripples exist in this UP) ---
+            event_index = find(up_idx == ripple_norm_dur(:,2));
+            if ~isempty(event_index)
+                ripples_index = ripple_norm_dur(event_index, 1);
+                onset = ripple_data.onset(ripples_index);
+                offset = ripple_data.offset(ripples_index);
+                duration = offset - onset;
+
+                data_struct.(hemi).first_ripples_duration{nprobe}(nevent) = offset(1) - onset(1);
+                data_struct.(hemi).last_ripples_duration{nprobe}(nevent) = offset(end) - onset(end);
+                data_struct.(hemi).ripples_duration{nprobe}(nevent) = sum(duration);
+                data_struct.(hemi).ripple_counts{nprobe}(nevent) = length(ripples_index);
+                data_struct.(hemi).time_from_last_ripples{nprobe}(nevent) = ...
+                    slow_waves_all(nprobe).UP_ints(up_idx,2) - ripple_data.peaktimes(ripples_index(end));
+
+                data_struct.(hemi).first_ripples_power{nprobe}(nevent) = ripple_data.peak_zscore(ripples_index(1));
+                data_struct.(hemi).last_ripples_power{nprobe}(nevent) = ripple_data.peak_zscore(ripples_index(end));
+
+                idx1 = find(ripples_original_index == ripples_index(1) & ripples_hemisphere_id == ripple_idx);
+                idx2 = find(ripples_original_index == ripples_index(end) & ripples_hemisphere_id == ripple_idx);
+                data_struct.(hemi).first_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(idx1);
+                data_struct.(hemi).last_ripples_lag_diff{nprobe}(nevent) = ripples_lag_diff(idx2);
+
+                [C, ia] = intersect(ripples_all_overlap_idx, idx1);
+                if ~isempty(C)
+                    data_struct.(hemi).first_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
+                end
+                [C, ia] = intersect(ripples_all_overlap_idx, idx2);
+                if ~isempty(C)
+                    data_struct.(hemi).last_ripples_lag{nprobe}(nevent) = ripples_all_lags(ia);
+                end
+
+                % MUA from event_info
+                for r = 1:length(region_labels)
+                    reg = region_labels{r};  % 'L_V1', 'R_HPC', etc.
+                    region_hemi = strcmp(reg(1), 'R') + 1;  % 1 = L, 2 = R
+                    region_type = reg(3:end);              % 'V1' or 'HPC'
+
+                    data_struct.(hemi).(['ripple_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(event_info(nprobe).([hemi '_ripple_' region_type '_MUA_cumulative_UP'])(event_index, region_hemi));
+                    data_struct.(hemi).(['normalised_ripple_' reg '_MUA_cumulative']){nprobe}(nevent) = sum(event_info(nprobe).([hemi '_ripple_' region_type '_MUA_cumulative_UP'])(event_index, region_hemi)) ./ sum(duration);
+
+                    data_struct.(hemi).(['first_ripple_' reg '_MUA_peak']){nprobe}(nevent) = event_info(nprobe).([hemi '_ripple_' region_type '_MUA_peak_UP'])(event_index(1), region_hemi);
+                    data_struct.(hemi).(['last_ripple_' reg '_MUA_peak']){nprobe}(nevent) = event_info(nprobe).([hemi '_ripple_' region_type '_MUA_peak_UP'])(event_index(end), region_hemi);
+                end
+            else
+                data_struct.(hemi).time_from_last_ripples{nprobe}(nevent) = 0;
+                for v = 1:length(varnames)
+                    data_struct.(hemi).(varnames{v}){nprobe}(nevent) = nan;
+                end
+                for r = 1:length(region_labels)
+                    reg = region_labels{r};
+                    for suffix = {'ripple_', 'normalised_ripple_', 'first_ripple_', 'last_ripple_'}
+                        fname = [suffix{1} reg '_MUA_cumulative'];
+                        if contains(fname, 'peak')
+                            fname = strrep(fname, '_cumulative', '_peak');
+                        end
+                        data_struct.(hemi).(fname){nprobe}(nevent) = nan;
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Build UP_DOWN_info
+UP_DOWN_info = struct();
+varnames = fieldnames(data_struct.L);
+for i = 1:length(varnames)
+    varname = varnames{i};
+    if ~contains(varname,'MUA')
+        L_var = data_struct.L.(varname);
+        R_var = data_struct.R.(varname);
+        UP_DOWN_info.(['ipsi_' varname '_UP']) = [L_var{1}, R_var{2}];
+        UP_DOWN_info.(['contra_' varname '_UP']) = [R_var{1}, L_var{2}];
+    end
+end
+
+% ripple_<hemi>_<region>_MUA_<type>
+ripple_regions = {'V1', 'HPC'};
+ripple_mua_suffixes = {
+    'ripple_%s_MUA_cumulative'
+    'normalised_ripple_%s_MUA_cumulative'
+    'first_ripple_%s_MUA_peak'
+    'last_ripple_%s_MUA_peak'
+    'first_ripple_%s_MUA_cumulative'
+    'last_ripple_%s_MUA_cumulative'
+};
+
+
+for i = 1:length(ripple_regions)
+    region = ripple_regions{i};
+    for j = 1:length(ripple_mua_suffixes)
+        suffix_template = ripple_mua_suffixes{j};
+
+        % Build field names for L and R
+        L_field = sprintf(suffix_template, ['L_' region]);
+        R_field = sprintf(suffix_template, ['R_' region]);
+
+        % Build output variable name
+        var_base = strrep(suffix_template, '%s', region);
+        ipsi_name = ['ipsi_' var_base '_UP'];
+        contra_name = ['contra_' var_base '_UP'];
+
+        % Assign
+        UP_DOWN_info.(ipsi_name) = [data_struct.L.(L_field){1}, data_struct.R.(R_field){2}];
+        UP_DOWN_info.(contra_name) = [data_struct.R.(R_field){1}, data_struct.L.(L_field){2}];
+    end
+end
+
+
+% <prefix>_<hemi>_<region>_MUA_<type>
+global_regions = {'V1', 'HPC'};
+global_prefixes = {'', 'normalised_', 'first_half_', 'second_half_'};
+
+for i = 1:length(global_regions)
+    region = global_regions{i};
+    for j = 1:length(global_prefixes)
+        prefix = global_prefixes{j};
+
+        L_field = [prefix 'L_' region '_MUA_cumulative'];
+        R_field = [prefix 'R_' region '_MUA_cumulative'];
+
+        base_name = [prefix region '_MUA_cumulative_UP'];
+        UP_DOWN_info.(['ipsi_' base_name]) = [data_struct.(L_field){1}, data_struct.(R_field){2}];
+        UP_DOWN_info.(['contra_' base_name]) = [data_struct.(R_field){1}, data_struct.(L_field){2}];
+    end
+end
+
+
+% Cleanup
+clear hemi_labels region_labels varnames data_struct
+clear h r v f i C ia ripple_idx
+clear hemi reg suffix fname field
+clear nprobe nevent up_idx up_duration npoints half_idx cum_sum trace
+clear UP_indices ripple_norm_dur ripple_data
+clear event_index ripples_index onset offset duration vals MUA_cum MUA_peak
+clear idx1 idx2
+clear ripple_regions ripple_types global_regions global_prefixes
+clear region prefix base_name L_field R_field ipsi_name contra_name
+
+
+
+%%%%% Grab DOWN/UP info
+varnames = {
+    'ipsi_Delta_peaks_zscore_UD'
+    'ipsi_Delta_peaks_zscore_DU'
+    'SWpeakmag_UD'
+    'SWpeakmag_DU'
+    'contra_Delta_peaks_zscore_UD'
+    'contra_Delta_peaks_zscore_DU'
+    };
+
+% Loop through each variable name
+for i = 1:length(varnames)
+    varname = varnames{i};
+    temp =eval(varname);
+    UP_DOWN_info.(varname) = temp;
+end
+UP_DOWN_info.UP_duration = [event_info(1).UP_duration;event_info(2).UP_duration];
+UP_DOWN_info.previous_DOWN_duration = [event_info(1).previous_DOWN_duration;event_info(2).previous_DOWN_duration];
+UP_DOWN_info.next_DOWN_duration = [event_info(1).next_DOWN_duration;event_info(2).next_DOWN_duration];
+
+
+%%%%%%%%%% Spindles
+%%%%%%%%%%%%%%%%%%%%
+UP_DOWN_info.ipsi_spindles_UP = [spindle_probability_psth_whole(1).L_spindles_UP; spindle_probability_psth_whole(2).R_spindles_UP];
+UP_DOWN_info.contra_spindles_UP = [spindle_probability_psth_whole(1).R_spindles_UP; spindle_probability_psth_whole(2).L_spindles_UP];
+UP_DOWN_info.ipsi_spindles_DOWN = [spindle_probability_psth_whole(1).L_spindles_DOWN; spindle_probability_psth_whole(2).R_spindles_DOWN];
+UP_DOWN_info.contra_spindles_DOWN = [spindle_probability_psth_whole(1).R_spindles_DOWN; spindle_probability_psth_whole(2).L_spindles_DOWN];
+
+
+
+
+
+%%%%%%%%%%%%%%%%%% Ripple info
+ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+
+%%%%%%%%%%%%%%% Reactivation bias correlation
+timebin = 0.02;
+time_windows = [-0.5 0.5];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+
+z_log_oods = [bayesian_reactivation_all(1).z_log_odds(:,ripples_all(1).SWS_index==1) bayesian_reactivation_all(2).z_log_odds(:,ripples_all(2).SWS_index==1)];
+z_log_oods_V1 = [bayesian_reactivation_V1_all(1).z_log_odds(:,ripples_all(1).SWS_index==1) bayesian_reactivation_V1_all(2).z_log_odds(:,ripples_all(2).SWS_index==1)];
+
+z_bias = [bayesian_reactivation_all(1).z_bias(:,ripples_all(1).SWS_index==1) bayesian_reactivation_all(2).z_bias(:,ripples_all(2).SWS_index==1)];
+z_bias_V1 = [bayesian_reactivation_V1_all(1).z_bias(:,ripples_all(1).SWS_index==1) bayesian_reactivation_V1_all(2).z_bias(:,ripples_all(2).SWS_index==1)];
+
+
+
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+
+singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+
+
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
+figure
+for npower = 1:length(power_thresholds)-1
+    power_index = ripple_info.ripple_power > power_thresholds(npower) & ripple_info.ripple_power < power_thresholds(npower+1);
+    event_index = (singlet_index+power_index)>1;
+
+    mean_bias = mean(z_bias(bins_to_use,event_index),'omitnan');
+    mean_bias_V1 = mean(z_bias_V1(bins_to_use,event_index),'omitnan');
+    nexttile
+    scatter(mean_bias,mean_bias_V1);
+
+    % Example data
+    tbl = table(mean_bias', mean_bias_V1', categorical(subject_id(event_index)),'VariableNames',{'mean_bias','mean_bias_V1','subject_id'});
+    lme = fitlme(tbl, 'mean_bias_V1 ~ mean_bias + (1|subject_id)');
+    lme.Coefficients.pValue
+    lme.Rsquared
+end
+
+
+% event_index = (singlet_index+power_index)>1;
+
+% Ripple power binning
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/2:99.9);
+nBins = length(power_thresholds) - 1;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+bins_to_use_shifted = bin_centers>-0.5 & bin_centers<-0.4;
+nBoot = 1000;
+
+% Storage structure
+ripple_power_bias_difference = struct;
+
+
+
+colour_lines = [158,202,225;33,113,181]/256;% two blue
+% Plot layout
+fig = figure;
+fig.Position = [640 100 1100 650]
+fig.Name = 'Bayesian bias difference in V1 with different ripple powers';
+tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+
+for npower = 1:nBins
+    % Ripple power bin index
+    power_index = ripple_info.ripple_power > power_thresholds(npower) & ...
+        ripple_info.ripple_power <= power_thresholds(npower+1);
+
+    event_index = (singlet_index + power_index) > 1;
+    mean_bias = mean(z_bias(bins_to_use, event_index), 'omitnan');
+    mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+    mean_bias_V1 = mean(z_bias_V1(bins_to_use, event_index), 'omitnan');
+    total_events = length(mean_bias);
+
+    % Thresholds for bias
+    thresholds = prctile(abs(mean_bias),0:10:100);
+    thresholds = thresholds(1:end-1);
+    nThresh = length(thresholds);
+
+    % Bootstrap storage
+    bias_diff_boot = NaN(nBoot, nThresh);
+    prop_events_boot = NaN(nBoot, nThresh);
+    bias_diff_shifted_boot = NaN(nBoot, nThresh);
+    prop_events_shifted_boot = NaN(nBoot, nThresh);
+
+    parfor iBoot = 1:nBoot
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = randi(s, total_events, total_events, 1);
+
+        
+        boot_bias_shifted = mean_bias_shifted(idx);
+        boot_bias = mean_bias(idx);
+        boot_V1 = mean_bias_V1(idx);
+
+        diff_tmp = NaN(1, nThresh);
+        prop_tmp = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias >= th;
+            t2 = boot_bias <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_boot(iBoot, :) = diff_tmp;
+        prop_events_boot(iBoot, :) = prop_tmp;
+
+        diff_tmp_shifted = NaN(1, nThresh);
+        prop_tmp_shifted = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias_shifted >= th;
+            t2 = boot_bias_shifted <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp_shifted(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
+        prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
+    end
+
+    % Compute stats
+    bias_mean = mean(bias_diff_boot, 1, 'omitnan');
+    bias_CI_lo = prctile(bias_diff_boot, 2.5, 1);
+    bias_CI_hi = prctile(bias_diff_boot, 97.5, 1);
+
+    prop_mean = mean(prop_events_boot, 1, 'omitnan');
+    prop_CI_lo = prctile(prop_events_boot, 2.5, 1);
+    prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
+
+    % Store results
+    ripple_power_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_bias_difference(npower).thresholds = thresholds;
+
+
+    % Compute stats for shuffled (shifted) bias
+    bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
+    bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
+    bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
+
+    prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
+    prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
+    prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
+
+    % Store shifted (shuffled) results
+    ripple_power_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    ripple_power_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    ripple_power_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    ripple_power_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+
+    % ---- Plot A: Bias difference vs. threshold ----
+    nexttile((npower-1)*3 + 1);
+    hold on;
+
+    % Real
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    y_shift_lo = bias_shifted_CI_lo;
+    y_shift_hi = bias_shifted_CI_hi;
+    y2s = [y_shift_lo, fliplr(y_shift_hi)];
+    fill(x2, y2s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
+
+    ylim([-0.15 0.2])
+    xlim([0 1.4])
+    yline(0,'--r')
+    xlabel('HPC bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot B: Proportion vs. Bias Difference (X = bias, Y = proportion) ----
+    nexttile((npower-1)*3 + 2);
+    hold on;
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    x_lo = bias_CI_lo(valid_idx);
+    x_hi = bias_CI_hi(valid_idx);
+    x_shade = [x_lo, fliplr(x_hi)];
+    y_shade = [y_vals, fliplr(y_vals)];
+
+    % Real
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    x_lo_s = bias_shifted_CI_lo(valid_idx);
+    x_hi_s = bias_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_lo_s, fliplr(x_hi_s)];
+    y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.15 0.2])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Event Proportion vs. Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot C: V1 Bias Difference vs. Proportion, shaded CI on Y ----
+    nexttile((npower-1)*3 + 3);
+    hold on;
+
+    % Real
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    y_lo = prop_CI_lo(valid_idx);
+    y_hi = prop_CI_hi(valid_idx);
+    x_shade = [x_vals, fliplr(x_vals)];
+    y_shade = [y_lo, fliplr(y_hi)];
+
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    y_lo_s = prop_shifted_CI_lo(valid_idx);
+    y_hi_s = prop_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
+    y_shade_s = [y_lo_s, fliplr(y_hi_s)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.15 0.2])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Proportion vs. V1 Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+end
+
+% Plot layout
+fig = figure;
+fig.Position = [640 100 2*1100/3 650/2]
+fig.Name = 'Bayesian bias difference in V1 low vs high ripples';
+% tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+colour_lines = [158,202,225;33,113,181]/256;% two blue
+nexttile
+for npower = [1 2]
+    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
+
+    hold on;
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(thresholds, bias_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    %     grid on;
+end
+yline(0,'--r')
+legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
+
+nexttile
+for npower = [1 2]
+    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_bias_difference(npower).prop_mean;
+
+    hold on;
+    y2 = [prop_mean, fliplr(prop_mean)];
+    x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(bias_mean, prop_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('Proportion of events detected');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    %     grid on;
+end
+xline(0,'--r')
+legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
+
+
+% Save results
+save('ripple_power_bias_difference.mat', 'ripple_power_bias_difference');
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%%%%%%%%%%%%% KDE reactivation bias
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+
+timebin = 0.01;
+time_windows = [-0.5 0.5];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+
+
+z_bias = KDE_reactivation_content.HPC_z_ripples';
+z_bias_V1 = KDE_reactivation_content.V1_z_ripples';
+
+
+
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+
+singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+
+
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
+figure
+for npower = 1:length(power_thresholds)-1
+    power_index = ripple_info.ripple_power > power_thresholds(npower) & ripple_info.ripple_power < power_thresholds(npower+1);
+    event_index = (singlet_index+power_index)>1;
+
+    mean_bias = mean(z_bias(bins_to_use,event_index),'omitnan');
+    mean_bias_V1 = mean(z_bias_V1(bins_to_use,event_index),'omitnan');
+    nexttile
+    scatter(mean_bias,mean_bias_V1);
+
+    % Example data
+    tbl = table(mean_bias', mean_bias_V1', categorical(subject_id(event_index)),'VariableNames',{'mean_bias','mean_bias_V1','subject_id'});
+    lme = fitlme(tbl, 'mean_bias_V1 ~ mean_bias + (1|subject_id)');
+    lme.Coefficients.pValue
+    lme.Rsquared
+end
+
+
+% event_index = (singlet_index+power_index)>1;
+
+% Ripple power binning
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/2:99.9);
+nBins = length(power_thresholds) - 1;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+bins_to_use_shifted = bin_centers>-0.5 & bin_centers<-0.4;
+nBoot = 1000;
+
+% Storage structure
+ripple_power_bias_difference = struct;
+
+
+
+colour_lines = [158,202,225;33,113,181]/256;% two blue
+% Plot layout
+fig = figure;
+fig.Position = [640 100 1100 650]
+fig.Name = 'Bayesian bias difference in V1 with different ripple powers';
+tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+
+for npower = 1:nBins
+    % Ripple power bin index
+    power_index = ripple_info.ripple_power > power_thresholds(npower) & ...
+        ripple_info.ripple_power <= power_thresholds(npower+1);
+
+    event_index = (singlet_index + power_index) > 1;
+    mean_bias = mean(z_bias(bins_to_use, event_index), 'omitnan');
+    mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+    mean_bias_V1 = mean(z_bias_V1(bins_to_use, event_index), 'omitnan');
+    total_events = length(mean_bias);
+
+    % Thresholds for bias
+    thresholds = prctile(abs(mean_bias),0:10:100);
+    thresholds = thresholds(1:end-1);
+    nThresh = length(thresholds);
+
+    % Bootstrap storage
+    bias_diff_boot = NaN(nBoot, nThresh);
+    prop_events_boot = NaN(nBoot, nThresh);
+    bias_diff_shifted_boot = NaN(nBoot, nThresh);
+    prop_events_shifted_boot = NaN(nBoot, nThresh);
+
+    parfor iBoot = 1:nBoot
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = randi(s, total_events, total_events, 1);
+
+        
+        boot_bias_shifted = mean_bias_shifted(idx);
+        boot_bias = mean_bias(idx);
+        boot_V1 = mean_bias_V1(idx);
+
+        diff_tmp = NaN(1, nThresh);
+        prop_tmp = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias >= th;
+            t2 = boot_bias <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_boot(iBoot, :) = diff_tmp;
+        prop_events_boot(iBoot, :) = prop_tmp;
+
+        diff_tmp_shifted = NaN(1, nThresh);
+        prop_tmp_shifted = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias_shifted >= th;
+            t2 = boot_bias_shifted <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp_shifted(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
+        prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
+    end
+
+    % Compute stats
+    bias_mean = mean(bias_diff_boot, 1, 'omitnan');
+    bias_CI_lo = prctile(bias_diff_boot, 2.5, 1);
+    bias_CI_hi = prctile(bias_diff_boot, 97.5, 1);
+
+    prop_mean = mean(prop_events_boot, 1, 'omitnan');
+    prop_CI_lo = prctile(prop_events_boot, 2.5, 1);
+    prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
+
+    % Store results
+    ripple_power_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_bias_difference(npower).thresholds = thresholds;
+
+
+    % Compute stats for shuffled (shifted) bias
+    bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
+    bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
+    bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
+
+    prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
+    prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
+    prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
+
+    % Store shifted (shuffled) results
+    ripple_power_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    ripple_power_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    ripple_power_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    ripple_power_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+
+    % ---- Plot A: Bias difference vs. threshold ----
+    nexttile((npower-1)*3 + 1);
+    hold on;
+
+    % Real
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    y_shift_lo = bias_shifted_CI_lo;
+    y_shift_hi = bias_shifted_CI_hi;
+    y2s = [y_shift_lo, fliplr(y_shift_hi)];
+    fill(x2, y2s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
+
+    ylim([-0.15 0.2])
+    xlim([0 1.4])
+    yline(0,'--r')
+    xlabel('HPC bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot B: Proportion vs. Bias Difference (X = bias, Y = proportion) ----
+    nexttile((npower-1)*3 + 2);
+    hold on;
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    x_lo = bias_CI_lo(valid_idx);
+    x_hi = bias_CI_hi(valid_idx);
+    x_shade = [x_lo, fliplr(x_hi)];
+    y_shade = [y_vals, fliplr(y_vals)];
+
+    % Real
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    x_lo_s = bias_shifted_CI_lo(valid_idx);
+    x_hi_s = bias_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_lo_s, fliplr(x_hi_s)];
+    y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.15 0.2])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Event Proportion vs. Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot C: V1 Bias Difference vs. Proportion, shaded CI on Y ----
+    nexttile((npower-1)*3 + 3);
+    hold on;
+
+    % Real
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    y_lo = prop_CI_lo(valid_idx);
+    y_hi = prop_CI_hi(valid_idx);
+    x_shade = [x_vals, fliplr(x_vals)];
+    y_shade = [y_lo, fliplr(y_hi)];
+
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    y_lo_s = prop_shifted_CI_lo(valid_idx);
+    y_hi_s = prop_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
+    y_shade_s = [y_lo_s, fliplr(y_hi_s)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.15 0.2])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Proportion vs. V1 Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+end
+
+% Plot layout
+fig = figure;
+fig.Position = [640 100 2*1100/3 650/2]
+fig.Name = 'Bayesian bias difference in V1 low vs high ripples';
+% tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+colour_lines = [158,202,225;33,113,181]/256;% two blue
+nexttile
+for npower = [1 2]
+    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
+
+    hold on;
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(thresholds, bias_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    %     grid on;
+end
+yline(0,'--r')
+legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
+
+nexttile
+for npower = [1 2]
+    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_bias_difference(npower).prop_mean;
+
+    hold on;
+    y2 = [prop_mean, fliplr(prop_mean)];
+    x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(bias_mean, prop_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('Proportion of events detected');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    %     grid on;
+end
+xline(0,'--r')
+legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
+
+
+% Save results
+save('ripple_power_bias_difference.mat', 'ripple_power_bias_difference');
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
