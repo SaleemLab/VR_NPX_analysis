@@ -1,10 +1,10 @@
-function probability = calculate_ripple_spindle_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process, varargin)
-% Calculates spindle probability relative to L/R ripple onset
+function probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process, varargin)
+% Calculates ripple probability relative to L/R spindle onset or peaktimes
 
 p = inputParser;
 addParameter(p,'option','absolute',@ischar);
 addParameter(p,'shuffle_option','time_circular_shift',@ischar);
-addParameter(p,'time_option','onset',@ischar);
+addParameter(p,'time_option','peaktimes',@ischar);
 addParameter(p,'time_windows',[-0.5 0.5],@isnumeric);
 addParameter(p,'time_bin',0.02,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
@@ -22,92 +22,103 @@ shuffle_option = p.Results.shuffle_option;
 timebin_edge = time_windows(1):time_bin:time_windows(end);
 bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
 
-ripple_tag = ["L","R"];
-spindle_tag = ["L","R"];
+for hemi = 1:2 % hemi 1 = L spindle, 2 = R spindle
+    L_binnedArray = [];
+    R_binnedArray = [];
+    L_ripple_index_all = [];
+    R_ripple_index_all = [];
 
-for ripple_hemi = 1:2  % L/R ripple
-    for spindle_hemi = 1:2  % L/R spindle
-        binnedArray = [];
-        ripple_index_all = [];
+    for nsession = 1:length(sessions_to_process)
+        session_id = sessions_to_process(nsession);
 
-        for nsession = 1:length(sessions_to_process)
-            session_id = sessions_to_process(nsession);
+        spindle_index = find(spindles_all(hemi).session_count == session_id & spindles_all(hemi).SWS_index == 1);
+        if isempty(spindle_index), continue; end
 
-            % Ripple events
-            ripple_index = find(ripples_all(ripple_hemi).session_count == session_id & ripples_all(ripple_hemi).SWS_index == 1);
-            if isempty(ripple_index), continue; end
-            ripple_onset = ripples_all(ripple_hemi).onset(ripple_index);
+        spindle_times = spindles_all(hemi).onset(spindle_index);
 
-            if contains(shuffle_option,'baseline')
-                ripple_onset = ripple_onset - 3;
-            end
+        if contains(shuffle_option,'baseline')
+            spindle_times = spindle_times - 3;
+        end
 
-            % Spindle events from current hemisphere
-            spindle_index = find(spindles_all(spindle_hemi).session_count == session_id & spindles_all(spindle_hemi).SWS_index == 1);
-            if isempty(spindle_index), continue; end
+        for ripple_hemi = 1:2 % ripple source: 1 = L ripple, 2 = R ripple
+            ripples_index = find(ripples_all(ripple_hemi).session_count == session_id & ripples_all(ripple_hemi).SWS_index == 1);
+            if isempty(ripples_index), continue; end
 
-            % Get spindle times: onset or full duration
             if contains(time_option,'onset')
-                spindle_times = spindles_all(spindle_hemi).onset(spindle_index);
+                ripple_times = ripples_all(ripple_hemi).peaktimes(ripples_index);
+            elseif contains(time_option,'peaktimes')
+                ripple_times = ripples_all(ripple_hemi).onset(ripples_index);
             else
-                spindle_times = [spindles_all(spindle_hemi).onset(spindle_index), ...
-                                 spindles_all(spindle_hemi).offset(spindle_index)];
+                ripple_times = [ripples_all(ripple_hemi).onset(ripples_index) ripples_all(ripple_hemi).offset(ripples_index)];
             end
 
-            [~, temp, event_index] = calculate_event_probability(spindle_times, ripple_onset, timebin_edge, 0);
+            [prob, temp, event_index] = calculate_event_probability(ripple_times, spindle_times, timebin_edge, 0);
 
-            % Optional masking to exclude overlapping ripple windows
             if ~contains(shuffle_option,'baseline')
-                ripple_times = [ripples_all(ripple_hemi).onset(ripple_index), ...
-                                ripples_all(ripple_hemi).offset(ripple_index)];
-                timebin_edges_all = ripple_onset + bins_centre;
+                spindle_win = [spindles_all(hemi).onset(spindle_index) spindles_all(hemi).offset(spindle_index)];
+                timebin_edges_all = spindle_times + bins_centre;
 
-                for i = 1:size(ripple_times,1)
+                for i = 1:size(spindle_win,1)
                     if i > 1
-                        prev_offset = ripple_times(i-1,2);
+                        prev_offset = spindle_win(i-1,2);
                         temp(i, timebin_edges_all(i,:) <= prev_offset) = NaN;
                     end
-                    if i < size(ripple_times,1)
-                        next_onset = ripple_times(i+1,1);
+                    if i < size(spindle_win,1)
+                        next_onset = spindle_win(i+1,1);
                         temp(i, timebin_edges_all(i,:) >= next_onset) = NaN;
                     end
                 end
             end
 
-            binnedArray = [binnedArray; temp];
-            ripple_index_all = [ripple_index_all; event_index];
+            if ripple_hemi == 1
+                L_binnedArray = [L_binnedArray; temp];
+                L_ripple_index_all = [L_ripple_index_all; event_index];
+            else
+                R_binnedArray = [R_binnedArray; temp];
+                R_ripple_index_all = [R_ripple_index_all; event_index];
+            end
         end
+    end
 
-        r_label = ripple_tag{ripple_hemi};
-        s_label = spindle_tag{spindle_hemi};
+    tag = ["L","R"];
+    spindle_label = tag{hemi};
 
-        probability(ripple_hemi).([s_label '_spindle']) = binnedArray;
-        probability(ripple_hemi).([s_label '_spindle_index']) = ripple_index_all;
-        probability(ripple_hemi).([r_label '_ripple_no']) = sum(ripples_all(ripple_hemi).SWS_index == 1);
+    probability(hemi).L_ripple = L_binnedArray;
+    probability(hemi).R_ripple = R_binnedArray;
+    probability(hemi).L_ripple_index = L_ripple_index_all;
+    probability(hemi).R_ripple_index = R_ripple_index_all;
+    probability(hemi).spindle_no = sum(spindles_all(hemi).SWS_index == 1);
 
-        % Bootstrap
+    % Bootstrap
+    for s = {'L', 'R'}
+        side = s{1};
+        tempArray = probability(hemi).([side '_ripple']);
         tempBoot = [];
         for iBoot = 1:1000
             s = RandStream('mrg32k3a','Seed',iBoot);
-            event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-            tempBoot(iBoot,:) = sum(binnedArray(event_id,:), 'omitnan') ./ sum(~isnan(binnedArray(event_id,:)));
+            event_id = datasample(s,1:size(tempArray,1),size(tempArray,1));
+            tempBoot(iBoot,:) = sum(tempArray(event_id,:), 'omitnan') ./ sum(~isnan(tempArray(event_id,:)));
         end
-        probability(ripple_hemi).([s_label '_spindle_bootstrap']) = tempBoot;
+        probability(hemi).([side '_ripple_bootstrap']) = tempBoot;
+    end
 
-        % Shuffle
-        if contains(shuffle_option,'time_circular_shift')
+    % Shuffle
+    if contains(shuffle_option,'time_circular_shift')
+        for s = {'L', 'R'}
+            side = s{1};
+            tempArray = probability(hemi).([side '_ripple']);
             tempShuf = [];
             for iBoot = 1:1000
-                temp1 = zeros(size(binnedArray));
-                parfor event_id = 1:size(binnedArray,1)
+                temp1 = zeros(size(tempArray));
+                parfor event_id = 1:size(tempArray,1)
                     s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id);
-                    shift = datasample(s,1:size(binnedArray,2),1);
-                    bins = circshift(1:size(binnedArray,2), shift);
-                    temp1(event_id,:) = binnedArray(event_id,bins);
+                    shift = datasample(s,1:size(tempArray,2),1);
+                    bins = circshift(1:size(tempArray,2), shift);
+                    temp1(event_id,:) = tempArray(event_id,bins);
                 end
                 tempShuf(iBoot,:) = sum(temp1,1,'omitnan') ./ sum(~isnan(temp1));
             end
-            probability(ripple_hemi).([s_label '_spindle_shuffled']) = tempShuf;
+            probability(hemi).([side '_ripple_shuffled']) = tempShuf;
         end
     end
 end
