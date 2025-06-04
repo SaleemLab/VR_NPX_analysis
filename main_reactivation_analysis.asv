@@ -1048,57 +1048,6 @@ for nsession =3:10
           end
       end
 
-          %               bins=[];
-          %               samples = Restrict(timevec_edge',[ripples(nprobe).onset ripples(nprobe).offset]);
-          %               ripples_time_edges=[];
-          %               ripples_id=[];
-          %               for i = 1: length(ripples(nprobe).onset)
-          %                   event_duration = ripples(nprobe).offset(i) - ripples(nprobe).onset(i);
-          %                   num_bins = floor(event_duration / time_bin_size);
-          %                   timebins_edges = linspace(ripples(nprobe).onset(i), ripples(nprobe).onset(i) + num_bins *  time_bin_size, num_bins+1);
-          %                   ripples_time_edges = [ripples_time_edges timebins_edges];
-          %                   ripples_id = [ripples_id i*ones(1,length(timebins_edges))];
-          %               end
-          %
-          %               bins(:,1)=ripples_time_edges;
-          %               bins(:,2)=ripples_time_edges+time_bin_size;
-          %               [strength,zscored_spike_counts] = ReactivationStrength(spikes_sleep,templates,'bins',bins);
-          %               reactivation_strength(nprobe).track(ntrack).ripples_id=ripples_id;
-          %               reactivation_strength(nprobe).track(ntrack).strength=strength(:,2:end);
-          %               reactivation_strength(nprobe).track(ntrack).ripples_time_edges=ripples_time_edges;
-          %               reactivation_strength(nprobe).track(ntrack).zscored_spike_counts=zscored_spike_counts;
-          %
-          %               strength_shuffled=[];
-          %               checkpoint=0;
-          %               disp('Reactivation strength for cell id shuffle')
-          %               parfor nshuffle =1:1000
-          %
-          %                   s = RandStream('mrg32k3a','Seed',100*ntrack+1000*nprobe+nshuffle); % Set random seed for resampling
-          %                   unique_cell_id = unique(spikes_sleep(:,2));
-          %                   p = randperm(s,length(unique_cell_id));
-          %                   cell_id_shuffled_spikes=spikes_sleep;
-          %
-          %                   for iCell = 1:length(unique_cell_id)
-          %                       cell_id_shuffled_spikes(spikes_sleep(:,2)==unique_cell_id(iCell),2)=p(iCell);% swap cell id
-          %                   end
-          %
-          %                   [temp,~] = ReactivationStrength(cell_id_shuffled_spikes,templates,'bins',bins);
-          %                   strength_shuffled(nshuffle,:,:)=temp(:,2:end);
-          %               end
-          %               reactivation_strength(nprobe).track(ntrack).strength_shuffled=strength_shuffled;
-          %
-          %               for nevent = 1:max(ripples_id)
-          %                   index = reactivation_strength(nprobe).track(ntrack).ripples_id==nevent;
-          %
-          %                   strength_this_event = mean(mean(reactivation_strength(nprobe).track(ntrack).strength(index,:),2));
-          %                   strength_shuffled_this_event = mean(mean(strength_shuffled(:,index,:),3),2);
-          %                   reactivation_strength(nprobe).track(ntrack).strength_percentile(nevent)=...
-          %                       sum(strength_this_event>strength_shuffled_this_event)/length(strength_shuffled_this_event);
-          %
-          %               end
-      
-      % end
-
       for nprobe = 1:length(ripples)
           KDE_reactivation_V1(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
           KDE_reactivation_V1_UP(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
@@ -1121,6 +1070,303 @@ for nsession =3:10
 
     end
 end
+
+
+%% KDE based reactivation for V1 and HPC (add ripples -0.5 to 0.5s)
+
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+% option = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+% [1 2 3 4 9 10 12 14]
+% Stimulus_types_all = {'RUN'};
+% Stimulus_types_all = {'RUN','POST'};
+
+
+for nsession =1:10
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
+
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1','KDE_RUN_V1','PLS_V1')
+        elseif contains(stimulus_name{n},'Sleep')
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+
+            clusters=clusters_ks4;
+
+          load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_RUN','PLS');
+          load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_RUN_V1','PLS_V1');
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        end
+        clear CA1_clusters V1_clusters
+
+        % From cell structure back to spike times and spike id
+        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
+        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
+        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
+        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
+
+        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+        session_clusters.spike_id=session_clusters.spike_id(index);
+
+%         params = create_cluster_selection_params('sorting_option','masa');
+        clusters_combined = session_clusters;
+
+        tic
+
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+
+        % For now just needed the cell to have reliable firing on the track
+        % (more so than randomly shuffled spiking)
+%         spatial_cell_index = find(session_clusters_RUN.odd_even_stability(:,1)>0.95 ...
+%             | session_clusters_RUN.odd_even_stability(:,2)>0.95);
+
+        % grab HPC spikes during Sleep
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'HPC');
+        HPC_clusters = select_clusters(clusters_combined,metric_param);
+%         HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
+%         HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
+
+        % grab HPC spikes during RUN
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'HPC');
+        HPC_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
+        
+        % grab V1 spikes during Sleep
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters = select_clusters(clusters_combined,metric_param);
+        %         HPC_clusters.id_conversion(:,1) = 1:length(HPC_clusters.cluster_id);
+        %         HPC_clusters.id_conversion(:,2) = HPC_clusters.cluster_id;
+
+        % grab V1 spikes during RUN
+        metric_param =[];
+        metric_param.cluster_id = @(x) ismember(x,session_clusters_RUN.cluster_id(spatial_cell_index));
+        metric_param.region = @(x) contains(x,'V1');
+        V1_clusters_RUN = select_clusters(session_clusters_RUN,metric_param);
+
+        %%%%% KDE based Reactivation strength analysis
+
+        % Define time bin edges
+        time_bin_size=0.02;
+        timevec = session_clusters.sglxTime{1};
+        timevec_edge = (timevec(1)-(time_bin_size)/2....
+            :time_bin_size:...
+            timevec(end)+(time_bin_size)/2)';
+
+        time_bin_size=0.1;
+        timevec_edge_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));
+        speed_RUN= interp1(session_clusters_RUN.sglxTime{1},session_clusters_RUN.speed{1},session_clusters_RUN.sglxTime{1}(1):time_bin_size:session_clusters_RUN.sglxTime{1}(end));        
+        timevec_edge_RUN(speed_RUN<1)=[];
+
+%         % Define Gaussian window for smoothing
+%         gaussianWindow = gausswin(0.2*1/time_bin_size);
+%         % Normalize to have an area of 1 (i.e., to be a probability distribution)
+%         gaussianWindow = gaussianWindow / sum(gaussianWindow);
+
+%         for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
+%             SpikeCount=[];
+%             this_track_start_time = session_clusters_RUN.start_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
+%             this_track_end_time = session_clusters_RUN.end_time_all{1}(session_clusters_RUN.track_ID_all{1}==ntrack);
+%             samples = Restrict(timevec_edge',[this_track_start_time this_track_end_time']);
+%             for iCell = 1:length(HPC_clusters_RUN.cluster_id)
+%                 y = histcounts(HPC_clusters_RUN.spike_times(HPC_clusters_RUN.spike_id == HPC_clusters_RUN.cluster_id(iCell)), samples)';
+%                 y(find(abs(diff(samples))>2*time_bin_size))=[]; % remove spikes that happended in-between laps
+%                 
+%                 SpikeCount(iCell,:) = y;
+%                 %             SpikeCount(iCell,:) = conv(y, gaussianWindow, 'same');
+%             end
+%             [AssemblyTemplates,AssemblyIDs,time_projection,ASSEMBLYPROJECTOR,variance] = assembly_patterns_masa(SpikeCount,'threshold_method','MarcenkoPastur');%MarcenkoPastur circularshift
+%         end
+
+      spikes_template=[];
+      spikes_template(:,1) = HPC_clusters_RUN.spike_times;
+      spikes_template(:,2) = HPC_clusters_RUN.spike_id;
+
+      spikes_sleep=[];
+      spikes_sleep(:,1) = HPC_clusters.spike_times;
+      spikes_sleep(:,2) = HPC_clusters.spike_id;
+
+      unique_sleep_cluster_id = unique(HPC_clusters.spike_id);
+      unique_RUN_cluster_id = unique(HPC_clusters_RUN.spike_id);
+
+      if length(unique_RUN_cluster_id)~=length(unique_sleep_cluster_id)
+          [index1,index2] = ismember(unique_RUN_cluster_id,unique_sleep_cluster_id);
+          unique_clusters = unique_RUN_cluster_id(index1);
+
+          spikes_template(~ismember(spikes_template(:,2),unique_clusters),:) = [];
+          spikes_sleep(~ismember(spikes_sleep(:,2),unique_clusters),:) = [];
+      else
+          unique_clusters = unique_RUN_cluster_id;
+      end
+
+      for iCell = 1:length(unique_clusters)
+          spikes_template(spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+          spikes_sleep(spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+      end
+
+      V1_spikes_template=[];
+      V1_spikes_template(:,1) = V1_clusters_RUN.spike_times;
+      V1_spikes_template(:,2) = V1_clusters_RUN.spike_id;
+
+      V1_spikes_sleep=[];
+      V1_spikes_sleep(:,1) = V1_clusters.spike_times;
+      V1_spikes_sleep(:,2) = V1_clusters.spike_id;
+
+      unique_sleep_cluster_id = unique(V1_clusters.spike_id);
+      unique_RUN_cluster_id = unique(V1_clusters_RUN.spike_id);
+        
+      if length(unique_RUN_cluster_id)~=length(unique_sleep_cluster_id)
+          [index1,index2] = ismember(unique_RUN_cluster_id,unique_sleep_cluster_id);
+          unique_clusters = unique_RUN_cluster_id(index1);
+
+          V1_spikes_template(~ismember(V1_spikes_template(:,2),unique_clusters),:) = [];
+          V1_spikes_sleep(~ismember(V1_spikes_sleep(:,2),unique_clusters),:) = [];
+      else
+          unique_clusters = unique_RUN_cluster_id;
+      end
+
+      for iCell = 1:length(unique_clusters)
+          V1_spikes_template(V1_spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+          V1_spikes_sleep(V1_spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
+      end
+      clear KDE_reactivation_ripples unique_clusters 
+
+      % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
+      time_bin_size=0.02;
+      tic
+      %%%%% HPC
+      for nprobe = 1:length(ripples)
+          disp('PLS KDE reactivation for HPC data')
+          options = session_info(n).probe(nprobe);
+          ripple_probe_no = options.probe_id + 1;
+
+          [~,~,KDE_reactivation_ripples(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+              session_clusters_RUN.track_ID_all{1},spikes_template,...
+              [ripples(nprobe).onset-0.5 ripples(nprobe).onset+0.5],spikes_sleep,options,'PLS',PLS(ripple_probe_no),'KDE_RUN',KDE_RUN(ripple_probe_no),'event_type','HPC','shuffle_option',0)
+      end
+      toc
+      for nprobe = 1:length(ripples)
+          KDE_reactivation_ripples(nprobe).cluster_id = HPC_clusters_RUN.cluster_id;
+      end
+
+      if contains(stimulus_name{n},'Masa2tracks')
+          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_ripples%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_ripples','-v7.3')
+      else
+          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_ripples.mat'),'KDE_reactivation_ripples','-v7.3');
+
+          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
+      end
+      clear KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN
+
+
+      %%%%% V1
+      tic
+      for nprobe = 1:length(ripples)
+          disp('PLS KDE reactivation for V1 data')
+          options = session_info(n).probe(nprobe);
+          ripple_probe_no = options.probe_id + 1;
+
+          [~,~,KDE_reactivation_V1_ripples(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
+              session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+              [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+              session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
+              [ripples(nprobe).onset-0.5 ripples(nprobe).onset+0.5],V1_spikes_sleep,options,'PLS',PLS_V1(ripple_probe_no),'KDE_RUN',KDE_RUN_V1(ripple_probe_no),'event_type','V1','shuffle_option',0)
+
+      end
+      toc
+
+      for nprobe = 1:length(ripples)
+          KDE_reactivation_V1_ripples(nprobe).cluster_id = V1_clusters_RUN.cluster_id;
+      end
+
+      if contains(stimulus_name{n},'Masa2tracks')
+          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_V1_ripples%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1_ripples','-v7.3')
+      else
+          save(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_ripples.mat'),'KDE_reactivation_V1_ripples','-v7.3');
+
+          % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
+      end
+      clear KDE_reactivation_V1_ripples KDE_RUN_V1 PLS_V1 KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN
+
+      close all
+    end
+end
+
+
+
 
 
 %% Log odds Reactivation and reactivation strength

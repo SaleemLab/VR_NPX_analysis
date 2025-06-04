@@ -35,12 +35,16 @@ addParameter(p,'event_type','ripples',@isstr)
 addParameter(p,'time_bin_size_RUN',0.1,@isnumeric)
 addParameter(p,'time_bin_size',0.02,@isnumeric)
 addParameter(p,'time_bin_size_moving',0.01,@isnumeric)
+addParameter(p,'shuffle_option',1,@isnumeric)
+addParameter(p,'plot_option',1,@isnumeric)
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
 KDE_RUN = p.Results.KDE_RUN;
 PLS = p.Results.PLS;
 event_type = p.Results.event_type;
+shuffle_option = p.Results.shuffle_option;
+plot_option = p.Results.plot_option;
 
 
 
@@ -128,7 +132,7 @@ n_ripples_residuals = zscore(n_ripples - ripple_global_pattern,0,1); % Residuals
 %     random_cell_index = randperm(s,size(n_ripples,2));
 %     n_ripples_shuffled = n_ripples(:,random_cell_index);
 % %     scatter3(n_ripples_shuffled* weights(:, 1),n_ripples_shuffled* weights(:, 2),n_ripples_shuffled* weights(:, 3),15,'k','filled','MarkerFaceAlpha',0.1);hold on
-% 
+%
 % end
 % Combine data and labels
 if isempty(fieldnames(PLS))
@@ -372,7 +376,7 @@ end
 [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
 
 %%%%%%%%%%%%%% Reactivation strength
-% % calculate projection matrix 
+% % calculate projection matrix
 % P_template = zeros(size(W,1),size(W,1),size(W,2));
 % for i = 1:size(W,2)
 %     P_template(:,:,i) = W(:,i)*W(:,i)';
@@ -384,7 +388,7 @@ end
 % %     imagesc(squeeze(P_template(:,:,i)))
 % %     colorbar
 % % end
-% % 
+% %
 % % Compute reactivation strengths
 % nTemplates = size(P_template,3);
 % strength = zeros(size(n_ripples,1),nTemplates);
@@ -394,7 +398,7 @@ end
 %     template = template - diag(diag(template));
 %     strength(:,i) = nansum(n_ripples*(template).*n_ripples,2);
 % end
-% 
+%
 % % Compute reactivation strengths
 % nTemplates = size(P_template,3);
 % strength_shuffled = zeros(size(n_ripples,1),nTemplates,1000);
@@ -405,13 +409,13 @@ end
 %         template = template - diag(diag(template));
 %         s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
 %         random_cell_index = randperm(s,size(n_ripples_residuals,2));
-% 
+%
 %         n_ripples_shuffled = n_ripples(:,random_cell_index);
 %         strength_shuffled(:,i,nshuffle) = nansum(n_ripples_shuffled*(template).*n_ripples_shuffled,2);
 %     end
 % end
-% 
-% 
+%
+%
 % for i = 1:nTemplates
 % %     prctile(strength(:,i),0.5)
 % %     prctile(strength(:,i),99.5)
@@ -423,75 +427,75 @@ end
 
 
 %%%%% Visualise projection
+if plot_option == 1
+    region_name = {'Left','Right'};
 
-region_name = {'Left','Right'};
+    colour_lines = [215,25,28;44,123,182]/256;
+    title_text = sprintf('%s %s PLS latent components visualisation %s',options.SUBJECT,options.SESSION);
+    nfigure = 2;
+    fig(nfigure)=figure;
+    fig(nfigure).Name=title_text;
+    fig(nfigure).Position = [300 380 1300 600]
 
-colour_lines = [215,25,28;44,123,182]/256;
-title_text = sprintf('%s %s PLS latent components visualisation %s',options.SUBJECT,options.SESSION);
-nfigure = 2;
-fig(nfigure)=figure;
-fig(nfigure).Name=title_text;
-fig(nfigure).Position = [300 380 1300 600]
-
-% s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
-% random_cell_index = randperm(s,size(n_ripples,2));
-plsScores_Track1 = X(Y == 1,:) * W;
-plsScores_Track2 = X(Y == 2,:) * W;
-% plsScores_shuffled1 = X(Y == 1,random_cell_index) * W;
-% plsScores_shuffled2 = X(Y == 2,random_cell_index) * W;
-% plsScores_ripples = n_ripples_residuals * W;
-% figure;
-subplot(2,2,1)
-scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
-xlabel('PLS Component 1');
-ylabel('PLS Component 2');
-zlabel('PLS Component 3');
-legend('Track 1', 'Track 2','Box','off');
-title('T1-T2 PLS components');
-% legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-subplot(2,2,2)
-scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
-plsScores_ripples = n_ripples * W;
-scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-legend('Track 1', 'Track 2',event_type,'Box','off')
-title(sprintf('%s PLS projection',event_type));
-% legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
-title(title_text)
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-xlabel('PLS Component 1');
-ylabel('PLS Component 2');
-zlabel('PLS Component 3');
+    % s = RandStream('mrg32k3a','Seed',2); % Set random seed for resampling
+    % random_cell_index = randperm(s,size(n_ripples,2));
+    plsScores_Track1 = X(Y == 1,:) * W;
+    plsScores_Track2 = X(Y == 2,:) * W;
+    % plsScores_shuffled1 = X(Y == 1,random_cell_index) * W;
+    % plsScores_shuffled2 = X(Y == 2,random_cell_index) * W;
+    % plsScores_ripples = n_ripples_residuals * W;
+    % figure;
+    subplot(2,2,1)
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    xlabel('PLS Component 1');
+    ylabel('PLS Component 2');
+    zlabel('PLS Component 3');
+    legend('Track 1', 'Track 2','Box','off');
+    title('T1-T2 PLS components');
+    % legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-subplot(2,2,4)
-scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
-plsScores_ripples = n_ripples_residuals * W;
-scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-legend('Track 1', 'Track 2','Event residuals','Box','off')
-title(sprintf('%s PLS projection',event_type));
-% legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
-title(title_text)
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-xlabel('PLS Component 1');
-ylabel('PLS Component 2');
-zlabel('PLS Component 3');
+    subplot(2,2,2)
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    plsScores_ripples = n_ripples * W;
+    scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
+    legend('Track 1', 'Track 2',event_type,'Box','off')
+    title(sprintf('%s PLS projection',event_type));
+    % legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
+    title(title_text)
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    xlabel('PLS Component 1');
+    ylabel('PLS Component 2');
+    zlabel('PLS Component 3');
 
-sgtitle(title_text)
 
+    subplot(2,2,4)
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    plsScores_ripples = n_ripples_residuals * W;
+    scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
+    legend('Track 1', 'Track 2','Event residuals','Box','off')
+    title(sprintf('%s PLS projection',event_type));
+    % legend(ERROR_SHADE(1:3),{'Track 1','Track 2','Cell ID shuffle'},'Box','off')
+    title(title_text)
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    xlabel('PLS Component 1');
+    ylabel('PLS Component 2');
+    zlabel('PLS Component 3');
+
+    sgtitle(title_text)
+end
 % scatter3(plsScores_shuffled2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.01);  hold on;
 % scatter3(plsScores_shuffled1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.01);hold on;
-% 
+%
 % % scatter3(plsScores_shuffled1(:, 1), plsScores_shuffled1(:, 2), plsScores_shuffled1(:, 3),10,'k','filled','MarkerFaceAlpha',0.1);hold on;
 
 % scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
-% 
-% 
+%
+%
 % s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
 % random_cell_index = randperm(s,size(n_ripples_residuals,2));
 % [XL_shuffled] = plsregress(X(:,random_cell_index),Y,3,'CV',10,'Options',statset('UseParallel',true)); % 3 components
@@ -650,26 +654,28 @@ Bandwidth = Bandwith_list(index);
 [pdf_T1] = mvksdensity( X(Y == 1,:) * W,n_ripples_residuals * W, 'Bandwidth',Bandwidth); % Cross-validated bandwidth
 [pdf_T2] = mvksdensity( X(Y == 2,:) * W,n_ripples_residuals * W, 'Bandwidth', Bandwidth);
 
-pdf_T1_shuffled = zeros(1000,size(n_ripples_residuals,1));
-pdf_T2_shuffled = zeros(1000,size(n_ripples_residuals,1));
 disp(sprintf('Caclulate Reactivation based on KDE of PLS projection to %s data',event_type));
 
-% tic
-parfor nshuffle = 1:1000
-    tic
-    s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-    random_cell_index = randperm(s,size(n_ripples_residuals,2));
-    n_ripples_shuffled = n_ripples_residuals(:,random_cell_index);
-    pdf_T1_shuffled(nshuffle,:) = mvksdensity( X(Y == 1,:) * W,n_ripples_shuffled * W, 'Bandwidth',Bandwidth); % Cross-validated bandwidth
-    pdf_T2_shuffled(nshuffle,:)= mvksdensity( X(Y == 2,:) * W,n_ripples_shuffled * W, 'Bandwidth', Bandwidth);
-    toc
+if shuffle_option == 1
+    pdf_T1_shuffled = zeros(1000,size(n_ripples_residuals,1));
+    pdf_T2_shuffled = zeros(1000,size(n_ripples_residuals,1));
+
+    % tic
+    parfor nshuffle = 1:1000
+        tic
+        s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
+        random_cell_index = randperm(s,size(n_ripples_residuals,2));
+        n_ripples_shuffled = n_ripples_residuals(:,random_cell_index);
+        pdf_T1_shuffled(nshuffle,:) = mvksdensity( X(Y == 1,:) * W,n_ripples_shuffled * W, 'Bandwidth',Bandwidth); % Cross-validated bandwidth
+        pdf_T2_shuffled(nshuffle,:)= mvksdensity( X(Y == 2,:) * W,n_ripples_shuffled * W, 'Bandwidth', Bandwidth);
+        toc
+    end
+    % toc
 end
-% toc
 
 KDE_bias_shuffled_event=[];
 KDE_bias_event = [];
 KDE_bias = pdf_T1./(pdf_T1+pdf_T2);
-KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
 
 KDE_reactivation = [];
 KDE_reactivation.event_id = ripples_id;
@@ -678,8 +684,12 @@ KDE_reactivation.event_bins = ripple_bins;
 KDE_reactivation.event_bias = KDE_bias;
 KDE_reactivation.event_T1_probability = pdf_T1;
 KDE_reactivation.event_T2_probability = pdf_T2;
-KDE_reactivation.event_T1_probability_shuffled = pdf_T1_shuffled;
-KDE_reactivation.event_T2_probability_shuffled = pdf_T2_shuffled;
+
+if shuffle_option == 1
+    KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
+    KDE_reactivation.event_T1_probability_shuffled = pdf_T1_shuffled;
+    KDE_reactivation.event_T2_probability_shuffled = pdf_T2_shuffled;
+end
 KDE_reactivation.event_proj = W;
 
 
@@ -803,51 +813,52 @@ if contains(event_type,'ripples') % calculate significance for ripple events onl
     ylabel(han, 'T1/T2 bias');
 else
 
-    %%%%% Visualisation of random events without determining reactivation
-    %%%%% significance
-    nfigure = nfigure+ 1;
-    fig(nfigure) = figure;
-    fig(nfigure).Position = [279,55,1800,933];
-    fig(nfigure).Name=sprintf('KDE bias %s %s',region_name{options.probe_hemisphere},event_type);
-    count = 0
-    
-    s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
-    event_index = 1:max(ripples_id);
+    if plot_option == 1
+        %%%%% Visualisation of random events without determining reactivation
+        %%%%% significance
+        nfigure = nfigure+1;
+        fig(nfigure) = figure;
+        fig(nfigure).Position = [279,55,1800,933];
+        fig(nfigure).Name=sprintf('KDE bias %s %s',region_name{options.probe_hemisphere},event_type);
+        count = 0
+
+        s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+        event_index = 1:max(ripples_id);
 
 
-    if length(event_index)>100
-        sampled_event_id = datasample(s,event_index,100,'Replace',false);
-    else
-        sampled_event_id = 1:event_index;
-    end
-    
-    for nEvent = sampled_event_id
-        count = count + 1;
-        if count < 101
-            this_event_bins = find(ripples_id==nEvent);
-
-            x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
-            subplot(10,10,count)
-            plot(x,(KDE_bias(this_event_bins)),'r')
-            hold on
-            y = mean(KDE_bias_shuffled(:,this_event_bins));
-            CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
-            CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
-            PLOT = plot(x,y,'Color','k');hold on;
-            ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
-            ylim([0 1])
-            set(gca,"TickDir","out",'box', 'off','Color','none')
+        if length(event_index)>100
+            sampled_event_id = datasample(s,event_index,100,'Replace',false);
+        else
+            sampled_event_id = 1:event_index;
         end
-    end
-    fontsize(gcf,10,"points")
-    % Add a common x-label and y-label
-    % Use 'Position' to adjust placement
-    han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
-    han.XLabel.Visible = 'on'; % Turn on visibility for x-label
-    han.YLabel.Visible = 'on'; % Turn on visibility for y-label
-    xlabel(han, 'Time (s)');
-    ylabel(han, 'T1/T2 bias');
 
+        for nEvent = sampled_event_id
+            count = count + 1;
+            if count < 101
+                this_event_bins = find(ripples_id==nEvent);
+
+                x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
+                subplot(10,10,count)
+                plot(x,(KDE_bias(this_event_bins)),'r')
+                hold on
+                y = mean(KDE_bias_shuffled(:,this_event_bins));
+                CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
+                CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
+                PLOT = plot(x,y,'Color','k');hold on;
+                ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
+                ylim([0 1])
+                set(gca,"TickDir","out",'box', 'off','Color','none')
+            end
+        end
+        fontsize(gcf,10,"points")
+        % Add a common x-label and y-label
+        % Use 'Position' to adjust placement
+        han = axes(fig(nfigure), 'Visible', 'off'); % Create invisible axes
+        han.XLabel.Visible = 'on'; % Turn on visibility for x-label
+        han.YLabel.Visible = 'on'; % Turn on visibility for y-label
+        xlabel(han, 'Time (s)');
+        ylabel(han, 'T1/T2 bias');
+    end
 end
 
 disp('PLS KDE decoding finished')
@@ -855,7 +866,7 @@ disp('PLS KDE decoding finished')
 % figure;
 % scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
 % scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
-% 
+%
 % for nEvent = 1:max(ripples_id);
 %     this_event_bins = find(ripples_id==nEvent);
 %     for nshuffle = 1:1000
@@ -872,28 +883,28 @@ disp('PLS KDE decoding finished')
 % ylabel('PLS Component 2');
 % legend('Track 1', 'Track 2');
 % title('PLS-DA Separation');
-% 
+%
 
-% 
+%
 % %%%%% Representational similarity
-% % Determine similarity between ripple representation to 
+% % Determine similarity between ripple representation to
 % % Track 1 and Track 2 representations
-% 
+%
 % %%%% Mahalanobis distances
 % [XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(X,Y,3,'CV',10,'Options',statset('UseParallel',true)); % 3 components
 % [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
 % plsScores_ripples = n_ripples_residuals * W;
 % dist_to_Track1 = mahal(plsScores_ripples, plsScores_Track1); % MATLAB's mahal function
 % dist_to_Track2 = mahal(plsScores_ripples, plsScores_Track2);
-% 
+%
 % % Normalize to calculate similarity
 % similarity_timeseries = dist_to_Track1 ./ (dist_to_Track1 + dist_to_Track2);
-% % 
+% %
 % % for nEvent = 1:max(ripples_id);
 % %     this_event_bins = find(ripples_id==nEvent);
 % %     if length(this_event_bins>3)
 % %     similarity(this_event_bins);
-% % 
+% %
 % %     end
 % % end
 % dist_to_Track1_shuffled=[];
@@ -902,7 +913,7 @@ disp('PLS KDE decoding finished')
 % for nshuffle = 1:1000
 %     s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
 %     random_cell_index = randperm(s,size(n_ripples,2));
-% % 
+% %
 % %     % Calculate mean activity across all neurons for each ripple
 % %     mean_ripple_activity = mean(n_ripples, 2); % Average firing rate per ripple
 % %     % Regress out the mean ripple activity
@@ -912,15 +923,15 @@ disp('PLS KDE decoding finished')
 % % plsScores_ripples = n_ripples_residuals_shuffled * W;
 %     [XL_shuffled] = plsregress(X(:,random_cell_index),Y,3,'CV',10,'Options',statset('UseParallel',true)); % 3 components
 %     [W_shuffled, ~] = qr(XL_shuffled, 0); % Orthonormalize XL using QR decomposition
-% 
+%
 % %     n_ripples_shuffled = n_ripples_residuals(:,random_cell_index);
-% 
+%
 %     plsScores_ripples = n_ripples_residuals * W_shuffled;
 %     dist_to_Track1_shuffled(nshuffle,:) = mahal(plsScores_ripples, plsScores_Track1); % MATLAB's mahal function
 %     dist_to_Track2_shuffled(nshuffle,:) = mahal(plsScores_ripples, plsScores_Track2);
 %     similarity_timeseries_shuffled(nshuffle,:) = dist_to_Track1_shuffled(nshuffle,:) ./ (dist_to_Track1_shuffled(nshuffle,:) + dist_to_Track2_shuffled(nshuffle,:));
 % end
-% 
+%
 % similarity_shuffled=[];
 % similarity = [];
 % max(ripples_id);
@@ -929,11 +940,11 @@ disp('PLS KDE decoding finished')
 %     this_event_bins = find(ripples_id==nEvent);
 %     %     similarity_shuffled(:,nEvent) = mean(similarity_timeseries_shuffled(:,this_event_bins),2);
 %     %     similarity(nEvent) = mean(similarity_timeseries(this_event_bins));
-% 
+%
 %     [similarity(nEvent) tidx] = min(similarity_timeseries(this_event_bins));
 %     similarity_shuffled(:,nEvent) = similarity_timeseries_shuffled(:,this_event_bins(tidx));
 %     x = 0:time_bin_size_moving:time_bin_size_moving*(length(this_event_bins)-1);
-% 
+%
 %     subplot(10,10,nEvent)
 %     plot(x,(similarity_timeseries(this_event_bins)),'r')
 %     hold on
@@ -943,13 +954,13 @@ disp('PLS KDE decoding finished')
 %     PLOT = plot(x,y,'Color','k');hold on;
 %     ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
 % end
-% 
+%
 % KDE_bias_shuffled_event=[];
 % KDE_bias_event = [];
 % KDE_bias = pdf_T1./(pdf_T1+pdf_T2);
 % KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
-% 
-% 
+%
+%
 % % Visualize similarity
 % figure;
 % % similarity_timeseries_shuffled = reshape(similarity_timeseries_shuffled,1,[]);
@@ -958,43 +969,43 @@ disp('PLS KDE decoding finished')
 % xlabel('Ripple Time Bin');
 % ylabel('Track 2 Similarity');
 % title('Mahalanobis-Based Similarity');
-% 
-% 
+%
+%
 % similarity_shuffled=[];
 % similarity = [];
 % for nEvent = 1:max(ripples_id);
 %     this_event_bins = find(ripples_id==nEvent);
 %     Track1_dist_shuffled(:,nEvent) = mean(dist_to_Track1_shuffled(:,this_event_bins),2);
 %     Track2_dist_shuffled(:,nEvent) = mean(dist_to_Track2_shuffled(:,this_event_bins),2);
-% 
+%
 %     Track1_dist(:,nEvent) = mean(dist_to_Track1(this_event_bins));
 %     Track2_dist(:,nEvent) = mean(dist_to_Track2(this_event_bins));
 % end
-% 
-% 
+%
+%
 % histogram(Track1_dist,0:0.01:5,'Normalization','probability','EdgeAlpha',0);hold on;
 % histogram(Track1_dist_shuffled,0:0.01:5,'Normalization','probability','EdgeAlpha',0);hold on;
-% 
-% 
+%
+%
 % histogram(Track2_dist,0:0.01:5,'Normalization','probability','EdgeAlpha',0);hold on;
 % histogram(Track2_dist_shuffled,0:0.01:5,'Normalization','probability','EdgeAlpha',0);
-% 
-% 
+%
+%
 % similarity_shuffled=[];
 % similarity = [];
 % for nEvent = 1:max(ripples_id);
 %     this_event_bins = find(ripples_id==nEvent);
 %     similarity_shuffled(:,nEvent) = mean(similarity_timeseries_shuffled(:,this_event_bins),2);
 %     similarity(nEvent) = mean(similarity_timeseries(this_event_bins));
-% 
+%
 %     similarity_T1_sig = find(similarity<prctile(similarity_shuffled,2.5));
 %     similarity_T2_sig = find(similarity>prctile(similarity_shuffled,97.5));
 % end
 % similarity_T1_sig = similarity<similarity_shuffled
-% 
+%
 % similarity_T1_sig = find(similarity<prctile(similarity_shuffled,2.5));
 % similarity_T2_sig = find(similarity>prctile(similarity_shuffled,97.5));
-% 
+%
 % % Visualize similarity
 % figure;
 % % similarity_timeseries_shuffled = reshape(similarity_timeseries_shuffled,1,[]);
