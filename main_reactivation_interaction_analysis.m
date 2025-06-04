@@ -30,37 +30,6 @@ load(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivat
 
 
 
-%%%%% Grabbing bias at DOWN-UP and UP-DOWN transition
-
-all_sessions = max(slow_waves_all(1).DOWN_session_count);
-sessions_to_process = 1:all_sessions;
-for nsession = 1:all_sessions
-    
-    for nprobe = 1:2
-        UP_event_index = intersect(find(slow_waves_all(nprobe).UP_session_count==nsession),probability(nprobe).UP_all_index);
-        
-        temp_index = find(slow_waves_all(nprobe).DOWN_session_count==nsession);
-        [C,ia,ib] = intersect(slow_waves_all(nprobe).DOWN_ints(temp_index,2),slow_waves_all(nprobe).UP_ints(UP_event_index,1));
-        previous_DOWN_event_index = temp_index(ia);
-
-        DOWN_event_index = intersect(find(slow_waves_all(nprobe).DOWN_session_count==nsession),probability(nprobe).DOWN_all_index);
-
-        for nevent = 1:length(event_index)
-
-
-        end
-
-        KDE_reactivation_V1_UP_all(nprobe).event_id{nsession}
-
-        probability(nprobe).DOWN_all_index
-
-        
-        probability(nprobe).UP_all_index
-    end
-
-end
-
-
 
 %%%%% Grabbing bias at DOWN-UP and UP-DOWN transition
 
@@ -103,8 +72,8 @@ for nprobe = 1:2
         % Bias data
         bias_up = KDE_reactivation_V1_UP_all(nprobe).bias{nsession};
         bias_down = KDE_reactivation_V1_DOWN_all(nprobe).bias{nsession};
-        time_up = KDE_reactivation_V1_UP_all(nprobe).timebin{nsession};
-        time_down = KDE_reactivation_V1_DOWN_all(nprobe).timebin{nsession};
+        time_up = KDE_reactivation_V1_UP_all(nprobe).event_bins{nsession}(:,1)';
+        time_down = KDE_reactivation_V1_DOWN_all(nprobe).event_bins{nsession}(:,1)';
         event_id_up = KDE_reactivation_V1_UP_all(nprobe).event_id{nsession};
         event_id_down = KDE_reactivation_V1_DOWN_all(nprobe).event_id{nsession};
 
