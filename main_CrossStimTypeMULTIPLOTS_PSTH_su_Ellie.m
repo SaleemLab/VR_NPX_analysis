@@ -8,7 +8,7 @@ clear all
 session_specific_L4 = {15, 4510:4650;}; % 1/4. um. Set for each SESSION based on CSD +/- 70um
 % 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; 
 % 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650;
-depth_for_analysis = 'L5_6'; % choose 'L4' or 'L2_3' (max(L4_depth_range) + 500) or 'L5_6' (min(L4_depth_range) - 400)
+depth_for_analysis = 'L4'; % choose 'L4' or 'L2_3' (max(L4_depth_range) + 500) or 'L5_6' (min(L4_depth_range) - 400)
 SUBJECTS = {'M00013'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
@@ -33,6 +33,7 @@ stimulus_colors = [
 for nsession = sessions_to_plot 
     %Create a figure handle for each cluster outside the stimulus-type loop
     cluster_figures = containers.Map('KeyType', 'int32', 'ValueType', 'any'); %% to store figure handles
+    cluster_raster_figures = containers.Map('KeyType', 'int32', 'ValueType', 'any');
 
     for stim_idx = 1:length(Stimulus_types)
         Stimulus_type = Stimulus_types{stim_idx};
@@ -97,13 +98,6 @@ for nsession = sessions_to_plot
                     time_edges = baseline_window(1):psthBinSize:baseline_window(2);
                 end
 
-                % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
-                %all_spike_times = [];
-                %all_spike_ids = [];
-                %for np = 1:length(depth_selected_clusters)
-                  %  all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
-                  %  all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
-                %end
                 for cluster_idx = 1:length(depth_cluster_ids)
                     cluster_id = depth_cluster_ids(cluster_idx);
                     
@@ -111,16 +105,22 @@ for nsession = sessions_to_plot
                     this_cluster_mask = depth_selected_clusters(nprobe).spike_id == cluster_id;
                     cluster_spike_times = depth_selected_clusters(nprobe).spike_times(this_cluster_mask);
                     
-                    % Create figure for this cluster if not already created
+                    % Create traces figure for this cluster if not already created
                     if ~isKey(cluster_figures, cluster_id)
                         cluster_figures(cluster_id) = figure('Name', sprintf('Cluster %d', cluster_id), 'NumberTitle', 'off'); %% <<< MODIFIED >>>
                         figure(cluster_figures(cluster_id)); % activates the figure
                         hold on;
                     end
-                    fig = cluster_figures(cluster_id);
-                    figure(fig); % Activate figure
 
-                
+                    % Create raster figure for this cluster if not already created
+                    if ~isKey(cluster_raster_figures, cluster_id)
+                        raster_fig = figure('Name', sprintf('Cluster %d Raster', cluster_id), 'NumberTitle', 'off');
+                        cluster_raster_figures(cluster_id) = raster_fig;
+                        tiledlayout(raster_fig, 3, 1); % 3 vertically stacked panels
+                    end
+
+                    fig = cluster_figures(cluster_id);
+                    figure(fig); % Activate traces figure
                 
                     % Compute appropriate histogram counts for z-scoring
                     if contains(z_score_period, 'entire_session')
@@ -129,7 +129,6 @@ for nsession = sessions_to_plot
                         baseline_spikes = cluster_spike_times(cluster_spike_times >= baseline_window(1) & cluster_spike_times <= baseline_window(2));
                         zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                     end
-    
     
                     ordered_oris = unique(Task_info.stim_orientation, 'stable');               
                     
@@ -188,16 +187,97 @@ for nsession = sessions_to_plot
                     
                         sgtitle(sprintf('%s %s cluster %d FRs %s vs %s vs %s', subject_number, depth_for_analysis, cluster_id, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 16);
                     end    
-                    if stim_idx == 3 %only save once    
-                        filename = sprintf('%s %s cluster %d FRs %s vs %s vs %s.png', subject_number, depth_for_analysis, cluster_id, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
-                        save_path = fullfile(pwd, filename);
-                        exportgraphics(fig, save_path); 
-        
-                        % Also save as .fig
+                    if stim_idx == 3 %only save once as .fig    
                         fig_filename = sprintf('%s %s cluster %d FRs %s vs %s vs %s.fig', subject_number, depth_for_analysis, cluster_id, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
                         fig_save_path = fullfile(pwd, fig_filename);
                         savefig(fig, fig_save_path);
                     end    
+                    
+                    % Activate raster figure and tile
+                    raster_fig = cluster_raster_figures(cluster_id);
+                    figure(raster_fig); % activate figure
+                    t = findobj(raster_fig, 'Type', 'tiledlayout');
+                    nexttile(t, stim_idx); % Use tile based on stim_idx
+                    ax = gca;
+
+                    % Plot the raster
+                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(cluster_spike_times, stim_onsets, [-0.3 1.35], psthBinSize/10); 
+                    plot(ax, rasterX, rasterY, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 2, 'HandleVisibility', 'off');
+                    hold on;
+
+                    %look at the distribution of spikes in the omission window i.e. 30-150ms after onset of element 2 
+                    analysis_window = [0.18 0.3];  % seconds after onset of element 1 (which comes on 0.15s before element 2)
+                    trial_means = [];
+                    
+                    % Loop over each stimulus onset
+                    for i = 1:length(stim_onsets)
+                        onset = stim_onsets(i);
+                        % Get spikes within the window for this trial
+                        spikes_in_trial = cluster_spike_times(cluster_spike_times >= onset + analysis_window(1) & ...
+                                                              cluster_spike_times <= onset + analysis_window(2));
+                        spikes_in_trial = spikes_in_trial - onset;
+
+                        if ~isempty(spikes_in_trial)
+                            trial_means(end+1) = mean(spikes_in_trial);
+                        end
+                    end
+                    
+                    % Only compute if spikes were found
+                    if ~isempty(trial_means)
+                        mean_spike_time = mean(trial_means);
+                        sem_spike_time = std(trial_means) / sqrt(length(trial_means));  % SEM across trials; n = # of trials with spikes
+                        ci99 = 2.576 * sem_spike_time;  % 99% CI
+                        % Add a marker for the mean spike time 
+                      %  y_val = max(rasterY)/2;  % Place it in the middle of the raster
+                       
+                        hold on;
+                        
+                       % errorbar(ax, mean_spike_time, y_val, ci99, 'horizontal', ...
+                        %    'o', ...
+                        %    'Color', 'k', ...
+                        %    'CapSize', 10, ...
+                         %   'LineWidth', 1.0, ...
+                        %    'MarkerSize', 5, ...
+                        %    'MarkerFaceColor', stimulus_colors(stim_idx,:), ...
+                        %    'MarkerEdgeColor', stimulus_colors(stim_idx,:), ...
+                        %    'DisplayName', 'mean trial spike time [0.18–0.3s] 99% CI');
+                    end
+                    %legend show
+                    %legend('Location', 'southwest');
+                    xlim(ax, [-0.2 1.2]); % to highlight post stim oscillations
+                    xticks(ax, 0:0.2:1.2); % to highlight post stim oscillations
+                    %xlim(ax, [0.14 0.31]); % to highlight response to second element
+                    %xticks(ax, 0.15:0.01:0.3); % to highlight response to second element
+                    
+                    xline(ax, 0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                    xline(ax, 0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                    
+                    if stim_idx == 1 %only label (with standard ABCD orientations!) once
+                        xline(ax, 0, 'k', (sprintf('A %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(ax, 0.15, 'k', (sprintf('B %d%s onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                    end    
+                    
+                    if stim_idx == 2 %only label (with standard ABCD orientations!) once
+                        xline(ax, 0, 'k', (sprintf('A %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(ax, 0.15, 'k', (sprintf('grey onset')), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                    end  
+
+                    if stim_idx == 3 %only label (with standard ABCD orientations!) once
+                        xline(ax, 0, 'k', (sprintf('E %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(ax, 0.15, 'k', (sprintf('grey onset')), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xlabel('Time (s) since onset of first element', 'FontSize', 14);
+                    end  
+                    sgtitle(sprintf('%s %s cluster %d rasters %s vs %s vs %s', subject_number, depth_for_analysis, cluster_id, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 16);
+                    ylabel('Trial', 'FontSize', 14);
+                    title(Stimulus_types{stim_idx}, 'Interpreter', 'none', 'FontSize', 14);
+                    set(gca, 'FontSize', 14, 'TickDir', 'out', 'box', 'off');
+
+                    if stim_idx == 3 %only save once as .fig    
+                        fig_filename = sprintf('%s %s cluster %d rasters %s vs %s vs %s.fig', subject_number, depth_for_analysis, cluster_id, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
+                        fig_save_path = fullfile(pwd, fig_filename);
+                        savefig(raster_fig, fig_save_path);
+                    end  
+
                 end
             end
         end

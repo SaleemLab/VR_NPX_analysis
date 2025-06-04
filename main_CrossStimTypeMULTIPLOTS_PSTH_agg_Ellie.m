@@ -15,7 +15,7 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK DCBA'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'entire_session'; % 'none' = no z scoring or z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
@@ -143,23 +143,32 @@ for nsession = sessions_to_plot
         
                         if contains(z_score_period, 'none')
                             % Plot raw mean firing rate trace
-                            plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
+                            plot(bins, mean_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
                             ylabel('Mean firing rate (Hz)', 'FontSize', 14);
                             ylim ([0 16]);
-                        else % Compute appropriate histogram counts for z-scoring
+                        else 
+                            baseline_mean = mean(zscore_counts);
+                            baseline_std = std(zscore_counts);
+                            % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
+                            zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
+                            z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
+                            sem_trace = std(zscored_trials, 0, 1) / sqrt(size(zscored_trials, 1));  % SEM
+                            
+                            plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
+                               % Plot SEM shading
+                            fill([bins, fliplr(bins)], ...
+                                [z_trace + sem_trace, fliplr(z_trace - sem_trace)], ...
+                                stimulus_colors(stim_idx,:), ...
+                                'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+
                             if contains(z_score_period, 'entire_session')
-                                zscore_counts = histcounts(all_spike_times, time_edges);
                                 ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
                                 ylim([-1 5]);
                             elseif contains(z_score_period, 'first30secs')
-                                baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
-                                zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                                 ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
                                 ylim([-1 8]);
                             end
-                            z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
-                            plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
-                            
+                                                   
                         end    
                                        
                         peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
@@ -305,22 +314,31 @@ for nsession = sessions_to_plot
                     
                     if contains(z_score_period, 'none')
                         % Plot raw mean firing rate trace
-                        plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
+                        plot(bins, mean_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
                         ylabel('Mean firing rate (Hz)', 'FontSize', 14);
                         ylim ([0 16]);
-                    else % Compute appropriate histogram counts for z-scoring
+                    else 
+                        baseline_mean = mean(zscore_counts);
+                        baseline_std = std(zscore_counts);
+                        % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
+                        zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
+                        z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
+                        sem_trace = std(zscored_trials, 0, 1) / sqrt(size(zscored_trials, 1));  % SEM
+                        
+                         % Plot SEM shading
+                        fill([bins, fliplr(bins)], ...
+                             [z_trace + sem_trace, fliplr(z_trace - sem_trace)], ...
+                             stimulus_colors(stim_idx,:), ...
+                             'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+                        
+                        plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
                         if contains(z_score_period, 'entire_session')
-                            zscore_counts = histcounts(all_spike_times, time_edges);
                             ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
                             ylim([-1 5]);
                         elseif contains(z_score_period, 'first30secs')
-                            baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
-                            zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
                             ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
                             ylim([-1 8]);
-                        end
-                        z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
-                        plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));         
+                        end                   
                     end    
                                        
                     peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
@@ -367,6 +385,7 @@ for nsession = sessions_to_plot
                     all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                     
                     xlim([-0.5 1.5]);
+                    ylim([-1 5]);
                     xticks(-0.4:0.2:1.4);
                     xlabel('Time (s)', 'FontSize', 14)
                     set(gca, 'FontSize', 14);  % Tick labels font size
