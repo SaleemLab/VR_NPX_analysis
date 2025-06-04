@@ -9,15 +9,16 @@
 %% Visual tuning based on SparseNoise
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
 
-clear all
 % SUBJECTS = {'M23017','M23028','M23029'};
 % SUBJECTS = {'M23087'};
-SUBJECTS = {'M24017'};
-
+SUBJECTS = {'M25002','M25026'};
+sessions = {2:15,[2:15,17,18]};
 % SUBJECTS = {'M23153'};
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
+for iSub = 1:2
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECTS{iSub},'analysis','experiment_info.mat'))
 % Stimulus_type = 'Masa2tracks';
 ROOTPATH = 'Z:\ibn-vision';
 % Stimulus_type = 'SparseNoise_fullscreen';
@@ -25,7 +26,8 @@ Stimulus_type = 'SparseNoise';
 initMap = [];
 probe_hemisphere_text = {'Left','Right'};
 
-for nsession =1:length(experiment_info)
+for ns =1:length(sessions{iSub})
+    nsession = sessions{iSub}(ns);
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -56,8 +58,8 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_behaviour.mat"))
             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_task_info.mat"))
 %             load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
-            load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks3.mat"))
-            sorting_option = 'spikeinterface';
+            load(fullfile(options.ANALYSIS_DATAPATH,"extracted_clusters_ks4.mat"))
+            sorting_option = 'masa';
             % currently hard-coded
             %             good_unit_index = (clusters.amplitude_cutoff <= 0.1...
             %                 &clusters.isi_viol <= 0.1...
@@ -67,9 +69,10 @@ for nsession =1:length(experiment_info)
             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
             %             metric_param.unstable_ids = @(x) x==0;
             clusters(nprobe) = select_clusters(clusters_ks4(nprobe),metric_param);
-            good_unit = unique(clusters(nprobe).spike_id);
+            good_unit = unique(clusters(nprobe).cluster_id);
 
             %         num_cell = length(unique(spike_data(:,1)));
+            resps = zeros(length(good_unit),options.AnalysisTimeWindow(2)/options.BinWidth,length(Task_info.stim_onset));
             for unit_id = 1:length(good_unit)
                 spikes_this_cell = clusters(nprobe).spike_times(clusters(nprobe).spike_id==good_unit(unit_id));
 
@@ -139,12 +142,12 @@ for nsession =1:length(experiment_info)
             initMap = [];
         end
 
-        save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
+        save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks4.mat'),'RF')
 %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
         %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
     end
 end
-
+end
 % load(fullfile(EPHYS_DATAPATH,'analysis','receptiveFields.mat'))
 
 %% plotting SparseNoise
@@ -298,3 +301,39 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
 end
 mkdir('visual')
 save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','visual'),[])
+
+
+%%
+% SUBJECTS = {'M23017','M23028','M23029'};
+% SUBJECTS = {'M23087'};
+SUBJECTS = {'M25002','M25026'};
+sessions = {2:15,[2:15,17,18]};
+% SUBJECTS = {'M23153'};
+for iSub = 1:2
+load(fullfile('Z:\ibn-vision\DATA\SUBJECTS',SUBJECTS{iSub},'analysis','experiment_info.mat'))
+% Stimulus_type = 'Masa2tracks';
+ROOTPATH = 'Z:\ibn-vision';
+% Stimulus_type = 'SparseNoise_fullscreen';
+Stimulus_type = 'SparseNoise';
+initMap = [];
+probe_hemisphere_text = {'Left','Right'};
+onedrive = 'C:\Users\adam.tong\OneDrive - University College London\data';
+for ns =1:length(sessions{iSub})
+    nsession = sessions{iSub}(ns);
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    gFileNum = experiment_info(nsession).gFileNum(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+
+    %     cd(fullfile(ROOTPATH,'DATA','SUBJECTS',session_info.probe(1).SUBJECT,'ephys',session_info.probe(1).SESSION,'analysis'))
+%     load(fullfile(options.ANALYSIS_DATAPATH,'..',"best_channels.mat"))
+
+    for n = 1:length(session_info)
+        options = session_info(n).probe(1);
+        onedrive_folder = fullfile(onedrive,SUBJECTS{iSub},'analysis',options.SESSION,'SparseNoise');
+        load(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks4.mat'),'RF')
+        save(fullfile(onedrive_folder,'receptiveFields_ks4.mat'),'RF')
+%         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_ks3.mat'),'RF')
+        %         save(fullfile(options.ANALYSIS_DATAPATH,'receptiveFields_without_pd.mat'),'RF')
+    end
+end
+end

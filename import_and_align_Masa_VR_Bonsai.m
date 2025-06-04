@@ -41,7 +41,7 @@ peripheral_path = bonsai_files_names(contains(bonsai_files_names,'WheelLog'));
 trial_path = bonsai_files_names(contains(bonsai_files_names,'Trial_info'));
 reward_path = bonsai_files_names(contains(bonsai_files_names,'Reward'));
 lick_performance_path = bonsai_files_names(contains(bonsai_files_names,'Lick_Performance'));
-
+manual_reward_path = bonsai_files_names(contains(bonsai_files_names,'Manual'));
 % DLC Eyedata pupil size
 
 DLC_EYEDATA_DATAPATH = char(fullfile(options.BONSAI_DATAPATH,options.bonsai_files_names(contains(options.bonsai_files_names,'DLC'))));% new eye log
@@ -764,6 +764,60 @@ task_info.pd_on.sglxTime = pdstart';
 task_info.pd_off.sglxTime = pdend';
 
 
+
+if ~isempty(manual_reward_path)
+    manual_reward = readtable(fullfile([BONSAI_DATAPATH,'\',char(manual_reward_path)]));
+    if ~isempty(manual_reward)
+        task_info.manual_reward_LR = table2cell(manual_reward(:,"Var1"));
+        task_info.manual_reward_LR = cellfun(@(x) x(2:end), task_info.manual_reward_LR, 'UniformOutput',false);
+        task_info.manual_reward_LR = cellfun(@str2double,task_info.manual_reward_LR);
+
+        task_info.manual_reward_track_ID = table2array(manual_reward(:,"Var2"));
+        task_info.manual_reward_lap_ID = zeros(size(  task_info.manual_reward_track_ID));
+
+        task_info.manual_reward_lap_ID(task_info.manual_reward_track_ID == 1) = table2array(manual_reward(task_info.manual_reward_track_ID==1,4));
+        task_info.manual_reward_lap_ID(task_info.manual_reward_track_ID == 2) = table2array(manual_reward(task_info.manual_reward_track_ID==2,5));
+
+        task_info.manual_reward_position = table2cell(manual_reward(:,"Var6"));
+        task_info.manual_reward_position = cellfun(@(x) x(1:end-1), task_info.manual_reward_position, 'UniformOutput',false);
+        task_info.manual_reward_position = cellfun(@str2double,task_info.manual_reward_position);
+
+        %%  Reward Delivery Time Based on Eye Frame Count, or Time
+
+        %     DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
+        task_info.manual_reward_time_original = [];
+        task_info.manual_reward_time = [];
+
+        %             if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
+        reward_delivery_time = table2array(manual_reward(:,"Var3")); % May want to simplify this in the future
+
+        % Initially search for reward delivery time using original spikeglx timestamp (not 60Hz resampled one)
+        for n = 1:length(reward_delivery_time)
+            start_index = find(reward_delivery_time(n) == peripherals.Time);
+
+            %         start_index = interp1(behaviour.computer_timevec,behaviour.computer_timevec,reward_delivery_time(n),'nearest') == behaviour.computer_timevec;
+
+            if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                for count = 1:10
+                    start_index = find(reward_delivery_time(n)+count == peripherals.Time);
+                    if ~isempty(start_index)
+                        break
+                    end
+                end
+            end
+
+            if  reward_delivery_time(n) >= peripherals.Time(end) % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+                break
+            end
+
+            % Original reward time
+            task_info.manual_reward_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+            % Reward time basewd on resampled 60Hz timestamp
+            task_info.manual_reward_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.manual_reward_time_original(n,1),'nearest');
+        end
+
+    end
+end
 % end
 % extract_laps_masa(1,behaviour,position)
 

@@ -1,5 +1,11 @@
-function analyse_UP_DOWN_transition(event_info,ripples_all,spindles_all,slow_waves_all)
-
+function predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all)
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
 % if exist('D:\corticohippocampal_replay')>0
 %     analysis_folder = 'D:\corticohippocampal_replay';
 % elseif exist('P:\corticohippocampal_replay')>0

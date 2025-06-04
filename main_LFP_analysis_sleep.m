@@ -538,6 +538,7 @@ for nsession =1:length(experiment_info)
                     end
                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+                    % spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     spindle_phase_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
 

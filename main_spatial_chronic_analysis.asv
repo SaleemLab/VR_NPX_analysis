@@ -394,32 +394,23 @@ for nsession = 1:length(experiment_info)
         estimated_position_lap_CV_HPC_combined.track = [];
         estimated_position_lap_CV_V1_combined.track = [];
 
-
+        
         if length(session_info(n).probe) > 1
             options.region = 'HPC Combined';
-%             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-%             metric_param.unstable_ids = @(x) x==0;
-%             metric_param.region = @(x) contains(x,'HPC');
-% 
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            metric_param.region = @(x) contains(x,'HPC');
 
-           selected_clusters =  HPC_clusters_RUN;
-
-           place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-               selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
-            [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track,estimated_position_lap_CV_shuffled_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [probability_ratio_RUN_lap_HPC_combined,estimated_position_lap_CV_HPC_combined.track,estimated_position_lap_CV_shuffled_HPC_combined.track] = bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields,Behaviour,Task_info,options);
 
             options.region = 'V1 Combined';
-            %             metric_param = create_cluster_selection_params('sorting_option',sorting_option);
-            %             metric_param.unstable_ids = @(x) x==0;
-            %             metric_param.region = @(x) contains(x,'V1');
-            % [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            metric_param = create_cluster_selection_params('sorting_option',sorting_option);
+            metric_param.unstable_ids = @(x) x==0;
+            metric_param.region = @(x) contains(x,'V1');
 
-            selected_clusters =  V1_clusters_RUN;
-
-            place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
-                selected_clusters.position{1},speed,selected_clusters.track_ID_all{1},selected_clusters.start_time_all{1},selected_clusters.end_time_all{1},x_window,x_bin_width);
-            [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track,estimated_position_lap_CV_shuffled_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields_BAYESIAN,Behaviour,Task_info,options);
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            [probability_ratio_RUN_lap_V1_combined,estimated_position_lap_CV_V1_combined.track,estimated_position_lap_CV_shuffled_V1_combined.track] = bayesian_decoding_RUN_lap_cross_validation_all(selected_clusters,place_fields,Behaviour,Task_info,options);
 
         end
 

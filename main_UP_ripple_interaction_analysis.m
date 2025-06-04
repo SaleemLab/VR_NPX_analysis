@@ -22,7 +22,9 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
 
 
-if exist('D:\corticohippocampal_replay')>0
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
@@ -52,14 +54,19 @@ plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thres_norm
 plot_ipsi_contra_UP_DOWN_ripples_coupling_detection_thresholded
 
 plot_ipsi_contra_UP_DOWN_spindles_coupling_detection_thres_norm
-plot_ipsi_contra_UP_DOWN_spindles_coupling_detection_thresholded
+plot_ipsi_contra_UP_DOWN_spindles_coupling_detection_thres
 
 
-plot_ipsi_contra_UP_DOWN_ripple_spindle_coupling(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
 
-plot_ipsi_contra_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+% plot_ipsi_contra_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+plot_ipsi_contra_ripples_UP_DOWN_coupling(slow_waves_all,ripples_all,spindles_all)
+
+plot_ipsi_contra_ripples_spindles_coupling(slow_waves_all,ripples_all,spindles_all)
 
 
+% Demonstrate how DOWN/UP, ripples and spindles predict each other (using mixed effect linear regression and survival analysis )
+predict_ipsi_contra_UP_DOWN_ripples_MUA(slow_waves_all,ripples_all,spindles_all)
+predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all)
 
 %% Plotting and calculating MUA relative to UP DOWN and ripple
 all_sessions = max(slow_waves_all(1).DOWN_session_count);

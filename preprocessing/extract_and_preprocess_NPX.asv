@@ -12,7 +12,7 @@ function extract_and_preprocess_NPX(session_info,Stimulus_type)
 % extraction function.
 stimulus_name = cell(length(session_info),1);
 for n = 1:length(session_info) % just in case there might be multiple recording for the same stimulus type (e.g. PRE RUN POST Masa2tracks)
-    stimulus_name{n,1}
+    stimulus_name{n,1} = session_info(n).probe(1).StimulusName;
     
     if str2num(session_info(n).probe(1).SESSION) < 20240401
         % Old Part 1 Align two NPX probes if there are two probes
@@ -61,8 +61,8 @@ for n = 1:length(session_info) % just in case there might be multiple recording 
                 [Behaviour,Task_info,Peripherals]  = import_and_align_Masa_VR_Bonsai_MatrixRig(stimulus_name{n},options);
             end
             
-        elseif contains(Stimulus_type,'Diao')
-
+        elseif contains(Stimulus_type,'DotMotion')
+                [Behaviour,Task_info,Peripherals]  = import_and_align_dot_motion_Bonsai_MatrixRig(options);
         elseif contains(Stimulus_type,'Edd')
 
         else % Else just standard visual stimuli such as Sparse Noise, checkerboard and static grating etc

@@ -12,15 +12,15 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([33 34 35 44 45 58 59 71 72]);
+% experiment_info=experiment_info([33 34 35 44 45 58 59 71 72]);
 % experiment_info=experiment_info([33 34 35 44 45 58 59 71 72 73]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % experiment_info=experiment_info([45 46 48 51]);
 Stimulus_type = 'RUN1';
 
-for nsession = 1:length(experiment_info)
+for nsession = [13 14 15 18 19 22]
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
 
@@ -229,11 +229,13 @@ end
 %% Spatial bayesian decoding
 %% Within session
 clear all
-% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
-SUBJECTS={'M24016','M24017','M24018'};
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'RUN';
 % [1 2 3 4 9 10 12 14]
 
@@ -254,6 +256,16 @@ for nsession = 1:length(experiment_info)
             clusters = clusters_ks4;
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        end
+
+        mean_FR = [];
+        for ncluster = 1:length(session_clusters.cluster_id)
+            if length(session_clusters.spike_times{ncluster}) > 0
+                mean_FR(ncluster) = length(session_clusters.spike_times{ncluster})...
+                    /(session_clusters.spike_times{ncluster}(end) - session_clusters.spike_times{ncluster}(1));
+            else
+                mean_FR(ncluster) = 0;
+            end
         end
 
         clusters_combined= session_clusters;
@@ -298,6 +310,7 @@ for nsession = 1:length(experiment_info)
             end
             
             metric_param = [];
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
             if options.probe_hemisphere == 1
                 metric_param.region = @(x) contains(x,'HPC_L');
                 options.region = 'HPC Left';
@@ -324,6 +337,7 @@ for nsession = 1:length(experiment_info)
             clear place_fields_BAYESIAN
 
             metric_param = [];
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
             if clusters(nprobe).probe_hemisphere == 1
                 metric_param.region = @(x) contains(x,'V1_L');
                 options.region = 'V1 Left';
@@ -343,8 +357,9 @@ for nsession = 1:length(experiment_info)
 
         if length(session_info(n).probe) > 1
             options.region = 'HPC Combined';
-            metric_param=[]
+            metric_param=[];
             metric_param.region = @(x) contains(x,'HPC');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
@@ -356,6 +371,7 @@ for nsession = 1:length(experiment_info)
             options.region = 'V1 Combined';
             metric_param=[];
             metric_param.region = @(x) contains(x,'V1');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
 
             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
             place_fields_BAYESIAN = calculate_spatial_cells(selected_clusters,selected_clusters.tvec{1},...
@@ -430,10 +446,10 @@ for nsession = 1:length(experiment_info)
         clusters_combined.spike_id=clusters_combined.spike_id(index);
 
         % Cell with spatial tuning
-        ia = find(clusters_combined.odd_even_stability(:,1)>0.95 ...
-            | clusters_combined.odd_even_stability(:,2)>0.95);
-%                 ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
-%             | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
+        %         ia = find(mean_FR' <= 2 &((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+        %             | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95)));
+        ia = find((clusters_combined.peak_percentile(:,1)>0.95&clusters_combined.odd_even_stability(:,1)>0.95) ...
+            | (clusters_combined.peak_percentile(:,2)>0.95&clusters_combined.odd_even_stability(:,2)>0.95));
         %         [C,ia,ic] = unique(clusters_combined.cluster_id);
         C = clusters_combined.cluster_id(ia);
 
@@ -447,9 +463,6 @@ for nsession = 1:length(experiment_info)
         place_fields_BAYESIAN = calculate_spatial_cells(clusters_combined,clusters_combined.tvec{1},...
             clusters_combined.position{1},speed,clusters_combined.track_ID_all{1},clusters_combined.start_time_all{1},clusters_combined.end_time_all{1},x_window,x_bin_width);
 
-
-        find((clusters_combined.odd_even_stability(:,1)>0.95 ...
-            | clusters_combined.odd_even_stability(:,2)>0.95)&contains(clusters_combined.region,'HPC')&(clusters_combined.firing_rate < 10));
 
         % Plotting Log odds
 

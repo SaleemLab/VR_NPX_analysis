@@ -41,6 +41,7 @@ peripheral_path = bonsai_files_names(contains(bonsai_files_names,'WheelLog'));
 trial_path = bonsai_files_names(contains(bonsai_files_names,'Trial_info'));
 reward_path = bonsai_files_names(contains(bonsai_files_names,'Reward'));
 lick_performance_path = bonsai_files_names(contains(bonsai_files_names,'Lick_Performance'));
+manual_reward_path = bonsai_files_names(contains(bonsai_files_names,'Manual'));
 
 % DLC Eyedata pupil size
 
@@ -107,7 +108,7 @@ if sum(peripherals.Sync>0) <= 0 % no sync pulse detected so align photodiode to 
         photodiode = rmfield(photodiode,{'T','S','P'});
         % no sync pulse
 
-        baseline_corrected_PD_nidq = Nidq.photodiode-movmean(Nidq.photodiode,120);
+        baseline_corrected_PD_nidq = Nidq.photodiode-movmean(Nidq.photodiode,10000);
         initial_centroids = [ prctile(baseline_corrected_PD_nidq,10);prctile(baseline_corrected_PD_nidq,90)];
         PD_nidq_kmean = kmeans(baseline_corrected_PD_nidq',2,'Start', initial_centroids)-1;
         PD_nidq_onset = double([0;diff(PD_nidq_kmean)] > 0);
@@ -117,10 +118,11 @@ if sum(peripherals.Sync>0) <= 0 % no sync pulse detected so align photodiode to 
         PD_bonsai_kmean = kmeans(baseline_corrected_PD_bonsai,2,'Start', initial_centroids)-1;
         PD_bonsai_onset = double([0;diff(PD_bonsai_kmean)] > 0);
         
-        photodiode.sglxTime = align_A_time_to_B_time(PD_bonsai_onset,photodiode.FrameTime,PD_nidq_onset,Nidq.sglxTime);
+        photodiode.sglxTime = align_A_time_to_B_time(PD_bonsai_onset,photodiode.Time./1000,PD_nidq_onset,Nidq.sglxTime);
 %         photodiode.sglxTime = align_A_time_to_B_time(photodiode.Photodiode,photodiode.Time./1000,Nidq.photodiode,Nidq.sglxTime);
-        peripherals.sglxTime = align_A_time_to_B_time(peripherals.Photodiode,peripherals.Time./1000,photodiode.Photodiode,photodiode.sglxTime);
-        
+        peripherals.sglxTime = align_A_time_to_B_time(peripherals.Photodiode,peripherals.FrameTime,photodiode.Photodiode,photodiode.sglxTime);
+        photodiode.sglxTime = linspace(photodiode.sglxTime(1),photodiode.sglxTime(end),length(photodiode.sglxTime));
+        peripherals.sglxTime = linspace(peripherals.sglxTime(1),peripherals.sglxTime(end),length(peripherals.sglxTime));
 
     else
         photodiode = []; photodiode_sync = [];
@@ -147,10 +149,6 @@ end
 % eyeData = import_bonsai_eyedata(fullfile([BONSAI_DATAPATH,'\',char(EYEDATA_DATAPATH)]));
 % [eyeData] = alignBonsaiToEphysSyncTimes(eyeData,syncTimes_ephys);
 eyeData = [];
-
-
-
-
 
 reward = readtable(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
 lick_performance = readtable(fullfile([BONSAI_DATAPATH,'\',char(lick_performance_path)]));
@@ -919,6 +917,59 @@ task_info.pd_on.sglxTime = pdstart';
 task_info.pd_off.sglxTime = pdend';
 
 
+if ~isempty(manual_reward_path)
+    manual_reward = readtable(fullfile([BONSAI_DATAPATH,'\',char(manual_reward_path)]));
+    if ~isempty(manual_reward)
+        task_info.manual_reward_LR = table2cell(manual_reward(:,"Var1"));
+        task_info.manual_reward_LR = cellfun(@(x) x(2:end), task_info.manual_reward_LR, 'UniformOutput',false);
+        task_info.manual_reward_LR = cellfun(@str2double,task_info.manual_reward_LR);
+
+        task_info.manual_reward_track_ID = table2array(manual_reward(:,"Var2"));
+        task_info.manual_reward_lap_ID = zeros(size(  task_info.manual_reward_track_ID));
+
+        task_info.manual_reward_lap_ID(task_info.manual_reward_track_ID == 1) = table2array(manual_reward(task_info.manual_reward_track_ID==1,4));
+        task_info.manual_reward_lap_ID(task_info.manual_reward_track_ID == 2) = table2array(manual_reward(task_info.manual_reward_track_ID==2,5));
+
+        task_info.manual_reward_position = table2cell(manual_reward(:,"Var6"));
+        task_info.manual_reward_position = cellfun(@(x) x(1:end-1), task_info.manual_reward_position, 'UniformOutput',false);
+        task_info.manual_reward_position = cellfun(@str2double,task_info.manual_reward_position);
+
+        %%  Reward Delivery Time Based on Eye Frame Count, or Time
+
+        %     DIR = dir(fullfile([BONSAI_DATAPATH,'\',char(reward_path)]));
+        task_info.manual_reward_time_original = [];
+        task_info.manual_reward_time = [];
+
+        %             if DIR.datenum > datenum('14-June-2023 13:00:00') & DIR.datenum < datenum('01-Jan-2024 13:00:00')
+        reward_delivery_time = table2array(manual_reward(:,"Var3")); % May want to simplify this in the future
+
+        % Initially search for reward delivery time using original spikeglx timestamp (not 60Hz resampled one)
+        for n = 1:length(reward_delivery_time)
+            start_index = find(reward_delivery_time(n) == peripherals.Time);
+
+            %         start_index = interp1(behaviour.computer_timevec,behaviour.computer_timevec,reward_delivery_time(n),'nearest') == behaviour.computer_timevec;
+
+            if isempty(start_index) % in rare cases where a frame is dropped, use next frame to get the lick time
+                for count = 1:10
+                    start_index = find(reward_delivery_time(n)+count == peripherals.Time);
+                    if ~isempty(start_index)
+                        break
+                    end
+                end
+            end
+
+            if  reward_delivery_time(n) >= peripherals.Time(end) % rare cases last lap started when the workflow stopped such that nothing was not logged in peripherals
+                break
+            end
+
+            % Original reward time
+            task_info.manual_reward_time_original(n,1) = peripherals.corrected_sglxTime(start_index);
+            % Reward time basewd on resampled 60Hz timestamp
+            task_info.manual_reward_time(n,1) = interp1(behaviour.sglxTime,behaviour.sglxTime,task_info.manual_reward_time_original(n,1),'nearest');
+        end
+
+    end
+end
 % end
 % extract_laps_masa(1,behaviour,position)
 
