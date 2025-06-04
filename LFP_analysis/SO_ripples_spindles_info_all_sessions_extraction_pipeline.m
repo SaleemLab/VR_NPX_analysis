@@ -868,40 +868,95 @@ for nsession =1:length(experiment_info)
 
     for nprobe = 1:length(decoded_ripple_events_V1)
 
+        % Store bin quality and threshold
         decoded_ripple_events_V1(nprobe).good_bins = good_bins;
-        decoded_ripple_events_V1(nprobe).PV_threshold =   PV_threshold; % empty if based on cell id distribution
+        decoded_ripple_events_V1(nprobe).PV_threshold = PV_threshold;
 
-        decoded_matrix = [decoded_ripple_events_V1(nprobe).track(1).replay_events(:).replay; decoded_ripple_events_V1(nprobe).track(2).replay_events(:).replay];
-        decoded_matrix = reshape(decoded_matrix,56,50,[]);
+        bayesian_reactivation_V1_all(nprobe).good_bins{nsession} = good_bins;
+        bayesian_reactivation_V1_all(nprobe).PV_threshold{nsession} = PV_threshold;
 
-        %         summed_probability = [good_bins good_bins+28];
-        summed_probability_distribution= [decoded_ripple_events_V1(nprobe).track(1).replay_events(:).summed_probability; decoded_ripple_events_V1(nprobe).track(2).replay_events(:).summed_probability];
-        summed_probability = reshape(summed_probability_distribution,2,50,[]);
+        % -- Compute bias distribution for zscoring (no bin alignment needed)
+        summed_probability_distribution = [
+            decoded_ripple_events_V1(nprobe).track(1).replay_events(:).summed_probability;
+            decoded_ripple_events_V1(nprobe).track(2).replay_events(:).summed_probability
+            ];
+        bias_distribution = summed_probability_distribution(1,:) ./ sum(summed_probability_distribution, 1, 'omitnan');
+        bias_mean = mean(bias_distribution, 'omitnan');
+        bias_std = std(bias_distribution, 0, 'omitnan');
 
-        bayesian_reactivation_V1_all(nprobe).summed_probability = summed_probability;
-        bayesian_reactivation_V1_all(nprobe).decoded_matrix = decoded_matrix;
+        % -- Initialize accumulation on first session
+        if session_count == 1 || ~isfield(bayesian_reactivation_V1_all(nprobe), 'decoded_matrix')
+            bayesian_reactivation_V1_all(nprobe).decoded_matrix = [];
+            bayesian_reactivation_V1_all(nprobe).summed_probability = [];
+            bayesian_reactivation_V1_all(nprobe).bias = [];
+            bayesian_reactivation_V1_all(nprobe).z_bias = [];
+            bayesian_reactivation_V1_all(nprobe).z_log_odds = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile = [];
+        end
 
-        bayesian_reactivation_V1_all(nprobe).bias = reshape(summed_probability_distribution(1,:)./sum(summed_probability_distribution,1),50,[]);
-        bayesian_reactivation_V1_all(nprobe).z_bias = reshape(zscore(summed_probability_distribution(1,:)./sum(summed_probability_distribution,1)),50,[]);
+        % -- Loop through events
+        for nevent = 1:length(decoded_ripple_events_V1(nprobe).track(1).replay_events)
 
-        bayesian_reactivation_V1_all(nprobe).summed_probability = summed_probability;
+            % Get data
+            replay1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).replay;
+            replay2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).replay;
+            sumprob1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).summed_probability;
+            sumprob2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).summed_probability;
 
-        for nevent = 1:length(decoded_ripple_events(nprobe).track(1).replay_events)
-            data = log(summed_probability(1,:,nevent)./summed_probability(2,:,nevent));
+            % Align bins based on onset time
+            time_edges = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).timebins_edges;
+            onset_time = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).onset;
+            [~, onset_bin] = min(abs(time_edges(1:end) - onset_time));
+            shift = 26 - onset_bin;
 
-            shuffled_data = log(decoded_ripple_events_shuffled(nprobe).track(1).replay_events(nevent).summed_probability...
-                ./decoded_ripple_events_shuffled(nprobe).track(2).replay_events(nevent).summed_probability);
+            % Setup shifted bins
+            [npos, nbins] = size(replay1);
+            bin_range = (1:nbins) + shift;
+            valid_idx = bin_range > 0 & bin_range <= 50;
 
-            bayesian_reactivation_V1_all(nprobe).z_log_odds(:,nevent) = (data-mean(shuffled_data))./std(shuffled_data);
+            % Align decoded matrix
+            mat1 = nan(npos, 50);
+            mat2 = nan(npos, 50);
+            mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
+            mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
+            combined_matrix = cat(1, mat1, mat2); % 56x50
 
+            bayesian_reactivation_V1_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
 
-            for i = 1:length(data)
-                % Get the column distribution
-                dist = shuffled_data(:, i);
+            % Align and store summed probability
+            sp_nan = nan(2, 50);
+            sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
+            sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
+            bayesian_reactivation_V1_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
 
-                % Percentile is the proportion of values less than or equal to data(i)
-                bayesian_reactivation_V1_all(nprobe).log_odds_percentile(i,nevent) = sum(dist <= data(i)) / length(dist) * 100;
+            % Bias and z-bias
+            total_prob = sum(sp_nan, 1, 'omitnan');
+            bias = sp_nan(1,:) ./ total_prob;
+            z_bias = (bias - bias_mean) ./ bias_std;
+
+            bayesian_reactivation_V1_all(nprobe).bias(:,end+1) = bias;
+            bayesian_reactivation_V1_all(nprobe).z_bias(:,end+1) = z_bias;
+
+            % Z log odds and percentiles
+            shuffled1 = decoded_ripple_events_V1_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
+            shuffled2 = decoded_ripple_events_V1_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
+            sp_shuf = log(shuffled1 ./ shuffled2);  % [nshuff x nbins]
+
+            shuf_nan = nan(size(sp_shuf,1), 50);
+            for s = 1:size(sp_shuf,1)
+                shuf_nan(s, bin_range(valid_idx)) = sp_shuf(s, valid_idx);
             end
+
+            data = log(sp_nan(1,:) ./ sp_nan(2,:));
+            bayesian_reactivation_V1_all(nprobe).z_log_odds(:,end+1) = (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');;
+
+            % Percentiles
+            log_odds_pct = nan(1, 50);
+            for i = 1:50
+                dist = shuf_nan(:, i);
+                log_odds_pct(i) = sum(dist <= data(i), 'omitnan') / sum(~isnan(dist)) * 100;
+            end
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile(:,end+1) = log_odds_pct;
         end
     end
 
@@ -939,6 +994,102 @@ for nsession =1:length(experiment_info)
             end
         end
     end
+
+    for nprobe = 1:length(decoded_ripple_events)
+
+        % Store bin quality and threshold
+        decoded_ripple_events(nprobe).good_bins = good_bins;
+        decoded_ripple_events(nprobe).PV_threshold = PV_threshold;
+
+        bayesian_reactivation_all(nprobe).good_bins{nsession} = good_bins;
+        bayesian_reactivation_all(nprobe).PV_threshold{nsession} = PV_threshold;
+
+        % -- Compute bias distribution for zscoring (no bin alignment needed)
+        summed_probability_distribution = [
+            decoded_ripple_events(nprobe).track(1).replay_events(:).summed_probability;
+            decoded_ripple_events(nprobe).track(2).replay_events(:).summed_probability
+            ];
+        bias_distribution = summed_probability_distribution(1,:) ./ sum(summed_probability_distribution, 1, 'omitnan');
+        bias_mean = mean(bias_distribution, 'omitnan');
+        bias_std = std(bias_distribution, 0, 'omitnan');
+
+        % -- Initialize accumulation on first session
+        if session_count == 1 || ~isfield(bayesian_reactivation_all(nprobe), 'decoded_matrix')
+            bayesian_reactivation_all(nprobe).decoded_matrix = [];
+            bayesian_reactivation_all(nprobe).summed_probability = [];
+            bayesian_reactivation_all(nprobe).bias = [];
+            bayesian_reactivation_all(nprobe).z_bias = [];
+            bayesian_reactivation_all(nprobe).z_log_odds = [];
+            bayesian_reactivation_all(nprobe).log_odds_percentile = [];
+        end
+
+        % -- Loop through events
+        for nevent = 1:length(decoded_ripple_events(nprobe).track(1).replay_events)
+
+            % Get data
+            replay1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).replay;
+            replay2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).replay;
+            sumprob1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).summed_probability;
+            sumprob2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).summed_probability;
+
+            % Align bins based on onset time
+            time_edges = decoded_ripple_events(nprobe).track(1).replay_events(nevent).timebins_edges;
+            onset_time = decoded_ripple_events(nprobe).track(2).replay_events(nevent).onset;
+            [~, onset_bin] = min(abs(time_edges(1:end) - onset_time));
+            shift = 26 - onset_bin;
+
+            % Setup shifted bins
+            [npos, nbins] = size(replay1);
+            bin_range = (1:nbins) + shift;
+            valid_idx = bin_range > 0 & bin_range <= 50;
+
+            % Align decoded matrix
+            mat1 = nan(npos, 50);
+            mat2 = nan(npos, 50);
+            mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
+            mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
+            combined_matrix = cat(1, mat1, mat2); % 56x50
+
+            bayesian_reactivation_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
+
+            % Align and store summed probability
+            sp_nan = nan(2, 50);
+            sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
+            sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
+            bayesian_reactivation_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
+
+            % Bias and z-bias
+            total_prob = sum(sp_nan, 1, 'omitnan');
+            bias = sp_nan(1,:) ./ total_prob;
+            z_bias = (bias - bias_mean) ./ bias_std;
+
+            bayesian_reactivation_all(nprobe).bias(:,end+1) = bias;
+            bayesian_reactivation_all(nprobe).z_bias(:,end+1) = z_bias;
+
+            % Z log odds and percentiles
+            shuffled1 = decoded_ripple_events_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
+            shuffled2 = decoded_ripple_events_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
+            sp_shuf = log(shuffled1 ./ shuffled2);  % [nshuff x nbins]
+
+            shuf_nan = nan(size(sp_shuf,1), 50);
+            for s = 1:size(sp_shuf,1)
+                shuf_nan(s, bin_range(valid_idx)) = sp_shuf(s, valid_idx);
+            end
+
+            data = log(sp_nan(1,:) ./ sp_nan(2,:));
+            bayesian_reactivation_all(nprobe).z_log_odds(:,end+1) = ...
+                (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');
+
+            % Percentiles
+            log_odds_pct = nan(1, 50);
+            for i = 1:50
+                dist = shuf_nan(:, i);
+                log_odds_pct(i) = sum(dist <= data(i), 'omitnan') / sum(~isnan(dist)) * 100;
+            end
+            bayesian_reactivation_all(nprobe).log_odds_percentile(:,end+1) = log_odds_pct;
+        end
+    end
+
     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
 
 
@@ -950,8 +1101,8 @@ elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
 
-save(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
-save(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
+save(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'),'bayesian_reactivation_all')
+save(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'),'bayesian_reactivation_V1_all')
 
 
 %% Analyse and plot peri-ripple, peri-spindle and peri-UP activity
