@@ -536,8 +536,41 @@ UP_DOWN_info.contra_spindles_DOWN = [spindle_probability_psth_whole(1).R_spindle
 
 
 %%%%%%%%%%%%%%%%%% Ripple info
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+
 ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
 
+[~,spindle_index] = RestrictInts(merged_event_info.ripples_ints,merged_event_info.spindles_ints);
+ripple_info.spindle_presence = spindle_index;
+
+
+
+for probe_no = 1:2
+    spindle_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,probe_no),:)];
+    end
+end
+spindle_phase = [spindle_phase{1} spindle_phase{2}];
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+
+for i = 1:max(subject_id)
+    phases = subject_id
+    mean_angles(end+1) = circ_mean(phases);
+    vector_lengths(end+1) = circ_r(phases);  % mean resultant length
+    pvals(end+1) = circ_rtest(phases);
+end
+
+
+
+ripple_info.spindle_phase = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
 %%%%%%%%%%%%%%% Reactivation bias correlation
 timebin = 0.02;
 time_windows = [-0.5 0.5];
@@ -556,9 +589,6 @@ z_bias_V1 = [bayesian_reactivation_V1_all(1).z_bias(:,ripples_all(1).SWS_index==
 
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
-subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
-[~, ~, subject_id] = unique(subject_id);
 
 
 singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
@@ -863,6 +893,8 @@ legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
 save('ripple_power_bias_difference.mat', 'ripple_power_bias_difference');
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 
 %%%%%%%%%%%%
@@ -872,7 +904,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
 
 timebin = 0.01;
-time_windows = [-0.5 0.5];
+time_windows = [0 0.2];
 % Generate bin edges
 bin_edges = time_windows(1):timebin:time_windows(2);
 % Generate bin centers
@@ -919,7 +951,7 @@ end
 power_thresholds = prctile(ripple_info.ripple_power,0:99.9/2:99.9);
 nBins = length(power_thresholds) - 1;
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-bins_to_use_shifted = bin_centers>-0.5 & bin_centers<-0.4;
+% bins_to_use_shifted = bin_centers>-0.5 & bin_centers<-0.4;
 nBoot = 1000;
 
 % Storage structure
@@ -941,7 +973,7 @@ for npower = 1:nBins
 
     event_index = (singlet_index + power_index) > 1;
     mean_bias = mean(z_bias(bins_to_use, event_index), 'omitnan');
-    mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+%     mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
     mean_bias_V1 = mean(z_bias_V1(bins_to_use, event_index), 'omitnan');
     total_events = length(mean_bias);
 
@@ -953,8 +985,8 @@ for npower = 1:nBins
     % Bootstrap storage
     bias_diff_boot = NaN(nBoot, nThresh);
     prop_events_boot = NaN(nBoot, nThresh);
-    bias_diff_shifted_boot = NaN(nBoot, nThresh);
-    prop_events_shifted_boot = NaN(nBoot, nThresh);
+%     bias_diff_shifted_boot = NaN(nBoot, nThresh);
+%     prop_events_shifted_boot = NaN(nBoot, nThresh);
 
     parfor iBoot = 1:nBoot
         s = RandStream('philox4x32_10', 'Seed', iBoot);
@@ -985,27 +1017,27 @@ for npower = 1:nBins
 
         bias_diff_boot(iBoot, :) = diff_tmp;
         prop_events_boot(iBoot, :) = prop_tmp;
-
-        diff_tmp_shifted = NaN(1, nThresh);
-        prop_tmp_shifted = NaN(1, nThresh);
-
-        for i = 1:nThresh
-            th = thresholds(i);
-            t1 = boot_bias_shifted >= th;
-            t2 = boot_bias_shifted <= -th;
-
-            t1_V1 = boot_V1(t1);
-            t2_V1 = boot_V1(t2);
-
-            if ~isempty(t1_V1) && ~isempty(t2_V1)
-                diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
-            end
-
-            prop_tmp_shifted(i) = (sum(t1) + sum(t2)) / total_events;
-        end
-
-        bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
-        prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
+% 
+%         diff_tmp_shifted = NaN(1, nThresh);
+%         prop_tmp_shifted = NaN(1, nThresh);
+% 
+%         for i = 1:nThresh
+%             th = thresholds(i);
+%             t1 = boot_bias_shifted >= th;
+%             t2 = boot_bias_shifted <= -th;
+% 
+%             t1_V1 = boot_V1(t1);
+%             t2_V1 = boot_V1(t2);
+% 
+%             if ~isempty(t1_V1) && ~isempty(t2_V1)
+%                 diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
+%             end
+% 
+%             prop_tmp_shifted(i) = (sum(t1) + sum(t2)) / total_events;
+%         end
+% 
+%         bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
+%         prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
     end
 
     % Compute stats
@@ -1018,28 +1050,28 @@ for npower = 1:nBins
     prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
 
     % Store results
-    ripple_power_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
-    ripple_power_bias_difference(npower).bias_diff_mean = bias_mean;
-    ripple_power_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
-    ripple_power_bias_difference(npower).prop_mean = prop_mean;
-    ripple_power_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
-    ripple_power_bias_difference(npower).thresholds = thresholds;
+    ripple_power_KDE_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_KDE_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_KDE_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_KDE_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_KDE_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_KDE_bias_difference(npower).thresholds = thresholds;
 
 
-    % Compute stats for shuffled (shifted) bias
-    bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
-    bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
-    bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
-
-    prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
-    prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
-    prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
-
-    % Store shifted (shuffled) results
-    ripple_power_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
-    ripple_power_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
-    ripple_power_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
-    ripple_power_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+%     % Compute stats for shuffled (shifted) bias
+%     bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
+%     bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
+%     bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
+% 
+%     prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
+%     prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
+%     prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
+% 
+%     % Store shifted (shuffled) results
+%     ripple_power_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+%     ripple_power_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+%     ripple_power_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+%     ripple_power_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
 
     % ---- Plot A: Bias difference vs. threshold ----
     nexttile((npower-1)*3 + 1);
@@ -1051,12 +1083,12 @@ for npower = 1:nBins
     fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
     plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
 
-    % Time-shifted
-    y_shift_lo = bias_shifted_CI_lo;
-    y_shift_hi = bias_shifted_CI_hi;
-    y2s = [y_shift_lo, fliplr(y_shift_hi)];
-    fill(x2, y2s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-    plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
+%     % Time-shifted
+%     y_shift_lo = bias_shifted_CI_lo;
+%     y_shift_hi = bias_shifted_CI_hi;
+%     y2s = [y_shift_lo, fliplr(y_shift_hi)];
+%     fill(x2, y2s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+%     plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
 
     ylim([-0.15 0.2])
     xlim([0 1.4])
@@ -1082,13 +1114,13 @@ for npower = 1:nBins
     fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
     plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
 
-    % Time-shifted
-    x_vals_shift = bias_shifted_mean(valid_idx);
-    y_vals_shift = prop_shifted_mean(valid_idx);
-    x_lo_s = bias_shifted_CI_lo(valid_idx);
-    x_hi_s = bias_shifted_CI_hi(valid_idx);
-    x_shade_s = [x_lo_s, fliplr(x_hi_s)];
-    y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
+%     % Time-shifted
+%     x_vals_shift = bias_shifted_mean(valid_idx);
+%     y_vals_shift = prop_shifted_mean(valid_idx);
+%     x_lo_s = bias_shifted_CI_lo(valid_idx);
+%     x_hi_s = bias_shifted_CI_hi(valid_idx);
+%     x_shade_s = [x_lo_s, fliplr(x_hi_s)];
+%     y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
 
     fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
     plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
@@ -1117,13 +1149,13 @@ for npower = 1:nBins
     fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
     plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
 
-    % Time-shifted
-    x_vals_shift = bias_shifted_mean(valid_idx);
-    y_vals_shift = prop_shifted_mean(valid_idx);
-    y_lo_s = prop_shifted_CI_lo(valid_idx);
-    y_hi_s = prop_shifted_CI_hi(valid_idx);
-    x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
-    y_shade_s = [y_lo_s, fliplr(y_hi_s)];
+%     % Time-shifted
+%     x_vals_shift = bias_shifted_mean(valid_idx);
+%     y_vals_shift = prop_shifted_mean(valid_idx);
+%     y_lo_s = prop_shifted_CI_lo(valid_idx);
+%     y_hi_s = prop_shifted_CI_hi(valid_idx);
+%     x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
+%     y_shade_s = [y_lo_s, fliplr(y_hi_s)];
 
     fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
     plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
@@ -1147,9 +1179,9 @@ fig.Name = 'Bayesian bias difference in V1 low vs high ripples';
 colour_lines = [158,202,225;33,113,181]/256;% two blue
 nexttile
 for npower = [1 2]
-    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
+    bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_CI(2,:)
 
     hold on;
     x2 = [thresholds, fliplr(thresholds)];
@@ -1168,10 +1200,10 @@ legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
 
 nexttile
 for npower = [1 2]
-    bias_mean = ripple_power_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_bias_difference(npower).bias_diff_CI(2,:)
-    prop_mean = ripple_power_bias_difference(npower).prop_mean;
+    bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_KDE_bias_difference(npower).prop_mean;
 
     hold on;
     y2 = [prop_mean, fliplr(prop_mean)];
@@ -1190,5 +1222,5 @@ legend(Fill(1:2) ,{'Low ripple power','High ripple power'},'box','off')
 
 
 % Save results
-save('ripple_power_bias_difference.mat', 'ripple_power_bias_difference');
+save('ripple_power_KDE_bias_difference.mat', 'ripple_power_KDE_bias_difference');
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])

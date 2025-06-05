@@ -536,11 +536,52 @@ UP_DOWN_info.contra_spindles_DOWN = [spindle_probability_psth_whole(1).R_spindle
 
 
 %%%%%%%%%%%%%%%%%% Ripple info
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
 
+%%% ripple power
 ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
-ripple_info.spindle_presence = [probability(2).L_spindle; probability(2).R_spindle];
 
+%%% spindle co-occurance
+[~,spindle_index] = RestrictInts(merged_event_info.ripples_ints,merged_event_info.spindles_ints);
+ripple_info.spindle_presence = spindle_index;
+
+%%% spindle phase
+spindle_phase=[];
+for probe_no = 1:2
+    spindle_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,probe_no),:)];
+    end
+end
+spindle_phase = [spindle_phase{1}(ripples_all(1).SWS_index==1) spindle_phase{2}(ripples_all(2).SWS_index==1)];
+ripple_info.spindle_phase = spindle_phase';
+
+    angles_wrapped = mod(mean_angles, 2*pi);
+    polarhistogram(angles_wrapped, 25);  % 12 bins (adjust as needed)
+
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+
+figure
+for i = 1:max(session_count)
+    nexttile
+    phases = spindle_phase(session_count == i)';
+    angles_wrapped = mod(phases, 2*pi);
+    polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    title('Polar Histogram of Mean Angles');
+
+    mean_angles(end+1) = circ_mean(phases);
+    vector_lengths(end+1) = circ_r(phases);  % mean resultant length
+    pvals(end+1) = circ_rtest(phases);
+end
+
+
+ripple_info.spindle_phase = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
 %%%%%%%%%%%%%%% Reactivation bias correlation
 timebin = 0.02;
 time_windows = [-0.5 0.5];
@@ -559,9 +600,6 @@ z_bias_V1 = [bayesian_reactivation_V1_all(1).z_bias(:,ripples_all(1).SWS_index==
 
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
-subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
-[~, ~, subject_id] = unique(subject_id);
 
 
 singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
@@ -899,7 +937,7 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
 
-power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/2:99.9);
 figure
 for npower = 1:length(power_thresholds)-1
     power_index = ripple_info.ripple_power > power_thresholds(npower) & ripple_info.ripple_power < power_thresholds(npower+1);
@@ -912,7 +950,7 @@ for npower = 1:length(power_thresholds)-1
 
     % Example data
     tbl = table(mean_bias', mean_bias_V1', categorical(subject_id(event_index)),'VariableNames',{'mean_bias','mean_bias_V1','subject_id'});
-    lme = fitlme(tbl, 'mean_bias_V1 ~ mean_bias + (1|subject_id)');
+    lme = fitlme(tbl, 'mean_bias_V1 ~ mean_bias');
     lme.Coefficients.pValue
     lme.Rsquared
 end
@@ -936,7 +974,7 @@ colour_lines = [158,202,225;33,113,181]/256;% two blue
 % Plot layout
 fig = figure;
 fig.Position = [640 100 1100 650]
-fig.Name = 'Bayesian bias difference in V1 with different ripple powers';
+fig.Name = 'KDE bias difference in V1 with different ripple powers';
 tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 
 for npower = 1:nBins
@@ -966,7 +1004,7 @@ for npower = 1:nBins
         idx = randi(s, total_events, total_events, 1);
 
         
-        boot_bias_shifted = mean_bias_shifted(idx);
+        % boot_bias_shifted = mean_bias_shifted(idx);
         boot_bias = mean_bias(idx);
         boot_V1 = mean_bias_V1(idx);
 
@@ -1095,10 +1133,10 @@ for npower = 1:nBins
 %     x_shade_s = [x_lo_s, fliplr(x_hi_s)];
 %     y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
 
-    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+    % fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    % plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
 
-    xlim([-0.15 0.2])
+    xlim([-0.1 0.25])
     xline(0,'--r')
     xlabel('V1 bias diff (T1 - T2)');
     ylabel('Proportion of events detected');
@@ -1130,10 +1168,10 @@ for npower = 1:nBins
 %     x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
 %     y_shade_s = [y_lo_s, fliplr(y_hi_s)];
 
-    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+    % fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    % plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
 
-    xlim([-0.15 0.2])
+    xlim([-0.1 0.25])
     xline(0,'--r')
     xlabel('V1 bias diff (T1 - T2)');
     ylabel('Proportion of events detected');
@@ -1147,7 +1185,7 @@ end
 % Plot layout
 fig = figure;
 fig.Position = [640 100 2*1100/3 650/2]
-fig.Name = 'Bayesian bias difference in V1 low vs high ripples';
+fig.Name = 'KDE bias difference in V1 low vs high ripples';
 % tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 colour_lines = [158,202,225;33,113,181]/256;% two blue
 nexttile
@@ -1166,6 +1204,7 @@ for npower = [1 2]
     ylabel('V1 bias diff (T1 - T2)');
     %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    ylim([-0.1 0.25])
     %     grid on;
 end
 yline(0,'--r')
@@ -1188,6 +1227,7 @@ for npower = [1 2]
     ylabel('Proportion of events detected');
     %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([-0.1 0.25])
     %     grid on;
 end
 xline(0,'--r')
