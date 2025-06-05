@@ -887,7 +887,7 @@ elseif exist('P:\corticohippocampal_replay')>0
 end
 
 save(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_ripples_V1_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
 
 
 %% Add on Log odds bayesian bias
