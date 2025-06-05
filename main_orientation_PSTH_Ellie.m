@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4510:4650; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
 CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
 Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
@@ -18,19 +18,19 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'GAVNIK_A_CD'; 
-plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+Stimulus_type = 'OMIT'; 
+plot_choice = 'single_units'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
-sliced_plot_option = 'yes'; % if you want to plot traces by groups of 40 trials to look for changes during the session
-z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
+sliced_plot_option = 'no'; % 'yes' if you want to plot traces by groups of 40 trials to look for changes during the session
+z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250221\GAVNIK_A_CD') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250207\OMIT') % 4/5 files will be saved here in the cd
 
 
-for nsession = 15 %5/5 row number of recording date in "experiment_info" 
+for nsession = 8 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -788,11 +788,7 @@ for nsession = 15 %5/5 row number of recording date in "experiment_info"
                         zscore_counts = histcounts(baseline_spikes, time_edges);
                     end
 
-                    % Session-wide stats for z-scoring
-                    mu = mean(zscore_counts);
-                    sigma = std(zscore_counts);
-
-                   for stim_pos = 1 % make charts from onset of first stimulus in sequence
+                    for stim_pos = 1 % make charts from onset of first stimulus in sequence
                         blue_onsets = [];
                         red_onsets = [];
 
@@ -832,11 +828,7 @@ for nsession = 15 %5/5 row number of recording date in "experiment_info"
                         % Compute PSTHs for red and blue
                         [~, bins, ~, ~, ~, binned_red] = psthAndBA(spike_times_this_cluster, red_onsets, [-0.3 1.8], psthBinSize);
                         [~, ~, ~, ~, ~, binned_blue] = psthAndBA(spike_times_this_cluster, blue_onsets, [-0.3 1.8], psthBinSize);
-
-                        % Z-score
-                        z_red = (mean(binned_red,1) - mu) / sigma;
-                        z_blue = (mean(binned_blue,1) - mu) / sigma;
-                        
+                      
                         fig1 = figure; %fig1 is for raster plots
                         fig1.Name = sprintf('%s - Spiking raster %s Cluster %i', Stimulus_type, depth_for_analysis, cluster_id(nCluster));
                         fig1.Position = [114 90 770 650];
@@ -850,7 +842,7 @@ for nsession = 15 %5/5 row number of recording date in "experiment_info"
                         [~, ~, rasterX_blue, rasterY_blue, ~, ~] = psthAndBA(spike_times_this_cluster, blue_onsets, rasterWindow, psthBinSize/10);
                         nexttile([74 1]); 
                         
-                        plot(rasterX_blue, rasterY_blue, 'b');
+                        plot(rasterX_blue, rasterY_blue, 'Color', [0, 0, 0.6]); %dark blue
                         xlim([-0.5 2]);
                         xticks(-0.4:0.2:1.8);
                         xlabel('Time (s)');
@@ -868,8 +860,8 @@ for nsession = 15 %5/5 row number of recording date in "experiment_info"
                         [~, ~, rasterX_red, rasterY_red, ~, ~] = psthAndBA(spike_times_this_cluster, red_onsets, rasterWindow, psthBinSize/10);
                         nexttile([26 1]); 
                         
-                        color_raster = 'r';
-                        if contains(Stimulus_type, 'E_CD'), color_raster = 'g'; end
+                        color_raster = [0.6, 0, 0]; %dark red
+                        if contains(Stimulus_type, 'E_CD'), color_raster = [0, 0.5, 0]; end %dark green
                         plot(rasterX_red, rasterY_red, 'Color', color_raster);
                         xlim([-0.5 2]);
                         xticks(-0.4:0.2:1.8);
@@ -934,23 +926,72 @@ for nsession = 15 %5/5 row number of recording date in "experiment_info"
                         red_label = sprintf('%s %dx', Stimulus_type, length(red_onsets));
                         % Plot
                         nexttile;
-                        p1 = plot(bins, z_blue, 'b', 'LineWidth', 1.5); hold on;
-                        if contains(Stimulus_type, 'OMIT')
-                            p2 = plot(bins, z_red, 'r', 'LineWidth', 1.5);
-                        elseif contains(Stimulus_type, 'E_CD')
-                            p2 = plot(bins, z_red, 'g', 'LineWidth', 1.5);
+                        if contains(z_score_period, 'none')
+                            % Raw mean and SEM (Hz)
+                            mean_blue = mean(binned_blue, 1) / psthBinSize;
+                            sem_blue = std(binned_blue, 0, 1) / sqrt(size(binned_blue, 1)) / psthBinSize;
+                        
+                            mean_red = mean(binned_red, 1) / psthBinSize;
+                            sem_red = std(binned_red, 0, 1) / sqrt(size(binned_red, 1)) / psthBinSize;
+                        
+                            % SEM shading
+                            fill([bins, fliplr(bins)], [mean_blue + sem_blue, fliplr(mean_blue - sem_blue)], ...
+                                 [0, 0, 1], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off'); hold on;
+                            p1 = plot(bins, mean_blue, 'b', 'LineWidth', 1.5);
+                        
+                            if contains(Stimulus_type, 'OMIT')
+                                fill([bins, fliplr(bins)], [mean_red + sem_red, fliplr(mean_red - sem_red)], ...
+                                     [1, 0, 0], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+                                p2 = plot(bins, mean_red, 'r', 'LineWidth', 1.5);
+                            elseif contains(Stimulus_type, 'E_CD')
+                                fill([bins, fliplr(bins)], [mean_red + sem_red, fliplr(mean_red - sem_red)], ...
+                                     [0, 0.5, 0], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+                                p2 = plot(bins, mean_red, 'g', 'LineWidth', 1.5);
+                            end
+                        
+                            ylabel('Mean FR across trials (Hz)', 'FontSize', 14);
+                        
+                        else
+                            % Session-wide stats for z-scoring
+                            mu = mean(zscore_counts);
+                            sigma = std(zscore_counts);
+
+                            zscored_blue_trials = (binned_blue - mu) / sigma;
+                            zscored_red_trials  = (binned_red  - mu) / sigma;
+                            
+                            z_blue = mean(zscored_blue_trials, 1);
+                            sem_blue = std(zscored_blue_trials, 0, 1) / sqrt(size(zscored_blue_trials, 1));
+                            
+                            z_red = mean(zscored_red_trials, 1);
+                            sem_red = std(zscored_red_trials, 0, 1) / sqrt(size(zscored_red_trials, 1));
+                        
+                            % SEM shading
+                            fill([bins, fliplr(bins)], [z_blue + sem_blue, fliplr(z_blue - sem_blue)], ...
+                                 [0, 0, 1], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off'); hold on;
+                            p1 = plot(bins, z_blue, 'b', 'LineWidth', 1.5);
+                        
+                            if contains(Stimulus_type, 'OMIT')
+                                fill([bins, fliplr(bins)], [z_red + sem_red, fliplr(z_red - sem_red)], ...
+                                     [1, 0, 0], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+                                p2 = plot(bins, z_red, 'r', 'LineWidth', 1.5);
+                            elseif contains(Stimulus_type, 'E_CD')
+                                fill([bins, fliplr(bins)], [z_red + sem_red, fliplr(z_red - sem_red)], ...
+                                     [0, 0.5, 0], 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+                                p2 = plot(bins, z_red, 'g', 'LineWidth', 1.5);
+                            end
+                        
+                            if contains(z_score_period, 'entire_session')
+                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
+                            elseif contains(z_score_period, 'first30secs')
+                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
+                            end
                         end
+
                         xline(0,'k','LineWidth',1);
                         xlim([-0.5 2]);
                         xticks(-0.4:0.2:1.8);
                         xlabel('Time (s)');
                         
-                        if contains(z_score_period, 'entire_session')
-                            ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
-                        elseif contains(z_score_period, 'first30secs')
-                            ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
-                        end
-
                         legend([p1 p2], {blue_label, red_label}, 'Location', 'northeast');  
                         legend boxoff;
                         set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);

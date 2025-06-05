@@ -15,7 +15,7 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK DCBA'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'entire_session'; % 'none' = no z scoring or z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
