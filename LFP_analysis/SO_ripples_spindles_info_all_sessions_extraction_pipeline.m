@@ -501,7 +501,6 @@ else
 end
 
 %% Add on PLS KDE regression
-
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 
@@ -523,6 +522,247 @@ KDE_reactivation_V1_DOWN_all= struct();
 KDE_reactivation_UP_all = struct();
 KDE_reactivation_DOWN_all = struct();
 KDE_reactivation_all = struct();
+
+for nsession = 1:length(experiment_info)
+    tic
+    disp(sprintf('session %i',nsession))
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    if length(stimulus_name) > 1
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2'));
+        else
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+            if length(stimulus_name) > 1
+                disp('Same stimuli multiple recordings. Will take _2')
+                n = find(contains(stimulus_name,'_2'));
+            else
+                n = 1;
+            end
+        end
+    else
+        n = 1;
+    end
+
+    session_count = session_count + 1;
+    options = session_info(n).probe(1);
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+    if isempty(DIR)
+        continue
+    end
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+    if ~isempty(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        session_clusters_RUN = session_clusters;
+        clear session_clusters
+    end
+
+    if ~isempty(DIR1)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN = session_clusters;
+        clear session_clusters
+    end
+
+    if contains(stimulus_name{n},'Sleep')
+        load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_reactivation_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_DOWN.mat'),'KDE_reactivation_V1_DOWN');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'),'KDE_reactivation_V1_UP');
+    end
+
+    for nprobe = 1:length(KDE_reactivation_V1)
+        bias_distribution_V1 = [KDE_reactivation_V1(nprobe).event_bias(:)' KDE_reactivation_V1_UP(nprobe).event_bias(:)' KDE_reactivation_V1_DOWN(nprobe).event_bias(:)'];
+
+        % --- V1 ---
+        real_bias = KDE_reactivation_V1(nprobe).event_bias(:)';
+        shuffled = KDE_reactivation_V1(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_V1(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1(nprobe).event_T2_probability_shuffled);
+
+        nbin = size(shuffled, 2);
+        percentile = nan(1, nbin);
+        zscored_bias = nan(1, nbin);
+        for i = 1:nbin
+            valid_shuffled = shuffled(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
+                percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
+                zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
+            end
+        end
+        KDE_reactivation_V1_all(nprobe).event_bins{nsession} = KDE_reactivation_V1(nprobe).event_bins;
+        KDE_reactivation_V1_all(nprobe).event_id{nsession} = KDE_reactivation_V1(nprobe).event_id;
+        KDE_reactivation_V1_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_V1_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution_V1,'omitnan')) ./ std(bias_distribution_V1,'omitnan');
+        KDE_reactivation_V1_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
+        KDE_reactivation_V1_all(nprobe).percentile{nsession} = percentile;
+
+        % --- V1 UP ---
+        real_bias_up = KDE_reactivation_V1_UP(nprobe).event_bias(:)';
+        shuffled_up = KDE_reactivation_V1_UP(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_V1_UP(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_UP(nprobe).event_T2_probability_shuffled);
+        nbin_up = size(shuffled_up, 2);
+        zscored_bias_up = nan(1, nbin_up);
+        percentile_up = nan(1, nbin_up);
+        for i = 1:nbin_up
+            valid_shuffled = shuffled_up(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias_up(i))
+                zscored_bias_up(i) = (real_bias_up(i) - mean(valid_shuffled)) / std(valid_shuffled);
+                percentile_up(i) = sum(valid_shuffled < real_bias_up(i)) / length(valid_shuffled) * 100;
+            end
+        end
+        KDE_reactivation_V1_UP_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_UP(nprobe).event_bins;
+        KDE_reactivation_V1_UP_all(nprobe).event_id{nsession} = KDE_reactivation_V1_UP(nprobe).event_id;
+        KDE_reactivation_V1_UP_all(nprobe).bias{nsession} = real_bias_up;
+        KDE_reactivation_V1_UP_all(nprobe).zscored_bias{nsession} = (real_bias_up - mean(bias_distribution_V1,'omitnan')) ./ std(bias_distribution_V1,'omitnan');
+        KDE_reactivation_V1_UP_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_up;
+        KDE_reactivation_V1_UP_all(nprobe).percentile{nsession} = percentile_up;
+
+        % --- V1 DOWN ---
+        real_bias_down = KDE_reactivation_V1_DOWN(nprobe).event_bias(:)';
+        shuffled_down = KDE_reactivation_V1_DOWN(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_V1_DOWN(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_DOWN(nprobe).event_T2_probability_shuffled);
+        nbin_down = size(shuffled_down, 2);
+        zscored_bias_down = nan(1, nbin_down);
+        percentile_down = nan(1, nbin_down);
+        for i = 1:nbin_down
+            valid_shuffled = shuffled_down(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias_down(i))
+                zscored_bias_down(i) = (real_bias_down(i) - mean(valid_shuffled)) / std(valid_shuffled);
+                percentile_down(i) = sum(valid_shuffled < real_bias_down(i)) / length(valid_shuffled) * 100;
+            end
+        end
+        KDE_reactivation_V1_DOWN_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_DOWN(nprobe).event_bins;
+        KDE_reactivation_V1_DOWN_all(nprobe).event_id{nsession} = KDE_reactivation_V1_DOWN(nprobe).event_id;
+        KDE_reactivation_V1_DOWN_all(nprobe).bias{nsession} = real_bias_down;
+        KDE_reactivation_V1_DOWN_all(nprobe).zscored_bias{nsession} = (real_bias_down - mean(bias_distribution_V1,'omitnan')) ./ std(bias_distribution_V1,'omitnan');
+        KDE_reactivation_V1_DOWN_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_down;
+        KDE_reactivation_V1_DOWN_all(nprobe).percentile{nsession} = percentile_down;
+    end
+    clear KDE_reactivation_V1 KDE_reactivation_V1_DOWN KDE_reactivation_V1_UP
+
+    % Repeat similar process for general KDE reactivation
+    load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation');
+    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_DOWN.mat'),'KDE_reactivation_DOWN');
+    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_UP.mat'),'KDE_reactivation_UP');
+
+    for nprobe = 1:length(KDE_reactivation)
+        bias_distribution = [KDE_reactivation(nprobe).event_bias(:)' KDE_reactivation_UP(nprobe).event_bias(:)' KDE_reactivation_DOWN(nprobe).event_bias(:)'];
+
+        % --- Main ---
+        real_bias = KDE_reactivation(nprobe).event_bias(:)';
+        shuffled = KDE_reactivation(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation(nprobe).event_T1_probability_shuffled + KDE_reactivation(nprobe).event_T2_probability_shuffled);
+        nbin = size(shuffled, 2);
+        percentile = nan(1, nbin);
+        zscored_bias = nan(1, nbin);
+        for i = 1:nbin
+            valid_shuffled = shuffled(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
+                percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
+                zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
+            end
+        end
+        KDE_reactivation_all(nprobe).event_bins{nsession} = KDE_reactivation(nprobe).event_bins;
+        KDE_reactivation_all(nprobe).event_id{nsession} = KDE_reactivation(nprobe).event_id;
+        KDE_reactivation_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
+        KDE_reactivation_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
+        KDE_reactivation_all(nprobe).percentile{nsession} = percentile;
+
+        % --- UP ---
+        real_bias_up = KDE_reactivation_UP(nprobe).event_bias(:)';
+        shuffled_up = KDE_reactivation_UP(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_UP(nprobe).event_T1_probability_shuffled + KDE_reactivation_UP(nprobe).event_T2_probability_shuffled);
+        nbin_up = size(shuffled_up, 2);
+        zscored_bias_up = nan(1, nbin_up);
+        percentile_up = nan(1, nbin_up);
+        for i = 1:nbin_up
+            valid_shuffled = shuffled_up(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias_up(i))
+                zscored_bias_up(i) = (real_bias_up(i) - mean(valid_shuffled)) / std(valid_shuffled);
+                percentile_up(i) = sum(valid_shuffled < real_bias_up(i)) / length(valid_shuffled) * 100;
+            end
+        end
+        KDE_reactivation_UP_all(nprobe).event_bins{nsession} = KDE_reactivation_UP(nprobe).event_bins;
+        KDE_reactivation_UP_all(nprobe).event_id{nsession} = KDE_reactivation_UP(nprobe).event_id;
+        KDE_reactivation_UP_all(nprobe).bias{nsession} = real_bias_up;
+        KDE_reactivation_UP_all(nprobe).zscored_bias{nsession} = (real_bias_up - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
+        KDE_reactivation_UP_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_up;
+        KDE_reactivation_UP_all(nprobe).percentile{nsession} = percentile_up;
+
+        % --- DOWN ---
+        real_bias_down = KDE_reactivation_DOWN(nprobe).event_bias(:)';
+        shuffled_down = KDE_reactivation_DOWN(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_DOWN(nprobe).event_T1_probability_shuffled + KDE_reactivation_DOWN(nprobe).event_T2_probability_shuffled);
+        nbin_down = size(shuffled_down, 2);
+        zscored_bias_down = nan(1, nbin_down);
+        percentile_down = nan(1, nbin_down);
+        for i = 1:nbin_down
+            valid_shuffled = shuffled_down(:, i);
+            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+            if ~isempty(valid_shuffled) && ~isnan(real_bias_down(i))
+                zscored_bias_down(i) = (real_bias_down(i) - mean(valid_shuffled)) / std(valid_shuffled);
+                percentile_down(i) = sum(valid_shuffled < real_bias_down(i)) / length(valid_shuffled) * 100;
+            end
+        end
+        KDE_reactivation_DOWN_all(nprobe).event_bins{nsession} = KDE_reactivation_DOWN(nprobe).event_bins;
+        KDE_reactivation_DOWN_all(nprobe).event_id{nsession} = KDE_reactivation_DOWN(nprobe).event_id;
+        KDE_reactivation_DOWN_all(nprobe).bias{nsession} = real_bias_down;
+        KDE_reactivation_DOWN_all(nprobe).zscored_bias{nsession} = (real_bias_down - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
+        KDE_reactivation_DOWN_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_down;
+        KDE_reactivation_DOWN_all(nprobe).percentile{nsession} = percentile_down;
+    end
+    clear KDE_reactivation KDE_reactivation_DOWN KDE_reactivation_UP
+    toc
+end
+
+% Save everything
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+save(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
+save(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
+save(fullfile(analysis_folder,'KDE_reactivation_all_POST.mat'),'KDE_reactivation_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_DOWN_all_POST.mat'),'KDE_reactivation_V1_DOWN_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
+
+
+%% Add on PLS KDE regression Ripples
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'SleepChronic';
+
+session_count = 0;
+
+KDE_reactivation_V1_ripples_all= struct();
+KDE_reactivation_ripples_all = struct();
 
 for nsession =1:length(experiment_info)
 
@@ -579,154 +819,64 @@ for nsession =1:length(experiment_info)
     end
 
     if contains(stimulus_name{n},'Sleep')
-        load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_reactivation_V1');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_DOWN.mat'),'KDE_reactivation_V1_DOWN');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'),'KDE_reactivation_V1_UP');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_ripples.mat'),'KDE_reactivation_V1_ripples');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_ripples.mat'),'KDE_reactivation_ripples');
     end
 
-    for nprobe = 1:length(KDE_reactivation_V1)
-        bias_distribution_V1 = [KDE_reactivation_V1(nprobe).event_bias(:)' KDE_reactivation_V1_UP(nprobe).event_bias(:)' KDE_reactivation_V1_DOWN(nprobe).event_bias(:)'];
+    for nprobe = 1:length(KDE_reactivation_V1_ripples)
+        bias_distribution_V1 = [KDE_reactivation_V1_ripples(nprobe).event_bias(:)'];
 
         %%%%% Ripples
-        real_bias = KDE_reactivation_V1(nprobe).event_bias(:)';
-        shuffled = KDE_reactivation_V1(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_V1(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1(nprobe).event_T2_probability_shuffled);
+        real_bias = KDE_reactivation_V1_ripples(nprobe).event_bias(:)';
+        shuffled = KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_ripples(nprobe).event_T2_probability_shuffled);
 
-        nbin = size(shuffled, 2);
-        percentile = nan(1, nbin);
-        zscored_bias = nan(1, nbin);
-        for i = 1:nbin
-            valid_shuffled = shuffled(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
-                percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
-                zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
+        % nbin = size(shuffled, 2);
+        % percentile = nan(1, nbin);
+        % zscored_bias = nan(1, nbin);
+        % for i = 1:nbin
+        %     valid_shuffled = shuffled(:, i);
+        %     valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+        %     if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
+        %         percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
+        %         zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
+        %     end
+        % end
 
-        KDE_reactivation_V1_all(nprobe).event_bins{nsession} = KDE_reactivation_V1(nprobe).event_bins;
-        KDE_reactivation_V1_all(nprobe).event_id{nsession} = KDE_reactivation_V1(nprobe).event_id;
-        KDE_reactivation_V1_all(nprobe).bias{nsession} = real_bias;
-        KDE_reactivation_V1_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution_V1,'omitnan'))./std(bias_distribution_V1,'omitnan');
-        KDE_reactivation_V1_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
-
-        %%%%% UP
-        real_bias_up = KDE_reactivation_V1_UP(nprobe).event_bias(:)';
-        shuffled_up = KDE_reactivation_V1_UP(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_V1_UP(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_UP(nprobe).event_T2_probability_shuffled);
-
-        nbin_up = size(shuffled_up, 2);
-        zscored_bias_up = nan(1, nbin_up);
-        for i = 1:nbin_up
-            valid_shuffled = shuffled_up(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias_up(i))
-                zscored_bias_up(i) = (real_bias_up(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
-
-        KDE_reactivation_V1_UP_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_UP(nprobe).event_bins;
-        KDE_reactivation_V1_UP_all(nprobe).event_id{nsession} = KDE_reactivation_V1_UP(nprobe).event_id;
-        KDE_reactivation_V1_UP_all(nprobe).bias{nsession} = real_bias_up;
-        KDE_reactivation_V1_UP_all(nprobe).zscored_bias{nsession} = (real_bias_up - mean(bias_distribution_V1,'omitnan'))./std(bias_distribution_V1,'omitnan');
-        KDE_reactivation_V1_UP_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_up;
-
-        %%%%% DOWN
-        real_bias_down = KDE_reactivation_V1_DOWN(nprobe).event_bias(:)';
-        shuffled_down = KDE_reactivation_V1_DOWN(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_V1_DOWN(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_DOWN(nprobe).event_T2_probability_shuffled);
-
-        nbin_down = size(shuffled_down, 2);
-        zscored_bias_down = nan(1, nbin_down);
-        for i = 1:nbin_down
-            valid_shuffled = shuffled_down(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias_down(i))
-                zscored_bias_down(i) = (real_bias_down(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
-
-        KDE_reactivation_V1_DOWN_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_DOWN(nprobe).event_bins;
-        KDE_reactivation_V1_DOWN_all(nprobe).event_id{nsession} = KDE_reactivation_V1_DOWN(nprobe).event_id;
-        KDE_reactivation_V1_DOWN_all(nprobe).bias{nsession} = real_bias_down;
-        KDE_reactivation_V1_DOWN_all(nprobe).zscored_bias{nsession} = (real_bias_down - mean(bias_distribution_V1,'omitnan'))./std(bias_distribution_V1,'omitnan');
-        KDE_reactivation_V1_DOWN_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_down;
+        KDE_reactivation_V1_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_ripples(nprobe).event_bins;
+        KDE_reactivation_V1_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_V1_ripples(nprobe).event_id;
+        KDE_reactivation_V1_ripples_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_V1_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution_V1,'omitnan'))./std(bias_distribution_V1,'omitnan');
+        % KDE_reactivation_V1_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
     end
-    clear KDE_reactivation_V1 KDE_reactivation_V1_DOWN KDE_reactivation_V1_UP
 
-    load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation');
-    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_DOWN.mat'),'KDE_reactivation_DOWN');
-    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_UP.mat'),'KDE_reactivation_UP');
-
-    for nprobe = 1:length(KDE_reactivation)
-        bias_distribution = [KDE_reactivation(nprobe).event_bias(:)' KDE_reactivation_UP(nprobe).event_bias(:)' KDE_reactivation_DOWN(nprobe).event_bias(:)'];
+    for nprobe = 1:length(KDE_reactivation_ripples)
+        bias_distribution = [KDE_reactivation_ripples(nprobe).event_bias(:)'];
 
         %%%%% Ripples
-        real_bias = KDE_reactivation(nprobe).event_bias(:)';
-        shuffled = KDE_reactivation(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation(nprobe).event_T1_probability_shuffled + KDE_reactivation(nprobe).event_T2_probability_shuffled);
+        real_bias = KDE_reactivation_ripples(nprobe).event_bias(:)';
+        shuffled = KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled ./ ...
+            (KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_ripples(nprobe).event_T2_probability_shuffled);
 
-        nbin = size(shuffled, 2);
-        percentile = nan(1, nbin);
-        zscored_bias = nan(1, nbin);
-        for i = 1:nbin
-            valid_shuffled = shuffled(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
-                percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
-                zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
+        % nbin = size(shuffled, 2);
+        % percentile = nan(1, nbin);
+        % zscored_bias = nan(1, nbin);
+        % for i = 1:nbin
+        %     valid_shuffled = shuffled(:, i);
+        %     valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
+        %     if ~isempty(valid_shuffled) && ~isnan(real_bias(i))
+        %         percentile(i) = sum(valid_shuffled < real_bias(i)) / length(valid_shuffled) * 100;
+        %         zscored_bias(i) = (real_bias(i) - mean(valid_shuffled)) / std(valid_shuffled);
+        %     end
+        % end
 
-        KDE_reactivation_all(nprobe).event_bins{nsession} = KDE_reactivation(nprobe).event_bins;
-        KDE_reactivation_all(nprobe).event_id{nsession} = KDE_reactivation(nprobe).event_id;
+        KDE_reactivation_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
+        KDE_reactivation_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
         KDE_reactivation_all(nprobe).bias{nsession} = real_bias;
-        KDE_reactivation_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
-        KDE_reactivation_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
-
-        %%%%% UP
-        real_bias_up = KDE_reactivation_UP(nprobe).event_bias(:)';
-        shuffled_up = KDE_reactivation_UP(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_UP(nprobe).event_T1_probability_shuffled + KDE_reactivation_UP(nprobe).event_T2_probability_shuffled);
-
-        nbin_up = size(shuffled_up, 2);
-        zscored_bias_up = nan(1, nbin_up);
-        for i = 1:nbin_up
-            valid_shuffled = shuffled_up(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias_up(i))
-                zscored_bias_up(i) = (real_bias_up(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
-
-        KDE_reactivation_UP_all(nprobe).event_bins{nsession} = KDE_reactivation_UP(nprobe).event_bins;
-        KDE_reactivation_UP_all(nprobe).event_id{nsession} = KDE_reactivation_UP(nprobe).event_id;
-        KDE_reactivation_UP_all(nprobe).bias{nsession} = real_bias_up;
-        KDE_reactivation_UP_all(nprobe).zscored_bias{nsession} = (real_bias_up - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
-        KDE_reactivation_UP_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_up;
-
-        %%%%% DOWN
-        real_bias_down = KDE_reactivation_DOWN(nprobe).event_bias(:)';
-        shuffled_down = KDE_reactivation_DOWN(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_DOWN(nprobe).event_T1_probability_shuffled + KDE_reactivation_DOWN(nprobe).event_T2_probability_shuffled);
-
-        nbin_down = size(shuffled_down, 2);
-        zscored_bias_down = nan(1, nbin_down);
-        for i = 1:nbin_down
-            valid_shuffled = shuffled_down(:, i);
-            valid_shuffled = valid_shuffled(~isnan(valid_shuffled));
-            if ~isempty(valid_shuffled) && ~isnan(real_bias_down(i))
-                zscored_bias_down(i) = (real_bias_down(i) - mean(valid_shuffled)) / std(valid_shuffled);
-            end
-        end
-
-        KDE_reactivation_DOWN_all(nprobe).event_bins{nsession} = KDE_reactivation_DOWN(nprobe).event_bins;
-        KDE_reactivation_DOWN_all(nprobe).event_id{nsession} = KDE_reactivation_DOWN(nprobe).event_id;
-        KDE_reactivation_DOWN_all(nprobe).bias{nsession} = real_bias_down;
-        KDE_reactivation_DOWN_all(nprobe).zscored_bias{nsession} = (real_bias_down - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
-        KDE_reactivation_DOWN_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_down;
+        % KDE_reactivation_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
+        % KDE_reactivation_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
     end
-    clear KDE_reactivation KDE_reactivation_DOWN KDE_reactivation_UP
+    clear KDE_reactivation_ripples KDE_reactivation_V1_ripples
     toc
 end
 
@@ -736,12 +886,8 @@ elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
 
-save(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
-save(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
-save(fullfile(analysis_folder,'KDE_reactivation_all_POST.mat'),'KDE_reactivation_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_DOWN_all_POST.mat'),'KDE_reactivation_V1_DOWN_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
+save(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
 
 
 %% Add on Log odds bayesian bias

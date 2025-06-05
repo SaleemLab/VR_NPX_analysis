@@ -327,6 +327,113 @@ KDE_reactivation_PSTH.HPC_DOWN_zshuff = [DOWN_bias_all_zshuff{1}; DOWN_bias_all_
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH');
 
 
+%%%%% HPC ripples
+% Parameters
+ripple_window = [0, 0.2];  % seconds
+psth_step = 0.01;          % 10 ms
+nbins = round(diff(ripple_window) / psth_step);
+
+% Metrics to extract
+metric_names = {'bias', 'zscored_bias', 'zscored_bias_shuffled'};
+
+% Output containers
+ripple_bias_masked_SWS = struct();
+ripple_bias_masked_nonSWS = struct();
+for region = ["HPC", "V1"]
+    for metric = metric_names
+        ripple_bias_masked_SWS.(region).(metric{1})     = cell(1, 2);
+        ripple_bias_masked_nonSWS.(region).(metric{1})  = cell(1, 2);
+    end
+end
+
+% Main loop
+for isSWS = [1, 0]
+    for nprobe = 1:2
+        for region = ["HPC", "V1"]
+
+            if contains(region,'V1')
+                temp = KDE_reactivation_V1_all;
+            else
+                temp = KDE_reactivation_all;
+            end
+
+            for metric = metric_names
+                metric_str = metric{1};
+                masked_all = [];
+
+                for nsession = 1:length(temp(nprobe).(metric_str))
+                    % Get all ripple indices for this session
+                    session_mask = ripples_all(nprobe).session_count == nsession;
+                    ripple_idx_all = find(session_mask);
+
+                    % Get SWS or non-SWS ripple subset
+                    state_mask = ripples_all(nprobe).SWS_index == isSWS;
+                    [ripple_idx_all,ripple_idx_session,~] = intersect(ripple_idx_all,find(state_mask));
+
+                    if isempty(ripple_idx_session), continue; end
+
+                    ripple_times = [ ...
+                        ripples_all(nprobe).onset(ripple_idx_all), ...
+                        ripples_all(nprobe).offset(ripple_idx_all)];
+
+                    % Get data
+                    bias_vals = temp(nprobe).(metric_str){nsession};
+                    time_bins = temp(nprobe).event_bins{nsession}(:,1)';
+                    event_ids = temp(nprobe).event_id{nsession};
+
+                    for i = 1:length(ripple_idx_session)
+                        ripple_id = ripple_idx_session(i);
+                        t_start = ripple_times(i, 1);
+
+                        rel_time = time_bins - t_start;
+                        idx = find(event_ids == ripple_id & rel_time >= 0 & rel_time <= 0.2);
+                   
+                        ripple_bias = nan(1, nbins);
+
+                        ripple_bias(1:length(idx)) = bias_vals(idx);
+                        % Mask if another ripple starts within this window
+                        all_starts = ripples_all(nprobe).onset(ripple_idx_all);
+                        next_ripple = all_starts > t_start & all_starts < (t_start + 0.2);
+                        if any(next_ripple)
+                            t_next = min(all_starts(next_ripple));
+                            mask_start = round((t_next - t_start) / psth_step) + 1;
+                            ripple_bias(mask_start:end) = nan;
+                        end
+
+                        masked_all = [masked_all; ripple_bias];
+                    end
+                end
+
+                % Save result
+                if isSWS
+                    ripple_bias_masked_SWS.(region).(metric_str){nprobe} = masked_all;
+                else
+                    ripple_bias_masked_nonSWS.(region).(metric_str){nprobe} = masked_all;
+                end
+            end
+        end
+    end
+end
+
+
+% SWS ripples
+% SWS ripples
+KDE_reactivation_content.HPC_ripples             = [ripple_bias_masked_SWS.HPC.bias{1};             ripple_bias_masked_SWS.HPC.bias{2}];
+KDE_reactivation_content.V1_ripples              = [ripple_bias_masked_SWS.V1.bias{1};              ripple_bias_masked_SWS.V1.bias{2}];
+KDE_reactivation_content.HPC_z_ripples     = [ripple_bias_masked_SWS.HPC.zscored_bias{1};     ripple_bias_masked_SWS.HPC.zscored_bias{2}];
+KDE_reactivation_content.V1_z_ripples      = [ripple_bias_masked_SWS.V1.zscored_bias{1};      ripple_bias_masked_SWS.V1.zscored_bias{2}];
+KDE_reactivation_content.HPC_zshuff_ripples    = [ripple_bias_masked_SWS.HPC.zscored_bias_shuffled{1}; ripple_bias_masked_SWS.HPC.zscored_bias_shuffled{2}];
+KDE_reactivation_content.V1_zshuff_ripples     = [ripple_bias_masked_SWS.V1.zscored_bias_shuffled{1}; ripple_bias_masked_SWS.V1.zscored_bias_shuffled{2}];
+
+% Non-SWS (awake/REM)
+KDE_reactivation_content.HPC_awake_ripples             = [ripple_bias_masked_nonSWS.HPC.bias{1};             ripple_bias_masked_nonSWS.HPC.bias{2}];
+KDE_reactivation_content.V1_awake_ripples              = [ripple_bias_masked_nonSWS.V1.bias{1};              ripple_bias_masked_nonSWS.V1.bias{2}];
+KDE_reactivation_content.HPC_z_awake_ripples     = [ripple_bias_masked_nonSWS.HPC.zscored_bias{1};     ripple_bias_masked_nonSWS.HPC.zscored_bias{2}];
+KDE_reactivation_content.V1_z_awake_ripples      = [ripple_bias_masked_nonSWS.V1.zscored_bias{1};      ripple_bias_masked_nonSWS.V1.zscored_bias{2}];
+KDE_reactivation_content.HPC_zshuff_awake_ripples    = [ripple_bias_masked_nonSWS.HPC.zscored_bias_shuffled{1}; ripple_bias_masked_nonSWS.HPC.zscored_bias_shuffled{2}];
+KDE_reactivation_content.V1_zshuff_awake_ripples     = [ripple_bias_masked_nonSWS.V1.zscored_bias_shuffled{1}; ripple_bias_masked_nonSWS.V1.zscored_bias_shuffled{2}];
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'),'KDE_reactivation_content');
 
 
 
