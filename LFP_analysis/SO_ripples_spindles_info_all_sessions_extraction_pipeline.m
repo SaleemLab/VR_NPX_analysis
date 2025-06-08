@@ -764,7 +764,7 @@ session_count = 0;
 KDE_reactivation_V1_ripples_all= struct();
 KDE_reactivation_ripples_all = struct();
 
-for nsession =1:length(experiment_info)
+for nsession =11:17
 
     tic
     disp(sprintf('session %i',nsession))
@@ -828,8 +828,8 @@ for nsession =1:length(experiment_info)
 
         %%%%% Ripples
         real_bias = KDE_reactivation_V1_ripples(nprobe).event_bias(:)';
-        shuffled = KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_ripples(nprobe).event_T2_probability_shuffled);
+        % shuffled = KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled ./ ...
+        %     (KDE_reactivation_V1_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_V1_ripples(nprobe).event_T2_probability_shuffled);
 
         % nbin = size(shuffled, 2);
         % percentile = nan(1, nbin);
@@ -855,8 +855,8 @@ for nsession =1:length(experiment_info)
 
         %%%%% Ripples
         real_bias = KDE_reactivation_ripples(nprobe).event_bias(:)';
-        shuffled = KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled ./ ...
-            (KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_ripples(nprobe).event_T2_probability_shuffled);
+        % shuffled = KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled ./ ...
+        %     (KDE_reactivation_ripples(nprobe).event_T1_probability_shuffled + KDE_reactivation_ripples(nprobe).event_T2_probability_shuffled);
 
         % nbin = size(shuffled, 2);
         % percentile = nan(1, nbin);
@@ -870,11 +870,11 @@ for nsession =1:length(experiment_info)
         %     end
         % end
 
-        KDE_reactivation_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
-        KDE_reactivation_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
-        KDE_reactivation_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
+        KDE_reactivation_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
+        KDE_reactivation_ripples_all(nprobe).bias{nsession} = real_bias;
         % KDE_reactivation_all(nprobe).zscored_bias_shuffled{nsession} = zscored_bias;
-        % KDE_reactivation_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
+        KDE_reactivation_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan'))./std(bias_distribution,'omitnan');
     end
     clear KDE_reactivation_ripples KDE_reactivation_V1_ripples
     toc
