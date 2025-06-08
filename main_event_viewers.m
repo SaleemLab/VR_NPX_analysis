@@ -346,7 +346,7 @@ for nsession =6
 
 
         tindex = find(t>behavioural_state_merged.REM(2,1)-290 & t<behavioural_state_merged.REM(2,1)+300);
-        tindex = find(t>4200 & t<5500)
+        tindex = find(t>3800 & t<5500)
 % tindex = 1:length(t);
 
         theta_delta_ratio = mean(S_mag_smoothed_HPC(f>4 & f<12,:),1)./mean(S_mag_smoothed_HPC(f>0.5 & f<4,:),1);

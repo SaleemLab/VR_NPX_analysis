@@ -764,7 +764,7 @@ session_count = 0;
 KDE_reactivation_V1_ripples_all= struct();
 KDE_reactivation_ripples_all = struct();
 
-for nsession =11:17
+for nsession =1:length(experiment_info)
 
     tic
     disp(sprintf('session %i',nsession))
