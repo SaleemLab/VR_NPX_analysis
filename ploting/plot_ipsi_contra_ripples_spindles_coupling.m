@@ -42,6 +42,142 @@ for nsession = 1:max(ripples_all(1).session_count)
 end
 
 
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%%
+% %%%%%%%%%%% SO phase coupling
+
+%%% spindle phase
+SO_phase=[];
+for probe_no = 1:2
+    SO_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,probe_no),:)];
+    end
+end
+SO_phase = [SO_phase{1} SO_phase{2}]';
+
+
+
+
+fig = figure
+fig.Name = 'Ripple-SO phase-locking'
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(SO_phase, 24);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(SO_phase);
+mean_angle = circ_mean(SO_phase);
+pvals(end+1) = circ_rtest(SO_phase);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = SO_phase(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(end+1) = circ_mean(phases);
+    vector_lengths(end+1) = circ_r(phases);  % mean resultant length
+    pvals(end+1) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%%
+% %%%%%%%%%%% Spindle phase coupling
+
+%%% spindle phase
+spindle_phase=[];
+for probe_no = 1:2
+    spindle_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,probe_no),:)];
+    end
+end
+spindle_phase = [spindle_phase{1} spindle_phase{2}]';
+
+
+fig = figure
+fig.Name = 'Ripple-spindle phase-locking'
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(spindle_phase, 24);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(spindle_phase);
+mean_angle = circ_mean(spindle_phase);
+pvals(end+1) = circ_rtest(spindle_phase);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = spindle_phase(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(end+1) = circ_mean(phases);
+    vector_lengths(end+1) = circ_r(phases);  % mean resultant length
+    pvals(end+1) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+spindle_phase=[];
+for probe_no = 1:2
+    spindle_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,probe_no),:)];
+    end
+end
+spindle_phase = [spindle_phase{1}(ripples_all(1).SWS_index==1) spindle_phase{2}(ripples_all(2).SWS_index==1)];
+ripple_info.spindle_phase = spindle_phase';
+
+
 %%%%%%%%%%%%%%%%%% Probability of ripples relative to spindles
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole_baseline.mat'),'probability');
 probability_psth_whole_baseline = probability;
