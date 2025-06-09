@@ -280,7 +280,7 @@ delta_power =SWpeakmag_DU;
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
-    event_idx{5}{n} =(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
+    event_idx{5}{n} =find(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
 end
 
 
@@ -324,42 +324,6 @@ contra_probability = [probability_psth_whole(1).R_spindles_UP; probability_psth_
 ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_spindles_UP; probability_psth_whole_baseline(2).R_spindles_UP];
 contra_probability_baseline = [probability_psth_whole_baseline(1).R_spindles_UP; probability_psth_whole_baseline(2).L_spindles_UP];
 
-%%%%% calculate shuffled baseline
-%%% Ipsi
-binnedArray = ipsi_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_baseline_bootstrap = temp;
-
-%%% Contra
-binnedArray = contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-contra_baseline_bootstrap = temp;
-
-%%% Ipsi-Contra baseline
-binnedArray = ipsi_probability_baseline-contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_contra_diff_baseline_bootstrap = temp;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% Calculate bootstrapped MUA
@@ -373,6 +337,9 @@ probability_merged.x = x;
 probability_merged.ipsi_spindles_UP = [];
 probability_merged.contra_spindles_UP = [];
 probability_merged.ipsi_contra_diff_spindles_UP = [];
+ipsi_baseline_bootstrap=[];
+contra_baseline_bootstrap=[];
+ipsi_contra_diff_baseline_bootstrap=[];
 
 for ngroup = 1:length(event_idx)+1
 
@@ -407,6 +374,57 @@ for ngroup = 1:length(event_idx)+1
         probability_merged.contra_spindles_UP{ngroup}{i} = temp2;
         probability_merged.ipsi_contra_diff_spindles_UP{ngroup}{i} = temp3;
     end
+
+       %%%%% Shuffled distribution
+    mean_number = [];
+    all_index = [];
+    for i = 1:length(group_index)
+        if size({ngroup},1) == 1
+            all_index = [all_index reshape(group_index{i},1,[])];
+        else
+            all_index = [all_index group_index{i}];
+        end
+
+        mean_number(i) = length(group_index{i});
+    end
+    mean_number = round(mean(mean_number));
+
+    %%%%% V1 Shuffled distribution
+    binnedArray = ipsi_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,all_index,mean_number);
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    ipsi_baseline_bootstrap{ngroup} = temp;
+
+    %%% Contra
+    binnedArray = contra_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,all_index,mean_number);
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    contra_baseline_bootstrap{ngroup} = temp;
+
+    %%% Ipsi-Contra baseline
+    binnedArray = ipsi_probability_baseline-contra_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    ipsi_contra_diff_baseline_bootstrap{ngroup} = temp;
+
 end
 
 
@@ -459,7 +477,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_spindles_baseline_UP;
+    binnedArray = probability_merged.ipsi_spindles_baseline_UP{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -498,7 +516,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.contra_spindles_baseline_UP;
+    binnedArray = probability_merged.contra_spindles_baseline_UP{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -536,7 +554,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_UP;
+    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_UP{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -627,7 +645,7 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 xline(0,'r',LineWidth=1)
 
 % baseline
-binnedArray = probability_merged.ipsi_spindles_baseline_UP;
+binnedArray = probability_merged.ipsi_spindles_baseline_UP{end};
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
@@ -717,7 +735,7 @@ delta_power =SWpeakmag_UD;
 
 % lag_thresholds = [-0.2]
 for n = 1:length(power_thresholds)-1
-    event_idx{5}{n} =(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
+    event_idx{5}{n} =find(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1));
 end
 
 
@@ -760,43 +778,6 @@ contra_probability = [probability_psth_whole(1).R_spindles_DOWN; probability_pst
 ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_spindles_DOWN; probability_psth_whole_baseline(2).R_spindles_DOWN];
 contra_probability_baseline = [probability_psth_whole_baseline(1).R_spindles_DOWN; probability_psth_whole_baseline(2).L_spindles_DOWN];
 
-%%%%% calculate shuffled baseline
-%%% Ipsi
-binnedArray = ipsi_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_baseline_bootstrap = temp;
-
-%%% Contra
-binnedArray = contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-contra_baseline_bootstrap = temp;
-
-%%% Ipsi-Contra baseline
-binnedArray = ipsi_probability_baseline-contra_probability_baseline;
-temp=[];
-parfor iBoot = 1:1000
-    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
-    event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
-    temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
-    % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
-end
-
-ipsi_contra_diff_baseline_bootstrap = temp;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% Calculate bootstrapped MUA
 
@@ -809,6 +790,10 @@ probability_merged.x = x;
 probability_merged.ipsi_spindles_DOWN = [];
 probability_merged.contra_spindles_DOWN = [];
 probability_merged.ipsi_contra_diff_spindles_DOWN = [];
+ipsi_baseline_bootstrap=[];
+contra_baseline_bootstrap=[];
+ipsi_contra_diff_baseline_bootstrap=[];
+
 
 for ngroup = 1:length(event_idx)+1
 
@@ -843,6 +828,57 @@ for ngroup = 1:length(event_idx)+1
         probability_merged.contra_spindles_DOWN{ngroup}{i} = temp2;
         probability_merged.ipsi_contra_diff_spindles_DOWN{ngroup}{i} = temp3;
     end
+
+
+    %%%%% Shuffled distribution
+    mean_number = [];
+    all_index = [];
+    for i = 1:length(group_index)
+        if size({ngroup},1) == 1
+            all_index = [all_index reshape(group_index{i},1,[])];
+        else
+            all_index = [all_index group_index{i}];
+        end
+
+        mean_number(i) = length(group_index{i});
+    end
+    mean_number = round(mean(mean_number));
+
+    %%%%% V1 Shuffled distribution
+    binnedArray = ipsi_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,all_index,mean_number);
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    ipsi_baseline_bootstrap{ngroup} = temp;
+
+    %%% Contra
+    binnedArray = contra_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,all_index,mean_number);
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    contra_baseline_bootstrap{ngroup} = temp;
+
+    %%% Ipsi-Contra baseline
+    binnedArray = ipsi_probability_baseline-contra_probability_baseline;
+    temp=[];
+    parfor iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+        temp(iBoot,:) =  mean(binnedArray(event_id,:),'omitnan');
+        % temp(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    ipsi_contra_diff_baseline_bootstrap{ngroup} = temp;
 end
 
 
@@ -890,7 +926,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_spindles_baseline_DOWN;
+    binnedArray = probability_merged.ipsi_spindles_baseline_DOWN{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -928,7 +964,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.contra_spindles_baseline_DOWN;
+    binnedArray = probability_merged.contra_spindles_baseline_DOWN{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -964,7 +1000,7 @@ for ngroup = 1:length(event_idx)
     end
 
     % baseline
-    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_DOWN;
+    binnedArray = probability_merged.ipsi_contra_diff_spindles_baseline_DOWN{ngroup};
     y = mean(binnedArray,'omitnan');
     %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
     LCI = prctile(binnedArray,2.5);
@@ -1058,7 +1094,7 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 xline(0,'r',LineWidth=1)
 
 % baseline
-binnedArray = probability_merged.ipsi_spindles_baseline_DOWN;
+binnedArray = probability_merged.ipsi_spindles_baseline_DOWN{end};
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
