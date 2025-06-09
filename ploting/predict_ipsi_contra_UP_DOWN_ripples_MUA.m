@@ -626,13 +626,13 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'
 
 
 %%%%%%%%%%%%%%%%%%% Plotting
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
-% output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
-%     ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1);
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
+output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
+    ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1);
+
 % 
-% 
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
-% output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1);
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
+output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1);
 
 %%
 
