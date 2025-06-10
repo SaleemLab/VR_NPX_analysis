@@ -87,7 +87,9 @@ for i = 1: length(event_times)
     %     event_duration = event_times(i,2) - event_times(i,1);
 
     if contains(event_type,'ripples')
-        if event_duration <0.1
+        if event_duration <0.1 &  event_times(i,1)+0.1 < event_times(i+1,1) 
+            % if it is a singlet ripple and is shorter than 100ms, then
+            % grab 100ms
             event_duration = 0.1;
         end
     end
@@ -100,8 +102,38 @@ end
 ripple_bins = [];
 ripple_bins(:,1)=ripples_time_edges;
 ripple_bins(:,2)=ripples_time_edges+time_bin_size;
-[~,~,~,~,~,n_ripples] = ActivityTemplates(spike_target,'bins',ripple_bins);
 
+if sum(event_times(2:end,1) - event_times(1:end-1,2)<0)<1
+    [~,~,~,~,~,n_ripples] = ActivityTemplates(spike_target,'bins',ripple_bins);
+else % in case a bigger window is selected by overlapping bins.
+    % Construct spike counts
+    spike_times = spike_target(:,1);
+    unit_ids = spike_target(:,2);
+    nNeurons = max(unit_ids);
+
+    spike_counts_all = cell(1,size(event_times,1));  % final matrix
+
+    parfor i = 1:length(event_times)
+        % tic
+        this_bins = ripple_bins(ripples_id == i,:);
+
+        % Preallocate
+        this_counts = zeros(size(this_bins,1), nNeurons);
+
+        for unit = 1:nNeurons
+            unit_spikes = spike_times(unit_ids == unit);
+            this_counts(:,unit) = CountInIntervals(unit_spikes, this_bins);
+        end
+
+        % Concatenate across all events
+        spike_counts_all{i} = [this_counts];
+        % toc
+    end
+
+    % Z-score across bins (within each neuron)
+    spike_counts_all = cat(1,spike_counts_all{:});
+    n_ripples = zscore(spike_counts_all, 0, 1);
+end
 
 % Calculate ripple residual
 % Calculate mean activity across all neurons for each ripple
