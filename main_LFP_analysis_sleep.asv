@@ -1497,32 +1497,26 @@ for nsession =1:length(experiment_info)
                             [~,tidx]=min(abs(tvec-spindles(probe_no).peaktimes(nevent)));
                         % Onset ampltiude and phase
                             SO_phase_spindle_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
-                            SO_amplitude_spindle_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_peak_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
 
                             [~,tidx]=min(abs(tvec-spindles(probe_no).onset(nevent)));
-                            % Peak amplitude and phase
+                        % Peak amplitude and phase
                             SO_phase_spindle_onset(:,nevent) = SO_phase_LFP(tidx,:);
-                            SO_amplitude_spindle_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_onset_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
                         end
 
                         spindles(probe_no).SO_phase_spindle_peaktime = SO_phase_spindle_peaktime;
-                        spindles(probe_no).SO_amplitude_spindle_peaktime = SO_amplitude_spindle_peaktime;
                         spindles(probe_no).spindle_peak_amplitude = spindle_peak_amplitude;
 
                         spindles(probe_no).SO_phase_spindle_onset = SO_phase_spindle_onset;
-                        spindles(probe_no).SO_amplitude_spindle_onset = SO_amplitude_spindle_onset;
                         spindles(probe_no).spindle_onset_amplitude = spindle_onset_amplitude;
                     end
                 else
                     spindles(probe_no).SO_phase_spindle_peaktime = [];
                     spindles(probe_no).spindle_peak_amplitude = [];
-                    spindles(probe_no).SO_amplitude_spindle_peaktime = [];
 
                     spindles(probe_no).SO_phase_spindle_onset = [];
                     spindles(probe_no).spindle_onset_amplitude = [];
-                    spindles(probe_no).SO_amplitude_spindle_onset = [];
                 end
             end
 
@@ -1540,60 +1534,34 @@ for nsession =1:length(experiment_info)
         [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
         session_clusters.spike_id=session_clusters.spike_id(index);
 
-        % Preallocate matrices
-%         n_channels =    size(SO_amplitude_LFP,2);
-%         SO_phase_at_spikes = nan(nSpikes, n_channels);  % Adjust n_channels accordingly
-%         SO_amplitude_at_spikes = nan(nSpikes, n_channels);
-%         spindle_phase_at_spikes = nan(nSpikes, n_channels);
-%         spindle_amplitude_at_spikes = nan(nSpikes, n_channels);
-% 
-%         ripple_amplitude_at_spikes = nan(nSpikes, size(ripple_amplitude_LFP,2));
-
         nSpikes = length(session_clusters.spike_times);
-        n_channels = size(SO_amplitude_LFP, 2);
-        ripple_channels = size(ripple_amplitude_LFP, 2);
 
-        chunk_size = 5e5;  % 500,000 spikes per chunk
-        n_chunks = ceil(nSpikes / chunk_size);
+        % Preallocate matrices
+        n_channels =    size(SO_amplitude_LFP,2);
+        SO_phase_at_spikes = nan(nSpikes, n_channels);  % Adjust n_channels accordingly
+        SO_amplitude_at_spikes = nan(nSpikes, n_channels);
+        spindle_phase_at_spikes = nan(nSpikes, n_channels);
+        spindle_amplitude_at_spikes = nan(nSpikes, n_channels);
 
-        % Preallocate cell arrays for chunks
-        SO_phase_chunks = cell(n_chunks, 1);
-        SO_amplitude_chunks = cell(n_chunks, 1);
-        spindle_phase_chunks = cell(n_chunks, 1);
-        spindle_amplitude_chunks = cell(n_chunks, 1);
-        ripple_amplitude_chunks = cell(n_chunks, 1);
+        ripple_amplitude_at_spikes = nan(nSpikes, size(ripple_amplitude_LFP,2));
 
-        for c = 1:n_chunks
-            idx_start = (c-1)*chunk_size + 1;
-            idx_end = min(c*chunk_size, nSpikes);
-            idx_range = idx_start:idx_end;
+        for spk = 1:nSpikes
+            spk_time = session_clusters.spike_times(spk);
+            [~, tidx] = min(abs(tvec - spk_time));
 
-            % Spike times and nearest LFP index
-            spike_times_chunk = session_clusters.spike_times(idx_range);
-            spike_idx = interp1(tvec, 1:length(tvec), spike_times_chunk, 'nearest', 'extrap');
-
-
-            % Extract and convert to single
-            SO_phase_chunks{c} = single(SO_phase_LFP(spike_idx, :));
-            SO_amplitude_chunks{c} = single(SO_amplitude_LFP(spike_idx, :));
-            spindle_phase_chunks{c} = single(spindle_phase_LFP(spike_idx, :));
-            spindle_amplitude_chunks{c} = single(spindle_amplitude_LFP(spike_idx, :));
-            ripple_amplitude_chunks{c} = single(ripple_amplitude_LFP(spike_idx, :));
-
-            fprintf('Processed chunk %d of %d (%d spikes)\n', c, n_chunks, length(idx_range));
+            SO_phase_at_spikes(spk, :) = SO_phase_LFP(tidx, :);
+            SO_amplitude_at_spikes(spk, :) = SO_amplitude_LFP(tidx, :);
+            spindle_phase_at_spikes(spk, :) = spindle_phase_LFP(tidx, :);
+            spindle_amplitude_at_spikes(spk, :) = spindle_amplitude_LFP(tidx, :);
+            ripple_amplitude_at_spikes(spk, :) = ripple_amplitude_LFP(tidx, :);
         end
-    
-        % Merge and clear chunked variables
-        spike_phase_amplitude.SO_phase = vertcat(SO_phase_chunks{:});
-        spike_phase_amplitude.SO_amplitude = vertcat(SO_amplitude_chunks{:});
-        spike_phase_amplitude.spindle_phase = vertcat(spindle_phase_chunks{:});
-        spike_phase_amplitude.spindle_amplitude = vertcat(spindle_amplitude_chunks{:});
-        spike_phase_amplitude.ripple_amplitude = vertcat(ripple_amplitude_chunks{:});
+        spike_phase_amplitude.SO_phase = single(SO_phase_at_spikes);
+        spike_phase_amplitude.SO_amplitude = single(SO_amplitude_at_spikes);
+        spike_phase_amplitude.spindle_phase = single(spindle_phase_at_spikes);
+        spike_phase_amplitude.spindle_amplitude = single(spindle_amplitude_at_spikes);
+        spike_phase_amplitude.ripple_amplitude = single(ripple_amplitude_at_spikes);
 
-        % Clear chunk variables to free memory
-        clear SO_phase_chunks SO_amplitude_chunks spindle_phase_chunks ...
-            spindle_amplitude_chunks ripple_amplitude_chunks;
-
+        save('spike_phase_amplitude_single.mat', 'spike_phase_amplitude', '-v7.3');
 
 
         toc
@@ -1614,15 +1582,11 @@ for nsession =1:length(experiment_info)
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spindles');
             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
-
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('spike_phase_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spike_phase_amplitude','-v7,3');
         else
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles');
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
-
-            save(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'), 'spike_phase_amplitude', '-v7.3');
         end
     end
 end
