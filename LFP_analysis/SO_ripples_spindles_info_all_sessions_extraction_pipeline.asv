@@ -273,7 +273,8 @@ for nsession =1:length(experiment_info)
         for iField =1:length(field_names)
             if session_count == 1
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude',...
+                        })
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
@@ -568,6 +569,7 @@ for nsession = 1:length(experiment_info)
         clear session_clusters
     end
 
+    % --- V1 data ---
     if contains(stimulus_name{n},'Sleep')
         load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_reactivation_V1');
         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_DOWN.mat'),'KDE_reactivation_V1_DOWN');
@@ -586,6 +588,7 @@ for nsession = 1:length(experiment_info)
             log(KDE_reactivation_V1_UP(nprobe).event_T1_probability ./ KDE_reactivation_V1_UP(nprobe).event_T2_probability);
             log(KDE_reactivation_V1_DOWN(nprobe).event_T1_probability ./ KDE_reactivation_V1_DOWN(nprobe).event_T2_probability)
         ];
+        all_log_odds = all_log_odds((isfinite(all_log_odds)));
 
         all_bias = [
             KDE_reactivation_V1(nprobe).event_bias;
@@ -613,7 +616,6 @@ for nsession = 1:length(experiment_info)
 
             log_odds = log(src(nprobe).event_T1_probability ./ src(nprobe).event_T2_probability);
             log_odds_shuffled = log(src(nprobe).event_T1_probability_shuffled ./ src(nprobe).event_T2_probability_shuffled);
-
             zscored_log_odds_shuffled = nan(1, size(log_odds_shuffled, 2));
             log_odds_percentile = nan(1, size(log_odds_shuffled, 2));
             for i = 1:size(log_odds_shuffled,2)
@@ -634,10 +636,15 @@ for nsession = 1:length(experiment_info)
             eval([dst '(nprobe).zscored_log_odds{nsession} = (log_odds - mean(all_log_odds,''omitnan'')) ./ std(all_log_odds,''omitnan'');']);
             eval([dst '(nprobe).zscored_log_odds_shuffled{nsession} = zscored_log_odds_shuffled;']);
             eval([dst '(nprobe).log_odds_percentile{nsession} = log_odds_percentile;']);
+
+            % New: Save event metadata
+            eval([dst '(nprobe).event_bins{nsession} = src(nprobe).event_bins;']);
+            eval([dst '(nprobe).event_id{nsession} = src(nprobe).event_id;']);
         end
     end
     clear KDE_reactivation_V1 KDE_reactivation_V1_DOWN KDE_reactivation_V1_UP
 
+    % --- General (non-V1) data ---
     load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation');
     load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_DOWN.mat'),'KDE_reactivation_DOWN');
     load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_UP.mat'),'KDE_reactivation_UP');
@@ -654,6 +661,7 @@ for nsession = 1:length(experiment_info)
             log(KDE_reactivation_UP(nprobe).event_T1_probability ./ KDE_reactivation_UP(nprobe).event_T2_probability);
             log(KDE_reactivation_DOWN(nprobe).event_T1_probability ./ KDE_reactivation_DOWN(nprobe).event_T2_probability)
         ];
+        all_log_odds = all_log_odds((isfinite(all_log_odds)));
 
         all_bias = [
             KDE_reactivation(nprobe).event_bias;
@@ -681,7 +689,6 @@ for nsession = 1:length(experiment_info)
 
             log_odds = log(src(nprobe).event_T1_probability ./ src(nprobe).event_T2_probability);
             log_odds_shuffled = log(src(nprobe).event_T1_probability_shuffled ./ src(nprobe).event_T2_probability_shuffled);
-
             zscored_log_odds_shuffled = nan(1, size(log_odds_shuffled, 2));
             log_odds_percentile = nan(1, size(log_odds_shuffled, 2));
             for i = 1:size(log_odds_shuffled,2)
@@ -702,16 +709,21 @@ for nsession = 1:length(experiment_info)
             eval([dst '(nprobe).zscored_log_odds{nsession} = (log_odds - mean(all_log_odds,''omitnan'')) ./ std(all_log_odds,''omitnan'');']);
             eval([dst '(nprobe).zscored_log_odds_shuffled{nsession} = zscored_log_odds_shuffled;']);
             eval([dst '(nprobe).log_odds_percentile{nsession} = log_odds_percentile;']);
+
+            % New: Save event time metadata
+            eval([dst '(nprobe).event_bins{nsession} = src(nprobe).event_bins;']);
+            eval([dst '(nprobe).event_id{nsession} = src(nprobe).event_id;']);
         end
     end
     clear KDE_reactivation KDE_reactivation_DOWN KDE_reactivation_UP
     toc
 end
 
-if exist('D:\corticohippocampal_replay','dir')
-    analysis_folder = 'D:\corticohippocampal_replay';
-elseif exist('P:\corticohippocampal_replay','dir')
-    analysis_folder = 'P:\corticohippocampal_replay';
+% Save all results
+if exist('D:\\corticohippocampal_replay','dir')
+    analysis_folder = 'D:\\corticohippocampal_replay';
+elseif exist('P:\\corticohippocampal_replay','dir')
+    analysis_folder = 'P:\\corticohippocampal_replay';
 end
 
 save(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
@@ -803,8 +815,7 @@ for nsession =1:length(experiment_info)
         bias_distribution = [real_bias];
 
         log_odds = log(KDE_reactivation_V1_ripples(nprobe).event_T1_probability ./ KDE_reactivation_V1_ripples(nprobe).event_T2_probability)';
-        log_odds_distribution = log_odds;
-        log_odds_distribution(~isfinite(log_odds_distribution)) = [];
+        log_odds_distribution = log_odds((isfinite(log_odds)));
 
         KDE_reactivation_V1_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_ripples(nprobe).event_bins;
         KDE_reactivation_V1_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_V1_ripples(nprobe).event_id;
@@ -822,7 +833,6 @@ for nsession =1:length(experiment_info)
 
         log_odds = log(KDE_reactivation_ripples(nprobe).event_T1_probability ./ KDE_reactivation_ripples(nprobe).event_T2_probability)';
         log_odds_distribution = log_odds((isfinite(log_odds)));
-        log_odds_distribution = [];
 
         KDE_reactivation_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
         KDE_reactivation_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
@@ -993,8 +1003,10 @@ for nsession =1:length(experiment_info)
             bayesian_reactivation_V1_all(nprobe).summed_probability = [];
             bayesian_reactivation_V1_all(nprobe).bias = [];
             bayesian_reactivation_V1_all(nprobe).z_bias = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds = [];
             bayesian_reactivation_V1_all(nprobe).z_log_odds = [];
-            bayesian_reactivation_V1_all(nprobe).log_odds_percentile = [];
+            bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile_shuffled = [];
         end
 
         % -- Loop through events
@@ -1206,6 +1218,10 @@ end
 
 save(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'),'bayesian_reactivation_all')
 save(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'),'bayesian_reactivation_V1_all')
+
+%%%%%
+
+
 
 
 %% Analyse and plot peri-ripple, peri-spindle and peri-UP activity

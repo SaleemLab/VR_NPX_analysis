@@ -229,7 +229,8 @@ for nsession =1:length(experiment_info)
             if session_count == 1
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
                         'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
-                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude','SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime',...
+                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     ripples_all(probe_no).(field_names{iField}) = ripples(nprobe).(field_names{iField});
@@ -239,7 +240,8 @@ for nsession =1:length(experiment_info)
             else
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
                         'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
-                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude'})
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude','SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime',...
+                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset'})
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     A = ripples_all(probe_no).(field_names{iField});
@@ -273,7 +275,8 @@ for nsession =1:length(experiment_info)
         for iField =1:length(field_names)
             if session_count == 1
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude',...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset'})
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
@@ -281,7 +284,8 @@ for nsession =1:length(experiment_info)
                 end
             else
                 if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude'})
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude',...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset'})
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     A = spindles_all(probe_no).(field_names{iField});
@@ -500,7 +504,119 @@ else
     save(fullfile(analysis_folder,'behavioural_state_merged_all.mat'),'behavioural_state_merged_all','-v7.3')
 end
 
-%% Extract all clusters
+%% Extract all clusters spike amplitude phase info and spatial tuning 
+
+
+
+
+% SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
+% option = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar 
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+% [1 2 3 4 9 10 12 14]
+% Stimulus_types_all = {'RUN'};
+% Stimulus_types_all = {'RUN','POST'};
+
+
+for nsession =3:10
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+
+        if contains(stimulus_name{n},'Masa2tracks')
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
+        elseif contains(stimulus_name{n},'Sleep')
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+
+            clusters=clusters_ks4;
+            load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
+           
+        else
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        end
+        clear CA1_clusters V1_clusters
+
+        % From cell structure back to spike times and spike id
+        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
+        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
+        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
+        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
+
+        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+        session_clusters.spike_id=session_clusters.spike_id(index);
+
+%         params = create_cluster_selection_params('sorting_option','masa');
+        clusters_combined = session_clusters;
+
+        tic
+
+        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+
+
+        spike_phase_amplitude
+
+    end
+end
+
 
 
 
@@ -1002,8 +1118,10 @@ for nsession =1:length(experiment_info)
             bayesian_reactivation_V1_all(nprobe).summed_probability = [];
             bayesian_reactivation_V1_all(nprobe).bias = [];
             bayesian_reactivation_V1_all(nprobe).z_bias = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds = [];
             bayesian_reactivation_V1_all(nprobe).z_log_odds = [];
-            bayesian_reactivation_V1_all(nprobe).log_odds_percentile = [];
+            bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile_shuffled = [];
         end
 
         % -- Loop through events
@@ -1215,6 +1333,10 @@ end
 
 save(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'),'bayesian_reactivation_all')
 save(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'),'bayesian_reactivation_V1_all')
+
+%%%%%
+
+
 
 
 %% Analyse and plot peri-ripple, peri-spindle and peri-UP activity

@@ -1,4 +1,4 @@
-function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding(tvec_template,position,speed,lap_times,track_ID,spikes_template,event_times,spike_target,options,varargin)
+function [PLS KDE_RUN KDE_reactivation] = PLS_KDE_Reactivation_decoding_validation(tvec_template,position,speed,lap_times,track_ID,spikes_template,event_times,spike_target,options,varargin)
 % PLS_KDE_Reactivation_decoding - 1. Perform PLS regression to obtain PLS latent components that are maximised for covariance between track identity and spiking data during RUN, which can be projected to RUN data or Ripple data
 %  2. Use KDE to find probability of track reactivation during ripple based on PLS projection
 %
@@ -74,6 +74,8 @@ position_interp1 = discretize(position_interp1,28)*5;
 [T2_bins,~,index] = InIntervals(timevec_edge_RUN',lap_times(track_ID==2,:));
 [~,~,~,~,~,n] = ActivityTemplates(spikes_template,'bins',bins);
 
+% time_bin_size=0.02;
+% time_bin_size_moving = 0.01;
 % timevec_edge= interp1(tvec_target,tvec_target,tvec_target(1):time_bin_size:tvec_target(end));
 % speed_RUN= interp1(tvec_template,speed,tvec_template(1):time_bin_size:tvec_template(end));
 % timevec_edge_RUN(speed_RUN<1)=nan;
