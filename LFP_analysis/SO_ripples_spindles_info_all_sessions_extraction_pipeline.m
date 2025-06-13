@@ -1434,9 +1434,9 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 
 %%%%%% baseline shuffle (-3s before each ripples)
 %%%% P(UP) and P(DOWN) during ripples
-probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','onset','shuffle_option','baseline')
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','onset','shuffle_option','baseline','time_windows',[-1 1])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_baseline.mat'),'probability');
-probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','shuffle_option','baseline')
+probability = calculate_ripple_UP_DOWN_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','shuffle_option','baseline','time_windows',[-1 1])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole_baseline.mat'),'probability');
 
 %%%%%% baseline shuffle (-3s before each ripples)
