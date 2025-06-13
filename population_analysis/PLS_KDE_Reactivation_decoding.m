@@ -87,9 +87,13 @@ for i = 1: length(event_times)
     %     event_duration = event_times(i,2) - event_times(i,1);
 
     if contains(event_type,'ripples')
-        if event_duration <0.1 &  event_times(i,1)+0.1 < event_times(i+1,1) 
-            % if it is a singlet ripple and is shorter than 100ms, then
-            % grab 100ms
+        if i < size(event_times,1)
+            if event_duration <0.1 &  event_times(i,1)+0.1 < event_times(i+1,1)
+                % if it is a singlet ripple and is shorter than 100ms, then
+                % grab 100ms
+                event_duration = 0.1;
+            end
+        elseif event_duration <0.1
             event_duration = 0.1;
         end
     end
