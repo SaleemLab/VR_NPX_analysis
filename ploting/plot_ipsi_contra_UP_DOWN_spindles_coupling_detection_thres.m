@@ -1115,7 +1115,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_merged.mat'),'probability_merged')
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
 
 %%
 
