@@ -11,6 +11,11 @@ nBoot = p.Results.nBoot;
 nseed = p.Results.nseed;
 
 temp = zeros(nBoot, size(data_matrix,2));
+
+data_matrix1 = data_matrix(isfinite(data_matrix));
+data_matrix(data_matrix>=inf) = prctile(data_matrix1,99.5);
+data_matrix(data_matrix<=-inf) = prctile(data_matrix1,0.5);
+
 parfor iBoot = 1:nBoot
     s = RandStream('mrg32k3a','Seed',iBoot+nseed);
     resample_idx = datasample(s, index, nSamples);
