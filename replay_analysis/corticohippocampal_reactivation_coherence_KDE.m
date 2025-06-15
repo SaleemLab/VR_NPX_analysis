@@ -163,8 +163,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -180,14 +180,16 @@ z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
 
 %%%%%%%%%%% ALL
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-T1_events = find(nanmean(z_bias(bins_to_use,:))>0.5);
-T2_events = find(nanmean(z_bias(bins_to_use,:))<-0.5);
+
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 
 nSamples = min([length(T1_events) length(T2_events)]);
 
 [bV1_mean_T1, LCI1_V1, UCI1_V1,bootV1_T1] = calculate_bootstrap_CI(z_bias_V1', T1_events,'nSamples',nSamples);
 [bV1_mean_T2, LCI2_V1, UCI2_V1,bootV1_T2] = calculate_bootstrap_CI(z_bias_V1', T2_events,'nSamples',nSamples);
-[bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events T2_events],'nSamples',nSamples);
+[bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', 1:length(z_bias_V1),'nSamples',nSamples);
 [~, ~, ~, bootV1_T2_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events T2_events],'nSamples',nSamples,'nseed', 1000);
 bootV1_diff_shuffled = bootV1_T1_shuffled - bootV1_T2_shuffled;
 
@@ -202,7 +204,7 @@ UCI_V1_diff =  prctile(bootV1_diff, 97.5);
 
 [b_mean_T1, LCI1, UCI1,boot_T1] = calculate_bootstrap_CI(z_bias', T1_events,'nSamples',nSamples);
 [b_mean_T2, LCI2, UCI2,boot_T2] = calculate_bootstrap_CI(z_bias', T2_events,'nSamples',nSamples);
-[b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events T2_events],'nSamples',nSamples);
+[b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', 1:length(z_bias_V1),'nSamples',nSamples);
 [~, ~, ~,boot_T2_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events T2_events],'nSamples',nSamples,'nseed', 1000);
 boot_diff_shuffled = boot_T1_shuffled - boot_T2_shuffled;
 
@@ -219,7 +221,7 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 nfig = figure;
 nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 All'; 
-nfig.Position = [500 75 850 850];
+nfig.Position = [500 75 700 850];
 
 event_index = [T1_events T2_events];
 z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
@@ -2039,9 +2041,16 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 nfig = figure;
 nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase peak'; 
-nfig.Position = [7 75 1900 910];
+nfig.Position = [500 75 700 850];
+
+event_index = [T1_events T2_events];
+z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
+
+[~,sorted_index] = sort(z_event);
+
 nexttile
-imagesc(bin_centers,[],z_bias(:,T1_events)');clim([-3 3])
+h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
@@ -2050,29 +2059,14 @@ xlabel('Time (s)')
 ylabel('Ripple event')
 
 nexttile
-imagesc(bin_centers,[],z_bias(:,T2_events)');clim([-3 3])
+h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 xlabel('Time (s)')
 ylabel('Ripple event')
 
-nexttile
-imagesc(bin_centers,[],z_bias_V1(:,T1_events)');clim([-3 3])
-xlim([-0.5 0.5])
-colorbar;
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-% imagesc(z_bias_V1);colorbar;
-xlabel('Time (s)')
-ylabel('Ripple event')
-
-nexttile
-imagesc(bin_centers,[],z_bias_V1(:,T2_events)');clim([-3 3])
-xlim([-0.5 0.5])
-colorbar;
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-xlabel('Time (s)')
-ylabel('Ripple event')
 
 % Colors
 track1_color = [0 0 1]; % blue
@@ -2090,7 +2084,7 @@ plot(bin_centers, b_mean_T1, 'Color', track1_color);
 plot(bin_centers, b_mean_T2, 'Color', track2_color);
 plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
 xlim([-0.5 0.5])
-ylim([-2 2])
+ylim([-3 3])
 legend('Track 1', 'Track 2','Shuffled','box','off');
 xlabel('Time (s)')
 ylabel('Bias (z)')
@@ -2108,7 +2102,7 @@ fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_lab
 plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
 plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
 plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
-ylim([-0.15 0.15])
+ylim([-0.2 0.2])
 xlim([-0.5 0.5])
 legend('Track 1', 'Track 2','Shuffled','box','off');
 title('z bias V1');
@@ -2127,7 +2121,7 @@ fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuff
 plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
 plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
 xlim([-0.5 0.5])
-ylim([-1 3])
+ylim([-1 4.5])
 legend('Track diff','Shuffled','box','off');
 xlabel('Time (s)')
 ylabel('Bias T1-T2 difference (z)')
@@ -2143,13 +2137,14 @@ fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff
 
 plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
 plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
-ylim([-0.1 0.2])
+ylim([-0.1 0.3])
 xlim([-0.5 0.5])
 legend('Track diff','Shuffled','box','off');
 title('z bias diff V1');
 xlabel('Time (s)')
 ylabel('Bias T1-T2 difference (z)')
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
 
 
 
@@ -2208,9 +2203,16 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 nfig = figure;
 nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase trough'; 
-nfig.Position = [7 75 1900 910];
+nfig.Position = [500 75 700 850];
+
+event_index = [T1_events T2_events];
+z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
+
+[~,sorted_index] = sort(z_event);
+
 nexttile
-imagesc(bin_centers,[],z_bias(:,T1_events)');clim([-3 3])
+h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
@@ -2219,29 +2221,14 @@ xlabel('Time (s)')
 ylabel('Ripple event')
 
 nexttile
-imagesc(bin_centers,[],z_bias(:,T2_events)');clim([-3 3])
+h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 xlabel('Time (s)')
 ylabel('Ripple event')
 
-nexttile
-imagesc(bin_centers,[],z_bias_V1(:,T1_events)');clim([-3 3])
-xlim([-0.5 0.5])
-colorbar;
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-% imagesc(z_bias_V1);colorbar;
-xlabel('Time (s)')
-ylabel('Ripple event')
-
-nexttile
-imagesc(bin_centers,[],z_bias_V1(:,T2_events)');clim([-3 3])
-xlim([-0.5 0.5])
-colorbar;
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-xlabel('Time (s)')
-ylabel('Ripple event')
 
 % Colors
 track1_color = [0 0 1]; % blue
@@ -2259,7 +2246,7 @@ plot(bin_centers, b_mean_T1, 'Color', track1_color);
 plot(bin_centers, b_mean_T2, 'Color', track2_color);
 plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
 xlim([-0.5 0.5])
-ylim([-2 2])
+ylim([-3 3])
 legend('Track 1', 'Track 2','Shuffled','box','off');
 xlabel('Time (s)')
 ylabel('Bias (z)')
@@ -2277,7 +2264,7 @@ fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_lab
 plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
 plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
 plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
-ylim([-0.15 0.15])
+ylim([-0.2 0.2])
 xlim([-0.5 0.5])
 legend('Track 1', 'Track 2','Shuffled','box','off');
 title('z bias V1');
@@ -2296,7 +2283,7 @@ fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuff
 plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
 plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
 xlim([-0.5 0.5])
-ylim([-1 3])
+ylim([-1 4.5])
 legend('Track diff','Shuffled','box','off');
 xlabel('Time (s)')
 ylabel('Bias T1-T2 difference (z)')
@@ -2312,13 +2299,14 @@ fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff
 
 plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
 plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
-ylim([-0.1 0.2])
+ylim([-0.1 0.3])
 xlim([-0.5 0.5])
 legend('Track diff','Shuffled','box','off');
 title('z bias diff V1');
 xlabel('Time (s)')
 ylabel('Bias T1-T2 difference (z)')
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
 
 
 

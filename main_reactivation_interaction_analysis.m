@@ -461,6 +461,7 @@ end
 
 % Combine and store
 for region = regions
+    region = char(region)
     KDE_reactivation_ripples_PSTH.([region '_ripples'])             = [ripple_bias_masked_SWS.(region).bias{1};              ripple_bias_masked_SWS.(region).bias{2}];
     KDE_reactivation_ripples_PSTH.([region '_z_ripples'])           = [ripple_bias_masked_SWS.(region).zscored_bias{1};      ripple_bias_masked_SWS.(region).zscored_bias{2}];
     KDE_reactivation_ripples_PSTH.([region '_logodds_ripples'])     = [ripple_bias_masked_SWS.(region).log_odds{1};          ripple_bias_masked_SWS.(region).log_odds{2}];
