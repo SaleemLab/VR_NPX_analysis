@@ -42,8 +42,8 @@ num_lags = length(lags);
 % ------------------------------
 % Z-score each trial (row-wise)
 % ------------------------------
-HPC_z = zscore(HPC_bias, 0, 2);
-V1_z = zscore(V1_bias, 0, 2);
+HPC_z = zscore(HPC_bias, 0, 2,'omitnan');
+V1_z = zscore(V1_bias, 0, 2,'omitnan');
 
 if use_gpu
     HPC_z = gpuArray(HPC_z);
@@ -67,10 +67,10 @@ for li = 1:num_lags
         v = V1_z;
     end
     % Pearson via dot product (z-scored data)
-    corr_mat(:, li) = sum(h .* v, 2) ./ (size(h,2) - 1);
+    corr_mat(:, li) = sum(h .* v, 2,'omitnan') ./ (size(h,2) - 1);
 end
 
-corr_mean = mean(corr_mat, 1);
+corr_mean = mean(corr_mat, 1,'omitnan');
 if use_gpu
     corr_mean = gather(corr_mean);  % bring back to CPU
 end
@@ -109,11 +109,11 @@ parfor s = 1:num_shuffles
             h = HPC_z;
             v = V1_shifted;
         end
-        temp_corr(li) = mean(sum(h .* v, 2) ./ (size(h,2) - 1));
+        temp_corr(li) = mean(sum(h .* v, 2,'omitnan') ./ (size(h,2) - 1),'omitnan');
     end
     shuffle_corrs(s, :) = temp_corr;
 end
 
-shuffle_mean = mean(shuffle_corrs, 1);
+shuffle_mean = mean(shuffle_corrs, 1,'omitnan');
 shuffle_CI = prctile(shuffle_corrs, [2.5 97.5], 1);
 end
