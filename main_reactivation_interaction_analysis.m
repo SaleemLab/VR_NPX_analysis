@@ -238,7 +238,7 @@ nbins = round(diff(ripple_window) / psth_step);
 
 % Metrics to extract
 % metric_names = {'bias', 'zscored_bias', 'zscored_bias_shuffled'};
-metric_names = {'bias', 'zscored_bias', 'log_odds', 'zscored_log_odds','zscored_log_odds_shuffled'};
+metric_names = {'bias', 'zscored_bias', 'log_odds', 'zscored_log_odds','zscored_log_odds_shuffled','log_odds_percentile'};
 % Output containers
 ripple_bias_masked_SWS = struct();
 ripple_bias_masked_nonSWS = struct();
@@ -321,20 +321,41 @@ end
 
 % SWS ripples
 % SWS ripples
-KDE_reactivation_content.HPC_ripples             = [ripple_bias_masked_SWS.HPC.bias{1};             ripple_bias_masked_SWS.HPC.bias{2}];
-KDE_reactivation_content.V1_ripples              = [ripple_bias_masked_SWS.V1.bias{1};              ripple_bias_masked_SWS.V1.bias{2}];
-KDE_reactivation_content.HPC_z_ripples     = [ripple_bias_masked_SWS.HPC.zscored_bias{1};     ripple_bias_masked_SWS.HPC.zscored_bias{2}];
-KDE_reactivation_content.V1_z_ripples      = [ripple_bias_masked_SWS.V1.zscored_bias{1};      ripple_bias_masked_SWS.V1.zscored_bias{2}];
-KDE_reactivation_content.HPC_zshuff_ripples    = [ripple_bias_masked_SWS.HPC.zscored_bias_shuffled{1}; ripple_bias_masked_SWS.HPC.zscored_bias_shuffled{2}];
-KDE_reactivation_content.V1_zshuff_ripples     = [ripple_bias_masked_SWS.V1.zscored_bias_shuffled{1}; ripple_bias_masked_SWS.V1.zscored_bias_shuffled{2}];
+% bias
+KDE_reactivation_content.HPC_ripples                  = [ripple_bias_masked_SWS.HPC.bias{1}; ripple_bias_masked_SWS.HPC.bias{2}];
+KDE_reactivation_content.V1_ripples                   = [ripple_bias_masked_SWS.V1.bias{1}; ripple_bias_masked_SWS.V1.bias{2}];
+KDE_reactivation_content.HPC_awake_ripples            = [ripple_bias_masked_nonSWS.HPC.bias{1}; ripple_bias_masked_nonSWS.HPC.bias{2}];
+KDE_reactivation_content.V1_awake_ripples             = [ripple_bias_masked_nonSWS.V1.bias{1}; ripple_bias_masked_nonSWS.V1.bias{2}];
 
-% Non-SWS (awake/REM)
-KDE_reactivation_content.HPC_awake_ripples             = [ripple_bias_masked_nonSWS.HPC.bias{1};             ripple_bias_masked_nonSWS.HPC.bias{2}];
-KDE_reactivation_content.V1_awake_ripples              = [ripple_bias_masked_nonSWS.V1.bias{1};              ripple_bias_masked_nonSWS.V1.bias{2}];
-KDE_reactivation_content.HPC_z_awake_ripples     = [ripple_bias_masked_nonSWS.HPC.zscored_bias{1};     ripple_bias_masked_nonSWS.HPC.zscored_bias{2}];
-KDE_reactivation_content.V1_z_awake_ripples      = [ripple_bias_masked_nonSWS.V1.zscored_bias{1};      ripple_bias_masked_nonSWS.V1.zscored_bias{2}];
-KDE_reactivation_content.HPC_zshuff_awake_ripples    = [ripple_bias_masked_nonSWS.HPC.zscored_bias_shuffled{1}; ripple_bias_masked_nonSWS.HPC.zscored_bias_shuffled{2}];
-KDE_reactivation_content.V1_zshuff_awake_ripples     = [ripple_bias_masked_nonSWS.V1.zscored_bias_shuffled{1}; ripple_bias_masked_nonSWS.V1.zscored_bias_shuffled{2}];
+% zscored_bias
+KDE_reactivation_content.HPC_z_ripples                = [ripple_bias_masked_SWS.HPC.zscored_bias{1}; ripple_bias_masked_SWS.HPC.zscored_bias{2}];
+KDE_reactivation_content.V1_z_ripples                 = [ripple_bias_masked_SWS.V1.zscored_bias{1}; ripple_bias_masked_SWS.V1.zscored_bias{2}];
+KDE_reactivation_content.HPC_z_awake_ripples          = [ripple_bias_masked_nonSWS.HPC.zscored_bias{1}; ripple_bias_masked_nonSWS.HPC.zscored_bias{2}];
+KDE_reactivation_content.V1_z_awake_ripples           = [ripple_bias_masked_nonSWS.V1.zscored_bias{1}; ripple_bias_masked_nonSWS.V1.zscored_bias{2}];
+
+% log_odds
+KDE_reactivation_content.HPC_logodds_ripples         = [ripple_bias_masked_SWS.HPC.log_odds{1}; ripple_bias_masked_SWS.HPC.log_odds{2}];
+KDE_reactivation_content.V1_logodds_ripples          = [ripple_bias_masked_SWS.V1.log_odds{1}; ripple_bias_masked_SWS.V1.log_odds{2}];
+KDE_reactivation_content.HPC_logodds_awake_ripples   = [ripple_bias_masked_nonSWS.HPC.log_odds{1}; ripple_bias_masked_nonSWS.HPC.log_odds{2}];
+KDE_reactivation_content.V1_logodds_awake_ripples    = [ripple_bias_masked_nonSWS.V1.log_odds{1}; ripple_bias_masked_nonSWS.V1.log_odds{2}];
+
+% zscored_log_odds
+KDE_reactivation_content.HPC_z_logodds_ripples       = [ripple_bias_masked_SWS.HPC.zscored_log_odds{1}; ripple_bias_masked_SWS.HPC.zscored_log_odds{2}];
+KDE_reactivation_content.V1_z_logodds_ripples        = [ripple_bias_masked_SWS.V1.zscored_log_odds{1}; ripple_bias_masked_SWS.V1.zscored_log_odds{2}];
+KDE_reactivation_content.HPC_z_logodds_awake_ripples = [ripple_bias_masked_nonSWS.HPC.zscored_log_odds{1}; ripple_bias_masked_nonSWS.HPC.zscored_log_odds{2}];
+KDE_reactivation_content.V1_z_logodds_awake_ripples  = [ripple_bias_masked_nonSWS.V1.zscored_log_odds{1}; ripple_bias_masked_nonSWS.V1.zscored_log_odds{2}];
+
+% zscored_log_odds_shuffled
+KDE_reactivation_content.HPC_zshuff_logodds_ripples       = [ripple_bias_masked_SWS.HPC.zscored_log_odds_shuffled{1}; ripple_bias_masked_SWS.HPC.zscored_log_odds_shuffled{2}];
+KDE_reactivation_content.V1_zshuff_logodds_ripples        = [ripple_bias_masked_SWS.V1.zscored_log_odds_shuffled{1}; ripple_bias_masked_SWS.V1.zscored_log_odds_shuffled{2}];
+KDE_reactivation_content.HPC_zshuff_logodds_awake_ripples = [ripple_bias_masked_nonSWS.HPC.zscored_log_odds_shuffled{1}; ripple_bias_masked_nonSWS.HPC.zscored_log_odds_shuffled{2}];
+KDE_reactivation_content.V1_zshuff_logodds_awake_ripples  = [ripple_bias_masked_nonSWS.V1.zscored_log_odds_shuffled{1}; ripple_bias_masked_nonSWS.V1.zscored_log_odds_shuffled{2}];
+
+% log_odds_percentile
+KDE_reactivation_content.HPC_logodds_percentile_ripples         = [ripple_bias_masked_SWS.HPC.log_odds_percentile{1}; ripple_bias_masked_SWS.HPC.log_odds_percentile{2}];
+KDE_reactivation_content.V1_logodds_percentile_ripples          = [ripple_bias_masked_SWS.V1.log_odds_percentile{1}; ripple_bias_masked_SWS.V1.log_odds_percentile{2}];
+KDE_reactivation_content.HPC_logodds_percentile_awake_ripples   = [ripple_bias_masked_nonSWS.HPC.log_odds_percentile{1}; ripple_bias_masked_nonSWS.HPC.log_odds_percentile{2}];
+KDE_reactivation_content.V1_logodds_percentile_awake_ripples    = [ripple_bias_masked_nonSWS.V1.log_odds_percentile{1}; ripple_bias_masked_nonSWS.V1.log_odds_percentile{2}];
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'),'KDE_reactivation_content');
 
