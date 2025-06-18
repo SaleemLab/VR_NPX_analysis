@@ -1603,25 +1603,15 @@ for nsession =1:length(experiment_info)
 
         end
 
-
-
         %%%%%%%%%%%%%%%%%%%%%%%%% Grab phase and amplitude per spike
 
         % From cell structure back to spike times and spike id
-        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
-        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
-        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
-        session_clusters.spike_id=session_clusters.spike_id(index);
+        session_clusters.spike_id = vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times = vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times, index] = sort(session_clusters.spike_times);
+        session_clusters.spike_id = session_clusters.spike_id(index);
 
-        % Preallocate matrices
-%         n_channels =    size(SO_amplitude_LFP,2);
-%         SO_phase_at_spikes = nan(nSpikes, n_channels);  % Adjust n_channels accordingly
-%         SO_amplitude_at_spikes = nan(nSpikes, n_channels);
-%         spindle_phase_at_spikes = nan(nSpikes, n_channels);
-%         spindle_amplitude_at_spikes = nan(nSpikes, n_channels);
-% 
-%         ripple_amplitude_at_spikes = nan(nSpikes, size(ripple_amplitude_LFP,2));
-
+        % Setup
         nSpikes = length(session_clusters.spike_times);
         n_channels = size(SO_amplitude_LFP, 2);
         ripple_channels = size(ripple_amplitude_LFP, 2);
@@ -1635,7 +1625,11 @@ for nsession =1:length(experiment_info)
         spindle_phase_chunks = cell(n_chunks, 1);
         spindle_amplitude_chunks = cell(n_chunks, 1);
         ripple_amplitude_chunks = cell(n_chunks, 1);
+        ripple_phase_chunks = cell(n_chunks, 1);        
+        theta_phase_chunks = cell(n_chunks, 1);          
+        theta_amplitude_chunks = cell(n_chunks, 1);     
 
+        % Loop over chunks
         for c = 1:n_chunks
             idx_start = (c-1)*chunk_size + 1;
             idx_end = min(c*chunk_size, nSpikes);
@@ -1645,27 +1639,34 @@ for nsession =1:length(experiment_info)
             spike_times_chunk = session_clusters.spike_times(idx_range);
             spike_idx = interp1(tvec, 1:length(tvec), spike_times_chunk, 'nearest', 'extrap');
 
-
             % Extract and convert to single
             SO_phase_chunks{c} = single(SO_phase_LFP(spike_idx, :));
             SO_amplitude_chunks{c} = single(SO_amplitude_LFP(spike_idx, :));
             spindle_phase_chunks{c} = single(spindle_phase_LFP(spike_idx, :));
             spindle_amplitude_chunks{c} = single(spindle_amplitude_LFP(spike_idx, :));
             ripple_amplitude_chunks{c} = single(ripple_amplitude_LFP(spike_idx, :));
+            ripple_phase_chunks{c} = single(ripple_phase_LFP(spike_idx, :));           
+            theta_phase_chunks{c} = single(theta_phase_HPC_LFP(spike_idx, :));        
+            theta_amplitude_chunks{c} = single(theta_amplitude_HPC_LFP(spike_idx, :)); 
 
             fprintf('Processed chunk %d of %d (%d spikes)\n', c, n_chunks, length(idx_range));
         end
-    
-        % Merge and clear chunked variables
+
+        % Merge chunks
         spike_phase_amplitude.SO_phase = vertcat(SO_phase_chunks{:});
         spike_phase_amplitude.SO_amplitude = vertcat(SO_amplitude_chunks{:});
         spike_phase_amplitude.spindle_phase = vertcat(spindle_phase_chunks{:});
         spike_phase_amplitude.spindle_amplitude = vertcat(spindle_amplitude_chunks{:});
         spike_phase_amplitude.ripple_amplitude = vertcat(ripple_amplitude_chunks{:});
+        spike_phase_amplitude.ripple_phase = vertcat(ripple_phase_chunks{:});          
+        spike_phase_amplitude.theta_phase = vertcat(theta_phase_chunks{:});             
+        spike_phase_amplitude.theta_amplitude = vertcat(theta_amplitude_chunks{:});    
 
         % Clear chunk variables to free memory
         clear SO_phase_chunks SO_amplitude_chunks spindle_phase_chunks ...
-            spindle_amplitude_chunks ripple_amplitude_chunks;
+            spindle_amplitude_chunks ripple_amplitude_chunks ripple_phase_chunks ...
+            theta_phase_chunks theta_amplitude_chunks
+
 
 
 
