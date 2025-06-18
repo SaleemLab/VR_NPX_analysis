@@ -222,8 +222,8 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([33 9 10 14]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -242,8 +242,12 @@ for nstimuli = 1:length(all_stimulus_type)
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            % options = session_info(n).probe(1);
-            LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
+            options = session_info(n).probe(1);
+            % LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
+            % extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
+            % detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
+            detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
+            
         end
     end
 end
@@ -1626,6 +1630,208 @@ for nsession =1:length(experiment_info)
         end
     end
 end
+
+
+
+
+%% LFP PSD slope and cortical wave direction
+% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+pyenv("ExecutionMode","OutOfProcess")
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+        tic
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
+        elseif contains(stimulus_name{n},'Sleep')
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        else
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        end
+        toc
+
+
+        for nprobe = 1:length(slow_waves)
+            if isfield(slow_waves(nprobe),'ints')
+                slow_waves(nprobe).UP_ints = slow_waves(nprobe).ints.UP;
+                slow_waves(nprobe).DOWN_ints = slow_waves(nprobe).ints.DOWN;
+            end
+        end
+
+        if isfield(slow_waves(1),'ints')
+            slow_waves = rmfield(slow_waves,'ints');
+        end
+
+        params = create_cluster_selection_params('sorting_option','masa');
+        % PSD slope quantification using fooof ()
+        tvec = LFP(1).tvec;
+        SR = round(1/mean(diff(tvec)));
+        nfft_seconds= 2;
+        nfft = 2^(nextpow2(SR*nfft_seconds));
+        win  = hanning(nfft);
+
+        %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+
+        filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+        filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+        filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
+        filterparms.gammafilter = [100 400];
+        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+                time_idx = 1:length(LFP(1).best_HPC);
+            elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+                time_idx = 1:length(LFP(2).best_HPC);
+            else
+                time_idx = 1:length(LFP(1).best_HPC) ;
+            end
+
+            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+            lfp.timestamps = LFP(probe_no).tvec(time_idx);
+            tvec = LFP(probe_no).tvec(time_idx);
+
+            lfp_V1 = lfp;
+            lfp_HPC = lfp;
+            lfp_V1.data=[];
+            lfp_HPC.data=[];
+
+
+            if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+                probe_id = [];
+
+                if length(LFP)==1
+                    lfp.data= [LFP(probe_no).best_HPC(:,time_idx)'];
+                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
+                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                else
+                    lfp.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
+                    probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
+                    if size(LFP(probe_no).best_HPC_shank_id,1)==1
+                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+                    else
+                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id' LFP(2).best_HPC_shank_id'];
+                    end
+                end
+            end
+
+
+            if length(LFP)==1
+                lfp.data= [LFP(probe_no).average_V1(:,time_idx)'];
+                probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
+                slow_waves(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
+            else
+                lfp.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
+                probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
+                if size(LFP(probe_no).average_V1_shank_id,1)==1
+                    slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
+                else
+                    slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id' LFP(2).average_V1_shank_id'];
+                end
+            end
+        end
+
+
+
+        tic
+        disp('UP/DOWN and ripples and spindles phase coupling and amplitude correlation')
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            %%%%% Ripples
+            ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+                &slow_waves(probe_no).probe_hemisphere == probe_no);
+            cortex_ref_shank = ref_shank;
+            spindles(nprobe).best_channel = cortex_ref_shank;
+
+
+            shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+            HPC_ref_shank = shank_id(ripples(probe_no).best_channel);
+            ref_shank= HPC_ref_shank;
+
+
+        end
+    end
+end
+
 
 % 
 % %% LFP PSD slope and cortical wave direction
