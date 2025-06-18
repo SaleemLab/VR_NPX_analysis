@@ -560,6 +560,23 @@ for nsession =1:length(experiment_info)
                     ripple_amplitude_cortex_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     ripple_phase_cortex_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
+
+
+
+                    % grab gamma LFP
+                    filter_type  = 'bandpass';
+                    passband = [30 60];
+                    filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+                    norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                    b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+                    signal = [];
+                    for nShank = 1:length(probe_hemisphere)
+                        signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+                    end
+
+                    gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+                    gamma_phase_LFP = angle(hilbert(signal)); % spindle phase
                 end
 
                 %%%%% Calculate Delta peak amplitude and timestamp per event
@@ -747,6 +764,8 @@ for nsession =1:length(experiment_info)
                     %                     spindle_amplitude_HPC_LFP = smoothdata(spindle_amplitude_HPC_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
                     spindle_amplitude_HPC_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     spindle_phase_HPC_LFP = angle(hilbert(signal)); % spindle phase
+
+
                     signal = [];
 
                     % grab ripples LFP
@@ -764,6 +783,23 @@ for nsession =1:length(experiment_info)
                     ripple_amplitude_LFP = zscored_LFP; % z scored amplitude
                     ripple_phase_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
+
+
+
+                    % grab theta LFP
+                    filter_type  = 'bandpass';
+                    passband = [4 12];
+                    filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+                    norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                    b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+                    signal = [];
+                    for nShank = 1:length(probe_hemisphere)
+                        signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+                    end
+
+                    theta_amplitude_HPC_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+                    theta_phase_HPC_LFP = angle(hilbert(signal)); % spindle phase
                 end
 
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
@@ -1465,23 +1501,41 @@ for nsession =1:length(experiment_info)
                     spindle_peak_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
                     spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 
+
+                    gamma_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+                    gamma_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
                     for nevent = 1:length(ripples(probe_no).onset)
                         [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
                         
-                        % Onset ampltiude and phase
+                        % peak ampltiude and phase
                         SO_phase_ripple_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_peaktime(:,nevent) = spindle_phase_LFP(tidx,:);
                         SO_amplitude_ripple_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
                         spindle_amplitude_ripple_peaktime(:,nevent) = spindle_amplitude_LFP(tidx,:);
                         ripple_peak_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+                        gamma_phase_ripple_peaktime(:, nevent) = gamma_phase_LFP(tidx, :);
+                        gamma_amplitude_ripple_peaktime(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
 
                         [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
-                        % Peak amplitude and phase
+                        % onset amplitude and phase
                         SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
                         SO_amplitude_ripple_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
                         spindle_amplitude_ripple_onset(:,nevent) = spindle_amplitude_LFP(tidx,:);
                         ripple_onset_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+                        gamma_phase_ripple_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+                        gamma_amplitude_ripple_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
                     end
 
                     ripples(probe_no).SO_phase_ripple_peaktime = SO_phase_ripple_peaktime;
@@ -1496,19 +1550,29 @@ for nsession =1:length(experiment_info)
                     ripples(probe_no).spindle_amplitude_ripple_onset = spindle_amplitude_ripple_onset;
                     ripples(probe_no).ripple_onset_amplitude = ripple_onset_amplitude;
 
+                    ripples(probe_no).gamma_phase_ripple_peaktime = gamma_phase_ripple_peaktime;
+                    ripples(probe_no).gamma_amplitude_ripple_peaktime = gamma_amplitude_ripple_peaktime;
+                    ripples(probe_no).gamma_phase_ripple_onset = gamma_phase_ripple_onset;
+                    ripples(probe_no).gamma_amplitude_ripple_onset = gamma_amplitude_ripple_onset;
+
                     if ~isempty(spindles(probe_no).onset)
                         for nevent = 1:length(spindles(probe_no).onset)
                             [~,tidx]=min(abs(tvec-spindles(probe_no).peaktimes(nevent)));
-                        % Onset ampltiude and phase
+                            % peak ampltiude and phase
                             SO_phase_spindle_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                             SO_amplitude_spindle_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_peak_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
+                            gamma_phase_spindle_peaktime(:, nevent) = gamma_phase_LFP(tidx, :);
+                            gamma_amplitude_spindle_peaktime(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
 
                             [~,tidx]=min(abs(tvec-spindles(probe_no).onset(nevent)));
-                            % Peak amplitude and phase
+                            % onset amplitude and phase
                             SO_phase_spindle_onset(:,nevent) = SO_phase_LFP(tidx,:);
                             SO_amplitude_spindle_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_onset_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
+                            gamma_phase_spindle_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+                            gamma_amplitude_spindle_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
                         end
 
                         spindles(probe_no).SO_phase_spindle_peaktime = SO_phase_spindle_peaktime;
@@ -1518,6 +1582,11 @@ for nsession =1:length(experiment_info)
                         spindles(probe_no).SO_phase_spindle_onset = SO_phase_spindle_onset;
                         spindles(probe_no).SO_amplitude_spindle_onset = SO_amplitude_spindle_onset;
                         spindles(probe_no).spindle_onset_amplitude = spindle_onset_amplitude;
+
+                        spindles(probe_no).gamma_phase_spindle_peaktime = gamma_phase_spindle_peaktime;
+                        spindles(probe_no).gamma_amplitude_spindle_peaktime = gamma_amplitude_spindle_peaktime;
+                        spindles(probe_no).gamma_phase_spindle_onset = gamma_phase_spindle_onset;
+                        spindles(probe_no).gamma_amplitude_spindle_onset = gamma_amplitude_spindle_onset;
                     end
                 else
                     spindles(probe_no).SO_phase_spindle_peaktime = [];
@@ -1634,7 +1703,7 @@ end
 
 
 
-%% LFP PSD slope and cortical wave direction
+%% LFP time frequency analysis
 % pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
 % pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
