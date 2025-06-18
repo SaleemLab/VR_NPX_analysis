@@ -227,10 +227,17 @@ for nsession =1:length(experiment_info)
 
         for iField =1:length(field_names)
             if session_count == 1
-                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
-                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude','SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime',...
-                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset'})
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude', ...
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude', ...
+                        'SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime', ...
+                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset', ...
+                        'gamma_phase_ripple_peaktime','gamma_amplitude_ripple_peaktime', ...
+                        'gamma_phase_ripple_onset','gamma_amplitude_ripple_onset'
+                        })
+
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     ripples_all(probe_no).(field_names{iField}) = ripples(nprobe).(field_names{iField});
@@ -238,10 +245,17 @@ for nsession =1:length(experiment_info)
 
 
             else
-                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude',...
-                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude','SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime',...
-                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset'})
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_ripple_peaktime','spindle_phase_ripple_peaktime','ripple_peak_amplitude', ...
+                        'SO_phase_ripple_onset','spindle_phase_ripple_onset','ripple_onset_amplitude', ...
+                        'SO_amplitude_ripple_peaktime','spindle_amplitude_ripple_peaktime', ...
+                        'SO_amplitude_ripple_onset','spindle_amplitude_ripple_onset', ...
+                        'gamma_phase_ripple_peaktime','gamma_amplitude_ripple_peaktime', ...
+                        'gamma_phase_ripple_onset','gamma_amplitude_ripple_onset'
+                        })
+
                     ripples_all(probe_no).(field_names{iField}){session_count} = ripples(nprobe).(field_names{iField});
                 else
                     A = ripples_all(probe_no).(field_names{iField});
@@ -271,21 +285,35 @@ for nsession =1:length(experiment_info)
         spindles_all(probe_no).subject(session_count,:) = options.SUBJECT;
         spindles_all(probe_no).session(session_count,:) = options.SESSION;
         spindles_all(probe_no).session_day(session_count) = iDate;
-        
+
         for iField =1:length(field_names)
             if session_count == 1
-                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude',...
-                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset'})
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
+                        'spindle_peak_amplitude','spindle_onset_amplitude', ...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
+                        'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
+                        'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
+                        })
+
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
 
                 end
             else
-                if  ismember(field_names{iField},{'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere',...
-                        'amp_corr','xcorr_lag','xcorr_r','pd','plv','SO_phase_spindle_peaktime','SO_phase_spindle_onset','spindle_peak_amplitude','spindle_onset_amplitude',...
-                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset'})
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
+                        'spindle_peak_amplitude','spindle_onset_amplitude', ...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
+                        'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
+                        'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
+                        })
+
                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
                 else
                     A = spindles_all(probe_no).(field_names{iField});
@@ -505,9 +533,6 @@ else
 end
 
 %% Extract all clusters spike amplitude phase info and spatial tuning 
-
-
-
 
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
 % option = 'bilateral';
@@ -1061,7 +1086,7 @@ for nsession =1:length(experiment_info)
     within_tracks_pairs = setdiff(1:16,across_tracks_pairs);
     x_bin_width =5;
 
-    
+
     position_bins = 1:2:140;
     bad_bins = position_bins(sum((PPvector_V1.pval(:,across_tracks_pairs)<0.05).*(PPvector_V1.population_vector(:,across_tracks_pairs)>0),2) +...
         sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
@@ -1093,7 +1118,6 @@ for nsession =1:length(experiment_info)
         end
     end
 
-
     for nprobe = 1:length(decoded_ripple_events_V1)
 
         % Store bin quality and threshold
@@ -1103,7 +1127,7 @@ for nsession =1:length(experiment_info)
         bayesian_reactivation_V1_all(nprobe).good_bins{nsession} = good_bins;
         bayesian_reactivation_V1_all(nprobe).PV_threshold{nsession} = PV_threshold;
 
-        % -- Compute bias distribution for zscoring (no bin alignment needed)
+        % -- Compute bias and log-odds distributions for z-scoring
         summed_probability_distribution = [
             decoded_ripple_events_V1(nprobe).track(1).replay_events(:).summed_probability;
             decoded_ripple_events_V1(nprobe).track(2).replay_events(:).summed_probability
@@ -1112,7 +1136,11 @@ for nsession =1:length(experiment_info)
         bias_mean = mean(bias_distribution, 'omitnan');
         bias_std = std(bias_distribution, 0, 'omitnan');
 
-        % -- Initialize accumulation on first session
+        log_odds_distribution = log(summed_probability_distribution(1,:) ./ summed_probability_distribution(2,:));
+        log_odds_mean = mean(log_odds_distribution, 'omitnan');
+        log_odds_std = std(log_odds_distribution, 0, 'omitnan');
+
+        % -- Initialize accumulation
         if session_count == 1 || ~isfield(bayesian_reactivation_V1_all(nprobe), 'decoded_matrix')
             bayesian_reactivation_V1_all(nprobe).decoded_matrix = [];
             bayesian_reactivation_V1_all(nprobe).summed_probability = [];
@@ -1121,56 +1149,50 @@ for nsession =1:length(experiment_info)
             bayesian_reactivation_V1_all(nprobe).log_odds = [];
             bayesian_reactivation_V1_all(nprobe).z_log_odds = [];
             bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled = [];
-            bayesian_reactivation_V1_all(nprobe).log_odds_percentile_shuffled = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile = [];
         end
 
-        % -- Loop through events
         for nevent = 1:length(decoded_ripple_events_V1(nprobe).track(1).replay_events)
-
-            % Get data
+            % Decode info
             replay1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).replay;
             replay2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).replay;
             sumprob1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).summed_probability;
             sumprob2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).summed_probability;
 
-            % Align bins based on onset time
+            % Bin alignment
             time_edges = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).timebins_edges;
             onset_time = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).onset;
-            [~, onset_bin] = min(abs(time_edges(1:end) - onset_time));
+            [~, onset_bin] = min(abs(time_edges - onset_time));
             shift = 26 - onset_bin;
 
-            % Setup shifted bins
             [npos, nbins] = size(replay1);
             bin_range = (1:nbins) + shift;
             valid_idx = bin_range > 0 & bin_range <= 50;
 
-            % Align decoded matrix
             mat1 = nan(npos, 50);
             mat2 = nan(npos, 50);
             mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
             mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
-            combined_matrix = cat(1, mat1, mat2); % 56x50
+            combined_matrix = cat(1, mat1, mat2);
 
             bayesian_reactivation_V1_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
 
-            % Align and store summed probability
             sp_nan = nan(2, 50);
             sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
             sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
             bayesian_reactivation_V1_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
 
-            % Bias and z-bias
+            % Bias
             total_prob = sum(sp_nan, 1, 'omitnan');
             bias = sp_nan(1,:) ./ total_prob;
             z_bias = (bias - bias_mean) ./ bias_std;
-
             bayesian_reactivation_V1_all(nprobe).bias(:,end+1) = bias;
             bayesian_reactivation_V1_all(nprobe).z_bias(:,end+1) = z_bias;
 
-            % Z log odds and percentiles
+            % Log odds and shuffled z-score
             shuffled1 = decoded_ripple_events_V1_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
             shuffled2 = decoded_ripple_events_V1_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
-            sp_shuf = log(shuffled1 ./ shuffled2);  % [nshuff x nbins]
+            sp_shuf = log(shuffled1 ./ shuffled2);
 
             shuf_nan = nan(size(sp_shuf,1), 50);
             for s = 1:size(sp_shuf,1)
@@ -1178,7 +1200,11 @@ for nsession =1:length(experiment_info)
             end
 
             data = log(sp_nan(1,:) ./ sp_nan(2,:));
-            bayesian_reactivation_V1_all(nprobe).z_log_odds(:,end+1) = (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');;
+            bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled(:,end+1) = ...
+                (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');
+
+            bayesian_reactivation_V1_all(nprobe).z_log_odds(:,end+1) = ...
+                (data - log_odds_mean) ./ log_odds_std;
 
             % Percentiles
             log_odds_pct = nan(1, 50);
@@ -1190,7 +1216,8 @@ for nsession =1:length(experiment_info)
         end
     end
 
-    save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_V1.mat'),'decoded_ripple_events_V1');
+
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_V1.mat'),'decoded_ripple_events_V1');
 
 
     %%%%%%%% HPC
@@ -1234,7 +1261,7 @@ for nsession =1:length(experiment_info)
         bayesian_reactivation_all(nprobe).good_bins{nsession} = good_bins;
         bayesian_reactivation_all(nprobe).PV_threshold{nsession} = PV_threshold;
 
-        % -- Compute bias distribution for zscoring (no bin alignment needed)
+        % -- Compute bias and log-odds distributions for z-scoring
         summed_probability_distribution = [
             decoded_ripple_events(nprobe).track(1).replay_events(:).summed_probability;
             decoded_ripple_events(nprobe).track(2).replay_events(:).summed_probability
@@ -1243,63 +1270,63 @@ for nsession =1:length(experiment_info)
         bias_mean = mean(bias_distribution, 'omitnan');
         bias_std = std(bias_distribution, 0, 'omitnan');
 
-        % -- Initialize accumulation on first session
+        log_odds_distribution = log(summed_probability_distribution(1,:) ./ summed_probability_distribution(2,:));
+        log_odds_mean = mean(log_odds_distribution, 'omitnan');
+        log_odds_std = std(log_odds_distribution, 0, 'omitnan');
+
+        % -- Initialize accumulation
         if session_count == 1 || ~isfield(bayesian_reactivation_all(nprobe), 'decoded_matrix')
             bayesian_reactivation_all(nprobe).decoded_matrix = [];
             bayesian_reactivation_all(nprobe).summed_probability = [];
             bayesian_reactivation_all(nprobe).bias = [];
             bayesian_reactivation_all(nprobe).z_bias = [];
+            bayesian_reactivation_all(nprobe).log_odds = [];
             bayesian_reactivation_all(nprobe).z_log_odds = [];
+            bayesian_reactivation_all(nprobe).z_log_odds_shuffled = [];
             bayesian_reactivation_all(nprobe).log_odds_percentile = [];
         end
 
-        % -- Loop through events
         for nevent = 1:length(decoded_ripple_events(nprobe).track(1).replay_events)
-
-            % Get data
+            % Decode info
             replay1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).replay;
             replay2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).replay;
             sumprob1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).summed_probability;
             sumprob2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).summed_probability;
 
-            % Align bins based on onset time
+            % Bin alignment
             time_edges = decoded_ripple_events(nprobe).track(1).replay_events(nevent).timebins_edges;
             onset_time = decoded_ripple_events(nprobe).track(2).replay_events(nevent).onset;
-            [~, onset_bin] = min(abs(time_edges(1:end) - onset_time));
+            [~, onset_bin] = min(abs(time_edges - onset_time));
             shift = 26 - onset_bin;
 
-            % Setup shifted bins
             [npos, nbins] = size(replay1);
             bin_range = (1:nbins) + shift;
             valid_idx = bin_range > 0 & bin_range <= 50;
 
-            % Align decoded matrix
             mat1 = nan(npos, 50);
             mat2 = nan(npos, 50);
             mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
             mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
-            combined_matrix = cat(1, mat1, mat2); % 56x50
+            combined_matrix = cat(1, mat1, mat2);
 
             bayesian_reactivation_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
 
-            % Align and store summed probability
             sp_nan = nan(2, 50);
             sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
             sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
             bayesian_reactivation_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
 
-            % Bias and z-bias
+            % Bias
             total_prob = sum(sp_nan, 1, 'omitnan');
             bias = sp_nan(1,:) ./ total_prob;
             z_bias = (bias - bias_mean) ./ bias_std;
-
             bayesian_reactivation_all(nprobe).bias(:,end+1) = bias;
             bayesian_reactivation_all(nprobe).z_bias(:,end+1) = z_bias;
 
-            % Z log odds and percentiles
+            % Log odds and shuffled z-score
             shuffled1 = decoded_ripple_events_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
             shuffled2 = decoded_ripple_events_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
-            sp_shuf = log(shuffled1 ./ shuffled2);  % [nshuff x nbins]
+            sp_shuf = log(shuffled1 ./ shuffled2);
 
             shuf_nan = nan(size(sp_shuf,1), 50);
             for s = 1:size(sp_shuf,1)
@@ -1307,8 +1334,11 @@ for nsession =1:length(experiment_info)
             end
 
             data = log(sp_nan(1,:) ./ sp_nan(2,:));
-            bayesian_reactivation_all(nprobe).z_log_odds(:,end+1) = ...
+            bayesian_reactivation_all(nprobe).z_log_odds_shuffled(:,end+1) = ...
                 (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');
+
+            bayesian_reactivation_all(nprobe).z_log_odds(:,end+1) = ...
+                (data - log_odds_mean) ./ log_odds_std;
 
             % Percentiles
             log_odds_pct = nan(1, 50);
@@ -1320,7 +1350,8 @@ for nsession =1:length(experiment_info)
         end
     end
 
-    save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
+
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
 
 
 end
