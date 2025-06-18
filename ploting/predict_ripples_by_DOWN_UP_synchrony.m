@@ -737,6 +737,7 @@ if plot_option == 1
     y = ipsiHPC_cat(:);
     scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
     ylim([-2 15])
+    xlim([0 5])
     xlabel('DOWN UP transition delta power')
     ylabel('ipsi HPC rebound excitation')
     set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
@@ -759,6 +760,7 @@ if plot_option == 1
     y = contraHPC_cat(:);
     scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
     ylim([-2 15])
+    xlim([0 5])
     xlabel('DOWN UP transition delta power')
     ylabel('contra HPC rebound excitation')
     set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
@@ -822,6 +824,7 @@ if plot_option == 1
     y = ipsi_ripple_power(:);
     scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2)
     ylim([5 25])
+    xlim([0 5])
     xlabel('DOWN UP transition delta power')
     ylabel('ipsi ripple power')
     set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
@@ -844,6 +847,7 @@ if plot_option == 1
     y = contra_ripple_power(:);
     scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.2)
     ylim([5 25])
+    xlim([0 5])
     xlabel('DOWN UP transition delta power')
     ylabel('contra ripple power')
     set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
@@ -1223,7 +1227,9 @@ if plot_option == 1
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
-
+    xlim([0 1])
+    ylim([0 25])
+    
     % --- Contra ripple power
     nexttile
     x = DOWN_duration(:); y = contra_ripple_power(:);
@@ -1239,7 +1245,8 @@ if plot_option == 1
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
-
+    xlim([0 1])
+    ylim([0 25])
 
     % --- Histogram: DOWN duration vs. ipsi ripple presence
     nexttile
@@ -1250,7 +1257,7 @@ if plot_option == 1
     legend('With ipsi ripple', 'Without ipsi ripple', 'box','off')
     xlabel('DOWN duration (s)'); ylabel('Proportion')
     set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12)
-
+    xlim([0 1])
 
 
     % --- Histogram: DOWN duration vs. contra ripple presence
@@ -1262,7 +1269,7 @@ if plot_option == 1
     legend('With contra ripple', 'Without contra ripple', 'box','off')
     xlabel('DOWN duration (s)'); ylabel('Proportion')
     set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12)
-
+    xlim([0 1])
 
     % --- t-stat bar plots for ripple power
     mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);

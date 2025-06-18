@@ -851,7 +851,6 @@ if plot_option == 1
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
     xlim([0 1])
-    ylim([0 25])
 
     % --- Contra ripple power
     nexttile
@@ -869,7 +868,7 @@ if plot_option == 1
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
     xlim([0 1])
-    ylim([0 25])
+
 
     % --- Histogram: DOWN duration vs. ipsi ripple presence
     nexttile
@@ -881,7 +880,7 @@ if plot_option == 1
     xlabel('DOWN duration (s)'); ylabel('Proportion')
     set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12)
     xlim([0 1])
-    % ylim([0 25])
+
 
     % --- Histogram: DOWN duration vs. contra ripple presence
     nexttile
