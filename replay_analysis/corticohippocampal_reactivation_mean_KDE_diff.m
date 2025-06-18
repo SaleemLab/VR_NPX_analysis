@@ -521,7 +521,7 @@ legend(Fill([1 4]) ,{'Low ripple power','High ripple power'},'box','off')
 
 % Save results
 save('ripple_power_KDE_bias_difference.mat', 'ripple_power_KDE_bias_difference');
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
 
 
 

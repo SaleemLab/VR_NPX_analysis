@@ -324,129 +324,101 @@ if plot_option == 1
     %% 6. PLOTTING
 
 
-    fig = figure('Color','w');
-    fig.Position = [350 59 800 930];
-    fig.Name ='HPC MUA predicted by DOWN UP synchrony';
-
-    customColors = [0,90,50;74,20,134; 228,42,168 ]/256; % dark purple, dark green, magenta
-
-    nexttile
-    scatter(DOWN_UP_lag,ipsiHPC_cat,'filled','MarkerFaceColor',customColors(1,:),'MarkerFaceAlpha',0.05)
-    ylim([-2 12])
-    xlabel('DOWN UP transition ipsi-contra lags')
-    ylabel('ipsi HPC rebound excitation')
-
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-    nexttile
-    scatter(DOWN_UP_lag,contraHPC_cat,'filled','MarkerFaceColor',customColors(2,:),'MarkerFaceAlpha',0.05)
-    ylim([-2 12])
-    xlabel('DOWN UP transition ipsi-contra lags')
-    ylabel('contra HPC rebound excitation')
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-    nexttile
-    scatter(ipsiHPC_cat,contraHPC_cat,'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.05)
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-    xlabel('ipsi HPC rebound excitation')
-    ylabel('contra HPC rebound excitation')
-    xlim([-2 12])
-    ylim([-2 12])
-
-
-    mean_ipsi = mean(output.ipsi_t_stat);
-    ci_ipsi = prctile(output.ipsi_t_stat, [2.5 97.5]);
-
-    mean_ipsi_shuffled = mean(output.ipsi_t_stat_shuffled);
-    ci_ipsi_shuffled = prctile(output.ipsi_t_stat_shuffled, [2.5 97.5]);
-
-    mean_contra = mean(output.contra_t_stat);
-    ci_contra = prctile(output.contra_t_stat, [2.5 97.5]);
-
-    mean_contra_shuffled = mean(output.contra_t_stat_shuffled);
-    ci_contra_shuffled = prctile(output.contra_t_stat_shuffled, [2.5 97.5]);
-
-    % Organize data for bar plot
-    barData = [mean_ipsi, mean_ipsi_shuffled, mean_contra, mean_contra_shuffled];
-    lowerCI = [mean_ipsi(1)-ci_ipsi(1), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(1), mean_contra(1)-ci_contra(1), mean_contra_shuffled(1)-ci_contra_shuffled(1)];
-    upperCI = [mean_ipsi(1)-ci_ipsi(2), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(2), mean_contra(1)-ci_contra(2), mean_contra_shuffled(1)-ci_contra_shuffled(2)];
-
-    nexttile
-    barColors = [0,90,50;65,171,93;74,20,134;128,125,186]/256;
-    % Define custom x-positions
-    x_pos = [1, 2, 4, 5]; % spacing
-
-    %     b = bar(1:4, barData, 'FaceColor', 'flat');
-    for i = 1:4
-        hold on
-        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', 'CData', barColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
-        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), 'k', 'linestyle', 'none', 'linewidth', 1.5);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Extract bootstrapped stats
+    % Extract bootstrapped stats
+    for nBoot = 1:1000
+        ipsi_t(nBoot)   = output(nBoot).t_stat{10};
+        contra_t(nBoot) = output(nBoot).t_stat{11};
+        pval_ipsi(nBoot)   = output(nBoot).pval{10};
+        pval_contra(nBoot) = output(nBoot).pval{11};
+        R2_ipsi(nBoot)     = output(nBoot).R2(10);
+        R2_contra(nBoot)   = output(nBoot).R2(11);
     end
 
-    % Customize plot
-    xlim([0.5 5.5])
-    xticks(x_pos)
-    xticklabels({'ipsi HPC','ipsi HPC shuffled','contra HPC','contra HPC shuffled'})
-    ylabel('Bootstrapped t-statistic')
-    title('t-statistic of HPC excitation')
-    %     legend({'Data','Shuffled'}, 'Box','off')
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-    grid off
-    hold off
+    % Plot setup
+    fig = figure('Color', 'w');
+    fig.Position = [350 59 800 600];
+    fig.Name = 'UP→DOWN lag predicted by HPC excitation';
+    customColors = [0,90,50; 74,20,134]/256;
 
-    %
-    %     %%%%% Lag-resolved
-    %     nexttile
-    %     lag_bins = output.lag_bins; % assuming you saved lag bin centers
-    %
-    %     % Colors
-    %     barColors = [0,90,50;65,171,93;74,20,134;128,125,186]/256;
-    %
-    %     % IPSI actual
-    %     mean_ipsi_lag = mean(output.lag_resolved_ipsi_t_stat,2);
-    %     ci_ipsi_lag = prctile(output.lag_resolved_ipsi_t_stat, [2.5 97.5],2);
-    %
-    %     %     % IPSI shuffled
-    %     %     mean_ipsi_lag_shuff = mean(output.lag_resolved_ipsi_t_stat_shuffled,2);
-    %     %     ci_ipsi_lag_shuff = prctile(output.lag_resolved_ipsi_t_stat_shuffled, [2.5 97.5],2);
-    %
-    %     % CONTRA actual
-    %     mean_contra_lag = mean(output.lag_resolved_contra_t_stat,2);
-    %     ci_contra_lag = prctile(output.lag_resolved_contra_t_stat, [2.5 97.5],2);
-    %
-    %     %     % CONTRA shuffled
-    %     %     mean_contra_lag_shuff = mean(output.lag_resolved_contra_t_stat_shuffled,2);
-    %     %     ci_contra_lag_shuff = prctile(output.lag_resolved_contra_t_stat_shuffled, [2.5 97.5],2);
-    %
-    %     % Plotting
-    %     x = lag_bins;
-    %
-    %     hold on
-    %     % IPSI
-    %     PLOT(1)=plot(x, mean_ipsi_lag, 'Color', barColors(1,:), 'LineWidth', 2);
-    %     patch([x fliplr(x)], [ci_ipsi_lag(:,2)' fliplr(ci_ipsi_lag(:,1)')], barColors(1,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     %     % IPSI shuffled
-    %     %     plot(x, mean_ipsi_lag_shuff, '--', 'Color', barColors(2,:), 'LineWidth', 2);
-    %     %     patch([x fliplr(x)], [ci_ipsi_lag_shuff(:,2)' fliplr(ci_ipsi_lag_shuff(:,1)')], barColors(2,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     % CONTRA
-    %     PLOT(2)=plot(x, mean_contra_lag, 'Color', barColors(3,:), 'LineWidth', 2);
-    %     patch([x fliplr(x)], [ci_contra_lag(:,2)' fliplr(ci_contra_lag(:,1)')], barColors(3,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     %     % CONTRA shuffled
-    %     %     plot(x, mean_contra_lag_shuff, '--', 'Color', barColors(4,:), 'LineWidth', 2);
-    %     %     patch([x fliplr(x)], [ci_contra_lag_shuff(:,2)' fliplr(ci_contra_lag_shuff(:,1)')], barColors(4,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     % Customize plot
-    %     xlabel('Mean DOWN-UP lag (z-score)')
-    %     ylabel('Bootstrapped t-statistic')
-    %     title('Lag-Resolved Mixed Model Results')
-    %     yline(0,'--k') % optional: horizontal line at y=0
-    %     legend(PLOT(1:2),{'ipsi','contra'}, 'Box','off')
-    %     grid on
-    %     hold off
-    %     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+    % --- IPSI
+    nexttile
+    x = ipsiHPC_cat(:);
+    y = UP_DOWN_lag(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('ipsi HPC excitation'); ylabel('UP→DOWN transition lag')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12); hold on
+
+    % Linear fit
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    plot(x_fit, y_fit, 'k', 'LineWidth', 2)
+
+    % Mixed-effects model
+    tbl = table(x(validIdx), y(validIdx), 'VariableNames', {'excitation','lag'});
+    lme = fitlme(tbl, 'lag ~ excitation');
+    R2 = lme.Rsquared.Ordinary;
+    p = lme.Coefficients.pValue(2);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', R2, p), 'FontSize', 10, 'Color', col)
+
+    % --- CONTRA
+    nexttile
+    x = contraHPC_cat(:);
+    y = UP_DOWN_lag(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('contra HPC excitation'); ylabel('UP→DOWN transition lag')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12); hold on
+
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+
+    tbl = table(x(validIdx), y(validIdx), 'VariableNames', {'excitation','lag'});
+    lme = fitlme(tbl, 'lag ~ excitation');
+    R2 = lme.Rsquared.Ordinary;
+    p = lme.Coefficients.pValue(2);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', R2, p), 'FontSize', 10, 'Color', col)
+
+
+    % Compute mean and CI
+    mean_ipsi   = mean(ipsi_t);
+    mean_contra = mean(contra_t);
+    ci_ipsi     = prctile(ipsi_t, [2.5 97.5]);
+    ci_contra   = prctile(contra_t, [2.5 97.5]);
+
+    barData  = [mean_ipsi, mean_contra];
+    lowerCI  = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI  = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    % Plot
+    nexttile
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('t-stat: HPC → UP→DOWN lag')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    grid off
+
+
+
+
+
 
 
     if exist('D:\corticohippocampal_replay')>0
@@ -454,7 +426,7 @@ if plot_option == 1
     elseif exist('P:\corticohippocampal_replay')>0
         analysis_folder = 'P:\corticohippocampal_replay';
     end
-    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
 
 
 end
