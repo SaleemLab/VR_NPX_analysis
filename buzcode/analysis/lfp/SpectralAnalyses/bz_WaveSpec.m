@@ -63,6 +63,7 @@ function [wavespec] = bz_WaveSpec(lfp,varargin)
 %Last Updated: 10/9/15
 %DLevenstein
 %Modified by Antonio FR, 7/18/18
+% modified by Masahiro Takigawa, 06/2025
 
 %% Parse the inputs
 
@@ -122,7 +123,7 @@ si = 1./samplingRate;
 
 %Restrict to intervals, with overhang to remove edge effects at transitions
 %(then remove later)
-overhang = (ncyc)./frange(1);
+overhang = (ncyc(1))./frange(1);
 overint = bsxfun(@(X,Y) X+Y,intervals,overhang.*[-1 1]);
 keepIDX = InIntervals(lfp.timestamps,overint);
 lfp.data = lfp.data(keepIDX,:);
@@ -164,7 +165,13 @@ for cidx = 1:nchan
         if showprogress
             bz_Counter(f_i,nfreqs,'Wavelet Frequency')
         end
-        wavelet = MorletWavelet(freqs(f_i),ncyc,si);
+
+        if length(ncyc) > 1
+            wavelet = MorletWavelet(freqs(f_i), ncyc(f_i), si);
+        else
+            wavelet = MorletWavelet(freqs(f_i), ncyc, si);
+        end
+        
          wavespec.data(:,f_i,cidx) = ...
              downsample(FConv(wavelet',lfp.data(:,cidx)),downsampleout);
     end

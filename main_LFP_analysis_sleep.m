@@ -1710,7 +1710,6 @@ end
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-pyenv("ExecutionMode","OutOfProcess")
 
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
@@ -1722,7 +1721,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:length(experiment_info)
+for nsession =2:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -1795,17 +1794,6 @@ for nsession =1:length(experiment_info)
         toc
 
 
-        for nprobe = 1:length(slow_waves)
-            if isfield(slow_waves(nprobe),'ints')
-                slow_waves(nprobe).UP_ints = slow_waves(nprobe).ints.UP;
-                slow_waves(nprobe).DOWN_ints = slow_waves(nprobe).ints.DOWN;
-            end
-        end
-
-        if isfield(slow_waves(1),'ints')
-            slow_waves = rmfield(slow_waves,'ints');
-        end
-
         params = create_cluster_selection_params('sorting_option','masa');
         % PSD slope quantification using fooof ()
         tvec = LFP(1).tvec;
@@ -1817,91 +1805,268 @@ for nsession =1:length(experiment_info)
         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
 
         filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+        filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
         filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
         filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
         filterparms.gammafilter = [100 400];
         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
         filterparms.gammanormwin = 20; %window for gamma normalization (s)
 
-        for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(nprobe).probe_id+1;
+        %         for nprobe = 1:length(session_info(n).probe)
+        nprobe = 1;
+        probe_no = session_info(n).probe(nprobe).probe_id+1;
 
-            if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
-                time_idx = 1:length(LFP(1).best_HPC);
-            elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+        if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+            time_idx = 1:length(LFP(1).best_HPC);
+        elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
 
-                time_idx = 1:length(LFP(2).best_HPC);
-            else
-                time_idx = 1:length(LFP(1).best_HPC) ;
-            end
-
-            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-            lfp.timestamps = LFP(probe_no).tvec(time_idx);
-            tvec = LFP(probe_no).tvec(time_idx);
-
-            lfp_V1 = lfp;
-            lfp_HPC = lfp;
-            lfp_V1.data=[];
-            lfp_HPC.data=[];
-
-
-            if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
-                probe_id = [];
-
-                if length(LFP)==1
-                    lfp.data= [LFP(probe_no).best_HPC(:,time_idx)'];
-                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
-                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
-                else
-                    lfp.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
-                    probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
-                    if size(LFP(probe_no).best_HPC_shank_id,1)==1
-                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
-                    else
-                        ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id' LFP(2).best_HPC_shank_id'];
-                    end
-                end
-            end
-
-
-            if length(LFP)==1
-                lfp.data= [LFP(probe_no).average_V1(:,time_idx)'];
-                probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
-                slow_waves(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
-            else
-                lfp.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
-                probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
-                if size(LFP(probe_no).average_V1_shank_id,1)==1
-                    slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
-                else
-                    slow_waves(probe_no).shank_id = [LFP(1).average_V1_shank_id' LFP(2).average_V1_shank_id'];
-                end
-            end
+            time_idx = 1:length(LFP(2).best_HPC);
+        else
+            time_idx = 1:length(LFP(1).best_HPC) ;
         end
 
+        lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+        lfp.timestamps = LFP(probe_no).tvec(time_idx);
+        tvec = LFP(probe_no).tvec(time_idx);
+
+        lfp_V1 = lfp;
+        lfp_HPC = lfp;
+        lfp_V1.data=[];
+        lfp_HPC.data=[];
+
+        if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+            probe_id = [];
+
+            if length(LFP)==1
+                lfp_HPC.data= [LFP(probe_no).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(probe_no).best_V1(:,time_idx)'];
+            else
+                lfp_HPC.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
+            end
+        end
+        %         end
 
 
-        tic
-        disp('UP/DOWN and ripples and spindles phase coupling and amplitude correlation')
+        %%% get 
+        HPC_ref_shank=[];
+        ref_shank = [];
         for nprobe = 1:length(session_info(n).probe)
             probe_no = session_info(n).probe(nprobe).probe_id+1;
 
-            %%%%% Ripples
             ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
                 &slow_waves(probe_no).probe_hemisphere == probe_no);
-            cortex_ref_shank = ref_shank;
-            spindles(nprobe).best_channel = cortex_ref_shank;
-
+            cortex_ref_shank(probe_no) = ref_shank;
 
             shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
-            HPC_ref_shank = shank_id(ripples(probe_no).best_channel);
-            ref_shank= HPC_ref_shank;
+            HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
+        end
+
+      
+        disp('Peri event TF and PPC analysis')
+
+        % Parameters
+        win_full = [-2.5 2.5];
+        win_save = [-2 2];
+        baseline_win = [-2 -1.5];
+        downsample_factor = 25;
+        fs = lfp_V1.samplingRate/downsample_factor; % 20ms bins
+
+        win_full_samp = round(win_full * fs);
+        win_save_samp = round(win_save * fs);
+        baseline_samp = round((baseline_win - win_full(1)) * fs);
+        timebin = abs(diff(win_save_samp)) + 1;
+        tvec = win_save(1):1/fs:win_save(end);
+
+        freq_band = [0.5 300];
+        freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
+        nCycles = round(max(5, freqs * 0.1));
+        nCycles(nCycles > 20) = 20;
+%         nCycles = round(min(20, freqs * 0.1));
+
+        event_types = {'ripples','spindles','UP_ints','DOWN_ints'};
+
+        % Output structures
+        TF_amp_V1 = struct(); TF_phase_V1 = struct();
+        TF_amp_HPC = struct(); TF_phase_HPC = struct();
+        PPC_V1_HPC = struct(); PPC_V1 = struct(); PPC_HPC = struct();
+
+        for nprobe = 1:length(session_info(n).probe)
+            tic
+            disp(['Processing probe ' num2str(nprobe)]);
+
+            % Interpolate event onsets to sample indices
+            ripple_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), ripples(nprobe).onset, 'nearest', 'extrap'));
+            spindle_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), spindles(nprobe).onset, 'nearest', 'extrap'));
+            up_sample_idx      = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).UP_ints(:,1), 'nearest', 'extrap'));
+            down_sample_idx    = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).DOWN_ints(:,1), 'nearest', 'extrap'));
+
+            for eidx = 1:length(event_types)
+                event_name = event_types{eidx};
+                switch event_name
+                    case 'ripples'
+                        onsets = ripple_sample_idx;
+                    case 'spindles'
+                        onsets = spindle_sample_idx;
+                    case 'UP_ints'
+                        onsets = up_sample_idx;
+                    case 'DOWN_ints'
+                        onsets = down_sample_idx;
+                end
+
+                nevents = length(onsets);
+
+                % Preallocate outputs
+                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(freqs), timebin, nevents));
+                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(freqs), timebin, nevents));
+                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(freqs), timebin, nevents));
+                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(freqs), timebin, nevents));
+
+%                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
+%                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
+%                 PPC_HPC(nprobe).(event_name)     = single(nan(length(freqs),timebin, nevents));
 
 
+                for nevent = 1:nevents
+                    t0 = onsets(nevent);
+                    idx_full = t0 + downsample_factor*win_full_samp(1):t0 + win_full_samp(2)*downsample_factor;
+                    if idx_full(1) < 1 || idx_full(end) > size(lfp_V1.data,1), continue; end
+
+                    for vhemi = 1:2
+                        dat = lfp_V1.data(idx_full, cortex_ref_shank(vhemi));
+                        wavespec = bz_WaveSpec(dat, 'frange', freq_band, ...
+                            'ncyc', nCycles, 'nfreqs', 100,'samplingRate',fs,'downsampleout', downsample_factor);
+                        amp_all = abs(wavespec.data);
+                        phase_all = angle(wavespec.data);
+
+                        base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
+                        amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
+
+                        TF_amp_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(amp_norm(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                        TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                    end
+
+                    for hhemi = 1:2
+                        dat = lfp_HPC.data(idx_full, HPC_ref_shank(hhemi));
+                        wavespec = bz_WaveSpec(dat, 'frange', freq_band, ...
+                            'ncyc', nCycles, 'nfreqs', 100,'samplingRate',fs,'downsampleout', downsample_factor);
+                        amp_all = abs(wavespec.data);
+                        phase_all = angle(wavespec.data);
+
+                        base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
+                        amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
+
+                        TF_amp_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(amp_norm(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                        TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                    end
+
+%                     % Compute PPC across time and frequency
+%                     for vhemi = 1:2
+%                         for hhemi = 1:2
+%                             v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
+%                             hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
+% 
+%                             % Compute phase difference: still [freq x time]
+%                             phase_diff = exp(1i * (v1p - hpcp));
+% 
+%                             % Assign directly
+%                             PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
+%                         end
+%                     end
+% 
+%                     % Cross-hemispheric PPC
+%                     v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
+%                     v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
+%                     hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
+%                     hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
+% 
+%                     PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
+%                     PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
+                end
+            end
+            toc
+        end
+
+        if contains(stimulus_name{n},'Masa2tracks')
+         
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_phase%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_phase_V1','TF_phase_HPC','-v7.3');
+
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+        else
+
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude.mat'),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
+            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+
+ 
+        end
+    end
+
+end
+
+
+
+
+
+% Plot
+figure;
+timevec = linspace(-2, 2, size(amp_norm', 2));  % time axis
+imagesc(timevec, freqs, amp_norm'); axis xy;
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title(sprintf('TF amplitude (dB), V1 hemi %d, event %d', vhemi, nevent));
+colorbar;
+clim([0 5]);  % Optional: adjust dynamic range for better contrast
+set(gca, 'YScale', 'log');  % Optional: log scale on y-axis if desired
+
+% Plot
+figure;
+timevec = linspace(-2, 2, size(phase_all', 2));  % time axis
+imagesc(timevec, freqs, phase_all'); axis xy;
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title(sprintf('TF phase, V1 hemi %d, event %d', vhemi, nevent));
+colorbar;
+clim([-pi pi]);  % Optional: adjust dynamic range for better contrast
+yticks = [1 2 4 8 16 32 64 128 256];
+ytick_indices = arrayfun(@(f) find(freqs >= f, 1, 'first'), yticks);
+set(gca, 'YTick', freqs(ytick_indices));
+
+
+
+
+
+
+
+% Compute PPC across time and frequency
+tic
+for nevent = 1:size(TF_phase_V1(nprobe).(event_name),4)
+    for vhemi = 1:2
+        for hhemi = 1:2
+            v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
+            hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
+
+            % Compute phase difference: still [freq x time]
+            phase_diff = exp(1i * (v1p - hpcp));
+
+            % Assign directly
+            PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
         end
     end
 end
+toc
 
+% Cross-hemispheric PPC
+v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
+v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
+hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
+hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
+
+PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
+PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
 
 % 
 % %% LFP PSD slope and cortical wave direction
