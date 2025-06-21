@@ -567,21 +567,19 @@ for nsession =3:10
             continue
         end
 
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
         DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-
-        if ~isempty(DIR)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-            session_clusters_RUN=session_clusters;
-            clear session_clusters
-        end
-
         if ~isempty(DIR1)
             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
             session_clusters_RUN=session_clusters;
             clear session_clusters
         end
 
+        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+        if ~isempty(DIR2)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
 
         if contains(stimulus_name{n},'Masa2tracks')
             % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));

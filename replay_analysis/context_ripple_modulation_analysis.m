@@ -35,6 +35,11 @@ load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
 
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
 
+%% Ripple modulation in V1 and HPC
+
+
+
+
 
 %% Context selective ripple modulation 
 

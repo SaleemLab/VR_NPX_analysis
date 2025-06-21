@@ -3,7 +3,7 @@
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
-%% Spatial raster plot and spatial tuning curves & spatial modulation analysis
+%% Spatial raster plot and spatial tuning curves and remapping
 
 clear all
 % SUBJECTS = {'M23017','M23028','M23029','M23087','M23153'};
