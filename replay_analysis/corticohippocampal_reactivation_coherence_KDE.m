@@ -123,7 +123,7 @@ ripple_info.SO_amplitude = SO_amplitude';
 
 
 %%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.1]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
 ripple_info.early_UP_index = UP_index;
 ripple_info.early_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
@@ -131,7 +131,7 @@ ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemispher
 
 
 %%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.1 merged_event_info.DOWN_ints(:,1)]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
 ripple_info.late_UP_index = UP_index;
 ripple_info.late_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));

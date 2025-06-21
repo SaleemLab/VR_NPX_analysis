@@ -362,7 +362,7 @@ if plot_option == 1
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
-    xlim([-0.5 10])
+    xlim([-0.5 15])
 
 
     % ------------------ CONTRA ------------------
@@ -388,7 +388,7 @@ if plot_option == 1
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
         sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
-    xlim([-0.5 10])
+    xlim([-0.5 15])
 
 
     % ------------------ Bar Plot: Bootstrapped t-statistics ------------------
@@ -764,12 +764,12 @@ if plot_option == 1
 
     % Extract bootstrapped stats
     for nBoot = 1:1000
-        ipsi_t(nBoot)      = output(nBoot).t_stat{7};
-        contra_t(nBoot)    = output(nBoot).t_stat{8};
-        pval_ipsi(nBoot)   = output(nBoot).pval{7};
-        pval_contra(nBoot) = output(nBoot).pval{8};
-        R2_ipsi(nBoot)     = output(nBoot).R2(7);
-        R2_contra(nBoot)   = output(nBoot).R2(8);
+        ipsi_t(nBoot)      = output(nBoot).t_stat{18};
+        contra_t(nBoot)    = output(nBoot).t_stat{19};
+        pval_ipsi(nBoot)   = output(nBoot).pval{18};
+        pval_contra(nBoot) = output(nBoot).pval{19};
+        R2_ipsi(nBoot)     = output(nBoot).R2(18);
+        R2_contra(nBoot)   = output(nBoot).R2(19);
     end
 
     fig = figure('Color', 'w');
