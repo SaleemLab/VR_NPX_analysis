@@ -1,4 +1,7 @@
 function output = predict_ripples_by_SO_spindles(ripple_info, varargin)
+% Analyse how SO and spindles phase and power at ripple peak modulates
+% ripple power.
+
 
 % --- Input Parser
 p = inputParser;
