@@ -1,0 +1,404 @@
+function KDE_RUN_validation = PLS_KDE_Reactivation_decoding_validation( ...
+    tvec_template, position, speed, lap_times, track_ID, ...
+    spikes_template, PLS, KDE_RUN, options,varargin);
+
+
+% -------------------- PARAMETERS --------------------
+p = inputParser;
+addParameter(p, 'time_bin_size', 0.02, @isnumeric);           % decoding bin
+addParameter(p, 'time_bin_size_RUN', 0.1, @isnumeric);        % original 100ms bin
+addParameter(p,'time_bin_size_moving',0.01,@isnumeric)
+addParameter(p, 'shuffle_option', 1, @isnumeric);
+addParameter(p, 'plot_option', 1, @isnumeric);
+% addParameter(p, 'SUBJECT', 'Subj', @ischar);
+% addParameter(p, 'SESSION', 'Sesh', @ischar);
+addParameter(p, 'event_type', 'RUN', @ischar);
+parse(p,varargin{:});
+
+time_bin_size = p.Results.time_bin_size;
+time_bin_size_RUN = p.Results.time_bin_size_RUN;
+time_bin_size_moving = p.Results.time_bin_size_moving;
+shuffle_option = p.Results.shuffle_option;
+plot_option = p.Results.plot_option;
+event_type = p.Results.event_type;
+
+% -------------------- STEP 1: Define RUN bins for PLS (speed filtered) --------------------
+
+timevec_edge_RUN = tvec_template(1):time_bin_size_RUN:tvec_template(end);
+speed_RUN = interp1(tvec_template, speed, timevec_edge_RUN);
+valid_bins = speed_RUN >= 1;
+timevec_edge_RUN = timevec_edge_RUN(valid_bins);
+
+bins_RUN = [timevec_edge_RUN(:), timevec_edge_RUN(:) + time_bin_size_RUN];
+[~, ~, ~, ~, ~, n_original] = ActivityTemplates(spikes_template, 'bins', bins_RUN);
+
+T1_bins = InIntervals(timevec_edge_RUN', lap_times(track_ID == 1,:));
+T2_bins = InIntervals(timevec_edge_RUN', lap_times(track_ID == 2,:));
+
+X = [n_original(T1_bins,:); n_original(T2_bins,:)];
+Y = [ones(sum(T1_bins),1); 2*ones(sum(T2_bins),1)];
+bins_RUN = [bins_RUN(T1_bins,:);bins_RUN(T2_bins,:) ];
+
+position_interp1 = interp1(tvec_template,position,timevec_edge_RUN);
+position_interp1(isnan(position_interp1))=0;
+position_interp1 = discretize(position_interp1,28)*5;
+position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
+
+% position_bins = unique(position_Z);
+[index,Locb] = ismember(position_Z,PLS.good_position);
+
+X = zscore(X(index,:));
+Y = Y(index);
+bins_RUN = bins_RUN(index,:);
+
+
+% -------------------- STEP 2: Train PLS --------------------
+[XL,~,~,~,~,~,~] = plsregress(X, Y, 3);
+[W,~] = qr(XL, 0);
+
+% -------------------- STEP 3: Bin fine data (20/50ms) --------------------
+timevec_edge_fine = tvec_template(1):time_bin_size_moving:(tvec_template(end) - time_bin_size);
+
+% Interpolate speed to match fine time resolution
+speed_fine = interp1(tvec_template, speed, timevec_edge_fine);
+
+% Filter: keep only bins where speed ≥ 1 cm/s
+valid_speed_idx = speed_fine >= 1;
+timevec_edge_fine = timevec_edge_fine(valid_speed_idx);
+
+% Create bin edges: [start, start+dt]
+bins_fine = [timevec_edge_fine(:), timevec_edge_fine(:) + time_bin_size];
+center_fine = mean(bins_fine, 2);
+
+% Get spike counts per fine bin
+[~, ~, ~, ~, ~, n_fine] = ActivityTemplates(spikes_template, 'bins', bins_fine);
+
+% Track identity labels from lap times
+InT1 = InIntervals(center_fine, lap_times(track_ID == 1, :));
+InT2 = InIntervals(center_fine, lap_times(track_ID == 2, :));
+
+X_fine = [n_fine(InT1,:); n_fine(InT2,:)];
+Y_fine = [ones(sum(InT1),1); 2*ones(sum(InT2),1)];
+bins_fine = [bins_fine(InT1,:);bins_fine(InT2,:) ];
+
+
+% Valid bins: labeled and high-speed
+valid_idx = Y_fine > 0;
+
+% Global pattern regression (remove mean activity component)
+mean_act = mean(X_fine, 2);
+coeff = (mean_act' * X_fine) / (mean_act' * mean_act);
+global_pattern = mean_act * coeff;
+X_fine_residuals = X_fine - global_pattern;
+
+% Final inputs for decoding
+X_fine = X_fine_residuals(valid_idx, :);
+Y_fine = Y_fine(valid_idx);
+
+
+position_interp1 = interp1(tvec_template,position,timevec_edge_fine);
+position_interp1(isnan(position_interp1))=0;
+position_interp1 = discretize(position_interp1,28)*5;
+position_Z = [position_interp1(InT1) position_interp1(InT2)];
+
+% position_bins = unique(position_Z);
+[index,Locb] = ismember(position_Z,PLS.good_position);
+
+X_fine= zscore(X_fine(index,:));
+Y_fine = Y_fine(index);
+bins_fine = bins_fine(index,:);
+
+
+%%% Best bandwith for KDE based on RUN Track 1 and Track 2 separation
+Bandwith_list = KDE_RUN.Bandwidth;
+mean_AUC = median(KDE_RUN.AUC,2);
+
+[~,index] = max(mean_AUC);% Bandwith that leads to maximum separation between tracks
+
+if index == 1 % if first binwitdh (it can be too local)
+    mean_AUC(1)=nan;
+    [~,index] = max(mean_AUC);% Bandwith that leads to maximum separation between tracks
+end
+bw = Bandwith_list(index);
+% -------------------- STEP 4: Project and decode --------------------
+
+% Project fine (20/50ms) bins into PLS space
+X_fine_proj = X_fine * W;
+
+% STEP 4.1: Generate fold IDs from 100ms CV
+rng(200)
+cv = cvpartition(Y, 'KFold', 10);
+fold_id = zeros(length(Y), 1);
+for f = 1:10
+    fold_id(cv.test(f)) = f;
+end
+
+% STEP 4.2: Assign each fine bin to its nearest 100ms bin
+center_original = mean(bins_RUN, 2);            % 100ms centers
+center_fine = mean(bins_fine, 2);               % fine bin centers
+nearest_idx = knnsearch(center_original, center_fine);
+
+% STEP 4.3: Restrict fold ID to valid bins
+fold_id_fine = fold_id(nearest_idx);        % All fine bins mapped to 100ms folds
+
+% STEP 4.4: Decode with KDE across folds
+log_odds = nan(size(fold_id_fine));
+T1_prob = nan(size(fold_id_fine));
+T2_prob = nan(size(fold_id_fine));
+labels = Y_fine;
+
+for fold = 1:10
+%     tic
+    train_mask = fold_id ~= fold;
+
+    KDE_T1 = X(train_mask & Y == 1, :) * W;
+    KDE_T2 = X(train_mask & Y == 2, :) * W;
+
+    test_mask = fold_id_fine == fold;
+    test_data = X_fine_proj(test_mask, :);
+
+    pT1 = mvksdensity(KDE_T1, test_data, 'Bandwidth', bw);
+    pT2 = mvksdensity(KDE_T2, test_data, 'Bandwidth', bw);
+
+    log_odds(test_mask) = log(pT1 ./ pT2);
+    T1_prob(test_mask) = pT1;
+    T2_prob(test_mask) = pT2;
+%     toc
+end
+
+
+% % -------------------- STEP 5: Shuffle log-odds --------------------
+% if shuffle_option
+%     log_odds_shuffled = zeros(1000, length(labels));
+%     tic
+%     parfor i = 1:1000
+%         s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+%         idx = randperm(size(X_fine,2));
+% %         X_shuf = X_fine(:,idx) * W;
+%         tmp = nan(1, length(labels));
+% 
+%         for fold = 1:10
+%             train_mask = fold_id ~= fold;
+% 
+%             KDE_T1 = X(train_mask & Y == 1, idx) * W;
+%             KDE_T2 = X(train_mask & Y == 2, idx) * W;
+% 
+%             test_mask = fold_id_fine == fold;
+%             test_data = X_fine_proj(test_mask, :);
+% 
+%             pT1 = mvksdensity(KDE_T1, test_data, 'Bandwidth', bw);
+%             pT2 = mvksdensity(KDE_T2, test_data, 'Bandwidth', bw);
+% 
+%             tmp(test_mask) = log(pT1 ./ pT2);
+%         end
+%         log_odds_shuffled(i,:) = tmp;
+%     end
+%     toc
+% end
+
+% -------------------- STEP 6: ROC + Bootstrap --------------------
+fpr = 0:0.01:1;
+TPR_real = zeros(1000, length(fpr));
+AUC_real = zeros(1,1000);
+parfor i = 1:1000
+    s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+    idx = randsample(s,length(labels), length(labels), true);
+    [~, ~, ~, AUC_real(i)] = perfcurve(labels(idx), log_odds(idx),1,'XVals', fpr);
+    [x,y,~,AUC_real(i)] = perfcurve(labels(idx), log_odds(idx),1, 'XVals', fpr);
+    [C,ia,ic] = unique(x);
+    y = y(ia);
+    x = x(ia);
+
+    TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
+    TPR_real(i,:) = TPR_interp;
+end
+
+TPR_shuf = zeros(1000, length(fpr));
+AUC_shuf = zeros(1,1000);
+for i = 1:1000
+    s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+    idx = randsample(s,length(labels), length(labels), true);
+%     [~, ~, ~, AUC_shuf(i)] = perfcurve(labels(idx), log_odds_shuffled(i,:), 1, 'XVals', fpr);
+
+    [x,y,~,AUC_shuf(i)] = perfcurve(labels(idx), log_odds(:),1, 'XVals', fpr);
+    [C,ia,ic] = unique(x);
+    y = y(ia);
+    x = x(ia);
+
+    TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
+    TPR_shuf(i,:) = TPR_interp;
+
+end
+
+% -------------------- STEP 7: Plot ROC --------------------
+if plot_option
+    title_text = sprintf('%s %s %s ROC validation %.0f ms bins', ...
+        options.SUBJECT, options.SESSION, event_type, time_bin_size*1000);
+    fig = figure('Name', title_text, 'Position', [200 100 475 880]); hold on;
+    
+    nexttile
+    CI_real = prctile(TPR_real, [0.5 99.5]);
+    CI_shuf = prctile(TPR_shuf, [0.5 99.5]);
+    hold on
+    plot([0 1],[0 1],'--k')
+    PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
+        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
+        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
+    plot(fpr, mean(TPR_shuf,1), 'k', 'LineWidth', 1.5);
+    xlabel('True positive rate')
+    ylabel('False Positive rate')
+%     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+    title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    nexttile
+
+    AUC = [AUC_real;AUC_shuf];
+    bar_colors = [231,41,138; 0, 0, 0]/255;
+    x_pos=[1 2];
+    for i = 1:2
+
+        mean_AUC = mean(AUC(i,:),'omitnan');
+        auc_errors = [mean_AUC-prctile(AUC(i,:), [0.5]),...  % lower error
+            prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+        hold on
+        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    end
+
+
+    xticks([1 2]);
+    xticklabels({'Real', 'Shuffled'});
+    ylabel('AUC');
+    ylim([0 1]);
+    title('Mean AUC – Real vs Shuffled');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    
+
+end
+
+
+% -------------------- PLS Component Projection Visualisation --------------------
+% colour_lines = [215,25,28; 44,123,182]/256;  % red, blue
+title_text = sprintf('%s %s %s PLS latent components validation visualisation %.0f ms bins', ...
+    options.SUBJECT, options.SESSION, event_type, time_bin_size*1000);
+nfigure = 2;
+fig(nfigure) = figure;
+fig(nfigure).Name = title_text;
+fig(nfigure).Position = [300 380 1300 600];
+
+% ---------- Subplot 1: Original 100ms training data ----------
+subplot(2,2,1)
+plsScores_Track1 = X(Y == 1,:) * W;
+plsScores_Track2 = X(Y == 2,:) * W;
+
+scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3), ...
+    10, 'b', 'filled', 'MarkerFaceAlpha', 0.15); hold on;
+scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3), ...
+    10, 'r', 'filled', 'MarkerFaceAlpha', 0.15);
+
+xlabel('PLS Component 1'); ylabel('PLS Component 2'); zlabel('PLS Component 3');
+legend({'Track 1', 'Track 2'}, 'Box', 'off');
+title('PLS projection – 100ms training bins');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12);
+
+% ---------- Subplot 2: Fine-resolution bins ----------
+subplot(2,2,2)
+plsScores_fine = X_fine * W;
+
+scatter3(plsScores_fine(Y_fine == 1, 1), plsScores_fine(Y_fine == 1, 2), plsScores_fine(Y_fine == 1, 3), ...
+    10, 'b', 'filled', 'MarkerFaceAlpha', 0.1); hold on;
+scatter3(plsScores_fine(Y_fine == 2, 1), plsScores_fine(Y_fine == 2, 2), plsScores_fine(Y_fine == 2, 3), ...
+    10, 'r', 'filled', 'MarkerFaceAlpha', 0.1);
+
+xlabel('PLS Component 1'); ylabel('PLS Component 2'); zlabel('PLS Component 3');
+legend({'Track 1', 'Track 2'}, 'Box', 'off');
+title(sprintf('PLS projection – %.0f ms decoding bins', time_bin_size * 1000));
+set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12);
+
+
+% % -------------------- STEP 8: Context decoding by position --------------------
+% position_fine = interp1(tvec_template, position, centers_fine, 'linear', 'extrap');
+% position_bin = discretize(position_fine, 28) * 5;
+% position_bin = position_bin(valid_idx);
+% 
+% mdl = fitclinear(X_proj, Y_fine, 'Learner', 'logistic', 'Regularization', 'ridge');
+% Y_pred = predict(mdl, X_proj);
+% 
+% pos_bins = unique(position_bin);
+% for n = 1:length(pos_bins)
+%     b = pos_bins(n);
+%     idx1 = (Y_fine == 1) & (position_bin == b);
+%     idx2 = (Y_fine == 2) & (position_bin == b);
+% 
+%     correct1(n) = sum(Y_pred(idx1) == 1);
+%     correct2(n) = sum(Y_pred(idx2) == 2);
+%     total1(n) = sum(idx1);
+%     total2(n) = sum(idx2);
+% end
+% 
+% acc1 = correct1 ./ (total1 + eps);
+% acc2 = correct2 ./ (total2 + eps);
+% 
+% % Shuffled baseline
+% num_shuffles = 1000;
+% num_bins = length(pos_bins);
+% acc_shuf = zeros(num_shuffles, num_bins);
+% 
+% parfor s = 1:num_shuffles
+%     acc_tmp = zeros(1, num_bins);  % temporary row for this shuffle
+% 
+%     idx = randperm(size(X_fine,2));
+%     X_shuf = X_fine(:,idx);
+%     [XL_shuf, ~, ~, ~, ~, ~] = plsregress(X_shuf, Y_fine, 3);
+%     [W_shuf, ~] = qr(XL_shuf, 0);
+%     X_proj_shuf = X_fine * W_shuf;
+% 
+%     mdl_s = fitclinear(X_proj_shuf, Y_fine, 'Learner', 'logistic', 'Regularization', 'ridge');
+%     Y_pred_s = predict(mdl_s, X_proj_shuf);
+% 
+%     for p = 1:num_bins
+%         idx_pos = position_bin == pos_bins(p);
+%         acc_tmp(p) = sum(Y_pred_s(idx_pos) == Y_fine(idx_pos)) / (sum(idx_pos) + eps);
+%     end
+% 
+%     acc_shuf(s,:) = acc_tmp;  % assign all at once
+% end
+% 
+% 
+% if plot_option
+%     colour_lines = [215,25,28; 44,123,182]/256;
+%     title_text = sprintf('%s %s %s Logistic Ridge regression of PLS components %s', ...
+%         options.SUBJECT, options.SESSION, event_type);
+%     fig = figure('Name', title_text, 'Position', [680 482 630 500]); hold on;
+% 
+%     patch([pos_bins fliplr(pos_bins)], ...
+%           [prctile(acc_shuf,97.5) fliplr(prctile(acc_shuf,2.5))], ...
+%           'k', 'FaceAlpha', 0.3, 'LineStyle', 'none');
+% 
+%     plot(pos_bins, acc1, 'Color', colour_lines(1,:), 'LineWidth', 2);
+%     plot(pos_bins, acc2, 'Color', colour_lines(2,:), 'LineWidth', 2);
+% 
+%     legend({'Shuffled CI', 'Track 1', 'Track 2'}, 'Box', 'off');
+%     xlabel('Position (cm)'); ylabel('Proportion correct context classification');
+%     title(title_text); set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% end
+
+% -------------------- STEP 9: Output --------------------
+KDE_RUN_validation.time_bin_size = time_bin_size;
+KDE_RUN_validation.Y = labels;
+KDE_RUN_validation.T1_prob = T1_prob;
+KDE_RUN_validation.T2_prob = T2_prob;
+KDE_RUN_validation.log_odds = log_odds;
+% KDE_RUN_validation.log_odds_shuffled = log_odds_shuffled;
+% KDE_RUN_validation.z_log_odds = (log_odds - mean(log_odds_shuffled,1,'omitnan')') ./ std(log_odds_shuffled,[],1,'omitnan')';
+% KDE_RUN_validation.percentile = mean(log_odds_shuffled < log_odds', 1);
+KDE_RUN_validation.FPR = fpr;
+KDE_RUN_validation.TPR_real = TPR_real;
+KDE_RUN_validation.TPR_shuffle = TPR_shuf;
+KDE_RUN_validation.AUC_real = AUC_real;
+KDE_RUN_validation.AUC_shuffle = AUC_shuf;
+
+end

@@ -683,28 +683,6 @@ for nsession =1:length(experiment_info)
     spike_id=spike_id(sort_idx);
 
 
-%     event_times = [ripples(1).onset(ripples(1).SWS_index==1); ripples(2).onset(ripples(2).SWS_index==1)];
-%     event_id = [ones(sum(ripples(1).SWS_index==1),1); 2*ones(sum(ripples(2).SWS_index==1),1)];
-%     tic
-%     ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,windows,psthBinSize,'unit_id',spatial_cell_id,'event_times',event_times,'event_id',event_id,'shuffle_option',0);
-
-
-    mean_activity_track1 = nan(length(spatial_cell_id), 1);
-    mean_activity_track2 = nan(length(spatial_cell_id), 1);
-
-    for i = 1:length(spatial_cell_id)
-        % Track 1
-        data1 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 1};
-        if ~isempty(data1)
-            mean_activity_track1(i) = mean(data1(:), 'omitnan');
-        end
-
-        % Track 2
-        data2 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 2};
-        if ~isempty(data2)
-            mean_activity_track2(i) = mean(data2(:), 'omitnan');
-        end
-    end
 
     %%%%%%
     session_clusters_all.subject(session_count,:) = options.SUBJECT;
@@ -724,8 +702,6 @@ for nsession =1:length(experiment_info)
 
     session_clusters_all.spatial_response{nsession} = session_clusters_RUN.spatial_response(spatial_cell_index,:);
     session_clusters_all.spatial_response_raw{nsession} = session_clusters_RUN.spatial_response_raw(spatial_cell_index,:);
-    session_clusters_all.mean_FR{nsession} = [mean_activity_track1 mean_activity_track2];
-
 
     session_clusters_all.SMI_peak_RUN1{nsession} = session_clusters_RUN.SMI_peak_RUN1(spatial_cell_index,:);
     session_clusters_all.SMI_area_RUN1{nsession} = session_clusters_RUN.SMI_area_RUN1(spatial_cell_index,:);
@@ -755,8 +731,8 @@ for nsession =1:length(experiment_info)
     session_clusters_all.SO_amplitude{nsession}       = spike_phase_amplitude.SO_amplitude(spike_index, cortex_ref_shank);
     session_clusters_all.spindle_phase{nsession}      = spike_phase_amplitude.spindle_phase(spike_index, cortex_ref_shank);
     session_clusters_all.spindle_amplitude{nsession}  = spike_phase_amplitude.spindle_amplitude(spike_index, cortex_ref_shank);
-    session_clusters_all.ripple_phase{nsession}       = spike_phase_amplitude.ripple_phase(spike_index, HPC_ref_shank);
-    session_clusters_all.ripple_amplitude{nsession}   = spike_phase_amplitude.ripple_amplitude(spike_index, HPC_ref_shank);
+    session_clusters_all.ripple_phase{nsession}       = spike_phase_amplitude.ripple_phase(spike_index, cortex_ref_shank);
+    session_clusters_all.ripple_amplitude{nsession}   = spike_phase_amplitude.ripple_amplitude(spike_index, cortex_ref_shank);
 
     session_clusters_all.theta_phase{nsession}        = spike_phase_amplitude.theta_phase(spike_index, HPC_ref_shank);
     session_clusters_all.theta_amplitude{nsession}    = spike_phase_amplitude.theta_amplitude(spike_index, HPC_ref_shank);
@@ -770,6 +746,8 @@ for nsession =1:length(experiment_info)
     session_clusters_all.ripple_amplitude{nsession}   = session_clusters_all.ripple_amplitude{nsession}(sort_idx,:);
     session_clusters_all.theta_phase{nsession}        = session_clusters_all.theta_phase{nsession}(sort_idx,:);
     session_clusters_all.theta_amplitude{nsession}    = session_clusters_all.theta_amplitude{nsession}(sort_idx,:);
+
+
 end
 
 

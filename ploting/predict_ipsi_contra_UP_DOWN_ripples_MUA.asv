@@ -749,42 +749,39 @@ for probe_no = 1:2
 end
 
 spindle_amplitude(1,:) = [spindle_amplitude1{1}(1,ripples_all(1).SWS_index==1) spindle_amplitude1{2}(2,ripples_all(2).SWS_index==1)];
-spindle_amplitude(2,:) = [spindle_amplitude1{1}(2,ripples_all(1).SWS_index==1) spindle_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
+spindle_amplitude(2,:) = [spindle_amplitude1{2}(2,ripples_all(2).SWS_index==1) spindle_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
 
 ripple_info.spindle_amplitude = spindle_amplitude';
 
 %%% SO phase
 SO_phase=[];
-SO_phase1=[];
 for probe_no = 1:2
-    SO_phase1{probe_no}=[];
+    SO_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase1{probe_no} = [SO_phase1{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
-SO_phase(1,:) = [SO_phase1{1}(1,ripples_all(1).SWS_index==1) SO_phase1{2}(2,ripples_all(2).SWS_index==1)];
-SO_phase(2,:) = [SO_phase1{1}(2,ripples_all(1).SWS_index==1) SO_phase1{2}(1,ripples_all(2).SWS_index==1)];
+SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+
 ripple_info.SO_phase = SO_phase';
 
 %%% SO power
 SO_amplitude=[];
-SO_amplitude1=[];
 for probe_no = 1:2
-    SO_amplitude1{probe_no}=[];
+    SO_amplitude{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_amplitude1{probe_no} = [SO_amplitude1{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
-SO_amplitude(1,:) = [SO_amplitude1{1}(1,ripples_all(1).SWS_index==1) SO_amplitude1{2}(2,ripples_all(2).SWS_index==1)];
-SO_amplitude(2,:) = [SO_amplitude1{1}(2,ripples_all(1).SWS_index==1) SO_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
+SO_amplitude = [SO_amplitude{1}(:,ripples_all(1).SWS_index==1) SO_amplitude{2}(:,ripples_all(2).SWS_index==1)];
 
 ripple_info.SO_amplitude = SO_amplitude';
 
 
 %%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.1]);
 ripple_info.early_UP_index = UP_index;
 ripple_info.early_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
@@ -792,7 +789,7 @@ ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemispher
 
 
 %%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.1 merged_event_info.DOWN_ints(:,1)]);
 ripple_info.late_UP_index = UP_index;
 ripple_info.late_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
@@ -826,11 +823,6 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 %%%%%%%%%%%%% Mixed effect model (Does spindle and SO predict ripple power?)
 
 output = predict_ripples_by_SO_spindles(ripple_info,'subject_id',subject_id);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_amp_phase_Ripples_output.mat'),'output');
-
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_amp_phase_Ripples_output.mat'),'output')
-predict_ripples_by_SO_spindles(ripple_info,'subject_id',subject_id,'output',output,'plot_option',1);
-
 
 
 predict_ripples_by_SO_spindles_TF(ripple)

@@ -54,6 +54,15 @@ for iField = 1:size(all_cluster_fields,1)
         selected_clusters.sorter = clusters.sorter;
     elseif contains(all_cluster_fields{iField},'probe_hemisphere')
         selected_clusters.probe_hemisphere = clusters.probe_hemisphere;
+    elseif contains(all_cluster_fields{iField},'lap_seesion_ID')
+        selected_clusters.lap_seesion_ID = clusters.lap_seesion_ID;
+    elseif contains(all_cluster_fields{iField},'pass_landmarks_laps')
+        selected_clusters.pass_landmarks_laps = clusters.pass_landmarks_laps;
+    elseif contains(all_cluster_fields{iField},'spatial_response_all_2cm')
+        selected_clusters.spatial_response_all_2cm = clusters.spatial_response_all_2cm(cluster_filter_index,:,:);
+    elseif contains(all_cluster_fields{iField},'excluded_by_metric')
+        % selected_clusters.excluded_by_metric = clusters.excluded_by_metric;
+
     elseif contains(all_cluster_fields{iField},'params')
 
     elseif iscell(clusters.(all_cluster_fields{iField})) % if it is a cell structure (Usually for RF which is cell structure)

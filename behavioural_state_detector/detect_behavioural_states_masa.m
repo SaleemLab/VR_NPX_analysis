@@ -136,7 +136,8 @@ disp('Detecting Slow Wave Sleep...')
 SR = 1/mean(diff(corticalLFP(:,1)));
 parameters = list_of_parameters;
 filter_type  = 'bandpass';
-filter_width = [9 17];                 % range of frequencies in Hz you want to filter between
+% filter_width = [9 17];                 % range of frequencies in Hz you want to filter between
+filter_width = [0.5 4];                 % range of frequencies in Hz you want to filter between
 filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
 norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
 b_spindle = fir1(filter_order, norm_freq_range,filter_type);

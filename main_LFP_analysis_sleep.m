@@ -222,8 +222,8 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([33 9 10 14]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -242,8 +242,12 @@ for nstimuli = 1:length(all_stimulus_type)
         load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-            % options = session_info(n).probe(1);
-            LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
+            options = session_info(n).probe(1);
+            % LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
+            % extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
+            % detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
+            detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
+            
         end
     end
 end
@@ -536,9 +540,9 @@ for nsession =1:length(experiment_info)
                     for nShank = 1:length(probe_hemisphere)
                         signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
                     end
-                    spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
-                    spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
-                    % spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+%                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+%                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+                    spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     spindle_phase_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
 
@@ -556,6 +560,23 @@ for nsession =1:length(experiment_info)
                     ripple_amplitude_cortex_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     ripple_phase_cortex_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
+
+
+
+                    % grab gamma LFP
+                    filter_type  = 'bandpass';
+                    passband = [30 60];
+                    filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+                    norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                    b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+                    signal = [];
+                    for nShank = 1:length(probe_hemisphere)
+                        signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+                    end
+
+                    gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+                    gamma_phase_LFP = angle(hilbert(signal)); % spindle phase
                 end
 
                 %%%%% Calculate Delta peak amplitude and timestamp per event
@@ -739,9 +760,12 @@ for nsession =1:length(experiment_info)
                     for nShank = 1:length(probe_hemisphere)
                         signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
                     end
-                    spindle_amplitude_HPC_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
-                    spindle_amplitude_HPC_LFP = smoothdata(spindle_amplitude_HPC_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+                    %                     spindle_amplitude_HPC_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+                    %                     spindle_amplitude_HPC_LFP = smoothdata(spindle_amplitude_HPC_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+                    spindle_amplitude_HPC_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
                     spindle_phase_HPC_LFP = angle(hilbert(signal)); % spindle phase
+
+
                     signal = [];
 
                     % grab ripples LFP
@@ -759,6 +783,23 @@ for nsession =1:length(experiment_info)
                     ripple_amplitude_LFP = zscored_LFP; % z scored amplitude
                     ripple_phase_LFP = angle(hilbert(signal)); % spindle phase
                     signal = [];
+
+
+
+                    % grab theta LFP
+                    filter_type  = 'bandpass';
+                    passband = [4 12];
+                    filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+                    norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+                    b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+                    signal = [];
+                    for nShank = 1:length(probe_hemisphere)
+                        signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+                    end
+
+                    theta_amplitude_HPC_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+                    theta_phase_HPC_LFP = angle(hilbert(signal)); % spindle phase
                 end
 
                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
@@ -1437,11 +1478,20 @@ for nsession =1:length(experiment_info)
                     SO_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
                     SO_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
 
+                    SO_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    SO_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
                     spindle_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
                     spindle_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
 
+                    spindle_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    spindle_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
+
                     SO_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
                     SO_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+                    SO_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    SO_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 
                     % SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
                     % spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
@@ -1451,60 +1501,173 @@ for nsession =1:length(experiment_info)
                     spindle_peak_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
                     spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 
+
+                    gamma_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+                    gamma_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+                    gamma_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+                    gamma_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
                     for nevent = 1:length(ripples(probe_no).onset)
                         [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
                         
-                        % Phase
+                        % peak ampltiude and phase
                         SO_phase_ripple_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_peaktime(:,nevent) = spindle_phase_LFP(tidx,:);
+                        SO_amplitude_ripple_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
+                        spindle_amplitude_ripple_peaktime(:,nevent) = spindle_amplitude_LFP(tidx,:);
                         ripple_peak_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+                        gamma_phase_ripple_peaktime(:, nevent) = gamma_phase_LFP(tidx, :);
+                        gamma_amplitude_ripple_peaktime(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
 
                         [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
-                        % Phase
+                        % onset amplitude and phase
                         SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
                         spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
+                        SO_amplitude_ripple_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
+                        spindle_amplitude_ripple_onset(:,nevent) = spindle_amplitude_LFP(tidx,:);
                         ripple_onset_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+                        gamma_phase_ripple_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+                        gamma_amplitude_ripple_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
                     end
 
                     ripples(probe_no).SO_phase_ripple_peaktime = SO_phase_ripple_peaktime;
                     ripples(probe_no).spindle_phase_ripple_peaktime = spindle_phase_ripple_peaktime;
+                    ripples(probe_no).SO_amplitude_ripple_peaktime = SO_amplitude_ripple_peaktime;
+                    ripples(probe_no).spindle_amplitude_ripple_peaktime = spindle_amplitude_ripple_peaktime;
                     ripples(probe_no).ripple_peak_amplitude = ripple_peak_amplitude;
 
                     ripples(probe_no).SO_phase_ripple_onset = SO_phase_ripple_onset;
                     ripples(probe_no).spindle_phase_ripple_onset = spindle_phase_ripple_onset;
+                    ripples(probe_no).SO_amplitude_ripple_onset = SO_amplitude_ripple_onset;
+                    ripples(probe_no).spindle_amplitude_ripple_onset = spindle_amplitude_ripple_onset;
                     ripples(probe_no).ripple_onset_amplitude = ripple_onset_amplitude;
+
+                    ripples(probe_no).gamma_phase_ripple_peaktime = gamma_phase_ripple_peaktime;
+                    ripples(probe_no).gamma_amplitude_ripple_peaktime = gamma_amplitude_ripple_peaktime;
+                    ripples(probe_no).gamma_phase_ripple_onset = gamma_phase_ripple_onset;
+                    ripples(probe_no).gamma_amplitude_ripple_onset = gamma_amplitude_ripple_onset;
 
                     if ~isempty(spindles(probe_no).onset)
                         for nevent = 1:length(spindles(probe_no).onset)
                             [~,tidx]=min(abs(tvec-spindles(probe_no).peaktimes(nevent)));
-                            % Phase
+                            % peak ampltiude and phase
                             SO_phase_spindle_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
+                            SO_amplitude_spindle_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_peak_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
+                            gamma_phase_spindle_peaktime(:, nevent) = gamma_phase_LFP(tidx, :);
+                            gamma_amplitude_spindle_peaktime(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
 
                             [~,tidx]=min(abs(tvec-spindles(probe_no).onset(nevent)));
-                            % Phase
+                            % onset amplitude and phase
                             SO_phase_spindle_onset(:,nevent) = SO_phase_LFP(tidx,:);
+                            SO_amplitude_spindle_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
                             spindle_onset_amplitude(:,nevent) = spindle_amplitude_LFP(tidx,:);
+                            gamma_phase_spindle_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+                            gamma_amplitude_spindle_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
                         end
 
                         spindles(probe_no).SO_phase_spindle_peaktime = SO_phase_spindle_peaktime;
+                        spindles(probe_no).SO_amplitude_spindle_peaktime = SO_amplitude_spindle_peaktime;
                         spindles(probe_no).spindle_peak_amplitude = spindle_peak_amplitude;
 
                         spindles(probe_no).SO_phase_spindle_onset = SO_phase_spindle_onset;
+                        spindles(probe_no).SO_amplitude_spindle_onset = SO_amplitude_spindle_onset;
                         spindles(probe_no).spindle_onset_amplitude = spindle_onset_amplitude;
+
+                        spindles(probe_no).gamma_phase_spindle_peaktime = gamma_phase_spindle_peaktime;
+                        spindles(probe_no).gamma_amplitude_spindle_peaktime = gamma_amplitude_spindle_peaktime;
+                        spindles(probe_no).gamma_phase_spindle_onset = gamma_phase_spindle_onset;
+                        spindles(probe_no).gamma_amplitude_spindle_onset = gamma_amplitude_spindle_onset;
                     end
                 else
                     spindles(probe_no).SO_phase_spindle_peaktime = [];
                     spindles(probe_no).spindle_peak_amplitude = [];
+                    spindles(probe_no).SO_amplitude_spindle_peaktime = [];
 
                     spindles(probe_no).SO_phase_spindle_onset = [];
                     spindles(probe_no).spindle_onset_amplitude = [];
+                    spindles(probe_no).SO_amplitude_spindle_onset = [];
                 end
             end
 
 
 
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%% Grab phase and amplitude per spike
+
+        % From cell structure back to spike times and spike id
+        session_clusters.spike_id = vertcat(session_clusters.spike_id{:});
+        session_clusters.spike_times = vertcat(session_clusters.spike_times{:});
+        [session_clusters.spike_times, index] = sort(session_clusters.spike_times);
+        session_clusters.spike_id = session_clusters.spike_id(index);
+
+        % Setup
+        nSpikes = length(session_clusters.spike_times);
+        n_channels = size(SO_amplitude_LFP, 2);
+        ripple_channels = size(ripple_amplitude_LFP, 2);
+
+        chunk_size = 5e5;  % 500,000 spikes per chunk
+        n_chunks = ceil(nSpikes / chunk_size);
+
+        % Preallocate cell arrays for chunks
+        SO_phase_chunks = cell(n_chunks, 1);
+        SO_amplitude_chunks = cell(n_chunks, 1);
+        spindle_phase_chunks = cell(n_chunks, 1);
+        spindle_amplitude_chunks = cell(n_chunks, 1);
+        ripple_amplitude_chunks = cell(n_chunks, 1);
+        ripple_phase_chunks = cell(n_chunks, 1);        
+        theta_phase_chunks = cell(n_chunks, 1);          
+        theta_amplitude_chunks = cell(n_chunks, 1);     
+
+        % Loop over chunks
+        for c = 1:n_chunks
+            idx_start = (c-1)*chunk_size + 1;
+            idx_end = min(c*chunk_size, nSpikes);
+            idx_range = idx_start:idx_end;
+
+            % Spike times and nearest LFP index
+            spike_times_chunk = session_clusters.spike_times(idx_range);
+            spike_idx = interp1(tvec, 1:length(tvec), spike_times_chunk, 'nearest', 'extrap');
+
+            % Extract and convert to single
+            SO_phase_chunks{c} = single(SO_phase_LFP(spike_idx, :));
+            SO_amplitude_chunks{c} = single(SO_amplitude_LFP(spike_idx, :));
+            spindle_phase_chunks{c} = single(spindle_phase_LFP(spike_idx, :));
+            spindle_amplitude_chunks{c} = single(spindle_amplitude_LFP(spike_idx, :));
+            ripple_amplitude_chunks{c} = single(ripple_amplitude_LFP(spike_idx, :));
+            ripple_phase_chunks{c} = single(ripple_phase_LFP(spike_idx, :));           
+            theta_phase_chunks{c} = single(theta_phase_HPC_LFP(spike_idx, :));        
+            theta_amplitude_chunks{c} = single(theta_amplitude_HPC_LFP(spike_idx, :)); 
+
+            fprintf('Processed chunk %d of %d (%d spikes)\n', c, n_chunks, length(idx_range));
+        end
+
+        % Merge chunks
+        spike_phase_amplitude.SO_phase = vertcat(SO_phase_chunks{:});
+        spike_phase_amplitude.SO_amplitude = vertcat(SO_amplitude_chunks{:});
+        spike_phase_amplitude.spindle_phase = vertcat(spindle_phase_chunks{:});
+        spike_phase_amplitude.spindle_amplitude = vertcat(spindle_amplitude_chunks{:});
+        spike_phase_amplitude.ripple_amplitude = vertcat(ripple_amplitude_chunks{:});
+        spike_phase_amplitude.ripple_phase = vertcat(ripple_phase_chunks{:});          
+        spike_phase_amplitude.theta_phase = vertcat(theta_phase_chunks{:});             
+        spike_phase_amplitude.theta_amplitude = vertcat(theta_amplitude_chunks{:});    
+
+        % Clear chunk variables to free memory
+        clear SO_phase_chunks SO_amplitude_chunks spindle_phase_chunks ...
+            spindle_amplitude_chunks ripple_amplitude_chunks ripple_phase_chunks ...
+            theta_phase_chunks theta_amplitude_chunks
+
+
 
 
         toc
@@ -1525,23 +1688,28 @@ for nsession =1:length(experiment_info)
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_spindle_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spindles');
             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('spike_phase_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'spike_phase_amplitude','-v7,3');
         else
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'),'spindles');
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'), 'spike_phase_amplitude', '-v7.3');
         end
     end
 end
 
 
-%% LFP PSD slope and cortical wave direction
+
+
+%% LFP time frequency analysis
 % pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
 % pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-pyenv("ExecutionMode","OutOfProcess")
 
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
@@ -1549,10 +1717,11 @@ option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar
 % experiment_info=experiment_info([4 5 6 ]);
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:length(experiment_info)
+for nsession =2:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -1604,7 +1773,7 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
 
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -1624,68 +1793,8 @@ for nsession =1:length(experiment_info)
         end
         toc
 
+
         params = create_cluster_selection_params('sorting_option','masa');
-
-        %%% Test slow wave detection
-        tvec = LFP(1).tvec;
-        clear slow_waves_markov
-        for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(nprobe).probe_id+1;
-            options = session_info(n).probe(nprobe);
-
-            %%%%% V1 MUA spikes
-            metric_param =[]; % get all V1 spikes from left or right hemisphere
-            if options.probe_hemisphere==1
-                metric_param.region = @(x) contains(x,'HPC_L');
-                HPC_clusters = select_clusters(clusters(nprobe),metric_param);
-
-                V1_clusters=[];
-                V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_L");
-                V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
-                V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
-
-                if length(V1_clusters.cluster_id)<150
-                    V1_clusters=[];
-                    metric_param.region = @(x) contains(x,'V1_L');
-                    %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
-                    V1_clusters = select_clusters(clusters(nprobe),metric_param);
-                end
-            elseif options.probe_hemisphere==2
-                %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
-                metric_param.region = @(x) contains(x,'HPC_R');
-                HPC_clusters = select_clusters(clusters(nprobe),metric_param);
-
-                V1_clusters=[];
-                V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_R");
-                V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
-                V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
-
-                if length(V1_clusters.cluster_id)<150
-                    V1_clusters=[];
-                    metric_param.region = @(x) contains(x,'V1_R');
-                    %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
-                    V1_clusters = select_clusters(clusters(nprobe),metric_param);
-                end
-            end
-
-
-            best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
-
-            if isempty(best_channel)
-                [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
-                slow_waves_markov(probe_no) = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
-                %                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
-                temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
-                temp.best_channel = LFP(nprobe).best_V1_high_freq_channel(best_channel);
-                slow_waves_markov(probe_no) = temp;
-            else
-                %                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
-                temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
-                temp.best_channel = slow_waves(probe_no).best_channel;
-                slow_waves_markov(probe_no) = temp;
-            end
-        end
-
         % PSD slope quantification using fooof ()
         tvec = LFP(1).tvec;
         SR = round(1/mean(diff(tvec)));
@@ -1693,472 +1802,897 @@ for nsession =1:length(experiment_info)
         nfft = 2^(nextpow2(SR*nfft_seconds));
         win  = hanning(nfft);
 
-        clipDur = 5; % seconds
-        timebin_edges = tvec(1):clipDur:tvec(end); % 5 seconds timebin edges for PSD slope
-        nClipSamps = round(SR*clipDur);
-
-        PSD_slope=[];
-
-        disp('PSD slope for slow waves started')
-        tic
-        for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(nprobe).probe_id+1;
-
-            slow_waves_markov(probe_no).power = [];
-            slow_waves_markov(probe_no).frequency = [];
-            slow_waves_markov(probe_no).PSD_slope = [];
-            slow_waves_markov(probe_no).timebin_edges = [];
-            slow_waves_markov(probe_no).DOWN_PSD_slope = [];
-            slow_waves_markov(probe_no).UP_PSD_slope = [];
-
-            if ~isempty(behavioural_state_merged.SWS)
-                best_channel = find(LFP(probe_no).best_V1_channel==slow_waves_markov(probe_no).best_channel);
-                V1_LFP = LFP(probe_no).best_V1(best_channel,:);
-
-            else
-                continue
-            end
-
-            if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
-                continue
-            end
-
-            if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
-                continue
-            end
-
-            % slow_waves(probe_no).power=[];
-            % slow_waves(probe_no).powerdB=[];
-            nClips = floor(length(V1_LFP)/nClipSamps);
-            samples_to_pass = 0;
-
-            for clip = 1:nClips
-                tidx = [1+samples_to_pass:samples_to_pass+nClipSamps]; % in samples
-                % timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
-                % timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
-
-
-                [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
-
-                slow_waves_markov(probe_no).power(clip,:) = pxx;
-                % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
-                fxx = fxx';
-                % FOOOF settings
-                settings = struct();
-                f_range = [1, 10];
-
-                % Run FOOOF to fit the model and quantify the slope of power spectra
-                fooof_results = fooof(fxx, pxx, f_range, settings);
-                % fooof_plot(fooof_results)
-                PSD_slope(clip) = fooof_results.aperiodic_params(2); % slope of aperiodic component
-
-                samples_to_pass = samples_to_pass + nClipSamps;
-            end
-
-            slow_waves_markov(probe_no).frequency = fxx;
-            slow_waves_markov(probe_no).PSD_slope = PSD_slope;
-            slow_waves_markov(probe_no).timebin_edges = timebin_edges;
-
-            delta_power=[];
-            delta_power = zscore(mean(10*log10(slow_waves_markov(probe_no).power(:,slow_waves_markov(probe_no).frequency>0.5&slow_waves_markov(probe_no).frequency<4)),2));
-            %             delta_power = mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2);
-
-            %             timebin_centre = timebin_edges(1)+mean(diff(timebin_edges))/2:mean(diff(timebin_edges)):timebin_edges(end)-mean(diff(timebin_edges))/2;
-            %             NREM_delta_power = delta_power(find(ismember(timebin_centre,Restrict(timebin_centre,behavioural_state_merged.SWS))));
-            %             delta_power = (delta_power-mean(NREM_delta_power))/std(NREM_delta_power);
-
-            event_midpoint = mean(slow_waves_markov(probe_no).UP_ints,2);
-            % Find the bin indices for each event time
-            [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-            slow_waves_markov(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
-            slow_waves_markov(probe_no).UP_delta_power= delta_power(bin_indices);
-
-
-            event_midpoint = mean(slow_waves_markov(probe_no).DOWN_ints,2);
-            % Find the bin indices for each event time
-            [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
-            slow_waves_markov(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
-            slow_waves_markov(probe_no).DOWN_delta_power= delta_power(bin_indices);
-        end
-        toc
-        disp('PSD slope for slow waves finished')
-
-        disp('cortical wave traveling direction analysis started')
-        tic
         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
-        % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        % https://www.nature.com/articles/s41467-019-10327-5 levenstein et
-        % al used 0.5 to 8 Hz for slow wave UP DOWN detection
-        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+
+        filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+        filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
+        filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+        filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
         filterparms.gammafilter = [100 400];
         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
         filterparms.gammanormwin = 20; %window for gamma normalization (s)
 
-        for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(nprobe).probe_id+1;
-            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-            lfp.timestamps = LFP(probe_no).tvec;
-            lfp.data=[];
-            DOWN_peaks_shank = [];
-            peaks_latency = [];
-            DOWN_traveling = [];
-            DOWN_peaks_zscore= [];
-
-            slow_waves_markov(probe_no).DOWN_peaks_zscore = [];
-            slow_waves_markov(probe_no).DOWN_peaktimes = [];
-            slow_waves_markov(probe_no).DOWN_peaks_latency = [];
-            slow_waves_markov(probe_no).DOWN_traveling = [];
-            slow_waves_markov(probe_no).probe_hemisphere = [];
-            slow_waves_markov(probe_no).shank_id = [];
-
-            if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
-                continue
-            end
-
-            if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
-                continue
-            end
-
-            if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
-                probe_id = [];
-
-                if length(LFP)==1
-                    lfp.data= [LFP(probe_no).average_V1'];
-                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
-                    slow_waves_markov(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
-                else
-                    lfp.data= [LFP(1).average_V1' LFP(2).average_V1'];
-                    probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
-                    slow_waves_markov(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
-                end
-
-                slow_waves_markov(probe_no).probe_hemisphere = probe_hemisphere;
-
-
-                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-
-                zscored_LFP = [];
-                zscored_LFP = zscore(deltaLFP.data);
-                % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
-
-                for nevent = 1:size(slow_waves_markov(probe_no).DOWN_ints,1)
-                    % for nevent = 600:640
-                    midpoint = mean(slow_waves_markov(probe_no).DOWN_ints(nevent,:));
-                    tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
-                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
-                    tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(midpoint-tvec));
-
-                    for nShank=1:length(probe_hemisphere) % across shanks from both probes if using two probes
-
-                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
-
-                        [~,temp]=min(abs(midpoint-tvec(tidx(peak_id))));
-                        if ~isempty(temp)
-                            DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
-                            DOWN_peaks_zscore(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
-                        else
-                            DOWN_peaks_shank(nShank,nevent) = nan;
-                            DOWN_peaks_zscore(nShank,nevent) = nan;
-                        end
-                    end
-
-                    % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
-                    %
-                    % diff(DOWN_peaks_shank(:,425))
-
-                    % Putative calculation of average latency across shanks
-                    % for each hemisphere
-                    for h = unique(probe_hemisphere)
-                        DOWN_peaks_shank_temp = DOWN_peaks_shank(probe_hemisphere==h,nevent);
-
-                        if sum(~isnan(DOWN_peaks_shank_temp))==4 % if delta peaks on four shanks
-                            peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
-                        elseif sum(~isnan(DOWN_peaks_shank_temp))==3 % if delta peaks on three shanks
-                            skipped_shank= diff(LFP(h).average_V1_shank_id(~isnan(DOWN_peaks_shank_temp)))>1;
-                            if sum(skipped_shank)>0 % if delta peak skipped one shank
-
-                                if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
-                                    peaks_latency(h,nevent) = DOWN_peaks_shank_temp(1)-DOWN_peaks_shank_temp(2);
-                                elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
-                                    peaks_latency(h,nevent) = DOWN_peaks_shank_temp(2)-DOWN_peaks_shank_temp(3);
-                                end
-                            else
-                                peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
-                            end
-                        elseif sum(~isnan(DOWN_peaks_shank_temp))==2 % if delta peaks on two shanks (latency divide by number of shanks skipped to caluclate mean latency per 250 micron)
-                            peaks_latency(h,nevent) = diff(DOWN_peaks_shank_temp(1:2))/abs(LFP(h).average_V1_shank_id(2)-LFP(h).average_V1_shank_id(1));
-                        else % only one peak. Can't calculate latency
-                            peaks_latency(h,nevent) =nan;
-                        end
-
-                        % From https://www.jneurosci.org/content/34/26/8875#sec-2
-                        % speed is ~40 milimeter per seconds
-                        % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
-                        % putatively set the minimum delay threshold to be 3
-                        % miliseconds.
-                        if h==1
-
-                            % if direction of mean latency is consistent with the latency more than half
-                            % of the shank latency
-                            % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
-                            % (if three shanks, then still 2 jumps needed)
-                            if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
-                                DOWN_traveling(h,nevent) = 1; % anterior to posterior
-                            elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
-                                DOWN_traveling(h,nevent) = -1; % posterior to anterior
-                            else
-                                DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
-                            end
-                            % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
-                        elseif h==2
-                            if peaks_latency(h,nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
-                                DOWN_traveling(h,nevent) = -1; % posterior to anterior
-                            elseif peaks_latency(h,nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
-                                DOWN_traveling(h,nevent) = 1; % anterior to posterior
-                            else
-                                DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
-                            end
-                        end
-                    end
-                    % nexttile
-                    % hold on;xline(tvec(idx));
-                    % plot(tvec(tidx),zscored_LFP(tidx,:));
-                    % % hold on;xline(median(tvec(tidx(1):tidx(end))))
-                    % xline(DOWN_peaks_shank(:,nevent)')
-                end
-
-
-            end
-
-
-            slow_waves_markov(probe_no).DOWN_peaktimes = DOWN_peaks_shank;
-            slow_waves_markov(probe_no).DOWN_peaks_zscore = DOWN_peaks_zscore;
-            slow_waves_markov(probe_no).DOWN_peaks_latency = peaks_latency;
-            slow_waves_markov(probe_no).DOWN_traveling = DOWN_traveling;
-        end
-        disp('cortical wave traveling direction analysis finished')
-        toc
-        %
-
-        disp('Sharp wave ripple traveling direction analysis started')
-        tic
-        %%%%%%%%%%%% Cortical wave direction during DOWN state peak
-        % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
-        filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
-
-        for nprobe = 1:length(session_info(n).probe)
-            probe_no = session_info(n).probe(nprobe).probe_id+1;
-            lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-            lfp.timestamps = LFP(probe_no).tvec;
-            lfp.data=[];
-            % DOWN_peaks_shank = [];
-            sharp_wave_peaks_shank=[];
-            peaks_latency = [];
-            wave_traveling = [];
-            sharp_wave_zscore_shank=[];
-
-
-            ripples(probe_no).sharp_wave_peaktimes = [];
-            ripples(probe_no).sharp_wave_zscore = [];
-
-            ripples(probe_no).SWR_peaktimes = [];
-            ripples(probe_no).SWR_zscore = [];
-            ripples(probe_no).SWR_traveling = [];
-
-            ripples(probe_no).probe_hemisphere = [];
-            ripples(probe_no).shank_id = [];
-
-            if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
-                probe_id = [];
-
-                if length(LFP)==1
-                    lfp.data= [LFP(probe_no).best_HPC'];
-                    probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
-                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
-                else
-                    lfp.data= [LFP(1).best_HPC' LFP(2).best_HPC'];
-                    probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
-                    ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
-                end
-
-                ripples(probe_no).probe_hemisphere = probe_hemisphere;
-
-                filter_type  = 'bandpass';
-                passband = [125 300];
-                filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
-                norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-                b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-
-                signal = [];
-                for nShank = 1:length(probe_hemisphere)
-                    signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
-                end
-                zscored_LFP = zscore(abs(hilbert(signal)));
-
-                % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
-
-                for nevent = 1:length(ripples(probe_no).onset)
-
-                    tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
-                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
-                    tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
-
-
-                    for nShank=1:length(probe_hemisphere)
-
-                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
-
-                        if ~isempty(peak_id)
-                            [~,temp]=min(abs(ripples(probe_no).onset(nevent)-tvec(tidx(peak_id))));
-                            sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
-                            sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
-                        else
-                            sharp_wave_peaks_shank(nShank,nevent) = nan;
-                            sharp_wave_zscore_shank(nShank,nevent) = nan;
-                        end
-                    end
-
-                    % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
-                    %
-                    % diff(DOWN_peaks_shank(:,425))
-
-                    % Putatively
-                    for h = unique(probe_hemisphere)
-                        sharp_wave_peaks_shank_temp = sharp_wave_peaks_shank(probe_hemisphere==h,nevent);
-
-                        if sum(~isnan(sharp_wave_peaks_shank_temp))==4 % if delta peaks on four shanks
-                            peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
-                        elseif sum(~isnan(sharp_wave_peaks_shank_temp))==3 % if delta peaks on three shanks
-                            skipped_shank= diff(LFP(probe_no).best_HPC_shank_id(~isnan(sharp_wave_peaks_shank_temp)))>1;
-                            if sum(skipped_shank)>0 % if delta peak skipped one shank
-
-                                if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
-                                    peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(1)-sharp_wave_peaks_shank_temp(2);
-                                elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
-                                    peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(2)-sharp_wave_peaks_shank_temp(3);
-                                end
-                            else
-                                peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
-                            end
-                        elseif sum(~isnan(sharp_wave_peaks_shank_temp))==2 % if delta peaks on two shanks
-                            peaks_latency(h,nevent) = diff(sharp_wave_peaks_shank_temp(1:2))/abs(LFP(h).best_HPC_shank_id(2)-LFP(h).best_HPC_shank_id(1));
-                        else % only one peak. Can't calculate latency
-                            peaks_latency(h,nevent) =nan;
-                        end
-
-                        % From Patel et al. (2013) https://pmc.ncbi.nlm.nih.gov/articles/PMC3807028/#sec2
-                        % ripple propogation speed roughly 0.35 m/s or 0.7
-                        % ms per 250 micron
-                        % putatively set the minimum delay threshold to be 2
-                        % miliseconds.
-                        if h==1
-
-                            % if direction of mean latency is consistent with the latency more than half
-                            % of the shank latency
-                            % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
-                            % (if three shanks, then still 2 jumps needed)
-                            if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
-                                wave_traveling(h,nevent) = 1; % anterior to posterior
-                            elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
-                                wave_traveling(h,nevent) = -1; % posterior to anterior
-                            else
-                                wave_traveling(h,nevent) = 0; % noisy or standing wave?
-                            end
-                            % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
-                        elseif h==2
-                            if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
-                                wave_traveling(h,nevent) = -1; % posterior to anterior
-                            elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
-                                wave_traveling(h,nevent) = 1; % anterior to posterior
-                            else
-                                wave_traveling(h,nevent) = 0; % noisy or standing wave?
-                            end
-                        end
-                    end
-                    % nexttile
-                    % hold on;xline(tvec(idx));
-                    % plot(tvec(tidx),zscored_LFP(tidx,:));
-                    % % hold on;xline(median(tvec(tidx(1):tidx(end))))
-                    % xline(sharp_wave_peaks_shank(:,nevent)')
-                end
-
-                ripples(probe_no).SWR_peaktimes = sharp_wave_peaks_shank;
-                ripples(probe_no).SWR_latency = peaks_latency;
-                ripples(probe_no).SWR_zscore = sharp_wave_zscore_shank;
-                ripples(probe_no).SWR_traveling = wave_traveling;
-
-
-                sharp_wave_zscore_shank = [];
-                sharp_wave_peaks_shank = [];
-
-
-                deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
-
-                zscored_LFP = [];
-                zscored_LFP = zscore(deltaLFP.amp);
-
-                for nevent = 1:length(ripples(probe_no).onset)
-                    %                 ripples(probe_no).peaktimes(nevent)
-
-                    tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
-                    % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
-                    tidx=tidx(1):tidx(end);
-                    [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
-
-
-                    for nShank=1:length(probe_hemisphere)
-
-                        [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
-
-                        if ~isempty(peak_id)
-                            [~,temp]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec(tidx(peak_id))));
-                            sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
-                            sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
-                        else
-                            sharp_wave_peaks_shank(nShank,nevent) = nan;
-                            sharp_wave_zscore_shank(nShank,nevent) = nan;
-                        end
-                    end
-                end
-
-                ripples(probe_no).sharp_wave_peaktimes = sharp_wave_peaks_shank;
-                ripples(probe_no).sharp_wave_zscore = sharp_wave_zscore_shank;
-            end
-        end
-
-        disp('Sharp wave ripple traveling direction analysis started')
-        toc
-
-
-        zscored_LFP = [];
-        phase_LFP = [];
-        amplitude_LFP = [];
-
-        % histogram(slow_waves(1).DOWN_peaks_latency,100,'Normalization','cdf');
-        % hold on; xline(prctile(slow_waves(1).DOWN_peaks_latency,50));
-        % histogram(slow_waves(2).DOWN_peaks_latency,100,'Normalization','cdf');
-        % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
-        %
-        % histogram(slow_waves(1).DOWN_travling,3,'Normalization','probability');hold on;
-        % histogram(slow_waves(2).DOWN_travling,3,'Normalization','probability');
-
-        % histogram(slow_waves(1).DOWN_peaks_latency,100,'Normalization','probability');
-        % hold on; xline(prctile(slow_waves(1).DOWN_peaks_latency,50));
-        % histogram(slow_waves(2).DOWN_peaks_latency,100,'Normalization','probability');
-        % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
-        if contains(stimulus_name{n},'Masa2tracks')
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples');
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
-            % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+        %         for nprobe = 1:length(session_info(n).probe)
+        nprobe = 1;
+        probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+        if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+            time_idx = 1:length(LFP(1).best_HPC);
+        elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+            time_idx = 1:length(LFP(2).best_HPC);
         else
-            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
+            time_idx = 1:length(LFP(1).best_HPC) ;
+        end
+
+        lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+        lfp.timestamps = LFP(probe_no).tvec(time_idx);
+        tvec = LFP(probe_no).tvec(time_idx);
+
+        lfp_V1 = lfp;
+        lfp_HPC = lfp;
+        lfp_V1.data=[];
+        lfp_HPC.data=[];
+
+        if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+            probe_id = [];
+
+            if length(LFP)==1
+                lfp_HPC.data= [LFP(probe_no).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(probe_no).best_V1(:,time_idx)'];
+            else
+                lfp_HPC.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
+            end
+        end
+        %         end
+
+
+        %%% get 
+        HPC_ref_shank=[];
+        ref_shank = [];
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+                &slow_waves(probe_no).probe_hemisphere == probe_no);
+            cortex_ref_shank(probe_no) = ref_shank;
+
+            shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+            HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
+        end
+
+      
+        disp('Peri event TF and PPC analysis')
+
+        % Parameters
+        win_full = [-2.5 2.5];
+        win_save = [-2 2];
+        baseline_win = [-2 -1.5];
+        downsample_factor = 25;
+        fs = lfp_V1.samplingRate/downsample_factor; % 20ms bins
+
+        win_full_samp = round(win_full * fs);
+        win_save_samp = round(win_save * fs);
+        baseline_samp = round((baseline_win - win_full(1)) * fs);
+        timebin = abs(diff(win_save_samp)) + 1;
+        tvec = win_save(1):1/fs:win_save(end);
+
+        freq_band = [0.5 300];
+        freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
+        nCycles = round(max(5, freqs * 0.1));
+        nCycles(nCycles > 20) = 20;
+%         nCycles = round(min(20, freqs * 0.1));
+
+        event_types = {'ripples','spindles','UP_ints','DOWN_ints'};
+
+        % Output structures
+        TF_amp_V1 = struct(); TF_phase_V1 = struct();
+        TF_amp_HPC = struct(); TF_phase_HPC = struct();
+        PPC_V1_HPC = struct(); PPC_V1 = struct(); PPC_HPC = struct();
+
+        for nprobe = 1:length(session_info(n).probe)
+            tic
+            disp(['Processing probe ' num2str(nprobe)]);
+
+            % Interpolate event onsets to sample indices
+            ripple_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), ripples(nprobe).onset, 'nearest', 'extrap'));
+            spindle_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), spindles(nprobe).onset, 'nearest', 'extrap'));
+            up_sample_idx      = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).UP_ints(:,1), 'nearest', 'extrap'));
+            down_sample_idx    = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).DOWN_ints(:,1), 'nearest', 'extrap'));
+
+            for eidx = 1:length(event_types)
+                event_name = event_types{eidx};
+                switch event_name
+                    case 'ripples'
+                        onsets = ripple_sample_idx;
+                    case 'spindles'
+                        onsets = spindle_sample_idx;
+                    case 'UP_ints'
+                        onsets = up_sample_idx;
+                    case 'DOWN_ints'
+                        onsets = down_sample_idx;
+                end
+
+                nevents = length(onsets);
+
+                % Preallocate outputs
+                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(freqs), timebin, nevents));
+                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(freqs), timebin, nevents));
+                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(freqs), timebin, nevents));
+                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(freqs), timebin, nevents));
+
+%                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
+%                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
+%                 PPC_HPC(nprobe).(event_name)     = single(nan(length(freqs),timebin, nevents));
+
+
+                for nevent = 1:nevents
+                    t0 = onsets(nevent);
+                    idx_full = t0 + downsample_factor*win_full_samp(1):t0 + win_full_samp(2)*downsample_factor;
+                    if idx_full(1) < 1 || idx_full(end) > size(lfp_V1.data,1), continue; end
+
+                    for vhemi = 1:2
+                        dat = lfp_V1.data(idx_full, cortex_ref_shank(vhemi));
+                        wavespec = bz_WaveSpec(dat, 'frange', freq_band, ...
+                            'ncyc', nCycles, 'nfreqs', 100,'samplingRate',fs,'downsampleout', downsample_factor);
+                        amp_all = abs(wavespec.data);
+                        phase_all = angle(wavespec.data);
+
+                        base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
+                        amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
+
+                        TF_amp_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(amp_norm(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                        TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                    end
+
+                    for hhemi = 1:2
+                        dat = lfp_HPC.data(idx_full, HPC_ref_shank(hhemi));
+                        wavespec = bz_WaveSpec(dat, 'frange', freq_band, ...
+                            'ncyc', nCycles, 'nfreqs', 100,'samplingRate',fs,'downsampleout', downsample_factor);
+                        amp_all = abs(wavespec.data);
+                        phase_all = angle(wavespec.data);
+
+                        base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
+                        amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
+
+                        TF_amp_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(amp_norm(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                        TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                    end
+
+%                     % Compute PPC across time and frequency
+%                     for vhemi = 1:2
+%                         for hhemi = 1:2
+%                             v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
+%                             hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
+% 
+%                             % Compute phase difference: still [freq x time]
+%                             phase_diff = exp(1i * (v1p - hpcp));
+% 
+%                             % Assign directly
+%                             PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
+%                         end
+%                     end
+% 
+%                     % Cross-hemispheric PPC
+%                     v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
+%                     v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
+%                     hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
+%                     hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
+% 
+%                     PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
+%                     PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
+                end
+            end
+            toc
+        end
+
+        if contains(stimulus_name{n},'Masa2tracks')
+         
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_phase%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_phase_V1','TF_phase_HPC','-v7.3');
+
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+        else
+
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude.mat'),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
+            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+
+ 
+        end
+    end
+
+end
+
+
+
+
+
+% Plot
+figure;
+timevec = linspace(-2, 2, size(amp_norm', 2));  % time axis
+imagesc(timevec, freqs, amp_norm'); axis xy;
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title(sprintf('TF amplitude (dB), V1 hemi %d, event %d', vhemi, nevent));
+colorbar;
+clim([0 5]);  % Optional: adjust dynamic range for better contrast
+set(gca, 'YScale', 'log');  % Optional: log scale on y-axis if desired
+
+% Plot
+figure;
+timevec = linspace(-2, 2, size(phase_all', 2));  % time axis
+imagesc(timevec, freqs, phase_all'); axis xy;
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title(sprintf('TF phase, V1 hemi %d, event %d', vhemi, nevent));
+colorbar;
+clim([-pi pi]);  % Optional: adjust dynamic range for better contrast
+yticks = [1 2 4 8 16 32 64 128 256];
+ytick_indices = arrayfun(@(f) find(freqs >= f, 1, 'first'), yticks);
+set(gca, 'YTick', freqs(ytick_indices));
+
+
+
+
+
+
+
+% Compute PPC across time and frequency
+tic
+for nevent = 1:size(TF_phase_V1(nprobe).(event_name),4)
+    for vhemi = 1:2
+        for hhemi = 1:2
+            v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
+            hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
+
+            % Compute phase difference: still [freq x time]
+            phase_diff = exp(1i * (v1p - hpcp));
+
+            % Assign directly
+            PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
         end
     end
 end
+toc
+
+% Cross-hemispheric PPC
+v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
+v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
+hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
+hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
+
+PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
+PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
+
+% 
+% %% LFP PSD slope and cortical wave direction
+% % pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% % pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+% 
+% addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+% addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+% pyenv("ExecutionMode","OutOfProcess")
+% 
+% clear all
+% SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+% option = 'bilateral';
+% experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% % Famililar
+% % experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+% Stimulus_type = 'Sleep';
+% 
+% for nsession =1:length(experiment_info)
+%     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+%     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+%     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+%     % find right date number based on all experiment dates of the subject
+%     iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+%     if isempty(stimulus_name)
+%         continue
+%     end
+%     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+% 
+%     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+%         options = session_info(n).probe(1);
+% 
+%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+%         if isempty(DIR)
+%             continue
+%         end
+% 
+%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+%         DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+% 
+%         if ~isempty(DIR)
+%             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+%             session_clusters_RUN=session_clusters;
+%             clear session_clusters
+%         end
+% 
+%         if ~isempty(DIR1)
+%             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+%             session_clusters_RUN=session_clusters;
+%             clear session_clusters
+%         end
+%         tic
+%         if contains(stimulus_name{n},'Masa2tracks')
+%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+% 
+%             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+%             clusters=clusters_ks4;
+%         elseif contains(stimulus_name{n},'Sleep')
+%             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+%             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+%             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+% 
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
+% 
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+% 
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+%             % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
+%             %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+%             clusters=clusters_ks4;
+%         else
+%             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+%             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+% 
+%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+%             clusters=clusters_ks4;
+%         end
+%         toc
+% 
+%         params = create_cluster_selection_params('sorting_option','masa');
+% 
+%         %%% Test slow wave detection
+%         tvec = LFP(1).tvec;
+%         clear slow_waves_markov
+%         for nprobe = 1:length(session_info(n).probe)
+%             probe_no = session_info(n).probe(nprobe).probe_id+1;
+%             options = session_info(n).probe(nprobe);
+% 
+%             %%%%% V1 MUA spikes
+%             metric_param =[]; % get all V1 spikes from left or right hemisphere
+%             if options.probe_hemisphere==1
+%                 metric_param.region = @(x) contains(x,'HPC_L');
+%                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
+% 
+%                 V1_clusters=[];
+%                 V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_L");
+%                 V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_L"});
+%                 V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_L"});
+% 
+%                 if length(V1_clusters.cluster_id)<150
+%                     V1_clusters=[];
+%                     metric_param.region = @(x) contains(x,'V1_L');
+%                     %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+%                     V1_clusters = select_clusters(clusters(nprobe),metric_param);
+%                 end
+%             elseif options.probe_hemisphere==2
+%                 %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+%                 metric_param.region = @(x) contains(x,'HPC_R');
+%                 HPC_clusters = select_clusters(clusters(nprobe),metric_param);
+% 
+%                 V1_clusters=[];
+%                 V1_clusters.cluster_id = session_clusters.cluster_id(session_clusters.region=="V1_R");
+%                 V1_clusters.spike_times = vertcat(session_clusters.spike_times{session_clusters.region=="V1_R"});
+%                 V1_clusters.spike_id = vertcat(session_clusters.spike_id{session_clusters.region=="V1_R"});
+% 
+%                 if length(V1_clusters.cluster_id)<150
+%                     V1_clusters=[];
+%                     metric_param.region = @(x) contains(x,'V1_R');
+%                     %                 metric_param.amplitude_median = @(x) abs(x)>50; %IBL 50 but bombcell 20
+%                     V1_clusters = select_clusters(clusters(nprobe),metric_param);
+%                 end
+%             end
+% 
+% 
+%             best_channel = find(LFP(probe_no).best_V1_channel==slow_waves(nprobe).best_channel);
+% 
+%             if isempty(best_channel)
+%                 [~,best_channel] = max(LFP(nprobe).best_V1_high_freq_power(:,7));
+%                 slow_waves_markov(probe_no) = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+%                 %                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1_high_freq(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+%                 temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+%                 temp.best_channel = LFP(nprobe).best_V1_high_freq_channel(best_channel);
+%                 slow_waves_markov(probe_no) = temp;
+%             else
+%                 %                 temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS,'sensitivity',0.5);
+%                 temp = detect_UP_DOWN_markov(tvec,slow_waves(probe_no),[V1_clusters.spike_times V1_clusters.spike_id],behavioural_state_merged);
+%                 temp.best_channel = slow_waves(probe_no).best_channel;
+%                 slow_waves_markov(probe_no) = temp;
+%             end
+%         end
+% 
+%         % PSD slope quantification using fooof ()
+%         tvec = LFP(1).tvec;
+%         SR = round(1/mean(diff(tvec)));
+%         nfft_seconds= 2;
+%         nfft = 2^(nextpow2(SR*nfft_seconds));
+%         win  = hanning(nfft);
+% 
+%         clipDur = 5; % seconds
+%         timebin_edges = tvec(1):clipDur:tvec(end); % 5 seconds timebin edges for PSD slope
+%         nClipSamps = round(SR*clipDur);
+% 
+%         PSD_slope=[];
+% 
+%         disp('PSD slope for slow waves started')
+%         tic
+%         for nprobe = 1:length(session_info(n).probe)
+%             probe_no = session_info(n).probe(nprobe).probe_id+1;
+% 
+%             slow_waves_markov(probe_no).power = [];
+%             slow_waves_markov(probe_no).frequency = [];
+%             slow_waves_markov(probe_no).PSD_slope = [];
+%             slow_waves_markov(probe_no).timebin_edges = [];
+%             slow_waves_markov(probe_no).DOWN_PSD_slope = [];
+%             slow_waves_markov(probe_no).UP_PSD_slope = [];
+% 
+%             if ~isempty(behavioural_state_merged.SWS)
+%                 best_channel = find(LFP(probe_no).best_V1_channel==slow_waves_markov(probe_no).best_channel);
+%                 V1_LFP = LFP(probe_no).best_V1(best_channel,:);
+% 
+%             else
+%                 continue
+%             end
+% 
+%             if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
+%                 continue
+%             end
+% 
+%             if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
+%                 continue
+%             end
+% 
+%             % slow_waves(probe_no).power=[];
+%             % slow_waves(probe_no).powerdB=[];
+%             nClips = floor(length(V1_LFP)/nClipSamps);
+%             samples_to_pass = 0;
+% 
+%             for clip = 1:nClips
+%                 tidx = [1+samples_to_pass:samples_to_pass+nClipSamps]; % in samples
+%                 % timeWindow = [1+start_samp+samples_to_pass:start_samp+samples_to_pass+nClipSamps]; % in seconds
+%                 % timebin(clip) = round((tvec(tidx(1))+ tvec(tidx(end)))/2);
+% 
+% 
+%                 [pxx,fxx] = pwelch(V1_LFP(tidx),win,[],nfft,SR);
+% 
+%                 slow_waves_markov(probe_no).power(clip,:) = pxx;
+%                 % slow_waves(probe_no).powerdB(clip,:) = 10*log10(pxx);
+%                 fxx = fxx';
+%                 % FOOOF settings
+%                 settings = struct();
+%                 f_range = [1, 10];
+% 
+%                 % Run FOOOF to fit the model and quantify the slope of power spectra
+%                 fooof_results = fooof(fxx, pxx, f_range, settings);
+%                 % fooof_plot(fooof_results)
+%                 PSD_slope(clip) = fooof_results.aperiodic_params(2); % slope of aperiodic component
+% 
+%                 samples_to_pass = samples_to_pass + nClipSamps;
+%             end
+% 
+%             slow_waves_markov(probe_no).frequency = fxx;
+%             slow_waves_markov(probe_no).PSD_slope = PSD_slope;
+%             slow_waves_markov(probe_no).timebin_edges = timebin_edges;
+% 
+%             delta_power=[];
+%             delta_power = zscore(mean(10*log10(slow_waves_markov(probe_no).power(:,slow_waves_markov(probe_no).frequency>0.5&slow_waves_markov(probe_no).frequency<4)),2));
+%             %             delta_power = mean(10*log10(slow_waves(probe_no).power(:,slow_waves(probe_no).frequency>0.5&slow_waves(probe_no).frequency<4)),2);
+% 
+%             %             timebin_centre = timebin_edges(1)+mean(diff(timebin_edges))/2:mean(diff(timebin_edges)):timebin_edges(end)-mean(diff(timebin_edges))/2;
+%             %             NREM_delta_power = delta_power(find(ismember(timebin_centre,Restrict(timebin_centre,behavioural_state_merged.SWS))));
+%             %             delta_power = (delta_power-mean(NREM_delta_power))/std(NREM_delta_power);
+% 
+%             event_midpoint = mean(slow_waves_markov(probe_no).UP_ints,2);
+%             % Find the bin indices for each event time
+%             [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
+%             slow_waves_markov(probe_no).UP_PSD_slope= PSD_slope(bin_indices);
+%             slow_waves_markov(probe_no).UP_delta_power= delta_power(bin_indices);
+% 
+% 
+%             event_midpoint = mean(slow_waves_markov(probe_no).DOWN_ints,2);
+%             % Find the bin indices for each event time
+%             [~, ~, bin_indices] = histcounts(event_midpoint, timebin_edges);
+%             slow_waves_markov(probe_no).DOWN_PSD_slope= PSD_slope(bin_indices);
+%             slow_waves_markov(probe_no).DOWN_delta_power= delta_power(bin_indices);
+%         end
+%         toc
+%         disp('PSD slope for slow waves finished')
+% 
+%         disp('cortical wave traveling direction analysis started')
+%         tic
+%         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+%         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
+%         % https://www.nature.com/articles/s41467-019-10327-5 levenstein et
+%         % al used 0.5 to 8 Hz for slow wave UP DOWN detection
+%         filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+%         filterparms.gammafilter = [100 400];
+%         filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+%         filterparms.gammanormwin = 20; %window for gamma normalization (s)
+% 
+%         for nprobe = 1:length(session_info(n).probe)
+%             probe_no = session_info(n).probe(nprobe).probe_id+1;
+%             lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+%             lfp.timestamps = LFP(probe_no).tvec;
+%             lfp.data=[];
+%             DOWN_peaks_shank = [];
+%             peaks_latency = [];
+%             DOWN_traveling = [];
+%             DOWN_peaks_zscore= [];
+% 
+%             slow_waves_markov(probe_no).DOWN_peaks_zscore = [];
+%             slow_waves_markov(probe_no).DOWN_peaktimes = [];
+%             slow_waves_markov(probe_no).DOWN_peaks_latency = [];
+%             slow_waves_markov(probe_no).DOWN_traveling = [];
+%             slow_waves_markov(probe_no).probe_hemisphere = [];
+%             slow_waves_markov(probe_no).shank_id = [];
+% 
+%             if isempty(slow_waves_markov(probe_no).UP_DOWN_index)
+%                 continue
+%             end
+% 
+%             if size(slow_waves_markov(probe_no).UP_DOWN_index,1) < 10
+%                 continue
+%             end
+% 
+%             if isfield(LFP(probe_no),'average_V1_xcoord') & ~isempty(behavioural_state_merged.SWS)% if exist best V1 channel for sleep
+%                 probe_id = [];
+% 
+%                 if length(LFP)==1
+%                     lfp.data= [LFP(probe_no).average_V1'];
+%                     probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).average_V1_shank_id));
+%                     slow_waves_markov(probe_no).shank_id = [LFP(probe_no).average_V1_shank_id];
+%                 else
+%                     lfp.data= [LFP(1).average_V1' LFP(2).average_V1'];
+%                     probe_hemisphere = [ones(1,length(LFP(1).average_V1_shank_id)) 2*ones(1,length(LFP(2).average_V1_shank_id))];
+%                     slow_waves_markov(probe_no).shank_id = [LFP(1).average_V1_shank_id LFP(2).average_V1_shank_id];
+%                 end
+% 
+%                 slow_waves_markov(probe_no).probe_hemisphere = probe_hemisphere;
+% 
+% 
+%                 deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+% 
+%                 zscored_LFP = [];
+%                 zscored_LFP = zscore(deltaLFP.data);
+%                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
+% 
+%                 for nevent = 1:size(slow_waves_markov(probe_no).DOWN_ints,1)
+%                     % for nevent = 600:640
+%                     midpoint = mean(slow_waves_markov(probe_no).DOWN_ints(nevent,:));
+%                     tidx = FindInInterval(tvec,[midpoint-0.1 midpoint+0.1]);
+%                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+%                     tidx=tidx(1):tidx(end);
+%                     [~,idx]=min(abs(midpoint-tvec));
+% 
+%                     for nShank=1:length(probe_hemisphere) % across shanks from both probes if using two probes
+% 
+%                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+% 
+%                         [~,temp]=min(abs(midpoint-tvec(tidx(peak_id))));
+%                         if ~isempty(temp)
+%                             DOWN_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+%                             DOWN_peaks_zscore(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
+%                         else
+%                             DOWN_peaks_shank(nShank,nevent) = nan;
+%                             DOWN_peaks_zscore(nShank,nevent) = nan;
+%                         end
+%                     end
+% 
+%                     % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
+%                     %
+%                     % diff(DOWN_peaks_shank(:,425))
+% 
+%                     % Putative calculation of average latency across shanks
+%                     % for each hemisphere
+%                     for h = unique(probe_hemisphere)
+%                         DOWN_peaks_shank_temp = DOWN_peaks_shank(probe_hemisphere==h,nevent);
+% 
+%                         if sum(~isnan(DOWN_peaks_shank_temp))==4 % if delta peaks on four shanks
+%                             peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
+%                         elseif sum(~isnan(DOWN_peaks_shank_temp))==3 % if delta peaks on three shanks
+%                             skipped_shank= diff(LFP(h).average_V1_shank_id(~isnan(DOWN_peaks_shank_temp)))>1;
+%                             if sum(skipped_shank)>0 % if delta peak skipped one shank
+% 
+%                                 if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
+%                                     peaks_latency(h,nevent) = DOWN_peaks_shank_temp(1)-DOWN_peaks_shank_temp(2);
+%                                 elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
+%                                     peaks_latency(h,nevent) = DOWN_peaks_shank_temp(2)-DOWN_peaks_shank_temp(3);
+%                                 end
+%                             else
+%                                 peaks_latency(h,nevent) = mean(diff(DOWN_peaks_shank_temp),'omitnan');
+%                             end
+%                         elseif sum(~isnan(DOWN_peaks_shank_temp))==2 % if delta peaks on two shanks (latency divide by number of shanks skipped to caluclate mean latency per 250 micron)
+%                             peaks_latency(h,nevent) = diff(DOWN_peaks_shank_temp(1:2))/abs(LFP(h).average_V1_shank_id(2)-LFP(h).average_V1_shank_id(1));
+%                         else % only one peak. Can't calculate latency
+%                             peaks_latency(h,nevent) =nan;
+%                         end
+% 
+%                         % From https://www.jneurosci.org/content/34/26/8875#sec-2
+%                         % speed is ~40 milimeter per seconds
+%                         % 6.25 miliseconds to travel 250 micrometer (rough shank spacing)
+%                         % putatively set the minimum delay threshold to be 3
+%                         % miliseconds.
+%                         if h==1
+% 
+%                             % if direction of mean latency is consistent with the latency more than half
+%                             % of the shank latency
+%                             % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
+%                             % (if three shanks, then still 2 jumps needed)
+%                             if peaks_latency(nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
+%                                 DOWN_traveling(h,nevent) = 1; % anterior to posterior
+%                             elseif peaks_latency(nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
+%                                 DOWN_traveling(h,nevent) = -1; % posterior to anterior
+%                             else
+%                                 DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
+%                             end
+%                             % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+%                         elseif h==2
+%                             if peaks_latency(h,nevent)>0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)>0)>=length(LFP(h).average_V1_shank_id)/2
+%                                 DOWN_traveling(h,nevent) = -1; % posterior to anterior
+%                             elseif peaks_latency(h,nevent)<-0.003 & sum(DOWN_peaks_shank_temp(2:end)-DOWN_peaks_shank_temp(1)<0)>=length(LFP(h).average_V1_shank_id)/2
+%                                 DOWN_traveling(h,nevent) = 1; % anterior to posterior
+%                             else
+%                                 DOWN_traveling(h,nevent) = 0; % noisy or standing wave?
+%                             end
+%                         end
+%                     end
+%                     % nexttile
+%                     % hold on;xline(tvec(idx));
+%                     % plot(tvec(tidx),zscored_LFP(tidx,:));
+%                     % % hold on;xline(median(tvec(tidx(1):tidx(end))))
+%                     % xline(DOWN_peaks_shank(:,nevent)')
+%                 end
+% 
+% 
+%             end
+% 
+% 
+%             slow_waves_markov(probe_no).DOWN_peaktimes = DOWN_peaks_shank;
+%             slow_waves_markov(probe_no).DOWN_peaks_zscore = DOWN_peaks_zscore;
+%             slow_waves_markov(probe_no).DOWN_peaks_latency = peaks_latency;
+%             slow_waves_markov(probe_no).DOWN_traveling = DOWN_traveling;
+%         end
+%         disp('cortical wave traveling direction analysis finished')
+%         toc
+%         %
+% 
+%         disp('Sharp wave ripple traveling direction analysis started')
+%         tic
+%         %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+%         % -1 is posterior -> anterior, 0 is no delay or noisy delay and 1 is anterior -> posterior
+%         filterparms.deltafilter = [0.5 8];%heuristically defined.  room for improvement here.
+% 
+%         for nprobe = 1:length(session_info(n).probe)
+%             probe_no = session_info(n).probe(nprobe).probe_id+1;
+%             lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+%             lfp.timestamps = LFP(probe_no).tvec;
+%             lfp.data=[];
+%             % DOWN_peaks_shank = [];
+%             sharp_wave_peaks_shank=[];
+%             peaks_latency = [];
+%             wave_traveling = [];
+%             sharp_wave_zscore_shank=[];
+% 
+% 
+%             ripples(probe_no).sharp_wave_peaktimes = [];
+%             ripples(probe_no).sharp_wave_zscore = [];
+% 
+%             ripples(probe_no).SWR_peaktimes = [];
+%             ripples(probe_no).SWR_zscore = [];
+%             ripples(probe_no).SWR_traveling = [];
+% 
+%             ripples(probe_no).probe_hemisphere = [];
+%             ripples(probe_no).shank_id = [];
+% 
+%             if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+%                 probe_id = [];
+% 
+%                 if length(LFP)==1
+%                     lfp.data= [LFP(probe_no).best_HPC'];
+%                     probe_hemisphere = probe_no*ones(1,length(LFP(probe_no).best_HPC_shank_id));
+%                     ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+%                 else
+%                     lfp.data= [LFP(1).best_HPC' LFP(2).best_HPC'];
+%                     probe_hemisphere = [ones(1,length(LFP(1).best_HPC_shank_id)) 2*ones(1,length(LFP(2).best_HPC_shank_id))];
+%                     ripples(probe_no).shank_id = [LFP(1).best_HPC_shank_id LFP(2).best_HPC_shank_id];
+%                 end
+% 
+%                 ripples(probe_no).probe_hemisphere = probe_hemisphere;
+% 
+%                 filter_type  = 'bandpass';
+%                 passband = [125 300];
+%                 filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+%                 norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+%                 b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+% 
+%                 signal = [];
+%                 for nShank = 1:length(probe_hemisphere)
+%                     signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+%                 end
+%                 zscored_LFP = zscore(abs(hilbert(signal)));
+% 
+%                 % [ordered_xcoord,~]=sort(LFP(probe_no).best_V1_xcoord);
+% 
+%                 for nevent = 1:length(ripples(probe_no).onset)
+% 
+%                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
+%                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+%                     tidx=tidx(1):tidx(end);
+%                     [~,idx]=min(abs(ripples(probe_no).onset(nevent)-tvec));
+% 
+% 
+%                     for nShank=1:length(probe_hemisphere)
+% 
+%                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+% 
+%                         if ~isempty(peak_id)
+%                             [~,temp]=min(abs(ripples(probe_no).onset(nevent)-tvec(tidx(peak_id))));
+%                             sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+%                             sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
+%                         else
+%                             sharp_wave_peaks_shank(nShank,nevent) = nan;
+%                             sharp_wave_zscore_shank(nShank,nevent) = nan;
+%                         end
+%                     end
+% 
+%                     % (diff(ordered_xcoord)/1000000)'./diff(DOWN_peaks_shank(:,nevent))
+%                     %
+%                     % diff(DOWN_peaks_shank(:,425))
+% 
+%                     % Putatively
+%                     for h = unique(probe_hemisphere)
+%                         sharp_wave_peaks_shank_temp = sharp_wave_peaks_shank(probe_hemisphere==h,nevent);
+% 
+%                         if sum(~isnan(sharp_wave_peaks_shank_temp))==4 % if delta peaks on four shanks
+%                             peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
+%                         elseif sum(~isnan(sharp_wave_peaks_shank_temp))==3 % if delta peaks on three shanks
+%                             skipped_shank= diff(LFP(probe_no).best_HPC_shank_id(~isnan(sharp_wave_peaks_shank_temp)))>1;
+%                             if sum(skipped_shank)>0 % if delta peak skipped one shank
+% 
+%                                 if skipped_shank(1)==1 % if shanks [1 2 4] then delay using 1 -> 2
+%                                     peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(1)-sharp_wave_peaks_shank_temp(2);
+%                                 elseif skipped_shank(2) == 1 % if shanks [1 3 4] then delay using 3 -> 4
+%                                     peaks_latency(h,nevent) = sharp_wave_peaks_shank_temp(2)-sharp_wave_peaks_shank_temp(3);
+%                                 end
+%                             else
+%                                 peaks_latency(h,nevent) = mean(diff(sharp_wave_peaks_shank_temp),'omitnan');
+%                             end
+%                         elseif sum(~isnan(sharp_wave_peaks_shank_temp))==2 % if delta peaks on two shanks
+%                             peaks_latency(h,nevent) = diff(sharp_wave_peaks_shank_temp(1:2))/abs(LFP(h).best_HPC_shank_id(2)-LFP(h).best_HPC_shank_id(1));
+%                         else % only one peak. Can't calculate latency
+%                             peaks_latency(h,nevent) =nan;
+%                         end
+% 
+%                         % From Patel et al. (2013) https://pmc.ncbi.nlm.nih.gov/articles/PMC3807028/#sec2
+%                         % ripple propogation speed roughly 0.35 m/s or 0.7
+%                         % ms per 250 micron
+%                         % putatively set the minimum delay threshold to be 2
+%                         % miliseconds.
+%                         if h==1
+% 
+%                             % if direction of mean latency is consistent with the latency more than half
+%                             % of the shank latency
+%                             % (i.e. if four shanks, at least 2 jumps between three shanks should be in the same direction as the mean latency)
+%                             % (if three shanks, then still 2 jumps needed)
+%                             if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
+%                                 wave_traveling(h,nevent) = 1; % anterior to posterior
+%                             elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
+%                                 wave_traveling(h,nevent) = -1; % posterior to anterior
+%                             else
+%                                 wave_traveling(h,nevent) = 0; % noisy or standing wave?
+%                             end
+%                             % DOWN_peaks_shank(:,nevent) - DOWN_peaks_shank(1,nevent)
+%                         elseif h==2
+%                             if peaks_latency(h,nevent)>0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)>0)>=length(LFP(h).best_HPC_shank_id)/2
+%                                 wave_traveling(h,nevent) = -1; % posterior to anterior
+%                             elseif peaks_latency(h,nevent)<-0.001 & sum(sharp_wave_peaks_shank_temp(2:end)-sharp_wave_peaks_shank_temp(1)<0)>=length(LFP(h).best_HPC_shank_id)/2
+%                                 wave_traveling(h,nevent) = 1; % anterior to posterior
+%                             else
+%                                 wave_traveling(h,nevent) = 0; % noisy or standing wave?
+%                             end
+%                         end
+%                     end
+%                     % nexttile
+%                     % hold on;xline(tvec(idx));
+%                     % plot(tvec(tidx),zscored_LFP(tidx,:));
+%                     % % hold on;xline(median(tvec(tidx(1):tidx(end))))
+%                     % xline(sharp_wave_peaks_shank(:,nevent)')
+%                 end
+% 
+%                 ripples(probe_no).SWR_peaktimes = sharp_wave_peaks_shank;
+%                 ripples(probe_no).SWR_latency = peaks_latency;
+%                 ripples(probe_no).SWR_zscore = sharp_wave_zscore_shank;
+%                 ripples(probe_no).SWR_traveling = wave_traveling;
+% 
+% 
+%                 sharp_wave_zscore_shank = [];
+%                 sharp_wave_peaks_shank = [];
+% 
+% 
+%                 deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+% 
+%                 zscored_LFP = [];
+%                 zscored_LFP = zscore(deltaLFP.amp);
+% 
+%                 for nevent = 1:length(ripples(probe_no).onset)
+%                     %                 ripples(probe_no).peaktimes(nevent)
+% 
+%                     tidx = FindInInterval(tvec,[ripples(probe_no).onset(nevent)-0.05 ripples(probe_no).offset(nevent)]);
+%                     % tidx = FindInInterval(tvec,[slow_waves(probe_no).ints.UP(nevent,1)-0.3 slow_waves(probe_no).ints.UP(nevent,1)+0.3]);
+%                     tidx=tidx(1):tidx(end);
+%                     [~,idx]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec));
+% 
+% 
+%                     for nShank=1:length(probe_hemisphere)
+% 
+%                         [~,peak_id] = findpeaks(zscored_LFP(tidx(1):tidx(end),nShank));
+% 
+%                         if ~isempty(peak_id)
+%                             [~,temp]=min(abs(ripples(probe_no).peaktimes(nevent)-tvec(tidx(peak_id))));
+%                             sharp_wave_peaks_shank(nShank,nevent) = tvec(tidx(peak_id(temp)));
+%                             sharp_wave_zscore_shank(nShank,nevent) = zscored_LFP(tidx(peak_id(temp)),nShank);
+%                         else
+%                             sharp_wave_peaks_shank(nShank,nevent) = nan;
+%                             sharp_wave_zscore_shank(nShank,nevent) = nan;
+%                         end
+%                     end
+%                 end
+% 
+%                 ripples(probe_no).sharp_wave_peaktimes = sharp_wave_peaks_shank;
+%                 ripples(probe_no).sharp_wave_zscore = sharp_wave_zscore_shank;
+%             end
+%         end
+% 
+%         disp('Sharp wave ripple traveling direction analysis started')
+%         toc
+% 
+% 
+%         zscored_LFP = [];
+%         phase_LFP = [];
+%         amplitude_LFP = [];
+% 
+%         % histogram(slow_waves(1).DOWN_peaks_latency,100,'Normalization','cdf');
+%         % hold on; xline(prctile(slow_waves(1).DOWN_peaks_latency,50));
+%         % histogram(slow_waves(2).DOWN_peaks_latency,100,'Normalization','cdf');
+%         % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
+%         %
+%         % histogram(slow_waves(1).DOWN_travling,3,'Normalization','probability');hold on;
+%         % histogram(slow_waves(2).DOWN_travling,3,'Normalization','probability');
+% 
+%         % histogram(slow_waves(1).DOWN_peaks_latency,100,'Normalization','probability');
+%         % hold on; xline(prctile(slow_waves(1).DOWN_peaks_latency,50));
+%         % histogram(slow_waves(2).DOWN_peaks_latency,100,'Normalization','probability');
+%         % hold on; xline(prctile(slow_waves(2).DOWN_peaks_latency,50));
+%         if contains(stimulus_name{n},'Masa2tracks')
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'ripples');
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_markov_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves_markov');
+%             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'slow_waves');
+%         else
+%             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
+%         end
+%     end
+% end
 
 
 

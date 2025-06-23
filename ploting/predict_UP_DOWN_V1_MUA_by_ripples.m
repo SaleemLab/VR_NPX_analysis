@@ -37,12 +37,16 @@ nTimes = length(timeVec);
 
 %% 1. Linear regression
 key_window_idx2 = find(timeVec < 0 & timeVec >= -0.05);
-key_window_idx1 = find(timeVec > 0 & timeVec <= 0.05);
+key_window_idx1 = find(timeVec > 0 & timeVec <= 0.1);
 
 ipsiV1_key = max(ipsi_V1_MUA(:, key_window_idx2)')'-min(ipsi_V1_MUA(:, key_window_idx1)')' ;
 contraV1_key = max(contra_V1_MUA(:, key_window_idx2)')' - min(contra_V1_MUA(:, key_window_idx1)')';
-ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')'-min(ipsi_HPC_MUA(:, key_window_idx1)')' ;
-contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:, key_window_idx1)')';
+% ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')'-min(ipsi_HPC_MUA(:, key_window_idx1)')' ;
+% contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:, key_window_idx1)')';
+% 
+
+ipsiHPC_key = max(ipsi_HPC_MUA(:, key_window_idx2)')' ;
+contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')';
 
 % ipsiV1_key = mean(ipsi_V1_MUA(:, key_window_idx2)',"omitnan")'-mean(ipsi_V1_MUA(:, key_window_idx1)',"omitnan")' ;
 % contraV1_key = mean(contra_V1_MUA(:, key_window_idx2)',"omitnan")' - mean(contra_V1_MUA(:, key_window_idx1)',"omitnan")';
@@ -51,7 +55,7 @@ contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:
 %     combinedV1_key = mean((ipsi_V1_MUA_norm(:, key_window_idx)+contra_V1_MUA_norm(:, key_window_idx)),2,'omitnan');
 
 %%%% HPC ripples
-key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.05);
+key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.1);
 %     key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.1);
 
 ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
@@ -291,416 +295,516 @@ end
 
 
 if plot_option == 1
-lag_thresholds = prctile(UP_DOWN_lag,[0:10:100]);
-
-for ngroup = 1:length(lag_thresholds)-1
-
-   mean_ipsi_power(ngroup) = nanmean(ipsi_ripple_power(UP_DOWN_lag>lag_thresholds(ngroup)&UP_DOWN_lag<lag_thresholds(ngroup+1)));
-end
-
-fig = figure('Color','w');
-fig.Position = [350 59 800 620];
-fig.Name ='HPC MUA predicted by DOWN UP synchrony';
 
 
-customColors = [0,90,50;74,20,134; 228,42,168 ]/256; % dark purple, dark green, magenta
-
-nexttile
-scatter(abs(DOWN_UP_lag),ipsi_ripple_power,'filled','MarkerFaceColor',customColors(1,:),'MarkerFaceAlpha',0.3)
-ylim([5 30])
-xlabel('DOWN UP transition ipsi-contra lags')
-ylabel('ipsi ripple peak power (z)')
-
-set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-nexttile
-scatter(abs(DOWN_UP_lag),contra_ripple_power,'filled','MarkerFaceColor',customColors(2,:),'MarkerFaceAlpha',0.3)
-ylim([5 30])
-xlabel('DOWN UP transition ipsi-contra lags')
-ylabel('contra ripple peak power (z)')
-set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-nexttile
-scatter(ipsi_ripple_power,contra_ripple_power,'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.1)
-set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-xlabel('ipsi ripple peak power (z)')
-ylabel('contra ripple peak power (z)')
-xlim([5 30])
-ylim([5 30])
-% xlim([-2 12])
-% ylim([-2 12])
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % ------------------ Extract bootstrapped stats ------------------
+    for nBoot = 1:1000
+        ipsi_t(nBoot)      = output(nBoot).t_stat{10};
+        contra_t(nBoot)    = output(nBoot).t_stat{11};
+        pval_ipsi(nBoot)   = output(nBoot).pval{10};
+        pval_contra(nBoot) = output(nBoot).pval{11};
+        R2_ipsi(nBoot)     = output(nBoot).R2(10);
+        R2_contra(nBoot)   = output(nBoot).R2(11);
+    end
 
 
-mean_ipsi = mean(output.ipsi_t_stat);
-ci_ipsi = prctile(output.ipsi_t_stat, [2.5 97.5]);
+    fig = figure('Color', 'w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'V1 delta power predicted by HPC excitation';
+    customColors = [0,90,50; 74,20,134]/256;
 
-mean_ipsi_shuffled = mean(output.ipsi_t_stat_shuffled);
-ci_ipsi_shuffled = prctile(output.ipsi_t_stat_shuffled, [2.5 97.5]);
+    % IPSI
+    nexttile
+    x = ipsiHPC_cat(ripples_index);x = x(:);
+    y = ipsi_Delta_peaks_zscore_UD(ripples_index);y = y(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('ipsi HPC excitation'); ylabel('ipsi V1 delta power')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(polyfit(x(valid), y(valid), 1), x_fit);
+    % medR2 = median(R2_ipsi); medP = median(pval_ipsi);
+    medR2 = prctile(R2_ipsi,50); medP = prctile(pval_ipsi,50);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    ylim([0 6])
+    xlim([0 15])
 
-mean_contra = mean(output.contra_t_stat);
-ci_contra = prctile(output.contra_t_stat, [2.5 97.5]);
+    % CONTRA
+    nexttile
+    x = contraHPC_cat(ripples_index);x = x(:);
+    y = ipsi_Delta_peaks_zscore_UD(ripples_index);y = y(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('contra HPC excitation'); ylabel('ipsi V1 delta power')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(polyfit(x(valid), y(valid), 1), x_fit);
+    medR2 = prctile(R2_contra,50); medP = prctile(pval_contra,50);
+    % medR2 = median(R2_contra); medP = median(pval_contra);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    ylim([0 6])
+    xlim([0 15])
 
-mean_contra_shuffled = mean(output.contra_t_stat_shuffled);
-ci_contra_shuffled = prctile(output.contra_t_stat_shuffled, [2.5 97.5]);
-
-% Organize data for bar plot
-barData = [mean_ipsi, mean_ipsi_shuffled, mean_contra, mean_contra_shuffled];
-lowerCI = [mean_ipsi(1)-ci_ipsi(1), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(1), mean_contra(1)-ci_contra(1), mean_contra_shuffled(1)-ci_contra_shuffled(1)];
-upperCI = [mean_ipsi(1)-ci_ipsi(2), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(2), mean_contra(1)-ci_contra(2), mean_contra_shuffled(1)-ci_contra_shuffled(2)];
-
-nexttile
-% barColors = [0,90,50;65,171,93;74,20,134;128,125,186]/256;
-barColors = [0,90,50;74,20,134]/256;
-% Define custom x-positions
-x_pos = [1, 2, 4, 5]; % spacing
-
-%     b = bar(1:4, barData, 'FaceColor', 'flat');
-for i = 1:2
-    hold on
-    bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', 'CData', barColors(i,:), 'EdgeColor', 'none');
-    errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), 'k', 'linestyle', 'none', 'linewidth', 1.5);
-end
-
-% Customize plot
-xlim([0.5 2.5])
-xticks(x_pos)
-xticklabels({'ipsi HPC','ipsi HPC shuffled','contra HPC','contra HPC shuffled'})
-ylabel('Bootstrapped t-statistic')
-title('t-statistic of HPC excitation')
-%     legend({'Data','Shuffled'}, 'Box','off')
-set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-grid off
-hold off
+    % T-stat bar
+    nexttile
+    barData = [mean(ipsi_t), mean(contra_t)];
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+    lowerCI = [barData(1) - ci_ipsi(1), barData(2) - ci_contra(1)];
+    upperCI = [barData(1) - ci_ipsi(2), barData(2) - ci_contra(2)];
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5)
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5)
+    end
+    xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('HPC excitation')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
 
-% 
-% % 
-% % colour_lines = []
-% % colour_lines{1} = [
-% %     0.6289, 0.8477, 0.6055;
-% %     0.5617, 0.8172, 0.5672;
-% %     0.4945, 0.7867, 0.5289;
-% %     0.4273, 0.7562, 0.4906;
-% %     0.3602, 0.7257, 0.4523;
-% %     0.3056, 0.6654, 0.4066;
-% %     0.2510, 0.6051, 0.3609;
-% %     0.1965, 0.5448, 0.3152;
-% %     0.1419, 0.4844, 0.2695;
-% %     0.0874, 0.4241, 0.2238;
-% % ];
-% % 
-% % colour_lines{2} = [
-% %     0.7344, 0.7383, 0.8594;
-% %     0.6914, 0.6969, 0.8359;
-% %     0.6484, 0.6555, 0.8125;
-% %     0.6055, 0.6141, 0.7891;
-% %     0.5625, 0.5727, 0.7656;
-% %     0.5156, 0.5098, 0.7344;
-% %     0.4688, 0.4470, 0.7031;
-% %     0.4219, 0.3841, 0.6719;
-% %     0.3750, 0.3213, 0.6406;
-% %     0.3281, 0.2584, 0.6094
-% % ];
-% colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-% colour_lines{2} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
-% 
-% % ipsiRipples_cat+contraRipples_cat > 0
-% 
-% figure
-% nexttile
-% amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 1),[0:20:100]);
-% 
-% % amp_threshold = [0:1:5];
-% % amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 0),[0:20:100]);
-% % amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
-% 
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(ipsi_V1_MUA(ipsiRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
-% title('ipsi HPC Ripples')
-% 
-% 
-% nexttile
-% amp_threshold = prctile(ipsiV1_cat(contraRipples_cat == 1),[0:20:100]);
-% % amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(contra_V1_MUA(contraRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(contra_HPC_MUA(contraRipples_cat == 1&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(contra_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
-% title('contra HPC Ripples')
-% sgtitle('ipsi UP DOWN magnitude (ripples)')
-% 
-% % 
-% 
-% figure
-% nexttile
-% amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 0),[0:20:100]);
-% 
-% % amp_threshold = [0:1:5];
-% % amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 0),[0:20:100]);
-% % amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
-% 
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(ipsi_V1_MUA(ipsiRipples_cat == 0&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 0&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
-% title('ipsi HPC Ripples')
-% 
-% 
-% nexttile
-% % amp_threshold = prctile(ipsiV1_cat(contraRipples_cat == 1),[0:20:100]);
-% % amp_threshold = prctile(ipsiV1_cat,[0:20:100]);
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(contra_V1_MUA(contraRipples_cat == 0&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(contra_HPC_MUA(contraRipples_cat == 0&ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(amp_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(contra_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% legend({'Top 0-20%','Top 20-40%','Top 40-60%','Top 60-80%','Top 80-100%','Shuffled'})
-% title('contra HPC Ripples')
-% sgtitle('ipsi UP DOWN magnitude without ripples')
 
-% 
-% 
-% figure
-% nexttile
-% [~,index]=sort(ipsiV1_cat);imagesc(ipsi_V1_MUA(index,:));colorbar;clim([-1 1])
-% nexttile
-% [~,index]=sort(ipsiV1_cat);imagesc(movmedian(ipsi_HPC_MUA(index,:),10));colorbar;clim([-0.3 0.5])
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% figure
-% nexttile
-% lag_threshold = prctile(UP_DOWN_lag,[0:20:100]);
-% 
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(ipsi_V1_MUA(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(ipsi_HPC_MUA(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi HPC MUA')
-% 
-% nexttile
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(ipsi_ripples(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('ipsi HPC Ripples')
-% 
-% 
-% 
-% 
-% 
-% nexttile
-% % lag_threshold = prctile(UP_DOWN_lag,[0:10:100]);
-% 
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec,nanmean(contra_V1_MUA(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra V1 MUA')
-% 
-% nexttile
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     plot(timeVec,nanmean(contra_HPC_MUA(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_ripples(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-% 
-%     mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra HPC MUA')
-% 
-% % [p, tbl, stats] = kruskalwallis(data, group, 'off');  % 'off' suppresses plot
-% 
-% 
-% nexttile
-% for ngroup = 1:length(lag_threshold)-1
-%     hold on
-%     %     plot(nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     %     plot(nanmean(ipsi_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%     plot(timeVec_prob,nanmean(contra_ripples(UP_DOWN_lag>lag_threshold(ngroup)&UP_DOWN_lag<lag_threshold(ngroup+1),:)),'Color',colour_lines{2}(ngroup,:));
-% 
-%     % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-% 
-% end
-% title('contra HPC Ripples')
-% % legend('')
-% sgtitle('ipsi-contra UP DOWN lag')
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure
-colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-for n = 1:6
-    amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 1 & subject_id==n),[0:20:100]);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %------------------ Extract data ------------------
+    for nBoot = 1:1000
+        % Ripple power
+        ipsi_t_power(nBoot) = output(nBoot).t_stat{13};
+        contra_t_power(nBoot) = output(nBoot).t_stat{14};
+        R2_ipsi_power(nBoot) = output(nBoot).R2(13);
+        R2_contra_power(nBoot) = output(nBoot).R2(14);
+        pval_ipsi_power(nBoot) = output(nBoot).pval{13};
+        pval_contra_power(nBoot) = output(nBoot).pval{14};
+
+        % Ripple occurrence
+        ipsi_t_occ(nBoot) = output(nBoot).t_stat{21};
+        contra_t_occ(nBoot) = output(nBoot).t_stat{22};
+    end
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930];
+    fig.Name = 'V1 delta power predicted by ripples';
+
+    % Scatter: ripple power
+    nexttile
+    x = ipsi_ripple_power(:); y = ipsi_Delta_peaks_zscore_UD(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('ipsi ripple power'); ylabel('ipsi V1 delta power')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(polyfit(x(valid), y(valid), 1), x_fit);
+    R2 = prctile(R2_ipsi_power, 50); p = prctile(pval_ipsi_power, 50);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+        'FontSize', 10, 'Color', col)
+    ylim([0 6])
+    xlim([0 25])
 
     nexttile
-    for ngroup = 1:5
-        hold on
-%         plot(nanmean( ipsi_ripples(subject_id==n &ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-        plot(nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 1 &ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-        % plot(nanmean(contra_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-        % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
-    end
-end
+    x = contra_ripple_power(:); y = ipsi_Delta_peaks_zscore_UD(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('contra ripple power'); ylabel('ipsi V1 delta power')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(polyfit(x(valid), y(valid), 1), x_fit);
+    R2 = prctile(R2_contra_power, 50); p = prctile(pval_contra_power, 50);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+        'FontSize', 10, 'Color', col)
+    ylim([0 6])
+    xlim([0 25])
 
-figure
-colour_lines{1} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
-for n = 1:6
-    amp_threshold = prctile(ipsiV1_cat(ipsiRipples_cat == 1 & subject_id==n),[0:20:100]);
+    % Histogram: ripple occurrence
+    nexttile
+    histogram(ipsi_Delta_peaks_zscore_UD(ipsiRipples_cat == 1), 0:0.1:5, 'Normalization','probability'); hold on
+    histogram(ipsi_Delta_peaks_zscore_UD(ipsiRipples_cat == 0), 0:0.1:5, 'Normalization','probability');
+    [~, pVal_ks_ipsi] = kstest2(ipsi_Delta_peaks_zscore_UD(ipsiRipples_cat == 1), ...
+        ipsi_Delta_peaks_zscore_UD(ipsiRipples_cat == 0));
+    legend('With ipsi ripple','Without','Box','off')
+    xlabel('ipsi V1 delta power'); ylabel('Proportion');
+    text(min(ipsi_Delta_peaks_zscore_UD), 0.08, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize',10)
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
 
     nexttile
-    for ngroup = 1:5
+    histogram(ipsi_Delta_peaks_zscore_UD(contraRipples_cat == 1), 0:0.1:5, 'Normalization','probability'); hold on
+    histogram(ipsi_Delta_peaks_zscore_UD(contraRipples_cat == 0), 0:0.1:5, 'Normalization','probability');
+    [~, pVal_ks_contra] = kstest2(ipsi_Delta_peaks_zscore_UD(contraRipples_cat == 1), ...
+        ipsi_Delta_peaks_zscore_UD(contraRipples_cat == 0));
+    legend('With contra ripple','Without','Box','off')
+    xlabel('ipsi V1 delta power'); ylabel('Proportion');
+    text(min(ipsi_Delta_peaks_zscore_UD), 0.08, sprintf('p = %.2e', pVal_ks_contra), 'FontSize',10)
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
+    % Bar: t-stats
+    nexttile
+    barData = [mean(ipsi_t_power), mean(contra_t_power)];
+    ci1 = prctile(ipsi_t_power, [2.5 97.5]);
+    ci2 = prctile(contra_t_power, [2.5 97.5]);
+    lowerCI = [barData(1) - ci1(1), barData(2) - ci2(1)];
+    upperCI = [barData(1) - ci1(2), barData(2) - ci2(2)];
+    x_pos = [1 2];
+    for i = 1:2
         hold on
-        plot(nanmean( ipsi_ripples(subject_id==n &ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-%         plot(nanmean(ipsi_HPC_MUA(ipsiRipples_cat == 1 &ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-        % plot(nanmean(contra_V1_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:)),'Color',colour_lines{1}(ngroup,:));
-        % mean_PSTH(ngroup,:) = nanmean(ipsi_HPC_MUA(ipsiV1_cat>amp_threshold(ngroup)&ipsiV1_cat<amp_threshold(ngroup+1),:));
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5)
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle','none','linewidth',1.5)
     end
+    xticks(x_pos); xticklabels({'ipsi','contra'}); title('Ripple power')
+    ylabel('Bootstrapped t-statistic')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+    nexttile
+    barData = [mean(ipsi_t_occ), mean(contra_t_occ)];
+    ci1 = prctile(ipsi_t_occ, [2.5 97.5]);
+    ci2 = prctile(contra_t_occ, [2.5 97.5]);
+    lowerCI = [barData(1) - ci1(1), barData(2) - ci2(1)];
+    upperCI = [barData(1) - ci1(2), barData(2) - ci2(2)];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5)
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle','none','linewidth',1.5)
+    end
+    xticks(x_pos); xticklabels({'ipsi','contra'}); title('Ripple occurrence')
+    ylabel('Bootstrapped t-statistic')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%% V1 delta power predicted by HPC excitation
+    % ------------------ Extract bootstrapped stats ------------------
+    for nBoot = 1:1000
+        ipsi_t(nBoot)   = output(nBoot).t_stat{5};
+        contra_t(nBoot) = output(nBoot).t_stat{6};
+        pval_ipsi(nBoot)   = output(nBoot).pval{5};
+        pval_contra(nBoot) = output(nBoot).pval{6};
+        R2_ipsi(nBoot)     = output(nBoot).R2(5);
+        R2_contra(nBoot)   = output(nBoot).R2(6);
+    end
+
+    % ------------------ Plot Setup ------------------
+    fig = figure('Color', 'w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'V1 depression predicted by HPC excitation';
+    customColors = [0,90,50; 74,20,134]/256;
+    x_pos = [1 2];
+
+    % ------------------ Scatter: ipsi ------------------
+    nexttile
+    x = ipsiHPC_cat(ripples_index);x = x(:);
+    y = ipsiV1_cat(ripples_index);y = y(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('ipsi HPC excitation'); ylabel('ipsi V1 depression')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12); hold on
+
+    % Visual regression line (polyfit)
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    plot(x_fit, y_fit, 'k', 'LineWidth', 2)
+
+    % Annotation using bootstrapped stats
+    medR2 = prctile(R2_ipsi,50); medP = prctile(pval_ipsi,50);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    xlim([-2 15])
+    ylim([-2 10])
+
+    % ------------------ Scatter: contra ------------------
+    nexttile
+    x = contraHPC_cat(ripples_index);x = x(:);
+    y = ipsiV1_cat(ripples_index);y = y(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('contra HPC excitation'); ylabel('ipsi V1 depression')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12); hold on
+
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+
+    medR2 = prctile(R2_contra,50); medP = prctile(pval_contra,50);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    xlim([-2 15])
+    ylim([-2 10])
+
+    % ------------------ Bar Plot: Bootstrapped t-statistics ------------------
+    mean_ipsi   = mean(ipsi_t);
+    mean_contra = mean(contra_t);
+    ci_ipsi     = prctile(ipsi_t, [2.5 97.5]);
+    ci_contra   = prctile(contra_t, [2.5 97.5]);
+
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('HPC excitation')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    grid off
+
+
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%% V1 depression predicted by ripple features
+
+    % Extract stats
+    for nBoot = 1:1000
+        % Ripple power
+        ipsi_t_power(nBoot)   = output(nBoot).t_stat{2};
+        contra_t_power(nBoot) = output(nBoot).t_stat{3};
+        R2_ipsi_power(nBoot)  = output(nBoot).R2(2);
+        R2_contra_power(nBoot)= output(nBoot).R2(3);
+        pval_ipsi_power(nBoot)= output(nBoot).pval{2};
+        pval_contra_power(nBoot)= output(nBoot).pval{3};
+
+        % Ripple occurrence
+        ipsi_t_occ(nBoot)     = output(nBoot).t_stat{17};
+        contra_t_occ(nBoot)   = output(nBoot).t_stat{18};
+    end
+
+    customColors = [0,90,50; 74,20,134]/256;
+    x_pos = [1 2];
+
+
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930];
+    fig.Name = 'V1 depression predicted by ripples';
+
+    % ------------------ Scatter: ripple power vs V1 depression ------------------
+    nexttile
+    x = ipsi_ripple_power(:); y = ipsiV1_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('ipsi ripple power'); ylabel('ipsi V1 depression')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = prctile(R2_ipsi_power,50); medP = prctile(pval_ipsi_power,50);
+    % medR2 = median(R2_ipsi_power); medP = median(pval_ipsi_power);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    ylim([-1 10])
+    xlim([0 25])
+    % ylim([-2 10])
+
+    nexttile
+    x = contra_ripple_power(:); y = ipsiV1_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('contra ripple power'); ylabel('ipsi V1 depression')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = prctile(R2_contra_power,50); medP = prctile(pval_contra_power,50);
+    % medR2 = median(R2_contra_power); medP = median(pval_contra_power);
+    col = 'r'; if medP > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        'FontSize', 10, 'Color', col)
+    ylim([-1 10])
+    xlim([0 25])
+    % ------------------ Histogram: V1 depression with vs without ripples ------------------
+
+    % --- IPSI
+    nexttile
+    histogram(ipsiV1_cat(ipsiRipples_cat == 1), -1:0.1:6, 'Normalization', 'probability'); hold on
+    histogram(ipsiV1_cat(ipsiRipples_cat == 0), -1:0.1:6, 'Normalization', 'probability');
+    [~, pVal_ks_ipsi] = kstest2(ipsiV1_cat(ipsiRipples_cat == 1), ipsiV1_cat(ipsiRipples_cat == 0));
+    legend('With ipsi ripple', 'Without ipsi ripple', 'Box','off')
+    xlabel('ipsi V1 depression'); ylabel('Proportion');
+    text(6, 0.04, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+    % --- CONTRA
+    nexttile
+    histogram(ipsiV1_cat(contraRipples_cat == 1), -1:0.1:6, 'Normalization', 'probability'); hold on
+    histogram(ipsiV1_cat(contraRipples_cat == 0), -1:0.1:6, 'Normalization', 'probability');
+    [~, pVal_ks_contra] = kstest2(ipsiV1_cat(contraRipples_cat == 1), ipsiV1_cat(contraRipples_cat == 0));
+    legend('With contra ripple', 'Without contra ripple', 'Box','off')
+    xlabel('ipsi V1 depression'); ylabel('Proportion');
+    text(6, 0.04, sprintf('p = %.2e', pVal_ks_contra), 'FontSize', 10, 'Color', 'k')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+
+    % ------------------ Bar plot: t-statistics (ripple power) ------------------
+    mean_ipsi   = mean(ipsi_t_power); ci_ipsi = prctile(ipsi_t_power, [2.5 97.5]);
+    mean_contra = mean(contra_t_power); ci_contra = prctile(contra_t_power, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xticks(x_pos); xticklabels({'ipsi','contra'});
+    ylabel('Bootstrapped t-statistic'); title('Ripple power')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
+    % ------------------ Bar plot: t-statistics (ripple occurrence) ------------------
+    mean_ipsi   = mean(ipsi_t_occ); ci_ipsi = prctile(ipsi_t_occ, [2.5 97.5]);
+    mean_contra = mean(contra_t_occ); ci_contra = prctile(contra_t_occ, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xticks(x_pos); xticklabels({'ipsi','contra'});
+    ylabel('Bootstrapped t-statistic'); title('Ripple occurrence')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %%%% ipsi ripple lag predicts V1 depression, delta power
+
+
+    % Load custom color scheme
+    customColors = [0,90,50; 74,20,134]/256;
+
+    % Extract stats
+    for nBoot = 1:1000
+        % V1 depression (model 7)
+        t_V1depr(nBoot)   = output(nBoot).t_stat{7};
+        R2_V1depr(nBoot)  = output(nBoot).R2(7);
+        pval_V1depr(nBoot)= output(nBoot).pval{7};
+
+        % V1 delta power (model 23)
+        t_V1delta(nBoot)   = output(nBoot).t_stat{15};
+        R2_V1delta(nBoot)  = output(nBoot).R2(15);
+        pval_V1delta(nBoot)= output(nBoot).pval{15};
+
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % ------- Plot 1: V1 depression -----------------------
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3];
+    fig.Name = 'V1 depression vs ripple lag';
+
+    % Scatter
+    nexttile
+    x = ipsi_ripple_lag(:); y = ipsiV1_cat(:);
+    scatter(x, y, 20, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    R2 = prctile(R2_V1depr, 50); p = prctile(pval_V1depr, 50);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    xlabel('ipsi ripple lag'); ylabel('V1 depression')
+    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+        'FontSize', 10, 'Color', col)
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+    xlim([0 0.06])
+    
+    % T-stat bar
+    nexttile
+    barData = mean(t_V1depr);
+    ci = prctile(t_V1depr, [2.5 97.5]);
+    bar(1, barData, 0.4, 'FaceColor', customColors(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5); hold on
+    errorbar(1, barData, barData - ci(1), barData - ci(2), 'k', 'LineWidth', 1.5)
+    xlim([0.5 1.5]); xticks(1); xticklabels({'V1 depression'})
+    ylabel('Bootstrapped t-statistic')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % ------- Plot 2: V1 delta power -----------------------
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3];
+    fig.Name = 'V1 delta power vs ripple lag';
+
+    % Scatter
+    nexttile
+    x = ipsi_ripple_lag(:); y = ipsi_Delta_peaks_zscore_UD(:);
+    scatter(x, y, 20, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    R2 = prctile(R2_V1delta, 50); p = prctile(pval_V1delta, 50);
+    col = 'r'; if p > 0.05, col = 'k'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    xlabel('ipsi ripple lag'); ylabel('V1 delta power')
+    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+        'FontSize', 10, 'Color', col)
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+    xlim([0 0.06])
+
+    % T-stat bar
+    nexttile
+    barData = mean(t_V1delta);
+    ci = prctile(t_V1delta, [2.5 97.5]);
+    bar(1, barData, 0.4, 'FaceColor', customColors(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5); hold on
+    errorbar(1, barData, barData - ci(1), barData - ci(2), 'k', 'LineWidth', 1.5)
+    xlim([0.5 1.5]); xticks(1); xticklabels({'V1 delta power'})
+    ylabel('Bootstrapped t-statistic')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
+
+    if exist('D:\corticohippocampal_replay')>0
+        analysis_folder = 'D:\corticohippocampal_replay';
+    elseif exist('P:\corticohippocampal_replay')>0
+        analysis_folder = 'P:\corticohippocampal_replay';
+    end
+    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+
 end
 end

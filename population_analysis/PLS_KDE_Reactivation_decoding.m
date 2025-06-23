@@ -45,23 +45,24 @@ PLS = p.Results.PLS;
 event_type = p.Results.event_type;
 shuffle_option = p.Results.shuffle_option;
 plot_option = p.Results.plot_option;
-
-
+time_bin_size_RUN =  p.Results.time_bin_size_RUN;
+time_bin_size_moving =  p.Results.time_bin_size_moving;
+time_bin_size =  p.Results.time_bin_size;
 
 % Initialize output variables
 KDE_reactivation = struct();
 
 % Define time bin edges
-time_bin_size=0.1;
-timevec_edge_RUN= interp1(tvec_template,tvec_template,tvec_template(1):time_bin_size:tvec_template(end));
-speed_RUN= interp1(tvec_template,speed,tvec_template(1):time_bin_size:tvec_template(end));
+% time_bin_size=0.1;
+timevec_edge_RUN= interp1(tvec_template,tvec_template,tvec_template(1):time_bin_size_RUN:tvec_template(end));
+speed_RUN= interp1(tvec_template,speed,tvec_template(1):time_bin_size_RUN:tvec_template(end));
 timevec_edge_RUN(speed_RUN<1)=nan;
 
 bins = [];
 samples = timevec_edge_RUN';
 
 bins(:,1)=samples;
-bins(:,2)=samples+time_bin_size;
+bins(:,2)=samples+time_bin_size_RUN;
 
 
 position_interp1 = interp1(tvec_template,position,timevec_edge_RUN);
@@ -73,8 +74,6 @@ position_interp1 = discretize(position_interp1,28)*5;
 [T2_bins,~,index] = InIntervals(timevec_edge_RUN',lap_times(track_ID==2,:));
 [~,~,~,~,~,n] = ActivityTemplates(spikes_template,'bins',bins);
 
-time_bin_size=0.02;
-time_bin_size_moving = 0.01;
 % timevec_edge= interp1(tvec_target,tvec_target,tvec_target(1):time_bin_size:tvec_target(end));
 % speed_RUN= interp1(tvec_template,speed,tvec_template(1):time_bin_size:tvec_template(end));
 % timevec_edge_RUN(speed_RUN<1)=nan;
@@ -87,9 +86,13 @@ for i = 1: length(event_times)
     %     event_duration = event_times(i,2) - event_times(i,1);
 
     if contains(event_type,'ripples')
-        if event_duration <0.1 &  event_times(i,1)+0.1 < event_times(i+1,1) 
-            % if it is a singlet ripple and is shorter than 100ms, then
-            % grab 100ms
+        if i < size(event_times,1)
+            if event_duration <0.1 &  event_times(i,1)+0.1 < event_times(i+1,1)
+                % if it is a singlet ripple and is shorter than 100ms, then
+                % grab 100ms
+                event_duration = 0.1;
+            end
+        elseif event_duration <0.1
             event_duration = 0.1;
         end
     end

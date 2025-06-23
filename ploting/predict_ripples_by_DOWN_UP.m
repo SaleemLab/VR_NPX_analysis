@@ -324,129 +324,621 @@ if plot_option == 1
     %% 6. PLOTTING
 
 
-    fig = figure('Color','w');
-    fig.Position = [350 59 800 930];
-    fig.Name ='HPC MUA predicted by DOWN UP synchrony';
 
-    customColors = [0,90,50;74,20,134; 228,42,168 ]/256; % dark purple, dark green, magenta
-
-    nexttile
-    scatter(DOWN_UP_lag,ipsiHPC_cat,'filled','MarkerFaceColor',customColors(1,:),'MarkerFaceAlpha',0.05)
-    ylim([-2 12])
-    xlabel('DOWN UP transition ipsi-contra lags')
-    ylabel('ipsi HPC rebound excitation')
-
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-    nexttile
-    scatter(DOWN_UP_lag,contraHPC_cat,'filled','MarkerFaceColor',customColors(2,:),'MarkerFaceAlpha',0.05)
-    ylim([-2 12])
-    xlabel('DOWN UP transition ipsi-contra lags')
-    ylabel('contra HPC rebound excitation')
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-
-    nexttile
-    scatter(ipsiHPC_cat,contraHPC_cat,'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.05)
-    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
-    xlabel('ipsi HPC rebound excitation')
-    ylabel('contra HPC rebound excitation')
-    xlim([-2 12])
-    ylim([-2 12])
-
-
-    mean_ipsi = mean(output.ipsi_t_stat);
-    ci_ipsi = prctile(output.ipsi_t_stat, [2.5 97.5]);
-
-    mean_ipsi_shuffled = mean(output.ipsi_t_stat_shuffled);
-    ci_ipsi_shuffled = prctile(output.ipsi_t_stat_shuffled, [2.5 97.5]);
-
-    mean_contra = mean(output.contra_t_stat);
-    ci_contra = prctile(output.contra_t_stat, [2.5 97.5]);
-
-    mean_contra_shuffled = mean(output.contra_t_stat_shuffled);
-    ci_contra_shuffled = prctile(output.contra_t_stat_shuffled, [2.5 97.5]);
-
-    % Organize data for bar plot
-    barData = [mean_ipsi, mean_ipsi_shuffled, mean_contra, mean_contra_shuffled];
-    lowerCI = [mean_ipsi(1)-ci_ipsi(1), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(1), mean_contra(1)-ci_contra(1), mean_contra_shuffled(1)-ci_contra_shuffled(1)];
-    upperCI = [mean_ipsi(1)-ci_ipsi(2), mean_ipsi_shuffled(1)-ci_ipsi_shuffled(2), mean_contra(1)-ci_contra(2), mean_contra_shuffled(1)-ci_contra_shuffled(2)];
-
-    nexttile
-    barColors = [0,90,50;65,171,93;74,20,134;128,125,186]/256;
-    % Define custom x-positions
-    x_pos = [1, 2, 4, 5]; % spacing
-
-    %     b = bar(1:4, barData, 'FaceColor', 'flat');
-    for i = 1:4
-        hold on
-        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', 'CData', barColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
-        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), 'k', 'linestyle', 'none', 'linewidth', 1.5);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Extract bootstrapped stats for delta power vs HPC excitation
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{1};
+        contra_t(nBoot) = output(nBoot).t_stat{2};
+        R2_ipsi(nBoot) = output(nBoot).R2(1);
+        R2_contra(nBoot) = output(nBoot).R2(2);
+        pval_ipsi(nBoot) = output(nBoot).pval{1};
+        pval_contra(nBoot) = output(nBoot).pval{2};
     end
 
-    % Customize plot
-    xlim([0.5 5.5])
+    % Compute means and confidence intervals for t-statistics
+    mean_ipsi = mean(ipsi_t);
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+
+    mean_contra = mean(contra_t);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    % Prepare figure
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'HPC excitation predicted by DOWN UP delta power';
+
+    customColors = [0,90,50; 74,20,134; 228,42,168]/256;
+
+    % SCATTER: ipsi
+    nexttile
+    x = ipsi_Delta_peaks_zscore_DU(:);  % force column
+    y = ipsiHPC_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
+    ylim([-2 15])
+    xlim([0 5])
+    xlabel('DOWN UP transition delta power')
+    ylabel('ipsi HPC rebound excitation')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    hold on
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medianR2_ipsi = prctile(R2_ipsi, 50);
+    medianP_ipsi = prctile(pval_ipsi, 50);
+    col = 'k'; if medianP_ipsi < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.5*max(y), ...
+        sprintf('R^2 = %.3f\np = %.2e', medianR2_ipsi, medianP_ipsi), ...
+        'FontSize', 10, 'Color', col)
+
+    % SCATTER: contra
+    nexttile
+    x = ipsi_Delta_peaks_zscore_DU(:);  % still same x predictor
+    y = contraHPC_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
+    ylim([-2 15])
+    xlim([0 5])
+    xlabel('DOWN UP transition delta power')
+    ylabel('contra HPC rebound excitation')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    hold on
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medianR2_contra = prctile(R2_contra, 50);
+    medianP_contra = prctile(pval_contra, 50);
+    col = 'k'; if medianP_contra < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2*max(x_fit), 0.5*max(y), ...
+        sprintf('R^2 = %.3f\np = %.2e', medianR2_contra, medianP_contra), ...
+        'FontSize', 10, 'Color', col)
+
+    % BAR PLOT: t-stats
+    nexttile
+    barColors = [0,90,50; 74,20,134]/256;
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', barColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5])
     xticks(x_pos)
-    xticklabels({'ipsi HPC','ipsi HPC shuffled','contra HPC','contra HPC shuffled'})
+    xticklabels({'ipsi','contra'})
     ylabel('Bootstrapped t-statistic')
     title('t-statistic of HPC excitation')
-    %     legend({'Data','Shuffled'}, 'Box','off')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    grid off
+    hold off
+
+
+
+    % Bootstrapped stats for ripple power (delta-based)
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{7};
+        contra_t(nBoot) = output(nBoot).t_stat{8};
+        R2_ipsi(nBoot) = output(nBoot).R2(7);
+        R2_contra(nBoot) = output(nBoot).R2(8);
+        pval_ipsi(nBoot) = output(nBoot).pval{7};
+        pval_contra(nBoot) = output(nBoot).pval{8};
+    end
+
+
+
+    %%%%%%%%%%%%%%%%%%
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930];
+    fig.Name = 'Ripples predicted by DOWN UP delta power';
+
+    customColors = [0,90,50;74,20,134; 228,42,168]/256;
+
+    % --- Scatter: ipsi ripple power
+    nexttile
+    x = ipsi_Delta_peaks_zscore_DU(:);
+    y = ipsi_ripple_power(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2)
+    ylim([5 25])
+    xlim([0 5])
+    xlabel('DOWN UP transition delta power')
+    ylabel('ipsi ripple power')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    hold on
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medianR2_ipsi = prctile(R2_ipsi, 50);
+    medianP_ipsi = prctile(pval_ipsi, 50);
+    col = 'k'; if medianP_ipsi < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.5 * max(y), ...
+        sprintf('R^2 = %.2e\np = %.2e', medianR2_ipsi, medianP_ipsi), ...
+        'FontSize', 10, 'Color', col)
+
+    % --- Scatter: contra ripple power
+    nexttile
+    x = ipsi_Delta_peaks_zscore_DU(:);
+    y = contra_ripple_power(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.2)
+    ylim([5 25])
+    xlim([0 5])
+    xlabel('DOWN UP transition delta power')
+    ylabel('contra ripple power')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    hold on
+    validIdx = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(validIdx), y(validIdx), 1);
+    x_fit = linspace(min(x(validIdx)), max(x(validIdx)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medianR2_contra = prctile(R2_contra, 50);
+    medianP_contra = prctile(pval_contra, 50);
+    col = 'k'; if medianP_contra < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.5 * max(y), ...
+        sprintf('R^2 = %.2e\np = %.2e', medianR2_contra, medianP_contra), ...
+        'FontSize', 10, 'Color', col)
+
+    % --- Histogram: delta power vs ipsi ripple occurrence
+    nexttile
+    histogram(ipsi_Delta_peaks_zscore_DU(ipsiRipples_cat == 1), 0:0.1:5, 'Normalization', 'probability'); hold on
+    histogram(ipsi_Delta_peaks_zscore_DU(ipsiRipples_cat == 0), 0:0.1:5, 'Normalization', 'probability')
+    [~, pVal_ks_ipsi] = kstest2(ipsi_Delta_peaks_zscore_DU(ipsiRipples_cat == 1), ipsi_Delta_peaks_zscore_DU(ipsiRipples_cat == 0));
+    text(4.5, 0.05, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    legend('With ipsi ripples', 'Without ipsi ripples', 'box', 'off')
+    xlabel('DOWN UP transition delta power')
+    ylabel('Proportion of events')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+
+
+    % --- Histogram: delta power vs contra ripple occurrence
+    nexttile
+    histogram(ipsi_Delta_peaks_zscore_DU(contraRipples_cat == 1), 0:0.1:5, 'Normalization', 'probability'); hold on
+    histogram(ipsi_Delta_peaks_zscore_DU(contraRipples_cat == 0), 0:0.1:5, 'Normalization', 'probability')
+    [~, pVal_ks_ipsi] = kstest2(ipsi_Delta_peaks_zscore_DU(contraRipples_cat == 1), ipsi_Delta_peaks_zscore_DU(contraRipples_cat == 0));
+    text(4.5, 0.05, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    legend('With contra ripples', 'Without contra ripples', 'box', 'off')
+    xlabel('DOWN UP transition delta power')
+    ylabel('Proportion of events')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+
+    % --- Bar plot: t-stat ripple power
+    mean_ipsi = mean(ipsi_t);
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    barColors = [0,90,50;74,20,134]/256;
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', barColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5])
+    xticks(x_pos)
+    xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic')
+    title('t-statistic of Ripple power')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    grid off
+    hold off
+
+    % --- Bar plot: t-stat ripple occurrence
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{17};
+        contra_t(nBoot) = output(nBoot).t_stat{18};
+    end
+    mean_ipsi = mean(ipsi_t);
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', barColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5])
+    xticks(x_pos)
+    xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic')
+    title('t-statistic of Ripple occurrence')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
+    grid off
+    hold off
+
+
+
+
+
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name ='HPC excitation predicted by DOWN UP + spindles';
+
+    customColors = [0,90,50;74,20,134; 228,42,168 ]/256;
+
+    % --- Histogram: ipsi HPC excitation with/without spindle
+    nexttile
+    histogram(ipsiHPC_cat(ipsi_spindles==1), 0:0.1:5, 'Normalization', 'probability'); hold on
+    histogram(ipsiHPC_cat(ipsi_spindles==0), 0:0.1:5, 'Normalization', 'probability')
+    [~, pVal_ks_ipsi] = kstest2(ipsiHPC_cat(ipsi_spindles==1), ipsiHPC_cat(ipsi_spindles==0));
+    text(4.5, 0.05, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    legend('With ipsi spindles','Without ipsi spindles','box','off')
+    xlabel('ipsi HPC MUA excitation (z)')
+    ylabel('Proportion of events')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+    % --- Histogram: contra HPC excitation with/without spindle
+    nexttile
+    histogram(contraHPC_cat(ipsi_spindles==1), 0:0.1:5, 'Normalization', 'probability'); hold on
+    histogram(contraHPC_cat(ipsi_spindles==0), 0:0.1:5, 'Normalization', 'probability')
+    [~, pVal_ks_contra] = kstest2(contraHPC_cat(ipsi_spindles==1), contraHPC_cat(ipsi_spindles==0));
+    text(4.5, 0.05, sprintf('p = %.2e', pVal_ks_contra), 'FontSize', 10, 'Color', 'k')
+    legend('With ipsi spindles','Without ipsi spindles','box','off')
+    xlabel('contra HPC MUA excitation (z)')
+    ylabel('Proportion of events')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+    % --- Bar plot: t-statistic
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{5};
+        contra_t(nBoot) = output(nBoot).t_stat{6};
+    end
+
+    mean_ipsi = mean(ipsi_t);
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    barColors = [0,90,50;74,20,134]/256;
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', barColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5])
+    xticks(x_pos)
+    xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic')
+    title('t-statistic of HPC excitation')
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
     grid off
     hold off
 
-    %
-    %     %%%%% Lag-resolved
-    %     nexttile
-    %     lag_bins = output.lag_bins; % assuming you saved lag bin centers
-    %
-    %     % Colors
-    %     barColors = [0,90,50;65,171,93;74,20,134;128,125,186]/256;
-    %
-    %     % IPSI actual
-    %     mean_ipsi_lag = mean(output.lag_resolved_ipsi_t_stat,2);
-    %     ci_ipsi_lag = prctile(output.lag_resolved_ipsi_t_stat, [2.5 97.5],2);
-    %
-    %     %     % IPSI shuffled
-    %     %     mean_ipsi_lag_shuff = mean(output.lag_resolved_ipsi_t_stat_shuffled,2);
-    %     %     ci_ipsi_lag_shuff = prctile(output.lag_resolved_ipsi_t_stat_shuffled, [2.5 97.5],2);
-    %
-    %     % CONTRA actual
-    %     mean_contra_lag = mean(output.lag_resolved_contra_t_stat,2);
-    %     ci_contra_lag = prctile(output.lag_resolved_contra_t_stat, [2.5 97.5],2);
-    %
-    %     %     % CONTRA shuffled
-    %     %     mean_contra_lag_shuff = mean(output.lag_resolved_contra_t_stat_shuffled,2);
-    %     %     ci_contra_lag_shuff = prctile(output.lag_resolved_contra_t_stat_shuffled, [2.5 97.5],2);
-    %
-    %     % Plotting
-    %     x = lag_bins;
-    %
-    %     hold on
-    %     % IPSI
-    %     PLOT(1)=plot(x, mean_ipsi_lag, 'Color', barColors(1,:), 'LineWidth', 2);
-    %     patch([x fliplr(x)], [ci_ipsi_lag(:,2)' fliplr(ci_ipsi_lag(:,1)')], barColors(1,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     %     % IPSI shuffled
-    %     %     plot(x, mean_ipsi_lag_shuff, '--', 'Color', barColors(2,:), 'LineWidth', 2);
-    %     %     patch([x fliplr(x)], [ci_ipsi_lag_shuff(:,2)' fliplr(ci_ipsi_lag_shuff(:,1)')], barColors(2,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     % CONTRA
-    %     PLOT(2)=plot(x, mean_contra_lag, 'Color', barColors(3,:), 'LineWidth', 2);
-    %     patch([x fliplr(x)], [ci_contra_lag(:,2)' fliplr(ci_contra_lag(:,1)')], barColors(3,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     %     % CONTRA shuffled
-    %     %     plot(x, mean_contra_lag_shuff, '--', 'Color', barColors(4,:), 'LineWidth', 2);
-    %     %     patch([x fliplr(x)], [ci_contra_lag_shuff(:,2)' fliplr(ci_contra_lag_shuff(:,1)')], barColors(4,:), 'FaceAlpha', 0.3, 'EdgeColor','none');
-    %
-    %     % Customize plot
-    %     xlabel('Mean DOWN-UP lag (z-score)')
-    %     ylabel('Bootstrapped t-statistic')
-    %     title('Lag-Resolved Mixed Model Results')
-    %     yline(0,'--k') % optional: horizontal line at y=0
-    %     legend(PLOT(1:2),{'ipsi','contra'}, 'Box','off')
-    %     grid on
-    %     hold off
-    %     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+
+
+
+    % Initialize figure
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930*2/3];
+    fig.Name = 'Ripples predicted by spindles';
+
+    customColors = [0,90,50;74,20,134]/256;
+
+    % Histogram & KS test: ripple power (ipsi)
+    nexttile
+    edges = 5:0.5:25;
+    histogram(ipsi_ripple_power(ipsi_spindles==1), edges, 'Normalization', 'probability', ...
+        'FaceAlpha', 0.5); hold on
+    histogram(ipsi_ripple_power(ipsi_spindles==0), edges, 'Normalization', 'probability', ...
+        'FaceAlpha', 0.5);
+
+    [~, pVal_ks_ipsi] = kstest2(ipsi_ripple_power(ipsi_spindles==1), ipsi_ripple_power(ipsi_spindles==0));
+    text(20, 0.008, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+
+    legend('With ipsi spindles', 'Without ipsi spindles', 'Box', 'off')
+    xlabel('Ipsi ripple power')
+    ylabel('Proportion of events')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+    % Histogram & KS test: ripple power (contra)
+    nexttile
+    histogram(contra_ripple_power(ipsi_spindles==1), edges, 'Normalization', 'probability', ...
+        'FaceAlpha', 0.5); hold on
+    histogram(contra_ripple_power(ipsi_spindles==0), edges, 'Normalization', 'probability', ...
+        'FaceAlpha', 0.5);
+
+    [~, pVal_ks_contra] = kstest2(contra_ripple_power(ipsi_spindles==1), contra_ripple_power(ipsi_spindles==0));
+    text(20, 0.008, sprintf('p = %.2e', pVal_ks_contra), 'FontSize', 10, 'Color', 'k')
+
+    legend('With ipsi spindles', 'Without ipsi spindles', 'Box', 'off')
+    xlabel('Contra ripple power')
+    ylabel('Proportion of events')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+
+    % Bootstrapped t-stat: ripple power (ipsi/contra)
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{11};   % update these indices if needed
+        contra_t(nBoot) = output(nBoot).t_stat{12};
+    end
+
+    mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t); ci_contra = prctile(contra_t, [2.5 97.5]);
+
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    x_pos = [1, 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    ylim([-1 13])
+    xlim([0.5 2.5])
+    xticks(x_pos)
+    xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic')
+    title('Ripple power t-stat (spindle effect)')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+    grid off
+
+    % %% Ripple occurrence proportion & t-stat
+    % % Ripple proportion: ipsi
+    % p_with = sum(ipsiRipples_cat(ipsi_spindles==1)) / sum(ipsi_spindles==1);
+    % p_without = sum(ipsiRipples_cat(ipsi_spindles==0)) / sum(ipsi_spindles==0);
+
+    % KS test-like binary comparison (proportions)
+    % Bootstrapped t-stats (occurrence)
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{21};
+        contra_t(nBoot) = output(nBoot).t_stat{22};
+    end
+    mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t); ci_contra = prctile(contra_t, [2.5 97.5]);
+
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    ylim([-1 13])
+    xlim([0.5 2.5])
+    xticks(x_pos)
+    xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic')
+    title('Ripple occurrence t-stat (spindle effect)')
+    set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
+    grid off
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'HPC excitation predicted by previous DOWN duration';
+
+    customColors = [0,90,50; 74,20,134; 228,42,168]/256;
+
+    % Bootstrapped stats
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{3};
+        contra_t(nBoot) = output(nBoot).t_stat{4};
+        R2_ipsi(nBoot) = output(nBoot).R2(3);
+        R2_contra(nBoot) = output(nBoot).R2(4);
+        pval_ipsi(nBoot) = output(nBoot).pval{3};
+        pval_contra(nBoot) = output(nBoot).pval{4};
+    end
+
+    % --- Ipsi HPC excitation
+    nexttile
+    x = DOWN_duration(:); y = ipsiHPC_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('DOWN duration (s)'); ylabel('ipsi HPC excitation')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y) & x < 1;
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = median(R2_ipsi); medP = median(pval_ipsi);
+    col = 'k'; if medP < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
+    xlim([0 1])
+    
+    % --- Contra HPC excitation
+    nexttile
+    x = DOWN_duration(:); y = contraHPC_cat(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.05)
+    xlabel('DOWN duration (s)'); ylabel('contra HPC excitation')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y) & x < 1;
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = median(R2_contra); medP = median(pval_contra);
+    col = 'k'; if medP < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
+    xlim([0 1])
+
+    % --- t-stat bar plot
+    mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t); ci_contra = prctile(contra_t, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    x_pos = [1 2];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('HPC excitation')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+    hold off
+
+
+
+    %%%%%%%%%%%%%%%%%%%%
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930];
+    fig.Name = 'Ripples predicted by previous DOWN duration';
+
+    % Bootstrapped stats
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{9};
+        contra_t(nBoot) = output(nBoot).t_stat{10};
+        R2_ipsi(nBoot) = output(nBoot).R2(9);
+        R2_contra(nBoot) = output(nBoot).R2(10);
+        pval_ipsi(nBoot) = output(nBoot).pval{9};
+        pval_contra(nBoot) = output(nBoot).pval{10};
+    end
+
+    % --- Ipsi ripple power
+    nexttile
+    x = DOWN_duration(:); y = ipsi_ripple_power(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('DOWN duration (s)'); ylabel('ipsi ripple power')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = median(R2_ipsi); medP = median(pval_ipsi);
+    col = 'k'; if medP < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
+    xlim([0 1])
+    ylim([0 25])
+
+    % --- Contra ripple power
+    nexttile
+    x = DOWN_duration(:); y = contra_ripple_power(:);
+    scatter(x, y, 'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.2)
+    xlabel('DOWN duration (s)'); ylabel('ipsi ripple power')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); hold on
+    valid = ~isnan(x) & ~isnan(y);
+    coeffs = polyfit(x(valid), y(valid), 1);
+    x_fit = linspace(min(x(valid)), max(x(valid)), 100);
+    y_fit = polyval(coeffs, x_fit);
+    medR2 = median(R2_contra); medP = median(pval_contra);
+    col = 'k'; if medP < 0.05, col = 'r'; end
+    plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
+    text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
+        sprintf('R^2 = %.2e\np = %.2e', medR2, medP), 'FontSize', 10, 'Color', col)
+    xlim([0 1])
+    ylim([0 25])
+
+    % --- Histogram: DOWN duration vs. ipsi ripple presence
+    nexttile
+    histogram(DOWN_duration(ipsiRipples_cat==1), 0:0.01:1, 'Normalization','probability'); hold on
+    histogram(DOWN_duration(ipsiRipples_cat==0), 0:0.01:1, 'Normalization','probability')
+    [~, pVal_ks_ipsi] = kstest2(DOWN_duration(ipsiRipples_cat==1), DOWN_duration(ipsiRipples_cat==0));
+    text(0.8, 0.05, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    legend('With ipsi ripple', 'Without ipsi ripple', 'box','off')
+    xlabel('DOWN duration (s)'); ylabel('Proportion')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12)
+    xlim([0 1])
+    % ylim([0 25])
+
+    % --- Histogram: DOWN duration vs. contra ripple presence
+    nexttile
+    histogram(DOWN_duration(contraRipples_cat==1), 0:0.01:1, 'Normalization','probability'); hold on
+    histogram(DOWN_duration(contraRipples_cat==0), 0:0.01:1, 'Normalization','probability')
+    [~, pVal_ks_ipsi] = kstest2(DOWN_duration(contraRipples_cat==1), DOWN_duration(contraRipples_cat==0));
+    text(0.8, 0.05, sprintf('p = %.2e', pVal_ks_ipsi), 'FontSize', 10, 'Color', 'k')
+    legend('With contra ripple', 'Without contra ripple', 'box','off')
+    xlabel('DOWN duration (s)'); ylabel('Proportion')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12)
+    xlim([0 1])
+
+    % --- t-stat bar plots for ripple power
+    mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    mean_contra = mean(contra_t); ci_contra = prctile(contra_t, [2.5 97.5]);
+    barData = [mean_ipsi, mean_contra];
+    lowerCI = [mean_ipsi - ci_ipsi(1), mean_contra - ci_contra(1)];
+    upperCI = [mean_ipsi - ci_ipsi(2), mean_contra - ci_contra(2)];
+
+    nexttile
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('Ripple power')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+    hold off
+
+
+    for nBoot = 1:1000
+        ipsi_t(nBoot) = output(nBoot).t_stat{19};
+        contra_t(nBoot) = output(nBoot).t_stat{20};
+    end
+
+
+    nexttile
+    barData = [mean(ipsi_t), mean(contra_t)];
+    ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
+    ci_contra = prctile(contra_t, [2.5 97.5]);
+    lowerCI = [barData(1) - ci_ipsi(1), barData(2) - ci_contra(1)];
+    upperCI = [barData(1) - ci_ipsi(2), barData(2) - ci_contra(2)];
+    for i = 1:2
+        hold on
+        bar(x_pos(i), barData(i), 0.4, 'FaceColor', 'flat', ...
+            'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
+        errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
+            'k', 'linestyle', 'none', 'linewidth', 1.5);
+    end
+    xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
+    ylabel('Bootstrapped t-statistic'); title('t-statistic of Ripple occurrence')
+    set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+
 
 
     if exist('D:\corticohippocampal_replay')>0
@@ -454,7 +946,7 @@ if plot_option == 1
     elseif exist('P:\corticohippocampal_replay')>0
         analysis_folder = 'P:\corticohippocampal_replay';
     end
-    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
 
 
 end
