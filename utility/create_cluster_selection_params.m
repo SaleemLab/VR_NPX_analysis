@@ -54,7 +54,7 @@ elseif contains(sorting_option,'ellie')
     params.peak_to_valley = @(x) x<=0.0008 & x>= 0.0001; % Peters et al 2022 % the duration between negative and positive peaks
     params.amplitude_cv_median = @(x) x<=0.7; % cv = coefficient of variation, variability around the mean; ratio of s.d./mean amplitude. A low median value indicates a stereotypical spike shape i.e. a well-isolated unit.
     params.amplitude_cv_range = @(x) x<=0.7; % cv range may be high if there is noise contamination
-    params.firing_rate = @(x) x>= 0.01;% number of spikes divided by number of seconds in the recording. Due to sleep/wake difference, we
+    params.firing_rate = @(x) x>= 0.014;% number of spikes divided by number of seconds in the recording. Due to sleep/wake difference, we
     %can include neurons that are silent during sleep or wake
     params.presence_ratio = @(x) x>= 0.3;% Due to sleep/wake difference, we can include neurons that are silent during sleep or wake. 
     % if you are analysing a short segment of the recording, you could disable the default presence ratio filter, to maximise the number of units available.

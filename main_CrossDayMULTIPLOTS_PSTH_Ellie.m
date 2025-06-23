@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-session_specific_L4 = {4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+session_specific_L4 = {11, 4500:4640; 15, 4510:4650}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 % 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; %% M00013 TRAIN
 % 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650; %% M00013 GAVNIK
 % 
@@ -17,7 +17,7 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_type = 'TRAIN'; 
+Stimulus_type = 'GAVNIK_ABCD'; 
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 neuron_type = 'All'; % for GAVNIK stimuli (coded for so far) set this to 'PYR only' if you want to include only putative pyramidal neurons. distinguish between putative PYR (wide waveform, lower tau rise than SOM), PV (narrow waveform) and SOM (wide waveform, higher tau rise in the ACG i.e. probability of spiking again increases quite slowly)
@@ -25,12 +25,12 @@ z_score_period = 'entire_session'; % 'none' = no z scoring or z score either ove
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis') % 3/5 files will be saved here in the cd
 
-sessions_to_plot = [4, 5, 6, 7, 8]; %4/5 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8   11, 12, 13, 14, 15
+sessions_to_plot = [11, 15]; %4/5 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8   11, 12, 13, 14, 15
 colors = [
     1.0,  0.8,  0.0;  % 1st group - golden yellow (1,0, 1.0, 0.0 for pure yellow)
-    0.4,  0.8,  0.0;  % 2nd group - yellow-green (more yellowish)
-    0.2,  0.6,  0.4;  % 3rd group - pure green
-    0.2,  0.4,  0.6;  % 4th group - greenish blue (not too blue)
+    %0.4,  0.8,  0.0;  % 2nd group - yellow-green (more yellowish)
+    %0.2,  0.6,  0.4;  % 3rd group - pure green
+    %0.2,  0.4,  0.6;  % 4th group - greenish blue (not too blue)
     0.0,  0.0,  0.8];   % 5th group - deep blue
 
 
@@ -463,10 +463,24 @@ for nsession = sessions_to_plot
                 hold on;
 
                 if contains(z_score_period, 'none')
+                    ylim ([0 16]);
+                     % Define grey intervals
+                    grey_intervals = [-0.5 0; 0.6 1.5];
+                                   
+                    % Get current y-axis limits for full vertical shading
+                    yl = ylim;
+                        
+                    % Shade each interval
+                    for i = 1:size(grey_intervals, 1)
+                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                        y = [yl(1), yl(1), yl(2), yl(2)];
+                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
+                    end
+                    
                     % Plot raw mean firing rate trace
                     plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
                     ylabel('Mean firing rate (Hz)', 'FontSize', 14);
-                    ylim ([0 16]);
+                    
                 else 
                     baseline_mean = mean(zscore_counts);
                     baseline_std = std(zscore_counts);
@@ -482,8 +496,6 @@ for nsession = sessions_to_plot
                          colors(find(sessions_to_plot == nsession), :), ...
                          'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
                     
-                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
-
                     if contains(z_score_period, 'entire_session')
                         ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
                         ylim([-1 5]);
@@ -491,6 +503,21 @@ for nsession = sessions_to_plot
                         ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
                         ylim([-1 8]);
                     end
+
+                    % Define grey intervals
+                    grey_intervals = [-0.5 0; 0.6 1.5];
+                                   
+                    % Get current y-axis limits for full vertical shading
+                    yl = ylim;
+                        
+                    % Shade each interval
+                    for i = 1:size(grey_intervals, 1)
+                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                        y = [yl(1), yl(1), yl(2), yl(2)];
+                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
+                    end
+
+                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
                                         
                 end    
                 
@@ -561,19 +588,7 @@ for nsession = sessions_to_plot
                 legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'FontSize', 14);
                 hold on;                
             end
-                    % Define grey intervals
-            grey_intervals = [-0.5 0; 0.6 1.5];
-                           
-            % Get current y-axis limits for full vertical shading
-            yl = ylim;
-                
-            % Shade each interval
-            for i = 1:size(grey_intervals, 1)
-                x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                y = [yl(1), yl(1), yl(2), yl(2)];
-                fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-            end
-
+            
             xline(0, 'k', (sprintf('A %d%s onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
             xline(0.15, 'k', (sprintf('B %d%s onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
             xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
