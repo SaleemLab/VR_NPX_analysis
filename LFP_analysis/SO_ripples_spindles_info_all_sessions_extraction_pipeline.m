@@ -682,6 +682,13 @@ for nsession =1:length(experiment_info)
     [spike_times,sort_idx] =sort(spike_times);
     spike_id=spike_id(sort_idx);
 
+
+%     event_times = [ripples(1).onset(ripples(1).SWS_index==1); ripples(2).onset(ripples(2).SWS_index==1)];
+%     event_id = [ones(sum(ripples(1).SWS_index==1),1); 2*ones(sum(ripples(2).SWS_index==1),1)];
+%     tic
+%     ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,windows,psthBinSize,'unit_id',spatial_cell_id,'event_times',event_times,'event_id',event_id,'shuffle_option',0);
+
+
     mean_activity_track1 = nan(length(spatial_cell_id), 1);
     mean_activity_track2 = nan(length(spatial_cell_id), 1);
 

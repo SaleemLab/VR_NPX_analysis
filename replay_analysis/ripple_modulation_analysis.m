@@ -46,17 +46,17 @@ time_edges = window(1):psthBinSize:window(2);
 spike_times_events = spike_times;
 event_times_unchanged = event_times;
 
-for nevent = 1:no_events
-    if nevent < no_events
-        spike_times_event_index = spike_times < event_times(nevent+1)+window(1) ...
-            & spike_times >=  (event_times(nevent)+window(1));
-    else
-        spike_times_event_index = spike_times >=  (event_times(nevent)+window(1));
-    end
-    spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
-    event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
-
-end
+% for nevent = 1:no_events
+%     if nevent < no_events
+%         spike_times_event_index = spike_times < event_times(nevent+1)+window(1) ...
+%             & spike_times >=  (event_times(nevent)+window(1));
+%     else
+%         spike_times_event_index = spike_times >=  (event_times(nevent)+window(1));
+%     end
+%     spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
+%     event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
+% 
+% end
 
 % unit_id= unique(spike_id);
 cluster_spike_id = cell(size(unit_id));
