@@ -36,7 +36,7 @@ for nsession =1:length(experiment_info)
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
 
-    if length(stimulus_name)>1
+    if length(stimulus_name)>1 % Based on if POST or PRE
         if contains(Stimulus_type,'PRE')
             disp('Same stimuli multiple recordings. Will take _2')
             n = find(contains(stimulus_name,'_2')); % Usually because first stimulus is crashed.
@@ -542,7 +542,7 @@ clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-% Famililar 
+% Famililar
 % experiment_info=experiment_info([4 5 6 ]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
@@ -551,8 +551,10 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN'};
 % Stimulus_types_all = {'RUN','POST'};
 
+session_clusters_all = struct();
+session_count = 0;
 
-for nsession =3:10
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -560,86 +562,229 @@ for nsession =3:10
     % find right date number based on all experiment dates of the subject
     iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
 
-    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
-        options = session_info(n).probe(1);
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
-        if isempty(DIR)
-            continue
-        end
 
-        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-        if ~isempty(DIR1)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-            session_clusters_RUN=session_clusters;
-            clear session_clusters
-        end
-
-        DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-        if ~isempty(DIR2)
-            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
-            session_clusters_RUN=session_clusters;
-            clear session_clusters
-        end
-
-        if contains(stimulus_name{n},'Masa2tracks')
-            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
-            clusters=clusters_ks4;
-        elseif contains(stimulus_name{n},'Sleep')
-%             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
-
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
-
-            clusters=clusters_ks4;
-            load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
-           
+    if length(stimulus_name)>1 % Based on if POST or PRE
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2')); % Usually because first stimulus is crashed.
         else
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
-            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
 
-            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
-            clusters=clusters_ks4;
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+
+            if length(stimulus_name)>1
+                disp('Same stimuli multiple recordings. Will take _2')
+                n = find(contains(stimulus_name,'_2')); % Usually because first stimulus is crashed.
+            else
+                n =1;
+            end
         end
-        clear CA1_clusters V1_clusters
-
-        % From cell structure back to spike times and spike id
-        session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
-        session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
-        [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
-        session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
-
-        session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
-        session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
-        [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
-        session_clusters.spike_id=session_clusters.spike_id(index);
-
-%         params = create_cluster_selection_params('sorting_option','masa');
-        clusters_combined = session_clusters;
-
-        tic
-
-        spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
-            | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
-
-
-        spike_phase_amplitude
-
+    else
+        n = 1;
     end
+
+    options = session_info(n).probe(1);
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+    if isempty(DIR)
+        continue
+    end
+
+
+    session_count = session_count + 1;
+    
+    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+    if ~isempty(DIR1)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    %         DIR2 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+    %         if ~isempty(DIR2)
+    %             load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN2.mat'));
+    %             session_clusters_RUN=session_clusters;
+    %             clear session_clusters
+    %         end
+
+    if contains(stimulus_name{n},'Masa2tracks')
+        % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        clusters=clusters_ks4;
+    elseif contains(stimulus_name{n},'Sleep')
+        %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+        %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+
+        clusters=clusters_ks4;
+        load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
+
+    else
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters=clusters_ks4;
+    end
+    clear CA1_clusters V1_clusters
+
+    % From cell structure back to spike times and spike id
+    session_clusters_RUN.spike_id=vertcat(session_clusters_RUN.spike_id{:});
+    session_clusters_RUN.spike_times=vertcat(session_clusters_RUN.spike_times{:});
+    [session_clusters_RUN.spike_times,index] =sort(session_clusters_RUN.spike_times);
+    session_clusters_RUN.spike_id=session_clusters_RUN.spike_id(index);
+
+    session_clusters.spike_id=vertcat(session_clusters.spike_id{:});
+    session_clusters.spike_times=vertcat(session_clusters.spike_times{:});
+    [session_clusters.spike_times,index] =sort(session_clusters.spike_times);
+    session_clusters.spike_id=session_clusters.spike_id(index);
+
+    %         params = create_cluster_selection_params('sorting_option','masa');
+    clusters_combined = session_clusters;
+
+
+    %%% get
+    HPC_ref_shank=[];
+    ref_shank = [];
+    for nprobe = 1:length(session_info(n).probe)
+        probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+        ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+            &slow_waves(probe_no).probe_hemisphere == probe_no);
+        cortex_ref_shank(probe_no) = ref_shank;
+
+        shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+        HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
+    end
+
+
+    tic
+
+    spatial_cell_id = session_clusters_RUN.cluster_id((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+        | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+    spatial_cell_index = find((session_clusters_RUN.peak_percentile(:,1)>0.95&session_clusters_RUN.odd_even_stability(:,1)>0.95) ...
+        | (session_clusters_RUN.peak_percentile(:,2)>0.95&session_clusters_RUN.odd_even_stability(:,2)>0.95));
+    spike_index=ismember(session_clusters.spike_id,spatial_cell_id);
+    spike_times = session_clusters.spike_times(spike_index);
+    spike_id = session_clusters.spike_id(spike_index);
+    [spike_times,sort_idx] =sort(spike_times);
+    spike_id=spike_id(sort_idx);
+
+    mean_activity_track1 = nan(length(spatial_cell_id), 1);
+    mean_activity_track2 = nan(length(spatial_cell_id), 1);
+
+    for i = 1:length(spatial_cell_id)
+        % Track 1
+        data1 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 1};
+        if ~isempty(data1)
+            mean_activity_track1(i) = mean(data1(:), 'omitnan');
+        end
+
+        % Track 2
+        data2 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 2};
+        if ~isempty(data2)
+            mean_activity_track2(i) = mean(data2(:), 'omitnan');
+        end
+    end
+
+    %%%%%%
+    session_clusters_all.subject(session_count,:) = options.SUBJECT;
+    session_clusters_all.session(session_count,:) = options.SESSION;
+    session_clusters_all.session_day(session_count) = iDate;
+
+    session_clusters_all.spike_id{nsession} =spike_id;
+    session_clusters_all.spike_times{nsession} = spike_times;
+    session_clusters_all.spatial_cell_id{nsession} = spatial_cell_id;
+
+    session_clusters_all.peak_channel{nsession} = session_clusters_RUN.peak_channel(spatial_cell_index);
+    session_clusters_all.peak_depth{nsession} = session_clusters_RUN.peak_depth(spatial_cell_index);
+    session_clusters_all.peak_channel_waveforms{nsession} = session_clusters_RUN.peak_channel_waveforms(spatial_cell_index,:);
+    session_clusters_all.cell_type{nsession} = session_clusters_RUN.cell_type(spatial_cell_index);  % double
+    session_clusters_all.receptive_field{nsession} = session_clusters_RUN.receptive_field(spatial_cell_index);  % cell
+    session_clusters_all.region{nsession} = session_clusters_RUN.region(spatial_cell_index);  % string
+
+    session_clusters_all.spatial_response{nsession} = session_clusters_RUN.spatial_response(spatial_cell_index,:);
+    session_clusters_all.spatial_response_raw{nsession} = session_clusters_RUN.spatial_response_raw(spatial_cell_index,:);
+    session_clusters_all.mean_FR{nsession} = [mean_activity_track1 mean_activity_track2];
+
+
+    session_clusters_all.SMI_peak_RUN1{nsession} = session_clusters_RUN.SMI_peak_RUN1(spatial_cell_index,:);
+    session_clusters_all.SMI_area_RUN1{nsession} = session_clusters_RUN.SMI_area_RUN1(spatial_cell_index,:);
+    session_clusters_all.SMI_peak_RUN2{nsession} = session_clusters_RUN.SMI_peak_RUN2(spatial_cell_index,:);
+    session_clusters_all.SMI_area_RUN2{nsession} = session_clusters_RUN.SMI_area_RUN2(spatial_cell_index,:);
+
+    session_clusters_all.peak_percentile_RUN1{nsession} = session_clusters_RUN.peak_percentile_RUN1(spatial_cell_index,:);
+    session_clusters_all.odd_even_stability_RUN1{nsession} = session_clusters_RUN.odd_even_stability_RUN1(spatial_cell_index,:);
+    session_clusters_all.first_second_stability_RUN1{nsession} = session_clusters_RUN.first_second_stability_RUN1(spatial_cell_index,:);
+    session_clusters_all.peak_percentile_RUN2{nsession} = session_clusters_RUN.peak_percentile_RUN2(spatial_cell_index,:);
+    session_clusters_all.odd_even_stability_RUN2{nsession} = session_clusters_RUN.odd_even_stability_RUN2(spatial_cell_index,:);
+    session_clusters_all.first_second_stability_RUN2{nsession} = session_clusters_RUN.first_second_stability_RUN2(spatial_cell_index,:);
+
+    session_clusters_all.landmark_tuned_status{nsession} = session_clusters_RUN.landmark_tuned_status(spatial_cell_index,:);
+    session_clusters_all.landmark_centres{nsession} = session_clusters_RUN.landmark_centres(spatial_cell_index,:);
+    session_clusters_all.landmark_peaks_all{nsession} = session_clusters_RUN.landmark_peaks_all(spatial_cell_index,:);
+    session_clusters_all.landmark_areas_all{nsession} = session_clusters_RUN.landmark_areas_all(spatial_cell_index,:);
+    session_clusters_all.interneurons_all{nsession} = session_clusters_RUN.interneurons_all(spatial_cell_index,:);
+
+    session_clusters_all.lap_session_ID{nsession} = session_clusters_RUN.lap_seesion_ID;
+    session_clusters_all.pass_landmarks_laps{nsession} = session_clusters_RUN.pass_landmarks_laps;
+    session_clusters_all.spatial_response_all_2cm{nsession} = session_clusters_RUN.spatial_response_all_2cm(spatial_cell_index,:,:);
+
+
+    %%%%%%% Phase and amplitude info
+    session_clusters_all.SO_phase{nsession}           = spike_phase_amplitude.SO_phase(spike_index, cortex_ref_shank);
+    session_clusters_all.SO_amplitude{nsession}       = spike_phase_amplitude.SO_amplitude(spike_index, cortex_ref_shank);
+    session_clusters_all.spindle_phase{nsession}      = spike_phase_amplitude.spindle_phase(spike_index, cortex_ref_shank);
+    session_clusters_all.spindle_amplitude{nsession}  = spike_phase_amplitude.spindle_amplitude(spike_index, cortex_ref_shank);
+    session_clusters_all.ripple_phase{nsession}       = spike_phase_amplitude.ripple_phase(spike_index, HPC_ref_shank);
+    session_clusters_all.ripple_amplitude{nsession}   = spike_phase_amplitude.ripple_amplitude(spike_index, HPC_ref_shank);
+
+    session_clusters_all.theta_phase{nsession}        = spike_phase_amplitude.theta_phase(spike_index, HPC_ref_shank);
+    session_clusters_all.theta_amplitude{nsession}    = spike_phase_amplitude.theta_amplitude(spike_index, HPC_ref_shank);
+
+    %Sort all to match spike_times
+    session_clusters_all.SO_phase{nsession}           = session_clusters_all.SO_phase{nsession}(sort_idx,:);
+    session_clusters_all.SO_amplitude{nsession}       = session_clusters_all.SO_amplitude{nsession}(sort_idx,:);
+    session_clusters_all.spindle_phase{nsession}      = session_clusters_all.spindle_phase{nsession}(sort_idx,:);
+    session_clusters_all.spindle_amplitude{nsession}  = session_clusters_all.spindle_amplitude{nsession}(sort_idx,:);
+    session_clusters_all.ripple_phase{nsession}       = session_clusters_all.ripple_phase{nsession}(sort_idx,:);
+    session_clusters_all.ripple_amplitude{nsession}   = session_clusters_all.ripple_amplitude{nsession}(sort_idx,:);
+    session_clusters_all.theta_phase{nsession}        = session_clusters_all.theta_phase{nsession}(sort_idx,:);
+    session_clusters_all.theta_amplitude{nsession}    = session_clusters_all.theta_amplitude{nsession}(sort_idx,:);
 end
 
+
+
+% ripples_all = rmfield(ripples_all, 'detectorinfo');
+% spindles_all = rmfield(spindles_all, 'detectorinfo');
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
+    save(fullfile(analysis_folder,'session_clusters_all_POST.mat'),'session_clusters_all','-v7.3')
+
+elseif contains(Stimulus_type,'PRE')
+    save(fullfile(analysis_folder,'session_clusters_all_PRE.mat'),'session_clusters_all','-v7.3')
+
+else
+    save(fullfile(analysis_folder,'session_clusters_all.mat'),'session_clusters_all','-v7.3')
+
+end
 
 
 
