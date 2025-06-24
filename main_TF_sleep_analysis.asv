@@ -120,7 +120,7 @@ for nsession =1:length(experiment_info)
 
 
     event_types = {'ripples','spindles','UP_ints','DOWN_ints'};
-
+    
     for e = 1:length(event_types)
 
         TF_amp_V1_ipsi = mean(squeeze([cat(4,TF_amp_V1(1).(event_types{e})(1,:,:,:), TF_amp_V1(2).(event_types{e})(2,:,:,:))]),3,'omitnan');
@@ -130,103 +130,48 @@ for nsession =1:length(experiment_info)
 
         % === V1 Phase ===
         TF_phase_V1_ipsi = squeeze(cat(4, ...
-            TF_phase_V1(1).(event_types{e})(1,:,:,:), ... % V1 L to L events
-            TF_phase_V1(2).(event_types{e})(2,:,:,:)  ... % V1 R to R events
+            TF_phase_V1(1).(event_types)(1,:,:,:), ... % V1 L to L events
+            TF_phase_V1(2).(event_types)(2,:,:,:)  ... % V1 R to R events
             ));  % size: [freq x time x events]
 
         TF_phase_V1_contra = squeeze(cat(4, ...
-            TF_phase_V1(1).(event_types{e})(2,:,:,:), ... % V1 L to R events
-            TF_phase_V1(2).(event_types{e})(1,:,:,:)  ... % V1 R to L events
+            TF_phase_V1(1).(event_types)(2,:,:,:), ... % V1 L to R events
+            TF_phase_V1(2).(event_types)(1,:,:,:)  ... % V1 R to L events
             ));  % size: [freq x time x events]
 
         % === HPC Phase ===
         TF_phase_HPC_ipsi = squeeze(cat(4, ...
-            TF_phase_HPC(1).(event_types{e})(1,:,:,:), ...
-            TF_phase_HPC(2).(event_types{e})(2,:,:,:)  ...
-            ));
+            TF_phase_HPC(1).(event_types)(1,:,:,:), ...
+            TF_phase_HPC(2).(event_types)(2,:,:,:)
+        ));
 
         TF_phase_HPC_contra = squeeze(cat(4, ...
-            TF_phase_HPC(1).(event_types{e})(2,:,:,:), ...
-            TF_phase_HPC(2).(event_types{e})(1,:,:,:)  ...
-            ));
+            TF_phase_HPC(1).(ev)(2,:,:,:), ...
+            TF_phase_HPC(2).(ev)(1,:,:,:)
+        ));
 
-        % Compute average complex phase vector
-        avg_phase_V1_ipsi = angle(mean(exp(1i * TF_phase_V1_ipsi), 3, 'omitnan'));     % [freq x time]
-        avg_phase_V1_contra = angle(mean(exp(1i * TF_phase_V1_contra), 3, 'omitnan'));
-
-        avg_phase_HPC_ipsi = angle(mean(exp(1i * TF_phase_HPC_ipsi), 3, 'omitnan'));
-        avg_phase_HPC_contra = angle(mean(exp(1i * TF_phase_HPC_contra), 3, 'omitnan'));
-
-
-
-        timevec = linspace(-2, 2, size(TF_amp_V1_ipsi, 2));  % time axis
-        freq_band = [0.5 300];
-        freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
-
-        figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
-
-        subplot(2,2,1)
-        imagesc(timevec, log10(freqs), TF_amp_V1_ipsi)
-        axis xy; title(['IPSI V1 - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-        colorbar
-
-        subplot(2,2,2)
-        imagesc(timevec, log10(freqs), TF_amp_V1_contra)
-        axis xy; title(['CONTRA V1 - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_contra, [1 1], 'r--')
-        colorbar
-
-
-        subplot(2,2,3)
-        imagesc(timevec, log10(freqs), TF_amp_HPC_ipsi)
-        axis xy; title(['IPSI HPC - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-        colorbar
-
-        subplot(2,2,4)
-        imagesc(timevec, log10(freqs), TF_amp_HPC_contra)
-        axis xy; title(['CONTRA HPC - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_contra, [1 1], 'r--')
-        colorbar
-
-
-        figure('Name',['TF phase - ' event_types{e}],'Position',[100 100 1200 500])
-
-        subplot(2,2,1)
-        imagesc(timevec, log10(freqs), avg_phase_V1_ipsi)
-        axis xy; title(['IPSI V1 - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-        colorbar
-
-        subplot(2,2,2)
-        imagesc(timevec, log10(freqs), avg_phase_V1_contra)
-        axis xy; title(['CONTRA V1 - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_contra, [1 1], 'r--')
-        colorbar
-
-
-        subplot(2,2,3)
-        imagesc(timevec, log10(freqs), avg_phase_HPC_ipsi)
-        axis xy; title(['IPSI HPC - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-        colorbar
-
-        subplot(2,2,4)
-        imagesc(timevec, log10(freqs), avg_phase_HPC_contra)
-        axis xy; title(['CONTRA HPC - ' event_types{e}])
-        xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
-        % hold on; contour(timevec, log10(freqs), sig_mask_contra, [1 1], 'r--')
-        colorbar
 
     end
+
+    timevec = linspace(-2, 2, size(TF_amp_V1_ipsi, 2));  % time axis
+    freq_band = [0.5 300];
+    freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
+
+    figure('Name',['TF Amplitude - ' ev],'Position',[100 100 1200 500])
+
+    subplot(1,2,1)
+    imagesc(timevec, log10(freqs), TF_amp_V1_ipsi)
+    axis xy; title(['IPSI - ' event_types])
+    xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
+    hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
+    colorbar
+
+    subplot(1,2,2)
+    imagesc(timevec, log10(freqs), TF_amp_V1_contra)
+    axis xy; title(['CONTRA - ' ev])
+    xlabel('Time (s)'), ylabel('log_{10}(Freq Hz)')
+    hold on; contour(timevec, log10(freqs), sig_mask_contra, [1 1], 'r--')
+    colorbar
 
 
     TF_amp_V1

@@ -1721,7 +1721,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =2:length(experiment_info)
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -1878,10 +1878,11 @@ for nsession =2:length(experiment_info)
         timebin = abs(diff(win_save_samp)) + 1;
         tvec = win_save(1):1/fs:win_save(end);
 
-        freq_band = [0.5 300];
+        freq_band = [1 300];
         freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
-        nCycles = round(max(5, freqs * 0.1));
-        nCycles(nCycles > 20) = 20;
+        nCycles = logspace(log10(3), log10(20), 100);
+        % nCycles = (max(5, freqs * 0.1));
+        % nCycles(nCycles > 20) = 20;
 %         nCycles = round(min(20, freqs * 0.1));
 
         event_types = {'ripples','spindles','UP_ints','DOWN_ints'};
