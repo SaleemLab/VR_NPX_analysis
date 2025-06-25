@@ -1,4 +1,6 @@
-function predict_ipsi_contra_UP_DOWN_ripples_MUA(slow_waves_all,ripples_all,spindles_all)
+%%%%%% Main script for mixed effect and cox regression analysis to examine
+%%%%%% predictive relationship between ripples and DOWN UP states and
+%%%%%% spindles
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -12,10 +14,10 @@ elseif exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 % % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
-% load(fullfile(analysis_folder,'ripples_all_POST.mat'))
-% load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 % load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
@@ -27,10 +29,12 @@ probability_psth_whole = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 probability_psth = probability;
 
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
 PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+
 
 % %%%%%%%
 % % Phase-amplitude coupling
@@ -479,8 +483,7 @@ ripple_mua_suffixes = {
     'normalised_ripple_%s_MUA_cumulative'
     'first_ripple_%s_MUA_peak'
     'last_ripple_%s_MUA_peak'
-    'first_ripple_%s_MUA_cumulative'
-    'last_ripple_%s_MUA_cumulative'
+    % 'ripple_%s_MUA_cumulative'
 };
 
 
@@ -703,6 +706,172 @@ output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MU
     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
 
 
+%% Effect of ripples and cumulative HPC activities  on UP survival probability
+UP_session_count = [slow_waves_all(1).UP_session_count(probability(1).UP_all_index); slow_waves_all(2).UP_session_count(probability(2).UP_all_index)];
+subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+UP_DOWN_info.subject_id = subject_id;
+
+%%%%%%%%%%%%% Ripple power predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_last_ripples_power_UP, UP_DOWN_info.contra_last_ripples_power_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[], ...
+    'event_option',[],'title_name', 'Last ripple peak power and last ripple to UP-DOWN transition','subject_id',subject_id...
+);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis'),[])
+
+
+% plot_UP_survival_probability( ...
+%     {UP_DOWN_info.ipsi_last_ripples_power_UP, UP_DOWN_info.contra_last_ripples_power_UP}, ...
+%     {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+%     {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',1,'subject_id',subject_id, ...
+%     'event_option',[],'title_name', 'Last ripple peak power and last ripple to UP-DOWN transition (1 ripple)'...
+% );
+
+% 
+% % Ripple MUA peak predicts UP probability
+% plot_UP_survival_probability( ...
+%     {UP_DOWN_info.ipsi_last_ripple_V1_MUA_peak_UP, UP_DOWN_info.contra_last_ripple_V1_MUA_peak_UP}, ...
+%     {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+%     {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+%     'event_option',[],'title_name', 'Last ripple V1 peak MUA and last ripple to UP-DOWN transition'...
+% );
+
+
+%%%%%%%%%%%%% cumulative ripple HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_ripple_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_ripple_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Ripple cumulative HPC MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% cumulative ripple HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_normalised_ripple_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_normalised_ripple_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Ripple normalised cumulative HPC MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+% cumulative ripple V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_ripple_V1_MUA_cumulative_UP, UP_DOWN_info.contra_ripple_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Ripple cumulative V1 MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% cumulative ripple HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_normalised_ripple_V1_MUA_cumulative_UP, UP_DOWN_info.contra_normalised_ripple_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Ripple normalised cumulative V1 MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+%%%%%%%%%%%%%%%%% ripple bilateral synchrony does not predict UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_last_ripples_lag_diff_UP, UP_DOWN_info.contra_last_ripples_lag_diff_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[], ...
+    'event_option',[],'title_name', 'Last ripple synchrony and last ripple to UP-DOWN transition','subject_id',subject_id...
+);
+
+
+
+%%%%%%%%%%%%%%%% Normalised cumulative HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_normalised_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_normalised_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative HPC MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% Normalsied cumulative V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_normalised_V1_MUA_cumulative_UP, UP_DOWN_info.contra_normalised_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative V1 MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+%%%%%%%%%%%%%%%% 1st half Normalised cumulative HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_first_half_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_first_half_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative HPC MUA 1st half and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% 1st half Normalsied cumulative V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_first_half_V1_MUA_cumulative_UP, UP_DOWN_info.contra_first_half_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative V1 MUA 1st and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+% 2nd half Normalised cumulative HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_second_half_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative HPC MUA 2nd half and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% 2nd half Normalsied cumulative V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_second_half_V1_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative V1 MUA 2nd and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+%%%%%%%%%%%%%%% 2nd half - 1st ha；
+
+% 2nd half Normalised cumulative HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_second_half_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative HPC MUA 2nd half and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% 2nd half Normalsied cumulative V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_second_half_V1_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative V1 MUA 2nd and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+%%%%%%%%%%%%%%%% cumulative HPC MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_HPC_MUA_cumulative_UP, UP_DOWN_info.contra_HPC_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Cumulative HPC MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+
+% cumulative V1 MUA predicts UP probability
+plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_V1_MUA_cumulative_UP, UP_DOWN_info.contra_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.ipsi_time_from_last_ripples_UP, UP_DOWN_info.contra_time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ipsi_ripple_counts_UP, UP_DOWN_info.contra_ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Cumulative V1 MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis'),[])
+
 %% Ripple predicted by spindle and SO phase and amplitude
 
 
@@ -749,39 +918,42 @@ for probe_no = 1:2
 end
 
 spindle_amplitude(1,:) = [spindle_amplitude1{1}(1,ripples_all(1).SWS_index==1) spindle_amplitude1{2}(2,ripples_all(2).SWS_index==1)];
-spindle_amplitude(2,:) = [spindle_amplitude1{2}(2,ripples_all(2).SWS_index==1) spindle_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
+spindle_amplitude(2,:) = [spindle_amplitude1{1}(2,ripples_all(1).SWS_index==1) spindle_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
 
 ripple_info.spindle_amplitude = spindle_amplitude';
 
 %%% SO phase
 SO_phase=[];
+SO_phase1=[];
 for probe_no = 1:2
-    SO_phase{probe_no}=[];
+    SO_phase1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase1{probe_no} = [SO_phase1{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
-SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
-
+SO_phase(1,:) = [SO_phase1{1}(1,ripples_all(1).SWS_index==1) SO_phase1{2}(2,ripples_all(2).SWS_index==1)];
+SO_phase(2,:) = [SO_phase1{1}(2,ripples_all(1).SWS_index==1) SO_phase1{2}(1,ripples_all(2).SWS_index==1)];
 ripple_info.SO_phase = SO_phase';
 
 %%% SO power
 SO_amplitude=[];
+SO_amplitude1=[];
 for probe_no = 1:2
-    SO_amplitude{probe_no}=[];
+    SO_amplitude1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_amplitude1{probe_no} = [SO_amplitude1{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
-SO_amplitude = [SO_amplitude{1}(:,ripples_all(1).SWS_index==1) SO_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+SO_amplitude(1,:) = [SO_amplitude1{1}(1,ripples_all(1).SWS_index==1) SO_amplitude1{2}(2,ripples_all(2).SWS_index==1)];
+SO_amplitude(2,:) = [SO_amplitude1{1}(2,ripples_all(1).SWS_index==1) SO_amplitude1{2}(1,ripples_all(2).SWS_index==1)];
 
 ripple_info.SO_amplitude = SO_amplitude';
 
 
 %%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.1]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
 ripple_info.early_UP_index = UP_index;
 ripple_info.early_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
@@ -789,7 +961,7 @@ ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemispher
 
 
 %%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.1 merged_event_info.DOWN_ints(:,1)]);
+[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
 ripple_info.late_UP_index = UP_index;
 ripple_info.late_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
@@ -823,22 +995,22 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 %%%%%%%%%%%%% Mixed effect model (Does spindle and SO predict ripple power?)
 
 output = predict_ripples_by_SO_spindles(ripple_info,'subject_id',subject_id);
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_amp_phase_Ripples_output.mat'),'output');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_amp_phase_Ripples_output.mat'),'output')
+predict_ripples_by_SO_spindles(ripple_info,'subject_id',subject_id,'output',output,'plot_option',1);
+
 
 
 predict_ripples_by_SO_spindles_TF(ripple)
 
-%% Predicts DOWN probability and V1 MUA based on Ripple power
 
-
-probability_psth_whole(1).DOWN_all_index
-[C,ia,ib] = intersect(merged_event_info.DOWN_ints(:,2),merged_event_info.UP_ints(:,1));
-
-merged_event_info.DOWN_index_sorted(ia)
-
-
-probability_psth_whole(1).UP_all_index
 %%
-%%%%%%%%%%%%%% Survival
+%%%%%%%%%%%%% Effect of ripples on UP survival probability
+
+
+
+
 [b, logl, H, stats] = coxphfit(abs(lags(lag_index)'), UP_DOWN_info.ipsi_time_from_last_ripples_UP(index)', 'Strata', subject_id);
 
 
@@ -953,6 +1125,10 @@ UCI = prctile(y_boot,97.5)';
 PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
 
+ylabel('Survival probability of UP')
+xlabel('Time (s)')
+xlim([0 0.3])
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(2,2,2)
 hold on;
@@ -964,5 +1140,101 @@ y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
 PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
 
+ylabel('Survival probability of UP')
+xlabel('Time (s)')
+xlim([0 0.3])
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
+
+
+
+% [C,index,ib] = intersect(non_overlap_idx,find(~isnan(ripples_info.ipsi_last_ripples_power_UP))');
+index = intersect(find(~isnan(UP_DOWN_info.contra_ripple_counts_UP))',find(UP_DOWN_info.contra_ripple_counts_UP>0)');
+data = UP_DOWN_info.contra_last_ripples_power_UP(index);
+
+% index = intersect(find(~isnan(ripples_info.ipsi_last_ripples_lag_UP))',find(ripples_info.ipsi_ripple_counts_UP>0)');
+% data = ripples_info.ipsi_last_ripples_lag_UP(index);
+ripple_threshold1 = prctile(data,25);
+ripple_threshold2 = prctile(data,75);
+event_id = find(data<ripple_threshold1);
+timeToTransition_ripples = UP_DOWN_info.contra_time_from_last_ripples_UP(index);
+
+
+colour_lines = [158,154,200;74,20,134]/256;
+% colour_lines = [116,196,118;0,90,50]/256;
+subplot(2,2,3)
+y_boot=[];
+for iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+
+    [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
+    temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
+    [temp_x,idx]= unique(temp_x);
+    temp_y = temp_y(idx);
+    y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
 end
+
+% yyaxis left
+x = binCenters';  % 'previous' for step behavior like ECDF
+y = mean(y_boot)';
+LCI = prctile(y_boot,2.5)';
+UCI = prctile(y_boot,97.5)';
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+subplot(2,2,4)
+hold on;
+x = binCenters';  % 'previous' for step behavior like ECDF
+y = mean(diff(y_boot')')';
+LCI = prctile(diff(y_boot')',2.5)';
+UCI = prctile(diff(y_boot')',97.5)';
+y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
+ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+
+
+
+event_id = find(data>ripple_threshold2);
+subplot(2,2,3)
+y_boot=[];
+for iBoot = 1:1000
+    s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+
+    [temp_y,temp_x] = ecdf(timeToTransition_ripples(datasample(s,event_id,length(event_id))),'Function', 'survivor');
+    temp_x(isnan(temp_y)) = [];temp_y(isnan(temp_y)) = [];
+    [temp_x,idx]= unique(temp_x);
+    temp_y = temp_y(idx);
+    y_boot(iBoot,:) = interp1(temp_x, temp_y, binCenters, 'previous', 'extrap')';  % 'previous' for step behavior like ECDF
+end
+hold on;
+% yyaxis left
+x = binCenters';  % 'previous' for step behavior like ECDF
+y = mean(y_boot)';
+LCI = prctile(y_boot,2.5)';
+UCI = prctile(y_boot,97.5)';
+%         y = y(x >= 0);LCI = LCI(x >= 0);UCI = UCI(x >= 0);x = x(x >= 0);
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+ylabel('Survival probability of UP')
+xlabel('Time (s)')
+xlim([0 0.3])
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+subplot(2,2,4)
+hold on;
+x = binCenters';  % 'previous' for step behavior like ECDF
+y = mean(diff(y_boot')')';
+LCI = prctile(diff(y_boot')',2.5)';
+UCI = prctile(diff(y_boot')',97.5)';
+y = [0; y];LCI = [0; LCI];UCI = [0; UCI];
+PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
+ERROR_SHADE(1) = patch([x' fliplr(x')],[UCI' fliplr(LCI')],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+ylabel('Survival probability of UP')
+xlabel('Time (s)')
+xlim([0 0.3])
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
