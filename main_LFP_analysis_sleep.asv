@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:16
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2480,7 +2480,7 @@ for nsession =1:16
         %         end
 
 
-        %%% get
+        %%% get 
         HPC_ref_shank=[];
         ref_shank = [];
         for nprobe = 1:length(session_info(n).probe)
@@ -2494,7 +2494,7 @@ for nsession =1:16
             HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
         end
 
-
+      
         disp('Peri event TF and PPC analysis')
 
         % Parameters
@@ -2613,32 +2613,36 @@ for nsession =1:16
 
 
             end
+
+
+
             toc
+
         end
 
         TF_amp_V1(1).timebin   = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_V1(1).timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_amp_HPC(1).timebin  =  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_HPC(1).timebin=  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_phase_V1(nprobe).timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_amp_HPC(nprobe).timebin  =  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_phase_HPC(nprobe).timebin=  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
 
-        TF_amp_V1(1).freq   = TFR.freq;
-        TF_phase_V1(1).freq = TFR.freq;
-        TF_amp_HPC(1).freq  = TFR.freq;
-        TF_phase_HPC(1).freq= TFR.freq;
+        TF_amp_V1(nprobe).freq   = f(fidx);
+        TF_phase_V1(nprobe).freq = f(fidx);
+        TF_amp_HPC(nprobe).freq  = f(fidx);
+        TF_phase_HPC(nprobe).freq= f(fidx);
 
         if contains(stimulus_name{n},'Masa2tracks')
-
-            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_amplitude_ft%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_amp_HPC','TF_amp_V1','-v7.3');
+         
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_amp_HPC','TF_amp_V1','-v7.3');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_phase%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_phase_V1','TF_phase_HPC','-v7.3');
 
-            %             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
         else
 
 
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude_ft.mat'),'TF_amp_HPC','TF_amp_V1','-v7.3');
-            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase_ft.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude.mat'),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
-            %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
         end
     end
 end

@@ -251,9 +251,6 @@ for nsession =1:length(experiment_info)
                 % 
                 
                 amp_corr_V1 = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_V1_contra(:,:,status_UP));
-                amp_corr_HPC = amplitude_corr_tf(TF_phase_HPC_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
-                amp_corr_V1_HPC_ipsi = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_ipsi(:,:,status_UP));
-                amp_corr_V1_HPC_contra = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
 
                 amp_corr_V1 = abs(mean(exp(1i * (TF_amp_V1_ipsi(:,:,status_UP) - TF_phase_V1_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
                 amp_corr_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
@@ -486,7 +483,7 @@ for nsession =1:length(experiment_info)
             xline(0,'r--')
             xlim([-2 2])
             ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
+            clim([0 0.6])
             yline(log2([9 17]))
             yline(log2([1 4]))
             yline(log2([125 300]))
@@ -504,14 +501,14 @@ for nsession =1:length(experiment_info)
             xline(0,'r--')
             xlim([-2 2])
             ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
+            clim([0 0.6])
             yline(log2([9 17]))
             yline(log2([1 4]))
             yline(log2([125 300]))
             set(gca,'TickDir','out','Box','off','FontSize',12)
 
             subplot(2,2,4)
-            contourf(timevec, log2(freqs), amp_corr_V1_HPC_contra,40,'linecolor','none')
+            contourf(timevec, log2(freqs), PLV_V1_HPC_contra,40,'linecolor','none')
             axis xy; title(['Contra corr - ' event_types{e}])
             xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
             % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
@@ -522,7 +519,7 @@ for nsession =1:length(experiment_info)
             xline(0,'r--')
             xlim([-2 2])
             ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
+            clim([0 0.6])
             yline(log2([9 17]))
             yline(log2([1 4]))
             yline(log2([125 300]))
