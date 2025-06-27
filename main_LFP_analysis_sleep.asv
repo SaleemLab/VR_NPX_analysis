@@ -25,6 +25,8 @@ experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 % Stimulus_type = 'SleepChronic';
 % all_stimulus_type={'RUN'};
 all_stimulus_type={'SleepChronic'};
+
+
 for nstimuli = 1:length(all_stimulus_type)
     for nsession = 1:length(experiment_info)
 
@@ -2028,7 +2030,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =19:15
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2221,7 +2223,7 @@ for nsession =19:15
         win_save_samp = find(t >=win_save(1) & t <=win_save(2));
         baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
 
-
+        nprobe = 1;
         TF_amp_V1(nprobe).timebin   = t(win_save_samp); 
         TF_phase_V1(nprobe).timebin =  t(win_save_samp);
         TF_amp_HPC(nprobe).timebin  =  t(win_save_samp);
@@ -2333,16 +2335,332 @@ end
 
 
 
+%% LFP time frequency analysis (fieldtrip)
+% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\fieldtrip'))
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+        if ~isempty(DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+
+        if ~isempty(DIR1)
+            load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+            session_clusters_RUN=session_clusters;
+            clear session_clusters
+        end
+        tic
+        if contains(stimulus_name{n},'Masa2tracks')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+            clusters=clusters_ks4;
+        elseif contains(stimulus_name{n},'Sleep')
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
+            %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        else
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+            % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+            clusters=clusters_ks4;
+        end
+        toc
+
+
+        params = create_cluster_selection_params('sorting_option','masa');
+        % PSD slope quantification using fooof ()
+        tvec = LFP(1).tvec;
+        SR = round(1/mean(diff(tvec)));
+        nfft_seconds= 2;
+        nfft = 2^(nextpow2(SR*nfft_seconds));
+        win  = hanning(nfft);
+
+        %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+
+        filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+        filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
+        filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+        filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
+        filterparms.gammafilter = [100 400];
+        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+
+        %         for nprobe = 1:length(session_info(n).probe)
+        nprobe = 1;
+        probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+        if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+            time_idx = 1:length(LFP(1).best_HPC);
+        elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+            time_idx = 1:length(LFP(2).best_HPC);
+        else
+            time_idx = 1:length(LFP(1).best_HPC) ;
+        end
+
+        lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+        lfp.timestamps = LFP(probe_no).tvec(time_idx);
+        tvec = LFP(probe_no).tvec(time_idx);
+
+        lfp_V1 = lfp;
+        lfp_HPC = lfp;
+        lfp_V1.data=[];
+        lfp_HPC.data=[];
+
+        if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+            probe_id = [];
+
+            if length(LFP)==1
+                lfp_HPC.data= [LFP(probe_no).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(probe_no).best_V1(:,time_idx)'];
+            else
+                lfp_HPC.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
+            end
+        end
+        %         end
+
+
+        %%% get 
+        HPC_ref_shank=[];
+        ref_shank = [];
+        for nprobe = 1:length(session_info(n).probe)
+            probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+            ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+                &slow_waves(probe_no).probe_hemisphere == probe_no);
+            cortex_ref_shank(probe_no) = ref_shank;
+
+            shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+            HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
+        end
+
+      
+        disp('Peri event TF and PPC analysis')
+
+        % Parameters
+        win_full = [-7 7];% full windows for extraction
+        win_save = [-2 2];% windwos for saving
+        baseline_win = [-2 -1.5];%windows used for baseline
+        % downsample_factor = 25;
+        fs = lfp_V1.samplingRate;
+
+        win_full_samp = round(win_full * fs);
+
+
+        freq_band = [1 300];
+        freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 150);
+
+
+        %%%%%%%%%%% initialise variables
+
+        event_types = {'ripples','spindles','UP','DOWN'};
+
+        % Output structures
+        TF_amp_V1 = struct(); TF_phase_V1 = struct();
+        TF_amp_HPC = struct(); TF_phase_HPC = struct();
+        % PPC_V1_HPC = struct(); PPC_V1 = struct(); PPC_HPC = struct();
+
+        win_save_samp = find(t >=win_save(1) & t <=win_save(2));
+        baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
+
+        for nprobe = 1:length(session_info(n).probe)
+            tic
+            disp(['Processing probe ' num2str(nprobe)]);
+
+
+
+            % Interpolate event onsets to sample indices
+            ripple_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), ripples(nprobe).onset, 'nearest', 'extrap'));
+            spindle_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), spindles(nprobe).onset, 'nearest', 'extrap'));
+            up_sample_idx      = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).UP_ints(:,1), 'nearest', 'extrap'));
+            down_sample_idx    = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), slow_waves(nprobe).DOWN_ints(:,1), 'nearest', 'extrap'));
+
+            for eidx = 1:length(event_types)
+                event_name = event_types{eidx};
+                switch event_name
+                    case 'ripples'
+                        onsets = ripple_sample_idx;
+                    case 'spindles'
+                        onsets = spindle_sample_idx;
+                    case 'UP'
+                        onsets = up_sample_idx;
+                    case 'DOWN'
+                        onsets = down_sample_idx;
+                end
+
+                nevents = length(onsets);
+
+                % Preallocate outputs
+
+                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
+
+                %                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
+                %                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
+                %                 PPC_HPC(nprobe).(event_name)     = single(nan(length(freqs),timebin, nevents));
+
+                cfg = [];
+                cfg.method       = 'mtmconvol';
+                cfg.output       = 'fourier';
+                cfg.taper        = 'hanning';
+                cfg.foi          = freqs;
+                cfg.t_ftimwin    = max(1 ./ freqs * 5, 0.1);
+                cfg.toi          = win_full(1)+0.02/2:0.02:win_full(end)-0.02/2;
+                cfg.pad          = 'nextpow2';
+                cfg.keeptrials   = 'yes';
+                cfg.numworkers  = 4;            % or however many CPU cores you want
+
+
+                data = [];
+                % data2 = [];
+
+                for nevent = 1:nevents
+                    t0 = onsets(nevent);
+                    idx_full = t0 + win_full_samp(1):t0 + win_full_samp(2);
+                    if idx_full(1) < 1 || idx_full(end) > size(lfp_V1.data,1)
+                        data.trial{nevent}  = zeros(4,length(idx_full));
+                        data.time{nevent}  = win_full(1):1/fs:win_full(end);
+                    else
+                        data.trial{nevent}  = [lfp_V1.data(idx_full, cortex_ref_shank)'; lfp_HPC.data(idx_full, HPC_ref_shank)'];
+                        data.time{nevent}  = win_full(1):1/fs:win_full(end);
+                    end
+                end
+
+                data.fsample = fs;
+                data.label = {'V1_L','V1_R','HPC_L','HPC_R'};  % one channel
+
+
+                TFR = ft_freqanalysis(cfg, data);
+                TFR.fourierspctrm = permute(TFR.fourierspctrm, [2 3 4 1]);
+
+                % Extract [-2 2] seconds
+                FFT=TFR.fourierspctrm(:,:,    TFR.time <= 2 &   TFR.time >= -2,:);
+
+
+                TF_amp_V1(nprobe).(event_name)(1, :, :, :) = single(abs(squeeze(FFT(1,:,:,:)).^2));
+                TF_phase_V1(nprobe).(event_name)(1, :, :, :) = single(angle(squeeze(FFT(1,:,:,:))));
+
+                TF_amp_V1(nprobe).(event_name)(2, :, :, :) = single(abs(squeeze(FFT(2,:,:,:)).^2));
+                TF_phase_V1(nprobe).(event_name)(2, :, :, :) = single(angle(squeeze(FFT(1,:,:,:))));
+
+                TF_amp_HPC(nprobe).(event_name)(1, :, :, :) = single(abs(squeeze(FFT(3,:,:,:)).^2));
+                TF_phase_HPC(nprobe).(event_name)(1, :, :, :) = single(angle(squeeze(FFT(3,:,:,:))));
+
+                TF_amp_HPC(nprobe).(event_name)(2, :, :, :) = single(abs(squeeze(FFT(4,:,:,:)).^2));
+                TF_phase_HPC(nprobe).(event_name)(2, :, :, :) = single(angle(squeeze(FFT(4,:,:,:))));
+
+
+            end
+
+
+
+            toc
+
+        end
+
+        TF_amp_V1(1).timebin   = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_phase_V1(nprobe).timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_amp_HPC(nprobe).timebin  =  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        TF_phase_HPC(nprobe).timebin=  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+
+        TF_amp_V1(nprobe).freq   = f(fidx);
+        TF_phase_V1(nprobe).freq = f(fidx);
+        TF_amp_HPC(nprobe).freq  = f(fidx);
+        TF_phase_HPC(nprobe).freq= f(fidx);
+
+        if contains(stimulus_name{n},'Masa2tracks')
+         
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_amplitude%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_TF_phase%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'TF_phase_V1','TF_phase_HPC','-v7.3');
+
+%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+        else
+
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude.mat'),'TF_amp_HPC','TF_amp_V1','-v7.3');
+            save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
+            % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
+%             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
+        end
+    end
+end
+
+
 % Convert power to dB
 t = t - median(t);
 
+S = (mean(squeeze(single(abs(squeeze(FFT(1,:,:,:)).^2))),3,'omitnan'));
 S_dB = 10 * log10(S);
 
 % % Create contour plot
 timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
+
+timtevec = TFR.time(TFR.time>=-2 & TFR.time<=2);
 figure;
 nexttile
-[~, h] = contourf(t, f, S_dB', 40, 'LineColor', 'none'); % 40 contour levels
+[~, h] = contourf(timtevec, TFR.freq, S_dB, 40, 'LineColor', 'none'); % 40 contour levels
 axis xy;
 xlabel('Time (s)');
 ylabel('Frequency (Hz)');
