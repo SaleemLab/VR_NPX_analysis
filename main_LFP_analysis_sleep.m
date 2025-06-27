@@ -2342,7 +2342,7 @@ end
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\fieldtrip'))
-
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip'))
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:16
+for nsession =17:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2520,8 +2520,8 @@ for nsession =1:16
         TF_amp_HPC = struct(); TF_phase_HPC = struct();
         % PPC_V1_HPC = struct(); PPC_V1 = struct(); PPC_HPC = struct();
 
-        win_save_samp = find(t >=win_save(1) & t <=win_save(2));
-        baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
+%         win_save_samp = find(t >=win_save(1) & t <=win_save(2));
+%         baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
 
         for nprobe = 1:length(session_info(n).probe)
             tic
@@ -2552,10 +2552,10 @@ for nsession =1:16
 
                 % Preallocate outputs
 
-                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
 
                 %                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
                 %                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
@@ -2643,7 +2643,7 @@ for nsession =1:16
     end
 end
 
-
+t
 % Convert power to dB
 t = t - median(t);
 
