@@ -2030,7 +2030,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:15
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2223,7 +2223,7 @@ for nsession =1:15
         win_save_samp = find(t >=win_save(1) & t <=win_save(2));
         baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
 
-
+        nprobe = 1;
         TF_amp_V1(nprobe).timebin   = t(win_save_samp); 
         TF_phase_V1(nprobe).timebin =  t(win_save_samp);
         TF_amp_HPC(nprobe).timebin  =  t(win_save_samp);

@@ -116,8 +116,9 @@ for nsession =1:length(experiment_info)
         clusters=clusters_ks4;
     end
 
-
-
+    
+    timevec = TF_phase_HPC(:).timebin;
+    freqs = TF_amp_V1(:).freq;
 
     event_types = {'ripples','spindles','UP_ints','DOWN_ints'};
 
@@ -159,9 +160,9 @@ for nsession =1:length(experiment_info)
 
 
 
-        timevec = linspace(-2, 2, size(TF_amp_V1_ipsi, 2));  % time axis
-        freq_band = [0.5 300];
-        freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
+        % timevec = linspace(-2, 2, size(TF_amp_V1_ipsi, 2));  % time axis
+        % freq_band = [0.5 300];
+        % freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 100);
 
         figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
 

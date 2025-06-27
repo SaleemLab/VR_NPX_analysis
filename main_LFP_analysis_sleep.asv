@@ -2028,7 +2028,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:length(experiment_info)
+for nsession =19:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2262,10 +2262,10 @@ for nsession =1:length(experiment_info)
 
                 % Preallocate outputs
                 
-                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(freqs), timebin, nevents));
-                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(freqs), timebin, nevents));
-                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(freqs), timebin, nevents));
-                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(freqs), timebin, nevents));
+                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
+                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
 
 %                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
 %                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
@@ -2277,58 +2277,38 @@ for nsession =1:length(experiment_info)
                     idx_full = t0 + win_full_samp(1):t0 + win_full_samp(2);
                     if idx_full(1) < 1 || idx_full(end) > size(lfp_V1.data,1), continue; end
 
-                    for vhemi = 1:2
-                        dat = lfp_V1.data(idx_full, cortex_ref_shank(vhemi));
-                        [phi,S,t,f] = mtspecgramc(dat, movingwin, params);
-                        
-                        % [C, phi, S12,S1, S2, t, f] = cohgramc(dat,dat1, movingwin, params);
+                    for hemi = 1:2
 
+                        % V1
+                        dat = lfp_V1.data(idx_full, cortex_ref_shank(hemi));
+                        [phi,S,t,f] = mtspecgramc(dat, movingwin, params);
                         amp_all = S(win_save_samp,fidx);
                         phase_all = phi(win_save_samp,fidx);
 
                         % base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
                         % amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
 
-                        TF_amp_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(amp_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
-                        TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
-                    end
+                        TF_amp_V1(nprobe).(event_name)(hemi, :, :, nevent) = single(amp_all');
+                        TF_phase_V1(nprobe).(event_name)(hemi, :, :, nevent) = single(phase_all');
 
-                    for hhemi = 1:2
-                        dat = lfp_HPC.data(idx_full, HPC_ref_shank(hhemi));
+
+                        % HPC
+                        dat = lfp_HPC.data(idx_full, HPC_ref_shank(hemi));
                         [phi,S,t,f] = mtspecgramc(dat, movingwin, params);
+                        amp_all = S(win_save_samp,fidx);
+                        phase_all = phi(win_save_samp,fidx);
 
-                        amp_all = S;
-                        phase_all = phi;
-                        % 
                         % base = mean(amp_all(baseline_samp(1):baseline_samp(2), :), 1);
                         % amp_norm = 10 * log10(bsxfun(@rdivide, amp_all, base));
 
-                        TF_amp_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(amp_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
-                        TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent) = single(phase_all(win_save_samp(1)-win_full_samp(1)+1:win_save_samp(2)-win_full_samp(1)+1, :)');
+                        TF_amp_HPC(nprobe).(event_name)(hemi, :, :, nevent) = single(amp_all');
+                        TF_phase_HPC(nprobe).(event_name)(hemi, :, :, nevent) = single(phase_all');
+
+
+                        % [C, phi, S12,S1, S2, t, f] = cohgramc(dat,dat1, movingwin, params);
                     end
 
-%                     % Compute PPC across time and frequency
-%                     for vhemi = 1:2
-%                         for hhemi = 1:2
-%                             v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
-%                             hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
-% 
-%                             % Compute phase difference: still [freq x time]
-%                             phase_diff = exp(1i * (v1p - hpcp));
-% 
-%                             % Assign directly
-%                             PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
-%                         end
-%                     end
-% 
-%                     % Cross-hemispheric PPC
-%                     v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
-%                     v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
-%                     hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
-%                     hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
-% 
-%                     PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
-%                     PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
+
                 end
             end
             toc
@@ -2347,11 +2327,8 @@ for nsession =1:length(experiment_info)
             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'),'TF_phase_V1','TF_phase_HPC','-v7.3');
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
 %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
-
- 
         end
     end
-
 end
 
 
@@ -2398,11 +2375,15 @@ colormap(jet)
 
 figure(2), clf
 subplot(2,1,1)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(TF_amp_V1(nprobe).(event_name)(1, :, :, :)),3),40,'linecolor','none')
+timevec = TF_amp_V1(nprobe).timebin;
+freqs = TF_amp_V1(nprobe).freq;
+signal = TF_amp_HPC(nprobe).(event_name)(1, :, :, :);
+signal = 10 * log10(signal);
+
+contourf(timevec,freqs,mean(squeeze(signal),3,'omitnan'),40,'linecolor','none')
 title(['Power time-freqeuncy plot V1'])
 xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
+set(gca,'ylim',[1 300])
 colormap(jet)
 
 subplot(2,1,2)
@@ -2410,7 +2391,7 @@ timevec = linspace(-2, 2, 201);  % time axis
 contourf(timevec,freqs,mean(squeeze(TF_amp_V1(nprobe).(event_name)(2, :, :, nevent)),3),40,'linecolor','none')
 title(['Power time-freqeuncy plot V1'])
 xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
+set(gca,'ylim',[1 300])
 colormap(jet)
 
 
