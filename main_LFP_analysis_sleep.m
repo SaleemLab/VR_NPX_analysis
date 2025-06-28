@@ -2590,7 +2590,7 @@ for nsession =1:16
 
                 data.fsample = fs;
                 data.label = {'V1_L','V1_R','HPC_L','HPC_R'};  % one channel
-
+                
                 clear TFR
                 TFR = ft_freqanalysis(cfg, data);
                 TFR.fourierspctrm = permute(TFR.fourierspctrm, [2 3 4 1]);
@@ -2611,20 +2611,23 @@ for nsession =1:16
                 TF_amp_HPC(nprobe).(event_name)(2, :, :, :) = single(abs(squeeze(FFT(4,:,:,:)).^2));
                 TF_phase_HPC(nprobe).(event_name)(2, :, :, :) = single(angle(squeeze(FFT(4,:,:,:))));
 
-
             end
             toc
         end
 
-        TF_amp_V1(1).timebin   = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_V1(1).timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_amp_HPC(1).timebin  =  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_HPC(1).timebin=  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        freqs = TFR.freq;
+        timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        clear TFR
 
-        TF_amp_V1(1).freq   = TFR.freq;
-        TF_phase_V1(1).freq = TFR.freq;
-        TF_amp_HPC(1).freq  = TFR.freq;
-        TF_phase_HPC(1).freq= TFR.freq;
+        TF_amp_V1(1).timebin   = timebin;
+        TF_phase_V1(1).timebin = timebin;
+        TF_amp_HPC(1).timebin  =  timebin;
+        TF_phase_HPC(1).timebin=  timebin;
+
+        TF_amp_V1(1).freq   = freqs;
+        TF_phase_V1(1).freq = freqs;
+        TF_amp_HPC(1).freq  = freqs;
+        TF_phase_HPC(1).freq= freqs;
 
         if contains(stimulus_name{n},'Masa2tracks')
 
