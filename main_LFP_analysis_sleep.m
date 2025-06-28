@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =17:22
+for nsession =1:16
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2591,7 +2591,7 @@ for nsession =17:22
                 data.fsample = fs;
                 data.label = {'V1_L','V1_R','HPC_L','HPC_R'};  % one channel
 
-
+                clear TFR
                 TFR = ft_freqanalysis(cfg, data);
                 TFR.fourierspctrm = permute(TFR.fourierspctrm, [2 3 4 1]);
 
@@ -2640,6 +2640,8 @@ for nsession =17:22
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
         end
+
+        clear TFR data TF_amp_HPC TF_amp_V1 TF_phase_V1 TF_phase_HPC
     end
 end
 
