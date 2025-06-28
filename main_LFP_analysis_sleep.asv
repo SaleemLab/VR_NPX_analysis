@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =3:
+for nsession =3:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2591,13 +2591,16 @@ for nsession =3:
                 data.fsample = fs;
                 data.label = {'V1_L','V1_R','HPC_L','HPC_R'};  % one channel
                 
-                clear TFR
-                TFR = ft_freqanalysis(cfg, data);
-                TFR.fourierspctrm = permute(TFR.fourierspctrm(:, :,:,TFR.time <= 2 &   TFR.time >= -2), [2 3 4 1]);
+                % clear TFR
+                % TFR = ft_freqanalysis(cfg, data);
+                % TFR.fourierspctrm = permute(TFR.fourierspctrm(:, :,:,TFR.time <= 2 &   TFR.time >= -2), [2 3 4 1]);
+                % 
+                % % Extract [-2 2] seconds
+                % FFT=TFR.fourierspctrm;
+                FFT = single
+                FFT = permute(FFT(:, :,:,TFR.time <= 2 &   TFR.time >= -2), [2 3 4 1]);
 
-                % Extract [-2 2] seconds
-                FFT=TFR.fourierspctrm;
-
+                [FFT,timebin_out,freqs_out] = run_timefrequency_ft_in_batches(cfg, data, 500);
 
                 TF_amp_V1(nprobe).(event_name)(1, :, :, :) = single(abs(squeeze(FFT(1,:,:,:)).^2));
                 TF_phase_V1(nprobe).(event_name)(1, :, :, :) = single(angle(squeeze(FFT(1,:,:,:))));
@@ -2615,8 +2618,8 @@ for nsession =3:
             toc
         end
 
-        freqs = TFR.freq;
-        timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        freqs = freqs_out;
+        timebin = timebin_out(timebin_out <= 2 &   timebin_out >= -2);
         clear TFR
 
         TF_amp_V1(1).timebin   = timebin;

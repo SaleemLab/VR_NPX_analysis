@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =3:15
+for nsession =17:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2650,11 +2650,12 @@ for nsession =3:15
 end
 
 
-S = (mean(squeeze(single(abs(squeeze(FFT(1,:,:,:)).^2))),3,'omitnan'));
+% S_basedline
+S = (mean(squeeze(single(abs(squeeze(TF_amp_V1(1).ripples(2,:,:,:)).^2))),3,'omitnan'));
 S_dB = 10 * log10(S);
 
 % % Create contour plot
-timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
+% timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
 
 timtevec = TFR.time(TFR.time>=-2 & TFR.time<=2);
 figure;
