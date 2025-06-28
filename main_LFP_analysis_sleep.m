@@ -2649,9 +2649,6 @@ for nsession =3:15
     end
 end
 
-t
-% Convert power to dB
-t = t - median(t);
 
 S = (mean(squeeze(single(abs(squeeze(FFT(1,:,:,:)).^2))),3,'omitnan'));
 S_dB = 10 * log10(S);

@@ -26,7 +26,7 @@ for i = 1:length(batch_starts)
     % Run frequency analysis
     TFR_batch = ft_freqanalysis(cfg, batch_data);
 
-    FFT_batch = permute(TFR_batch.fourierspctrm(:, :,:,TFR_batch.time <= 2 &   TFR_batch.time >= -2), [2 3 4 1]); % grab and save only 2 second windows
+    FFT_batch = single(permute(TFR_batch.fourierspctrm(:, :,:,TFR_batch.time <= 2 &   TFR_batch.time >= -2), [2 3 4 1])); % grab and save only 2 second windows
     
     if isempty(FFT)
         FFT = FFT_batch;
@@ -34,7 +34,7 @@ for i = 1:length(batch_starts)
         FFT = cat(4, FFT, FFT_batch);
     end
 end
-
+% FFT = single(FFT);
 timebin = TFR_batch.time;
 freqs = TFR_batch.freq;
 
