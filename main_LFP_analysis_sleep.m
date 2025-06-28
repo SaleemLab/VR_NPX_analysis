@@ -2457,9 +2457,9 @@ for nsession =17:22
             time_idx = 1:length(LFP(1).best_HPC) ;
         end
 
-        lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
-        lfp.timestamps = LFP(probe_no).tvec(time_idx);
-        tvec = LFP(probe_no).tvec(time_idx);
+        lfp.samplingRate = single(round(1/mean(diff(LFP(probe_no).tvec))));
+        lfp.timestamps = single(LFP(probe_no).tvec(time_idx));
+        tvec = single(LFP(probe_no).tvec(time_idx));
 
         lfp_V1 = lfp;
         lfp_HPC = lfp;
@@ -2470,11 +2470,11 @@ for nsession =17:22
             probe_id = [];
 
             if length(LFP)==1
-                lfp_HPC.data= [LFP(probe_no).best_HPC(:,time_idx)'];
-                lfp_V1.data= [LFP(probe_no).best_V1(:,time_idx)'];
+                lfp_HPC.data= single([LFP(probe_no).best_HPC(:,time_idx)']);
+                lfp_V1.data= single([LFP(probe_no).best_V1(:,time_idx)']);
             else
-                lfp_HPC.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
-                lfp_V1.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
+                lfp_HPC.data= single([LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)']);
+                lfp_V1.data= single([LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)']);
             end
         end
         %         end
@@ -2502,7 +2502,7 @@ for nsession =17:22
         win_save = [-2 2];% windwos for saving
         baseline_win = [-2 -1.5];%windows used for baseline
         % downsample_factor = 25;
-        fs = lfp_V1.samplingRate;
+        fs = single(lfp_V1.samplingRate);
 
         win_full_samp = round(win_full * fs);
 
