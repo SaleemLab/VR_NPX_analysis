@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:16
+for nsession =16:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2510,7 +2510,7 @@ for nsession =1:16
         freq_band = [1 300];
         freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 150);
 
-
+        clear LFP
         %%%%%%%%%%% initialise variables
 
         event_types = {'ripples','spindles','UP','DOWN'};
@@ -2570,7 +2570,7 @@ for nsession =1:16
                 cfg.toi          = win_full(1)+0.02/2:0.02:win_full(end)-0.02/2;
                 cfg.pad          = 'nextpow2';
                 cfg.keeptrials   = 'yes';
-                cfg.numworkers  = 4;            % or however many CPU cores you want
+                cfg.numworkers  = 2;            % or however many CPU cores you want
 
 
                 data = [];
@@ -2593,10 +2593,10 @@ for nsession =1:16
                 
                 clear TFR
                 TFR = ft_freqanalysis(cfg, data);
-                TFR.fourierspctrm = permute(TFR.fourierspctrm, [2 3 4 1]);
+                TFR.fourierspctrm = permute(TFR.fourierspctrm(:, :,:,TFR.time <= 2 &   TFR.time >= -2), [2 3 4 1]);
 
                 % Extract [-2 2] seconds
-                FFT=TFR.fourierspctrm(:,:,    TFR.time <= 2 &   TFR.time >= -2,:);
+                FFT=TFR.fourierspctrm;
 
 
                 TF_amp_V1(nprobe).(event_name)(1, :, :, :) = single(abs(squeeze(FFT(1,:,:,:)).^2));

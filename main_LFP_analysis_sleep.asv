@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =17
+for nsession =16:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2520,8 +2520,8 @@ for nsession =17
         TF_amp_HPC = struct(); TF_phase_HPC = struct();
         % PPC_V1_HPC = struct(); PPC_V1 = struct(); PPC_HPC = struct();
 
-        win_save_samp = find(t >=win_save(1) & t <=win_save(2));
-        baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
+%         win_save_samp = find(t >=win_save(1) & t <=win_save(2));
+%         baseline_samp = find(t >=baseline_win(1) & t <=baseline_win(2));
 
         for nprobe = 1:length(session_info(n).probe)
             tic
@@ -2552,10 +2552,10 @@ for nsession =17
 
                 % Preallocate outputs
 
-                TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
-                TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_phase_V1(nprobe).(event_name) = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_amp_HPC(nprobe).(event_name)  = single(nan(2, length(fidx), length(win_save_samp), nevents));
+%                 TF_phase_HPC(nprobe).(event_name)= single(nan(2, length(fidx), length(win_save_samp), nevents));
 
                 %                 PPC_V1_HPC(nprobe).(event_name)  = single(nan(2, 2,length(freqs), timebin, nevents));
                 %                 PPC_V1(nprobe).(event_name)      = single(nan(length(freqs),timebin, nevents));
@@ -2570,7 +2570,7 @@ for nsession =17
                 cfg.toi          = win_full(1)+0.02/2:0.02:win_full(end)-0.02/2;
                 cfg.pad          = 'nextpow2';
                 cfg.keeptrials   = 'yes';
-                cfg.numworkers  = 4;            % or however many CPU cores you want
+                cfg.numworkers  = 2;            % or however many CPU cores you want
 
 
                 data = [];
@@ -2590,10 +2590,10 @@ for nsession =17
 
                 data.fsample = fs;
                 data.label = {'V1_L','V1_R','HPC_L','HPC_R'};  % one channel
-
-
+                
+                clear TFR
                 TFR = ft_freqanalysis(cfg, data);
-                TFR.fourierspctrm = permute(TFR.fourierspctrm, [2 3 4 1]);
+                TFR.fourierspctrm = permute(TFR.fourierspctrm(:,:,:,:), [2 3 4 1]);
 
                 % Extract [-2 2] seconds
                 FFT=TFR.fourierspctrm(:,:,    TFR.time <= 2 &   TFR.time >= -2,:);
@@ -2611,20 +2611,23 @@ for nsession =17
                 TF_amp_HPC(nprobe).(event_name)(2, :, :, :) = single(abs(squeeze(FFT(4,:,:,:)).^2));
                 TF_phase_HPC(nprobe).(event_name)(2, :, :, :) = single(angle(squeeze(FFT(4,:,:,:))));
 
-
             end
             toc
         end
 
-        TF_amp_V1(1).timebin   = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_V1(1).timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_amp_HPC(1).timebin  =  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
-        TF_phase_HPC(1).timebin=  TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        freqs = TFR.freq;
+        timebin = TFR.time (TFR.time <= 2 &   TFR.time >= -2);
+        clear TFR
 
-        TF_amp_V1(1).freq   = TFR.freq;
-        TF_phase_V1(1).freq = TFR.freq;
-        TF_amp_HPC(1).freq  = TFR.freq;
-        TF_phase_HPC(1).freq= TFR.freq;
+        TF_amp_V1(1).timebin   = timebin;
+        TF_phase_V1(1).timebin = timebin;
+        TF_amp_HPC(1).timebin  =  timebin;
+        TF_phase_HPC(1).timebin=  timebin;
+
+        TF_amp_V1(1).freq   = freqs;
+        TF_phase_V1(1).freq = freqs;
+        TF_amp_HPC(1).freq  = freqs;
+        TF_phase_HPC(1).freq= freqs;
 
         if contains(stimulus_name{n},'Masa2tracks')
 
@@ -2640,10 +2643,12 @@ for nsession =17
             % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'),'slow_waves_markov');
             %             save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PPC.mat'),'PPC_V1','PPC_HPC','PPC_V1_HPC','-v7.3');
         end
+
+        clear TFR data TF_amp_HPC TF_amp_V1 TF_phase_V1 TF_phase_HPC
     end
 end
 
-
+t
 % Convert power to dB
 t = t - median(t);
 
