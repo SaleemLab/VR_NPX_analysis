@@ -74,12 +74,16 @@ end
 %% Spatial correlation and ripple correlation in V1 and HPC
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
 %  = struct();
-
+psthBinSize = 0.01;
+windows = [-1 1];
 for nsession = 1:length(sessions_to_process)
     all_clusters = session_clusters_all.spatial_cell_id{nsession};
-    
-    
 
+    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
+    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
+
+    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
+        'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
 
     for nCell = 1:length(all_clusters)
 
