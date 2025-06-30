@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =17:22
+for nsession =13:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2549,7 +2549,23 @@ for nsession =17:22
                 end
 
                 nevents = length(onsets);
+                
+                if nevents == 0
+                    TF_amp_V1(nprobe).(event_name) = [];
+                    TF_phase_V1(nprobe).(event_name) = [];
 
+                    TF_amp_V1(nprobe).(event_name)= [];
+                    TF_phase_V1(nprobe).(event_name) = [];
+
+                    TF_amp_HPC(nprobe).(event_name) = [];
+                    TF_phase_HPC(nprobe).(event_name) = [];
+
+                    TF_amp_HPC(nprobe).(event_name) = [];
+                    TF_phase_HPC(nprobe).(event_name) = [];
+                    continue
+                else
+  
+                end
                 % Preallocate outputs
 
 %                 TF_amp_V1(nprobe).(event_name)   = single(nan(2, length(fidx), length(win_save_samp), nevents));
