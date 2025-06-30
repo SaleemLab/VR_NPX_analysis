@@ -1,4 +1,4 @@
-function predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all)
+function predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all,UP_DOWN_info)
 if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
     analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
 elseif exist('D:\corticohippocampal_replay')>0
@@ -31,276 +31,271 @@ normalised_duration = 1/40:1/20:(1-1/40);
 %         end
 %     end
 % end
-% Find reference channel/shank
-cortex_ref_shank = [];
-HPC_ref_shank = [];
+% % Find reference channel/shank
+% cortex_ref_shank = [];
+% HPC_ref_shank = [];
+% 
+% for nsession = 1:max(ripples_all(1).session_count)
+%     for probe_no = 1:2
+%         cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+%             &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+%         % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+%         % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+%         % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+% 
+%         shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
+%         HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
+% 
+%     end
+% end
+% 
+% duration_threshold = median(unique(event_info(1).L_ripple_normalised_UP_duration(:,3)));
+% for nprobe = 1:2
+%     for mprobe = 1:2
+% 
+%         % Define survival response variables
+%         timeToTransition{nprobe} = event_info(nprobe).UP_duration; % Time until UP to DOWN transition
+%         % find predictor variables for each UP event
+%         normalised_ripple_duration{nprobe}{mprobe} = [];
+%         ripple_duration{nprobe}{mprobe} = [];
+%         ripple_count{nprobe}{mprobe} = [];
+%         ripple_power{nprobe}{mprobe} = [];
+%         last_ripple_power{nprobe}{mprobe} = [];
+%         first_ripple_power{nprobe}{mprobe} = [];
+%         ripple_rate{nprobe}{mprobe} = [];
+% 
+%         last_ripple_spindle_phase{nprobe}{mprobe} = [];
+%         first_ripple_spindle_phase{nprobe}{mprobe} = [];
+% 
+%         early_ripple_count{nprobe}{mprobe} = [];
+%         late_ripple_count{nprobe}{mprobe} = [];
+% 
+%         % peri-ripple MUA peak zscore
+%         ripple_L_HPC_MUA_peak{nprobe}{mprobe} = [];
+%         ripple_R_HPC_MUA_peak{nprobe}{mprobe}= [];
+%         ripple_L_V1_MUA_peak{nprobe}{mprobe} = [];
+%         ripple_R_V1_MUA_peak{nprobe}{mprobe} = [];
+% 
+%         % peri-ripple MUA cumulative activity
+%         ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
+%         ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
+%         ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
+%         ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
+% 
+%         % peri-ripple normalised MUA cumulative activity
+%         normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
+%         normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
+%         normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
+%         normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
+% 
+%         time_to_first_ripples{nprobe}{mprobe} = [];
+%         time_from_last_ripples{nprobe}{mprobe} = [];
+%         time_from_mean_ripples{nprobe}{mprobe}= [];
+% 
+%         inter_ripple_interval{nprobe}{mprobe}= [];
+% 
+%         % cumulative activity during UP until last ripples
+%         normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
+%         normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
+%         normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
+%         normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
+% 
+%         if mprobe ==1
+%             unique_UP_index = unique(event_info(nprobe).L_ripple_normalised_UP_duration(:,2));
+%         else
+%             unique_UP_index = unique(event_info(nprobe).R_ripple_normalised_UP_duration(:,2));
+%         end
+% 
+%         for nevent = 1:length(event_info(nprobe).UP_duration)
+%             index = find(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(:,2)==event_info(nprobe).UP_index(nevent));
+% 
+%             UP_ints = slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index(nevent),:);
+% 
+%             if isempty(index)
+%                 early_ripple_count{nprobe}{mprobe}(nevent) = 0;
+%                 late_ripple_count{nprobe}{mprobe}(nevent) = 0;
+%                 normalised_ripple_duration{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_duration{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_count{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_power{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_rate{nprobe}{mprobe}(nevent) = 0;
+%                 last_ripple_power{nprobe}{mprobe}(nevent) = 0;
+%                 first_ripple_power{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 last_ripple_spindle_phase{nprobe}{mprobe}(nevent) = 0;
+%                 first_ripple_spindle_phase{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 time_to_first_ripples{nprobe}{mprobe}(nevent) = 0;
+%                 time_from_last_ripples{nprobe}{mprobe}(nevent) = 0;
+%                 time_from_mean_ripples{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+%                 first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 % peri-ripple MUA cumulative activity
+%                 ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
+%                 ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+%                 ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+%                 normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
+%                 normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+%                 normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 inter_ripple_interval{nprobe}{mprobe}(nevent) = 0;
+% 
+%                 % Cumulative activity until last ripple ends
+%                 normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
+%                 normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
+% 
+%                 normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
+%                 normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
+% 
+%                 normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
+%                 normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
+% 
+%                 normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
+%                 normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
+%             else
+% 
+%                 ripples_index = event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,1);
+% 
+%                 time_to_first_ripples{nprobe}{mprobe}(nevent) = min(ripples_all(mprobe).peaktimes(ripples_index))-UP_ints(1);
+%                 time_from_last_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-max(ripples_all(mprobe).peaktimes(ripples_index));
+%                 time_from_mean_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-mean(ripples_all(mprobe).peaktimes(ripples_index));
+% 
+% 
+%                 late_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) > 0.5);
+%                 early_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) <= 0.5);
+% 
+%                 ripple_duration{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_cumulative_duration_UP',hemisphere{mprobe}))(unique_UP_index == unique(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,2)));
+% 
+% 
+% 
+%                 if length(index)>1
+%                     normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent)...
+%                         /(max(ripples_all(mprobe).peaktimes(ripples_index))-min(ripples_all(mprobe).peaktimes(ripples_index))); % normalised by time windows where first and last ripple happens
+% 
+%                     ripple_rate{nprobe}{mprobe}(nevent) = length(index)...
+%                         /(max(ripples_all(mprobe).offset(ripples_index))-min(ripples_all(mprobe).onset(ripples_index))); % normalised by time windows where first and last ripple happens
+% 
+%                     inter_ripple_interval{nprobe}{mprobe}(nevent)= mean(ripples_all(mprobe).onset(ripples_index(end))-ripples_all(mprobe).offset(ripples_index(end-1)));
+%                 else
+%                     normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent);
+% 
+%                     ripple_rate{nprobe}{mprobe}(nevent) = length(index)...
+%                         /(ripples_all(mprobe).offset(ripples_index)-ripples_all(mprobe).onset(ripples_index)); % normalised by time windows where first and last ripple happens
+% 
+%                     inter_ripple_interval{nprobe}{mprobe}(nevent)= 0;
+%                 end
+%                 ripple_count{nprobe}{mprobe}(nevent) = length(index);
+% 
+%                 [ripple_power{nprobe}{mprobe}(nevent),temp] = max(event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index));
+%                 last_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(end));
+%                 first_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(1));
+% 
+%                 nsession = ripples_all(mprobe).session_count(ripples_index(1));
+%                 %                 [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
+%                 [C,ia,ib] = intersect(find(ripples_all(mprobe).session_count == sessions_to_process(nsession)),ripples_index);
+% 
+%                 last_ripple_spindle_phase{nprobe}{mprobe}(nevent) = ripples_all(mprobe).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,nprobe),ia(end));
+%                 first_ripple_spindle_phase{nprobe}{mprobe}(nevent) = ripples_all(mprobe).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,nprobe),ia(1));
+% 
+%                 % peri-ripple MUA peak zscore
+%                 ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
+%                 ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
+%                 ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
+%                 ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
+% 
+%                 first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
+%                 first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
+%                 first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
+%                 first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
+% 
+%                 % peri-ripple MUA cumulative activity
+%                 ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
+%                 ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
+%                 ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
+%                 ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
+% 
+% 
+%                 normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+%                 normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+%                 normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+%                 normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
+% 
+% 
+%                 % Cumulative activity until last ripple ends
+%                 temp = UP_ints(1):0.01:UP_ints(2);
+% 
+%                 if length(temp)==length(event_info(nprobe).L_V1_MUA_UP{nevent})
+%                     [~,tidx]= min(abs(temp - ripples_all(mprobe).offset(ripples_index(end))));
+%                 else
+%                     temp = UP_ints(1):0.01:UP_ints(1)+0.01*(length(event_info(nprobe).L_V1_MUA_UP{nevent})-1);
+%                     [~,tidx]= min(abs(temp - ripples_all(mprobe).offset(ripples_index(end))));
+%                 end
+% 
+%                 normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
+%                 normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+% 
+%                 normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
+%                 normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+% 
+%                 normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
+%                 normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+% 
+%                 normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
+%                 normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
+% 
+% 
+%             end
+% 
+%             % Cumulative MUA activity (0-99% normalised so that cumulative
+%             % activity is addictive) during 1st half and 2nd half of UP
+% 
+%             normalised_L_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
+%             normalised_L_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+% 
+%             normalised_R_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
+%             normalised_R_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+% 
+%             normalised_L_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
+%             normalised_L_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+% 
+%             normalised_R_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
+%             normalised_R_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
+%         end
+%     end
+% 
+% 
+%     L_V1_MUA_DU_slope{nprobe} = event_info(nprobe).DU_slope_V1(1,:);
+%     % L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP;
+%     R_V1_DU_slope{nprobe} = event_info(nprobe).DU_slope_V1(2,:);
+%     % R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
+% 
+%     % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
+%     L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP;
+%     L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP;
+%     R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP;
+%     R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
+% 
+%     % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
+%     normalised_L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+%     normalised_L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+%     normalised_R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+%     normalised_R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
+% 
+% end
 
-for nsession = 1:max(ripples_all(1).session_count)
-    for probe_no = 1:2
-        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
-            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
-        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
-        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
-        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
 
-        shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
-        HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
-
-    end
-end
-
-duration_threshold = median(unique(event_info(1).L_ripple_normalised_UP_duration(:,3)));
-for nprobe = 1:2
-    for mprobe = 1:2
-
-        % Define survival response variables
-        timeToTransition{nprobe} = event_info(nprobe).UP_duration; % Time until UP to DOWN transition
-        % find predictor variables for each UP event
-        normalised_ripple_duration{nprobe}{mprobe} = [];
-        ripple_duration{nprobe}{mprobe} = [];
-        ripple_count{nprobe}{mprobe} = [];
-        ripple_power{nprobe}{mprobe} = [];
-        last_ripple_power{nprobe}{mprobe} = [];
-        first_ripple_power{nprobe}{mprobe} = [];
-        ripple_rate{nprobe}{mprobe} = [];
-
-        last_ripple_spindle_phase{nprobe}{mprobe} = [];
-        first_ripple_spindle_phase{nprobe}{mprobe} = [];
-
-        early_ripple_count{nprobe}{mprobe} = [];
-        late_ripple_count{nprobe}{mprobe} = [];
-
-        % peri-ripple MUA peak zscore
-        ripple_L_HPC_MUA_peak{nprobe}{mprobe} = [];
-        ripple_R_HPC_MUA_peak{nprobe}{mprobe}= [];
-        ripple_L_V1_MUA_peak{nprobe}{mprobe} = [];
-        ripple_R_V1_MUA_peak{nprobe}{mprobe} = [];
-
-        % peri-ripple MUA cumulative activity
-        ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
-        ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
-        ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
-        ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
-
-        % peri-ripple normalised MUA cumulative activity
-        normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe} = [];
-        normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe} =[];
-        normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe} = [];
-        normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe} = [];
-
-        time_to_first_ripples{nprobe}{mprobe} = [];
-        time_from_last_ripples{nprobe}{mprobe} = [];
-        time_from_mean_ripples{nprobe}{mprobe}= [];
-
-        inter_ripple_interval{nprobe}{mprobe}= [];
-
-        % cumulative activity during UP until last ripples
-        normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
-        normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
-        normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
-        normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe} = [];
-
-        if mprobe ==1
-            unique_UP_index = unique(event_info(nprobe).L_ripple_normalised_UP_duration(:,2));
-        else
-            unique_UP_index = unique(event_info(nprobe).R_ripple_normalised_UP_duration(:,2));
-        end
-
-        for nevent = 1:length(event_info(nprobe).UP_duration)
-            index = find(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(:,2)==event_info(nprobe).UP_index(nevent));
-
-            UP_ints = slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index(nevent),:);
-
-            if isempty(index)
-                early_ripple_count{nprobe}{mprobe}(nevent) = 0;
-                late_ripple_count{nprobe}{mprobe}(nevent) = 0;
-                normalised_ripple_duration{nprobe}{mprobe}(nevent) = 0;
-                ripple_duration{nprobe}{mprobe}(nevent) = 0;
-                ripple_count{nprobe}{mprobe}(nevent) = 0;
-                ripple_power{nprobe}{mprobe}(nevent) = 0;
-                ripple_rate{nprobe}{mprobe}(nevent) = 0;
-                last_ripple_power{nprobe}{mprobe}(nevent) = 0;
-                first_ripple_power{nprobe}{mprobe}(nevent) = 0;
-
-                last_ripple_spindle_phase{nprobe}{mprobe}(nevent) = 0;
-                first_ripple_spindle_phase{nprobe}{mprobe}(nevent) = 0;
-
-                time_to_first_ripples{nprobe}{mprobe}(nevent) = 0;
-                time_from_last_ripples{nprobe}{mprobe}(nevent) = 0;
-                time_from_mean_ripples{nprobe}{mprobe}(nevent) = 0;
-
-                ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-
-                first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-                first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = 0;
-
-                % peri-ripple MUA cumulative activity
-                ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
-                ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-                ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-                ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-
-                normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-                normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =0;
-                normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-                normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = 0;
-
-                inter_ripple_interval{nprobe}{mprobe}(nevent) = 0;
-
-                % Cumulative activity until last ripple ends
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
-
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
-
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
-
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = 0;
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = 0;
-            else
-
-                ripples_index = event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,1);
-
-                time_to_first_ripples{nprobe}{mprobe}(nevent) = min(ripples_all(mprobe).peaktimes(ripples_index))-UP_ints(1);
-                time_from_last_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-max(ripples_all(mprobe).peaktimes(ripples_index));
-                time_from_mean_ripples{nprobe}{mprobe}(nevent) = UP_ints(2)-mean(ripples_all(mprobe).peaktimes(ripples_index));
-
- 
-                late_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) > 0.5);
-                early_ripple_count{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,3) <= 0.5);
-
-                ripple_duration{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_cumulative_duration_UP',hemisphere{mprobe}))(unique_UP_index == unique(event_info(nprobe).(sprintf('%s_ripple_normalised_UP_duration',hemisphere{mprobe}))(index,2)));
-
-
-
-                if length(index)>1
-                    normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent)...
-                        /(max(ripples_all(mprobe).peaktimes(ripples_index))-min(ripples_all(mprobe).peaktimes(ripples_index))); % normalised by time windows where first and last ripple happens
-
-                    ripple_rate{nprobe}{mprobe}(nevent) = length(index)...
-                        /(max(ripples_all(mprobe).offset(ripples_index))-min(ripples_all(mprobe).onset(ripples_index))); % normalised by time windows where first and last ripple happens
-
-                    inter_ripple_interval{nprobe}{mprobe}(nevent)= mean(ripples_all(mprobe).onset(ripples_index(end))-ripples_all(mprobe).offset(ripples_index(end-1)));
-                else
-                    normalised_ripple_duration{nprobe}{mprobe}(nevent) = ripple_duration{nprobe}{mprobe}(nevent);
-
-                    ripple_rate{nprobe}{mprobe}(nevent) = length(index)...
-                        /(ripples_all(mprobe).offset(ripples_index)-ripples_all(mprobe).onset(ripples_index)); % normalised by time windows where first and last ripple happens
-
-                    inter_ripple_interval{nprobe}{mprobe}(nevent)= 0;
-                end
-                ripple_count{nprobe}{mprobe}(nevent) = length(index);
-
-                [ripple_power{nprobe}{mprobe}(nevent),temp] = max(event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index));
-                last_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(end));
-                first_ripple_power{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_zscore_UP',hemisphere{mprobe}))(index(1));
-
-                nsession = ripples_all(mprobe).session_count(ripples_index(1));
-                %                 [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
-                [C,ia,ib] = intersect(find(ripples_all(mprobe).session_count == sessions_to_process(nsession)),ripples_index);
-
-                last_ripple_spindle_phase{nprobe}{mprobe}(nevent) = ripples_all(mprobe).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,nprobe),ia(end));
-                first_ripple_spindle_phase{nprobe}{mprobe}(nevent) = ripples_all(mprobe).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,nprobe),ia(1));
-
-                % peri-ripple MUA peak zscore
-                ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
-                ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
-                ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),1);
-                ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(end),2);
-
-                first_ripple_L_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
-                first_ripple_R_HPC_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
-                first_ripple_L_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),1);
-                first_ripple_R_V1_MUA_peak{nprobe}{mprobe}(nevent) = event_info(nprobe).(sprintf('%s_ripple_V1_MUA_peak_UP',hemisphere{mprobe}))(index(1),2);
-
-                % peri-ripple MUA cumulative activity
-                ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
-                ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_HPC_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
-                ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,1));
-                ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = sum(event_info(nprobe).(sprintf('%s_ripple_V1_MUA_cumulative_UP',hemisphere{mprobe}))(index,2));
-
-
-                normalised_ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
-                normalised_ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent) =ripple_R_HPC_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
-                normalised_ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_L_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
-                normalised_ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent) = ripple_R_V1_MUA_cumulative{nprobe}{mprobe}(nevent)./ripple_duration{nprobe}{mprobe}(nevent);
-
-
-                % Cumulative activity until last ripple ends
-                temp = UP_ints(1):0.01:UP_ints(2);
-
-                if length(temp)==length(event_info(nprobe).L_V1_MUA_UP{nevent})
-                    [~,tidx]= min(abs(temp - ripples_all(mprobe).offset(ripples_index(end))));
-                else
-                    temp = UP_ints(1):0.01:UP_ints(1)+0.01*(length(event_info(nprobe).L_V1_MUA_UP{nevent})-1);
-                    [~,tidx]= min(abs(temp - ripples_all(mprobe).offset(ripples_index(end))));
-                end
-
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_L_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
-
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_R_V1_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
-
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_L_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
-
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(tidx/2)))./(0.01*tidx/2);
-                normalised_R_HPC_MUA_activity_half_last_ripple{nprobe}{mprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(tidx/2+1):tidx))./(0.01*tidx/2);
-
-
-            end
-
-            % Cumulative MUA activity (0-99% normalised so that cumulative
-            % activity is addictive) during 1st half and 2nd half of UP
-
-            normalised_L_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_L_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
-
-            normalised_R_V1_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_R_V1_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_V1_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
-
-            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_L_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).L_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
-
-            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,1) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(1:round(end/2)))./(event_info(nprobe).UP_duration(nevent)/2);
-            normalised_R_HPC_MUA_activity_half{nprobe}(nevent,2) = sum(event_info(nprobe).R_HPC_MUA_UP{nevent}(round(end/2+1):end))./(event_info(nprobe).UP_duration(nevent)/2);
-        end
-    end
-
-
-    L_V1_MUA_DU_slope{nprobe} = event_info(nprobe).DU_slope_V1(1,:);
-    % L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP;
-    R_V1_DU_slope{nprobe} = event_info(nprobe).DU_slope_V1(2,:);
-    % R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
-
-    % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
-    L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP;
-    L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP;
-    R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP;
-    R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP;
-
-    % Cumulative MUA activity (0-99% normalised so that cumulative activity is addictive)
-    normalised_L_V1_MUA_activity{nprobe} = event_info(nprobe).L_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
-    normalised_L_HPC_MUA_activity{nprobe} = event_info(nprobe).L_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
-    normalised_R_V1_MUA_activity{nprobe} = event_info(nprobe).R_V1_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
-    normalised_R_HPC_MUA_activity{nprobe} = event_info(nprobe).R_HPC_cumulative_activity_UP./slow_waves_all(nprobe).UP_ints(event_info(nprobe).UP_index)';
-
-end
-
-
-
-
-
-subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(slow_waves_all(nprobe).UP_session_count(event_info(nprobe).UP_index),end-1:end)));
-[~, ~, mappedIDs] = unique(subject_id);
 
 % Define predictor variables
 % timeToTransition_ripples = time_from_last_ripples{1}{1}(normalised_ripple_duration{1}{1}>0);
@@ -319,11 +314,23 @@ subject_id = str2double(cellstr(slow_waves_all(nprobe).subject(slow_waves_all(np
 
 % colour_lines = [215,48,39;69,117,180;244,109,67;145,191,219]/256;% 4 colors Dark red, orangish red, light blue, dark blue
 % colour_lines = [116,196,118;0,90,50;158,154,200;74,20,134]/256; % Green Purple 4 colours
+subject_id = str2double(cellstr(slow_waves_all(1).subject(slow_waves_all(1).UP_session_count(event_info(1).UP_index),end-1:end)));
+[~, ~, mappedIDs] = unique(subject_id);
+
 colour_lines = [116,196,118;158,154,200;0,90,50;74,20,134]/256; % Green Purple 4 colours
 
 colour_lines = [74,20,134;0,90,50;158,154,200;116,196,118]/256; % Green Purple 4 colours
 hemisphere = {'L','R'};
 target_hemisphere = {'ipsi','contra'};
+
+
+% 
+time_from_last_ripples{1} = UP_DOWN_info.ipsi_time_from_last_ripples_UP;
+time_from_last_ripples{2} = UP_DOWN_info.contra_time_from_last_ripples_UP;
+ripple_count{1} = UP_DOWN_info.ipsi_ripple_counts_UP;
+ripple_count{2} = UP_DOWN_info.contra_ripple_counts_UP;
+
+
 % Plot survival function (Kaplan-Meier estimate)
 %%%%%%%%%%%%%% ripple duration
 

@@ -2,285 +2,129 @@ function ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,win
 
 % Default values
 p = inputParser;
-addParameter(p,'event_times',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-addParameter(p,'event_id',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-addParameter(p,'shuffle_option',1,@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-%
-% addParameter(p,'place_fields',[],@isstruct) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-% addParameter(p,'unit_depth',[],@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-% addParameter(p,'unit_region',[],@isstring) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
-addParameter(p,'unit_id',unique(spike_id),@isnumeric) % Select channels for analysis (default is all the channles or at least all channels loaded (e.g. only from one cloumn)
+addParameter(p,'event_times',[],@isnumeric);
+addParameter(p,'event_id',[],@isnumeric);
+addParameter(p,'shuffle_option',1,@isnumeric);
+addParameter(p,'unit_id',unique(spike_id),@isnumeric);
+addParameter(p,'saving_PSTH',1,@isnumeric);
 
-Behaviour = [];
-
-% assign parameters (either defaults or given)
 parse(p,varargin{:});
-% place_fields = p.Results.place_fields;
-% unit_depth = p.Results.unit_depth;
-% unit_region = p.Results.unit_region;
-unit_id = p.Results.unit_id;
-shuffle_option = p.Results.shuffle_option;
-
-% event_label = p.Results.event_label;
 event_times = p.Results.event_times;
 event_id =  p.Results.event_id;
+unit_id = p.Results.unit_id;
+shuffle_option = p.Results.shuffle_option;
+saving_PSTH = p.Results.saving_PSTH;
 
-% if ~isempty(place_fields) % if place fields, only select spatially tuned cells
-%     spatial_cell_index = unique([find(place_fields(1).peak_percentile>0.95 & place_fields(1).odd_even_stability>0.95)...
-%         find(place_fields(2).peak_percentile>0.95 & place_fields(2).odd_even_stability>0.95)]);
-%     good_cell_index = intersect(spatial_cell_index,find(ismember(place_fields(1).cluster_id,unit_id)));
-%
-%     [Lia,Locb] = ismember(unit_id,place_fields(1).cluster_id(good_cell_index));
-%     unit_depth = unit_depth(Lia);
-%     unit_region = unit_region(Lia);
-%     unit_id = unit_id(Lia);
-%
-%     x_bin_width = mean(diff(place_fields(1).x_bin_centres));
-% end
-
-% t_bin = mean(diff(Behaviour.tvec));
-% tvec
+event_conditions = unique(event_id(:))';
+n_conditions = numel(event_conditions);
 no_events = size(event_times,1);
 time_edges = window(1):psthBinSize:window(2);
-% spike_speed = interp1(Behaviour.tvec,Behaviour.speed,spike_times,'nearest');
-spike_times_events = spike_times;
-event_times_unchanged = event_times;
-
-% for nevent = 1:no_events
-%     if nevent < no_events
-%         spike_times_event_index = spike_times < event_times(nevent+1)+window(1) ...
-%             & spike_times >=  (event_times(nevent)+window(1));
-%     else
-%         spike_times_event_index = spike_times >=  (event_times(nevent)+window(1));
-%     end
-%     spike_times_events(spike_times_event_index) = spike_times_events(spike_times_event_index)+100000*(nevent);
-%     event_times(nevent,1) = event_times(nevent,1)+(nevent)*100000;
-% 
-% end
-
-% unit_id= unique(spike_id);
-cluster_spike_id = cell(size(unit_id));
 no_cluster = length(unit_id);
 
-track1_ID = find(event_id == 1);
-track2_ID = find(event_id == 2);
-
-% whole session timevec variables
 timevec = [min(spike_times) max(spike_times)];
-timevec_edge = (timevec(1)-(psthBinSize)/2....
-    :psthBinSize:...
-    timevec(end)+(psthBinSize)/2)';
+timevec_edge = (timevec(1)-(psthBinSize)/2 : psthBinSize : timevec(end)+(psthBinSize)/2)';
 
-% Define Gaussian window for smoothing
+% Gaussian smoothing window
 gaussianWindow = gausswin(0.05*1/psthBinSize);
-% Normalize to have an area of 1 (i.e., to be a probability distribution)
 gaussianWindow = gaussianWindow / sum(gaussianWindow);
 
+spike_times_events = spike_times;
 
-% Define Gaussian window for spatial smoothing
-% spatial_w = gausswin(11);
-% % Normalize to have an area of 1 (i.e., to be a probability distribution)
-% spatial_w = spatial_w / sum(spatial_w);
-
-% interpolated tvec and track position
-% tvec = interp1(Behaviour.tvec,Behaviour.tvec,Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end));
-% trackPosition = interp1(Behaviour.tvec,discretize(Behaviour.position,place_fields(1).x_bin_edges(1):x_bin_width:place_fields(1).x_bin_edges(end)),...
-%     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
-% trackSpeed = interp1(Behaviour.tvec,Behaviour.speed,...
-%     Behaviour.tvec(1):psthBinSize:Behaviour.tvec(end),'previous');
-
-% tic
 for iCell = 1:no_cluster
+    cluster_spike_id = spike_id == unit_id(iCell);
+    y = histcounts(spike_times_events(cluster_spike_id), timevec_edge)';
+    y = conv(y, gaussianWindow, 'same');
 
-    %     ripple_modulation(1).cluster_id(iCell) = unit_id(iCell);
-    %     ripple_modulation(1).region(iCell) = unit_region(iCell);
-    %     ripple_modulation(1).peak_depth(iCell) = unit_depth(iCell);
-    %
-    %     ripple_modulation(2).cluster_id(iCell) = unit_id(iCell);
-    %     ripple_modulation(2).region(iCell) = unit_region(iCell);
-    %     ripple_modulation(2).peak_depth(iCell) = unit_depth(iCell);
+    binnedArrays = cell(1, n_conditions);
+    psth = cell(1, n_conditions);
 
-    cluster_spike_id{iCell} = spike_id == unit_id(iCell);
+    for ncond = 1:n_conditions
+        cond_id = event_conditions(ncond);
+        [~, bins, ~, ~, ~, binnedArray] = psthAndBA(spike_times_events(cluster_spike_id), ...
+            event_times(event_id == cond_id), window, psthBinSize);
 
-    % Convolve spike count time series with Gaussian window
-    y = histcounts(spike_times_events(cluster_spike_id{iCell}), timevec_edge)';
-    y = conv(y, gaussianWindow, 'same')/psthBinSize;
-
-    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray1] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==1), window, psthBinSize);
-    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray2] = psthAndBA(spike_times_events(cluster_spike_id{iCell}),event_times(event_id==2), window, psthBinSize);
-
-    if size(binnedArray1,1)==1
-        psth_track1 = conv(binnedArray1/psthBinSize,gaussianWindow,'same');
-    else
-        for nevent = 1:size(binnedArray1,1)
-            psth_track1(nevent,:) = conv(binnedArray1(nevent,:)/psthBinSize,gaussianWindow,'same');
+        if size(binnedArray,1) == 1
+            smoothed = conv(binnedArray, gaussianWindow, 'same');
+        else
+            smoothed = zeros(size(binnedArray));
+            for nevent = 1:size(binnedArray,1)
+                smoothed(nevent,:) = conv(binnedArray(nevent,:), gaussianWindow, 'same');
+            end
         end
-        binnedArray1 = psth_track1;
-        psth_track1 = mean(psth_track1,'omitnan');
-    end
 
-    if size(binnedArray2,1)==1
-        psth_track2 = conv(binnedArray2/psthBinSize,gaussianWindow,'same');
-    else
-        for nevent = 1:size(binnedArray2,1)
-            psth_track2(nevent,:) = conv(binnedArray2(nevent,:)/psthBinSize,gaussianWindow,'same');
-        end
-        binnedArray2 = psth_track2;
-        psth_track2 = mean(psth_track2,'omitnan');
+        binnedArrays{ncond} = smoothed;
+        psth{ncond} = mean(smoothed, 'omitnan');
     end
 
     if shuffle_option == 1
-        shiftedArrays1 = zeros(1000,size(binnedArray1,1),size(binnedArray1,2));
-        shiftedArrays2 = zeros(1000,size(binnedArray2,1),size(binnedArray2,2));
-        PSTH_shuffled1 = zeros(1000,size(binnedArray2,2));
-        PSTH_shuffled2 = zeros(1000,size(binnedArray2,2));
+        PSTH_shuffled = cell(1, n_conditions);
+        for ncond = 1:n_conditions
+            this_binned = binnedArrays{ncond};
+            n_trials = size(this_binned, 1);
+            n_timepoints = size(this_binned, 2);
+            % PSTH_shuffled{ncond} = zeros(1000, n_timepoints);
+            temp = zeros(1000, n_timepoints);
 
-
-        parfor nshuffle = 1:1000
-            %         shiftedArrays1(:,:,nshuffle) = zeros(size(binnedArray1,1),size(binnedArray1,2));
-            %         shiftedArrays2(:,:,nshuffle) = zeros(size(binnedArray2,1),size(binnedArray2,2));
-
-            s = RandStream('mrg32k3a','Seed',nshuffle+iCell*1000); % Set random seed for resampling
-            shift_values = round(size(binnedArray1,2)*rand(s,1,size(binnedArray1,1)))'; % Generate all shift values at once
-            temp = arrayfun(@(nevent) circshift(binnedArray1(nevent,:), shift_values(nevent), 2), 1:size(binnedArray1,1), 'UniformOutput', false);
-            shiftedArrays1(nshuffle,:,:) = cell2mat(temp');
-
-            PSTH_shuffled1(nshuffle,:) = squeeze(mean(shiftedArrays1(nshuffle,:,:),'omitnan')/psthBinSize);
-            %         PSTH_shuffled1(nshuffle,:)  = conv(PSTH_shuffled1(nshuffle,:) , gaussianWindow, 'same');
-
-            %
-            s = RandStream('mrg32k3a','Seed',1+nshuffle+iCell*1000); % Set random seed for resampling
-            shift_values = round(size(binnedArray2,2)*rand(s,1,size(binnedArray2,1)))'; % Generate all shift values at once
-            temp = arrayfun(@(nevent) circshift(binnedArray2(nevent,:), shift_values(nevent), 2), 1:size(binnedArray2,1), 'UniformOutput', false);
-            shiftedArrays2(nshuffle,:,:) = cell2mat(temp');
-
-            PSTH_shuffled2(nshuffle,:) = squeeze(mean(shiftedArrays2(nshuffle,:,:),'omitnan')/psthBinSize);
-            %         PSTH_shuffled2(nshuffle,:)  = conv(PSTH_shuffled2(nshuffle,:) , gaussianWindow, 'same');
-
-            %
+            parfor nshuffle = 1:1000
+                s = RandStream('mrg32k3a','Seed',nshuffle+iCell*1000+ncond*10000);
+                shift_values = round(n_timepoints * rand(s, 1, n_trials))';
+                shifted = arrayfun(@(nevent) circshift(this_binned(nevent,:), shift_values(nevent), 2), ...
+                    1:n_trials, 'UniformOutput', false);
+                temp(nshuffle,:) = mean(cell2mat(shifted'), 'omitnan');
+            end
+            PSTH_shuffled{ncond} = temp;
         end
     end
 
+    for ncond = 1:n_conditions
+        ripple_modulation(ncond).bins = bins;
 
-
-    ripple_modulation(1).bins = bins;
-    ripple_modulation(2).bins = bins;
-
-    %     ripple_modulation(1).spike_count(iCell,:,:) = binnedArray1;
-    %     ripple_modulation(2).spike_count(iCell,:,:) = binnedArray2;
-
-    ripple_modulation(1).PSTH(iCell,:,:) = binnedArray1;
-    ripple_modulation(2).PSTH(iCell,:,:) = binnedArray2;
-
-    ripple_modulation(1).PSTH_zscored(iCell,:,:) = (binnedArray1-mean(y))./std(y);
-    ripple_modulation(2).PSTH_zscored(iCell,:,:) = (binnedArray2-mean(y))./std(y);
-
-
-    %     ripple_modulation(1).spatial_spike_count{iCell} = yHat{1};
-    %     ripple_modulation(2).spatial_spike_count{iCell} = yHat{2};
-    % %
-    %     ripple_modulation(1).spatial_PSTH{iCell} = mean(yHat{1});
-    %     ripple_modulation(2).spatial_PSTH{iCell} = mean(yHat{2});
-
-    %     ripple_modulation(1).PSTH_shuffled{iCell} = PSTH_shuffled1;
-    %     ripple_modulation(2).PSTH_shuffled{iCell} = PSTH_shuffled2;
-    %%% Ripple modulation based on Peak method and Mean sqaured difference
-    %%% method
-
-
-    if shuffle_option == 1
-        twin = bins>-0.5 & bins<0.5;
-        % Real PSTH max min FR difference
-        FR_modulation1= (max(psth_track1(twin))-min(psth_track1(twin)))/mean(psth_track1(twin));
-        FR_modulation2 = (max(psth_track2(twin))-min(psth_track2(twin)))/mean(psth_track2(twin));
-
-        % Baseline PSTH: mean of shuffled PSTHs
-        baseline_psth1 = mean(PSTH_shuffled1(:, twin), 1);
-        baseline_psth2 = mean(PSTH_shuffled2(:, twin), 1);
-        % Mean squared difference between real PSTH and baseline
-        MSD_real1 = mean((psth_track1(twin) - baseline_psth1).^2);
-        MSD_real2 = mean((psth_track2(twin) - baseline_psth2).^2);
-
-
-        for nshuffle = 1:1000
-            FR_difference_shuffled1(nshuffle) = (max(PSTH_shuffled1(nshuffle,twin))-min(PSTH_shuffled1(nshuffle,twin)))/mean(PSTH_shuffled1(nshuffle,twin));
-            FR_difference_shuffled2(nshuffle) = (max(PSTH_shuffled2(nshuffle,twin))-min(PSTH_shuffled2(nshuffle,twin)))/mean(PSTH_shuffled2(nshuffle,twin));
-
-            MSD_shuffled1(nshuffle) = mean((PSTH_shuffled1(nshuffle, twin) - baseline_psth1).^2);
-            MSD_shuffled2(nshuffle) = mean((PSTH_shuffled2(nshuffle, twin) - baseline_psth2).^2);
-        end
-    
-        ripple_modulation(1).max_min_difference(iCell) = max(psth_track1)-min(psth_track1);
-        ripple_modulation(2).max_min_difference(iCell) = max(psth_track2)-min(psth_track2);
-
-
-        ripple_modulation(1).ripple_modulation(iCell) = FR_modulation1;
-        ripple_modulation(2).ripple_modulation(iCell) = FR_modulation2;
-
-        ripple_modulation(1).ripple_modulation_peak_percentile(iCell) = sum(abs(FR_modulation1)>abs(FR_difference_shuffled1))/length(FR_difference_shuffled1); % abs FR change as a neuron can be activated or inhibited
-        ripple_modulation(2).ripple_modulation_peak_percentile(iCell) = sum(abs(FR_modulation2)>abs(FR_difference_shuffled2))/length(FR_difference_shuffled2);
-
-
-        ripple_modulation(1).ripple_modulation_percentile(iCell) = mean(MSD_shuffled1 < MSD_real1); % proportion of shuffled MSDs < real MSD
-        ripple_modulation(2).ripple_modulation_percentile(iCell) = mean(MSD_shuffled2 < MSD_real2);
-
-        
-        %%% -200 to 200ms windows
-        twin = bins>-0.2 & bins<0.2;
-        % Real PSTH max min FR difference
-        FR_modulation1= (max(psth_track1(twin))-min(psth_track1(twin)))/mean(psth_track1(twin));
-        FR_modulation2 = (max(psth_track2(twin))-min(psth_track2(twin)))/mean(psth_track2(twin));
-
-        % Baseline PSTH: mean of shuffled PSTHs
-        baseline_psth1 = mean(PSTH_shuffled1(:, twin), 1);
-        baseline_psth2 = mean(PSTH_shuffled2(:, twin), 1);
-        % Mean squared difference between real PSTH and baseline
-        MSD_real1 = mean((psth_track1(twin) - baseline_psth1).^2);
-        MSD_real2 = mean((psth_track2(twin) - baseline_psth2).^2);
-
-
-        for nshuffle = 1:1000
-            FR_difference_shuffled1(nshuffle) = (max(PSTH_shuffled1(nshuffle,twin))-min(PSTH_shuffled1(nshuffle,twin)))/mean(PSTH_shuffled1(nshuffle,twin));
-            FR_difference_shuffled2(nshuffle) = (max(PSTH_shuffled2(nshuffle,twin))-min(PSTH_shuffled2(nshuffle,twin)))/mean(PSTH_shuffled2(nshuffle,twin));
-
-            MSD_shuffled1(nshuffle) = mean((PSTH_shuffled1(nshuffle, twin) - baseline_psth1).^2);
-            MSD_shuffled2(nshuffle) = mean((PSTH_shuffled2(nshuffle, twin) - baseline_psth2).^2);
+        if saving_PSTH
+            ripple_modulation(ncond).PSTH(iCell,:,:) = single(binnedArrays{ncond}) / psthBinSize;  % normalize by condition 1
+            ripple_modulation(ncond).PSTH_zscored(iCell,:,:) = single((binnedArrays{ncond} - mean(y)) ./ std(y));
         end
 
-        ripple_modulation(1).peak_percentile_200ms(iCell) = sum(abs(FR_modulation1)>abs(FR_difference_shuffled1))/length(FR_difference_shuffled1); % abs FR change as a neuron can be activated or inhibited
-        ripple_modulation(2).peak_percentile_200ms(iCell) = sum(abs(FR_modulation2)>abs(FR_difference_shuffled2))/length(FR_difference_shuffled2);
+        if shuffle_option == 1
+            twin = bins > 0 & bins < 0.2;
+            real_psth = psth{ncond};
+            base_psth = mean(PSTH_shuffled{ncond}(:, twin), 1);
+            MSD_real = mean((real_psth(twin) - base_psth).^2);
 
+            FR_diff = zeros(1, 1000);
+            MSD_shuffled = zeros(1, 1000);
+            for nshuffle = 1:1000
+                shuffled = PSTH_shuffled{ncond}(nshuffle,twin);
+                FR_diff(nshuffle) = (max(shuffled) - min(shuffled)) / mean(shuffled);
+                MSD_shuffled(nshuffle) = mean((shuffled - base_psth).^2);
+            end
 
-        ripple_modulation(1).modulation_percentile_200ms(iCell) = mean(MSD_shuffled1 < MSD_real1); % proportion of shuffled MSDs < real MSD
-        ripple_modulation(2).modulation_percentile_200ms(iCell) = mean(MSD_shuffled2 < MSD_real2);
+            FR_mod = (max(real_psth(twin)) - min(real_psth(twin))) / mean(real_psth(twin));
+            ripple_modulation(ncond).ripple_modulation(iCell) = FR_mod;
+            ripple_modulation(ncond).ripple_modulation_peak_percentile(iCell) = ...
+                sum(abs(FR_mod) > abs(FR_diff)) / numel(FR_diff);
+            ripple_modulation(ncond).ripple_modulation_percentile(iCell) = ...
+                mean(MSD_shuffled < MSD_real);
 
+            % PRE window
+            twin_pre = bins > -0.2 & bins < 0;
+            real_psth_pre = psth{ncond};
+            base_psth_pre = mean(PSTH_shuffled{ncond}(:, twin_pre), 1);
+            MSD_real_pre = mean((real_psth_pre(twin_pre) - base_psth_pre).^2);
+
+            FR_diff_pre = zeros(1, 1000);
+            MSD_shuffled_pre = zeros(1, 1000);
+            for nshuffle = 1:1000
+                shuffled = PSTH_shuffled{ncond}(nshuffle, twin_pre);
+                FR_diff_pre(nshuffle) = (max(shuffled) - min(shuffled)) / mean(shuffled);
+                MSD_shuffled_pre(nshuffle) = mean((shuffled - base_psth_pre).^2);
+            end
+
+            FR_mod_pre = (max(real_psth_pre(twin_pre)) - min(real_psth_pre(twin_pre))) / mean(real_psth_pre(twin_pre));
+            ripple_modulation(ncond).peak_percentile_PRE(iCell) = ...
+                sum(abs(FR_mod_pre) > abs(FR_diff_pre)) / numel(FR_diff_pre);
+            ripple_modulation(ncond).modulation_percentile_PRE(iCell) = ...
+                mean(MSD_shuffled_pre < MSD_real_pre);
+        end
     end
-
-
-    
-    %     % PRE-ripple modulation
-    %     temp = psth_track1(bins<0 & bins>-0.5);
-    %     tmep_shuffled = PSTH_shuffled1(:,bins<0 & bins>-0.5);
-    %     ripple_modulation(1).pre_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %     ripple_modulation(1).pre_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %
-    %     temp = psth_track2(bins<0 & bins>-0.5);
-    %     tmep_shuffled = PSTH_shuffled2(:,bins<0 & bins>-0.5);
-    %     ripple_modulation(2).pre_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %     ripple_modulation(2).pre_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %
-    %     % POST-ripple modulation
-    %     temp = psth_track1(bins>0 & bins<0.5);
-    %     tmep_shuffled = PSTH_shuffled1(:,bins>0 & bins<0.5);
-    %     ripple_modulation(1).post_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %     ripple_modulation(1).post_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %
-    %     temp = psth_track2(bins>0 & bins<0.5);
-    %     tmep_shuffled = PSTH_shuffled2(:,bins>0 & bins<0.5);
-    %     ripple_modulation(2).post_ripple_activation(iCell) = sum(max(temp)>max(tmep_shuffled'))/length(FR_difference_shuffled1);
-    %     ripple_modulation(2).post_ripple_inhibition(iCell) = sum(min(temp)<min(tmep_shuffled'))/length(FR_difference_shuffled1);
-
-
 end
-% toc
 end

@@ -13,7 +13,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar 
 % experiment_info=experiment_info([4 5 6 ]);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
-Stimulus_type = 'SleepChronic';
+Stimulus_type = 'SleepChronic_PRE';
 % experiment_info=experiment_info([6 9 14 19 21 22 27 35 38 40]);
 % 1:length(experiment_info)
 % [1 2 3 4 6 7 8 9 10 12 14]
@@ -27,12 +27,15 @@ behavioural_state_merged_all = struct();
 for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-    % find right date number based on all experiment dates of the subject
-    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
     if isempty(stimulus_name)
         continue
     end
+
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
 
 
@@ -683,6 +686,28 @@ for nsession =1:length(experiment_info)
     spike_id=spike_id(sort_idx);
 
 
+%     event_times = [ripples(1).onset(ripples(1).SWS_index==1); ripples(2).onset(ripples(2).SWS_index==1)];
+%     event_id = [ones(sum(ripples(1).SWS_index==1),1); 2*ones(sum(ripples(2).SWS_index==1),1)];
+%     tic
+%     ripple_modulation = ripple_modulation_analysis(spike_times,spike_id,windows,psthBinSize,'unit_id',spatial_cell_id,'event_times',event_times,'event_id',event_id,'shuffle_option',0);
+
+
+    mean_activity_track1 = nan(length(spatial_cell_id), 1);
+    mean_activity_track2 = nan(length(spatial_cell_id), 1);
+
+    for i = 1:length(spatial_cell_id)
+        % Track 1
+        data1 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 1};
+        if ~isempty(data1)
+            mean_activity_track1(i) = mean(data1(:), 'omitnan');
+        end
+
+        % Track 2
+        data2 = session_clusters_RUN.spatial_response_raw{spatial_cell_index(i), 2};
+        if ~isempty(data2)
+            mean_activity_track2(i) = mean(data2(:), 'omitnan');
+        end
+    end
 
     %%%%%%
     session_clusters_all.subject(session_count,:) = options.SUBJECT;
@@ -702,6 +727,8 @@ for nsession =1:length(experiment_info)
 
     session_clusters_all.spatial_response{nsession} = session_clusters_RUN.spatial_response(spatial_cell_index,:);
     session_clusters_all.spatial_response_raw{nsession} = session_clusters_RUN.spatial_response_raw(spatial_cell_index,:);
+    session_clusters_all.mean_FR{nsession} = [mean_activity_track1 mean_activity_track2];
+
 
     session_clusters_all.SMI_peak_RUN1{nsession} = session_clusters_RUN.SMI_peak_RUN1(spatial_cell_index,:);
     session_clusters_all.SMI_area_RUN1{nsession} = session_clusters_RUN.SMI_area_RUN1(spatial_cell_index,:);
@@ -731,8 +758,8 @@ for nsession =1:length(experiment_info)
     session_clusters_all.SO_amplitude{nsession}       = spike_phase_amplitude.SO_amplitude(spike_index, cortex_ref_shank);
     session_clusters_all.spindle_phase{nsession}      = spike_phase_amplitude.spindle_phase(spike_index, cortex_ref_shank);
     session_clusters_all.spindle_amplitude{nsession}  = spike_phase_amplitude.spindle_amplitude(spike_index, cortex_ref_shank);
-    session_clusters_all.ripple_phase{nsession}       = spike_phase_amplitude.ripple_phase(spike_index, cortex_ref_shank);
-    session_clusters_all.ripple_amplitude{nsession}   = spike_phase_amplitude.ripple_amplitude(spike_index, cortex_ref_shank);
+    session_clusters_all.ripple_phase{nsession}       = spike_phase_amplitude.ripple_phase(spike_index, HPC_ref_shank);
+    session_clusters_all.ripple_amplitude{nsession}   = spike_phase_amplitude.ripple_amplitude(spike_index, HPC_ref_shank);
 
     session_clusters_all.theta_phase{nsession}        = spike_phase_amplitude.theta_phase(spike_index, HPC_ref_shank);
     session_clusters_all.theta_amplitude{nsession}    = spike_phase_amplitude.theta_amplitude(spike_index, HPC_ref_shank);
@@ -746,8 +773,6 @@ for nsession =1:length(experiment_info)
     session_clusters_all.ripple_amplitude{nsession}   = session_clusters_all.ripple_amplitude{nsession}(sort_idx,:);
     session_clusters_all.theta_phase{nsession}        = session_clusters_all.theta_phase{nsession}(sort_idx,:);
     session_clusters_all.theta_amplitude{nsession}    = session_clusters_all.theta_amplitude{nsession}(sort_idx,:);
-
-
 end
 
 
@@ -1596,14 +1621,14 @@ sessions_to_process = 1:all_sessions;
 %%%% P(ripples) during UP DOWN
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','peaktimes')
 probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'),'probability_normalised');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction PRE','SO_ripples_probability_normalised.mat'),'probability_normalised');
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','peaktimes','time_windows',[-1 1]);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'),'probability');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction PRE','SO_ripples_probability.mat'),'probability');
 
 
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','whole')
 probability_normalised = probability;
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'),'probability_normalised');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction PRE','SO_ripples_probability_normalised_whole.mat'),'probability_normalised');
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'),'probability');
 

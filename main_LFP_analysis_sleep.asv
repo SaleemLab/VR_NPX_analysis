@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =17:22
+for nsession =3:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2457,9 +2457,9 @@ for nsession =17:22
             time_idx = 1:length(LFP(1).best_HPC) ;
         end
 
-        lfp.samplingRate = single(round(1/mean(diff(LFP(probe_no).tvec))));
-        lfp.timestamps = single(LFP(probe_no).tvec(time_idx));
-        tvec = single(LFP(probe_no).tvec(time_idx));
+        lfp.samplingRate = round(1/mean(diff(LFP(probe_no).tvec)));
+        lfp.timestamps = LFP(probe_no).tvec(time_idx);
+        tvec = LFP(probe_no).tvec(time_idx);
 
         lfp_V1 = lfp;
         lfp_HPC = lfp;
@@ -2470,11 +2470,11 @@ for nsession =17:22
             probe_id = [];
 
             if length(LFP)==1
-                lfp_HPC.data= single([LFP(probe_no).best_HPC(:,time_idx)']);
-                lfp_V1.data= single([LFP(probe_no).best_V1(:,time_idx)']);
+                lfp_HPC.data= [LFP(probe_no).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(probe_no).best_V1(:,time_idx)'];
             else
-                lfp_HPC.data= single([LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)']);
-                lfp_V1.data= single([LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)']);
+                lfp_HPC.data= [LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)'];
+                lfp_V1.data= [LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)'];
             end
         end
         %         end
@@ -2502,7 +2502,7 @@ for nsession =17:22
         win_save = [-2 2];% windwos for saving
         baseline_win = [-2 -1.5];%windows used for baseline
         % downsample_factor = 25;
-        fs = single(lfp_V1.samplingRate);
+        fs = lfp_V1.samplingRate;
 
         win_full_samp = round(win_full * fs);
 
@@ -2597,6 +2597,8 @@ for nsession =17:22
                 % 
                 % % Extract [-2 2] seconds
                 % FFT=TFR.fourierspctrm;
+                FFT = single
+                FFT = permute(FFT(:, :,:,TFR.time <= 2 &   TFR.time >= -2), [2 3 4 1]);
 
                 [FFT,timebin_out,freqs_out] = run_timefrequency_ft_in_batches(cfg, data, 500);
 
@@ -2649,13 +2651,15 @@ for nsession =17:22
     end
 end
 
+t
+% Convert power to dB
+t = t - median(t);
 
-% S_basedline
-S = (mean(squeeze(single(abs(squeeze(TF_amp_V1(1).ripples(2,:,:,:)).^2))),3,'omitnan'));
+S = (mean(squeeze(single(abs(squeeze(FFT(1,:,:,:)).^2))),3,'omitnan'));
 S_dB = 10 * log10(S);
 
 % % Create contour plot
-% timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
+timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
 
 timtevec = TFR.time(TFR.time>=-2 & TFR.time<=2);
 figure;

@@ -1,4 +1,4 @@
-function [S,t,f,Serr]=mtspecgramc(data,movingwin,params)
+function [Phi,S,t,f,Serr]=mtspecgramc(data,movingwin,params)
 % Multi-taper time-frequency spectrum - continuous process
 %
 % Usage:
@@ -47,11 +47,15 @@ function [S,t,f,Serr]=mtspecgramc(data,movingwin,params)
 %                                   [0 p] or 0 - no error bars) - optional. Default 0.
 %           trialave (average over trials/channels when 1, don't average when 0) - optional. Default 0
 % Output:
+%       Phi       phase in form time x frequency x channels/trials if trialave=0
 %       S       (spectrum in form time x frequency x channels/trials if trialave=0; 
 %               in the form time x frequency if trialave=1)
 %       t       (times)
 %       f       (frequencies)
 %       Serr    (error bars) only for err(1)>=1
+
+%%%% Modified by Masahiro Takigawa to output J (complex signal)
+
 
 if nargin < 2; error('Need data and window parameters'); end;
 if nargin < 3; params=[]; end;
@@ -61,7 +65,7 @@ if length(params.tapers)==3 & movingwin(1)~=params.tapers(2);
     error('Duration of data in params.tapers is inconsistent with movingwin(1), modify params.tapers(2) to proceed')
 end
 
-if nargout > 3 && err(1)==0; 
+if nargout > 4 && err(1)==0; 
 %   Cannot compute error bars with err(1)=0. change params and run again.
     error('When Serr is desired, err(1) has to be non-zero.');
 end;
@@ -78,25 +82,28 @@ nw=length(winstart);
 
 if trialave
     S = zeros(nw,Nf);
-    if nargout==4; Serr=zeros(2,nw,Nf); end;
+    Phi = zeros(nw,Nf);
+    if nargout==5; Serr=zeros(2,nw,Nf); end;
 else
     S = zeros(nw,Nf,Ch);
-    if nargout==4; Serr=zeros(2,nw,Nf,Ch); end;
+    Phi = zeros(nw,Nf,Ch);
+    if nargout==5; Serr=zeros(2,nw,Nf,Ch); end;
 end
 
 for n=1:nw;
    indx=winstart(n):winstart(n)+Nwin-1;
    datawin=data(indx,:);
-   if nargout==4
-     [s,f,serr]=mtspectrumc(datawin,params);
+   if nargout==5
+     [phi,s,f,serr]=mtspectrumc(datawin,params);
      Serr(1,n,:,:)=squeeze(serr(1,:,:));
      Serr(2,n,:,:)=squeeze(serr(2,:,:));
    else
-     [s,f]=mtspectrumc(datawin,params);
+     [phi,s,f]=mtspectrumc(datawin,params);
    end
    S(n,:,:)=s;
-end;
+   Phi(n,:,:)=phi;
+end
 S=squeeze(S); 
-if nargout==4;Serr=squeeze(Serr);end;
+if nargout==5;Serr=squeeze(Serr);end;
 winmid=winstart+round(Nwin/2);
 t=winmid/Fs;

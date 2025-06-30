@@ -173,9 +173,10 @@ for nsession =6
 
 
 
+            % cortex_LFP{probe_no} = LFP(probe_no).average_V1(LFP(probe_no).best_V1_channel ==  slow_waves(probe_no).best_channel,:);
             cortex_LFP{probe_no} = LFP(probe_no).best_V1(LFP(probe_no).best_V1_channel ==  slow_waves(probe_no).best_channel,:);
 
-            passband = [0.5 17];
+            passband = [0.5 30];
             filter_type  = 'bandpass';
             filter_order = round(6*LFP_SR/(max(passband)-min(passband)));  % creates filter for ripple
             norm_freq_range = passband/(LFP_SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
@@ -534,137 +535,140 @@ for nsession =6
         spike_data = {V1_spikes{1},V1_spikes{2},HPC_spikes{1},HPC_spikes{2}};
         region_names = {'Left V1','Right V1','Left HPC','Right HPC'};
 
+        nfig = 5;
 
-        for nfig = 5
+        for nfig = 1:length(event_times)
             tindex = find(tvec>event_times(min(nfig),1)-0.8 & tvec<event_times(max(nfig),2)+0.8);
-            fig = figure;
-            fig.Position = [740 130 440 850]
-            fig.Name = sprintf('raster raw race during UP DOWN ripples %i',nfig)
-
-
-
-
-
-            %         colour_lines = [0,90,50;74,20,134]/256;
-            colour_lines = [...
-                0.5000, 0.6768, 0.5984;  % lighter green
-                0.6445, 0.5391, 0.7617   % lighter purple
-                ];
-            colour_lines = [...
-                0.7000, 0.7886, 0.7492;  % even lighter green
-                0.7571, 0.7373, 0.8809   % even lighter purple
-                ];
-
-            for nregion = 1:4
-                % Map each neuron ID to a row index
-                start_time = tvec(tindex(1));
-                end_time = tvec(tindex(end));
-%                 if nregion <3
-%                     bin_size = 0.01; % 1 ms resolution
-%                 else
-                    bin_size = 0.005; % 1 ms resolution
+%             fig = figure;
+%             fig.Position = [740 130 440 850]
+%             fig.Name = sprintf('raster raw race during UP DOWN ripples %i',nfig)
+% 
+% 
+% 
+% 
+% 
+%             %         colour_lines = [0,90,50;74,20,134]/256;
+%             colour_lines = [...
+%                 0.5000, 0.6768, 0.5984;  % lighter green
+%                 0.6445, 0.5391, 0.7617   % lighter purple
+%                 ];
+%             colour_lines = [...
+%                 0.7000, 0.7886, 0.7492;  % even lighter green
+%                 0.7571, 0.7373, 0.8809   % even lighter purple
+%                 ];
+% 
+%             for nregion = 1:4
+%                 % Map each neuron ID to a row index
+%                 start_time = tvec(tindex(1));
+%                 end_time = tvec(tindex(end));
+% %                 if nregion <3
+% %                     bin_size = 0.01; % 1 ms resolution
+% %                 else
+%                     bin_size = 0.005; % 1 ms resolution
+% %                 end
+%                 time_bins =  tvec(tindex(1)):bin_size: tvec(tindex(end));
+%                 num_bins = length(time_bins);
+% 
+% 
+%                 subplot(4,1,nregion)
+%                 neuron_ids = unique(spike_data{nregion}(:,1));
+%                 num_neurons = length(neuron_ids);
+%                 neuron_map = containers.Map(neuron_ids, 1:num_neurons);
+% 
+%                 % Initialize raster matrix
+%                 raster_matrix = zeros(num_neurons, num_bins);
+% 
+%                 % Fill raster matrix
+%                 for i = 1:size(spike_data{nregion}, 1)
+%                     neuron = spike_data{nregion}(i,1);
+%                     time = spike_data{nregion}(i,2);
+% 
+%                     if time >= start_time && time <= end_time
+%                         row = neuron_map(neuron);
+%                         col = floor((time - start_time)/bin_size) + 1;
+%                         raster_matrix(row, col) = 1;
+%                     end
 %                 end
-                time_bins =  tvec(tindex(1)):bin_size: tvec(tindex(end));
-                num_bins = length(time_bins);
-                
-
-                subplot(4,1,nregion)
-                neuron_ids = unique(spike_data{nregion}(:,1));
-                num_neurons = length(neuron_ids);
-                neuron_map = containers.Map(neuron_ids, 1:num_neurons);
-
-                % Initialize raster matrix
-                raster_matrix = zeros(num_neurons, num_bins);
-
-                % Fill raster matrix
-                for i = 1:size(spike_data{nregion}, 1)
-                    neuron = spike_data{nregion}(i,1);
-                    time = spike_data{nregion}(i,2);
-
-                    if time >= start_time && time <= end_time
-                        row = neuron_map(neuron);
-                        col = floor((time - start_time)/bin_size) + 1;
-                        raster_matrix(row, col) = 1;
-                    end
-                end
-                % Remove neurons (rows) that did not fire at all
-                firing_neurons_mask = any(raster_matrix, 2);  % True for firing neurons
-                raster_matrix = raster_matrix(firing_neurons_mask, :);
-                num_active = size(raster_matrix, 1);
-
-                % Pad with blank rows at random positions to reach 60 rows
-                desired_rows = 65;
-                num_pad = desired_rows - num_active;
-                pad_matrix = zeros(num_pad, num_bins);
-
-                % Randomly choose positions to insert blank rows
-                insert_idx = sort(randperm(desired_rows, num_pad));
-                new_raster = zeros(desired_rows, num_bins);
-
-                active_idx = setdiff(1:desired_rows, insert_idx);
-
-                % Fill new raster
-                new_raster(active_idx, :) = raster_matrix;
-                % Blank rows already zero
-                raster_matrix = new_raster;
-
-                imagesc(time_bins, 1:size(raster_matrix,1), raster_matrix);
-                % Custom RGB color for spikes (e.g., red)
-                bg_rgb = [1 1 1];     % white background
-                if nregion == 1|nregion == 3
-                    spike_rgb = colour_lines(1,:)  % green
-                else
-                    spike_rgb = colour_lines(2,:) % purple
-                end
-                colormap(gca, [bg_rgb; spike_rgb]);
-
-                colorbar off;
-                hold on
-                yl = ylim;
-                for iEvent = 1:size(DOWN_times,1)
-                    x_start = DOWN_times(iEvent,1);
-                    x_end = DOWN_times(iEvent,2);
-                    x_rect = [x_start x_end x_end x_start];
-                    y_rect = [yl(1) yl(1) yl(2) yl(2)];
-                    patch('XData', x_rect, ...
-                        'YData', y_rect, ...
-                        'FaceColor','b', ...
-                        'FaceAlpha', 0.2, ...
-                        'EdgeColor', 'none');
-                end
-            
-                hold on
-                for iEvent = 1:size(ripple_times,1)
-                    x_start = ripple_times(iEvent,1);
-                    x_end = ripple_times(iEvent,2);
-                    fill([x_start x_end x_end x_start], ...
-                        [yl(1) yl(1) yl(2) yl(2)], ...
-                        'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
-                end
-
-
-                xlabel('Time (ms)');
-                ylabel('Neuron');
-%                 yticks(1:num_neurons);
-%                 yticklabels(neuron_ids);
-                title(region_names{nregion})
-
-
-                xlim([tvec(tindex(1)) tvec(tindex(end))])
-                set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-            end
+%                 % Remove neurons (rows) that did not fire at all
+%                 firing_neurons_mask = any(raster_matrix, 2);  % True for firing neurons
+%                 raster_matrix = raster_matrix(firing_neurons_mask, :);
+%                 num_active = size(raster_matrix, 1);
+% 
+%                 % Pad with blank rows at random positions to reach 60 rows
+%                 desired_rows = 65;
+%                 num_pad = desired_rows - num_active;
+%                 pad_matrix = zeros(num_pad, num_bins);
+% 
+%                 % Randomly choose positions to insert blank rows
+%                 insert_idx = sort(randperm(desired_rows, num_pad));
+%                 new_raster = zeros(desired_rows, num_bins);
+% 
+%                 active_idx = setdiff(1:desired_rows, insert_idx);
+% 
+%                 % Fill new raster
+%                 new_raster(active_idx, :) = raster_matrix;
+%                 % Blank rows already zero
+%                 raster_matrix = new_raster;
+% 
+%                 imagesc(time_bins, 1:size(raster_matrix,1), raster_matrix);
+%                 % Custom RGB color for spikes (e.g., red)
+%                 bg_rgb = [1 1 1];     % white background
+%                 if nregion == 1|nregion == 3
+%                     spike_rgb = colour_lines(1,:)  % green
+%                 else
+%                     spike_rgb = colour_lines(2,:) % purple
+%                 end
+%                 colormap(gca, [bg_rgb; spike_rgb]);
+% 
+%                 colorbar off;
+%                 hold on
+%                 yl = ylim;
+%                 for iEvent = 1:size(DOWN_times,1)
+%                     x_start = DOWN_times(iEvent,1);
+%                     x_end = DOWN_times(iEvent,2);
+%                     x_rect = [x_start x_end x_end x_start];
+%                     y_rect = [yl(1) yl(1) yl(2) yl(2)];
+%                     patch('XData', x_rect, ...
+%                         'YData', y_rect, ...
+%                         'FaceColor','b', ...
+%                         'FaceAlpha', 0.2, ...
+%                         'EdgeColor', 'none');
+%                 end
+% 
+%                 hold on
+%                 for iEvent = 1:size(ripple_times,1)
+%                     x_start = ripple_times(iEvent,1);
+%                     x_end = ripple_times(iEvent,2);
+%                     fill([x_start x_end x_end x_start], ...
+%                         [yl(1) yl(1) yl(2) yl(2)], ...
+%                         'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+%                 end
+% 
+% 
+%                 xlabel('Time (ms)');
+%                 ylabel('Neuron');
+% %                 yticks(1:num_neurons);
+% %                 yticklabels(neuron_ids);
+%                 title(region_names{nregion})
+% 
+% 
+%                 xlim([tvec(tindex(1)) tvec(tindex(end))])
+%                 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+%             end
 
 
             colour_lines = [0,90,50;74,20,134]/256;
 
             fig = figure;
             fig.Position = [740 130 440 850]
-            fig.Name = sprintf('LFP and MUA raw race during UP DOWN ripples %i',nfig)
+            fig.Name = sprintf('LFP (non-filtered) and MUA raw race during UP DOWN ripples %i',nfig)
 
             subplot(5,1,[1 2 3])
-            plot(tvec(tindex),4*cortex_LFP_SO_filtered{1}(tindex)+4000,'Color',colour_lines(1,:))
+            % plot(tvec(tindex),4*cortex_LFP_SO_filtered{1}(tindex)+4000,'Color',colour_lines(1,:))
+            plot(tvec(tindex),3*cortex_LFP{1}(tindex)+4000,'Color',colour_lines(1,:))
             hold on
-            plot(tvec(tindex),6*cortex_LFP_SO_filtered{2}(tindex)+3000,'Color',colour_lines(2,:))
+            plot(tvec(tindex),3*cortex_LFP{2}(tindex)+3000,'Color',colour_lines(2,:))
+            % plot(tvec(tindex),6*cortex_LFP_SO_filtered{2}(tindex)+3000,'Color',colour_lines(2,:))
             hold on;
             plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+2000,'Color',colour_lines(1,:))
             % plot(tvec(tindex),CA1_LFP_filtered{1}(tindex)+500,'k')
@@ -832,3 +836,4 @@ for nsession =6
 
 end
 
+analysis_folder = 'D:\corticohippocampal_replay';

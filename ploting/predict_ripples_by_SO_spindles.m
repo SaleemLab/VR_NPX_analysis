@@ -144,8 +144,367 @@ end
 
 % --- Optional plotting
 if p.Results.plot_option
-    figure;
-    subplot(3,1,1); histogram(output.spindle.pref_phase); title('Spindle preferred phase');
-    subplot(3,1,2); histogram(output.SO.pref_phase); title('SO preferred phase');
-    subplot(3,1,3); histogram(output.combined.pref_phase); title('Combined preferred phase');
+
+    customColors = [0,90,50;74,20,134; 228,42,168 ]/256; % dark purple, dark green, magenta
+
+    for i = 1:1000
+        b1 = output(i).b{1}; % ipsi model: [intercept, cos, sin]
+        b2 = output(i).b{2}; % contra model
+
+        beta_cos_ipsi = b1(1);
+        beta_sin_ipsi = b1(2);
+        beta_cos_contra = b2(1);
+        beta_sin_contra = b2(2);
+
+        mod_depth_ipsi(i) = sqrt(beta_cos_ipsi^2 + beta_sin_ipsi^2);
+        mod_depth_contra(i) = sqrt(beta_cos_contra^2 + beta_sin_contra^2);
+
+        pref_phase_ipsi(i) = atan2(beta_sin_ipsi, beta_cos_ipsi);
+        pref_phase_contra(i) = atan2(beta_sin_contra, beta_cos_contra);
+
+        pval_cos_ipsi(i) = output(i).pval{1}(1);  % cos
+        pval_sin_ipsi(i) = output(i).pval{1}(2);  % sin
+
+        pval_cos_contra(i) = output(i).pval{2}(1);
+        pval_sin_contra(i) = output(i).pval{2}(2);
+
+        R2_ipsi(i) = output(i).R2(1);
+        R2_contra(i) = output(i).R2(2);
+    end
+
+    % === Preferred phase and R² ===
+    medianR2_ipsi = median(R2_ipsi);
+    medianR2_contra = median(R2_contra);
+
+    medianP_cos_ipsi = median(pval_cos_ipsi);
+    medianP_sin_ipsi = median(pval_sin_ipsi);
+    medianP_cos_contra = median(pval_cos_contra);
+    medianP_sin_contra = median(pval_sin_contra);
+
+    pref_ipsi = median(pref_phase_ipsi);
+    pref_contra = median(pref_phase_contra);
+
+    % === Mod depth stats ===
+    mean_mod = [mean(mod_depth_ipsi), mean(mod_depth_contra)];
+    ci_mod = prctile([mod_depth_ipsi; mod_depth_contra]', [2.5 97.5]);
+    lowerCI = mean_mod - ci_mod(1,:);
+    upperCI = ci_mod(2,:) - mean_mod;
+
+    % === Colors ===
+    customColors = [0,90,50;74,20,134]/256;
+
+    % === FIGURE ===
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'Ripple power predicted by spindle phase';
+    tiledlayout(2,2, 'TileSpacing', 'tight');
+
+    % === SCATTER 1: IPSI ===
+    nexttile
+    scatter(ripple_info.spindle_phase(:,1), ripple_info.ripple_power, 10, ...
+        'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.03);
+    hold on
+    yline(mean(ripple_info.ripple_power), 'k--');
+    xline(pref_ipsi, 'r-', 'LineWidth', 2);
+    text(pi/2, prctile(ripple_info.ripple_power,99.9), ...
+        sprintf('\\phi = %.2f rad\nR^2 = %.3f\np_{cos} = %.3e\np_{sin} = %.3e', ...
+        pi/2, medianR2_ipsi, medianP_cos_ipsi, medianP_sin_ipsi), ...
+        'Color','r','FontSize',10, 'HorizontalAlignment','center');
+    xlabel('Spindle Phase (ipsi)'); ylabel('Ripple Power');
+    title('Ipsi Spindle Phase Modulation');
+    set(gca,'TickDir','out','Box','off','FontSize',12)
+    xticks([-pi -pi/2 0 pi/2 pi])
+    xticklabels({'-\pi','-\pi/2','0','\pi/2','\pi'})
+    ylim([4 30])
+    xlim([-pi pi])
+
+
+    % === SCATTER 2: CONTRA ===
+    nexttile
+    scatter(ripple_info.spindle_phase(:,2), ripple_info.ripple_power, 10, ...
+        'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.03);
+    hold on
+    yline(mean(ripple_info.ripple_power), 'k--');
+    xline(pref_contra, 'r-', 'LineWidth', 2);
+    text(pi/2, prctile(ripple_info.ripple_power,99.9), ...
+        sprintf('\\phi = %.2f rad\nR^2 = %.3f\np_{cos} = %.2e\np_{sin} = %.2e', ...
+        pi/2, medianR2_contra, medianP_cos_contra, medianP_sin_contra), ...
+        'Color','r','FontSize',10, 'HorizontalAlignment','center');
+    xlabel('Spindle Phase (contra)'); ylabel('Ripple Power');
+    title('Contra Spindle Phase Modulation');
+    set(gca,'TickDir','out','Box','off','FontSize',12)
+    xticks([-pi -pi/2 0 pi/2 pi])
+    xticklabels({'-\pi','-\pi/2','0','\pi/2','\pi'})
+    ylim([4 30])
+    xlim([-pi pi])
+
+    % === BAR PLOT: Mod depth ===
+    nexttile
+    barColors = customColors;
+    x_pos = [1 2];
+    bar(x_pos, mean_mod, 0.5, 'FaceColor', 'flat', 'CData', barColors, 'EdgeColor', 'none','FaceAlpha',0.5); hold on;
+    errorbar(x_pos, mean_mod, lowerCI, upperCI, ...
+        'k', 'LineStyle','none', 'LineWidth',1.5);
+    xticks(x_pos); xticklabels({'Ipsi', 'Contra'});
+    ylabel('Modulation Depth');
+    title('Modulation Depth (95% CI)');
+    set(gca,'TickDir','out','Box','off','FontSize',12)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% spindple amplitude
+
+for nBoot = 1:1000
+    b_spindle_ipsi(nBoot) = output(nBoot).b{4};
+    b_spindle_contra(nBoot) = output(nBoot).b{5};
+    t_spindle_ipsi(nBoot) = output(nBoot).t_stat{4};
+    t_spindle_contra(nBoot) = output(nBoot).t_stat{5};
+    R2_spindle_ipsi(nBoot) = output(nBoot).R2(4);
+    R2_spindle_contra(nBoot) = output(nBoot).R2(5);
+    pval_spindle_ipsi(nBoot) = output(nBoot).pval{4};
+    pval_spindle_contra(nBoot) = output(nBoot).pval{5};
+end
+
+
+
+fig = figure('Color','w');
+fig.Position = [350 59 800 930/3*2];
+fig.Name = 'Ripple power predicted by spindle power';
+tiledlayout(2,2, 'TileSpacing', 'tight');
+% --- IPSI SCATTER
+nexttile
+scatter(ripple_info.spindle_amplitude(:,1), ripple_info.ripple_power, 10, ...
+    'filled','MarkerFaceColor',customColors(1,:), 'MarkerFaceAlpha',0.03);
+hold on
+coeffs = polyfit(ripple_info.spindle_amplitude(:,1), ripple_info.ripple_power, 1);
+x_fit = linspace(min(ripple_info.spindle_amplitude(:,1)), max(ripple_info.spindle_amplitude(:,1)), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+text(prctile(ripple_info.spindle_amplitude(1,:),99.9), prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', median(R2_spindle_ipsi), median(pval_spindle_ipsi)), ...
+    'FontSize',10,'Color','r');
+xlabel('Spindle power')
+ylabel('Ripple power')
+title('Ipsi spindle power')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+ylim([4 30])
+xlim([-2 6])
+
+% --- CONTRA SCATTER
+nexttile
+scatter(ripple_info.spindle_amplitude(:,2), ripple_info.ripple_power, 10, ...
+    'filled','MarkerFaceColor',customColors(2,:), 'MarkerFaceAlpha',0.03);
+hold on
+coeffs = polyfit(ripple_info.spindle_amplitude(:,2), ripple_info.ripple_power, 1);
+x_fit = linspace(min(ripple_info.spindle_amplitude(:,2)), max(ripple_info.spindle_amplitude(:,2)), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+text(prctile(ripple_info.spindle_amplitude(2,:),99.9), prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', median(R2_spindle_contra), median(pval_spindle_contra)), ...
+    'FontSize',10,'Color','r');
+xlabel('Spindle power')
+ylabel('Ripple power')
+title('Contra spindle power')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+ylim([4 30])
+xlim([-2 6])
+
+% --- BAR: T-STATISTICS
+nexttile
+barData = [mean(t_spindle_ipsi), mean(t_spindle_contra)];
+ci_ipsi = prctile(t_spindle_ipsi, [2.5 97.5]);
+ci_contra = prctile(t_spindle_contra, [2.5 97.5]);
+lowerCI = [barData(1)-ci_ipsi(1), barData(2)-ci_contra(1)];
+upperCI = [ci_ipsi(2)-barData(1), ci_contra(2)-barData(2)];
+barColors = customColors;
+x_pos = [1 2];
+for i = 1:2
+    bar(x_pos(i), barData(i), 0.4, 'FaceColor', barColors(i,:), 'EdgeColor','none','FaceAlpha',0.5); hold on
+    errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), 'k', 'LineWidth', 1.5)
+end
+xticks(x_pos)
+xticklabels({'ipsi','contra'})
+ylabel('T-statistic')
+title('Spindle power effect')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SO phase
+
+customColors = [0,90,50;74,20,134; 228,42,168 ]/256; % dark purple, dark green, magenta
+
+% === Extract SO model info (model 7 & 8)
+for i = 1:1000
+    b1 = output(i).b{7}; % model 7: ipsi
+    b2 = output(i).b{8}; % model 8: contra
+
+    beta_cos_ipsi = b1(1);
+    beta_sin_ipsi = b1(2);
+    beta_cos_contra = b2(1);
+    beta_sin_contra = b2(2);
+
+    mod_depth_ipsi_SO(i) = sqrt(beta_cos_ipsi^2 + beta_sin_ipsi^2);
+    mod_depth_contra_SO(i) = sqrt(beta_cos_contra^2 + beta_sin_contra^2);
+
+    pref_phase_ipsi_SO(i) = atan2(beta_sin_ipsi, beta_cos_ipsi);
+    pref_phase_contra_SO(i) = atan2(beta_sin_contra, beta_cos_contra);
+
+    pval_cos_ipsi_SO(i) = output(i).pval{7}(1);  % cos
+    pval_sin_ipsi_SO(i) = output(i).pval{7}(2);  % sin
+    pval_cos_contra_SO(i) = output(i).pval{8}(1);
+    pval_sin_contra_SO(i) = output(i).pval{8}(2);
+
+    R2_ipsi_SO(i) = output(i).R2(7);
+    R2_contra_SO(i) = output(i).R2(8);
+end
+
+% === Summary stats
+medianR2_ipsi = median(R2_ipsi_SO);
+medianR2_contra = median(R2_contra_SO);
+medianP_cos_ipsi = median(pval_cos_ipsi_SO);
+medianP_sin_ipsi = median(pval_sin_ipsi_SO);
+medianP_cos_contra = median(pval_cos_contra_SO);
+medianP_sin_contra = median(pval_sin_contra_SO);
+pref_ipsi = median(pref_phase_ipsi_SO);
+pref_contra = median(pref_phase_contra_SO);
+mean_mod = [mean(mod_depth_ipsi_SO), mean(mod_depth_contra_SO)];
+ci_mod = prctile([mod_depth_ipsi_SO; mod_depth_contra_SO]', [2.5 97.5]);
+lowerCI = mean_mod - ci_mod(1,:);
+upperCI = ci_mod(2,:) - mean_mod;
+
+% === Colors
+customColors = [0,90,50;74,20,134]/256;
+
+% === FIGURE ===
+    fig = figure('Color','w');
+    fig.Position = [350 59 800 930/3*2];
+    fig.Name = 'Ripple power predicted by SO phase';
+    tiledlayout(2,2, 'TileSpacing', 'tight');
+tiledlayout(2,2, 'TileSpacing', 'tight');
+
+% === SCATTER: IPSI SO Phase
+nexttile
+scatter(ripple_info.SO_phase(:,1), ripple_info.ripple_power, 10, ...
+    'filled', 'MarkerFaceColor', customColors(1,:), 'MarkerFaceAlpha', 0.02);
+hold on
+yline(mean(ripple_info.ripple_power), 'k--');
+xline(pref_ipsi, 'r-', 'LineWidth', 2);
+text(pi/2, prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('\\phi = %.2f rad\nR^2 = %.3f\np_{cos} = %.2e\np_{sin} = %.2e', ...
+    pi/2, medianR2_ipsi, medianP_cos_ipsi, medianP_sin_ipsi), ...
+    'Color','r','FontSize',10, 'HorizontalAlignment','center');
+xlabel('SO Phase (ipsi)'); ylabel('Ripple Power');
+title('Ipsi SO Phase Modulation');
+xticks([-pi -pi/2 0 pi/2 pi])
+xticklabels({'-\pi','-\pi/2','0','\pi/2','\pi'})
+xlim([-pi pi]); ylim([4 30])
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+% === SCATTER: CONTRA SO Phase
+nexttile
+scatter(ripple_info.SO_phase(:,2), ripple_info.ripple_power, 10, ...
+    'filled', 'MarkerFaceColor', customColors(2,:), 'MarkerFaceAlpha', 0.02);
+hold on
+yline(mean(ripple_info.ripple_power), 'k--');
+xline(pref_contra, 'r-', 'LineWidth', 2);
+text(pi/2, prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('\\phi = %.2f rad\nR^2 = %.3f\np_{cos} = %.2e\np_{sin} = %.2e', ...
+    pi/2, medianR2_contra, medianP_cos_contra, medianP_sin_contra), ...
+    'Color','r','FontSize',10, 'HorizontalAlignment','center');
+xlabel('SO Phase (contra)'); ylabel('Ripple Power');
+title('Contra SO Phase Modulation');
+xticks([-pi -pi/2 0 pi/2 pi])
+xticklabels({'-\pi','-\pi/2','0','\pi/2','\pi'})
+xlim([-pi pi]); ylim([4 30])
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+% === BAR PLOT: Modulation Depth
+nexttile
+x_pos = [1 2];
+bar(x_pos, mean_mod, 0.5, 'FaceColor', 'flat', 'CData', customColors, ...
+    'EdgeColor', 'none', 'FaceAlpha', 0.5); hold on;
+errorbar(x_pos, mean_mod, lowerCI, upperCI, ...
+    'k', 'LineStyle','none', 'LineWidth',1.5);
+xticks(x_pos); xticklabels({'Ipsi', 'Contra'});
+ylabel('Modulation Depth');
+title('SO Phase Modulation Depth (95% CI)');
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% So amplitude
+
+% === Extract values for SO amplitude (model 10 = ipsi, model 11 = contra)
+for nBoot = 1:1000
+    b_SO_ipsi(nBoot) = output(nBoot).b{10};
+    b_SO_contra(nBoot) = output(nBoot).b{11};
+    t_SO_ipsi(nBoot) = output(nBoot).t_stat{10};
+    t_SO_contra(nBoot) = output(nBoot).t_stat{11};
+    R2_SO_ipsi(nBoot) = output(nBoot).R2(10);
+    R2_SO_contra(nBoot) = output(nBoot).R2(11);
+    pval_SO_ipsi(nBoot) = output(nBoot).pval{10};
+    pval_SO_contra(nBoot) = output(nBoot).pval{11};
+end
+
+fig = figure('Color','w');
+fig.Position = [350 59 800 930/3*2];
+fig.Name = 'Ripple power predicted by SO power';
+tiledlayout(2,2, 'TileSpacing', 'tight');
+
+% --- IPSI SO SCATTER
+nexttile
+scatter(ripple_info.SO_amplitude(:,1), ripple_info.ripple_power, 10, ...
+    'filled','MarkerFaceColor',customColors(1,:), 'MarkerFaceAlpha',0.03);
+hold on
+coeffs = polyfit(ripple_info.SO_amplitude(:,1), ripple_info.ripple_power, 1);
+x_fit = linspace(min(ripple_info.SO_amplitude(:,1)), max(ripple_info.SO_amplitude(:,1)), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+text(prctile(ripple_info.SO_amplitude(:,1),99), prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', median(R2_SO_ipsi), median(pval_SO_ipsi)), ...
+    'FontSize',10,'Color','r');
+xlabel('SO power')
+ylabel('Ripple power')
+title('Ipsi SO power')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+ylim([4 30])
+xlim([-2 6])
+
+% --- CONTRA SO SCATTER
+nexttile
+scatter(ripple_info.SO_amplitude(:,2), ripple_info.ripple_power, 10, ...
+    'filled','MarkerFaceColor',customColors(2,:), 'MarkerFaceAlpha',0.03);
+hold on
+coeffs = polyfit(ripple_info.SO_amplitude(:,2), ripple_info.ripple_power, 1);
+x_fit = linspace(min(ripple_info.SO_amplitude(:,2)), max(ripple_info.SO_amplitude(:,2)), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+text(prctile(ripple_info.SO_amplitude(:,2),99), prctile(ripple_info.ripple_power,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', median(R2_SO_contra), median(pval_SO_contra)), ...
+    'FontSize',10,'Color','r');
+xlabel('SO power')
+ylabel('Ripple power')
+title('Contra SO power')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+ylim([4 30])
+xlim([-2 6])
+
+% --- BAR: T-STATISTICS
+nexttile
+barData = [mean(t_SO_ipsi), mean(t_SO_contra)];
+ci_ipsi = prctile(t_SO_ipsi, [2.5 97.5]);
+ci_contra = prctile(t_SO_contra, [2.5 97.5]);
+lowerCI = [barData(1)-ci_ipsi(1), barData(2)-ci_contra(1)];
+upperCI = [ci_ipsi(2)-barData(1), ci_contra(2)-barData(2)];
+barColors = customColors;
+x_pos = [1 2];
+for i = 1:2
+    bar(x_pos(i), barData(i), 0.4, 'FaceColor', barColors(i,:), 'EdgeColor','none','FaceAlpha',0.5); hold on
+    errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), 'k', 'LineWidth', 1.5)
+end
+xticks(x_pos)
+xticklabels({'ipsi','contra'})
+ylabel('T-statistic')
+title('SO power effect')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
 end
