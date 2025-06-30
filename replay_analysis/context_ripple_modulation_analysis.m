@@ -62,7 +62,7 @@ save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_mod
 %  = struct();
 
 
-%% context-selective ripple modulation + Spatial correlation and ripple correlation in V1 and HPC 
+%% context-selective ripple modulation
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
 % load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
@@ -153,6 +153,10 @@ for nsession = 1:length(sessions_to_process)
         context_modulation_all.POST_ripple_FR{nsession}(1,nCell) = ...
             mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > 0 & ripple_modulation.bins < 0.2));
 
+        context_modulation_all.ripple_FR_shifted{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > -1 & ripple_modulation.bins < -0.8));
+
+
         % Firing rates on both tracks
         context_modulation_all.FR_track{nsession}(1,nCell) = session_clusters_all.mean_FR{nsession}(nCell,1);
         context_modulation_all.FR_track{nsession}(2,nCell) = session_clusters_all.mean_FR{nsession}(nCell,2);
@@ -170,17 +174,114 @@ for nsession = 1:length(sessions_to_process)
 
         context_modulation_all.session_id{nsession}(nCell) = nsession;
     end
+end
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+
+
+% Low ripple power vs High ripple power
+context_modulation_all = struct();
+% context_corr_all = struct();
+
+for nsession = 1:length(sessions_to_process)
+    all_clusters = session_clusters_all.spatial_cell_id{nsession};
+
+    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
+    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
+
+    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
+        'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
+    % bins = ripple_modulation.bins > 0 & ripple_modulation.bins < 0.5;
+   
+    % all_clusters = session_clusters_all.spatial_cell_id{nsession};
+    all_regions = session_clusters_all.region{nsession};
+    V1_id = find(contains(all_regions,'V1'));
+    HPC_id = find(contains(all_regions,'HPC'));
+
+    % Get mean bias for each ripple event in HPC and get within session
+    % Track 1 and Track 2 biased ripple events based on HPC bias
+    ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)]';
+    mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+    
+    power_threshold = prctile(ripple_powers,[25 75]); 
+    log_odds_threshold = prctile(mean_bias,[20 80]);
+    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers < power_threshold(1));
+    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers < power_threshold(1));
+
+    %%%%%%% Populational zscored firing rate difference
+    % T1_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) >  session_clusters_all.mean_FR{nsession}(V1_id,2));
+    % T2_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) <  session_clusters_all.mean_FR{nsession}(V1_id,2));
+    % T1_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
+    % T2_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
+    % z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(T1_V1_cell,:,:),1,'omitnan'))];
+    % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(T2_V1_cell,:,:),1,'omitnan'))];
+    % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(T2_V1_cell,:,:),1,'omitnan'))];
+    % mean(z_V1_population_ripple_PSTH{1}(T1_index,:)-z_V1_population_ripple_PSTH{2}(T1_index,:),'omitnan') -  mean(z_V1_population_ripple_PSTH{1}(T2_index,:)-z_V1_population_ripple_PSTH{2}(T2_index,:),'omitnan')
+
+    
+    %%%%%%% Context selective ripple modulation
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH{nsession}(2,nCell,:))';
+
+        % Pre- and post-ripple firing rate modulation
+        context_modulation_all.PRE_ripple_FR_low_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > -0.2 & ripple_modulation.bins < 0));
+
+        context_modulation_all.POST_ripple_FR_low_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > 0 & ripple_modulation.bins < 0.2));
+
+        context_modulation_all.ripple_FR_shifted_low_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > -1 & ripple_modulation.bins < -0.8));
+    end
+
+
+    ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)]';
+    mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+
+    power_threshold = prctile(ripple_powers,[25 75]);
+    log_odds_threshold = prctile(mean_bias,[20 80]);
+    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers > power_threshold(end));
+    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers > power_threshold(end));
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH{nsession}(2,nCell,:))';
+
+        % Pre- and post-ripple firing rate modulation
+        context_modulation_all.PRE_ripple_FR_high_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > -0.2 & ripple_modulation.bins < 0));
+
+        context_modulation_all.POST_ripple_FR_high_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > 0 & ripple_modulation.bins < 0.2));
+
+        context_modulation_all.ripple_FR_shifted_high_ripple{nsession}(1,nCell) = ...
+            mean(context_modulation_all.PSTH_diff{nsession}(nCell, ripple_modulation.bins > -1 & ripple_modulation.bins < -0.8));
+
+    end
 
 end
 
-
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 
     % subplot(2,2,1)
     % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.POST_ripple_FR(V1_id))
     % subplot(2,2,2)
     % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
     % 
-
+%%  +Spatial correlation and ripple correlation in V1 and HPC 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Spatial corr vs ripple corr
 context_corr_all = struct();
 
@@ -286,14 +387,198 @@ for nsession = 1:length(sessions_to_process)
 end
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_corr_all.mat'),'context_corr_all')
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
 
 %% Plotting context selecitve ripple modulation
 
+%%%% KDE bias
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+
+session_id = [ripples_all(1).session_count(ripples_all(1).SWS_index); ripples_all(2).session_count(ripples_all(2).SWS_index)];
+
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
+z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+clear z_bias1
 
 
 
 
+
+%% Plotting context selecitve ripple modulation
+% scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
+
+session_id_all = [context_modulation_all.session_id{:}];
+regions_all = [context_modulation_all.region{:}];
+z_FR_track = [context_modulation_all.z_FR_track{:}];
+z_FR_track_diff = z_FR_track(1,:)-z_FR_track(2,:);
+
+FR_track = [context_modulation_all.FR_track{:}];
+FR_track_diff = FR_track(1,:)-FR_track(2,:);
+
+POST_ripple_FR_diff = [context_modulation_all.POST_ripple_FR{:}];
+PRE_ripple_FR_diff = [context_modulation_all.PRE_ripple_FR{:}];
+
+
+tbl_V1 = table( ...
+    normalize(double(z_FR_track_diff(contains(regions_all,'V1'))')), ...
+    normalize(double(POST_ripple_FR_diff(contains(regions_all,'V1'))')), ...
+    normalize(double(PRE_ripple_FR_diff(contains(regions_all,'V1'))')), ...
+    categorical(session_id_all(contains(regions_all,'V1'))'), ...
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+
+tbl_HPC = table( ...
+    normalize(double(z_FR_track_diff(contains(regions_all,'HPC'))')), ...
+    normalize(double(POST_ripple_FR_diff(contains(regions_all,'HPC'))')), ...
+    normalize(double(PRE_ripple_FR_diff(contains(regions_all,'HPC'))')), ...
+    categorical(session_id_all(contains(regions_all,'HPC'))'), ...
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+
+tbl_all = {tbl_V1,tbl_V1,tbl_HPC,tbl_HPC};
+modelNames = {'V1 POST ripple','V1 PRE ripple','HPC POST ripple','HPC PRE ripple'};
+ModelList = {'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)'};
+
+parfor iBoot = 1:1000
+    local_b = cell(length(modelNames),1);
+    local_tstat = cell(length(modelNames),1);
+    local_pval = cell(length(modelNames),1);
+    local_variable = cell(length(modelNames),1);
+    local_R2 = zeros(length(modelNames),1);
+
+    tic
+
+
+    for m = 1:length(modelNames)
+        tbl = tbl_all{m};
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        index = randsample(s, 1:height(tbl), height(tbl), true);
+        tbl = tbl(index,:);
+
+        glme = fitlme(tbl, ModelList{m});
+        local_b{m} = glme.Coefficients.Estimate(2:end);
+        local_tstat{m} = glme.Coefficients.tStat(2:end);
+        local_pval{m} = glme.Coefficients.pValue(2:end);
+        local_variable{m} = glme.CoefficientNames(2:end);
+
+        if isprop(glme, 'Rsquared') && isfield(glme.Rsquared, 'Adjusted')
+            local_R2(m) = glme.Rsquared.Adjusted;
+        else
+            local_R2(m) = NaN;  % fallback
+        end
+    end
+
+    output(iBoot).b = local_b;
+    output(iBoot).R2 = local_R2;
+    output(iBoot).t_stat = local_tstat;
+    output(iBoot).pval = local_pval;
+    output(iBoot).variable = local_variable;
+    output(iBoot).model = ModelList{m};
+    output(iBoot).type = modelNames;
+    toc
+end
+
+% z_FR_track_diff(contains(regions_all,'V1'))
+
+nfig = figure;
+
+for nBoot = 1:1000
+    b_V1(nBoot) = output(nBoot).b{1};
+    t_V1(nBoot) = output(nBoot).t_stat{1};
+    R2_V1(nBoot) = output(nBoot).R2(1);
+    pval_V1(nBoot) = output(nBoot).pval{1};
+end
+
+
+subplot(2,4,1)
+histogram(z_FR_track_diff(contains(regions_all,'V1_L')),'Normalization','probability');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'V1_R')),'Normalization','probability')
+xlabel('Track L - Track R FR diff (z)')
+ylabel('proportion of cells')
+legend('V1 L','V1 R','box','off')
+title('Track L - Track R FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,4,2)
+histogram(z_FR_track_diff(contains(regions_all,'V1_L')),'Normalization','cdf');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'V1_R')),'Normalization','cdf')
+xlabel('Track L - Track R FR diff (z)')
+ylabel('proportion of cells')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,4,3)
+X = double(z_FR_track_diff(contains(regions_all,'V1')));
+Y = double(POST_ripple_FR_diff(contains(regions_all,'V1')));
+scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+hold on
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_V1,'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-2 2])
+ylim([-0.4 0.4])
+
+subplot(2,4,4)
+X = double(z_FR_track_diff(contains(regions_all,'V1')));
+Y = double(PRE_ripple_FR_diff(contains(regions_all,'V1')));
+scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+hold on
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_V1,'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-2 2])
+ylim([-0.4 0.4])
+
+
+
+subplot(2,3,3)
+histogram(z_FR_track_diff(contains(regions_all,'HPC_L')),'Normalization','probability');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'HPC_R')),'Normalization','probability')
+
+legend('HPC L','HPC R','box','off')
+title('Track L - Track R FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,3,4)
+histogram(z_FR_track_diff(contains(regions_all,'HPC_L')),'Normalization','cdf');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'HPC_R')),'Normalization','cdf')
 
 
 %% Plotting context selecitve spatial corr and ripple corr

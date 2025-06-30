@@ -249,34 +249,34 @@ for nsession = 1:length(sessions_to_process)
     pair_pval_T2 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
     pair_corr_T2 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
 
-    for nCell = 1:length(V1_id) % Every V1 cell
+    spatial_raw  = session_clusters_all.spatial_response_raw{nsession};
+
+    HPC_spatial = cell(length(HPC_id), 2);
+    for mCell = 1:length(HPC_id)
+        HPC_spatial{mCell,1} = reshape(spatial_raw {HPC_id(mCell), 1}, 1, []);
+        HPC_spatial{mCell,2} = reshape(spatial_raw {HPC_id(mCell), 2}, 1, []);
+    end
+
+    for nCell = 1:length(V1_id)
+        V1_spatial{1} = reshape(spatial_raw {V1_id(nCell), 1}, 1, []);
+        V1_spatial{2} = reshape(spatial_raw {V1_id(nCell), 2}, 1, []);
+
+        % === Preload HPC cell responses for this loop ===
 
 
-        % V1_cell_psth = squeeze(ripple_modulation.PSTH_zscored(V1_id(nCell),:,:));
-        % V1_cell_spatial_psth = squeeze(ripple_modulation.PSTH_zscored(V1_id(nCell),:,:));
-        V1_cell_spatial_psth{1} = reshape(session_clusters_all.spatial_response_raw{nsession}{V1_id(nCell),1},1,[]);
-        V1_cell_spatial_psth{2} = reshape(session_clusters_all.spatial_response_raw{nsession}{V1_id(nCell),2},1,[]);
+        parfor mCell = 1:length(HPC_id)
+            [r1, p1] = corr(HPC_spatial{mCell,1}', V1_spatial{1}', 'type', 'Spearman', 'Rows', 'complete');
+            [r2, p2] = corr(HPC_spatial{mCell,2}', V1_spatial{2}', 'type', 'Spearman', 'Rows', 'complete');
 
-        parfor mCell = 1:length(HPC_id) % Every HPC cell
-            HPC_cell_spatial_psth=[];
-            HPC_cell_spatial_psth=[];
-
-            % HPC_cell_psth = squeeze(ripple_modulation.PSTH_zscored(HPC_id(mCell),:,:));
-            HPC_cell_spatial_psth{1} = reshape(session_clusters_all.spatial_response_raw{nsession}{HPC_id(mCell),1},1,[]);
-            HPC_cell_spatial_psth{2} = reshape(session_clusters_all.spatial_response_raw{nsession}{HPC_id(mCell),2},1,[]);
-
-
-            [corr_vec pair_pval]= corr(HPC_cell_spatial_psth{1}', V1_cell_spatial_psth{1}', 'type', 'Spearman','Rows','complete');
-            pair_pval_T1(mCell,nCell) = pair_pval;
-            pair_corr_T1(mCell,nCell) = pair_pval;
-
-            [corr_vec pair_pval]= corr(HPC_cell_spatial_psth{2}', V1_cell_spatial_psth{2}', 'type', 'Spearman','Rows','complete');
-            pair_pval_T2(mCell,nCell) = pair_pval;
-            pair_corr_T2(mCell,nCell) = pair_pval;
+            pair_pval_T1(mCell, nCell) = p1;
+            pair_corr_T1(mCell, nCell) = r1;
+            pair_pval_T2(mCell, nCell) = p2;
+            pair_corr_T2(mCell, nCell) = r2;
         end
     end
 
-    pair_pval = reshape(pair_pval, nHPC, nV1); % Reshape to 2D [nHPC x nV1]
+
+    % pair_pval = reshape(pair_pval, nHPC, nV1); % Reshape to 2D [nHPC x nV1]
 
     context_corr_all.spatial_corr_T1{nsession}= pair_corr_T1;
     context_corr_all.spatial_corr_pval_T1{nsession} = pair_pval_T1;
@@ -286,15 +286,144 @@ for nsession = 1:length(sessions_to_process)
 end
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_corr_all.mat'),'context_corr_all')
-
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
 
 %% Plotting context selecitve ripple modulation
 
+%%%% KDE bias
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+
+session_id = [ripples_all(1).session_count(ripples_all(1).SWS_index); ripples_all(2).session_count(ripples_all(2).SWS_index)];
+
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
+z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+clear z_bias1
 
 
 
 
+
+%% Plotting context selecitve ripple modulation
+% scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
+
+session_id_all = [context_modulation_all.session_id{:}];
+regions_all = [context_modulation_all.region{:}];
+z_FR_track = [context_modulation_all.z_FR_track{:}];
+z_FR_track_diff = z_FR_track(1,:)-z_FR_track(2,:);
+
+FR_track = [context_modulation_all.FR_track{:}];
+FR_track_diff = FR_track(1,:)-FR_track(2,:);
+
+POST_ripple_FR_diff = [context_modulation_all.POST_ripple_FR{:}];
+PRE_ripple_FR_diff = [context_modulation_all.POST_ripple_FR{:}];
+
+
+tbl_V1 = table( ...
+    double(z_FR_track_diff(contains(regions_all,'V1'))'), ...
+    double(POST_ripple_FR_diff(contains(regions_all,'V1'))'), ...
+    double(PRE_ripple_FR_diff(contains(regions_all,'V1'))'), ...
+    categorical(session_id_all(contains(regions_all,'V1'))'), ...
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+
+tbl_HPC = table( ...
+    double(z_FR_track_diff(contains(regions_all,'HPC'))'), ...
+    double(POST_ripple_FR_diff(contains(regions_all,'HPC'))'), ...
+    double(PRE_ripple_FR_diff(contains(regions_all,'HPC'))'), ...
+    categorical(session_id_all(contains(regions_all,'HPC'))'), ...
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+
+tbl_all = {tbl_V1,tbl_V1,tbl_HPC,tbl_HPC};
+modelNames = {'V1 POST ripple','V1 PRE ripple','HPC POST ripple','HPC PRE ripple'};
+ModelList = {'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
+    'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)'};
+nModels
+parfor iBoot = 1:1000
+    local_b = cell(nModels,1);
+    local_tstat = cell(nModels,1);
+    local_pval = cell(nModels,1);
+    local_variable = cell(nModels,1);
+    local_R2 = zeros(nModels,1);
+
+    tic
+
+
+    for m = 1:length(modelNames)
+        tbl = tbl_all{m};
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        index = randsample(s, 1:length(tbl), 1:length(tbl), true);
+        tbl = tbl(index,:);
+
+        glme = fitlme(tbl, ModelList{m});
+        local_b{m} = glme.Coefficients.Estimate(2:end);
+        local_tstat{m} = glme.Coefficients.tStat(2:end);
+        local_pval{m} = glme.Coefficients.pValue(2:end);
+        local_variable{m} = glme.CoefficientNames(2:end);
+
+    end
+
+    output(iBoot).b = local_b;
+    output(iBoot).R2 = local_R2;
+    output(iBoot).t_stat = local_tstat;
+    output(iBoot).pval = local_pval;
+    output(iBoot).variable = local_variable;
+    output(iBoot).model = ModelList{m};
+    output(iBoot).type = modelNames;
+end
+
+% z_FR_track_diff(contains(regions_all,'V1'))
+
+nfig = figure;
+
+subplot(2,2,1)
+scatter(z_FR_track_diff(contains(regions_all,'V1')),POST_ripple_FR_diff),'k','filled','MarkerFaceAlpha', 0.1)
+xlim([-2 2])
+ylim([-0.4 0.4])
+
+
+
+figure
+subplot(2,3,1)
+histogram(z_FR_track_diff(contains(regions_all,'V1_L')),'Normalization','probability');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'V1_R')),'Normalization','probability')
+
+legend('V1 L','V1 R','box','off')
+title('Track L - Track R FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,3,2)
+histogram(z_FR_track_diff(contains(regions_all,'V1_L')),'Normalization','cdf');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'V1_R')),'Normalization','cdf')
+
+
+subplot(2,3,3)
+histogram(z_FR_track_diff(contains(regions_all,'HPC_L')),'Normalization','probability');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'HPC_R')),'Normalization','probability')
+
+legend('HPC L','HPC R','box','off')
+title('Track L - Track R FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,3,4)
+histogram(z_FR_track_diff(contains(regions_all,'HPC_L')),'Normalization','cdf');hold on;
+histogram(z_FR_track_diff(contains(regions_all,'HPC_R')),'Normalization','cdf')
 
 
 %% Plotting context selecitve spatial corr and ripple corr
