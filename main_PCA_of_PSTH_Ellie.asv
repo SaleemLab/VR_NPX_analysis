@@ -29,8 +29,7 @@ z_score_period = 'entire_session'; % z score either over 'entire_session' or 'fi
 psthBinSize = 0.01; % for GAVNIK protocol 20250217, using 1ms worsens cluster separation a lot. 0.02 worsens separation somewhat.
 stim_window = [0.03 0.16];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
                             % For my TRAIN protocol 20250203, [0.02 0.21] seems best. But across training days an uptick in spiking develops in the greyscreen period following stimulus offset
-gOSI_threshold = 0.07; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
-                            %nprobe = 1;
+%nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250217\GAVNIK_ABCD') % 4/5 files will be saved here in the cd
 
@@ -101,8 +100,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 visuallyresponsive_mask = abs(totalResponse) >= 2; % very lenient; summed net spiking across all orientations of more than 1 spike or less than -1 spike
                 
                 %%%% Filter out untuned neurons
-                gOSI_values = OP_tuning(nprobe).gOSI(loc_in_OP(is_member));
-                tuned_mask = gOSI_values > gOSI_threshold;
+                OriCV_values = OP_tuning(nprobe).OriCV(loc_in_OP(is_member));
+                   tuned_mask = OriCV_values > gOSI_threshold;
 
                 combined_mask = visuallyresponsive_mask & tuned_mask;
                 
@@ -114,8 +113,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 filtered_OP.cluster_id = OP_tuning(nprobe).cluster_id(loc_in_OP_final);
                 filtered_OP.OriAngle = OP_tuning(nprobe).OriAngle(loc_in_OP_final);
                 filtered_OP.DirAngle = OP_tuning(nprobe).DirAngle(loc_in_OP_final);
-                filtered_OP.gOSI = OP_tuning(nprobe).gOSI(loc_in_OP_final);
-                filtered_OP.gDSI = OP_tuning(nprobe).gDSI(loc_in_OP_final);
+                filtered_OP.OriCV = OP_tuning(nprobe).OriCV(loc_in_OP_final);
+                filtered_OP.DirCV = OP_tuning(nprobe).DirCV(loc_in_OP_final);
                 filtered_OP.summedNetSpikeCounts_per_ori = OP_tuning(nprobe).summedNetSpikeCounts_per_ori(:, loc_in_OP_final);
                 filtered_OP.all_orientations = OP_tuning(nprobe).all_orientations;
 
@@ -400,8 +399,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                            'Interpreter', 'none');  % Avoid italicizing if any LaTeX characters
 
                 hold off;
-                sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
-                fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
+                fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 savefig(fig1, fullfile(pwd, fig_filename1));
                         
                 
@@ -508,10 +507,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         set(gca, 'FontSize', 8);
                     end
                 
-                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of trial spikecounts (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', ...
+                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of trial spikecounts (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', ...
                         subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
                         'Interpreter', 'none');
-                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                     savefig(fig2, fullfile(pwd, fig_filename2));
                 
                 elseif contains(temporal_structure, 'timebinned spikes') % trials x timebins x neurons
@@ -593,10 +592,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         set(gca, 'FontSize', 8);
                     end
                 
-                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of spiking across time (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', ...
+                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of spiking across time (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', ...
                         subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
                         'Interpreter', 'none');
-                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                     savefig(fig2, fullfile(pwd, fig_filename2));
                 end
                 
@@ -742,10 +741,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 
                 xlabel('Number of Principal Components');
                 ylabel('Mean Silhouette Score');
-                sgtitle(sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset) Silhouette Clustering Quality vs. Number of PCs (by Trial Type), gOSI > %0.2f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset) Silhouette Clustering Quality vs. Number of PCs (by Trial Type), gOSI > %0.1f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
                 legend([{'Overall'}, ori_labels'], 'Location', 'best');
                 grid on;
-                fig3_filename = sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, Silhouette score progression with increasing PCs, coloured by trial-type.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                fig3_filename = sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset), gOSI over %0.1f, Silhouette score progression with increasing PCs, coloured by trial-type.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 fig3_save_path = fullfile(pwd, fig3_filename);
                 savefig(fig3, fig3_save_path);
 
@@ -806,11 +805,11 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 % Annotate
                 xlabel('Silhouette Value');
                 ylabel('Trial index (sorted by orientation)');
-                title(sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI > %0.2f, coloured by trial-type', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold), 'Interpreter', 'none');
+                title(sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI > %0.1f, coloured by trial-type', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold), 'Interpreter', 'none');
                 xlim([-1 1]);
                 grid on;
                 
-                fig4_filename = sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, coloured by trial-type.fig', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                fig4_filename = sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI over %0.1f, coloured by trial-type.fig', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 fig4_save_path = fullfile(pwd, fig4_filename);
                 savefig(fig4, fig4_save_path);
 
