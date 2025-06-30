@@ -115,6 +115,13 @@ for nsession = 1:length(sessions_to_process)
     % all_clusters = session_clusters_all.spatial_cell_id{nsession};
     all_regions = session_clusters_all.region{nsession};
     V1_id = find(contains(all_regions,'V1'));
+
+    % Only grab ripple-modulated cells
+    V1_id = intersect(V1_id,find(ripple_modulation_PSTH_all{nsession}(1).ripple_modulation >= 0.95 | ripple_modulation_PSTH_all{nsession}(2).ripple_modulation >= 0.95...
+        | ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE >=0.95 |ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE >=0.95));
+
+
+
     HPC_id = find(contains(all_regions,'HPC'));
 
     % Get mean bias for each ripple event in HPC and get within session
@@ -282,7 +289,7 @@ save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_al
     % subplot(2,2,2)
     % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
     % 
-%%  +Spatial correlation and ripple correlation in V1 and HPC 
+%%  Spatial correlation and ripple correlation in V1 and HPC 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Spatial corr vs ripple corr
 context_corr_all = struct();
 
@@ -435,24 +442,26 @@ FR_track_diff = FR_track(1,:)-FR_track(2,:);
 
 POST_ripple_FR_diff = [context_modulation_all.POST_ripple_FR{:}];
 PRE_ripple_FR_diff = [context_modulation_all.PRE_ripple_FR{:}];
-
+shifted_ripple_FR_diff = [context_modulation_all.ripple_FR_shifted{:}];
 
 tbl_V1 = table( ...
     normalize(double(z_FR_track_diff(contains(regions_all,'V1'))')), ...
     normalize(double(POST_ripple_FR_diff(contains(regions_all,'V1'))')), ...
     normalize(double(PRE_ripple_FR_diff(contains(regions_all,'V1'))')), ...
+    normalize(double(shifted_ripple_FR_diff(contains(regions_all,'V1'))')), ...
     categorical(session_id_all(contains(regions_all,'V1'))'), ...
-    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','shifted_ripple_FR_diff','subjectID'});
 
 tbl_HPC = table( ...
     normalize(double(z_FR_track_diff(contains(regions_all,'HPC'))')), ...
     normalize(double(POST_ripple_FR_diff(contains(regions_all,'HPC'))')), ...
     normalize(double(PRE_ripple_FR_diff(contains(regions_all,'HPC'))')), ...
+    normalize(double(shifted_ripple_FR_diff(contains(regions_all,'HPC'))')), ...
     categorical(session_id_all(contains(regions_all,'HPC'))'), ...
-    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','subjectID'});
+    'VariableNames', {'z_FR_track_diff','POST_ripple_FR_diff','PRE_ripple_FR_diff','shifted_ripple_FR_diff','subjectID'});
 
 tbl_all = {tbl_V1,tbl_V1,tbl_HPC,tbl_HPC};
-modelNames = {'V1 POST ripple','V1 PRE ripple','HPC POST ripple','HPC PRE ripple'};
+modelNames = {'V1 POST ripple','V1 PRE ripple','V1 shifted control','HPC POST ripple','HPC PRE ripple','HPC shifted control'};
 ModelList = {'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
     'PRE_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
     'POST_ripple_FR_diff ~ z_FR_track_diff + (1|subjectID)';...
