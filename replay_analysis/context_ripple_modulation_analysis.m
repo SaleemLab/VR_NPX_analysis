@@ -101,7 +101,7 @@ z_V1_population_ripple_PSTH{2} = [];
 
 context_modulation_all = struct();
 % context_corr_all = struct();
-
+tic
 for nsession = 1:length(sessions_to_process)
     all_clusters = session_clusters_all.spatial_cell_id{nsession};
 
@@ -129,8 +129,8 @@ for nsession = 1:length(sessions_to_process)
     T2_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) <  session_clusters_all.mean_FR{nsession}(V1_id,2));
     % T1_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
     % T2_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
-    z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(T1_V1_cell,:,:),1,'omitnan'))];
-    z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(T2_V1_cell,:,:),1,'omitnan'))];
+    z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T1_V1_cell),:,:),1,'omitnan'))];
+    z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T2_V1_cell),:,:),1,'omitnan'))];
     % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(T2_V1_cell,:,:),1,'omitnan'))];
     % mean(z_V1_population_ripple_PSTH{1}(T1_index,:)-z_V1_population_ripple_PSTH{2}(T1_index,:),'omitnan') -  mean(z_V1_population_ripple_PSTH{1}(T2_index,:)-z_V1_population_ripple_PSTH{2}(T2_index,:),'omitnan')
 
@@ -175,14 +175,15 @@ for nsession = 1:length(sessions_to_process)
         context_modulation_all.session_id{nsession}(nCell) = nsession;
     end
 end
-
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+toc
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
 
 
 % Low ripple power vs High ripple power
-context_modulation_all = struct();
+% context_modulation_all = struct();
 % context_corr_all = struct();
-
+tic
 for nsession = 1:length(sessions_to_process)
     all_clusters = session_clusters_all.spatial_cell_id{nsession};
 
@@ -205,8 +206,8 @@ for nsession = 1:length(sessions_to_process)
     
     power_threshold = prctile(ripple_powers,[25 75]); 
     log_odds_threshold = prctile(mean_bias,[20 80]);
-    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers < power_threshold(1));
-    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers < power_threshold(1));
+    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers <= power_threshold(1));
+    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers <= power_threshold(1));
 
     %%%%%%% Populational zscored firing rate difference
     % T1_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) >  session_clusters_all.mean_FR{nsession}(V1_id,2));
@@ -247,8 +248,8 @@ for nsession = 1:length(sessions_to_process)
 
     power_threshold = prctile(ripple_powers,[25 75]);
     log_odds_threshold = prctile(mean_bias,[20 80]);
-    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers > power_threshold(end));
-    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers > power_threshold(end));
+    T1_index = find(mean_bias > log_odds_threshold(2) & ripple_powers >= power_threshold(end));
+    T2_index = find(mean_bias < log_odds_threshold(1) & ripple_powers >= power_threshold(end));
 
     for nCell = 1:length(all_clusters)
         % Ripple PSTH
@@ -273,7 +274,7 @@ for nsession = 1:length(sessions_to_process)
     end
 
 end
-
+toc
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 
     % subplot(2,2,1)
@@ -286,6 +287,7 @@ save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_al
 context_corr_all = struct();
 
 for nsession = 1:length(sessions_to_process)
+    tic
     all_clusters = session_clusters_all.spatial_cell_id{nsession};
 
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
@@ -319,7 +321,7 @@ for nsession = 1:length(sessions_to_process)
     end
 
 
-    tic
+    
     [pair_corr, pair_pval,lags] = compute_ripple_xcorr_cell_pair(...
         session_clusters_all.spike_times{nsession}, ...
         session_clusters_all.spike_id{nsession}, ...
@@ -343,7 +345,7 @@ for nsession = 1:length(sessions_to_process)
 
     context_corr_all.ripple_corr_T2{nsession} = pair_corr_T2;
     context_corr_all.ripple_corr_pval_T2{nsession} = pair_pval;
-    toc
+    
 
     pair_pval_T1 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
     pair_corr_T1 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
@@ -384,10 +386,11 @@ for nsession = 1:length(sessions_to_process)
 
     context_corr_all.spatial_corr_T2{nsession} = pair_corr_T2;
     context_corr_all.spatial_corr_pval_T2{nsession} = pair_pval_T1;
+    toc
 end
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_corr_all.mat'),'context_corr_all')
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
 
 %% Plotting context selecitve ripple modulation
 
