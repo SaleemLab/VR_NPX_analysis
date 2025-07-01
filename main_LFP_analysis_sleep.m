@@ -2342,7 +2342,7 @@ end
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\fieldtrip'))
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip'))
+% addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip'))
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
@@ -2498,7 +2498,7 @@ for nsession =1:15
         disp('Peri event TF and PPC analysis')
 
         % Parameters
-        win_full = [-7 7];% full windows for extraction
+        win_full = [-3 3];% full windows for extraction
         win_save = [-2 2];% windwos for saving
         baseline_win = [-2 -1.5];%windows used for baseline
         % downsample_factor = 25;
@@ -2509,6 +2509,12 @@ for nsession =1:15
 
         freq_band = [1 300];
         freqs = logspace(log10(freq_band(1)), log10(freq_band(2)), 150);
+        nCycles = logspace(log10(3), log10(20), 150);
+        nCycles =  max([nCycles;  0.1*(freqs * pi)]);
+
+        % duration = nCycles ./ (freqs * pi);
+  
+
 
         clear LFP
         %%%%%%%%%%% initialise variables
@@ -2579,15 +2585,18 @@ for nsession =1:15
 
                 cfg = [];
                 cfg.method       = 'mtmconvol';
+                % cfg.method       = 'wavelet';
                 cfg.output       = 'fourier';
                 cfg.taper        = 'hanning';
                 cfg.foi          = freqs;
-                cfg.t_ftimwin    = max(1 ./ freqs * 5, 0.1);
+                cfg.t_ftimwin    = max(1 ./ freqs * 1, 0.1);
+                % cfg.width    = nCycles;
+                 
                 cfg.toi          = win_full(1)+0.02/2:0.02:win_full(end)-0.02/2;
                 cfg.pad          = 'nextpow2';
                 cfg.keeptrials   = 'yes';
                 cfg.numworkers  = 2;            % or however many CPU cores you want
-
+                % cfg.dpss_keepfv = 'no';
 
                 data = [];
                 % data2 = [];
@@ -2667,16 +2676,25 @@ end
 
 
 % S_basedline
-S = (mean(squeeze(single(abs(squeeze(TF_amp_V1(1).ripples(2,:,:,:)).^2))),3,'omitnan'));
-S_dB = 10 * log10(S);
+% timtevec = TFR.time(TFR.time>=-2 & TFR.time<=2);
+baseline_win = [-2 -1.5];  % baseline time window
+baseline_idx = timebin >= baseline_win(1) & timebin <= baseline_win(2);
+
+S = squeeze(single(abs(squeeze(TF_amp_V1(1).UP(2,:,:,:)).^2)));
+S = normalize_tf(S, baseline_idx, 'dB');
+
+% S_dB = 10 * log10(S);
+
+S_dB = (mean(squeeze(single(abs(squeeze(S(:,:,:)).^2))),3,'omitnan'));
+% S_dB = TF_amp_V1_ipsi;
 
 % % Create contour plot
 % timtevec = linspace(-2, 2, size(amp_all,1));  % time axis
 
-timtevec = TFR.time(TFR.time>=-2 & TFR.time<=2);
+
 figure;
 nexttile
-[~, h] = contourf(timtevec, TFR.freq, S_dB, 40, 'LineColor', 'none'); % 40 contour levels
+[~, h] = contourf(timebin, freqs, S_dB, 40, 'LineColor', 'none'); % 40 contour levels
 axis xy;
 xlabel('Time (s)');
 ylabel('Frequency (Hz)');
@@ -3000,10 +3018,12 @@ for nsession =1:15
         filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
         filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
         filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+        filterparms.lowgammafilter = [30 60];%heuristically defined.  room for improvement here.
+        filterparms.highgammafilter = [60 100];%heuristically defined.  room for improvement here.
         filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
-        filterparms.gammafilter = [100 400];
-        filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
-        filterparms.gammanormwin = 20; %window for gamma normalization (s)
+        % filterparms.gammafilter = [100 400];
+        % filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+        % filterparms.gammanormwin = 20; %window for gamma normalization (s)
 
         %         for nprobe = 1:length(session_info(n).probe)
         nprobe = 1;
@@ -3055,9 +3075,68 @@ for nsession =1:15
             HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
         end
 
+        % grab delta LFP
+        deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+        zscored_LFP = zscore(deltaLFP.data);
+        SO_phase_LFP = deltaLFP.phase;
+        SO_amplitude_LFP = zscore(deltaLFP.amp);
+        deltaLFP = [];
+
+        % grab spindles LFP
+        filter_type  = 'bandpass';
+        passband = [9 17];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_spindle = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:length(probe_hemisphere)
+            signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
+        end
+        %                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+        %                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+        spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        spindle_phase_LFP = angle(hilbert(signal)); % spindle phase
+        signal = [];
+
+        % grab ripples LFP
+        filter_type  = 'bandpass';
+        passband = [125 300];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:length(probe_hemisphere)
+            signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+        end
+        ripple_amplitude_cortex_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        ripple_phase_cortex_LFP = angle(hilbert(signal)); % spindle phase
+        signal = [];
+
+
+
+        % grab gamma LFP
+        filter_type  = 'bandpass';
+        passband = [30 60];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:length(probe_hemisphere)
+            signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+        end
+
+        gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        gamma_phase_LFP = angle(hilbert(signal)); % spindle phase
+
+
+
 
         disp('Peri event TF and PPC analysis')
 
+        
         % Parameters
         win_full = [-7 7];% full windows for extraction
         win_save = [-2 2];% windwos for saving
