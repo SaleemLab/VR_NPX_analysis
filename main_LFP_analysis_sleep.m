@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-for nsession =1:15
+for nsession =16:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -2680,12 +2680,15 @@ end
 baseline_win = [-2 -1.5];  % baseline time window
 baseline_idx = timebin >= baseline_win(1) & timebin <= baseline_win(2);
 
-S = squeeze(single(abs(squeeze(TF_amp_V1(1).UP(2,:,:,:)).^2)));
+S = squeeze(single(squeeze(TF_amp_V1(1).UP(1,:,:,:))));
 S = normalize_tf(S, baseline_idx, 'dB');
 
 % S_dB = 10 * log10(S);
 
-S_dB = (mean(squeeze(single(abs(squeeze(S(:,:,:)).^2))),3,'omitnan'));
+S_dB = mean(squeeze(single(squeeze(S(:,:,:)))),3,'omitnan');
+
+S = squeeze(single(squeeze(TF_phase_V1(1).UP(2,:,:,:))));
+S_dB = squeeze(S(:,:,500));
 % S_dB = TF_amp_V1_ipsi;
 
 % % Create contour plot
@@ -2694,224 +2697,24 @@ S_dB = (mean(squeeze(single(abs(squeeze(S(:,:,:)).^2))),3,'omitnan'));
 
 figure;
 nexttile
-[~, h] = contourf(timebin, freqs, S_dB, 40, 'LineColor', 'none'); % 40 contour levels
+[~, h] = contourf(timebin, log2(freqs), S_dB, 40, 'LineColor', 'none'); % 40 contour levels
 axis xy;
 xlabel('Time (s)');
 ylabel('Frequency (Hz)');
 title('Power Spectrogram (dB) - Contour');
 colorbar;
-set(gca, 'YScale', 'log'); ylim([1 300]);
+set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
+    'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
+colorbar
+xline(0,'r--')
+xlim([-1.5 1.5])
+ylim([min(log2(freqs)) max(log2(freqs))])
 hold on;
-xline(mean(t),'r')
-
-nexttile
-[~, h] = contourf(t, f, phi', 40, 'LineColor', 'none'); % 40 contour levels
-axis xy;
-xlabel('Time (s)');
-ylabel('Frequency (Hz)');
-title('Phase Spectrogram (dB) - Contour');
-colorbar;
-set(gca, 'YScale', 'log'); ylim([1 300]);
-xline(mean(t),'r')
-
-
-
-figure
-timevec = linspace(-2, 2, size(amp_all,1));  % time axis
-contourf(timevec,freqs,amp_all',40,'linecolor','none')
-title(['Power time-freqeuncy plot V1'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-
-
-figure(2), clf
-subplot(2,1,1)
-timevec = TF_amp_V1(nprobe).timebin;
-freqs = TF_amp_V1(nprobe).freq;
-signal = TF_amp_HPC(nprobe).(event_name)(1, :, :, :);
-signal = 10 * log10(signal);
-
-contourf(timevec,freqs,mean(squeeze(signal),3,'omitnan'),40,'linecolor','none')
-title(['Power time-freqeuncy plot V1'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[1 300])
-colormap(jet)
-
-subplot(2,1,2)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(TF_amp_V1(nprobe).(event_name)(2, :, :, nevent)),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot V1'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[1 300])
-colormap(jet)
-
-
-
-figure
-subplot(2,1,1)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(TF_amp_HPC(nprobe).(event_name)(1, :, :, :)),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot HPC'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-
-subplot(2,1,2)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(TF_amp_HPC(nprobe).(event_name)(2, :, :, :)),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot HPC'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-
-
-
-
-event_name = 'ripples'
-
-figure
-
-% Convert from single to double for processing
-dB_data = double(squeeze(TF_amp_HPC(nprobe).(event_name)(1,:,:,:)));  % [freq x time x trials]
-
-% Convert back to linear pseudo-amplitude
-lin_data = 10.^(dB_data / 10);  % [freq x time x trials]
-
-% Reshape to 2D: [freq x (time * trials)] for zscoring
-[nFreq, nTime, nTrials] = size(lin_data);
-lin_reshaped = reshape(lin_data, [nFreq, nTime*nTrials]);
-
-% Z-score across time × trials, separately per frequency
-lin_z = (lin_reshaped - mean(lin_reshaped, 2)) ./ std(lin_reshaped, 0, 2);
-
-% Reshape back to original shape
-lin_zscored = reshape(lin_z, [nFreq, nTime, nTrials]);
-
-
-subplot(2,1,1)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(lin_zscored),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot HPC'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-colorbar
-
-
-% Convert from single to double for processing
-dB_data = double(squeeze(TF_amp_HPC(nprobe).(event_name)(2,:,:,:)));  % [freq x time x trials]
-
-% Convert back to linear pseudo-amplitude
-lin_data = 10.^(dB_data / 10);  % [freq x time x trials]
-
-% Reshape to 2D: [freq x (time * trials)] for zscoring
-[nFreq, nTime, nTrials] = size(lin_data);
-lin_reshaped = reshape(lin_data, [nFreq, nTime*nTrials]);
-
-% Z-score across time × trials, separately per frequency
-lin_z = (lin_reshaped - mean(lin_reshaped, 2)) ./ std(lin_reshaped, 0, 2);
-
-% Reshape back to original shape
-lin_zscored = reshape(lin_z, [nFreq, nTime, nTrials]);
-
-
-subplot(2,1,2)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(lin_zscored),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot HPC'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-colorbar
-
-
-figure
-
-% Convert from single to double for processing
-dB_data = double(squeeze(TF_amp_V1(nprobe).(event_name)(1,:,:,:)));  % [freq x time x trials]
-
-% Convert back to linear pseudo-amplitude
-lin_data = 10.^(dB_data / 10);  % [freq x time x trials]
-
-% Reshape to 2D: [freq x (time * trials)] for zscoring
-[nFreq, nTime, nTrials] = size(lin_data);
-lin_reshaped = reshape(lin_data, [nFreq, nTime*nTrials]);
-
-% Z-score across time × trials, separately per frequency
-lin_z = (lin_reshaped - mean(lin_reshaped, 2)) ./ std(lin_reshaped, 0, 2);
-
-% Reshape back to original shape
-lin_zscored = reshape(lin_z, [nFreq, nTime, nTrials]);
-
-
-subplot(2,1,1)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(lin_zscored),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot V1'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-colorbar
-
-% Convert from single to double for processing
-dB_data = double(squeeze(TF_amp_V1(nprobe).(event_name)(2,:,:,:)));  % [freq x time x trials]
-
-% Convert back to linear pseudo-amplitude
-lin_data = 10.^(dB_data / 10);  % [freq x time x trials]
-
-% Reshape to 2D: [freq x (time * trials)] for zscoring
-[nFreq, nTime, nTrials] = size(lin_data);
-lin_reshaped = reshape(lin_data, [nFreq, nTime*nTrials]);
-
-% Z-score across time × trials, separately per frequency
-lin_z = (lin_reshaped - mean(lin_reshaped, 2)) ./ std(lin_reshaped, 0, 2);
-
-% Reshape back to original shape
-lin_zscored = reshape(lin_z, [nFreq, nTime, nTrials]);
-
-
-subplot(2,1,2)
-timevec = linspace(-2, 2, 201);  % time axis
-contourf(timevec,freqs,mean(squeeze(lin_zscored(:,:,:)),3),40,'linecolor','none')
-title(['Power time-freqeuncy plot V1'])
-xlabel('Time (ms)'), ylabel('Frequency (Hz)')
-set(gca,'ylim',[0 300])
-colormap(jet)
-colorbar
-
-
-
-
-
-
-% Compute PPC across time and frequency
-tic
-for nevent = 1:size(TF_phase_V1(nprobe).(event_name),4)
-    for vhemi = 1:2
-        for hhemi = 1:2
-            v1p = squeeze(TF_phase_V1(nprobe).(event_name)(vhemi, :, :, nevent));   % [freq x time]
-            hpcp = squeeze(TF_phase_HPC(nprobe).(event_name)(hhemi, :, :, nevent)); % [freq x time]
-
-            % Compute phase difference: still [freq x time]
-            phase_diff = exp(1i * (v1p - hpcp));
-
-            % Assign directly
-            PPC_V1_HPC(nprobe).(event_name)(vhemi, hhemi, :, :, nevent) =phase_diff;  % [time x freq]
-        end
-    end
-end
-toc
-
-% Cross-hemispheric PPC
-v1p_L = squeeze(TF_phase_V1(nprobe).(event_name)(1, :, :, nevent));
-v1p_R = squeeze(TF_phase_V1(nprobe).(event_name)(2, :, :, nevent));
-hpcp_L = squeeze(TF_phase_HPC(nprobe).(event_name)(1, :, :, nevent));
-hpcp_R = squeeze(TF_phase_HPC(nprobe).(event_name)(2, :, :, nevent));
-
-PPC_V1(nprobe).(event_name)(:,:, nevent) = exp(1i * (v1p_L - v1p_R));   % [time x freq]
-PPC_HPC(nprobe).(event_name)(:,:, nevent) =exp(1i * (hpcp_L - hpcp_R));
-
+xline(0,'r')
+yline(log2([9 17]))
+yline(log2([1 4]))
+yline(log2([125 300]))
+clim([-3.2 3.2])
 % 
 
 %% LFP time frequency analysis (Hilbert transform)
