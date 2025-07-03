@@ -2341,8 +2341,8 @@ end
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-addpath(genpath('C:\Users\masah\Documents\GitHub\fieldtrip'))
-% addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip'))
+addpath('C:\Users\masah\Documents\GitHub\fieldtrip')
+addpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip')
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
@@ -2353,7 +2353,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 Stimulus_type = 'Sleep';
 
-
+ft_defaults
 ft_default.interactive   = 'no';     % disables prompts
 ft_default.feedback      = 'no';     % disables progress feedback
 ft_default.checksize     = inf;      % disables large struct warnings
@@ -2618,6 +2618,8 @@ for nsession =16:22
                         data.trial{nevent}  = [lfp_V1.data(idx_full, cortex_ref_shank)'; lfp_HPC.data(idx_full, HPC_ref_shank)'];
                         data.time{nevent}  = win_full(1):1/fs:win_full(end);
                     end
+
+                    data.sampleinfo(nevent, :) = [t0 + win_full_samp(1), t0 + win_full_samp(2)];
                 end
 
                 data.fsample = fs;
