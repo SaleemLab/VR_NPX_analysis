@@ -2343,6 +2343,8 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath('C:\Users\masah\Documents\GitHub\fieldtrip')
 addpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip')
+
+
 clear all
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
 option = 'bilateral';
