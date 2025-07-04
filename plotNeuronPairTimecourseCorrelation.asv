@@ -1,0 +1,86 @@
+function plotNeuronPairTimecourseCorrelation(neuron_pair, ...
+    sorted_cluster_ids, ori_letter, znoise_corr_value, ori_angle, subject_number, ...
+    Stimulus_type, depth_for_analysis, temporal_structure, stim_window, gOSI_threshold, responses_this_ori, znoise_responses_this_ori)
+
+% neuron_pair: [1 x 2] — indices of neuron pair
+% sorted_cluster_ids: [1 x nNeurons] — cluster IDs
+% znoise_corr_value: scalar — correlation between the two neurons (from znoise-scored noise correlation matrix)
+% ori_angle: radians — orientation of grating
+% responses_this_ori: [nTrials x nTimeBins x nNeurons]
+% znoise_responses_this_ori: [nTrials x nTimeBins x nNeurons] — spike counts z-scored by trial type
+
+% Extract raw spike counts for scatter plot (right)
+x_all_raw = squeeze(responses_this_ori(:, :, neuron_pair(1)));  % [nTrials x nTimeBins]
+y_all_raw = squeeze(responses_this_ori(:, :, neuron_pair(2)));  % [nTrials x nTimeBins]
+
+% Flatten across trials and timebins for raw data
+x_raw = x_all_raw(:);
+y_raw = y_all_raw(:);
+
+% Compute raw correlation for scatter plot. 
+[R, P] = corr(x_raw, y_raw);
+
+% Add jitter to x and y to see overlapping datapoints
+jitter_amount = 0.1;  % adjust as needed 
+x_raw_jittered = x_raw + randn(size(x_raw)) * jitter_amount;
+y_raw_jittered = y_raw + randn(size(y_raw)) * jitter_amount;
+
+
+% Extract z-scored responses for line plot (left)
+x_all_znoise = squeeze(znoise_responses_this_ori(:, :, neuron_pair(1)));  % [nTrials x nTimeBins]
+y_all_znoise = squeeze(znoise_responses_this_ori(:, :, neuron_pair(2)));  % [nTrials x nTimeBins]
+
+% Compute mean across trials (z-scored timecourses)
+mean_x_znoise = mean(x_all_znoise, 1);
+mean_y_znoise = mean(y_all_znoise, 1);
+
+
+% Time axis
+nBins = size(responses_this_ori, 2);
+t = linspace(stim_window(1), stim_window(2), nBins);
+
+fig = figure('Position', [100 100 1000 400]);
+tiledlayout(1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+% ==== LEFT: Line plots of mean znoise-scored spike timecourses ====
+nexttile;
+plot(t, mean_x_znoise, '-o', 'LineWidth', 1.5);
+hold on;
+plot(t, mean_y_znoise, '-o', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Znoise-scored Spike Count');
+legend({sprintf('Neuron %d', sorted_cluster_ids(neuron_pair(1))), ...
+        sprintf('Neuron %d', sorted_cluster_ids(neuron_pair(2)))}, ...
+        'Location', 'best');
+title('Mean Znoise-scored Timecourse Across Trials');
+grid on;
+
+
+% ==== RIGHT: Scatter plot of raw spike counts across trials and time bins ====
+nexttile;
+scatter(x_raw_jittered, y_raw_jittered, 50, 'filled');
+hold on;
+coeffs = polyfit(x_raw, y_raw, 1);
+x_fit = linspace(min(x_raw), max(x_raw), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r--', 'LineWidth', 2);
+xlabel(sprintf('Neuron %d (raw)', sorted_cluster_ids(neuron_pair(1))));
+ylabel(sprintf('Neuron %d (raw)', sorted_cluster_ids(neuron_pair(2))));
+title(sprintf('Raw spikes per trial timebin (10ms) - r = %.2f (raw), p = %.3g | znoise-scored r = %.2f', R, P, znoise_corr_value));
+grid on;
+
+% ==== Super title ====
+sgtitle(sprintf('%s - %s - Orientation %s (%d°)\nPair: %d vs %d — Timebinned Correlation (%.2f–%.2fs), gOSI > %.2f', ...
+    subject_number, Stimulus_type, ori_letter, round(rad2deg(ori_angle)), ...
+    sorted_cluster_ids(neuron_pair(1)), sorted_cluster_ids(neuron_pair(2)), ...
+    stim_window(1), stim_window(2), gOSI_threshold), ...
+    'Interpreter', 'none');
+
+% Save
+fig_filename = sprintf('%s_%s_%s_%s_Scatter_%dvs%d - %s TIMECOURSE CORR (%.2f–%.2fs after stim onset), gOSI over %.2f.fig', ...
+    subject_number, Stimulus_type, depth_for_analysis, ori_letter, ...
+    sorted_cluster_ids(neuron_pair(1)), sorted_cluster_ids(neuron_pair(2)), ...
+    temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+savefig(fig, fullfile(pwd, fig_filename));
+
+end

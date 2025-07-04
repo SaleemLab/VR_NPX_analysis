@@ -28,10 +28,10 @@ z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs'
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\OP_Tuning') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250204\OP_Tuning') % 4/5 files will be saved here in the cd
 
 
-for nsession = 4 %5/5 row number of recording date in "experiment_info" 
+for nsession = 5 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -244,12 +244,12 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                 OP_tuning = struct( ...
                     'cluster_id', []);   
 
-                % For CV preference function:    
+                % For (1 - CV) orientation and direction preference function:    
                 th = all_orientations'; % transpose to a row vector to suit the function format
                 % Preallocate output vectors
-                DirCV     = zeros(1, length(cluster_id));
+                gDSI     = zeros(1, length(cluster_id));
                 DirAngle  = zeros(1, length(cluster_id));
-                OriCV     = zeros(1, length(cluster_id));
+                gOSI     = zeros(1, length(cluster_id));
                 OriAngle  = zeros(1, length(cluster_id));
 
                 for nCluster = 1:length(cluster_id) % loop through each good cluster
@@ -323,7 +323,7 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
 
                     %%%% Using complex VECTORs to calculate orientation and direction preferences:                
                     r = summedNetSpikeCounts(:, nCluster)'; % transpose to a row vector
-                    [DirCV(nCluster),DirAngle(nCluster),OriCV(nCluster),OriAngle(nCluster)] = calcCV(th,r);
+                    [gDSI(nCluster),DirAngle(nCluster),gOSI(nCluster),OriAngle(nCluster)] = calcCV(th,r);
                     DirAngle = mod(DirAngle, 360);  % Wraps negative angles and angles ≥360 back into [0, 360)
                     OriAngle = mod(OriAngle, 180);  % Orientation is periodic over 180°, so wrap accordingly
                 end
@@ -332,21 +332,21 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                 OP_tuning(nprobe).cluster_id = cluster_id(:)'; % include cluster ids for reference
                 OP_tuning(nprobe).DirAngle = DirAngle(:)'; % preferred direction
                 OP_tuning(nprobe).OriAngle = OriAngle(:)'; % preferred orientation
-                OP_tuning(nprobe).OriCV = OriCV(:)'; % (Circular Variance; 0 is untuned, 1 highly tuned)
-                OP_tuning(nprobe).DirCV = DirCV(:)';
+                OP_tuning(nprobe).gOSI = gOSI(:)'; % (Circular Variance; 0 is untuned, 1 highly tuned)
+                OP_tuning(nprobe).gDSI = gDSI(:)';
                 OP_tuning(nprobe).summedNetSpikeCounts_per_ori = summedNetSpikeCounts;
                 OP_tuning(nprobe).all_orientations = all_orientations(:);
-                
+                save('OP_tuning.mat', 'OP_tuning'); % save to current directory
 
-                % Plot OriCV vs DirCV to check the data
-                plot_OriCV = OP_tuning(nprobe).OriCV;
-                plot_DirCV = OP_tuning(nprobe).DirCV;
+                % Plot gOSI vs gDSI to check the data
+                plot_gOSI = OP_tuning(nprobe).gOSI;
+                plot_gDSI = OP_tuning(nprobe).gDSI;
                 cluster_ids = OP_tuning(nprobe).cluster_id;
-                figure;
-                scatter(plot_OriCV, plot_DirCV, 40, 'filled');
-                xlabel('Orientation Selectivity (CV)');
-                ylabel('Direction Selectivity (CV)');
-                title('OP Tuning Selectivity: OriCV vs DirCV');
+                fig=figure;
+                scatter(plot_gOSI, plot_gDSI, 40, 'filled');
+                xlabel('Orientation Selectivity (gOSI)');
+                ylabel('Direction Selectivity (gDSI)');
+                title('OP Tuning Selectivity: gOSI vs gDSI');
                 grid on;
                 xlim([0 1]);
                 ylim([0 1]);
@@ -354,16 +354,19 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                 % Annotate each point with cluster ID
                 hold on;
                 for i = 1:length(cluster_ids)
-                    text(plot_OriCV(i) + 0.01, plot_DirCV(i), num2str(cluster_ids(i)), ...
+                    text(plot_gOSI(i) + 0.01, plot_gDSI(i), num2str(cluster_ids(i)), ...
                         'FontSize', 8, 'Color', [0.3 0.3 0.3]); % small offset and light gray
                 end
+                fig_filename = sprintf('%s_%s_%s_gOSI vs gDSI Day %d.fig', ...
+                subject_number, Stimulus_type, depth_for_analysis, experiment_info(nsession).date);
+                savefig(fig, fullfile(pwd, fig_filename));
                 hold off;
 
                 % Plot preferred ori vs direction to check the data
                 plot_DirAngle = OP_tuning(nprobe).DirAngle;
                 plot_OriAngle = OP_tuning(nprobe).OriAngle;
                 cluster_ids = OP_tuning(nprobe).cluster_id;
-                figure;
+                fig=figure;
                 scatter(plot_OriAngle, plot_DirAngle, 40, 'filled');
                 xlabel('Preferred Orientation');
                 ylabel('Preferred Direction');
@@ -378,6 +381,9 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     text(plot_OriAngle(i) + 1, plot_DirAngle(i), num2str(cluster_ids(i)), ...
                         'FontSize', 8, 'Color', [0.3 0.3 0.3]); % small offset and light gray
                 end
+                fig_filename = sprintf('%s_%s_%s_pref Ori vs pref Dir).fig', ...
+                subject_number, Stimulus_type, depth_for_analysis);
+                savefig(fig, fullfile(pwd, fig_filename));
                 hold off;
               
             end

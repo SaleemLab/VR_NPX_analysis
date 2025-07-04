@@ -1,11 +1,11 @@
-%%% For PCA of spiking in response to visual stimuli
+%%% For PCA of spiking in response to visual stimuli ERB 2025
 
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4440:4580; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
 CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
 Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
@@ -18,8 +18,8 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'GAVNIK_ABCD'; % OMIT
-temporal_structure = 'timebinned spikes'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
+Stimulus_type = 'TRAIN'; % OMIT, 'TRAIN' 'GAVNIK_ABCD'
+temporal_structure = 'trial spikecounts'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
 % simple spikecounts gives better silhouette scores for my TRAIN protocol 20250203
 % timebinned spikes gives better silhouette scores for GAVNIK protocol 20250217
 
@@ -27,14 +27,15 @@ z_score_period = 'entire_session'; % z score either over 'entire_session' or 'fi
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 psthBinSize = 0.01; % for GAVNIK protocol 20250217, using 1ms worsens cluster separation a lot. 0.02 worsens separation somewhat.
-stim_window = [0.03 0.16];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
+stim_window = [0.02 0.21];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
                             % For my TRAIN protocol 20250203, [0.02 0.21] seems best. But across training days an uptick in spiking develops in the greyscreen period following stimulus offset
-%nprobe = 1;
+gOSI_threshold = 0.2; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or or 0.15 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
+                            %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250217\GAVNIK_ABCD') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN') % 4/5 files will be saved here in the cd
 
 
-for nsession = 11 %5/5 row number of recording date in "experiment_info" 
+for nsession = 4 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -100,8 +101,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 visuallyresponsive_mask = abs(totalResponse) >= 2; % very lenient; summed net spiking across all orientations of more than 1 spike or less than -1 spike
                 
                 %%%% Filter out untuned neurons
-                OriCV_values = OP_tuning(nprobe).OriCV(loc_in_OP(is_member));
-                   tuned_mask = OriCV_values > gOSI_threshold;
+                gOSI_values = OP_tuning(nprobe).gOSI(loc_in_OP(is_member));
+                tuned_mask = gOSI_values > gOSI_threshold;
 
                 combined_mask = visuallyresponsive_mask & tuned_mask;
                 
@@ -113,8 +114,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 filtered_OP.cluster_id = OP_tuning(nprobe).cluster_id(loc_in_OP_final);
                 filtered_OP.OriAngle = OP_tuning(nprobe).OriAngle(loc_in_OP_final);
                 filtered_OP.DirAngle = OP_tuning(nprobe).DirAngle(loc_in_OP_final);
-                filtered_OP.OriCV = OP_tuning(nprobe).OriCV(loc_in_OP_final);
-                filtered_OP.DirCV = OP_tuning(nprobe).DirCV(loc_in_OP_final);
+                filtered_OP.gOSI = OP_tuning(nprobe).gOSI(loc_in_OP_final);
+                filtered_OP.gDSI = OP_tuning(nprobe).gDSI(loc_in_OP_final);
                 filtered_OP.summedNetSpikeCounts_per_ori = OP_tuning(nprobe).summedNetSpikeCounts_per_ori(:, loc_in_OP_final);
                 filtered_OP.all_orientations = OP_tuning(nprobe).all_orientations;
 
@@ -399,8 +400,8 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                            'Interpreter', 'none');  % Avoid italicizing if any LaTeX characters
 
                 hold off;
-                sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
-                fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
+                fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 savefig(fig1, fullfile(pwd, fig_filename1));
                         
                 
@@ -429,24 +430,27 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 end
 
 
-                %%%%% Create a figure for correlation matrices
+                %%%%% Create a figure for NOISE correlation matrices
                 if contains(temporal_structure, 'trial spikecounts') % simpler case: trials x neurons
                     % Preallocate
                     stored_corrmats = cell(length(ordered_oris), 1);
                     stored_sorted_cluster_ids = cell(length(ordered_oris), 1);
-                    all_corr_values = [];                    
+                    all_znoise_corr_values = [];  
+                    letters = 'A':'D';
                 
                     for i = 1:length(ordered_oris)
                         ori = ordered_oris(i);
                         trial_mask = trial_labels == ori;
-                        responses_this_ori = z_trial_responses(trial_mask, :);
-                      
-                        corrmat = corr(responses_this_ori);
+                        responses_this_ori = trial_responses(trial_mask, :);
+                        % Z-score each neuron's spike count across trials of this orientation (removes stimulus-locked signal)
+                        znoise_responses_this_ori = zscore(responses_this_ori, 0, 1); % Z-score per neuron across responses to this trial-type
+
+                        corrmat = corr(znoise_responses_this_ori);
                         corrmat(isnan(corrmat)) = 0; % if any neuron has zero variance, it will lead to NaN - replace any NaNs with zeros
 
                         corrmat(1:size(corrmat,1)+1:end) = 1;
                         off_diagonal = corrmat(~eye(size(corrmat)));  % exclude autocorrelations
-                        all_corr_values = [all_corr_values; off_diagonal(:)];
+                        all_znoise_corr_values = [all_znoise_corr_values; off_diagonal(:)];
                         
                         % Get preferred orientations 
                         [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
@@ -455,19 +459,47 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         [~, sort_order] = sort(pref_ori, 'ascend');
                         % Reorder correlation matrix
                         corrmat = corrmat(sort_order, sort_order);
-                        responses_this_ori = responses_this_ori(:, sort_order);  % optional: if you store this
+                        znoise_responses_this_ori = znoise_responses_this_ori(:, sort_order);  
+                        responses_this_ori = responses_this_ori(:, sort_order); 
                         sorted_cluster_id = cluster_id(sort_order);  % optional: for labeling/storing
 
                         % Store outputs
                         stored_corrmats{i} = corrmat;
                         stored_sorted_cluster_ids{i} = sorted_cluster_id;
+
+                        %%% For neuron pairs with unusually strong correlations, make scatter plots of their trial by trial spikecounts
+                        pos_threshold = 1; % Strong Pearson Correlation
+                        neg_threshold = -1;
                         
+                        % Loop over upper triangle of the correlation matrix (excluding diagonal)
+                        n_neurons = size(corrmat, 1);
+                        for row = 1:n_neurons
+                            for col = row+1:n_neurons
+                                znoise_corr_value = corrmat(row, col);
+                                if znoise_corr_value > pos_threshold || znoise_corr_value < neg_threshold
+                                    fprintf('Plotting pair (%d, %d) with r = %.2f\n', row, col, znoise_corr_value);
+                                    plotNeuronPairTrialSpikecounts(responses_this_ori, ...
+                                        [row, col], sorted_cluster_id, letters(i), znoise_corr_value, ori, subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window, gOSI_threshold);
+                                end
+                            end
+                        end                       
                     end
                     % set global scale exclude exact -1 and +1 from the global color scale
                     tolerance = 1e-10;
-                    filtered_corr_values = all_corr_values(all_corr_values > -1 + tolerance & all_corr_values < 1 - tolerance);
-                    vmin = min(filtered_corr_values);
-                    vmax = max(filtered_corr_values);
+                    filtered_znoise_corr_values = all_znoise_corr_values(all_znoise_corr_values > -1 + tolerance & all_znoise_corr_values < 1 - tolerance);
+                    vmin = min(filtered_znoise_corr_values);
+                    vmax = max(filtered_znoise_corr_values);
+                    %% code to execute in the command window to manually change the axes limits later to match across days
+                    %ax = findall(gcf, 'Type', 'axes');
+                    %for i = 1:length(ax)
+                        %if ~strcmp(get(ax(i), 'Tag'), 'Colorbar')
+                            % Try forcing CLim only if the axes contains an image
+                            %contents = findobj(ax(i), 'Type', 'image');
+                            %if ~isempty(contents)
+                                %set(ax(i), 'CLim', [-0.5 0.7]);
+                            %end
+                        %end
+                    %end
                 
                     fig2 = figure;
                     t = tiledlayout(ceil(sqrt(length(ordered_oris))), ceil(sqrt(length(ordered_oris))), ...
@@ -493,7 +525,6 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         colormap('parula');
                         cb = colorbar;
                         ylabel(cb, 'Pearson Correlation');
-                        letters = 'A':'D';
                         if contains(Stimulus_type, 'TRAIN')
                             title([letters(i), ': orientation ', num2str(round(rad2deg(ori))), '° (clusters sorted by tuning, 0°-180°)']);
                         else 
@@ -507,33 +538,53 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         set(gca, 'FontSize', 8);
                     end
                 
-                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of trial spikecounts (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', ...
-                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
+                    sgtitle(sprintf('%s - %s: %s noise correlation matrices of trial spikecounts (%.2f–%.2fs after stim onset) Z-scored against trial-type reponses, gOSI > %0.2f, Day %d', ...
+                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), ...
                         'Interpreter', 'none');
-                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    fig_filename2 = sprintf('%s - %s - %s noise correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                     savefig(fig2, fullfile(pwd, fig_filename2));
                 
                 elseif contains(temporal_structure, 'timebinned spikes') % trials x timebins x neurons
                     % Preallocate
                     stored_corrmats = cell(length(ordered_oris), 1);
                     stored_sorted_cluster_ids = cell(length(ordered_oris), 1);
-                    all_corr_values = [];
+                    all_znoise_corr_values = [];
+                    letters = 'A':'D';
                 
                     for i = 1:length(ordered_oris)
                         ori = ordered_oris(i);
                         trial_mask = trial_labels == ori;
-                        responses_this_ori = z_trial_responses(trial_mask, :, :);
+                        responses_this_ori = trial_responses(trial_mask, :, :);
+                        
+                        % Znoise-score per TIMEBIN across trials for each neuron for this orientation only. To remove
+                        % trial-averaged signal from each timebin
+                        [num_trials, num_bins, num_neurons] = size(responses_this_ori);
+                        znoise_responses_this_ori = nan(size(responses_this_ori));
+                        
+                        for neuron = 1:num_neurons
+                            for t = 1:num_bins
+                                trial_vals = responses_this_ori(:, t, neuron);  % [nTrials x 1]
+                                mu = mean(trial_vals);
+                                sigma = std(trial_vals);
+                                if sigma > 0
+                                    znoisevals = (trial_vals - mu) / sigma;
+                                else
+                                    znoisevals = zeros(size(trial_vals));  % if no variance
+                                end
+                                znoise_responses_this_ori(:, t, neuron) = znoisevals;
+                            end
+                        end
+                                                
 
                         %%% For correlation matrices, RESHAPE the data to look at correlation between neurons (columns) at every timepoint/timebin (rows)
-                        [num_trials, num_bins, num_neurons] = size(responses_this_ori);
-                        reshaped = permute(responses_this_ori, [3, 1, 2]);  % reorder to neurons x trials x timebins
+                        reshaped = permute(znoise_responses_this_ori, [3, 1, 2]);  % reorder to neurons x trials x timebins
                         reshaped = reshape(reshaped, num_neurons, num_trials * num_bins)';  % after transposition, each row will correspond to one trial-timebin combination (trials*timebins, one timepoint in one trial). Each column corresponds to a neuron.
                         % Compute correlation
                         corrmat = corr(reshaped);
                         corrmat(isnan(corrmat)) = 0;  % in case of NaNs where variance is zero (which can be valid if there are just no spikes)
                         corrmat(1:size(corrmat,1)+1:end) = 1;
                         off_diagonal = corrmat(~eye(size(corrmat)));  % exclude autocorrelations
-                        all_corr_values = [all_corr_values; off_diagonal(:)];
+                        all_znoise_corr_values = [all_znoise_corr_values; off_diagonal(:)];
                         
                         % Get preferred orientations 
                         [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
@@ -542,19 +593,42 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         [~, sort_order] = sort(pref_ori, 'ascend');
                         % Reorder correlation matrix
                         corrmat = corrmat(sort_order, sort_order);
-                        responses_this_ori = responses_this_ori(:, sort_order);  % optional: if you store this
+                        znoise_responses_this_ori = znoise_responses_this_ori(:, :, sort_order);  
+                        responses_this_ori = responses_this_ori(:, :, sort_order);
                         sorted_cluster_id = cluster_id(sort_order);  % optional: for labeling/storing
 
                         % Store outputs
                         stored_corrmats{i} = corrmat;
                         stored_sorted_cluster_ids{i} = sorted_cluster_id;
+                        
+                        %%% For neuron pairs with unusually strong correlations, make scatter plots of their trial by trial spiking
+                        pos_threshold = 1; % Strong positive correlation threshold (adjust if needed)
+                        neg_threshold = -1; % Strong negative correlation threshold    
+                        % Prepare mean timebinned spikes: timebins x neurons
+                        mean_timebinned_spikes = squeeze(mean(responses_this_ori, 1)); 
+                
+                        % Loop over upper triangle neuron pairs to plot those with strong correlations
+                        n_neurons = size(corrmat, 1);
+                        for row = 1:n_neurons
+                            for col = row+1:n_neurons
+                                znoise_corr_value = corrmat(row, col);
+                                if znoise_corr_value > pos_threshold || znoise_corr_value < neg_threshold
+                                    fprintf('Plotting timebinned pair (%d, %d) with r = %.2f\n', row, col, znoise_corr_value);
+                                    plotNeuronPairTrialBinnedSpikes([row, col], sorted_cluster_id, letters(i), ...
+                                        znoise_corr_value, ori, subject_number, Stimulus_type, ...
+                                        depth_for_analysis, temporal_structure, stim_window, gOSI_threshold, responses_this_ori, znoise_responses_this_ori);
+                                end
+                            end
+                        end
+
                     end
                 
+
                     % set global scale exclude exact -1 and +1 from the global color scale
                     tolerance = 1e-10;
-                    filtered_corr_values = all_corr_values(all_corr_values > -1 + tolerance & all_corr_values < 1 - tolerance);
-                    vmin = min(filtered_corr_values);
-                    vmax = max(filtered_corr_values);
+                    filtered_znoise_corr_values = all_znoise_corr_values(all_znoise_corr_values > -1 + tolerance & all_znoise_corr_values < 1 - tolerance);
+                    vmin = min(filtered_znoise_corr_values);
+                    vmax = max(filtered_znoise_corr_values);
                 
                     fig2 = figure;
                     t = tiledlayout(ceil(sqrt(length(ordered_oris))), ceil(sqrt(length(ordered_oris))), ...
@@ -578,7 +652,6 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         colormap('parula');
                         cb = colorbar;
                         ylabel(cb, 'Pearson Correlation');
-                        letters = 'A':'D';
                         if contains(Stimulus_type, 'TRAIN')
                             title([letters(i), ': orientation ', num2str(round(rad2deg(ori))), '° (clusters sorted by tuning, 0°-180°)']);
                         else 
@@ -592,113 +665,312 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                         set(gca, 'FontSize', 8);
                     end
                 
-                    sgtitle(sprintf('%s - %s: %s cluster correlation matrices of spiking across time (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.1f, Day %d', ...
-                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
+                    sgtitle(sprintf('%s - %s: %s noise correlation matrices of spiking across time (%.2f–%.2fs after stim onset) Z-scored by trial-type timebin, gOSI > %0.2f, Day %d', ...
+                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), ...
                         'Interpreter', 'none');
-                    fig_filename2 = sprintf('%s - %s - %s cluster correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.1f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    fig_filename2 = sprintf('%s - %s - %s noise correlation matrices of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                     savefig(fig2, fullfile(pwd, fig_filename2));
                 end
                 
                 
 
 
-                %%% Make a Signal vs. Noise Correlation Scatter Plot - USE RAW SPIKING ----
-                % Prepare structure to hold per-pair signal and noise correlation
-                signal_corrs = [];
-                noise_corrs = [];
-                mean_response_per_neuron_allstim = [];  
-            
-                for i = 1:length(ordered_oris)
-                    ori = ordered_oris(i);
-                    trial_mask = trial_labels == ori;
-                    responses_this_ori = trial_responses(trial_mask, :, :);
-            
-                    if contains(temporal_structure, 'trial spikecounts')
-                        responses_this_ori = squeeze(responses_this_ori);  % trials x neurons
-                        [n_trials, n_neurons] = size(responses_this_ori);  
-                    else
-                        % timebinned case: reshape to trials x neurons
-                        [n_trials, n_bins, n_neurons] = size(responses_this_ori);
-                        %responses_this_ori = reshape(responses_this_ori, n_trials, []);  % concatenate timebins
-                        responses_this_ori = mean(responses_this_ori, 2);
-                        responses_this_ori = squeeze(responses_this_ori);
-                    end
-            
-                end
+                %%%%% Create a figure for a SIGNAL correlation matrix
+                if contains(temporal_structure, 'trial spikecounts') % simpler case: trials x neurons
+                    % Preallocate
+                    %stored_corrmats = cell(length(ordered_oris), 1);
+                    %stored_sorted_cluster_ids = cell(length(ordered_oris), 1);
+                    all_signal_corr_values = [];  
+                    letters = 'A':'D';
+                    n_neurons = size(z_trial_responses, 2);
+                    mean_zresponses_per_ori = nan(length(ordered_oris), n_neurons);
 
-                noise_corrs_all_oris = cell(length(ordered_oris),1); % pre-allocate
-                for i = 1:length(ordered_oris)
-                    ori = ordered_oris(i);
-                    trial_mask = trial_labels == ori;
-                    responses_this_ori = trial_responses(trial_mask, :, :);
+                    for i = 1:length(ordered_oris)
+                        ori = ordered_oris(i);
+                        trial_mask = trial_labels == ori;
+                        % For each orientation, get mean z-scored response across trials
+                        mean_zresponses_per_ori(i, :) = mean(z_trial_responses(trial_mask, :), 1);
+                    end    
+                       
+                    % Now each row is a stimulus (A–D), each column is a neuron. Transpose to get neuron x stimulus matrix
+                    neuron_stim_matrix = mean_zresponses_per_ori'; % size = [neurons x 4]
+
+                    % Compute signal correlation matrix (correlation across stimulus conditions)
+                    signal_corrmat = corr(neuron_stim_matrix', 'rows', 'pairwise'); % compute the Pearson correlation between each pair of neurons, where each neuron is represented by its mean responses across the stimuli (the 4 conditions).
+                    signal_corrmat(isnan(signal_corrmat)) = 0;
+                    signal_corrmat(1:size(signal_corrmat,1)+1:end) = 1;  
+                    off_diagonal = signal_corrmat(~eye(size(signal_corrmat)));  % exclude autocorrelations
+                    all_signal_corr_values = [all_signal_corr_values; off_diagonal(:)];
+                        
+                    % Get preferred orientations 
+                    [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
+                    pref_ori = filtered_OP.OriAngle(loc_in_filtered(is_member));
+                    % Sort neurons by preferred orientation
+                    [~, sort_order] = sort(pref_ori, 'ascend');
+                    % Reorder correlation matrix
+                    
+                    signal_corrmat_sorted = signal_corrmat(sort_order, sort_order);
+                    sorted_cluster_id = cluster_id(sort_order);  % optional: for labeling/storing
+
+                    %%% For neuron pairs with unusually strong correlations, make scatter plots mean trialtype spikecounts
+                    pos_threshold = 1; % Strong Pearson Correlation
+                    neg_threshold = -1;
+
+                    % Prepare sorted neuron-stim matrix
+                    neuron_stim_matrix_sorted = neuron_stim_matrix(sort_order, :); % [neurons x 4]
+                    
+                    % Loop over upper triangle of the correlation matrix (excluding diagonal)
+                    for row = 1:n_neurons
+                        for col = row+1:n_neurons
+                            r_val = signal_corrmat_sorted(row, col); % r_val is the Pearson corr coeff btweent the mean stimulus z-scored Spikecounts of a pair of neurons across four stimuli (ABCD)
+                            if r_val > pos_threshold || r_val < neg_threshold
+                                fprintf('Plotting pair (%d, %d) with r = %.2f\n', ...
+                                    sorted_cluster_id(row), sorted_cluster_id(col), r_val);
+                                % Get responses across stimuli (4 points each)
+                                x_vals = neuron_stim_matrix_sorted(row, :); % mean z-scored spikecounts per stimulus-type across trials for one neuron in the pair
+                                y_vals = neuron_stim_matrix_sorted(col, :); % mean z-scored spikecounts per stimulus-type across trials for the other neuron in the pair
+                                % Call plotting function
+                                plotSpikecountSignalCorrScatter(x_vals, y_vals, ...
+                                    sorted_cluster_id(row), sorted_cluster_id(col), ...
+                                    r_val, ori_labels, subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window, gOSI_threshold, z_score_period);
+                            end
+                        end
+                    end    
+                    % set global scale exclude exact -1 and +1 from the global color scale
+                    tolerance = 1e-10;
+                    filtered_signal_corr_values = all_signal_corr_values(all_signal_corr_values > -1 + tolerance & all_signal_corr_values < 1 - tolerance);
+                    vmin = min(filtered_signal_corr_values);
+                    vmax = max(filtered_signal_corr_values);
+                    mask_pm1 = (signal_corrmat == 1 | signal_corrmat == -1);
+                    signal_corrmat_sorted(mask_pm1(sort_order, sort_order)) = NaN;  % Mask ±1 as white; these values are not meaningful
+                    signal_corrmat_sorted(1:size(signal_corrmat_sorted,1)+1:end) = NaN;  % set diagonal to NaN for plotting only
+ 
+
+                    % Plot signal correlation matrix
+                    fig_signal = figure;
+                    imagesc(signal_corrmat_sorted, 'AlphaData', ~isnan(signal_corrmat_sorted), [vmin vmax]);
+                    set(gca, 'CLim', [vmin vmax]); % This forces the colorbar to use the filtered scale
+                    axis square;
+                    colormap('parula');
+                    cb = colorbar;
+                    ylabel(cb, 'Pearson Correlation');
+                    
+                    xticks(1:length(sorted_cluster_id));
+                    yticks(1:length(sorted_cluster_id));
+                    xticklabels(string(sorted_cluster_id));
+                    yticklabels(string(sorted_cluster_id));
+                    xtickangle(90);
+                    set(gca, 'FontSize', 8);
+                    ylabel('Cluster ID (sorted by tuning, 0°-180°)');
+                    xlabel('Cluster ID (sorted by tuning, 0°-180°)');
+                    
                 
-                    if contains(temporal_structure, 'trial spikecounts')
-                        responses_this_ori = squeeze(responses_this_ori);  % trials x neurons
-                        [n_trials, n_neurons] = size(responses_this_ori);
-                    else
-                        % timebinned case: reshape to trials x neurons
-                        [n_trials, n_bins, n_neurons] = size(responses_this_ori);
-                        %responses_this_ori = reshape(responses_this_ori, n_trials, []);  % concatenate timebins
-                        responses_this_ori = mean(responses_this_ori, 2);
-                        responses_this_ori = squeeze(responses_this_ori);
+                    sgtitle(sprintf('%s - %s: %s signal correlation matrix of trial spikecounts (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', ...
+                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
+                        'Interpreter', 'none');
+                    fig_filename_signal = sprintf('%s - %s - %s signal correlation matrix of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    savefig(fig_signal, fullfile(pwd, fig_filename_signal));
+
+                
+                elseif contains(temporal_structure, 'timebinned spikes') % trials x timebins x neurons
+                    all_signal_corr_values = [];
+                    letters = 'A':'D';
+                    n_neurons = size(trial_responses, 3);
+                    n_timebins = size(trial_responses, 2);
+                    neuron_timevector_matrix = nan(n_neurons, length(ordered_oris) * n_timebins);  % [neurons x (orientations × timebins)]
+                
+                    for i = 1:length(ordered_oris)
+                        ori = ordered_oris(i);
+                        trial_mask = trial_labels == ori;  % trials for this orientation
+                        responses_this_ori = trial_responses(trial_mask, :, :);  % [trials x timebins x neurons]
+                        
+                        % Average across trials (preserve timebin structure)
+                        mean_response = squeeze(mean(responses_this_ori, 1));  % [timbeins x neurons]
+
+                        %  Transpose and flatten for each neuron
+                        neuron_timevector_matrix(:, (i-1)*n_timebins + (1:n_timebins)) = mean_response';  % [neurons x timebins] per ori
                     end
-           
-                    % Initialize matrix on first iteration
-                    if isempty(mean_response_per_neuron_allstim)
-                        mean_response_per_neuron_allstim = zeros(length(ordered_oris), length(cluster_id)); 
-                    end
+                
+
+                    % Compute signal correlation: corr across stimulus types
+                    signal_corrmat = corr(neuron_timevector_matrix', 'rows', 'pairwise');
                     
-                    % Compute mean response per neuron for signal correlation
-                    mean_response_per_neuron_allstim(i, :) = mean(responses_this_ori, 1); 
-                    
-                    % Compute noise correlations (between residuals on a trial-by-trial basis)
-                    residuals = responses_this_ori - mean(responses_this_ori, 1);  % noise
-                    noise_corrmat = corr(residuals);
-                    temp_noise_corrs = [];
-                    % Extract upper triangle (excluding diagonal) to avoid redundancy - take each pair only once
-                    for m = 1:length(cluster_id)
-                        for k = m+1:length(cluster_id)
-                            temp_noise_corrs(end+1) = noise_corrmat(m,k);
+                    signal_corrmat(isnan(signal_corrmat)) = 0;
+                    signal_corrmat(1:size(signal_corrmat,1)+1:end) = 1;
+                    off_diagonal = signal_corrmat(~eye(size(signal_corrmat)));
+                    all_signal_corr_values = [all_signal_corr_values; off_diagonal(:)];
+                
+                    % Sort by orientation preference
+                    [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
+                    pref_ori = filtered_OP.OriAngle(loc_in_filtered(is_member));
+                    [~, sort_order] = sort(pref_ori, 'ascend');
+                    signal_corrmat_sorted = signal_corrmat(sort_order, sort_order);
+                    sorted_cluster_id = cluster_id(sort_order);
+                    neuron_timevector_matrix_sorted = neuron_timevector_matrix(sort_order, :);
+                
+                    % Scatter plots for highly correlated pairs
+                    pos_threshold = 1;
+                    neg_threshold = -1;
+                    for row = 1:n_neurons
+                        for col = row+1:n_neurons
+                            r_val = signal_corrmat_sorted(row, col);
+                            if r_val > pos_threshold || r_val < neg_threshold
+                                fprintf('Plotting pair (%d, %d) with r = %.2f\n', ...
+                                    sorted_cluster_id(row), sorted_cluster_id(col), r_val);
+                                x_vals = neuron_timevector_matrix_sorted(row, :);
+                                y_vals = neuron_timevector_matrix_sorted(col, :);
+                                plotTimebinnedSignalCorrScatter(x_vals, y_vals, ...
+                                    sorted_cluster_id(row), sorted_cluster_id(col), ...
+                                    r_val, ori_labels, ordered_oris, subject_number, Stimulus_type, ...
+                                    depth_for_analysis, temporal_structure, stim_window, ...
+                                    gOSI_threshold, z_score_period);
+                            end
                         end
                     end
-                    noise_corrs_all_oris{i} = temp_noise_corrs; % store separately by ori
-                end
-                %%% Compute signal correlation after loop across all stimuli
-                signal_corrmat = corr(mean_response_per_neuron_allstim);  %%% Transpose so each column is a neuron
-                %%% Extract signal correlations just once
-                for m = 1:length(cluster_id)
-                    for k = m+1:length(cluster_id)
-                        signal_corrs(end+1) = signal_corrmat(m,k);
-                    end
-                end
-
-
-                % Plot
-                figure;
-                for i = 1:length(ordered_oris)
-                    subplot(2,2,i);
-                    scatter(signal_corrs, noise_corrs_all_oris{i}, 25, 'filled', 'MarkerFaceAlpha', 0.6);
-                    xlabel('Signal Correlation');
-                    ylabel('Noise Correlation');
-                    title(sprintf('Orientation %d°', round(rad2deg(ordered_oris(i)))));
-                    grid on;
+                
+                    % Plot the signal correlation matrix
+                    tolerance = 1e-10;
+                    filtered_signal_corr_values = all_signal_corr_values(...
+                        all_signal_corr_values > -1 + tolerance & all_signal_corr_values < 1 - tolerance);
+                    vmin = min(filtered_signal_corr_values);
+                    vmax = max(filtered_signal_corr_values);
+                    mask_pm1 = (signal_corrmat == 1 | signal_corrmat == -1);
+                    signal_corrmat_sorted(mask_pm1(sort_order, sort_order)) = NaN;
+                    signal_corrmat_sorted(1:size(signal_corrmat_sorted,1)+1:end) = NaN;
+                
+                    fig_signal = figure;
+                    imagesc(signal_corrmat_sorted, 'AlphaData', ~isnan(signal_corrmat_sorted), [vmin vmax]);
+                    set(gca, 'CLim', [vmin vmax]);
                     axis square;
-                end
-                    
-                sgtitle(sprintf('%s - %s: Signal vs. Noise Correlations (Day %d)', ...
-                        subject_number, Stimulus_type, experiment_info(nsession).date), ...
+                    colormap('parula');
+                    cb = colorbar;
+                    ylabel(cb, 'Pearson Correlation');
+                
+                    xticks(1:length(sorted_cluster_id));
+                    yticks(1:length(sorted_cluster_id));
+                    xticklabels(string(sorted_cluster_id));
+                    yticklabels(string(sorted_cluster_id));
+                    xtickangle(90);
+                    set(gca, 'FontSize', 8);
+                    ylabel('Cluster ID (sorted by tuning, 0°–180°)');
+                    xlabel('Cluster ID (sorted by tuning, 0°–180°)');
+                
+                    sgtitle(sprintf('%s - %s: %s signal correlation matrix of timebinned spikes (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Day %d', ...
+                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, experiment_info(nsession).date), ...
                         'Interpreter', 'none');
+                    fig_filename_signal = sprintf('%s - %s - %s signal correlation matrix of %s (%.2f–%.2fs after stim onset), gOSI over %0.2f.fig', ...
+                        subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                    savefig(fig_signal, fullfile(pwd, fig_filename_signal));
+    
+                end
 
-                figure; imagesc(mean_response_per_neuron_allstim);
-                xlabel('Neuron'); ylabel('Stimulus'); title('Mean Responses per Neuron per Stimulus');
-                cb = colorbar;
-                ylabel(cb, 'Firing Rate (Hz)');
-                % Set x-axis ticks and labels
-                xticks(1:length(cluster_id));
-                xticklabels(cluster_id);
-                yticks(1:length(ordered_oris));
-                yticklabels({'A', 'B', 'C', 'D'});
-                xtickangle(90);  % optional: rotate labels for better readability
+                
+
+                %%%% Create figures to summarise the progression of the correlation matrices across days
+
+                
+
+
+ 
+                % THIS signal vs noise corr CODE IS NOT FUNCTIONAL - NOT SURE IF IT WOULD BE USEFUL
+                %%% Make a Signal vs. Noise Correlation Scatter Plot - USES RAW SPIKING ----
+                % % Prepare structure to hold per-pair signal and noise correlation
+                % signal_corrs = [];
+                % noise_corrs = [];
+                % mean_response_per_neuron_allstim = [];  
+                % 
+                % for i = 1:length(ordered_oris)
+                %     ori = ordered_oris(i);
+                %     trial_mask = trial_labels == ori;
+                %     responses_this_ori = trial_responses(trial_mask, :, :);
+                % 
+                %     if contains(temporal_structure, 'trial spikecounts')
+                %         responses_this_ori = squeeze(responses_this_ori);  % trials x neurons
+                %         [n_trials, n_neurons] = size(responses_this_ori);  
+                %     else
+                %         % timebinned case: reshape to trials x neurons
+                %         [n_trials, n_bins, n_neurons] = size(responses_this_ori);
+                %         %responses_this_ori = reshape(responses_this_ori, n_trials, []);  % concatenate timebins
+                %         responses_this_ori = mean(responses_this_ori, 2);
+                %         responses_this_ori = squeeze(responses_this_ori);
+                %     end
+                % 
+                % end
+                % 
+                % noise_corrs_all_oris = cell(length(ordered_oris),1); % pre-allocate
+                % for i = 1:length(ordered_oris)
+                %     ori = ordered_oris(i);
+                %     trial_mask = trial_labels == ori;
+                %     responses_this_ori = trial_responses(trial_mask, :, :);
+                % 
+                %     if contains(temporal_structure, 'trial spikecounts')
+                %         responses_this_ori = squeeze(responses_this_ori);  % trials x neurons
+                %         [n_trials, n_neurons] = size(responses_this_ori);
+                %     else
+                %         % timebinned case: reshape to trials x neurons
+                %         [n_trials, n_bins, n_neurons] = size(responses_this_ori);
+                %         %responses_this_ori = reshape(responses_this_ori, n_trials, []);  % concatenate timebins
+                %         responses_this_ori = mean(responses_this_ori, 2);
+                %         responses_this_ori = squeeze(responses_this_ori);
+                %     end
+                % 
+                %     % Initialize matrix on first iteration
+                %     if isempty(mean_response_per_neuron_allstim)
+                %         mean_response_per_neuron_allstim = zeros(length(ordered_oris), length(cluster_id)); 
+                %     end
+                % 
+                %     % Compute mean response per neuron for signal correlation
+                %     mean_response_per_neuron_allstim(i, :) = mean(responses_this_ori, 1); 
+                % 
+                %     % Compute noise correlations (between residuals on a trial-by-trial basis)
+                %     residuals = responses_this_ori - mean(responses_this_ori, 1);  % noise
+                %     noise_corrmat = corr(residuals);
+                %     temp_noise_corrs = [];
+                %     % Extract upper triangle (excluding diagonal) to avoid redundancy - take each pair only once
+                %     for m = 1:length(cluster_id)
+                %         for k = m+1:length(cluster_id)
+                %             temp_noise_corrs(end+1) = noise_corrmat(m,k);
+                %         end
+                %     end
+                %     noise_corrs_all_oris{i} = temp_noise_corrs; % store separately by ori
+                % end
+                % %%% Compute signal correlation after loop across all stimuli
+                % signal_corrmat = corr(mean_response_per_neuron_allstim);  %%% Transpose so each column is a neuron
+                % %%% Extract signal correlations just once
+                % for m = 1:length(cluster_id)
+                %     for k = m+1:length(cluster_id)
+                %         signal_corrs(end+1) = signal_corrmat(m,k);
+                %     end
+                % end
+                % 
+                % 
+                % % Plot
+                % figure;
+                % for i = 1:length(ordered_oris)
+                %     subplot(2,2,i);
+                %     scatter(signal_corrs, noise_corrs_all_oris{i}, 25, 'filled', 'MarkerFaceAlpha', 0.6);
+                %     xlabel('Signal Correlation');
+                %     ylabel('Noise Correlation');
+                %     title(sprintf('Orientation %d°', round(rad2deg(ordered_oris(i)))));
+                %     grid on;
+                %     axis square;
+                % end
+                % 
+                % sgtitle(sprintf('%s - %s: Signal vs. Noise Correlations (Day %d)', ...
+                %         subject_number, Stimulus_type, experiment_info(nsession).date), ...
+                %         'Interpreter', 'none');
+                % 
+                % figure; imagesc(mean_response_per_neuron_allstim);
+                % xlabel('Neuron'); ylabel('Stimulus'); title('Mean Responses per Neuron per Stimulus');
+                % cb = colorbar;
+                % ylabel(cb, 'Firing Rate (Hz)');
+                % % Set x-axis ticks and labels
+                % xticks(1:length(cluster_id));
+                % xticklabels(cluster_id);
+                % yticks(1:length(ordered_oris));
+                % yticklabels({'A', 'B', 'C', 'D'});
+                % xtickangle(90);  % optional: rotate labels for better readability
+
 
 
                 %%% SILHOUETTE SCORING
@@ -741,10 +1013,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 
                 xlabel('Number of Principal Components');
                 ylabel('Mean Silhouette Score');
-                sgtitle(sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset) Silhouette Clustering Quality vs. Number of PCs (by Trial Type), gOSI > %0.1f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
+                sgtitle(sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset) Silhouette Clustering Quality vs. Number of PCs (by Trial Type), gOSI > %0.2f, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
                 legend([{'Overall'}, ori_labels'], 'Location', 'best');
                 grid on;
-                fig3_filename = sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset), gOSI over %0.1f, Silhouette score progression with increasing PCs, coloured by trial-type.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                fig3_filename = sprintf('%s - %s - %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, Silhouette score progression with increasing PCs, coloured by trial-type.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 fig3_save_path = fullfile(pwd, fig3_filename);
                 savefig(fig3, fig3_save_path);
 
@@ -805,11 +1077,11 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 % Annotate
                 xlabel('Silhouette Value');
                 ylabel('Trial index (sorted by orientation)');
-                title(sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI > %0.1f, coloured by trial-type', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold), 'Interpreter', 'none');
+                title(sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI > %0.2f, coloured by trial-type', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold), 'Interpreter', 'none');
                 xlim([-1 1]);
                 grid on;
                 
-                fig4_filename = sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI over %0.1f, coloured by trial-type.fig', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
+                fig4_filename = sprintf('%s - %s - Silhouette plot using first %d PCs of %s Z-scored %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, coloured by trial-type.fig', subject_number, Stimulus_type, PCs_for_silhouette, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold);
                 fig4_save_path = fullfile(pwd, fig4_filename);
                 savefig(fig4, fig4_save_path);
 

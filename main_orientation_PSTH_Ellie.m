@@ -1,11 +1,11 @@
-%%% For analysis of unit spiking in response to visual stimuli
+%%% For analysis of unit spiking in response to visual stimuli. ERB 2025
 
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4510:4650; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
 CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
 Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
@@ -28,10 +28,10 @@ z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs'
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250217\OP_Tuning') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250221\OP_Tuning') % 4/5 files will be saved here in the cd
 
 
-for nsession = 11 %5/5 row number of recording date in "experiment_info" 
+for nsession = 15 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -342,11 +342,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 plot_gOSI = OP_tuning(nprobe).gOSI;
                 plot_gDSI = OP_tuning(nprobe).gDSI;
                 cluster_ids = OP_tuning(nprobe).cluster_id;
-                figure;
+                fig=figure;
                 scatter(plot_gOSI, plot_gDSI, 40, 'filled');
                 xlabel('Orientation Selectivity (gOSI)');
                 ylabel('Direction Selectivity (gDSI)');
-                title('OP Tuning Selectivity: gOSI vs gDSI');
                 grid on;
                 xlim([0 1]);
                 ylim([0 1]);
@@ -354,20 +353,23 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                 % Annotate each point with cluster ID
                 hold on;
                 for i = 1:length(cluster_ids)
-                    text(plot_gDSI(i) + 0.01, plot_gDSI(i), num2str(cluster_ids(i)), ...
+                    text(plot_gOSI(i) + 0.01, plot_gDSI(i), num2str(cluster_ids(i)), ...
                         'FontSize', 8, 'Color', [0.3 0.3 0.3]); % small offset and light gray
                 end
+                sgtitle(sprintf('%s_%s: gOSI vs gDSI Day %d', subject_number, Stimulus_type, experiment_info(nsession).date), 'Interpreter', 'None');
+                fig_filename = sprintf('%s_%s_%s_gOSI vs gDSI Day %d.fig', ...
+                    subject_number, Stimulus_type, depth_for_analysis, experiment_info(nsession).date);
+                savefig(fig, fullfile(pwd, fig_filename));
                 hold off;
 
                 % Plot preferred ori vs direction to check the data
                 plot_DirAngle = OP_tuning(nprobe).DirAngle;
                 plot_OriAngle = OP_tuning(nprobe).OriAngle;
                 cluster_ids = OP_tuning(nprobe).cluster_id;
-                figure;
+                fig=figure;
                 scatter(plot_OriAngle, plot_DirAngle, 40, 'filled');
                 xlabel('Preferred Orientation');
                 ylabel('Preferred Direction');
-                title('OP Tuning: Preferred Orientation vs Direction');
                 grid on;
                 xlim([0 180]);
                 ylim([0 360]);
@@ -378,6 +380,10 @@ for nsession = 11 %5/5 row number of recording date in "experiment_info"
                     text(plot_OriAngle(i) + 1, plot_DirAngle(i), num2str(cluster_ids(i)), ...
                         'FontSize', 8, 'Color', [0.3 0.3 0.3]); % small offset and light gray
                 end
+                sgtitle(sprintf('%s_%s: pref Ori vs pref Dir, Day %d', subject_number, Stimulus_type, experiment_info(nsession).date), 'Interpreter', 'None');
+                fig_filename = sprintf('%s_%s_%s_pref Ori vs pref Dir, Day %d.fig', ...
+                subject_number, Stimulus_type, depth_for_analysis, experiment_info(nsession).date);
+                savefig(fig, fullfile(pwd, fig_filename));
                 hold off;
               
             end
