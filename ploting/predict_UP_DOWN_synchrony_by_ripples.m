@@ -360,7 +360,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     xlim([-0.5 15])
 
@@ -386,7 +386,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     xlim([-0.5 15])
 
@@ -461,7 +461,7 @@ if plot_option == 1
     medR2 = prctile(R2_ipsi_power,50); medP = prctile(pval_ipsi_power,50)
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
 
     nexttile
@@ -479,7 +479,7 @@ if plot_option == 1
 
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
 
 
@@ -583,7 +583,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     xlim([-2 15])
     ylim([-2 10])
@@ -605,7 +605,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     xlim([-2 15])
     ylim([-2 10])
@@ -672,7 +672,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     ylim([-1 10])
 
@@ -691,7 +691,7 @@ if plot_option == 1
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     text(0.2 * max(x_fit), 0.8 * max(y_fit), ...
-        sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+        sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
     ylim([-1 10])
     % ------------------ Histogram: V1 depression with vs without ripples ------------------
@@ -791,7 +791,7 @@ if plot_option == 1
     medR2 = prctile(R2_ipsi,50); medP = prctile(pval_ipsi,50);
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
 
     % CONTRA
@@ -808,7 +808,7 @@ if plot_option == 1
     % medR2 = median(R2_contra); medP = median(pval_contra);
     col = 'r'; if medP > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', medR2, medP), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', medR2, medP), ...
         'FontSize', 10, 'Color', col)
 
     % T-stat bar
@@ -865,7 +865,7 @@ if plot_option == 1
     R2 = prctile(R2_ipsi_power, 50); p = prctile(pval_ipsi_power, 50);
     col = 'r'; if p > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', R2, p), ...
         'FontSize', 10, 'Color', col)
 
     nexttile
@@ -879,7 +879,7 @@ if plot_option == 1
     R2 = prctile(R2_contra_power, 50); p = prctile(pval_contra_power, 50);
     col = 'r'; if p > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
-    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+    text(0.2*max(x_fit), 0.8*max(y_fit), sprintf('R^2 = %.3f\np = %.2e', R2, p), ...
         'FontSize', 10, 'Color', col)
 
     % Histogram: ripple occurrence
@@ -984,7 +984,7 @@ if plot_option == 1
     col = 'r'; if p > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     xlabel('ipsi ripple lag'); ylabel('V1 depression')
-    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.3f\np = %.2e', R2, p), ...
         'FontSize', 10, 'Color', col)
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
@@ -1016,7 +1016,7 @@ if plot_option == 1
     col = 'r'; if p > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     xlabel('ipsi ripple lag'); ylabel('V1 delta power')
-    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.3f\np = %.2e', R2, p), ...
         'FontSize', 10, 'Color', col)
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
@@ -1048,7 +1048,7 @@ if plot_option == 1
     col = 'r'; if p > 0.05, col = 'k'; end
     plot(x_fit, y_fit, 'Color', col, 'LineWidth', 2)
     xlabel('ipsi ripple lag'); ylabel('UP-DOWN transition lag')
-    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.2f\np = %.2e', R2, p), ...
+    text(0.2*max(x_fit), 0.8*max(y(valid)), sprintf('R^2 = %.3f\np = %.2e', R2, p), ...
         'FontSize', 10, 'Color', col)
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 

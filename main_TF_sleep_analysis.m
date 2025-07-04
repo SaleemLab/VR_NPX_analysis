@@ -1,4 +1,4 @@
-%%%%%%% Main Time frequency analysis
+%%%%%%% Main Time frequency analysis (Average activities + extract -200-0 and 0-200ms phase coupling and average SO/Spindle/ripples power)
 
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -104,8 +104,8 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters=clusters_ks4;
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude.mat'));
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_amplitude_ft.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_TF_phase_ft.mat'));
 
         
     else
@@ -164,26 +164,26 @@ for nsession =1:length(experiment_info)
 
         TF_amp_V1_ipsi = squeeze([cat(4,TF_amp_V1(1).(event_types{e})(1,:,:,index1), TF_amp_V1(2).(event_types{e})(2,:,:,index2))]);
         TF_amp_V1_ipsi = normalize_tf(TF_amp_V1_ipsi, baseline_idx, 'dB');
-        mean_TF_amp_V1_ipsi = mean(TF_amp_V1_ipsi,3,'omitnan');
-        % [~, sig_mask_V1_ipsi] = permutation_TF_test(TF_amp_V1_ipsi, 1000, 0.05);
+        % mean_TF_amp_V1_ipsi = mean(TF_amp_V1_ipsi,3,'omitnan');
+        % [~, sig_mask_V1_ipsi] = permutation_TF_test(TF_amp_V1_ipsi, 1000);
 
 
         TF_amp_V1_contra = squeeze([cat(4,TF_amp_V1(1).(event_types{e})(2,:,:,index1), TF_amp_V1(2).(event_types{e})(1,:,:,index2))]);
         TF_amp_V1_contra = normalize_tf(TF_amp_V1_contra, baseline_idx, 'dB');
-        mean_TF_amp_V1_contra = mean(TF_amp_V1_contra,3,'omitnan');
-        % [~, sig_mask_V1_contra] = permutation_TF_test(TF_amp_V1_contra, 1000, 0.05);
+        % mean_TF_amp_V1_contra = mean(TF_amp_V1_contra,3,'omitnan');
+        % [~, sig_mask_V1_contra] = permutation_TF_test(TF_amp_V1_contra, 1000);
 
 
         TF_amp_HPC_ipsi = squeeze([cat(4,TF_amp_HPC(1).(event_types{e})(1,:,:,index1), TF_amp_HPC(2).(event_types{e})(2,:,:,index2))]);
         TF_amp_HPC_ipsi = normalize_tf(TF_amp_HPC_ipsi, baseline_idx, 'dB');
-        mean_TF_amp_HPC_ipsi = mean(TF_amp_HPC_ipsi,3,'omitnan');
-        % [~, sig_mask_HPC_ipsi] = permutation_TF_test(TF_amp_HPC_ipsi, 1000, 0.05);
+        % mean_TF_amp_HPC_ipsi = mean(TF_amp_HPC_ipsi,3,'omitnan');
+        % [~, sig_mask_HPC_ipsi] = permutation_TF_test(TF_amp_HPC_ipsi, 1000);
 
 
         TF_amp_HPC_contra = squeeze([cat(4,TF_amp_HPC(1).(event_types{e})(2,:,:,index1), TF_amp_HPC(2).(event_types{e})(1,:,:,index2))]);
         TF_amp_HPC_contra = normalize_tf(TF_amp_HPC_contra, baseline_idx, 'dB');
-        mean_TF_amp_HPC_contra = mean(TF_amp_HPC_contra,3,'omitnan');
-        % [~, sig_mask_HPC_contra] = permutation_TF_test(TF_amp_HPC_contra, 1000, 0.05);
+        % mean_TF_amp_HPC_contra = mean(TF_amp_HPC_contra,3,'omitnan');
+        % [~, sig_mask_HPC_contra] = permutation_TF_test(TF_amp_HPC_contra, 1000);
 
 
 
@@ -214,70 +214,87 @@ for nsession =1:length(experiment_info)
             TF_phase_HPC(1).(event_types{e})(2,:,:,index1), ...
             TF_phase_HPC(2).(event_types{e})(1,:,:,index2)  ...
             ));
-
         
-    
 
-        % 
 
-        Types = {'UP','DOWN'};
 
-        if contains(event_types{e},'spindles')
+        if contains(event_types{e},'ripples')
+
+            Types = {'All','UP','DOWN'};
+            num_figs = 3;
             % figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
+        elseif contains(event_types{e},'spindles')
+            Types = {'All'};
             num_figs = 1;
-        else
-            num_figs = 2;
             % figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
+        else
+            Types = {'All','ripples'};
+            num_figs = 2;
         end
 
-        for n = 1:num_figs
-            if contains(event_types{e},'ripples')
-                fig = figure('Name',['TF amplitude - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
-                % num_figs = 2;
-            else
-                fig = figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
-            end
 
-            if contains(event_types{e},'ripples')&n == 1 | contains(event_types{e},'UP')
+        for n = 1:num_figs
+            % if contains(event_types{e},'ripples')
+            fig = figure('Name',['TF amplitude - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
+                % num_figs = 2;
+            % else
+            %     fig = figure('Name',['TF amplitude - ' event_types{e}],'Position',[100 100 1200 500])
+            % end
+
+            if contains(event_types{e},'UP') | contains(Types{n},'UP')
                 mean_TF_amp_V1_ipsi = mean(TF_amp_V1_ipsi(:,:,status_UP),3,'omitnan');
+                % [~, pvals, sig_mask,null_dist]= permutation_TF_test(TF_amp_V1_ipsi(:,:,status_UP), 1000);
+
                 mean_TF_amp_V1_contra = mean(TF_amp_V1_contra(:,:,status_UP),3,'omitnan');
                 mean_TF_amp_HPC_ipsi = mean(TF_amp_HPC_ipsi(:,:,status_UP),3,'omitnan');
                 mean_TF_amp_HPC_contra = mean(TF_amp_HPC_contra(:,:,status_UP),3,'omitnan');
-
+                
                 % PLV_V1 = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_V1_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
                 % PLV_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
                 % PLV_V1_HPC_ipsi = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_ipsi(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
                 % PLV_V1_HPC_contra = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
                 % 
                 
-                amp_corr_V1 = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_V1_contra(:,:,status_UP));
-                amp_corr_HPC = amplitude_corr_tf(TF_phase_HPC_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
-                amp_corr_V1_HPC_ipsi = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_ipsi(:,:,status_UP));
-                amp_corr_V1_HPC_contra = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
+                % amp_corr_V1 = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_V1_contra(:,:,status_UP));
+                % amp_corr_HPC = amplitude_corr_tf(TF_phase_HPC_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
+                % amp_corr_V1_HPC_ipsi = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_ipsi(:,:,status_UP));
+                % amp_corr_V1_HPC_contra = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_UP),TF_phase_HPC_contra(:,:,status_UP));
 
-                amp_corr_V1 = abs(mean(exp(1i * (TF_amp_V1_ipsi(:,:,status_UP) - TF_phase_V1_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
-                amp_corr_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
-                amp_corr_HPC_V1_ipsi = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_ipsi(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
-                amp_corr_HPC_V1_contra = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
+                PLV_V1 = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_V1_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
+                PLV_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
+                PLV_V1_HPC_ipsi = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_ipsi(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
+                PLV_V1_HPC_contra = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_UP) - TF_phase_HPC_contra(:,:,status_UP))), 3, 'omitnan'));  % [freq x time]
 
-
-            elseif contains(event_types{e},'ripples')&n == 2 | contains(event_types{e},'DOWN')
+                % [~, pvals, sig_mask,null_dist]= permutation_TF_test(TF_phase_V1_ipsi(:,:,status_UP) , 1000,'data2',TF_phase_V1_contra(:,:,status_UP),'shuffle_option',2);
+            elseif contains(event_types{e},'DOWN') | contains(Types{n},'DOWN')
                 mean_TF_amp_V1_ipsi = mean(TF_amp_V1_ipsi(:,:,status_DOWN),3,'omitnan');
                 mean_TF_amp_V1_contra = mean(TF_amp_V1_contra(:,:,status_DOWN),3,'omitnan');
                 mean_TF_amp_HPC_ipsi = mean(TF_amp_HPC_ipsi(:,:,status_DOWN),3,'omitnan');
                 mean_TF_amp_HPC_contra = mean(TF_amp_HPC_contra(:,:,status_DOWN),3,'omitnan');
 
-
-                amp_corr_V1 = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_V1_contra(:,:,status_DOWN));
-                amp_corr_HPC = amplitude_corr_tf(TF_phase_HPC_ipsi(:,:,status_DOWN),TF_phase_HPC_contra(:,:,status_DOWN));
-                amp_corr_V1_HPC_ipsi = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_HPC_ipsi(:,:,status_DOWN));
-                amp_corr_V1_HPC_contra = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_HPC_contra(:,:,status_DOWN));
+                % amp_corr_V1 = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_V1_contra(:,:,status_DOWN));
+                % amp_corr_HPC = amplitude_corr_tf(TF_phase_HPC_ipsi(:,:,status_DOWN),TF_phase_HPC_contra(:,:,status_DOWN));
+                % amp_corr_V1_HPC_ipsi = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_HPC_ipsi(:,:,status_DOWN));
+                % amp_corr_V1_HPC_contra = amplitude_corr_tf(TF_amp_V1_ipsi(:,:,status_DOWN),TF_phase_HPC_contra(:,:,status_DOWN));
 
                 PLV_V1 = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_DOWN) - TF_phase_V1_contra(:,:,status_DOWN))), 3, 'omitnan'));  % [freq x time]
                 PLV_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,status_DOWN) - TF_phase_HPC_contra(:,:,status_DOWN))), 3, 'omitnan'));  % [freq x time]
                 PLV_V1_HPC_ipsi = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_DOWN) - TF_phase_HPC_ipsi(:,:,status_DOWN))), 3, 'omitnan'));  % [freq x time]
                 PLV_V1_HPC_contra = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,status_DOWN) - TF_phase_HPC_contra(:,:,status_DOWN))), 3, 'omitnan'));  % [freq x time]
 
+            else
+                mean_TF_amp_V1_ipsi = mean(TF_amp_V1_ipsi(:,:,:),3,'omitnan');
+                mean_TF_amp_V1_contra = mean(TF_amp_V1_contra(:,:,:),3,'omitnan');
+                mean_TF_amp_HPC_ipsi = mean(TF_amp_HPC_ipsi(:,:,:),3,'omitnan');
+                mean_TF_amp_HPC_contra = mean(TF_amp_HPC_contra(:,:,:),3,'omitnan');
+    
+        
+
+
+                PLV_V1 = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,:) - TF_phase_V1_contra(:,:,:))), 3, 'omitnan'));  % [freq x time]
+                PLV_HPC = abs(mean(exp(1i * (TF_phase_HPC_ipsi(:,:,:) - TF_phase_HPC_contra(:,:,:))), 3, 'omitnan'));  % [freq x time]
+                PLV_V1_HPC_ipsi = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,:) - TF_phase_HPC_ipsi(:,:,:))), 3, 'omitnan'));  % [freq x time]
+                PLV_V1_HPC_contra = abs(mean(exp(1i * (TF_phase_V1_ipsi(:,:,:) - TF_phase_HPC_contra(:,:,:))), 3, 'omitnan'));  % [freq x time]
             end
 
             subplot(2,2,1)
@@ -290,19 +307,21 @@ for nsession =1:length(experiment_info)
             set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             hold on;
+            % sig_mask = sig_mask_V1_ipsi< 0.05;
+            % contour(timevec, log2(freqs), sig_mask, [1 1], 'r', 'LineWidth', 1.2);
 
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-2 2])
+            % clim([-2 2])
             yline(log2([9 17]))
             yline(log2([1 4]))
             yline(log2([125 300]))
             set(gca,'TickDir','out','Box','off','FontSize',12)
 
             subplot(2,2,2)
-            contourf(timevec, log2(freqs), mean_TF_amp_V1_contra,40,'linecolor','none')
+            contourf(timevec, log2(freqs), mean_TF_amp_V1_contra,50,'linecolor','none')
             axis xy; title(['Contra V1 - ' event_types{e}])
             xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
             % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
@@ -311,7 +330,7 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([-2 2])
             yline(log2([9 17]))
@@ -320,7 +339,7 @@ for nsession =1:length(experiment_info)
             set(gca,'TickDir','out','Box','off','FontSize',12)
 
             subplot(2,2,3)
-            contourf(timevec, log2(freqs), mean_TF_amp_HPC_ipsi,40,'linecolor','none')
+            contourf(timevec, log2(freqs), mean_TF_amp_HPC_ipsi,50,'linecolor','none')
             axis xy; title(['Ipsi HPC - ' event_types{e}])
             xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
             % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
@@ -329,16 +348,16 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-2 5])
+            % clim([-2 5])
             yline(log2([9 17]))
             yline(log2([1 4]))
             yline(log2([125 300]))
             set(gca,'TickDir','out','Box','off','FontSize',12)
 
             subplot(2,2,4)
-            contourf(timevec, log2(freqs), mean_TF_amp_HPC_contra,40,'linecolor','none')
+            contourf(timevec, log2(freqs), mean_TF_amp_HPC_contra,50,'linecolor','none')
             axis xy; title(['Contra HPC - ' event_types{e}])
             xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
             % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
@@ -347,7 +366,7 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([-2 5])
             yline(log2([9 17]))
@@ -357,15 +376,9 @@ for nsession =1:length(experiment_info)
 
 
 
-
-
-            if contains(event_types{e},'ripples')
-                fig = figure('Name',['TF PLV - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
-                % num_figs = 2;
-            else
-                fig = figure('Name',['TF PLV - ' event_types{e}],'Position',[100 100 1200 500])
-            end
-
+            % fig = figure('Name',['TF PLV - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
+            % num_figs = 2;
+            fig = figure('Name',['TF PLV - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
 
             subplot(2,2,1)
             % contourf(timevec, log10(freqs), TF_amp_V1_ipsi,40,'linecolor','none')
@@ -380,7 +393,7 @@ for nsession =1:length(experiment_info)
 
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([0 0.6])
             yline(log2([9 17]))
@@ -398,7 +411,7 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([0 0.6])
             yline(log2([9 17]))
@@ -416,7 +429,7 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([0 0.6])
             yline(log2([9 17]))
@@ -434,7 +447,7 @@ for nsession =1:length(experiment_info)
                 'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
             colorbar
             xline(0,'r--')
-            xlim([-2 2])
+            xlim([-1.5 1.5])
             ylim([min(log2(freqs)) max(log2(freqs))])
             clim([0 0.6])
             yline(log2([9 17]))
@@ -442,91 +455,6 @@ for nsession =1:length(experiment_info)
             yline(log2([125 300]))
             set(gca,'TickDir','out','Box','off','FontSize',12)
 
-
-
-
-            if contains(event_types{e},'ripples')
-                fig = figure('Name',['TF amp corr - ' event_types{e},' ',Types{n}],'Position',[100 100 1200 500])
-                % num_figs = 2;
-            else
-                fig = figure('Name',['TF amp corr - ' event_types{e}],'Position',[100 100 1200 500])
-            end
-
-
-            subplot(2,2,1)
-            % contourf(timevec, log10(freqs), TF_amp_V1_ipsi,40,'linecolor','none')
-            contourf(timevec, log2(freqs), amp_corr_V1,40,'linecolor','none')
-            axis xy; title(['V1 corr - ' event_types{e}])
-            xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
-            % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-            % set(gca,'ylim',[0 300]);
-            set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
-                'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
-            hold on;
-
-            colorbar
-            xline(0,'r--')
-            xlim([-2 2])
-            ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
-            yline(log2([9 17]))
-            yline(log2([1 4]))
-            yline(log2([125 300]))
-            set(gca,'TickDir','out','Box','off','FontSize',12)
-
-            subplot(2,2,2)
-            contourf(timevec, log2(freqs), amp_corr_HPC,40,'linecolor','none')
-            axis xy; title(['HPC corr - ' event_types{e}])
-            xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
-            % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-            % set(gca,'ylim',[0 300]);
-            set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
-                'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
-            colorbar
-            xline(0,'r--')
-            xlim([-2 2])
-            ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
-            yline(log2([9 17]))
-            yline(log2([1 4]))
-            yline(log2([125 300]))
-            set(gca,'TickDir','out','Box','off','FontSize',12)
-
-            subplot(2,2,3)
-            contourf(timevec, log2(freqs), amp_corr_V1_HPC_ipsi,40,'linecolor','none')
-            axis xy; title(['Ipsi corr - ' event_types{e}])
-            xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
-            % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-            % set(gca,'ylim',[0 300]);
-            set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
-                'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
-            colorbar
-            xline(0,'r--')
-            xlim([-2 2])
-            ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
-            yline(log2([9 17]))
-            yline(log2([1 4]))
-            yline(log2([125 300]))
-            set(gca,'TickDir','out','Box','off','FontSize',12)
-
-            subplot(2,2,4)
-            contourf(timevec, log2(freqs), amp_corr_V1_HPC_contra,40,'linecolor','none')
-            axis xy; title(['Contra corr - ' event_types{e}])
-            xlabel('Time (s)'), ylabel('log_{2}(Freq Hz)')
-            % hold on; contour(timevec, log10(freqs), sig_mask_ipsi, [1 1], 'r--')
-            % set(gca,'ylim',[0 300]);
-            set(gca, 'YTick', log2([1 2 4 8 16 32 64 128 256]), ...
-                'YTickLabel', {'1','2','4','8','16','32','64','128','256'});
-            colorbar
-            xline(0,'r--')
-            xlim([-2 2])
-            ylim([min(log2(freqs)) max(log2(freqs))])
-            clim([-0.2 0.2])
-            yline(log2([9 17]))
-            yline(log2([1 4]))
-            yline(log2([125 300]))
-            set(gca,'TickDir','out','Box','off','FontSize',12)
 
 
             % TF_PSTH_mean

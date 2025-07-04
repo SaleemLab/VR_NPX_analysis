@@ -385,10 +385,10 @@ if plot_option == 1
 
     if medianP_ipsi < 0.05
         plot(x_fit, y_fit, 'Color', 'r', 'LineWidth', 2)
-        text(0.2*max(x_fit), 0.5*max(ipsiHPC_cat), sprintf('R^2 = %.2f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'r')
+        text(0.2*max(x_fit), 0.5*max(ipsiHPC_cat), sprintf('R^2 = %.3f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'r')
     else
         plot(x_fit, y_fit, 'Color', 'k', 'LineWidth', 2)
-        text(0.2*max(x_fit), 0.5*max(ipsiHPC_cat), sprintf('R^2 = %.2f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'k')
+        text(0.2*max(x_fit), 0.5*max(ipsiHPC_cat), sprintf('R^2 = %.3f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'k')
     end
 
 
@@ -541,10 +541,10 @@ if plot_option == 1
 
     if medianP_ipsi < 0.05
         plot(x_fit, y_fit, 'Color', 'r', 'LineWidth', 2)
-        text(0.2*max(x_fit), 0.5*max(ipsi_ripple_power), sprintf('R^2 = %.2f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'r')
+        text(0.2*max(x_fit), 0.5*max(ipsi_ripple_power), sprintf('R^2 = %.3e\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'r')
     else
         plot(x_fit, y_fit, 'Color', 'k', 'LineWidth', 2)
-        text(0.2*max(x_fit), 0.5*max(ipsi_ripple_power), sprintf('R^2 = %.2f\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'k')
+        text(0.2*max(x_fit), 0.5*max(ipsi_ripple_power), sprintf('R^2 = %.3e\np = %.2e', medianR2_ipsi, medianP_ipsi), 'FontSize', 10, 'Color', 'k')
     end
 
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12)
