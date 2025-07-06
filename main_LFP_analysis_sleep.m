@@ -2362,7 +2362,7 @@ ft_default.checksize     = inf;      % disables large struct warnings
 ft_default.showcallinfo  = 'no';     % disables call stack info
 ft_progress('init', 'none');         % disables progress bars
 
-for nsession =16:22
+for nsession =1:15
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);

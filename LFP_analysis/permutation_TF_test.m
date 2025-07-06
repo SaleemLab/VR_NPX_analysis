@@ -7,6 +7,10 @@ parse(p, varargin{:});
 shuffle_option = p.Results.shuffle_option;
 alpha = p.Results.alpha;
 
+data2 = p.Results.data2;
+if ~isempty(data2)
+    data2 = permute(data2, [3 1 2]);  % [event x freq x time]
+end
 data = permute(data, [3 1 2]);  % [event x freq x time]
 [nEvent, nFreq, nTime] = size(data);
 
