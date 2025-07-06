@@ -199,7 +199,7 @@ z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation
 z_bias_V1 = ([PSTH_MUA(1).R_V1_ripples-PSTH_MUA(1).L_V1_ripples;...
     [PSTH_MUA(2).R_V1_ripples-PSTH_MUA(2).L_V1_ripples]])';
 
-% z_bias_V1 = (z_V1_population_ripple_PSTH{1}-z_V1_population_ripple_PSTH{2})';
+% z_bias_V1 = (z_V1_population_ripple_PSTH{1}-z_V1_population_ripple_PSTH{2})' + KDE_reactivation_ripples_PSTH.nan_mask';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);

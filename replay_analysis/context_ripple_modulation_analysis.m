@@ -116,9 +116,9 @@ for nsession = 1:length(sessions_to_process)
     all_regions = session_clusters_all.region{nsession};
     V1_id = find(contains(all_regions,'V1'));
 
-    % Only grab ripple-modulated cells
-    V1_id = intersect(V1_id,find(ripple_modulation_PSTH_all{nsession}(1).ripple_modulation_percentile >= 0.95 | ripple_modulation_PSTH_all{nsession}(2).ripple_modulation_percentile >= 0.95...
-        | ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE >=0.95 |ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE >=0.95));
+    % % Only grab ripple-modulated cells
+    % V1_id = intersect(V1_id,find(ripple_modulation_PSTH_all{nsession}(1).ripple_modulation_percentile >= 0.95 | ripple_modulation_PSTH_all{nsession}(2).ripple_modulation_percentile >= 0.95...
+    %     | ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE >=0.95 |ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE >=0.95));
 
 
 
@@ -132,12 +132,34 @@ for nsession = 1:length(sessions_to_process)
     T2_index = find(mean_bias < log_odds_threshold(1));
 
     %%%%%%% Populational zscored firing rate difference
-    T1_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) >  session_clusters_all.mean_FR{nsession}(V1_id,2));
-    T2_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) <  session_clusters_all.mean_FR{nsession}(V1_id,2));
+
+
+    V1_id_R = find(contains(all_regions,'V1_R'));
+    T1_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id_R,1) >  session_clusters_all.mean_FR{nsession}(V1_id_R,2));
+    V1_id_L = find(contains(all_regions,'V1_L'));
+    T2_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id_L,1) <  session_clusters_all.mean_FR{nsession}(V1_id_L,2));
     % T1_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
     % T2_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
-    z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T1_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
-    z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T2_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
+    % z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id_R(T1_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
+    % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id_L(T2_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
+
+    %
+    % T1_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) >  session_clusters_all.mean_FR{nsession}(V1_id,2));
+    % T2_V1_cell =  find(session_clusters_all.mean_FR{nsession}(V1_id,1) <  session_clusters_all.mean_FR{nsession}(V1_id,2));
+    % % T1_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
+    % % T2_HPC_cell =  session_clusters_all.mean_FR{nsession}(HPC_id,1) >  session_clusters_all.mean_FR{nsession}(HPC_id,2);
+    % z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T1_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
+    % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(V1_id(T2_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'))];
+    % 
+    
+    temp1 = squeeze(mean(ripple_modulation.PSTH(V1_id_R(T1_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'));
+    temp1 = temp1-mean(temp1,"all",'omitnan')./std(temp1,0,'all','omitnan');
+
+    temp2 = squeeze(mean(ripple_modulation.PSTH(V1_id_L(T2_V1_cell),:,ripple_modulation.bins>-1 & ripple_modulation.bins<1),1,'omitnan'));
+    temp2 = temp2-mean(temp2,"all",'omitnan')./std(temp2,0,'all','omitnan');
+
+    z_V1_population_ripple_PSTH{1} = [z_V1_population_ripple_PSTH{1}; temp1];
+    z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; temp2];
     % z_V1_population_ripple_PSTH{2} = [z_V1_population_ripple_PSTH{2}; squeeze(mean(ripple_modulation.PSTH_zscored(T2_V1_cell,:,:),1,'omitnan'))];
     % mean(z_V1_population_ripple_PSTH{1}(T1_index,:)-z_V1_population_ripple_PSTH{2}(T1_index,:),'omitnan') -  mean(z_V1_population_ripple_PSTH{1}(T2_index,:)-z_V1_population_ripple_PSTH{2}(T2_index,:),'omitnan')
 
@@ -1140,12 +1162,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
 %%%%%%%%%%%%% 
 
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output');
-output_all = output;
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme_low_ripple.mat'),'output');
-output_low = output;
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme_high_ripple.mat'),'output');
-output_high = output;
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
 
 
 %%%%%%%%% V1 all vs low ripple vs high ripple

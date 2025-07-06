@@ -106,8 +106,8 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise 
 
-SUBJECTS = {'M24065'};
-Dates = {'20250126'};
+SUBJECTS = {'M24064'};
+Dates = {'20241211'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));
@@ -157,11 +157,12 @@ for nprobe = 1:2
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
-
+mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,'figures','visual'))
+save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,'figures','visual'),[])
 %% plotting SparseNoise (half shank)
 clear all
-SUBJECTS = {'M24065'};
-Dates = {'20250126'};
+SUBJECTS = {'M24062'};
+Dates = {'20241121'};
 nsession = 1;
 nstimuli = 2;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
@@ -170,7 +171,7 @@ nstimuli = 2;
 load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'receptiveFields_LFP.mat'),'RF')
 load(fullfile('Z:\ibn-vision\DATA\SUBJECTS\',SUBJECTS{1},'analysis',Dates{nsession},sprintf('SparseNoise_%i',nstimuli),'session_info.mat'))
 hemisphere_texts = {'Left','Right'}
-num_groups = 30;
+num_groups = 20;
 for nprobe = 1:2
     options = session_info.probe(nprobe);
     fig = figure
@@ -218,7 +219,6 @@ for nprobe = 1:2
         set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
     end
 end
-
 
 
 
@@ -277,5 +277,7 @@ for nprobe = 1:length(session_info.probe) % For each session, how many probes
     colorbar
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 end
-mkdir('visual')
-save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'ephys',options.SESSION,'analysis','visual'),[])
+
+
+mkdir(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,'figures','visual'))
+save_all_figures(fullfile(ROOTPATH,'DATA','SUBJECTS',options.SUBJECT,'analysis',options.SESSION,'figures','visual'),[])
