@@ -284,7 +284,7 @@ for nsession =1:length(experiment_info)
             if contains(Types{n}, 'UP') | contains(event_types{e},'UP')&contains(Types{n}, 'ripples')
                 suffix = '_UP';
                 event_index = find(status_UP);
-            elseif contains(Types{n}, 'DOWN') | contains(event_types{e},'DOWN')&contains(Types{n}, 'ripples')
+            elseif contains(Types{n}, 'DOWN')
                 suffix = '_DOWN';
                 event_index = find(status_DOWN);
             else
