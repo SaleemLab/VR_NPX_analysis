@@ -281,12 +281,18 @@ for nsession =1:length(experiment_info)
         for n = 1:num_figs
 
             % Determine suffix and event_index
-            if contains(Types{n}, 'UP') | contains(event_types{e},'UP')&contains(Types{n}, 'ripples')
+            if contains(Types{n}, 'UP') 
                 suffix = '_UP';
                 event_index = find(status_UP);
-            elseif contains(Types{n}, 'DOWN') | contains(event_types{e},'DOWN')&contains(Types{n}, 'ripples')
+            elseif contains(Types{n}, 'DOWN') 
                 suffix = '_DOWN';
                 event_index = find(status_DOWN);
+            elseif contains(event_types{e},'DOWN')&contains(Types{n}, 'ripples') 
+                suffix = '_ripples';
+                event_index = find(status_DOWN);
+            elseif contains(event_types{e},'UP')&contains(Types{n}, 'ripples')
+                suffix = '_ripples';
+                event_index = find(status_UP);
             else
                 suffix = '_all';
                 event_index = 1:size(TF_amp_V1_ipsi,3);
