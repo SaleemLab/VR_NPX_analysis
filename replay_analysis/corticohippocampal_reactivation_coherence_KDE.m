@@ -1362,9 +1362,12 @@ T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
 T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 spindle_index1 = ripple_info.spindle_amplitude(:,1) < prctile(ripple_info.spindle_amplitude(:,1),[25]);
 spindle_index2 = ripple_info.spindle_amplitude(:,2) < prctile(ripple_info.spindle_amplitude(:,2),[25]);
+spindle_index = (spindle_index1 + spindle_index2) > 0;
 
-T1_events = intersect(T1_events,find(spindle_index2));
-T2_events = intersect(T2_events,find(spindle_index1));
+T1_events = intersect(T1_events,find(spindle_index));
+T2_events = intersect(T2_events,find(spindle_index));
+% T1_events = intersect(T1_events,find(spindle_index2));
+% T2_events = intersect(T2_events,find(spindle_index1));
 
 % spindle_index = ripple_info.spindle_amplitude < prctile(ripple_info.spindle_amplitude,[25]);
 % 
@@ -1524,8 +1527,13 @@ T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 spindle_index1 = ripple_info.spindle_amplitude(:,1) > prctile(ripple_info.spindle_amplitude(:,1),[75]);
 spindle_index2 = ripple_info.spindle_amplitude(:,2) > prctile(ripple_info.spindle_amplitude(:,2),[75]);
 
-T1_events = intersect(T1_events,find(spindle_index2));
-T2_events = intersect(T2_events,find(spindle_index1));
+spindle_index = (spindle_index1 + spindle_index2) > 0;
+
+T1_events = intersect(T1_events,find(spindle_index));
+T2_events = intersect(T2_events,find(spindle_index));
+% 
+% T1_events = intersect(T1_events,find(spindle_index2));
+% T2_events = intersect(T2_events,find(spindle_index1));
 
 % event_index = find((singlet_index+spindle_index)>1);
 % hemi_index = ripple_info.spindle_presence_hemi;
@@ -3354,8 +3362,8 @@ T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 % event_index = find((singlet_index+ripple_info.UP_index)>1);
 hemi_index = ripple_info.UP_index_hemi;
 
-T1_events = intersect(T1_events,find(hemi_index == 2));
-T2_events = intersect(T2_events,find(hemi_index == 1));
+T1_events = intersect(T1_events,find(hemi_index >0));
+T2_events = intersect(T2_events,find(hemi_index >0));
 
 
 
@@ -3515,8 +3523,8 @@ T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 % event_index = find((singlet_index+ripple_info.DOWN_index)>1);
 hemi_index = ripple_info.DOWN_index_hemi;
 
-T1_events = intersect(T1_events,find(hemi_index == 2));
-T2_events = intersect(T2_events,find(hemi_index == 1));
+T1_events = intersect(T1_events,find(hemi_index >0));
+T2_events = intersect(T2_events,find(hemi_index >0));
 
 
 
@@ -3674,8 +3682,8 @@ T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 % event_index = find((singlet_index+ripple_info.early_UP_index)>1);
 hemi_index = ripple_info.early_UP_index_hemi;
 
-T1_events = intersect(T1_events,find(hemi_index == 2));
-T2_events = intersect(T2_events,find(hemi_index == 1));
+T1_events = intersect(T1_events,find(hemi_index>0));
+T2_events = intersect(T2_events,find(hemi_index >0));
 
 
 nSamples = min([length(T1_events) length(T2_events)]);
@@ -3829,11 +3837,12 @@ T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 % T1_events = intersect(intersect(T1_events,event_index),find(hemi_index == 0));
 % T2_events = intersect(intersect(T2_events,event_index),find(hemi_index == 0));
 
-event_index = find((singlet_index+ripple_info.late_UP_index)>1);
+% event_index = find((singlet_index+ripple_info.late_UP_index)>1
+event_index = find(ripple_info.late_UP_index>0);
 hemi_index = ripple_info.late_UP_index_hemi;
 
-T1_events = intersect(intersect(T1_events,event_index),find(hemi_index == 2));
-T2_events = intersect(intersect(T2_events,event_index),find(hemi_index == 1));
+T1_events = intersect(intersect(T1_events,event_index),find(hemi_index>0));
+T2_events = intersect(intersect(T2_events,event_index),find(hemi_index>0));
 
 
 
