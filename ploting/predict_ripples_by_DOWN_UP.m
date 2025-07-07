@@ -6,6 +6,8 @@ addParameter(p, 'nBoot', 1000);
 addParameter(p, 'output', []);
 addParameter(p, 'plot_option', 0);
 addParameter(p, 'subject_id', 0);
+addParameter(p, 'time_window', 0.1);
+
 % addParameter(p, 'DOWN_UP_lag', []);
 % addParameter(p, 'DOWN_UP_index', []);
 % addParameter(p, 'ripples_info', []);
@@ -19,6 +21,9 @@ subject_id = p.Results.subject_id;
 % DOWN_UP_lag = p.Results.DOWN_UP_lag;
 % DOWN_UP_index = p.Results.DOWN_UP_index;
 plot_option = p.Results.plot_option;
+time_window = p.Results.time_window;
+
+
 % ripples_info = p.Results.ripples_info;
 % ripples_power = p.Results.ripples_power;
 
@@ -39,7 +44,13 @@ nTimes = length(timeVec);
 %% 1. Linear regression
 %%%%%% Windows
 key_window_idx1 = find(timeVec < 0 & timeVec >= -0.05);
-key_window_idx2 = find(timeVec > 0 & timeVec <= 0.1);
+
+if length(time_window)==2
+    key_window_idx2 = find(timeVec > time_window(1) & timeVec <= time_window(end));
+else
+    key_window_idx2 = find(timeVec > 0 & timeVec <= time_window(end));
+end
+
 
 ipsiV1_key = max(ipsi_V1_MUA(:, key_window_idx2)')'-min(ipsi_V1_MUA(:, key_window_idx1)')' ;
 contraV1_key = max(contra_V1_MUA(:, key_window_idx2)')' - min(contra_V1_MUA(:, key_window_idx1)')';
@@ -54,7 +65,11 @@ contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')' - min(contra_HPC_MUA(:
 
 %%%% HPC ripples
 %     key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.05);
-key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.1);
+if length(time_window)==2
+    key_window_idx2 = find(timeVec_prob > time_window(1) & timeVec_prob <= time_window(end));
+else
+    key_window_idx2 = find(timeVec_prob > 0 & timeVec_prob <= time_window(end));
+end
 
 ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
 contraRipples_key =sum(contra_ripples(:,key_window_idx2),2)>0 ;
@@ -67,13 +82,13 @@ ipsiRipples_cat = ipsiRipples_key(:);
 contraRipples_cat = contraRipples_key(:);
 %     combinedV1_cat = combinedV1_key(:);
 
-validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
-ipsiV1_cat = ipsiV1_cat(validIdx);
-contraV1_cat = contraV1_cat(validIdx);
-ipsiHPC_cat = ipsiHPC_cat(validIdx);
-contraHPC_cat = contraHPC_cat(validIdx);
-ipsiRipples_cat = ipsiRipples_cat(validIdx);
-contraRipples_cat = contraRipples_cat(validIdx);
+% validIdx = ~(isnan(ipsiV1_cat) | isnan(contraV1_cat) | isnan(ipsiHPC_cat) | isnan(contraHPC_cat));
+% ipsiV1_cat = ipsiV1_cat(validIdx);
+% contraV1_cat = contraV1_cat(validIdx);
+% ipsiHPC_cat = ipsiHPC_cat(validIdx);
+% contraHPC_cat = contraHPC_cat(validIdx);
+% ipsiRipples_cat = ipsiRipples_cat(validIdx);
+% contraRipples_cat = contraRipples_cat(validIdx);
 DOWN_UP_index = 1:length(ipsi_ripples);
 
 %     ipsi_ripple_power(ipsiRipples_cat) = ripples_info.ipsi_first_ripples_power_UP(UP_DOWN_index(ipsiRipples_cat))';
@@ -542,6 +557,8 @@ if plot_option == 1
     for nBoot = 1:1000
         ipsi_t(nBoot) = output(nBoot).t_stat{17};
         contra_t(nBoot) = output(nBoot).t_stat{18};
+        pval_ipsi(nBoot) = output(nBoot).pval{17};
+        pval_contra(nBoot) = output(nBoot).pval{18};
     end
     mean_ipsi = mean(ipsi_t);
     ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
@@ -558,6 +575,11 @@ if plot_option == 1
             'CData', barColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), 'FontSize', 10, 'Color', 'k')
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), 'FontSize', 10, 'Color', 'k')
+        end
     end
     xlim([0.5 2.5])
     xticks(x_pos)
@@ -607,6 +629,8 @@ if plot_option == 1
     for nBoot = 1:1000
         ipsi_t(nBoot) = output(nBoot).t_stat{5};
         contra_t(nBoot) = output(nBoot).t_stat{6};
+        pval_ipsi(nBoot) = output(nBoot).pval{5};
+        pval_contra(nBoot) = output(nBoot).pval{6};
     end
 
     mean_ipsi = mean(ipsi_t);
@@ -627,6 +651,15 @@ if plot_option == 1
             'CData', barColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        end
+
     end
     xlim([0.5 2.5])
     xticks(x_pos)
@@ -720,6 +753,8 @@ if plot_option == 1
     for nBoot = 1:1000
         ipsi_t(nBoot) = output(nBoot).t_stat{21};
         contra_t(nBoot) = output(nBoot).t_stat{22};
+        pval_ipsi(nBoot) = output(nBoot).pval{21};
+        pval_contra(nBoot) = output(nBoot).pval{22};
     end
     mean_ipsi = mean(ipsi_t); ci_ipsi = prctile(ipsi_t, [2.5 97.5]);
     mean_contra = mean(contra_t); ci_contra = prctile(contra_t, [2.5 97.5]);
@@ -735,6 +770,11 @@ if plot_option == 1
             'CData', customColors(i,:), 'EdgeColor', 'none','FaceAlpha',0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), 'FontSize', 10, 'Color', 'k')
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), 'FontSize', 10, 'Color', 'k')
+        end
     end
     ylim([-1 13])
     xlim([0.5 2.5])
@@ -918,6 +958,8 @@ if plot_option == 1
     for nBoot = 1:1000
         ipsi_t(nBoot) = output(nBoot).t_stat{19};
         contra_t(nBoot) = output(nBoot).t_stat{20};
+        pval_ipsi(nBoot) = output(nBoot).pval{19};
+        pval_contra(nBoot) = output(nBoot).pval{20};
     end
 
 
@@ -933,20 +975,19 @@ if plot_option == 1
             'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        end
     end
     xlim([0.5 2.5]); xticks(x_pos); xticklabels({'ipsi','contra'})
     ylabel('Bootstrapped t-statistic'); title('t-statistic of Ripple occurrence')
     set(gca, 'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
 
-
-
-    if exist('D:\corticohippocampal_replay')>0
-        analysis_folder = 'D:\corticohippocampal_replay';
-    elseif exist('P:\corticohippocampal_replay')>0
-        analysis_folder = 'P:\corticohippocampal_replay';
-    end
-    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
 
 
 end
