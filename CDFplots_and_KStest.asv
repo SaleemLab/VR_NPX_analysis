@@ -1,0 +1,198 @@
+% For making CDF plots and performing the Kolmogorov Smirnov test on signal
+% and noise correlation matrix data across days. Run this code after running
+% main_PCA_of_PSTH_Ellie.m for all the days required (that code saves the
+% necessary data in the struct used by this code).
+% ERB 2025
+% === User parameters ===
+base_path = 'V:\Ellie\DATA\SUBJECTS\M00013\analysis';
+day_folders = {'20250203', '20250204', '20250205', '20250206', '20250207'};  % your session dates
+%'20250203', '20250204', '20250205', '20250206', '20250207'
+%'20250217', '20250218', '20250219', '20250220', '20250221'
+Stimulus_type = 'TRAIN';  % your stimulus type folder name here 'TRAIN'  'GAVNIK_ABCD'
+
+% === Load correlation data across days ===
+signal_data = cell(1, length(day_folders));
+noise_data = cell(length(day_folders), 1);
+
+for d = 1:length(day_folders)
+    day_path = fullfile(base_path, day_folders{d}, Stimulus_type);
+    corr_file = fullfile(day_path, 'correlation_summary.mat');
+    
+    if exist(corr_file, 'file')
+        loaded = load(corr_file);
+        if isfield(loaded, 'correlation_summary')
+            signal_data{d} = loaded.correlation_summary.unique_signal_values;
+            % On first day, load metadata like ordered_oris, labels, etc.
+            if d == 1
+                ordered_oris = loaded.correlation_summary.ordered_oris;
+                letters = loaded.correlation_summary.letters;
+                colors = loaded.correlation_summary.colors;
+                ori_labels = loaded.correlation_summary.ori_labels;
+                subject = loaded.correlation_summary.subject;
+                stimulus_type = loaded.correlation_summary.stimulus_type;
+                depth_for_analysis = loaded.correlation_summary.depth;
+
+                n_noise_types = length(ordered_oris);  % Now we can define this
+                noise_data = cell(length(day_folders), n_noise_types);  % Resize with known value
+            end    
+
+            % Load noise data for this session
+            for o = 1:length(loaded.correlation_summary.unique_noise_values)
+                noise_data{d, o} = loaded.correlation_summary.unique_noise_values{o};
+            end
+        else
+            error('correlation_summary struct not found in %s', corr_file);
+        end
+    else
+        error('File not found: %s', corr_file);
+    end
+end
+
+
+% === Plot Signal correlations figure ===
+figure; hold on;
+signal_color = [0.2 0.2 0.2]; % dark grey base
+for d = 1:length(day_folders)
+    shade = 1 - (d-1)*0.15;  % lighter for later days
+    c = signal_color * shade + (1 - shade); % blend towards white
+    [f, x] = ecdf(signal_data{d});
+    
+    % Use dashed lines for first and last day, solid otherwise
+    if d == 1 || d == length(day_folders)
+        ls = '--';
+    else
+        ls = '-';
+    end
+    
+    % Plot the CDF
+    plot(x, f, 'LineWidth', 2, 'Color', c, 'LineStyle', ls);
+    
+    % Plot the median
+    med_val = median(signal_data{d});
+    plot([med_val med_val], [0 0.5], 'LineStyle', ls, 'Color', c, 'LineWidth', 1.5, 'HandleVisibility', 'off');
+end
+
+xlabel('Pairwise Correlation (r)');
+ylabel('CDF');
+xlim([-1 1]);
+legend(day_folders, 'Location', 'Best');
+box on;
+
+% KS test for signal correlations
+day1_idx = 1;
+dayN_idx = length(day_folders);
+[h_sig, p_sig, D_sig] = kstest2(signal_data{day1_idx}, signal_data{dayN_idx});
+title(sprintf('%s %s %s Signal Correlations (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, Across Days (%s vs %s KS D=%.3f, p=%.3g)', subject, stimulus_type, depth_for_analysis,...
+    day_folders{day1_idx}, day_folders{dayN_idx}, D_sig, p_sig), 'Interpreter', 'none');
+fig_filename_signal = sprintf('%s %s %s Signal Correlations Across Days (%s to %s).fig', ...
+                        subject, stimulus_type, depth_for_analysis, day_folders{day1_idx}, day_folders{dayN_idx});
+%savefig(gcf, fig_filename_signal); 
+
+
+% === Plot Noise correlations, one figure per orientation ===
+fig_handles_noise = cell(n_noise_types, 1);         % To store figure handles
+fig_filenames_noise = cell(n_noise_types, 1);       % To store corresponding filenames
+
+for ori_idx = 1:n_noise_types
+    fig_handles_noise{ori_idx} = figure; hold on;   % Store figure handle
+    base_color = colors(ori_idx, :);
+    for d = 1:length(day_folders)
+        shade = 1 - (d-1)*0.15;  % lighter for later days
+        c = base_color * shade + (1 - shade); % blend towards white
+        [f, x] = ecdf(noise_data{d, ori_idx});
+        % Use dashed lines for first and last day, solid otherwise
+        if d == 1 || d == length(day_folders)
+            ls = '--';
+        else
+            ls = '-';
+        end
+        
+        % Plot the CDF
+        plot(x, f, 'LineWidth', 1.5, 'Color', c, 'LineStyle', ls);
+
+        % Plot matching median line
+        med_val = median(noise_data{d, ori_idx});
+        plot([med_val med_val], [0 0.5], 'LineStyle', ls, 'Color', c, 'LineWidth', 1.5, 'HandleVisibility', 'off');
+    end
+    xlabel('Pairwise Correlation (r)');
+    ylabel('CDF');
+    xlim([-0.5 0.7]);
+    legend(day_folders, 'Location', 'Best');
+    box on;
+
+    % KS test
+    [h_noise, p_noise, D_noise] = kstest2(noise_data{day1_idx, ori_idx}, noise_data{dayN_idx, ori_idx});
+    title(sprintf('%s %s %s Noise Correlations %s Across Days (%s vs %s KS D=%.3f, p=%.3g)', subject, stimulus_type, depth_for_analysis,...
+        ori_labels{ori_idx}, day_folders{day1_idx}, day_folders{dayN_idx}, D_noise, p_noise), 'Interpreter', 'none');
+    fig_filenames_noise{ori_idx} = sprintf('%s %s %s Noise Correlations %s Across Days (%s to %s).fig', ...
+                        subject, stimulus_type, depth_for_analysis, ori_labels{ori_idx}, day_folders{day1_idx}, day_folders{dayN_idx});
+
+end
+%for ori_idx = 1:n_noise_types
+%    savefig(fig_handles_noise{ori_idx}, fig_filenames_noise{ori_idx});
+%end
+
+% Store proportion of opposite-sign correlations across days and orientations
+opposite_sign_props = zeros(length(day_folders), n_noise_types);  % days × orientations
+
+% Store the cluster ID pairs for each day and orientation where signs are opposite
+opposite_sign_pairs = cell(length(day_folders), n_noise_types);  % each cell: n_pairs × 2
+for d = 1:length(day_folders)
+    day_path = fullfile(base_path, day_folders{d}, Stimulus_type);
+    corr_file = fullfile(day_path, 'correlation_summary.mat');
+    
+    if exist(corr_file, 'file')
+        loaded = load(corr_file);
+        if isfield(loaded, 'correlation_summary')
+            sig_vals = loaded.correlation_summary.unique_signal_values;
+            cluster_pairs = loaded.correlation_summary.cluster_id_pairs;
+
+            for ori_idx = 1:n_noise_types
+                noise_vals = loaded.correlation_summary.unique_noise_values{ori_idx};
+
+                if length(sig_vals) ~= length(noise_vals)
+                    error('Mismatch in pair counts for day %s, orientation %s', ...
+                        day_folders{d}, ori_labels{ori_idx});
+                end
+
+                % Logical index of opposite-sign cases
+                opposite_sign = (sig_vals > 0.01 & noise_vals < -0.01) | (sig_vals < -0.01 & noise_vals > 0.01);
+                opposite_sign_props(d, ori_idx) = mean(opposite_sign);
+
+                % Save the corresponding cluster ID pairs for inspection
+                opposite_sign_pairs{d, ori_idx} = cluster_pairs(opposite_sign, :);
+            end
+        else
+            error('correlation_summary struct not found in %s', corr_file);
+        end
+    else
+        error('File not found: %s', corr_file);
+    end
+end
+
+% === Plot bar chart of opposite-sign proportions ===
+figure;
+bar(opposite_sign_props, 'grouped');
+ylim([0 1]);
+ylabel('Proportion of Cluster Pairs with Opposite Sign');
+xlabel('Day');
+set(gca, 'XTickLabel', day_folders);
+legend(ori_labels, 'Location', 'Best');  % A, B, C, D
+title(sprintf('%s %s %s Signal vs Noise Correlation: Opposite Sign Proportions (%s to %s)', subject, stimulus_type, depth_for_analysis,...
+        day_folders{day1_idx}, day_folders{dayN_idx}), 'Interpreter', 'none');
+box on;
+fig_filename_bars = sprintf('%s %s %s Signal vs Noise Correlation: Opposite Sign Proportions (%s to %s).fig', ...
+                        subject, stimulus_type, depth_for_analysis, day_folders{day1_idx}, day_folders{dayN_idx});
+%savefig(gcf, fig_filename_bars); 
+
+
+
+%%% For auditing/sense-checking. Example: show opposite-sign pairs for day 2 and orientation B
+% day_idx = 1;
+% ori_idx = 2;  % B
+% 
+% disp(['Opposite-sign cluster pairs on ', day_folders{day_idx}, ...
+%       ' for orientation ', letters(ori_idx), ':']);
+% disp(opposite_sign_pairs{day_idx, ori_idx});
+
+

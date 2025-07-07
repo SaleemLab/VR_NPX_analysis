@@ -5,7 +5,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-L4_depth_range = 4440:4580; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+L4_depth_range = 4510:4650; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
 CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
 Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
@@ -18,8 +18,8 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 3/5
-Stimulus_type = 'TRAIN'; % OMIT, 'TRAIN' 'GAVNIK_ABCD'
-temporal_structure = 'trial spikecounts'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
+Stimulus_type = 'GAVNIK_ABCD'; % OMIT, 'TRAIN' 'GAVNIK_ABCD'
+temporal_structure = 'timebinned spikes'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
 % simple spikecounts gives better silhouette scores for my TRAIN protocol 20250203
 % timebinned spikes gives better silhouette scores for GAVNIK protocol 20250217
 
@@ -27,15 +27,15 @@ z_score_period = 'entire_session'; % z score either over 'entire_session' or 'fi
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 psthBinSize = 0.01; % for GAVNIK protocol 20250217, using 1ms worsens cluster separation a lot. 0.02 worsens separation somewhat.
-stim_window = [0.02 0.21];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
+stim_window = [0.03 0.16];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
                             % For my TRAIN protocol 20250203, [0.02 0.21] seems best. But across training days an uptick in spiking develops in the greyscreen period following stimulus offset
-gOSI_threshold = 0.2; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or or 0.15 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
+gOSI_threshold = 0.1; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or or 0.15 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
                             %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250220\GAVNIK_ABCD') % 4/5 files will be saved here in the cd
 
 
-for nsession = 4 %5/5 row number of recording date in "experiment_info" 
+for nsession = 14 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -437,7 +437,8 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     stored_sorted_cluster_ids = cell(length(ordered_oris), 1);
                     all_znoise_corr_values = [];  
                     letters = 'A':'D';
-                
+                    correlation_summary.unique_noise_values = cell(1, length(ordered_oris));
+
                     for i = 1:length(ordered_oris)
                         ori = ordered_oris(i);
                         trial_mask = trial_labels == ori;
@@ -467,6 +468,13 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                         stored_corrmats{i} = corrmat;
                         stored_sorted_cluster_ids{i} = sorted_cluster_id;
 
+                        % Get unique (non-redundant) values from the sorted noise correlation matrix
+                        upper_tri_mask = triu(true(size(corrmat)), 1); %triu(A, 1) returns the upper triangle excluding the diagonal
+                        unique_znoise_corr_values = corrmat(upper_tri_mask);
+                        
+                        % Store for struct
+                        correlation_summary.unique_noise_values{i} = unique_znoise_corr_values;
+                        
                         %%% For neuron pairs with unusually strong correlations, make scatter plots of their trial by trial spikecounts
                         pos_threshold = 1; % Strong Pearson Correlation
                         neg_threshold = -1;
@@ -550,7 +558,8 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     stored_sorted_cluster_ids = cell(length(ordered_oris), 1);
                     all_znoise_corr_values = [];
                     letters = 'A':'D';
-                
+                    correlation_summary.unique_noise_values = cell(1, length(ordered_oris));
+
                     for i = 1:length(ordered_oris)
                         ori = ordered_oris(i);
                         trial_mask = trial_labels == ori;
@@ -600,7 +609,13 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                         % Store outputs
                         stored_corrmats{i} = corrmat;
                         stored_sorted_cluster_ids{i} = sorted_cluster_id;
+                        % Get unique (non-redundant) values from the sorted noise correlation matrix
+                        upper_tri_mask = triu(true(size(corrmat)), 1); %triu(A, 1) returns the upper triangle excluding the diagonal
+                        unique_znoise_corr_values = corrmat(upper_tri_mask);
                         
+                        % Store for struct
+                        correlation_summary.unique_noise_values{i} = unique_znoise_corr_values;
+
                         %%% For neuron pairs with unusually strong correlations, make scatter plots of their trial by trial spiking
                         pos_threshold = 1; % Strong positive correlation threshold (adjust if needed)
                         neg_threshold = -1; % Strong negative correlation threshold    
@@ -700,8 +715,8 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     signal_corrmat(isnan(signal_corrmat)) = 0;
                     signal_corrmat(1:size(signal_corrmat,1)+1:end) = 1;  
                     off_diagonal = signal_corrmat(~eye(size(signal_corrmat)));  % exclude autocorrelations
-                    all_signal_corr_values = [all_signal_corr_values; off_diagonal(:)];
-                        
+                    all_signal_corr_values = [all_signal_corr_values; off_diagonal(:)]; % Keep full off-diagonal values for matrix visualization
+                    
                     % Get preferred orientations 
                     [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
                     pref_ori = filtered_OP.OriAngle(loc_in_filtered(is_member));
@@ -712,6 +727,14 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     signal_corrmat_sorted = signal_corrmat(sort_order, sort_order);
                     sorted_cluster_id = cluster_id(sort_order);  % optional: for labeling/storing
 
+                    % Store unique (non-redundant) correlations for summary statistics (e.g. CDF)
+                    upper_tri_mask_sorted = triu(true(size(signal_corrmat_sorted)), 1); %triu(A, 1) returns the upper triangle excluding the diagonal
+                    unique_signal_corr_values = signal_corrmat_sorted(upper_tri_mask_sorted);
+                    
+                    % Get index pairs for the sorted matrix
+                    [row_idx_sorted, col_idx_sorted] = find(upper_tri_mask_sorted);
+                    signal_cluster_id_pairs = [sorted_cluster_id(row_idx_sorted), sorted_cluster_id(col_idx_sorted)];
+                
                     %%% For neuron pairs with unusually strong correlations, make scatter plots mean trialtype spikecounts
                     pos_threshold = 1; % Strong Pearson Correlation
                     neg_threshold = -1;
@@ -799,7 +822,7 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     signal_corrmat(1:size(signal_corrmat,1)+1:end) = 1;
                     off_diagonal = signal_corrmat(~eye(size(signal_corrmat)));
                     all_signal_corr_values = [all_signal_corr_values; off_diagonal(:)];
-                
+                    
                     % Sort by orientation preference
                     [is_member, loc_in_filtered] = ismember(cluster_id, filtered_OP.cluster_id);
                     pref_ori = filtered_OP.OriAngle(loc_in_filtered(is_member));
@@ -807,6 +830,13 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                     signal_corrmat_sorted = signal_corrmat(sort_order, sort_order);
                     sorted_cluster_id = cluster_id(sort_order);
                     neuron_timevector_matrix_sorted = neuron_timevector_matrix(sort_order, :);
+                    % Store unique (non-redundant) correlations for summary statistics (e.g. CDF)
+                    upper_tri_mask_sorted = triu(true(size(signal_corrmat_sorted)), 1); %triu(A, 1) returns the upper triangle excluding the diagonal
+                    unique_signal_corr_values = signal_corrmat_sorted(upper_tri_mask_sorted);
+                    
+                    % Get index pairs for the sorted matrix
+                    [row_idx_sorted, col_idx_sorted] = find(upper_tri_mask_sorted);
+                    signal_cluster_id_pairs = [sorted_cluster_id(row_idx_sorted), sorted_cluster_id(col_idx_sorted)];
                 
                     % Scatter plots for highly correlated pairs
                     pos_threshold = 1;
@@ -867,8 +897,64 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
                 
 
                 %%%% Create figures to summarise the progression of the correlation matrices across days
-
+                figure;
+                hold on;
                 
+                % Define bin edges for consistent histograms
+                bin_edges = -1:0.05:1;
+
+                % === Plot signal correlation histogram using unique values ===
+                %signal_upper_tri_mask = triu(true(size(signal_corrmat)), 1);  % upper triangle only
+                %unique_signal_corr_values = signal_corrmat(signal_upper_tri_mask);  % store for struct too
+                h_signal = histogram(unique_signal_corr_values, bin_edges, ...
+                    'DisplayStyle', 'stairs', 'LineWidth', 2, 'EdgeColor', 'k', 'Normalization', 'probability');
+                
+                % === Plot noise correlation histograms (one per stimulus type) using unique values ===
+                h_noise = gobjects(1, length(ordered_oris));
+                                
+                for i = 1:length(ordered_oris)
+                    corrmat = stored_corrmats{i};
+                    upper_tri_mask = triu(true(size(corrmat)), 1);  % upper triangle only
+                    unique_off_diag = corrmat(upper_tri_mask);
+                    
+                    % Plot
+                    h_noise(i) = histogram(unique_off_diag, bin_edges, ...
+                        'DisplayStyle', 'stairs', 'LineWidth', 1.5, ...
+                        'EdgeColor', colors(i, :), 'Normalization', 'probability');
+               
+                end
+                                
+                legend([h_signal h_noise], [{'Signal'}, ori_labels(:)'], 'Location', 'Best');
+                xlabel('Pairwise correlation (r)');
+                ylabel('Percentage of total (%)');
+                yticks = get(gca, 'YTick');
+                xline(0, 'k', 'Handlevisibility', 'Off'); 
+                set(gca, 'YTickLabel', compose('%.0f%%', yticks * 100));
+                sgtitle(sprintf('%s - %s: %s Distribution of signal and noise correlations (%.2f–%.2fs after stim onset) gOSI > %0.2f, Day %d', ...
+                        subject_number, Stimulus_type, depth_for_analysis, stim_window(1), stim_window(2), gOSI_threshold, experiment_info(nsession).date), ...
+                        'Interpreter', 'none');
+                xlim([-1 1]);
+                box on;
+
+                % Store correlation data for future comparisons
+                correlation_summary.date = experiment_info(nsession).date;
+                correlation_summary.subject = subject_number;
+                correlation_summary.stimulus_type = Stimulus_type;
+                correlation_summary.depth = depth_for_analysis;
+                correlation_summary.L4_depth_range = L4_depth_range;
+                correlation_summary.unique_signal_values = unique_signal_corr_values;
+                correlation_summary.sorted_cluster_id = sorted_cluster_id;
+                correlation_summary.pairs_idx = [row_idx_sorted, col_idx_sorted]; % same for signal and noise correlation matrices
+                correlation_summary.cluster_id_pairs = signal_cluster_id_pairs; % same for signal and noise correlation matrices
+                correlation_summary.ori_labels = ori_labels;
+                correlation_summary.gOSI_threshold = gOSI_threshold;
+                correlation_summary.temporal_structure = temporal_structure;
+                correlation_summary.stim_window = stim_window;
+                correlation_summary.ordered_oris = ordered_oris;
+                correlation_summary.letters = letters;
+                correlation_summary.colors = colors;
+                
+                save('correlation_summary.mat', 'correlation_summary'); % save the struct for cross-day analysis
 
 
  
