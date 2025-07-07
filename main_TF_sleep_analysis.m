@@ -25,6 +25,7 @@ spindles_TF_stats = struct();
 
 
 for nsession =1:length(experiment_info)
+    tic
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -438,6 +439,9 @@ for nsession =1:length(experiment_info)
                 V1_amp_corr_all = nan(nBands, nBins, nEvents);
                 HPC_amp_corr_all = nan(nBands, nBins, nEvents);
 
+                V1_phase_median_all = nan(2, nBands, nBins, nEvents);  % [hemi x band x bin x event]
+                HPC_phase_median_all = nan(2, nBands, nBins, nEvents);
+
                 for f = 1:nBands
                     band = filterparms.(band_names{f});
                     freq_idx = find(freqs >= band(1) & freqs <= band(2));
@@ -449,11 +453,34 @@ for nsession =1:length(experiment_info)
                             ev_idx = event_index(ev);
 
                             % Amplitude
-                            V1_amp_all(1,f,b,ev) = mean(mean(TF_amp_V1_ipsi(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
-                            V1_amp_all(2,f,b,ev) = mean(mean(TF_amp_V1_contra(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
+                            V1_amp_all(1,f,b,ev) = median(median(TF_amp_V1_ipsi(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
+                            V1_amp_all(2,f,b,ev) = median(median(TF_amp_V1_contra(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
 
-                            HPC_amp_all(1,f,b,ev) = mean(mean(TF_amp_HPC_ipsi(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
-                            HPC_amp_all(2,f,b,ev) = mean(mean(TF_amp_HPC_contra(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
+                            HPC_amp_all(1,f,b,ev) = median(median(TF_amp_HPC_ipsi(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
+                            HPC_amp_all(2,f,b,ev) = median(median(TF_amp_HPC_contra(freq_idx, tIdx, ev_idx), 2, 'omitnan'), 'omitnan');
+
+                            % Phase Median (circular)
+                            % V1
+                            V1_phase_ipsi = TF_phase_V1_ipsi(freq_idx, tIdx, ev_idx);
+                            V1_phase_contra = TF_phase_V1_contra(freq_idx, tIdx, ev_idx);
+
+                            % Take circular median over all [freq x time] points
+                            V1_phase_median_ipsi = angle(median(exp(1i * V1_phase_ipsi(:)), 'omitnan'));
+                            V1_phase_median_contra = angle(median(exp(1i * V1_phase_contra(:)), 'omitnan'));
+
+                            % HPC
+                            HPC_phase_ipsi = TF_phase_HPC_ipsi(freq_idx, tIdx, ev_idx);
+                            HPC_phase_contra = TF_phase_HPC_contra(freq_idx, tIdx, ev_idx);
+
+                            HPC_phase_median_ipsi = angle(median(exp(1i * HPC_phase_ipsi(:)), 'omitnan'));
+                            HPC_phase_median_contra = angle(median(exp(1i * HPC_phase_contra(:)), 'omitnan'));
+
+                            % Store
+                            V1_phase_median_all(1,f,b,ev) = V1_phase_median_ipsi;
+                            V1_phase_median_all(2,f,b,ev) = V1_phase_median_contra;
+
+                            HPC_phase_median_all(1,f,b,ev) = HPC_phase_median_ipsi;
+                            HPC_phase_median_all(2,f,b,ev) = HPC_phase_median_contra;
 
                             % PLV
                             if contains(event_types{e}, 'ripples')
@@ -511,6 +538,10 @@ for nsession =1:length(experiment_info)
                 curr_TF_stats.V1_HPC_amp_corr{nsession} = V1_HPC_amp_corr_all;
                 curr_TF_stats.V1_amp_corr{nsession} = V1_amp_corr_all;
                 curr_TF_stats.HPC_amp_corr{nsession} = HPC_amp_corr_all;
+
+                curr_TF_stats.V1_phase_median{nsession} = V1_phase_median_all;
+                curr_TF_stats.HPC_phase_median{nsession} = HPC_phase_median_all;
+
 
             end
 
@@ -781,7 +812,7 @@ for nsession =1:length(experiment_info)
 
 %         eval([event_types{e}, '_TF_stats = curr_TF_stats;']);
     end
-   
+   toc
 end
 % 
 % ripples_TF_stats = struct();
