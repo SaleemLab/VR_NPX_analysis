@@ -825,6 +825,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed 
 %% Generate CSV files
 
 model_indices = [1 2 7 8 17 18 5 6 11 12 21 22 3 4 9 10 19 20];
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression 250ms ripples (full windows)'));
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_250ms_output.mat'),'output');
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'DU_ripples_Summary.csv');
@@ -832,42 +833,42 @@ summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'DU_ri
 
 model_indices = [1 2 7 8 17 18 5 6 11 12 21 22 3 4 9 10 19 20];
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
-% load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
-summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'DU_ripples_Summary.csv');
-
-
-model_indices = [1 2 7 8 17 18 5 6 11 12 21 22 3 4 9 10 19 20];
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'));
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'DU_ripples_Summary.csv');
 
 
 model_indices = [1 2 9 10 25 26 3 4 11 12 27 28 7 8 15 16 31 32 5 6 13 14 29 30];
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'));
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'DU_synchrony Ripples_Summary.csv');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output_based_on_UP.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows UP lag control)'));
 model_indices = [13 14 29 30 5 6 2 3 25 26 18 19 21 22 32 33 7 23 15];
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'Ripples_V1synchrony_Summary.csv');
 
 
 model_indices = [13 14 29 30 5 6 2 3 25 26 18 19 21 22 32 33 7 23 15];
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'));
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'Ripples_V1synchrony_Summary.csv');
 
 % [10 11 13 14 21 22 5 6 2 3 17 18 7 15]
 model_indices = [10 11 13 14 21 22 5 6 2 3 17 18 7 15];
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output_based_on_UP.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows UP lag control)'));
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'Ripples_V1depression_Summary.csv');
 
 
 model_indices = [10 11 13 14 21 22 5 6 2 3 17 18 7 15];
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'));
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'Ripples_V1depression_Summary.csv');
 
