@@ -252,7 +252,7 @@ context_modulation_all.timebin = ripple_modulation.bins;
 
 toc
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 
     % subplot(2,2,1)
@@ -1168,6 +1168,8 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
 
+
+summary_table = UP_DOWN_ripples_glme_summary_table(output_V1,[1:15],'context_ripple_modulation_glme_summary');
 
 %%%%%%%%% V1 all vs low ripple vs high ripple
 b_all = []; t_all = []; R2_all = []; pval_all = [];
