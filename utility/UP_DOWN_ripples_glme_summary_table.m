@@ -1,9 +1,9 @@
 function summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, save_path)
 % UP_DOWN_ripples_glme_summary_table - Summarize bootstrap stats for GLME models
-% Handles models with multiple predictors, and includes beta coefficients.
+% Handles models with multiple predictors, and includes beta coefficients and R² CIs.
 %
 % INPUTS:
-%   output         - 1xN struct array from bootstrap results (each with fields: t_stat, pval, R2, b, model)
+%   output         - 1xN struct array from bootstrap results (fields: t_stat, pval, R2, b, model)
 %   model_indices  - vector of model indices to summarize (e.g., [13 14 29])
 %   save_path      - optional full path to save CSV (e.g., 'Ripple_Model_Summary.csv')
 %
@@ -26,6 +26,8 @@ function summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indice
     ci_high_all = [];
     pval_all = [];
     R2_all = [];
+    R2_ci_low_all = [];
+    R2_ci_high_all = [];
     mean_beta_all = [];
     beta_ci_low_all = [];
     beta_ci_high_all = [];
@@ -46,8 +48,12 @@ function summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indice
             t_vals(b, :) = output(b).t_stat{idx};
             p_vals(b, :) = output(b).pval{idx};
             b_vals(b, :) = output(b).b{idx};
-            R2_vals(b) = output(b).R2(idx);  % same for all variables
+            R2_vals(b) = output(b).R2(idx);
         end
+
+        % Compute R² stats
+        R2_median = prctile(R2_vals, 50);
+        R2_ci = prctile(R2_vals, [2.5 97.5]);
 
         % Parse variable names from formula string
         var_names = get_predictor_names(model_str);
@@ -62,9 +68,11 @@ function summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indice
             ci_low_all(end+1,1) = ci(1);
             ci_high_all(end+1,1) = ci(2);
             pval_all(end+1,1) = prctile(p_vals(:,v), 50);
-            R2_all(end+1,1) = prctile(R2_vals, 50);
 
-            % Beta stats
+            R2_all(end+1,1) = R2_median;
+            R2_ci_low_all(end+1,1) = R2_ci(1);
+            R2_ci_high_all(end+1,1) = R2_ci(2);
+
             mean_beta_all(end+1,1) = mean(b_vals(:,v), 'omitnan');
             ci_beta = prctile(b_vals(:,v), [2.5 97.5]);
             beta_ci_low_all(end+1,1) = ci_beta(1);
@@ -76,10 +84,11 @@ function summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indice
     summary_table = table( ...
         model_index_all, model_name_all, variable_all, ...
         mean_tstat_all, ci_low_all, ci_high_all, ...
-        pval_all, R2_all, ...
+        pval_all, R2_all, R2_ci_low_all, R2_ci_high_all, ...
         mean_beta_all, beta_ci_low_all, beta_ci_high_all, ...
         'VariableNames', {'model_index', 'model_name', 'variable', ...
-                          'mean_tstat', 'ci_low', 'ci_high', 'pval', 'R2', ...
+                          'mean_tstat', 'ci_low', 'ci_high', ...
+                          'pval', 'R2', 'R2_ci_low', 'R2_ci_high', ...
                           'mean_beta', 'beta_ci_low', 'beta_ci_high'});
 
     % Save to CSV
