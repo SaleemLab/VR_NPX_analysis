@@ -166,6 +166,49 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
 %%%%% Plot distribution
 
+%%%%%%%%%%%%%
+% %%%%%%%%%%% Ripple power distribution
+ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+
+fig = figure('Color','w');
+fig.Position=[158 358 702/2 546];
+fig.Name = 'Ripple peaktime ripple power distribution';
+
+
+% histogram([ripple_info.ripple_power],4:0.5:25,'Normalization','probability')
+temp = ripple_info.ripple_power;
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Ipsi amplitude
+nexttile
+
+histogram(temp,4:0.5:23,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Ripple power (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Ripple power');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+% Contra amplitude
+temp = ripple_info.ripple_power;
+temp_thresholds = prctile(temp,[20 40 60 80]);
+nexttile
+
+
+histogram(temp,4:0.5:23,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Ripple power (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Ripple power');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
 %%%%%%%%%%%%%
