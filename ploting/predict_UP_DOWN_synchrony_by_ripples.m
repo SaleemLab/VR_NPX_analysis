@@ -16,6 +16,7 @@ addParameter(p, 'plot_option', 0);
 addParameter(p, 'subject_id', 0);
 addParameter(p, 'UP_DOWN_lag', []);
 addParameter(p, 'UP_DOWN_index', []);
+addParameter(p, 'time_window', -0.1);
 % addParameter(p, 'ripples_info', []);
 % addParameter(p, 'ripples_power', []);
 parse(p, varargin{:});
@@ -29,6 +30,8 @@ UP_DOWN_index = p.Results.UP_DOWN_index;
 plot_option = p.Results.plot_option;
 % ripples_info = p.Results.ripples_info;
 % ripples_power = p.Results.ripples_power;
+time_window = p.Results.time_window;
+
 
 
 % Time settings
@@ -45,8 +48,8 @@ timeVec_prob = timebin_edge_prob(1:end-1) + time_bin/2; % centers
 nTimes = length(timeVec);
 
 %% 1. Linear regression
-key_window_idx2 = find(timeVec < 0 & timeVec >= -0.1);
-key_window_idx1 = find(timeVec > 0 & timeVec <= 0.05);
+key_window_idx2 = find(timeVec < 0 & timeVec >= time_window);
+key_window_idx1 = find(timeVec > 0 & timeVec <= 0.1);
 
 ipsiV1_key = max(ipsi_V1_MUA(:, key_window_idx2)')'-min(ipsi_V1_MUA(:, key_window_idx1)')' ;
 contraV1_key = max(contra_V1_MUA(:, key_window_idx2)')' - min(contra_V1_MUA(:, key_window_idx1)')';
@@ -65,7 +68,7 @@ contraHPC_key = max(contra_HPC_MUA(:, key_window_idx2)')';
     % combinedV1_key = mean((ipsi_V1_MUA_norm(:, key_window_idx)+contra_V1_MUA_norm(:, key_window_idx)),2,'omitnan');
 
 %%%% HPC ripples
-key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= -0.1);
+key_window_idx2= find(timeVec_prob < 0 & timeVec_prob >= time_window);
 %     key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.1);
 
 ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
@@ -434,6 +437,8 @@ if plot_option == 1
         % Ripple occurrence
         ipsi_t_occ(nBoot) = output(nBoot).t_stat{29};
         contra_t_occ(nBoot) = output(nBoot).t_stat{30};
+        pval_ipsi(nBoot) = output(nBoot).pval{29};
+        pval_contra(nBoot) = output(nBoot).pval{30};
     end
 
     customColors = [0,90,50; 74,20,134]/256;
@@ -537,6 +542,13 @@ if plot_option == 1
             'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        end
     end
     xticks(x_pos); xticklabels({'ipsi','contra'});
     ylabel('Bootstrapped t-statistic'); title('Ripple occurrence')
@@ -648,6 +660,8 @@ if plot_option == 1
         % Ripple occurrence
         ipsi_t_occ(nBoot)     = output(nBoot).t_stat{25};
         contra_t_occ(nBoot)   = output(nBoot).t_stat{26};
+        pval_ipsi(nBoot) = output(nBoot).pval{25};
+        pval_contra(nBoot) = output(nBoot).pval{26};
     end
 
     customColors = [0,90,50; 74,20,134]/256;
@@ -751,6 +765,13 @@ if plot_option == 1
             'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle', 'none', 'linewidth', 1.5);
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        end
     end
     xticks(x_pos); xticklabels({'ipsi','contra'});
     ylabel('Bootstrapped t-statistic'); title('Ripple occurrence')
@@ -847,6 +868,8 @@ if plot_option == 1
         % Ripple occurrence
         ipsi_t_occ(nBoot)     = output(nBoot).t_stat{32};
         contra_t_occ(nBoot)   = output(nBoot).t_stat{33};
+        pval_ipsi(nBoot) = output(nBoot).pval{32};
+        pval_contra(nBoot) = output(nBoot).pval{33};
     end
 
     fig = figure('Color','w');
@@ -936,6 +959,13 @@ if plot_option == 1
             'CData', customColors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5)
         errorbar(x_pos(i), barData(i), lowerCI(i), upperCI(i), ...
             'k', 'linestyle','none','linewidth',1.5)
+        if i == 1
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_ipsi,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        else
+            text(x_pos(i)+0.25, barData(i), sprintf('p = %.2e', prctile(pval_contra,50)), ...
+                'FontSize', 10, 'Color', 'k');
+        end
     end
     xticks(x_pos); xticklabels({'ipsi','contra'}); title('Ripple occurrence')
     ylabel('Bootstrapped t-statistic')
@@ -1063,14 +1093,14 @@ if plot_option == 1
     set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
 
-
-    if exist('D:\corticohippocampal_replay')>0
-        analysis_folder = 'D:\corticohippocampal_replay';
-    elseif exist('P:\corticohippocampal_replay')>0
-        analysis_folder = 'P:\corticohippocampal_replay';
-    end
-    save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
-
+    % 
+    % if exist('D:\corticohippocampal_replay')>0
+    %     analysis_folder = 'D:\corticohippocampal_replay';
+    % elseif exist('P:\corticohippocampal_replay')>0
+    %     analysis_folder = 'P:\corticohippocampal_replay';
+    % end
+    % save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
+    % 
 
 % 
 % colour_lines = []

@@ -106,8 +106,8 @@ imagesc(mean(peak_map(:,:,V1_channel_ids),3))
 
 %% plotting SparseNoise 
 
-SUBJECTS = {'M24064'};
-Dates = {'20241211'};
+SUBJECTS = {'M24017'};
+Dates = {'20240606'};
 nsession = 1;
 % experiment_info = subject_session_stimuli_mapping(SUBJECTS,'bilateral');
 % session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,'SparseNoise'));

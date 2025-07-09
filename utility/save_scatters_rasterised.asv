@@ -72,35 +72,13 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
+
+save_all_figures('P:\PhD\Dissertation\Figure materials',[],'ContentType','vector')
 
 
 
-hFig = openfig('P:\PhD\Dissertation\Figure materials\M24064 20241206 Checkerboard_sh2_half event (all filtered) probe 1 X shank 2 ADJUSTED', 'visible');
+hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression (full windows)\V1 depression predicted by ripples.fig', 'visible');
 
-print(hFig, sprintf('P:/PhD/Dissertation/Figure materials/%s.svg',hFig.Name), '-dsvg', '-painters');
-close all
-
-hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression (150ms windows)\UP DOWN lag predicted by ripples.fig', 'visible');
-print(hFig, sprintf('P:/corticohippocampal_replay/V1-HPC bilateral interaction/mixed effect regression (150ms windows)/%s.svg',hFig.Name), '-dsvg', '-painters');
-close all
-
-
-hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression (150ms windows UP lag control)\UP DOWN lag predicted by ripples.fig', 'visible');
-print(hFig, sprintf('P:/corticohippocampal_replay/V1-HPC bilateral interaction/mixed effect regression (150ms windows UP lag control)/%s.svg',hFig.Name), '-dsvg', '-painters');
-close all
-
-hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression (full windows UP lag control)\V1 delta power predicted by ripples.fig', 'visible');
-print(hFig, sprintf('P:/corticohippocampal_replay/V1-HPC bilateral interaction/mixed effect regression (full windows UP lag control)/%s.svg',hFig.Name), '-dsvg', '-painters');
-close all
-
-
-hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression (full windows)\V1 delta power predicted by ripples.fig', 'visible');
 print(hFig, sprintf('P:/corticohippocampal_replay/V1-HPC bilateral interaction/mixed effect regression (full windows)/%s.svg',hFig.Name), '-dsvg', '-painters');
-close all
-
-
-
-hFig = openfig('P:\corticohippocampal_replay\V1-HPC bilateral interaction\mixed effect regression 250ms ripples (full windows)\Ripples predicted by DOWN UP delta power.fig', 'visible');
-print(hFig, sprintf('P:/corticohippocampal_replay/V1-HPC bilateral interaction/mixed effect regression 250ms ripples (full windows)/%s.svg',hFig.Name), '-dsvg', '-painters');
 close all

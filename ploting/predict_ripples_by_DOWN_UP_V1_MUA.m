@@ -61,7 +61,7 @@ if isempty(outputStruct)
 
     %%%% HPC ripples
     key_window_idx1 = find(timeVec_prob < 0 & timeVec_prob >= -0.05);
-    key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.1);
+    key_window_idx2 = find(timeVec_prob >= 0 & timeVec_prob <= 0.2);
 
     ipsiRipples_key = sum(ipsi_ripples(:,key_window_idx2),2)>0 ;
     contraRipples_key =sum(contra_ripples(:,key_window_idx2),2)>0 ;
