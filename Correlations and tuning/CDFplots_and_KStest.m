@@ -3,13 +3,14 @@
 % main_PCA_of_PSTH_Ellie.m for all the days required (that code saves the
 % necessary data in the struct used by this code).
 % ERB 2025
+clear all
 % === User parameters ===
 base_path = 'V:\Ellie\DATA\SUBJECTS\M00013\analysis';
 cd(base_path);
-day_folders = {'20250217', '20250218', '20250219', '20250220', '20250221'};  % your session dates
-%'20250203', '20250204', '20250205', '20250206', '20250207'
+day_folders = {'20250203', '20250204', '20250205', '20250206', '20250207'};  % your session dates
+%'20250203', '20250204', '20250205', '20250206', '20250207', '20250210', '20250211'
 %'20250217', '20250218', '20250219', '20250220', '20250221'
-Stimulus_type = 'GAVNIK_ABCD';  % your stimulus type folder name here 'TRAIN'  'GAVNIK_ABCD'
+Stimulus_type = 'TRAIN';  % your stimulus type folder name here 'TRAIN'  'GAVNIK_ABCD'
 
 % === Load correlation data across days ===
 signal_data = cell(1, length(day_folders));
@@ -90,7 +91,7 @@ title(sprintf('%s %s %s Signal Correlations (%.2f–%.2fs after stim onset, gOSI
     stim_window(1), stim_window(2), gOSI_threshold, day_folders{day1_idx}, day_folders{dayN_idx}, D_sig, p_sig), 'Interpreter', 'none');
 fig_filename_signal = sprintf('%s %s %s Signal Correlations Across Days (%s to %s).fig', ...
                         subject, stimulus_type, depth_for_analysis, day_folders{day1_idx}, day_folders{dayN_idx});
-savefig(gcf, fig_filename_signal); 
+%savefig(gcf, fig_filename_signal); 
 
 
 % === Plot Noise correlations, one figure per orientation ===
@@ -134,9 +135,161 @@ for ori_idx = 1:n_noise_types
                         subject, stimulus_type, depth_for_analysis, ori_labels{ori_idx}, day_folders{day1_idx}, day_folders{dayN_idx});
 
 end
+%for ori_idx = 1:n_noise_types
+%    savefig(fig_handles_noise{ori_idx}, fig_filenames_noise{ori_idx});
+%end
+
+
+
+% === Plot Unit Firing Rates (trial averages) across Days for Each Orientation ===
+fig_handles_fr = cell(n_noise_types, 1);         % To store figure handles
+fig_filenames_fr = cell(n_noise_types, 1);       % To store filenames
+stim_duration = diff(stim_window);               % Duration in seconds
+
 for ori_idx = 1:n_noise_types
-    savefig(fig_handles_noise{ori_idx}, fig_filenames_noise{ori_idx});
+    fig_handles_fr{ori_idx} = figure; hold on;
+    base_color = colors(ori_idx, :);
+    
+    all_rates = [];     % Collect all mean firing rates
+    all_groups = [];    % Corresponding group indices
+    all_colors = [];    % Colors for each day’s violins
+
+    for d = 1:length(day_folders)
+        % Reload responses
+        day_path = fullfile(base_path, day_folders{d}, Stimulus_type);
+        corr_file = fullfile(day_path, 'correlation_summary.mat');
+        loaded = load(corr_file);
+
+        responses = loaded.correlation_summary.responses_this_ori{ori_idx};  % trials × neurons
+        mean_spike_counts = mean(responses, 1);  % average across trials
+        mean_firing_rates = mean_spike_counts / stim_duration;
+
+        % Accumulate data
+        all_rates = [all_rates; mean_firing_rates(:)];
+        all_groups = [all_groups; repmat(d, size(mean_firing_rates(:)))];
+
+        % Color styling
+        shade = 1 - (d-1)*0.15;  % lighter for later days
+        this_color = base_color * shade + (1 - shade);
+        all_colors = [all_colors; repmat(this_color, length(mean_firing_rates), 1)];
+    end
+    
+    % Use violinplot.m (File Exchange version)
+    h = violinplot(all_rates, all_groups, 'ShowData', false);  % thick central vertical range is the interquartile range (25th-75th percentile). Thinner vertical line is the data range
+
+    % Apply color to each violin
+    for d = 1:length(h)
+        shade = 1 - (d-1)*0.15;
+        c = base_color * shade + (1 - shade);
+        h(d).ViolinColor = {c};
+        h(d).EdgeColor = c * 0.6;
+        h(d).BoxColor = c * 0.5;
+        h(d).MedianColor = [0 0 0];  % central black circle is the median firing rate
+    end
+
+    % Add legend for median marker
+    hold on;
+    h_legend = scatter(NaN, NaN, 50, 'ko', 'filled'); % black filled circle marker for median
+    legend(h_legend, 'Median unit firing rate', 'Location', 'best');
+    hold off;
+
+
+    % Label and style
+    xticks(1:length(day_folders));
+    xticklabels(day_folders);
+    xlabel('Day');
+    ylabel('V1 unit firing rates, averaged across trials (Hz)');
+    title(sprintf('%s %s %s unit firing rates – %s (%.2f–%.2fs after stim onset, gOSI > %0.2f)', subject, stimulus_type, depth_for_analysis, ori_labels{ori_idx}, stim_window(1), stim_window(2), gOSI_threshold), 'Interpreter', 'none');
+    box on;
+
+    % Save filename
+    fig_filenames_fr{ori_idx} = sprintf('%s %s %s unit FR violin plots %s (%s to %s) (%.2f to %.2fs after stim onset, gOSI over %0.2f).fig', ...
+        subject, stimulus_type, depth_for_analysis, letters(ori_idx), day_folders{1}, day_folders{end}, stim_window(1), stim_window(2), gOSI_threshold);
 end
+
+% === (Optional) Save figures ===
+for ori_idx = 1:n_noise_types
+    savefig(fig_handles_fr{ori_idx}, fig_filenames_fr{ori_idx});
+end
+
+
+
+
+
+
+% === Scatter plots of signal vs noise correlation, one per orientation ===
+figure_handles = cell(n_noise_types, 1);
+
+for ori_idx = 1:n_noise_types
+    figure_handles{ori_idx} = figure; hold on;
+    yline(0, 'k-', 'LineWidth', 0.5, 'HandleVisibility', 'off'); % line at zero noise correlation
+    base_color = colors(ori_idx, :);
+    legend_entries = cell(length(day_folders), 1);
+
+    for d = 1:length(day_folders)
+        % Load signal and noise correlations
+        signal_vals = signal_data{d};
+        noise_vals = noise_data{d, ori_idx};
+
+        if length(signal_vals) ~= length(noise_vals)
+            warning('Mismatch in signal/noise data length for day %s, orientation %s', ...
+                    day_folders{d}, ori_labels{ori_idx});
+            continue;
+        end
+
+        % Shade based on day
+        shade = 1 - (d-1)*0.15;
+        c = base_color * shade + (1 - shade); % blend toward white
+
+        % Scatter plot of signal vs noise correlations
+        scatter(signal_vals, noise_vals, 10, 'MarkerEdgeColor', c, ...
+            'MarkerFaceColor', c, 'MarkerFaceAlpha', 0.4, 'MarkerEdgeAlpha', 0.4, 'HandleVisibility', 'off');
+        
+        % Fit line of best fit (least squares linear regression)
+        coeffs = polyfit(signal_vals, noise_vals, 1);
+        x_fit = linspace(-1, 1, 100);
+        y_fit = polyval(coeffs, x_fit);
+        % Set dashed for first and last day
+        if d == 1 || d == length(day_folders)
+            line_style = ':';
+            line_width = 3;
+        else
+            line_style = '-';
+            line_width = 2;
+        end
+
+
+        plot(x_fit, y_fit, 'LineStyle', line_style, 'Color', c, 'LineWidth', line_width);
+
+        % Compute Pearson correlation coefficient
+        [r_val, p_val] = corr(signal_vals, noise_vals, 'Type', 'Pearson');
+
+        % Store legend entry
+        legend_entries{d} = sprintf('Day %s (r=%.2f, p=%.3f)', day_folders{d}, r_val, p_val);
+    end
+
+    % Labeling and formatting
+    xlabel('Signal Correlation (r)');
+    ylabel('Noise Correlation (r)');
+    title(sprintf('%s %s - %s - %s Unit Pair Signal vs Noise Correlations (%.2f–%.2fs after stim onset, gOSI > %0.2f) by Day ', ...
+        subject, stimulus_type, ori_labels{ori_idx}, depth_for_analysis, stim_window(1), stim_window(2), gOSI_threshold), ...
+        'Interpreter', 'none');
+    
+    xlim([-1 1]); ylim([-0.5 0.6]);
+    legend(legend_entries, 'Location', 'Best');
+    box on;
+    axis square;
+
+    % Optionally save the figure
+    fig_filename_scatter = sprintf('%s %s %s Unit Pair Signal_vs_Noise_Corrs Orientation_%s (%s to %s).fig', ...
+        subject, stimulus_type, depth_for_analysis, ori_labels{ori_idx}, ...
+        day_folders{1}, day_folders{end});
+    savefig(figure_handles{ori_idx}, fig_filename_scatter);
+end
+
+
+
+
 
 % Store proportion of opposite-sign correlations across days and orientations
 opposite_sign_props = zeros(length(day_folders), n_noise_types);  % days × orientations
@@ -191,12 +344,9 @@ fig_filename_bars = sprintf('%s %s %s Signal vs Noise Correlation: Opposite Sign
                         subject, stimulus_type, depth_for_analysis, day_folders{day1_idx}, day_folders{dayN_idx});
 %savefig(gcf, fig_filename_bars); 
 
-
-
 %%% For auditing/sense-checking. Example: show opposite-sign pairs for day 2 and orientation B
 % day_idx = 1;
 % ori_idx = 2;  % B
-% 
 % disp(['Opposite-sign cluster pairs on ', day_folders{day_idx}, ...
 %       ' for orientation ', letters(ori_idx), ':']);
 % disp(opposite_sign_pairs{day_idx, ori_idx});
