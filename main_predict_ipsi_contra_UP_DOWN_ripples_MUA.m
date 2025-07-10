@@ -1081,7 +1081,7 @@ spindle_phase1=[];
 for probe_no = 1:2
     spindle_phase1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_phase1{probe_no} = [spindle_phase1{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_phase1{probe_no} = [spindle_phase1{probe_no} ripples_all(probe_no).spindle_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -1098,7 +1098,7 @@ spindle_amplitude1=[];
 for probe_no = 1:2
     spindle_amplitude1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_amplitude1{probe_no} = [spindle_amplitude1{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_amplitude1{probe_no} = [spindle_amplitude1{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -1113,7 +1113,7 @@ SO_phase1=[];
 for probe_no = 1:2
     SO_phase1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase1{probe_no} = [SO_phase1{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase1{probe_no} = [SO_phase1{probe_no} ripples_all(probe_no).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -1127,7 +1127,7 @@ SO_amplitude1=[];
 for probe_no = 1:2
     SO_amplitude1{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_amplitude1{probe_no} = [SO_amplitude1{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_amplitude1{probe_no} = [SO_amplitude1{probe_no} ripples_all(probe_no).SO_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -1136,35 +1136,35 @@ SO_amplitude(2,:) = [SO_amplitude1{1}(2,ripples_all(1).SWS_index==1) SO_amplitud
 
 ripple_info.SO_amplitude = SO_amplitude';
 
-
-%%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
-ripple_info.early_UP_index = UP_index;
-ripple_info.early_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
-
-
-%%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
-ripple_info.late_UP_index = UP_index;
-ripple_info.late_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
-
-%%% UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,2)]);
-ripple_info.UP_index = UP_index;
-ripple_info.UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
-
-%%% DOWN transition co-occurance
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1) merged_event_info.DOWN_ints(:,2)]);
-ripple_info.DOWN_index = DOWN_index;
-ripple_info.DOWN_index_hemi = zeros(size(DOWN_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.DOWN_index_hemi(find(DOWN_index)) = merged_event_info.DOWN_hemisphere_id(index);
+% 
+% %%% early UP transition co-occurance
+% [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
+% ripple_info.early_UP_index = UP_index;
+% ripple_info.early_UP_index_hemi = zeros(size(UP_index));
+% % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
+% ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
+% 
+% 
+% %%% late UP transition co-occurance
+% [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
+% ripple_info.late_UP_index = UP_index;
+% ripple_info.late_UP_index_hemi = zeros(size(UP_index));
+% % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
+% ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
+% 
+% %%% UP transition co-occurance
+% [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,2)]);
+% ripple_info.UP_index = UP_index;
+% ripple_info.UP_index_hemi = zeros(size(UP_index));
+% % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
+% ripple_info.UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
+% 
+% %%% DOWN transition co-occurance
+% [~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1) merged_event_info.DOWN_ints(:,2)]);
+% ripple_info.DOWN_index = DOWN_index;
+% ripple_info.DOWN_index_hemi = zeros(size(DOWN_index));
+% % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
+% ripple_info.DOWN_index_hemi(find(DOWN_index)) = merged_event_info.DOWN_hemisphere_id(index);
 
 
 %%%%%% Ripple session count and subject_id
