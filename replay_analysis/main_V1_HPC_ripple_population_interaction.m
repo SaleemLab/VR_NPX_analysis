@@ -38,29 +38,6 @@ load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
 %     load(fullfile(analysis_folder,'session_clusters_all_POST.mat'),'session_clusters_all','-v7.3')
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
 
-%% Ripple modulation in V1 and HPC
-ripple_modulation_PSTH_all = [];
-psthBinSize = 0.01;
-windows = [-1 1];
-for nsession = 1:length(sessions_to_process)
-    %     ripple_modulation_PSTH_all{nsession} = [];
-
-    all_clusters = session_clusters_all.spatial_cell_id{nsession};
-    %       plot(unique(session_clusters_all.spike_id{nsession}));hold on;plot(all_clusters)
-
-    %         for nprobe = 1:length(ripples_all)
-    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-    tic
-    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
-        'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',0,'shuffle_option',1);
-    ripple_modulation_PSTH_all{nsession} = ripple_modulation;
-    toc
-end
-
-save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all','-v7.3')
-%  = struct();
-
 
 %% context-selective ripple modulation
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')

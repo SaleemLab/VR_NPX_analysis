@@ -145,6 +145,7 @@ for n = 1:2
             hemi_id = [ones(1,sum((ripples_all(1).SWS_index==1 & ripples_all(1).session_count==nsession)>0)) 2*ones(1,sum((ripples_all(2).SWS_index==1 & ripples_all(2).session_count==nsession)>0))];
 
             % V1 HF power
+            
             temp1 = [squeeze(ripples_TF_stats.V1_amp{nsession}(nprobe,end,timebins(n),hemi_id == nprobe))'; ...
                 squeeze(ripples_TF_stats.V1_amp{nsession}(abs(3-nprobe),end,timebins(n),hemi_id == nprobe))'];
             HF_amplitude{n}{nprobe} =  [HF_amplitude{n}{nprobe} temp1];
@@ -322,6 +323,14 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+histogram(ripple_info.SO_phase{1},'normalization','probability');hold on;histogram(ripple_info.SO_phase{2},'normalization','probability')
+
+figure;histogram(ripple_info.SO_amplitude{1},'normalization','probability');hold on;histogram(ripple_info.SO_amplitude{2},'normalization','probability')
+
+figure;polarhistogram(ripple_info.SO_phase{1},'normalization','probability');hold on;polarhistogram(ripple_info.SO_phase{2},'normalization','probability')
+
 
 %% V1 SO amp (before and after ripples)
 %%%% with low spindle power
@@ -341,8 +350,8 @@ for n = 1:2
 
     SO_index = (SO_index1 + SO_index2) > 0;
 
-    T1_events = intersect(T1_events,find(SO_index))';
-    T2_events = intersect(T2_events,find(SO_index))';
+    T1_events = intersect(T1_events,find(SO_index2))';
+    T2_events = intersect(T2_events,find(SO_index1))';
     % T1_events = intersect(T1_events,find(spindle_index2));
     % T2_events = intersect(T2_events,find(spindle_index1));
 
@@ -510,8 +519,8 @@ for n = 1:2
 
     SO_index = (SO_index1 + SO_index2) > 0;
 
-    T1_events = intersect(T1_events,find(SO_index))';
-    T2_events = intersect(T2_events,find(SO_index))';
+    T1_events = intersect(T1_events,find(SO_index2))';
+    T2_events = intersect(T2_events,find(SO_index1))';
 
 
 
@@ -655,7 +664,7 @@ for n = 1:2
 
 end
 
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+% save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
 
 
 
@@ -677,8 +686,8 @@ for n = 1:2
 
     SO_index = (SO_index1 + SO_index2) > 0;
 
-    T1_events = intersect(T1_events,find(SO_index))';
-    T2_events = intersect(T2_events,find(SO_index))';
+    T1_events = intersect(T1_events,find(SO_index2))';
+    T2_events = intersect(T2_events,find(SO_index1))';
     % T1_events = intersect(T1_events,find(spindle_index2));
     % T2_events = intersect(T2_events,find(spindle_index1));
 
@@ -846,8 +855,8 @@ for n = 1:2
 
     SO_index = (SO_index1 + SO_index2) > 0;
 
-    T1_events = intersect(T1_events,find(SO_index))';
-    T2_events = intersect(T2_events,find(SO_index))';
+    T1_events = intersect(T1_events,find(SO_index2))';
+    T2_events = intersect(T2_events,find(SO_index1))';
 
 
 
@@ -1012,21 +1021,25 @@ for n = 1:2
     % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= 0 & ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_amplitude{n}(1,:)>prctile(ripple_info.SO_amplitude{n}(1,:),50);
     % 
     % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= 0 & ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_amplitude{n}(2,:)>prctile(ripple_info.SO_amplitude{n}(2,:),50);
-    is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= 0 & ripple_info.SO_phase{n}(1,:) <= pi;
+    % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) <= 0;
+    % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) <= 0;
 
-    is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= 0 & ripple_info.SO_phase{n}(2,:) <= pi;
 
-
+    is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi/2 & ripple_info.SO_phase{n}(1,:) <= pi/2;
+    is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi/2 & ripple_info.SO_phase{n}(2,:) <= pi/2;
+    event_index = is_peak_phase_1 + is_peak_phase_2 >0;
     % event_index = find((singlet_index)==1);
     % % hemi_index = ripple_info.spindle_presence_hemi;
     % T1_events = intersect(T1_events,event_index);
     % T2_events = intersect(T2_events,event_index);
 
     % T1 events: keep those coupled to spindle peak in hemisphere 2
-    T1_events = intersect(T1_events, find(is_peak_phase_2))';
+    % T1_events = intersect(T1_events, find(is_peak_phase_2))';
+    T1_events = intersect(T1_events, find(event_index))';
 
     % T2 events: keep those coupled to spindle peak in hemisphere 1
-    T2_events = intersect(T2_events, find(is_peak_phase_1))';
+    % T2_events = intersect(T2_events, find(is_peak_phase_1))';
+    T2_events = intersect(T2_events, find(event_index))';
 
 
     nSamples = min([length(T1_events) length(T2_events)]);
@@ -1174,10 +1187,12 @@ for n = 1:2
     T2_events = find(nanmean(z_bias(bins_to_use,:))<-0.5);
 
     % Define logical arrays for whether phase is in the peak range
-    is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < 0;
-
-    is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < 0;
-
+    % is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -1;
+    % 
+    % is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -1;
+    is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -pi/2 |  ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_phase{n}(1,:) > pi/2;
+    is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -pi/2 |  ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_phase{n}(2,:) > pi/2;
+    event_index = is_trough_phase_1 + is_trough_phase_2 >0;
 
     % event_index = find((singlet_index)==1);
     % % hemi_index = ripple_info.spindle_presence_hemi;
@@ -1185,10 +1200,12 @@ for n = 1:2
     % T2_events = intersect(T2_events,event_index);
 
     % T1 events: keep those coupled to spindle peak in hemisphere 2
-    T1_events = intersect(T1_events, find(is_trough_phase_2))';
+    % T1_events = intersect(T1_events, find(is_trough_phase_2))';
+    T1_events = intersect(T1_events, find(event_index))';
 
     % T2 events: keep those coupled to spindle peak in hemisphere 1
-    T2_events = intersect(T2_events, find(is_trough_phase_1))';
+    % T2_events = intersect(T2_events, find(is_trough_phase_1))';
+    T2_events = intersect(T2_events, find(event_index))';
 
 
     nSamples = min([length(T1_events) length(T2_events)]);
@@ -1332,6 +1349,704 @@ for n = 1:2
 end
 
 
+%%
+% figure;
+% nexttile
+% histogram(ripple_info.V1_SO_synchrony{1},'normalization','probability');hold on;histogram( ripple_info.V1_SO_synchrony{2},'normalization','probability')
+% 
+% nexttile;
+% histogram(ripple_info.V1_SO_synchrony{2}-ripple_info.V1_SO_synchrony{1},'normalization','probability')
+
+
+%%
+%%%% SO synchrony
+
+for n = 1:2
+    % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
+    log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+    T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+    T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
+
+
+    % Define logical arrays for whether phase is in the peak range
+    
+
+    % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= 0 & ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_amplitude{n}(1,:)>prctile(ripple_info.SO_amplitude{n}(1,:),50);
+    % 
+    % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= 0 & ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_amplitude{n}(2,:)>prctile(ripple_info.SO_amplitude{n}(2,:),50);
+    % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) <= 0;
+    % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) <= 0;
+
+
+    is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi/2 & ripple_info.SO_phase{n}(1,:) <= pi/2;
+    is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi/2 & ripple_info.SO_phase{n}(2,:) <= pi/2;
+    event_index = is_peak_phase_1 + is_peak_phase_2 ==2;
+    % event_index = find((singlet_index)==1);
+    % % hemi_index = ripple_info.spindle_presence_hemi;
+    % T1_events = intersect(T1_events,event_index);
+    % T2_events = intersect(T2_events,event_index);
+
+    % T1 events: keep those coupled to spindle peak in hemisphere 2
+    % T1_events = intersect(T1_events, find(is_peak_phase_2))';
+    T1_events = intersect(T1_events, find(event_index+is_peak_phase_2 == 2))';
+
+    % T2 events: keep those coupled to spindle peak in hemisphere 1
+    % T2_events = intersect(T2_events, find(is_peak_phase_1))';
+    T2_events = intersect(T2_events, find(event_index+is_peak_phase_1 ==2))';
+
+
+    nSamples = min([length(T1_events) length(T2_events)]);
+    [bV1_mean_T1, LCI1_V1, UCI1_V1,bootV1_T1] = calculate_bootstrap_CI(z_bias_V1', T1_events,'nSamples',nSamples);
+    [bV1_mean_T2, LCI2_V1, UCI2_V1,bootV1_T2] = calculate_bootstrap_CI(z_bias_V1', T2_events,'nSamples',nSamples);
+    [bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~, bootV1_T2_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    bootV1_diff_shuffled = bootV1_T1_shuffled - bootV1_T2_shuffled;
+
+    bV1_mean_diff_shuffled = mean(bootV1_diff_shuffled);
+    LCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 2.5);
+    UCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 97.5);
+
+    bootV1_diff = bootV1_T1 - bootV1_T2;
+    bV1_mean_diff = mean(bootV1_diff);
+    LCI_V1_diff =  prctile(bootV1_diff, 2.5);
+    UCI_V1_diff =  prctile(bootV1_diff, 97.5);
+
+    [b_mean_T1, LCI1, UCI1,boot_T1] = calculate_bootstrap_CI(z_bias', T1_events,'nSamples',nSamples);
+    [b_mean_T2, LCI2, UCI2,boot_T2] = calculate_bootstrap_CI(z_bias', T2_events,'nSamples',nSamples);
+    [b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~,boot_T2_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    boot_diff_shuffled = boot_T1_shuffled - boot_T2_shuffled;
+
+    b_mean_diff_shuffled = mean(boot_diff_shuffled);
+    LCI_diff_shuffled =  prctile(boot_diff_shuffled, 2.5);
+    UCI_diff_shuffled =  prctile(boot_diff_shuffled, 97.5);
+
+    boot_diff = boot_T1 - boot_T2;
+    b_mean_diff = mean(boot_diff);
+    LCI_diff =  prctile(boot_diff, 2.5);
+    UCI_diff =  prctile(boot_diff, 97.5);
+
+
+    nfig = figure;
+    nfig.Name = sprintf('KDE Bias PSTH Track 1 vs Track 2 with SO peak synchronised(%s)',time_text{n});
+    nfig.Position = [500 75 700 850];
+
+    event_index = [T1_events; T2_events];
+    z_event = nanmean(z_bias(bins_to_use,[T1_events; T2_events]));
+
+    [~,sorted_index] = sort(z_event);
+
+    nexttile
+    h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    % imagesc(z_bias_V1);colorbar;
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+    nexttile
+    h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+
+    % Colors
+    track1_color = [0 0 1]; % blue
+    track2_color = [1 0 0]; % red
+
+    % Tile 5: z_bias mean with CI
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI1 fliplr(LCI1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2 fliplr(LCI2)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_label_shuffled fliplr(LCI_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(bin_centers, b_mean_T1, 'Color', track1_color);
+    plot(bin_centers, b_mean_T2, 'Color', track2_color);
+    plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-3 3])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    title('z bias');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI1_V1 fliplr(LCI1_V1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2_V1 fliplr(LCI2_V1)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
+    plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
+    plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
+    ylim([-0.2 0.2])
+    xlim([-0.5 0.5])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    title('z bias V1');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff fliplr(LCI_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-1 4.5])
+    legend('Track diff','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    title('z bias diff');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff fliplr(LCI_V1_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
+    ylim([-0.1 0.3])
+    xlim([-0.5 0.5])
+    legend('Track diff','Shuffled','box','off');
+    title('z bias diff V1');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    %%%% SO trough
+    T1_events = find(nanmean(z_bias(bins_to_use,:))>0.5);
+    T2_events = find(nanmean(z_bias(bins_to_use,:))<-0.5);
+
+    % Define logical arrays for whether phase is in the peak range
+    % is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -1;
+    % 
+    % is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -1;
+    is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -pi/2 |  ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_phase{n}(1,:) > pi/2;
+    is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -pi/2 |  ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_phase{n}(2,:) > pi/2;
+    event_index = is_trough_phase_1 + is_trough_phase_2 ==2;
+
+    % event_index = find((singlet_index)==1);
+    % % hemi_index = ripple_info.spindle_presence_hemi;
+    % T1_events = intersect(T1_events,event_index);
+    % T2_events = intersect(T2_events,event_index);
+
+    % T1 events: keep those coupled to spindle peak in hemisphere 2
+    % T1_events = intersect(T1_events, find(is_trough_phase_2))';
+    T1_events = intersect(T1_events, find(event_index+is_trough_phase_2==2))';
+
+    % T2 events: keep those coupled to spindle peak in hemisphere 1
+    % T2_events = intersect(T2_events, find(is_trough_phase_1))';
+    T2_events = intersect(T2_events, find(event_index+is_trough_phase_1==2))';
+
+
+    nSamples = min([length(T1_events) length(T2_events)]);
+    [bV1_mean_T1, LCI1_V1, UCI1_V1,bootV1_T1] = calculate_bootstrap_CI(z_bias_V1', T1_events,'nSamples',nSamples);
+    [bV1_mean_T2, LCI2_V1, UCI2_V1,bootV1_T2] = calculate_bootstrap_CI(z_bias_V1', T2_events,'nSamples',nSamples);
+    [bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~, bootV1_T2_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    bootV1_diff_shuffled = bootV1_T1_shuffled - bootV1_T2_shuffled;
+
+    bV1_mean_diff_shuffled = mean(bootV1_diff_shuffled);
+    LCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 2.5);
+    UCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 97.5);
+
+    bootV1_diff = bootV1_T1 - bootV1_T2;
+    bV1_mean_diff = mean(bootV1_diff);
+    LCI_V1_diff =  prctile(bootV1_diff, 2.5);
+    UCI_V1_diff =  prctile(bootV1_diff, 97.5);
+
+    [b_mean_T1, LCI1, UCI1,boot_T1] = calculate_bootstrap_CI(z_bias', T1_events,'nSamples',nSamples);
+    [b_mean_T2, LCI2, UCI2,boot_T2] = calculate_bootstrap_CI(z_bias', T2_events,'nSamples',nSamples);
+    [b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~,boot_T2_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    boot_diff_shuffled = boot_T1_shuffled - boot_T2_shuffled;
+
+    b_mean_diff_shuffled = mean(boot_diff_shuffled);
+    LCI_diff_shuffled =  prctile(boot_diff_shuffled, 2.5);
+    UCI_diff_shuffled =  prctile(boot_diff_shuffled, 97.5);
+
+    boot_diff = boot_T1 - boot_T2;
+    b_mean_diff = mean(boot_diff);
+    LCI_diff =  prctile(boot_diff, 2.5);
+    UCI_diff =  prctile(boot_diff, 97.5);
+
+    MUA_bin_centers = []
+    nfig = figure;
+    nfig.Name = sprintf('KDE Bias PSTH Track 1 vs Track 2 with SO trough synchronised (%s)',time_text{n});
+    nfig.Position = [500 75 700 850];
+
+    event_index = [T1_events; T2_events];
+    z_event = nanmean(z_bias(bins_to_use,[T1_events; T2_events]));
+
+    [~,sorted_index] = sort(z_event);
+
+    nexttile
+    h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    % imagesc(z_bias_V1);colorbar;
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+    nexttile
+    h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+
+    % Colors
+    track1_color = [0 0 1]; % blue
+    track2_color = [1 0 0]; % red
+
+    % Tile 5: z_bias mean with CI
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI1 fliplr(LCI1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2 fliplr(LCI2)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_label_shuffled fliplr(LCI_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(bin_centers, b_mean_T1, 'Color', track1_color);
+    plot(bin_centers, b_mean_T2, 'Color', track2_color);
+    plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-3 3])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    title('z bias');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI1_V1 fliplr(LCI1_V1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2_V1 fliplr(LCI2_V1)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
+    plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
+    plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
+    ylim([-0.2 0.2])
+    xlim([-0.5 0.5])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    title('z bias V1');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff fliplr(LCI_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-1 4.5])
+    legend('Track diff','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    title('z bias diff');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff fliplr(LCI_V1_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
+    ylim([-0.1 0.3])
+    xlim([-0.5 0.5])
+    legend('Track diff','Shuffled','box','off');
+    title('z bias diff V1');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+end
+
+
+
+
+
+%%
+%%%% Phase not synchronised
+
+for n = 1:2
+    % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
+    log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+    T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+    T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
+
+
+    % Define logical arrays for whether phase is in the peak range
+    
+
+    % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= 0 & ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_amplitude{n}(1,:)>prctile(ripple_info.SO_amplitude{n}(1,:),50);
+    % 
+    % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= 0 & ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_amplitude{n}(2,:)>prctile(ripple_info.SO_amplitude{n}(2,:),50);
+    % is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) <= 0;
+    % is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) <= 0;
+
+
+    is_peak_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi/2 & ripple_info.SO_phase{n}(1,:) <= pi/2;
+    is_peak_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi/2 & ripple_info.SO_phase{n}(2,:) <= pi/2;
+    event_index = is_peak_phase_1 + is_peak_phase_2 ==2;
+    % event_index = find((singlet_index)==1);
+    % % hemi_index = ripple_info.spindle_presence_hemi;
+    % T1_events = intersect(T1_events,event_index);
+    % T2_events = intersect(T2_events,event_index);
+
+    % T1 events: keep those coupled to spindle peak in hemisphere 2
+    % T1_events = intersect(T1_events, find(is_peak_phase_2))';
+    T1_events = intersect(T1_events, find(event_index+is_peak_phase_2==1))';
+
+    % T2 events: keep those coupled to spindle peak in hemisphere 1
+    % T2_events = intersect(T2_events, find(is_peak_phase_1))';
+    T2_events = intersect(T2_events, find(event_index+is_peak_phase_1==1))';
+
+
+    nSamples = min([length(T1_events) length(T2_events)]);
+    [bV1_mean_T1, LCI1_V1, UCI1_V1,bootV1_T1] = calculate_bootstrap_CI(z_bias_V1', T1_events,'nSamples',nSamples);
+    [bV1_mean_T2, LCI2_V1, UCI2_V1,bootV1_T2] = calculate_bootstrap_CI(z_bias_V1', T2_events,'nSamples',nSamples);
+    [bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~, bootV1_T2_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    bootV1_diff_shuffled = bootV1_T1_shuffled - bootV1_T2_shuffled;
+
+    bV1_mean_diff_shuffled = mean(bootV1_diff_shuffled);
+    LCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 2.5);
+    UCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 97.5);
+
+    bootV1_diff = bootV1_T1 - bootV1_T2;
+    bV1_mean_diff = mean(bootV1_diff);
+    LCI_V1_diff =  prctile(bootV1_diff, 2.5);
+    UCI_V1_diff =  prctile(bootV1_diff, 97.5);
+
+    [b_mean_T1, LCI1, UCI1,boot_T1] = calculate_bootstrap_CI(z_bias', T1_events,'nSamples',nSamples);
+    [b_mean_T2, LCI2, UCI2,boot_T2] = calculate_bootstrap_CI(z_bias', T2_events,'nSamples',nSamples);
+    [b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~,boot_T2_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    boot_diff_shuffled = boot_T1_shuffled - boot_T2_shuffled;
+
+    b_mean_diff_shuffled = mean(boot_diff_shuffled);
+    LCI_diff_shuffled =  prctile(boot_diff_shuffled, 2.5);
+    UCI_diff_shuffled =  prctile(boot_diff_shuffled, 97.5);
+
+    boot_diff = boot_T1 - boot_T2;
+    b_mean_diff = mean(boot_diff);
+    LCI_diff =  prctile(boot_diff, 2.5);
+    UCI_diff =  prctile(boot_diff, 97.5);
+
+
+    nfig = figure;
+    nfig.Name = sprintf('KDE Bias PSTH Track 1 vs Track 2 with SO peak not sycnhronised (%s)',time_text{n});
+    nfig.Position = [500 75 700 850];
+
+    event_index = [T1_events; T2_events];
+    z_event = nanmean(z_bias(bins_to_use,[T1_events; T2_events]));
+
+    [~,sorted_index] = sort(z_event);
+
+    nexttile
+    h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    % imagesc(z_bias_V1);colorbar;
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+    nexttile
+    h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+
+    % Colors
+    track1_color = [0 0 1]; % blue
+    track2_color = [1 0 0]; % red
+
+    % Tile 5: z_bias mean with CI
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI1 fliplr(LCI1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2 fliplr(LCI2)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_label_shuffled fliplr(LCI_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(bin_centers, b_mean_T1, 'Color', track1_color);
+    plot(bin_centers, b_mean_T2, 'Color', track2_color);
+    plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-3 3])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    title('z bias');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI1_V1 fliplr(LCI1_V1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2_V1 fliplr(LCI2_V1)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
+    plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
+    plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
+    ylim([-0.2 0.2])
+    xlim([-0.5 0.5])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    title('z bias V1');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff fliplr(LCI_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-1 4.5])
+    legend('Track diff','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    title('z bias diff');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff fliplr(LCI_V1_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
+    ylim([-0.1 0.3])
+    xlim([-0.5 0.5])
+    legend('Track diff','Shuffled','box','off');
+    title('z bias diff V1');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    %%%% SO trough
+    T1_events = find(nanmean(z_bias(bins_to_use,:))>0.5);
+    T2_events = find(nanmean(z_bias(bins_to_use,:))<-0.5);
+
+    % Define logical arrays for whether phase is in the peak range
+    % is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -1;
+    % 
+    % is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -1;
+    is_trough_phase_1 = ripple_info.SO_phase{n}(1,:) >= -pi & ripple_info.SO_phase{n}(1,:) < -pi/2 |  ripple_info.SO_phase{n}(1,:) <= pi & ripple_info.SO_phase{n}(1,:) > pi/2;
+    is_trough_phase_2 = ripple_info.SO_phase{n}(2,:) >= -pi & ripple_info.SO_phase{n}(2,:) < -pi/2 |  ripple_info.SO_phase{n}(2,:) <= pi & ripple_info.SO_phase{n}(2,:) > pi/2;
+    event_index = is_trough_phase_1 + is_trough_phase_2 ==2;
+
+    % event_index = find((singlet_index)==1);
+    % % hemi_index = ripple_info.spindle_presence_hemi;
+    % T1_events = intersect(T1_events,event_index);
+    % T2_events = intersect(T2_events,event_index);
+
+    % T1 events: keep those coupled to spindle peak in hemisphere 2
+    % T1_events = intersect(T1_events, find(is_trough_phase_2))';
+    T1_events = intersect(T1_events, find(event_index+is_trough_phase_2==1))';
+
+    % T2 events: keep those coupled to spindle peak in hemisphere 1
+    % T2_events = intersect(T2_events, find(is_trough_phase_1))';
+    T2_events = intersect(T2_events, find(event_index+is_trough_phase_1==1))';
+
+
+    nSamples = min([length(T1_events) length(T2_events)]);
+    [bV1_mean_T1, LCI1_V1, UCI1_V1,bootV1_T1] = calculate_bootstrap_CI(z_bias_V1', T1_events,'nSamples',nSamples);
+    [bV1_mean_T2, LCI2_V1, UCI2_V1,bootV1_T2] = calculate_bootstrap_CI(z_bias_V1', T2_events,'nSamples',nSamples);
+    [bV1_mean_label_shuffled, LCI_V1_label_shuffled, UCI_V1_label_shuffled, bootV1_T1_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~, bootV1_T2_shuffled] = calculate_bootstrap_CI(z_bias_V1', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    bootV1_diff_shuffled = bootV1_T1_shuffled - bootV1_T2_shuffled;
+
+    bV1_mean_diff_shuffled = mean(bootV1_diff_shuffled);
+    LCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 2.5);
+    UCI_V1_diff_shuffled =  prctile(bootV1_diff_shuffled, 97.5);
+
+    bootV1_diff = bootV1_T1 - bootV1_T2;
+    bV1_mean_diff = mean(bootV1_diff);
+    LCI_V1_diff =  prctile(bootV1_diff, 2.5);
+    UCI_V1_diff =  prctile(bootV1_diff, 97.5);
+
+    [b_mean_T1, LCI1, UCI1,boot_T1] = calculate_bootstrap_CI(z_bias', T1_events,'nSamples',nSamples);
+    [b_mean_T2, LCI2, UCI2,boot_T2] = calculate_bootstrap_CI(z_bias', T2_events,'nSamples',nSamples);
+    [b_mean_label_shuffled, LCI_label_shuffled, UCI_label_shuffled,boot_T1_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples);
+    [~, ~, ~,boot_T2_shuffled] = calculate_bootstrap_CI(z_bias', [T1_events; T2_events],'nSamples',nSamples,'nseed', 1000);
+    boot_diff_shuffled = boot_T1_shuffled - boot_T2_shuffled;
+
+    b_mean_diff_shuffled = mean(boot_diff_shuffled);
+    LCI_diff_shuffled =  prctile(boot_diff_shuffled, 2.5);
+    UCI_diff_shuffled =  prctile(boot_diff_shuffled, 97.5);
+
+    boot_diff = boot_T1 - boot_T2;
+    b_mean_diff = mean(boot_diff);
+    LCI_diff =  prctile(boot_diff, 2.5);
+    UCI_diff =  prctile(boot_diff, 97.5);
+
+    MUA_bin_centers = []
+    nfig = figure;
+    nfig.Name = sprintf('KDE Bias PSTH Track 1 vs Track 2 with SO trough not sycnhronised (%s)',time_text{n});
+    nfig.Position = [500 75 700 850];
+
+    event_index = [T1_events; T2_events];
+    z_event = nanmean(z_bias(bins_to_use,[T1_events; T2_events]));
+
+    [~,sorted_index] = sort(z_event);
+
+    nexttile
+    h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    % imagesc(z_bias_V1);colorbar;
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+    nexttile
+    h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
+    set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+    xlim([-0.5 0.5])
+    colorbar;
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    xlabel('Time (s)')
+    ylabel('Ripple event')
+
+
+    % Colors
+    track1_color = [0 0 1]; % blue
+    track2_color = [1 0 0]; % red
+
+    % Tile 5: z_bias mean with CI
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI1 fliplr(LCI1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2 fliplr(LCI2)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_label_shuffled fliplr(LCI_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(bin_centers, b_mean_T1, 'Color', track1_color);
+    plot(bin_centers, b_mean_T2, 'Color', track2_color);
+    plot(bin_centers, b_mean_label_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-3 3])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    title('z bias');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI1_V1 fliplr(LCI1_V1)], track1_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI2_V1 fliplr(LCI2_V1)], track2_color, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_label_shuffled fliplr(LCI_V1_label_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_label_shuffled, 'Color', 'k');
+    plot(bin_centers, bV1_mean_T1, 'Color', track1_color);
+    plot(bin_centers, bV1_mean_T2, 'Color', track2_color);
+    ylim([-0.2 0.2])
+    xlim([-0.5 0.5])
+    legend('Track 1', 'Track 2','Shuffled','box','off');
+    title('z bias V1');
+    xlabel('Time (s)')
+    ylabel('Bias (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+    nexttile
+    hold on;
+
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff fliplr(LCI_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_diff_shuffled fliplr(LCI_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, b_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, b_mean_diff_shuffled, 'Color', 'k');
+    xlim([-0.5 0.5])
+    ylim([-1 4.5])
+    legend('Track diff','Shuffled','box','off');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    title('z bias diff');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+    % Tile 6: z_bias_V1 mean with CI
+
+    nexttile
+    hold on;
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff fliplr(LCI_V1_diff)], [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    fill([bin_centers fliplr(bin_centers)], [UCI_V1_diff_shuffled fliplr(LCI_V1_diff_shuffled)], 'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+    plot(bin_centers, bV1_mean_diff, 'Color', [231,41,138]/256);
+    plot(bin_centers, bV1_mean_diff_shuffled, 'Color', 'k');
+    ylim([-0.1 0.3])
+    xlim([-0.5 0.5])
+    legend('Track diff','Shuffled','box','off');
+    title('z bias diff V1');
+    xlabel('Time (s)')
+    ylabel('Bias T1-T2 difference (z)')
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+end
 
 
 %%
