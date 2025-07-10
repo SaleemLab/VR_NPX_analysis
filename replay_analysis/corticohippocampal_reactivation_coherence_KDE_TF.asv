@@ -97,28 +97,12 @@ V1_spindle_synchrony_percentile = [];
 
 spindle_phase = [];
 SO_phase = [];
-
-HF_amplitude = [];
-HF_amplitude_percentile = [];
-
-V1_HPC_SO_amplitude_corr = [];
-V1_HPC_SO_amplitude_corr_percentile =[];
-
 % V1_HPC_SO_amplitude_corr=[];
 % V1_HPC_SO_amplitude_corr_percentile = [];
 
 timebins = [5 6];% 5 is -0.2 to 0 and 6 is 0 to 0.2s
 
 for n = 1:2
-    V1_SO_synchrony{n}=[];
-    V1_SO_synchrony_percentile{n}=[];
-    
-    V1_spindle_synchrony{n}=[];
-    V1_spindle_synchrony_percentile{n} = [];
-
-    V1_SO_amplitude_corr{n} = [];
-    V1_SO_amplitude_corr_percentile{n} = [];
-
     for nprobe = 1:2
         HF_amplitude{n}{nprobe} = [];
         HF_amplitude_percentile{n}{nprobe} = [];
@@ -190,49 +174,9 @@ for n = 1:2
             V1_HPC_spindle_synchrony{n}{nprobe} =  [V1_HPC_spindle_synchrony{n}{nprobe} temp1];
             V1_HPC_spindle_synchrony_percentile{n}{nprobe} = [V1_HPC_spindle_synchrony_percentile{n}{nprobe} tiedrank(temp1.').' / size(temp1,2)];
 
-            if nprobe ==1
-
-                % V1 SO PLV
-                temp1= squeeze(ripples_TF_stats.V1_PLV{nsession}(1,timebins(n),:))';
-                V1_SO_synchrony{n} =  [V1_SO_synchrony{n} temp1];
-                V1_SO_synchrony_percentile{n} = [V1_SO_synchrony_percentile{n} tiedrank(temp1.').' / size(temp1, 2)];
-
-                % V1 spindle PLV
-                temp1= squeeze(ripples_TF_stats.V1_PLV{nsession}(3,timebins(n),:))';
-                V1_spindle_synchrony{n} =  [V1_spindle_synchrony{n} temp1];
-                V1_spindle_synchrony_percentile{n} = [V1_spindle_synchrony_percentile{n} tiedrank(temp1.').' / size(temp1, 2)];
-
-                % V1 SO amp corr
-                temp1= squeeze(ripples_TF_stats.V1_amp_corr{nsession}(1,timebins(n),:))';
-                V1_SO_amplitude_corr{n} =  [V1_SO_amplitude_corr{n} temp1];
-                V1_SO_amplitude_corr_percentile{n} = [V1_SO_amplitude_corr_percentile{n} tiedrank(temp1.').' / size(temp1, 2)];
-            end
 
         end
     end
-
-    % Concatenate across probes (dim 2 is event/trials)
-    HF_amplitude{n} = [HF_amplitude{n}{:}];
-    HF_amplitude_percentile{n} = [HF_amplitude_percentile{n}{:}];
-
-    SO_amplitude{n} = [SO_amplitude{n}{:}];
-    SO_amplitude_percentile{n} = [SO_amplitude_percentile{n}{:}];
-
-    spindle_amplitude{n} = [spindle_amplitude{n}{:}];
-    spindle_amplitude_percentile{n} = [spindle_amplitude_percentile{n}{:}];
-
-    SO_phase{n} = [SO_phase{n}{:}];
-    spindle_phase{n} = [spindle_phase{n}{:}];
-
-    V1_HPC_SO_synchrony{n} = [V1_HPC_SO_synchrony{n}{:}];
-    V1_HPC_SO_synchrony_percentile{n} = [V1_HPC_SO_synchrony_percentile{n}{:}];
-
-    V1_HPC_SO_amplitude_corr{n} = [V1_HPC_SO_amplitude_corr{n}{:}];
-    V1_HPC_SO_amplitude_corr_percentile{n} = [V1_HPC_SO_amplitude_corr_percentile{n}{:}];
-
-    V1_HPC_spindle_synchrony{n} = [V1_HPC_spindle_synchrony{n}{:}];
-    V1_HPC_spindle_synchrony_percentile{n} = [V1_HPC_spindle_synchrony_percentile{n}{:}];
-
 end
 
 ripple_info.HF_amplitude = HF_amplitude;
@@ -242,7 +186,6 @@ ripple_info.SO_amplitude_percentile = SO_amplitude_percentile;
 ripple_info.V1_SO_synchrony = V1_SO_synchrony;
 ripple_info.V1_SO_synchrony_percentile = V1_SO_synchrony_percentile;
 ripple_info.V1_SO_amplitude_corr = V1_SO_amplitude_corr;
-ripple_info.V1_SO_amplitude_corr_percentile = V1_SO_amplitude_corr_percentile;
 ripple_info.V1_HPC_SO_synchrony_percentile = V1_HPC_SO_synchrony_percentile;
 ripple_info.V1_HPC_SO_amplitude_corr = V1_HPC_SO_amplitude_corr;
 ripple_info.V1_HPC_SO_amplitude_corr_percentile = V1_HPC_SO_amplitude_corr_percentile;
