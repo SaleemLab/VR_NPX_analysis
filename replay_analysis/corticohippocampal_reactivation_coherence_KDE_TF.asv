@@ -1008,7 +1008,7 @@ end
 %%
 %%%% SO peak vs So trough
 
-for n = 1:3
+for n = 1:
     % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
     log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
     T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
@@ -1034,12 +1034,12 @@ for n = 1:3
     % T2_events = intersect(T2_events,event_index);
 
     % T1 events: keep those coupled to spindle peak in hemisphere 2
-    T1_events = intersect(T1_events, find(is_peak_phase_2))';
-    % T1_events = intersect(T1_events, find(event_index))';
+    % T1_events = intersect(T1_events, find(is_peak_phase_2))';
+    T1_events = intersect(T1_events, find(event_index))';
 
     % T2 events: keep those coupled to spindle peak in hemisphere 1
-    T2_events = intersect(T2_events, find(is_peak_phase_1))';
-    % T2_events = intersect(T2_events, find(event_index))';
+    % T2_events = intersect(T2_events, find(is_peak_phase_1))';
+    T2_events = intersect(T2_events, find(event_index))';
 
 
     nSamples = min([length(T1_events) length(T2_events)]);
@@ -1200,12 +1200,12 @@ for n = 1:3
     % T2_events = intersect(T2_events,event_index);
 
     % T1 events: keep those coupled to spindle peak in hemisphere 2
-    T1_events = intersect(T1_events, find(is_trough_phase_2))';
-    % T1_events = intersect(T1_events, find(event_index))';
+    % T1_events = intersect(T1_events, find(is_trough_phase_2))';
+    T1_events = intersect(T1_events, find(event_index))';
 
     % T2 events: keep those coupled to spindle peak in hemisphere 1
-    T2_events = intersect(T2_events, find(is_trough_phase_1))';
-    % T2_events = intersect(T2_events, find(event_index))';
+    % T2_events = intersect(T2_events, find(is_trough_phase_1))';
+    T2_events = intersect(T2_events, find(event_index))';
 
 
     nSamples = min([length(T1_events) length(T2_events)]);
