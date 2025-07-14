@@ -2141,113 +2141,13 @@ ylabel('Maximum empirical cumulative distribution difference');
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
-%% Plotting context selecitve ripple modulation (Mixed effect regression)
-
-%%%%%%%%%%%%% 
-
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
-% summary_table = UP_DOWN_ripples_glme_summary_table(output_V1,[1:15],'context_ripple_modulation_glme_summary.csv');
-summary_table = UP_DOWN_ripples_glme_summary_table(output_V1,[1:15]);
-
-%%%%%%%%% V1 all vs low ripple vs high ripple
-model_index == 11
-
-%%%%%%%%% V1 all vs low ripple vs high ripple
-% b_all = []; t_all = []; R2_all = []; pval_all = [];
-b_low = []; t_low = []; R2_low = []; pval_low = [];
-b_high = []; t_high = []; R2_high = []; pval_high = [];
-
-for nBoot = 1:1000
-    % b_all(nBoot) = output_all(nBoot).b{7};
-    % t_all(nBoot) = output_all(nBoot).t_stat{7};
-    % R2_all(nBoot) = output_all(nBoot).R2(7);
-    % pval_all(nBoot) = output_all(nBoot).pval{7};
-
-    b_low(nBoot) = output_V1(nBoot).b{2};
-    t_low(nBoot) = output_V1(nBoot).t_stat{2};
-    R2_low(nBoot) = output_V1(nBoot).R2(2);
-    pval_low(nBoot) = output_V1(nBoot).pval{2};
-
-
-    b_high(nBoot) = output_V1(nBoot).b{3};
-    t_high(nBoot) = output_V1(nBoot).t_stat{3};
-    R2_high(nBoot) = output_V1(nBoot).R2(3);
-    pval_high(nBoot) = output_V1(nBoot).pval{3};
-end
-
-R2_diff = R2_high - R2_low;
-ci = prctile(R2_diff, [2.5 97.5]);
-barData = mean(R2_diff);
-
-
-ci = prctile(t_V1delta, [2.5 97.5]);
-
-nfig = figure;
-nfig.Name = 'Context selective ripple modulation glme regression';
-nfig.Position = [71 280  1815  662];
-bar([1 2 3], barData, 0.4, 'FaceColor', customColors(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5); hold on
-errorbar([1 2 3], barData, barData - ci(1), barData - ci(2), 'k', 'LineWidth', 1.5)
-xlim([0.5 1.5]); xticks(1); xticklabels({'V1 delta power'})
-ylabel('Bootstrapped t-statistic')
-set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
 
 
 
 
-
-%%%%%%%%% V1 
-b_all = []; t_all = []; R2_all = []; pval_all = [];
-b_low = []; t_low = []; R2_low = []; pval_low = [];
-b_high = []; t_high = []; R2_high = []; pval_high = [];
-
-for nBoot = 1:1000
-    b_all(nBoot) = output_all(nBoot).b{1};
-    t_all(nBoot) = output_all(nBoot).t_stat{1};
-    R2_all(nBoot) = output_all(nBoot).R2(1);
-    pval_all(nBoot) = output_all(nBoot).pval{1};
-
-    b_low(nBoot) = output_low(nBoot).b{1};
-    t_low(nBoot) = output_low(nBoot).t_stat{1};
-    R2_low(nBoot) = output_low(nBoot).R2(1);
-    pval_low(nBoot) = output_low(nBoot).pval{1};
-
-
-    b_high(nBoot) = output_high(nBoot).b{1};
-    t_high(nBoot) = output_high(nBoot).t_stat{1};
-    R2_high(nBoot) = output_high(nBoot).R2(1);
-    pval_high(nBoot) = output_high(nBoot).pval{1};
-end
-
-
-
-
-
-
-%%%%%%%%% Baseline
-b_all = []; t_all = []; R2_all = []; pval_all = [];
-b_low = []; t_low = []; R2_low = []; pval_low = [];
-b_high = []; t_high = []; R2_high = []; pval_high = [];
-
-for nBoot = 1:1000
-    b_all(nBoot) = output_all(nBoot).b{1};
-    t_all(nBoot) = output_all(nBoot).t_stat{1};
-    R2_all(nBoot) = output_all(nBoot).R2(1);
-    pval_all(nBoot) = output_all(nBoot).pval{1};
-
-    b_low(nBoot) = output_low(nBoot).b{1};
-    t_low(nBoot) = output_low(nBoot).t_stat{1};
-    R2_low(nBoot) = output_low(nBoot).R2(1);
-    pval_low(nBoot) = output_low(nBoot).pval{1};
-
-
-    b_high(nBoot) = output_high(nBoot).b{1};
-    t_high(nBoot) = output_high(nBoot).t_stat{1};
-    R2_high(nBoot) = output_high(nBoot).R2(1);
-    pval_high(nBoot) = output_high(nBoot).pval{1};
-end
-%% Plotting context selecitve spatial corr and ripple corr
-
-
-
+ripple_types = {'ALL','LOW','HIGH'};
+PSTH_fields = {'PSTH_diff_low_spindle','PSTH_diff_high_spindle'};
+ripple_name = 'ripple power';
+plot_context_selective_ripple_modulations(context_modulation_all,PSTH_fields,ripple_types,ripple_name)
 
 %% 
