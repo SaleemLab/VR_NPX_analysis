@@ -57,31 +57,8 @@ for nsession = 1:max(ripples_all(1).session_count)
     end
 end
 
-%% Ripple modulation in V1 and HPC
-ripple_modulation_PSTH_all = [];
-psthBinSize = 0.01;
-windows = [-1 1];
-for nsession = 1:length(sessions_to_process)
-    %     ripple_modulation_PSTH_all{nsession} = [];
 
-    all_clusters = session_clusters_all.spatial_cell_id{nsession};
-    %       plot(unique(session_clusters_all.spike_id{nsession}));hold on;plot(all_clusters)
-
-    %         for nprobe = 1:length(ripples_all)
-    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-    tic
-    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
-        'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',0,'shuffle_option',1);
-    ripple_modulation_PSTH_all{nsession} = ripple_modulation;
-    toc
-end
-
-save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all','-v7.3')
-%  = struct();
-
-
-%% context-selective ripple modulation
+%% context-selective ripple modulation based on V1 bias
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
 % load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
@@ -146,9 +123,9 @@ for nsession = 1:length(sessions_to_process)
 
     HPC_id = find(contains(all_regions,'HPC'));
 
-    % Get mean bias for each ripple event in HPC and get within session
+    % Get mean bias for each ripple event in V1 and get within session
     % Track 1 and Track 2 biased ripple events based on HPC bias
-    mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+    mean_bias = mean(z_bias_V1(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
     log_odds_threshold = prctile(mean_bias,[20 80]);
     T1_index = find(mean_bias > log_odds_threshold(2));
     T2_index = find(mean_bias < log_odds_threshold(1));
@@ -219,7 +196,7 @@ for nsession = 1:length(sessions_to_process)
 
     %%%%%%%%%%%%%%%%% Low ripples
     amplitudes = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)]';
-    mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+    % mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
 
     power_threshold = prctile(amplitudes,[25 75]);
     log_odds_threshold = prctile(mean_bias,[20 80]);
@@ -662,7 +639,7 @@ context_modulation_all.timebin = ripple_modulation.bins;
 toc
 
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all_V1_bias.mat'),'context_modulation_all')
 
     % subplot(2,2,1)
     % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.POST_ripple_FR(V1_id))
