@@ -2500,7 +2500,7 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 %%%% with Spindle
 % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
-bins_to_use = bin_centers > -0.2 & 0;
+bins_to_use = bin_centers > -0.2 & bin_centers < 0;
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
 T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
@@ -3189,7 +3189,7 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 %%%%%%% SO not synchronised (out of phase)
 %%%% SO peak 
 
-bins_to_use = bin_centers > 0 & bin_centers <0.1;
+bins_to_use = bin_centers > 0 & bin_centers <0.2;
 % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
@@ -3529,12 +3529,12 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 
 
-%% Phase synchrony
+%% Phase synchrony PRE ripple
 %%%%%%%%%%%% SO synchronised
 
 %%%% SO peak 
 
-bins_to_use = bin_centers > 0 & bin_centers <0.1;
+bins_to_use = bin_centers > -0.2 & bin_centers <0;
 % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
@@ -3596,7 +3596,7 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 
 nfig = figure;
-nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase peak (in phase) based on V1 bias'; 
+nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase peak (PRE ripple in phase) based on V1 bias'; 
 nfig.Position = [500 75 700 850];
 
 event_index = [T1_events; T2_events];
@@ -3768,7 +3768,7 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 
 nfig = figure;
-nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase trough (in phase) based on V1 bias'; 
+nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase trough (PRE ripple in phase) based on V1 bias'; 
 nfig.Position = [500 75 700 850];
 nfig.Position = [500 75 700 850];
 
@@ -3883,7 +3883,7 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 %%%%%%% SO not synchronised (out of phase)
 %%%% SO peak 
 
-bins_to_use = bin_centers > 0 & bin_centers <0.1;
+bins_to_use = bin_centers > -0.2 & bin_centers <0;
 % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
@@ -3945,7 +3945,7 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 
 nfig = figure;
-nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase peak (out phase) based on V1 bias'; 
+nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase peak (PRE ripple out phase) based on V1 bias'; 
 nfig.Position = [500 75 700 850];
 
 event_index = [T1_events; T2_events];
@@ -4114,7 +4114,7 @@ UCI_diff =  prctile(boot_diff, 97.5);
 
 
 nfig = figure;
-nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase trough (out phase) based on V1 bias'; 
+nfig.Name = 'KDE Bias PSTH Track 1 vs Track 2 with SO phase trough (PRE ripple out phase) based on V1 bias'; 
 nfig.Position = [500 75 700 850];
 
 event_index = [T1_events; T2_events];

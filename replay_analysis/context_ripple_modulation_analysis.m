@@ -813,8 +813,8 @@ colorlines = [ ...
 
 nfig = figure;
 nfig.Name = 'Context selective FR difference in V1 and HPC';
-nfig.Position = [623          88        1215         846];
-tiledlayout(nfig, 3, 4, 'TileSpacing', 'compact', 'Padding', 'compact');
+nfig.Position = [623          88        950         900];
+tiledlayout(nfig, 4, 4, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile
 % Assume z_FR_track is loaded and size is [2 x N]
 a = FR_track(1,:);  % Track L firing rate
@@ -922,6 +922,43 @@ set(gca,'TickDir','out','Box','off','FontSize',12)
 % axis equal
 
 
+
+nexttile
+% a = FR_track_ratio(1,:);  % Track L firing rate
+% b = FR_track_ratio(2,:);  % Track R firing rate
+FR_diff = FR_track_ratio;
+histogram(FR_diff(contains(regions_all,'V1_R')),[-1:0.05:1],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
+histogram(FR_diff(contains(regions_all,'V1_L')),[-1:0.05:1],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
+
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')));
+text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
+% ylim([0 0.12])
+xline(0,'k--')
+xlabel('Track L- Track R FR ratio diff')
+ylabel('cum prop of cells')
+legend('V1 R','V1 L','box','off')
+title('Track L - Track R FR ratio diff')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+% axis equal
+
+nexttile
+% a = z_FR_track(1,:);  % Track L firing rate
+% b = z_FR_track(2,:);  % Track R firing rate
+FR_diff = FR_track_ratio;
+hold on;
+histogram(FR_diff(contains(regions_all,'V1_L')),[-1:0.05:1],'Normalization','cdf','FaceColor',colorlines(2,:),'EdgeColor','none');
+histogram(FR_diff(contains(regions_all,'V1_R')),[-1:0.05:1],'Normalization','cdf','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
+ylim([0 1])
+xline(0,'k--')
+xlabel('Track L- Track R FR ratio diff')
+ylabel('cum prop of cells')
+legend('V1 L','V1 R','box','off')
+title('Track L - Track R FR ratio diff')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+% axis equal
+
+
+%%%%%%%%%%% HPC
 nexttile
 % Plot scatter
 % Assume z_FR_track is loaded and size is [2 x N]
@@ -1021,6 +1058,41 @@ xlabel('Track L - Track R FR diff (z)')
 ylabel('cum prop of cells')
 legend('HPC L','HPC R','box','off')
 title('Track L - Track R FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+% axis equal
+
+
+nexttile
+% a = FR_track_ratio(1,:);  % Track L firing rate
+% b = FR_track_ratio(2,:);  % Track R firing rate
+FR_diff = FR_track_ratio;
+histogram(FR_diff(contains(regions_all,'HPC_R')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
+histogram(FR_diff(contains(regions_all,'HPC_L')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
+
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')));
+text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
+% ylim([0 0.12])
+xline(0,'k--')
+xlabel('Track L- Track R FR ratio diff')
+ylabel('cum prop of cells')
+legend('HPC R','HPC L','box','off')
+title('Track L - Track R FR ratio diff')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+% axis equal
+
+nexttile
+% a = z_FR_track(1,:);  % Track L firing rate
+% b = z_FR_track(2,:);  % Track R firing rate
+FR_diff = FR_track_ratio;
+hold on;
+histogram(FR_diff(contains(regions_all,'HPC_L')),[-1:0.05:1],'Normalization','cdf','FaceColor',colorlines(2,:),'EdgeColor','none');
+histogram(FR_diff(contains(regions_all,'HPC_R')),[-1:0.05:1],'Normalization','cdf','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
+ylim([0 1])
+xline(0,'k--')
+xlabel('Track L- Track R FR ratio diff')
+ylabel('cum prop of cells')
+legend('HPC L','HPC R','box','off')
+title('Track L - Track R FR ratio diff')
 set(gca,'TickDir','out','Box','off','FontSize',12)
 % axis equal
 
@@ -1165,6 +1237,267 @@ end
  save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
 % z_FR_track_diff(contains(regions_all,'V1'))
 
+
+%%%%%%%%%%% ALL ripples
+
+all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff{:});
+POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
+PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
+shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
+
+
+nfig = figure;
+nfig.Name = 'Context selective ripple modulation in V1 and HPC regression ratio difference';
+nfig.Position = [   842   345   954   578];
+
+
+
+
+subplot(2,3,1)
+% X = double(z_FR_track_diff(contains(regions_all,'V1')))';
+
+is_V1R = contains(regions_all, 'V1_R');
+is_V1L = contains(regions_all, 'V1_L');
+% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0;
+% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0;
+
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+hold on
+X = double(FR_track_ratio(contains(regions_all,'V1')))';
+Y = double(POST_ripple_FR_diff(contains(regions_all,'V1')));
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+xline(0,'k--')
+yline(0,'k--')
+% set(gca,'xscale','log')
+% set(gca,'yscale','log')
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_V1,'POST_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-1 1])
+ylim([-0.45 0.45])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+title('0 to 0.2s relative to ripple')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
+
+subplot(2,3,2)
+
+% is_V1R = contains(regions_all, 'V1_R');
+% is_V1L = contains(regions_all, 'V1_L');
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+hold on
+
+X = double(FR_track_ratio(contains(regions_all,'V1')))';
+Y = double(PRE_ripple_FR_diff(contains(regions_all,'V1')));
+
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+hold on
+xline(0,'k--')
+yline(0,'k--')
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_V1,'PRE_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-1 1])
+ylim([-0.4 0.4])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+title('-0.2 to 0s relative to ripple')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
+subplot(2,3,3)
+
+% is_V1R = contains(regions_all, 'V1_R');
+% is_V1L = contains(regions_all, 'V1_L');
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+hold on
+X = double(FR_track_ratio(contains(regions_all,'V1')))';
+Y = double(shifted_ripple_FR_diff(contains(regions_all,'V1')));
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+hold on
+xline(0,'k--')
+yline(0,'k--')
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'k-', 'LineWidth', 2)
+glme = fitlme(tbl_V1,'SHIFT_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','k');
+
+xlim([-1 1])
+ylim([-0.4 0.4])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+title('-1 to -0.8s relative to ripple')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
+subplot(2,3,4)
+
+is_V1R = contains(regions_all, 'HPC_R');
+is_V1L = contains(regions_all, 'HPC_L');
+% is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0;
+% is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0;
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+X = double(FR_track_ratio(contains(regions_all,'HPC')))';
+Y = double(POST_ripple_FR_diff(contains(regions_all,'HPC')));
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+
+hold on
+xline(0,'k--')
+yline(0,'k--')
+
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_HPC,'POST_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-1 1])
+ylim([-1 1])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
+
+subplot(2,3,5)
+
+% is_V1R = contains(regions_all, 'HPC_R');
+% is_V1L = contains(regions_all, 'HPC_L');
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+
+X = double(FR_track_ratio(contains(regions_all,'HPC')))';
+Y = double(PRE_ripple_FR_diff(contains(regions_all,'HPC')));
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+
+hold on
+xline(0,'k--')
+yline(0,'k--')
+
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
+glme = fitlme(tbl_HPC,'PRE_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','r');
+
+xlim([-1 1])
+ylim([-0.7 0.7])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
+
+subplot(2,3,6)
+
+% is_V1R = contains(regions_all, 'HPC_R');
+% is_V1L = contains(regions_all, 'HPC_L');
+scolors = repmat([nan nan nan], length(regions_all), 1);  % red
+scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
+scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
+scolors(isnan(scolors(:,1)),:) = [];
+
+X = double(FR_track_ratio(contains(regions_all,'HPC')))';
+Y = double(shifted_ripple_FR_diff(contains(regions_all,'HPC')));
+% scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
+scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
+
+hold on
+xline(0,'k--')
+yline(0,'k--')
+
+
+valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
+X = X(valid_id);
+Y = Y(valid_id);
+coeffs = polyfit(X, Y, 1);
+x_fit = linspace(min(X), max(X), 100);
+y_fit = polyval(coeffs, x_fit);
+plot(x_fit, y_fit, 'k-', 'LineWidth', 2)
+glme = fitlme(tbl_HPC,'SHIFT_ripple_FR_diff_ALL ~ FR_track_ratio + (1|subjectID)');
+
+text(prctile(X,99.9), prctile(Y,99.9), ...
+    sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
+    'FontSize',10,'Color','k');
+
+xlim([-1 1])
+ylim([-0.4 0.4])
+xlabel('Track FR ratio diff')
+ylabel('Ripple FR diff (z)')
+set(gca,'TickDir','out','Box','off','FontSize',12)
 
 
 
@@ -1974,7 +2307,7 @@ shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&
 
 
 nfig = figure;
-nfig.Name = 'Context selective ripple modulation in V1 and HPC regression (high ripples Track prefering) ratio difference';
+nfig.Name = 'Context selective ripple modulation in V1 and HPC regression (high ripples) ratio difference';
 nfig.Position = [   842   345   954   578];
 
 
@@ -2686,7 +3019,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
 ripple_types = {'ALL','LOW','HIGH'};
 PSTH_fields = {'PSTH_diff_low_spindle','PSTH_diff_high_spindle'};
-ripple_name = 'ripple power';
+ripple_name = 'spindle power';
 plot_context_selective_ripple_modulations(context_modulation_all,PSTH_fields,ripple_types,ripple_name)
 
 %% 

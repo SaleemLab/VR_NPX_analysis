@@ -467,6 +467,7 @@ for npower = 1:nBins
 
 end
 
+clear Fill
 % Plot layout
 fig = figure;
 fig.Position = [640 100 2*1100/3 650/2]
@@ -492,8 +493,21 @@ for npower = [1 4]
     ylim([-0.1 0.35])
     %     grid on;
 end
+
+bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+
+hold on;
+x2 = [thresholds, fliplr(thresholds)];
+y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end +1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(thresholds, bias_mean, 'Color','k', 'LineWidth', 2);
+
+
+
 yline(0,'--r')
-legend(Fill([1 4]) ,{'Low ripple power','High ripple power'},'box','off')
+legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
 
 nexttile
 for npower = [1 4]
@@ -515,8 +529,22 @@ for npower = [1 4]
         xlim([-0.1 0.35])
     %     grid on;
 end
+
+
+bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = ripple_power_KDE_bias_difference(npower).prop_shifted_mean;
+
+hold on;
+y2 = [prop_mean, fliplr(prop_mean)];
+x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end + 1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(bias_mean, prop_mean, 'Color','k', 'LineWidth', 2);
+
+
 xline(0,'--r')
-legend(Fill([1 4]) ,{'Low ripple power','High ripple power'},'box','off')
+legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
 
 
 % Save results
