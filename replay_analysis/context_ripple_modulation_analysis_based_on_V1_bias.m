@@ -236,7 +236,7 @@ for nsession = 1:length(sessions_to_process)
     for nprobe = 1:2
         session_event_index = find(ripples_all(nprobe).session_count == nsession);
         [C,ia,ib] = intersect(session_event_index,find(ripples_all(nprobe).session_count == nsession&ripples_all(nprobe).SWS_index==1));
-        amplitudes = [amplitudes ripples_all(nprobe).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),ia)];
+        amplitudes = [amplitudes ripples_all(nprobe).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),ia)];
     end
 
     power_threshold1 = prctile(amplitudes(1,:),[25 75]);
