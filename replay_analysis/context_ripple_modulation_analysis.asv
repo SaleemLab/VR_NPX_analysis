@@ -866,7 +866,7 @@ nexttile
 FR_diff = a-b;
 histogram(FR_diff(contains(regions_all,'V1_R')),[-20:0.5:20],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'V1_L')),[-20:0.5:20],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')),'Tail',);
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 ylim([0 0.12])
 xline(0,'k--')
@@ -900,7 +900,7 @@ FR_diff = a-b;
 histogram(FR_diff(contains(regions_all,'V1_R')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'V1_L')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
 
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')));
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 ylim([0 0.12])
 xline(0,'k--')
@@ -936,7 +936,7 @@ FR_diff = FR_track_ratio;
 histogram(FR_diff(contains(regions_all,'V1_R')),[-1:0.05:1],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'V1_L')),[-1:0.05:1],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
 
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'V1_R')),FR_diff(contains(regions_all,'V1_L')));
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 % ylim([0 0.12])
 xline(0,'k--')
@@ -1007,7 +1007,7 @@ FR_diff = a-b;
 histogram(FR_diff(contains(regions_all,'HPC_R')),[-20:0.5:20],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'HPC_L')),[-20:0.5:20],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
 
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')));
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 ylim([0 0.2])
 xline(0,'k--')
@@ -1039,7 +1039,7 @@ b = z_FR_track(2,:);  % Track R firing rate
 FR_diff = a-b;
 histogram(FR_diff(contains(regions_all,'HPC_R')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'HPC_L')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')));
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 ylim([0 0.2])
 xline(0,'k--')
@@ -1075,7 +1075,7 @@ FR_diff = FR_track_ratio;
 histogram(FR_diff(contains(regions_all,'HPC_R')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(1,:),'EdgeColor','none');hold on;
 histogram(FR_diff(contains(regions_all,'HPC_L')),[-2:0.1:2],'Normalization','probability','FaceColor',colorlines(2,:),'EdgeColor','none');
 
-[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')),'Tail','smaller');
+[h,pval,ks2stat] = kstest2(FR_diff(contains(regions_all,'HPC_R')),FR_diff(contains(regions_all,'HPC_L')));
 text(prctile(a,90),0.1,sprintf('p = %.3e',pval))
 % ylim([0 0.12])
 xline(0,'k--')
