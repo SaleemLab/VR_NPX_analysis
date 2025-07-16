@@ -74,7 +74,7 @@ spindle_phase=[];
 for probe_no = 1:2
     spindle_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -113,7 +113,7 @@ SO_amplitude=[];
 for probe_no = 1:2
     SO_amplitude{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -831,7 +831,7 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 %%%% with low spindle power
 
 % power_thresholds = prctile(ripple_info.spindle_presence,0:99.9/2:99.9);
-% bins_to_use = 
+bins_to_use = bin_centers >0 & bin_centers <0.2;
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
 T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
