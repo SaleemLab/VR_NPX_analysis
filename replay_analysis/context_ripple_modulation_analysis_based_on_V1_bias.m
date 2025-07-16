@@ -1100,6 +1100,15 @@ for nsession = 1:length(sessions_to_process)
 
         T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1 & is_peak_phase_1 == 0);
         T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1 & is_peak_phase_2 == 0);
+        
+        % mainly session 4
+        if length(T1_index)==1
+            T1_index = [T1_index T1_index];
+        end
+
+        if length(T2_index)==1
+            T2_index = [T2_index T2_index];
+        end
 
         for nCell = 1:length(all_clusters)
             % Ripple PSTH
@@ -1118,6 +1127,15 @@ for nsession = 1:length(sessions_to_process)
         is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
         T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1 & is_trough_phase_1 == 0);
         T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1 & is_trough_phase_2 == 0);
+        
+        % mainly session 4
+        if length(T1_index)==1
+            T1_index = [T1_index T1_index];
+        end
+
+        if length(T2_index)==1
+            T2_index = [T2_index T2_index];
+        end
 
         for nCell = 1:length(all_clusters)
             % Ripple PSTH
