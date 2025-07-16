@@ -2,7 +2,7 @@
 clear; clc;
 
 % 1. DEFINE THE MOUSE TO ANALYZE
-SUBJECTS = {'M24016','M23017','M24018','M24062','M24064','M24065'};
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
 for iSub = 1:length(SUBJECTS)
     mouseName = SUBJECTS{iSub}; % <-- Set your mouse ID here
 
