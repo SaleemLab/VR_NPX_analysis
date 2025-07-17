@@ -56,7 +56,6 @@ end
 
 %%%%%%%%%%%%%%%%%% Ripple info
 
-
 % if merge events to bilateral events as one event
 [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id,merged_event_info.ripples_peaktimes,0.05);
 
@@ -85,7 +84,7 @@ spindle_phase=[];
 for probe_no = 1:2
     spindle_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -99,7 +98,7 @@ spindle_amplitude=[];
 for probe_no = 1:2
     spindle_amplitude{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -113,7 +112,7 @@ SO_phase=[];
 for probe_no = 1:2
     SO_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -127,7 +126,7 @@ SO_amplitude=[];
 for probe_no = 1:2
     SO_amplitude{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -135,7 +134,6 @@ SO_amplitude = [SO_amplitude{1}(:,ripples_all(1).SWS_index==1) SO_amplitude{2}(:
 
 ripple_info.SO_amplitude = SO_amplitude';
 ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
-
 
 
 %%% early UP transition co-occurance
@@ -182,6 +180,7 @@ ripple_info.DOWN_index_hemi = ripple_info.DOWN_index_hemi(event_ids_first);
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
+
 
 
 % singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));

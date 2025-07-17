@@ -40,11 +40,15 @@ FR_track_ratio = (FR_track(1,:)-FR_track(2,:))./( FR_track(1,:)+FR_track(2,:));
 
 
 
-colorlines = [ ...
-    0.85, 0.2, 0.2;  % red
-    0.2, 0.4, 0.8    % blue
-    ];
+% colorlines = [ ...
+%     0.85, 0.2, 0.2;  % red
+%     0.2, 0.4, 0.8    % blue
+%     ];
 
+colorlines = [ ...
+    0.2, 0.4, 0.8;    % blue
+    0.85, 0.2, 0.2;   % red
+];
 
 %%%%%%%%%%%%%%%%%% context selective ripple modulation based on different
 %%%%%%%%%%%%%%%%%% conditions (ripple power or spindle power or SO phase and etc)

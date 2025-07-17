@@ -368,6 +368,51 @@ for nsession = 1:length(sessions_to_process)
 
 
 
+    %%%%%%%%%%%% spindle phase
+    event_phase=[];
+
+    for nprobe = 1:2
+        session_event_index = find(ripples_all(nprobe).session_count == nsession);
+        [C,ia,ib] = intersect(session_event_index,find(ripples_all(nprobe).session_count == nsession&ripples_all(nprobe).SWS_index==1));
+        event_phase = [event_phase ripples_all(nprobe).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),ia)];
+    end
+    
+    is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
+    is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
+    T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1);
+    T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1);
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff_peak_spindle{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:))';
+    end
+
+
+
+    is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
+    is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
+    T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1);
+    T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1);
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff_trough_spindle{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:))';
+    end
+
+
+
 
     hemi_id = [ones(1,sum((ripples_all(1).SWS_index==1 & ripples_all(1).session_count==nsession)>0)) 2*ones(1,sum((ripples_all(2).SWS_index==1 & ripples_all(2).session_count==nsession)>0))];
 
@@ -956,6 +1001,48 @@ for nsession = 1:length(sessions_to_process)
     end
 
 
+    %%%%%%%%%%%% spindle phase
+    event_phase=[];
+
+    for nprobe = 1:2
+        session_event_index = find(ripples_all(nprobe).session_count == nsession);
+        [C,ia,ib] = intersect(session_event_index,find(ripples_all(nprobe).session_count == nsession&ripples_all(nprobe).SWS_index==1));
+        event_phase = [event_phase ripples_all(nprobe).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),ia)];
+    end
+    
+    is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
+    is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
+    T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1);
+    T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1);
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff_peak_spindle{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:))';
+    end
+
+
+
+    is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
+    is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
+    T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1);
+    T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1);
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
+        context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
+
+        % Difference PSTH (stim1 - stim2)
+        context_modulation_all.PSTH_diff_trough_spindle{nsession}(nCell,:) = ...
+            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:))' - ...
+            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:))';
+    end
 
 
     hemi_id = [ones(1,sum((ripples_all(1).SWS_index==1 & ripples_all(1).session_count==nsession)>0)) 2*ones(1,sum((ripples_all(2).SWS_index==1 & ripples_all(2).session_count==nsession)>0))];
@@ -1296,6 +1383,13 @@ ripple_name = 'spindle power';
 plot_context_selective_ripple_modulation(context_modulation_all,PSTH_fields,ripple_types,ripple_name,'bias_option', 'V1')
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
+%%%%%%%%%%%%%%% Spindle power
+ripple_types = {'peak','trough'};
+PSTH_fields = {'PSTH_diff_low_spindle','PSTH_diff_high_spindle'};
+ripple_name = 'spindle power';
+plot_context_selective_ripple_modulation(context_modulation_all,PSTH_fields,ripple_types,ripple_name,'bias_option', 'V1')
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
 
 
 
@@ -1311,14 +1405,14 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
 
 
-
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
-
-%%%%%%%%%%%%%%% Spindle power
-ripple_types = {'LOW','HIGH'};
-PSTH_fields = {'PSTH_diff_low_ripple','PSTH_diff_high_ripple'};
-ripple_name = 'ripple power';
-plot_context_selective_ripple_modulation(context_modulation_all,PSTH_fields,ripple_types,ripple_name,'bias_option', 'HPC')
+% 
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
+% 
+% %%%%%%%%%%%%%%% Spindle power
+% ripple_types = {'LOW','HIGH'};
+% PSTH_fields = {'PSTH_diff_low_ripple','PSTH_diff_high_ripple'};
+% ripple_name = 'ripple power';
+% plot_context_selective_ripple_modulation(context_modulation_all,PSTH_fields,ripple_types,ripple_name,'bias_option', 'HPC')
 
 
 %% 
