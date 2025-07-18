@@ -61,7 +61,7 @@ function [behaviour] = read_behavior_session(session_path)
     all_files.trial = dir(fullfile(session_path, '*Trial_info*.csv'));
     all_files.manual_reward = dir(fullfile(session_path, '*Manual_reward*.csv'));
     temp_reward_files = dir(fullfile(session_path, '*Reward*.csv'));
-    all_files.reward = temp_reward_files(~startsWith({temp_reward_files.name}, 'Manual_'));
+    all_files.reward = temp_reward_files(~contains({temp_reward_files.name}, 'Manual'));
 
     if isempty(all_files.wheel) || isempty(all_files.reward) || isempty(all_files.lick)
         fprintf('  -> WARNING: Missing essential Wheel, Reward, or Lick files.\n'); return;
