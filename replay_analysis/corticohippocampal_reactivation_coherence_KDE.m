@@ -55,6 +55,12 @@ for nsession = 1:max(ripples_all(1).session_count)
 end
 
 %%%%%%%%%%%%%%%%%% Ripple info
+
+
+% if merge events to bilateral events as one event
+[event_ids_first,event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id,merged_event_info.ripples_peaktimes,0.05);
+
+
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
@@ -62,6 +68,8 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 
 %%% ripple power
 ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
+
 
 %%% spindle co-occurance
 [~,spindle_index,~,index] =RestrictInts(merged_event_info.ripples_ints,merged_event_info.spindles_ints);
@@ -69,18 +77,22 @@ ripple_info.spindle_presence = spindle_index;
 ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
 ripple_info.spindle_presence_hemi(find(spindle_index)) = merged_event_info.spindles_hemisphere_id(index);
 
+ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first);
+ripple_info.spindle_presence_hemi = ripple_info.spindle_presence_hemi(event_ids_first);
+
 %%% spindle phase
 spindle_phase=[];
 for probe_no = 1:2
     spindle_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
 spindle_phase = [spindle_phase{1}(:,ripples_all(1).SWS_index==1) spindle_phase{2}(:,ripples_all(2).SWS_index==1)];
 
 ripple_info.spindle_phase = spindle_phase';
+ripple_info.spindle_phase = ripple_info.spindle_phase(event_ids_first,:);
 
 %%% spindle power
 spindle_amplitude=[];
@@ -94,19 +106,21 @@ end
 spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
 
 ripple_info.spindle_amplitude = spindle_amplitude';
+ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
 
 %%% SO phase
 SO_phase=[];
 for probe_no = 1:2
     SO_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
 SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
 
 ripple_info.SO_phase = SO_phase';
+ripple_info.SO_phase = ripple_info.SO_phase(event_ids_first,:);
 
 %%% SO power
 SO_amplitude=[];
@@ -120,6 +134,8 @@ end
 SO_amplitude = [SO_amplitude{1}(:,ripples_all(1).SWS_index==1) SO_amplitude{2}(:,ripples_all(2).SWS_index==1)];
 
 ripple_info.SO_amplitude = SO_amplitude';
+ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
+
 
 
 %%% early UP transition co-occurance
@@ -129,6 +145,8 @@ ripple_info.early_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
 ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
 
+ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first);
+ripple_info.early_UP_index_hemi = ripple_info.early_UP_index_hemi(event_ids_first);
 
 %%% late UP transition co-occurance
 [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
@@ -137,6 +155,9 @@ ripple_info.late_UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
 ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
 
+ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first);
+ripple_info.late_UP_index_hemi = ripple_info.late_UP_index_hemi(event_ids_first);
+
 %%% UP transition co-occurance
 [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,2)]);
 ripple_info.UP_index = UP_index;
@@ -144,6 +165,8 @@ ripple_info.UP_index_hemi = zeros(size(UP_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
 ripple_info.UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
 
+ripple_info.UP_index = ripple_info.UP_index(event_ids_first);
+ripple_info.UP_index_hemi = ripple_info.UP_index_hemi(event_ids_first);
 %%% DOWN transition co-occurance
 [~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1) merged_event_info.DOWN_ints(:,2)]);
 ripple_info.DOWN_index = DOWN_index;
@@ -151,6 +174,8 @@ ripple_info.DOWN_index_hemi = zeros(size(DOWN_index));
 % ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
 ripple_info.DOWN_index_hemi(find(DOWN_index)) = merged_event_info.DOWN_hemisphere_id(index);
 
+ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first);
+ripple_info.DOWN_index_hemi = ripple_info.DOWN_index_hemi(event_ids_first);
 
 
 %%%%%%
@@ -163,384 +188,6 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
 
-
-%%%%% Plot distribution
-
-%%%%%%%%%%%%%
-% %%%%%%%%%%% Ripple power distribution
-ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
-
-fig = figure('Color','w');
-fig.Position=[158 358 702/2 546];
-fig.Name = 'Ripple peaktime ripple power distribution';
-
-
-% histogram([ripple_info.ripple_power],4:0.5:25,'Normalization','probability')
-temp = ripple_info.ripple_power;
-temp_thresholds = prctile(temp,[25 50 75]);
-
-% Ipsi amplitude
-nexttile
-
-histogram(temp,4:0.5:23,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Ripple power (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('Ripple power');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-% Contra amplitude
-temp = ripple_info.ripple_power;
-temp_thresholds = prctile(temp,[20 40 60 80]);
-nexttile
-
-
-histogram(temp,4:0.5:23,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Ripple power (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('Ripple power');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
-
-
-%%%%%%%%%%%%%
-% %%%%%%%%%%%
-% %%%%%%%%%%% SO phase coupling
-session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
-%%% SO phase
-SO_phase=[];
-for probe_no = 1:2
-    SO_phase{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-% SO_phase = [SO_phase{1} SO_phase{2}]';
-
-
-
-fig = figure
-fig.Name = 'Ripple-SO phase-locking'
-fig.Position=[158 358 702 546];
-
-temp = [SO_phase{1}(1,ripples_all(1).SWS_index==1) SO_phase{2}(2,ripples_all(2).SWS_index==1)]';
-
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-% angles_wrapped = mod(spindle_phase, 2*pi);
-
-nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-rmax = max(h.Values);  % get max count from histogram
-
-mean_length = circ_r(temp);
-mean_angle = circ_mean(temp);
-pvals(end+1) = circ_rtest(temp);
-
-% Scale mean length to match histogram scale
-scaled_length = mean_length * rmax;
-
-% Plot mean vector
-hold on
-polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
-txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
-title(txt);
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-nexttile
-% figure
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-for i = 1:max(session_count)
-    % nexttile
-    phases = temp(session_count == i);
-    angles_wrapped = mod(phases, 2*pi);
-    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
-    % title('Polar Histogram of Mean Angles');
-
-    mean_angles(i) = circ_mean(phases);
-    vector_lengths(i) = circ_r(phases);  % mean resultant length
-    pvals(i) = circ_rtest(phases);
-end
-angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi')
-
-
-
-temp = [SO_phase{1}(2,ripples_all(1).SWS_index==1) SO_phase{2}(1,ripples_all(2).SWS_index==1)]';
-
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-% angles_wrapped = mod(spindle_phase, 2*pi);
-
-nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-rmax = max(h.Values);  % get max count from histogram
-
-mean_length = circ_r(temp);
-mean_angle = circ_mean(temp);
-pvals(end+1) = circ_rtest(temp);
-
-% Scale mean length to match histogram scale
-scaled_length = mean_length * rmax;
-
-% Plot mean vector
-hold on
-polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
-txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
-title(txt);
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-nexttile
-% figure
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-for i = 1:max(session_count)
-    % nexttile
-    phases = temp(session_count == i);
-    angles_wrapped = mod(phases, 2*pi);
-    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
-    % title('Polar Histogram of Mean Angles');
-
-    mean_angles(i) = circ_mean(phases);
-    vector_lengths(i) = circ_r(phases);  % mean resultant length
-    pvals(i) = circ_rtest(phases);
-end
-angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi')
-
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
-
-
-%%%%%%%%%%%%%
-% %%%%%%%%%%%
-% %%%%%%%%%%% Spindle phase coupling
-
-%%% spindle phase
-spindle_phase=[];
-for probe_no = 1:2
-    spindle_phase{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
-
-% spindle_phase = [spindle_phase{1} spindle_phase{2}]';
-
-
-fig = figure
-fig.Name = 'Ripple-spindle phase-locking';
-fig.Position=[158 358 702 546];
-temp = [spindle_phase{1}(1,ripples_all(1).SWS_index==1) spindle_phase{2}(2,ripples_all(2).SWS_index==1)]';
-
-
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-% angles_wrapped = mod(spindle_phase, 2*pi);
-
-nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-rmax = max(h.Values);  % get max count from histogram
-
-mean_length = circ_r(temp);
-mean_angle = circ_mean(temp);
-pvals(end+1) = circ_rtest(temp);
-
-% Scale mean length to match histogram scale
-scaled_length = mean_length * rmax;
-
-% Plot mean vector
-hold on
-polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
-txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
-title(txt);
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-nexttile
-% figure
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-for i = 1:max(session_count)
-    % nexttile
-    phases = temp(session_count == i);
-    angles_wrapped = mod(phases, 2*pi);
-    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
-    % title('Polar Histogram of Mean Angles');
-
-    mean_angles(i) = circ_mean(phases);
-    vector_lengths(i) = circ_r(phases);  % mean resultant length
-    pvals(i) = circ_rtest(phases);
-end
-angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Ipsi')
-
-temp = [spindle_phase{1}(2,ripples_all(1).SWS_index==1) spindle_phase{2}(1,ripples_all(2).SWS_index==1)]';
-
-
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-% angles_wrapped = mod(spindle_phase, 2*pi);
-
-nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-rmax = max(h.Values);  % get max count from histogram
-
-mean_length = circ_r(temp);
-mean_angle = circ_mean(temp);
-pvals(end+1) = circ_rtest(temp);
-
-% Scale mean length to match histogram scale
-scaled_length = mean_length * rmax;
-
-% Plot mean vector
-hold on
-polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
-txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
-title(txt);
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-nexttile
-% figure
-mean_angles = [];
-vector_lengths = [];
-pvals = [];
-for i = 1:max(session_count)
-    % nexttile
-    phases = temp(session_count == i);
-    angles_wrapped = mod(phases, 2*pi);
-    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
-    % title('Polar Histogram of Mean Angles');
-
-    mean_angles(i) = circ_mean(phases);
-    vector_lengths(i) = circ_r(phases);  % mean resultant length
-    pvals(i) = circ_rtest(phases);
-end
-angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-title('Contra')
-
-
-%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-spindle_amplitude=[];
-for probe_no = 1:2
-    spindle_amplitude{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-
-fig = figure('Color','w');
-fig.Position=[158 358 702/2 546];
-fig.Name = 'Ripple peaktime spindle amplitude distribution';
-
-
-temp = [spindle_amplitude{1}(1,ripples_all(1).SWS_index==1) spindle_amplitude{2}(2,ripples_all(2).SWS_index==1)];
-temp_thresholds = prctile(temp,[25 50 75]);
-
-% Ipsi amplitude
-nexttile
-
-histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Amplitude (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('ipsi amplitude');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-% Contra amplitude
-temp = [spindle_amplitude{1}(2,ripples_all(1).SWS_index==1) spindle_amplitude{2}(1,ripples_all(2).SWS_index==1)];
-temp_thresholds = prctile(temp,[25 50 75]);
-nexttile
-
-histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Amplitude (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('contra amplitude');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-SO_amplitude=[];
-for probe_no = 1:2
-    SO_amplitude{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-
-fig = figure('Color','w');
-fig.Position=[158 358 702/2 546];
-fig.Name = 'Ripple peaktime SO amplitude distribution';
-
-
-temp = [SO_amplitude{1}(1,ripples_all(1).SWS_index==1) SO_amplitude{2}(2,ripples_all(2).SWS_index==1)];
-temp_thresholds = prctile(temp,[25 50 75]);
-
-% Ipsi amplitude
-nexttile
-
-histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Amplitude (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('ipsi amplitude');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-% Contra amplitude
-temp = [SO_amplitude{1}(2,ripples_all(1).SWS_index==1) SO_amplitude{2}(1,ripples_all(2).SWS_index==1)];
-temp_thresholds = prctile(temp,[25 50 75]);
-nexttile
-
-histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
-xlabel('Amplitude (z)');  % or whatever unit your times are
-ylabel('probability');
-hold on
-xline(temp_thresholds,'r')
-title('contra amplitude');
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
 
@@ -587,7 +234,8 @@ z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
 
 % z_bias_V1 = [PSTH_MUA(1).L_V1_ripples-PSTH_MUA(1).R_V1_ripples; PSTH_MUA(2).R_V1_ripples-PSTH_MUA(2).L_V1_ripples]';
 
-
+z_bias = z_bias(:,event_ids_first);
+z_bias_V1 = z_bias_V1(:,event_ids_first);
 
 %%%%%%%%%%% ALL
 bins_to_use = bin_centers>0 & bin_centers<0.1;
