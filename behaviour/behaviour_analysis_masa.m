@@ -106,3 +106,145 @@ elseif exist('P:\corticohippocampal_replay')>0
 end
 save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_training.mat'))
 save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_ephys.mat'))
+
+
+%% Behaviour summary
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_training.mat'))
+load(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_ephys.mat'))
+
+
+for iSub = 1:length(SUBJECTS)
+    early_days = 1:floor(length(session_behaviour_summary_training.L_first_lick{iSub})/3);
+    mid_days = early_days(end)+1:2*floor(length(session_behaviour_summary_training.L_first_lick{iSub})/3);
+    late_days = mid_days(end):round(length(session_behaviour_summary_training.L_first_lick{iSub}));
+
+    for track_id = 1:2
+        early_days_T1_lick{iSub}{track_id} = [];
+        early_days_T2_lick{iSub}{track_id}= [];
+        mid_days_T1_lick{iSub}{track_id}= [];
+        mid_days_T2_lick{iSub}{track_id}= [];
+        late_days_T1_lick{iSub}{track_id}= [];
+        late_days_T2_lick{iSub}{track_id}= [];
+    end
+
+
+    for track_id = 1:2
+        early_days_speed{iSub}{track_id} = [];
+        mid_days_speed{iSub}{track_id}= [];
+        late_days_speed{iSub}{track_id}= [];
+    end
+    for track_id = 1:2
+        early_days_passive{iSub}{track_id} = [];
+        mid_days_passive{iSub}{track_id}= [];
+        late_days_passive{iSub}{track_id}= [];
+    end
+
+    for track_id = 1:2
+        early_days_manual{iSub}{track_id} = [];
+        mid_days_manual{iSub}{track_id}= [];
+        late_days_manual{iSub}{track_id}= [];
+    end
+
+
+    for iDay = early_days
+        if ~isempty(session_behaviour_summary_training.L_first_lick{iSub}{iDay})
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+
+            early_days_manual{iSub}{1} = [early_days_manual{iSub}{1} manual_t1];
+            early_days_manual{iSub}{2} = [early_days_manual{iSub}{2} manual_t2];
+            early_days_T1_lick{iSub}{1} = [early_days_T1_lick{iSub}{1} session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
+            early_days_T2_lick{iSub}{1} = [early_days_T2_lick{iSub}{1} session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
+        end
+        if ~isempty(session_behaviour_summary_training.R_first_lick{iSub}{iDay})
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+
+            early_days_T1_lick{iSub}{2} = [early_days_T1_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{1}];
+            early_days_T2_lick{iSub}{2} = [early_days_T2_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{2}];
+        end
+
+        if ~isempty(session_behaviour_summary_training.lap_speed{iSub}{iDay})
+            early_days_speed{iSub}{1} = [early_days_speed{iSub}{1}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{1}];
+            early_days_speed{iSub}{2} = [early_days_speed{iSub}{2}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{2}];
+        end
+    end
+
+
+    for iDay = mid_days
+        if ~isempty(session_behaviour_summary_training.L_first_lick{iSub}{iDay})
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+
+            mid_days_manual{iSub}{1} = [mid_days_manual{iSub}{1} manual_t1];
+            mid_days_manual{iSub}{2} = [mid_days_manual{iSub}{2} manual_t2];
+
+            mid_days_T1_lick{iSub}{1} = [mid_days_T1_lick{iSub}{1}  session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
+            mid_days_T2_lick{iSub}{1} = [mid_days_T2_lick{iSub}{1}  session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
+        end
+        if ~isempty(session_behaviour_summary_training.R_first_lick{iSub}{iDay})
+
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+
+            mid_days_T1_lick{iSub}{2} = [mid_days_T1_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{1}];
+            mid_days_T2_lick{iSub}{2} = [mid_days_T2_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{2}];
+        end
+        if ~isempty(session_behaviour_summary_training.lap_speed{iSub}{iDay})
+            mid_days_speed{iSub}{1} = [mid_days_speed{iSub}{1}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{1}];
+            mid_days_speed{iSub}{2} = [mid_days_speed{iSub}{2}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{2}];
+        end
+    end
+
+
+
+    for iDay = late_days
+        if ~isempty(session_behaviour_summary_training.L_first_lick{iSub}{iDay})
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+
+            late_days_T1_lick{iSub}{1} = [late_days_T1_lick{iSub}{1}  manual_t1+session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
+            late_days_T2_lick{iSub}{1} = [late_days_T2_lick{iSub}{1}  manual_t2+session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
+        end
+        if ~isempty(session_behaviour_summary_training.R_first_lick{iSub}{iDay})
+            manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
+            manual_t1(manual_t1==1) = nan;
+
+            manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
+            manual_t2(manual_t2==1) = nan;
+            late_days_T1_lick{iSub}{2} = [late_days_T1_lick{iSub}{2}  manual_t1+session_behaviour_summary_training.R_first_lick{iSub}{iDay}{1}];
+            late_days_T2_lick{iSub}{2} = [late_days_T2_lick{iSub}{2}  manual_t2+session_behaviour_summary_training.R_first_lick{iSub}{iDay}{2}];
+        end
+        if ~isempty(session_behaviour_summary_training.lap_speed{iSub}{iDay})
+            late_days_speed{iSub}{1} = [late_days_speed{iSub}{1}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{1}];
+            late_days_speed{iSub}{2} = [late_days_speed{iSub}{2}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{2}];
+        end
+    end
+end
+
+
+
+%%%%%%%% Acorss animal running behaviour
+

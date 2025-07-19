@@ -205,13 +205,24 @@ for nlap = 1:length(behaviour.lap_ID_all)
     track2_lick_position{nlap} = behaviour.lick_position(current_lap_licks(track2_licks))+correct_position;
 
 
-    if max(current_lap_licks) < length(behaviour.lick_time)
+    if max(current_lap_licks) <= length(behaviour.lick_time)
         track1_lick_time{nlap} = behaviour.lick_time(current_lap_licks(track1_licks));
         track2_lick_time{nlap} = behaviour.lick_time(current_lap_licks(track2_licks));
+    elseif isempty(current_lap_licks)
+        track1_lick_time{nlap} = [nan];
+        track2_lick_time{nlap} = [nan];
+    elseif current_lap_licks(end-1) < length(behaviour.lick_time)
+        track1_lick_time{nlap} = [behaviour.lick_time(current_lap_licks(track1_licks(1:end-1)));nan];
+        track2_lick_time{nlap} = [behaviour.lick_time(current_lap_licks(track2_licks(1:end-1)));nan];
+
     else
         track1_lick_time{nlap} = [nan];
         track2_lick_time{nlap} = [nan];
+  
+        % track1_lick_time{nlap} = [nan];
+        % track2_lick_time{nlap} = [nan];
     end
+    
     lap_times(current_track).lap(current_lap).track1_lick_time = track1_lick_time{nlap};
     lap_times(current_track).lap(current_lap).track2_lick_time = track2_lick_time{nlap};
 
@@ -248,6 +259,9 @@ for nlap = 1:length(behaviour.lap_ID_all)
         end
 
     end
+
+    session_behaviour_summary.L_lick{current_track}{current_lap} =track1_lick_position{nlap};
+    session_behaviour_summary.R_lick{current_track}{current_lap} =track2_lick_position{nlap};
 end
 
 
@@ -414,6 +428,11 @@ for track_id = 1:2
             plot(lickBin(2:end), zeros(1,length(lickBin(2:end))), 'Color', patch_color{2}(5,:));
         end
 
+        if ymax==0
+            ymax = 1;
+            
+        end
+
         xline(100, 'Color', patch_color{track_id}(5,:), 'LineWidth', 5)
 
         hold on
@@ -481,6 +500,11 @@ for track_id = 1:2
             plot(lickBin(2:end), zeros(1,length(lickBin(2:end))), 'Color', patch_color{2}(5,:));
         end
 
+        if ymax==0
+            ymax = 1;
+            
+        end
+        
         xline(100, 'Color', patch_color{track_id}(5,:), 'LineWidth', 5)
 
         hold on
@@ -501,8 +525,8 @@ for track_id = 1:2
 
         if type == 1
         
-            session_behaviour_summary.L_first_click{track_id} = track1_first_click;
-            session_behaviour_summary.R_first_click{track_id} = track2_first_click;
+            session_behaviour_summary.L_first_lick{track_id} = track1_first_click;
+            session_behaviour_summary.R_first_lick{track_id} = track2_first_click;
         end
     end
 
