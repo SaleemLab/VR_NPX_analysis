@@ -1,3 +1,9 @@
+%% Behavioural analysis
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
+
 clear all
 
 
@@ -163,6 +169,7 @@ for iSub = 1:length(SUBJECTS)
 
             early_days_manual{iSub}{1} = [early_days_manual{iSub}{1} manual_t1];
             early_days_manual{iSub}{2} = [early_days_manual{iSub}{2} manual_t2];
+            
             early_days_T1_lick{iSub}{1} = [early_days_T1_lick{iSub}{1} session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
             early_days_T2_lick{iSub}{1} = [early_days_T2_lick{iSub}{1} session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
         end
@@ -225,8 +232,11 @@ for iSub = 1:length(SUBJECTS)
             manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
             manual_t2(manual_t2==1) = nan;
 
-            late_days_T1_lick{iSub}{1} = [late_days_T1_lick{iSub}{1}  manual_t1+session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
-            late_days_T2_lick{iSub}{1} = [late_days_T2_lick{iSub}{1}  manual_t2+session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
+            late_days_manual{iSub}{1} = [late_days_manual{iSub}{1} manual_t1];
+            late_days_manual{iSub}{2} = [late_days_manual{iSub}{2} manual_t2];
+
+            late_days_T1_lick{iSub}{1} = [late_days_T1_lick{iSub}{1}  session_behaviour_summary_training.L_first_lick{iSub}{iDay}{1}];
+            late_days_T2_lick{iSub}{1} = [late_days_T2_lick{iSub}{1}  session_behaviour_summary_training.L_first_lick{iSub}{iDay}{2}];
         end
         if ~isempty(session_behaviour_summary_training.R_first_lick{iSub}{iDay})
             manual_t1 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{1}];
@@ -234,8 +244,8 @@ for iSub = 1:length(SUBJECTS)
 
             manual_t2 = [session_behaviour_summary_training.manual_trial{iSub}{iDay}{2}];
             manual_t2(manual_t2==1) = nan;
-            late_days_T1_lick{iSub}{2} = [late_days_T1_lick{iSub}{2}  manual_t1+session_behaviour_summary_training.R_first_lick{iSub}{iDay}{1}];
-            late_days_T2_lick{iSub}{2} = [late_days_T2_lick{iSub}{2}  manual_t2+session_behaviour_summary_training.R_first_lick{iSub}{iDay}{2}];
+            late_days_T1_lick{iSub}{2} = [late_days_T1_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{1}];
+            late_days_T2_lick{iSub}{2} = [late_days_T2_lick{iSub}{2}  session_behaviour_summary_training.R_first_lick{iSub}{iDay}{2}];
         end
         if ~isempty(session_behaviour_summary_training.lap_speed{iSub}{iDay})
             late_days_speed{iSub}{1} = [late_days_speed{iSub}{1}; session_behaviour_summary_training.lap_speed{iSub}{iDay}{1}];

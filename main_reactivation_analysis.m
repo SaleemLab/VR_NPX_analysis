@@ -1388,7 +1388,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession =[1 2 3 4 5 6 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22]
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -1659,7 +1659,6 @@ for nsession =[1 2 3 4 5 6 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22]
         close all
     end
 end
-
 
 
 
@@ -2461,3 +2460,6 @@ for nsession =1
 
     end
 end
+
+
+

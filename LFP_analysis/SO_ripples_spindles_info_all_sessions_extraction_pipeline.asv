@@ -865,21 +865,20 @@ end
 save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all','-v7.3')
 
 title_text = 'PLS contextual discrimination RUN1';
-fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+fig = figure('Name', title_text, 'Position', [200 100 475 880]); hold on;
 
-title_text = 'PLS contextual discrimination RUN1';
 for n = 1:2
     nexttile
     fpr = KDE_RUN_validations_all.FPR(1,:);
-    TPR_real = squeeze(mean(KDE_RUN_validations_all.HPC_TPR(n,:,:),2))';
-    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:),2))';
+    TPR_real = squeeze(mean(KDE_RUN_validations_all.HPC_TPR(n,:,:),2));
+    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:),2));
     CI_real = (std(squeeze(KDE_RUN_validations_all.HPC_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR,2));
     CI_shuf = (std(squeeze(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR_shuffled,2));
     hold on
     plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real' fliplr(TPR_real-CI_real')], ...
         [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_real+CI_real' fliplr(TPR_real-CI_real')], ...
         'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
     plot(fpr, TPR_real, 'Color', [231,41,138]/256);
     plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
