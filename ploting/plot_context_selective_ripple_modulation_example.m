@@ -12,6 +12,13 @@ end
 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
 
 ripple_modulation_percentile = [context_modulation_all.ripple_modulation_percentile{:}];
@@ -127,7 +134,7 @@ ModelList = {
 
 %%%%%%%%%
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-
+load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
 z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
@@ -151,7 +158,7 @@ bins_to_use = bin_centers>0 & bin_centers<0.1;
 
 psthBinSize = 0.01;
 windows = [-1.5 1.5];
-
+sessions_to_process = 1:max(ripples_all(1).session_count);
 
 for nsession = 1:22
 
@@ -229,11 +236,11 @@ for nsession = 1:22
     cluster_id = zeros(length(Z),1);
     cluster_id(Z == nsession) = 1:sum(Z == nsession);
 
-    T2_cell = cluster_id(X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L'));
-    T2_cell_all = find((X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L')));
+    T2_cell = cluster_id(X < -0.3 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L'));
+    T2_cell_all = find((X < -0.3 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L')));
 
-    T1_cell = cluster_id(X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R'));
-    T1_cell_all = find((X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R')));
+    T1_cell = cluster_id(X > 0.3 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R'));
+    T1_cell_all = find((X > 0.3 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R')));
 
 
     
@@ -244,9 +251,9 @@ for nsession = 1:22
 
     if ~isempty(T2_cell)
         for ncell = 1:length(T2_cell)
-            fig = figure
+            fig = figure;
             fig.Position = [1385 650 470 340];
-            fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T1_cell_all(ncell));
+            fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T2_cell_all(ncell));
             tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
 
             %%% all ripples
@@ -259,6 +266,7 @@ for nsession = 1:22
             ylabel('Firing rate (Hz)')
             % ylim([0 20])
             xlim([0 140])
+            legend('Track L','Track R','box','off')
 
             nexttile
             % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
@@ -269,7 +277,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('all ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -284,7 +292,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('low ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -298,7 +306,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('high ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -313,7 +321,7 @@ for nsession = 1:22
 
     if ~isempty(T1_cell)
         for ncell = 1:length(T1_cell)
-            fig = figure
+            fig = figure;
             fig.Position = [1385 650 470 340];
             fig.Name = sprintf('Session %i V1 R spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T1_cell(ncell)),T1_cell_all(ncell));
             tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
@@ -328,6 +336,7 @@ for nsession = 1:22
             ylabel('Firing rate (Hz)')
             % ylim([0 20])
             xlim([0 140])
+            legend('Track L','Track R','box','off')
 
             nexttile
             % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
@@ -338,7 +347,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('all ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -353,7 +362,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('low ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -367,7 +376,7 @@ for nsession = 1:22
 
             xlim([-1 1])
             xlabel('Time (s)')
-            ylabel('Firing rate (z)')
+            ylabel('Firing rate (Hz)')
             xlim([-1 1])
             title('high ripples')
             set(gca,'TickDir','out','Box','off','FontSize',12)
