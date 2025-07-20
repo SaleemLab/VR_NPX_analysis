@@ -2,8 +2,23 @@
 %% Plotting context selecitve ripple modulation
 % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
 
 ripple_modulation_percentile = [context_modulation_all.ripple_modulation_percentile{:}];
@@ -119,7 +134,7 @@ ModelList = {
 
 %%%%%%%%%
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-
+load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
 z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
@@ -132,7 +147,7 @@ z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
 z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
 clear z_bias1
 
-%%%%%%%%%%%%% High ripple (cell examples)
+%%%%%%%%%%%%% ripple PSTH (cell examples)
 timebin = 0.01;
 time_windows = [-1 1];
 % Generate bin edges
@@ -163,6 +178,16 @@ for nsession = 1:22
 
     power_threshold = prctile(amplitudes,[25 75]);
     log_odds_threshold = prctile(mean_bias,[20 80]);
+
+    T1_index = find(mean_bias > log_odds_threshold(2));
+    T2_index = find(mean_bias < log_odds_threshold(1));
+
+    for nCell = 1:length(all_clusters)
+        % Ripple PSTH
+        context_modulation_all.PSTH_Hz{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH(nCell,T1_index,:)));
+        context_modulation_all.PSTH_Hz{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH(nCell,T2_index,:)));
+    end
+
 
     T1_index = find(mean_bias > log_odds_threshold(2) & amplitudes >= power_threshold(end));
     T2_index = find(mean_bias < log_odds_threshold(1) & amplitudes >= power_threshold(end));
@@ -209,144 +234,160 @@ for nsession = 1:22
 
 
     cluster_id = zeros(length(Z),1);
-    cluster_id(Z == 17) = 1:sum(Z == nsession);
+    cluster_id(Z == nsession) = 1:sum(Z == nsession);
 
     T2_cell = cluster_id(X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L'));
     T2_cell_all = find((X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L')));
-    T1_cell = cluster_id(X > 0.4 & Y > 0.10 & Z == nsession & contains(regions_all','V1_R'));
-    T1_cell_all = find((X > 0.4 & Y > 0.10 & Z == nsession & contains(regions_all','V1_R')));
+
+    T1_cell = cluster_id(X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R'));
+    T1_cell_all = find((X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R')));
 
 
-    PSTH_Hz = [context_modulation_all.PSTH_high_ripple_Hz{nsession}];
+    
+    PSTH_Hz = [context_modulation_all.PSTH_Hz{nsession}];
+
+    high_PSTH_Hz = [context_modulation_all.PSTH_high_ripple_Hz{nsession}];
     low_PSTH_Hz = [context_modulation_all.PSTH_low_ripple_Hz{nsession}];
 
+    if ~isempty(T2_cell)
+        for ncell = 1:length(T2_cell)
+            fig = figure
+            fig.Position = [1385 650 470 340];
+            fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T1_cell_all(ncell));
+            tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
 
-    for ncell = 1:length(T2_cell)
-        fig = figure
-        fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T1_cell_all(ncell));
-        tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
+            %%% all ripples
+            nexttile
+            plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),1}),'Color',colorlines(1,:));hold on;
+            plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),2}),'Color',colorlines(2,:))
+            % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
+            set(gca,'TickDir','out','Box','off','FontSize',12)
+            xlabel('Position (cm)')
+            ylabel('Firing rate (Hz)')
+            % ylim([0 20])
+            xlim([0 140])
 
-        %%% High ripples
-        nexttile
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),1}),'Color',colorlines(1,:));hold on;
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),2}),'Color',colorlines(2,:))
-        % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xlabel('Position (cm)')
-        ylabel('Firing rate (Hz)')
-        % ylim([0 20])
-        xlim([0 140])
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(PSTH_Hz(1,T2_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(PSTH_Hz(2,T2_cell(ncell),:)),'Color',colorlines(2,:))
 
-        nexttile
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
-        %
-        plot(context_modulation_all.timebin,squeeze(PSTH_Hz(1,T2_cell(ncell),:)),'Color',colorlines(1,:));hold on;
-        plot(context_modulation_all.timebin,squeeze(PSTH_Hz(2,T2_cell(ncell),:)),'Color',colorlines(2,:))
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('all ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
 
-        xlim([-1 1])
-        xlabel('Time (s)')
-        ylabel('Firing rate (z)')
-        xlim([-1 1])
-        title('high ripples')
-        set(gca,'TickDir','out','Box','off','FontSize',12)
 
-        %%%% Low ripples
-        nexttile
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),1}),'Color',colorlines(1,:));hold on;
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T2_cell(ncell),2}),'Color',colorlines(2,:))
-        % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xlabel('Position (cm)')
-        ylabel('Firing rate (Hz)')
-        % ylim([0 20])
-        xlim([0 140])
-        
-        nexttile
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
-        %
-        plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(1,T2_cell(ncell),:)),'Color',colorlines(1,:));hold on;
-        plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(2,T2_cell(ncell),:)),'Color',colorlines(2,:))
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(1,T2_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(2,T2_cell(ncell),:)),'Color',colorlines(2,:))
 
-        xlim([-1 1])
-        xlabel('Time (s)')
-        ylabel('Firing rate (z)')
-        xlim([-1 1])
-        title('low ripples')
-        set(gca,'TickDir','out','Box','off','FontSize',12)
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('low ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
+
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(high_PSTH_Hz(1,T2_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(high_PSTH_Hz(2,T2_cell(ncell),:)),'Color',colorlines(2,:))
+
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('high ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
+
+        end
     end
 
-    PSTH_Hz = [context_modulation_all.PSTH_high_ripple_Hz{nsession}];
+    PSTH_Hz = [context_modulation_all.PSTH_Hz{nsession}];
+
+    high_PSTH_Hz = [context_modulation_all.PSTH_high_ripple_Hz{nsession}];
     low_PSTH_Hz = [context_modulation_all.PSTH_low_ripple_Hz{nsession}];
 
+    if ~isempty(T1_cell)
+        for ncell = 1:length(T1_cell)
+            fig = figure
+            fig.Position = [1385 650 470 340];
+            fig.Name = sprintf('Session %i V1 R spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T1_cell(ncell)),T1_cell_all(ncell));
+            tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
 
-    for ncell = 1:length(T1_cell)
-        fig = figure
-        fig.Name = sprintf('Session %i V1 R spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T1_cell(ncell)),T1_cell_all(ncell));
-        tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
+            %%% all ripples
+            nexttile
+            plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),1}),'Color',colorlines(1,:));hold on;
+            plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),2}),'Color',colorlines(2,:))
+            % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
+            set(gca,'TickDir','out','Box','off','FontSize',12)
+            xlabel('Position (cm)')
+            ylabel('Firing rate (Hz)')
+            % ylim([0 20])
+            xlim([0 140])
 
-        %%% High ripples
-        nexttile
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),1}),'Color',colorlines(1,:));hold on;
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),2}),'Color',colorlines(2,:))
-        % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xlabel('Position (cm)')
-        ylabel('Firing rate (Hz)')
-        % ylim([0 20])
-        xlim([0 140])
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(PSTH_Hz(1,T1_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(PSTH_Hz(2,T1_cell(ncell),:)),'Color',colorlines(2,:))
 
-        MAX_FR = max(max([squeeze(PSTH_Hz(1,T1_cell(ncell),:)),squeeze(PSTH_Hz(2,T1_cell(ncell),:)),squeeze(low_PSTH_Hz(1,T1_cell(ncell),:)),squeeze(low_PSTH_Hz(2,T1_cell(ncell),:))]));
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('all ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
 
-     
-        nexttile
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
-        %
-        plot(context_modulation_all.timebin,squeeze(PSTH_Hz(1,T1_cell(ncell),:)),'Color',colorlines(1,:));hold on;
-        plot(context_modulation_all.timebin,squeeze(PSTH_Hz(2,T1_cell(ncell),:)),'Color',colorlines(2,:))
 
-        xlim([-1 1])
-        xlabel('Time (s)')
-        ylabel('Firing rate (z)')
-        xlim([-1 1])
-        title('high ripples')
-        set(gca,'TickDir','out','Box','off','FontSize',12)
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(1,T1_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(2,T1_cell(ncell),:)),'Color',colorlines(2,:))
 
-        %%%% Low ripples
-        nexttile
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),1}),'Color',colorlines(1,:));hold on;
-        plot(1:140,mean(session_clusters_all.spatial_response{nsession}{T1_cell(ncell),2}),'Color',colorlines(2,:))
-        % title(sprintf('V1 L %i',session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell))))
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xlabel('Position (cm)')
-        ylabel('Firing rate (Hz)')
-        % ylim([0 20])
-        xlim([0 140])
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('low ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
 
-        nexttile
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
-        % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
-        %
-        plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(1,T1_cell(ncell),:)),'Color',colorlines(1,:));hold on;
-        plot(context_modulation_all.timebin,squeeze(low_PSTH_Hz(2,T1_cell(ncell),:)),'Color',colorlines(2,:))
+            nexttile
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
+            % plot(context_modulation_all.timebin,squeeze(all_PSTH(2,T2_cell_all(ncell),:)),'Color',colorlines(2,:))
+            %
+            plot(context_modulation_all.timebin,squeeze(high_PSTH_Hz(1,T1_cell(ncell),:)),'Color',colorlines(1,:));hold on;
+            plot(context_modulation_all.timebin,squeeze(high_PSTH_Hz(2,T1_cell(ncell),:)),'Color',colorlines(2,:))
 
-        xlim([-1 1])
-        xlabel('Time (s)')
-        ylabel('Firing rate (z)')
-        xlim([-1 1])
-        title('low ripples')
-        set(gca,'TickDir','out','Box','off','FontSize',12)
+            xlim([-1 1])
+            xlabel('Time (s)')
+            ylabel('Firing rate (Hz)')
+            xlim([-1 1])
+            title('high ripples')
+            set(gca,'TickDir','out','Box','off','FontSize',12)
+
+        end
     end
-
 
 
     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','context-selective ripple PSTH'),[],'ContentType','vector')
 
 end
 
-
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 
 
 %%%%%%%%%%%%% High ripple
