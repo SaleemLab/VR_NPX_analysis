@@ -886,7 +886,7 @@ for n = 1:2
     xlabel('True positive rate')
     ylabel('False Positive rate')
     %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    title(sprintf('ROC curve HPC (%i ms bins)')); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
 
