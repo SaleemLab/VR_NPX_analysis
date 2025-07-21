@@ -110,8 +110,8 @@ elseif exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_training.mat'))
-save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_ephys.mat'))
+save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_training.mat'),'session_behaviour_summary_training')
+save(fullfile(analysis_folder,'V1-HPC behaviour','session_behaviour_summary_ephys.mat'),'session_behaviour_summary_ephys')
 
 
 %% Behaviour summary
