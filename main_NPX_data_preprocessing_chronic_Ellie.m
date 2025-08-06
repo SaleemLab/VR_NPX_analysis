@@ -186,25 +186,26 @@ end
 
 
 %% PSD analysis and LFP profile
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
-ROOTPATH = 'Z:\ibn-vision';
+ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 % Single session
-SUBJECT = 'M24019';
-SESSION = '202405';
-options = 'bilateral';
-Stimulus_type = 'Checkerboard';
-% Stimulus_type = 'OpenField';
-if contains(Stimulus_type,'Masa2tracks')
-    session_files = dir(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info*.mat'));
-    for n = 1:length(session_files) % May have PRE RUN and POST sessions rather than just one
-        load(fullfile(session_files(n).folder, session_files(n).name))
-        extract_PSD_profile(session_info,Stimulus_type)
-    end
-else
-    load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
-    extract_PSD_profile(session_info,Stimulus_type)
-end
+SUBJECT = 'M00013';
+SESSION = '20250204';
+options = 'V1-HPC';
+Stimulus_type = 'Sleep_Box_1';
+
+load(fullfile(ROOTPATH,'DATA','SUBJECTS',SUBJECT,'analysis',SESSION,Stimulus_type,'session_info.mat'))
+extract_PSD_profile(session_info,Stimulus_type)
+
+
+
+
+
+
+
+
+
 
 
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};

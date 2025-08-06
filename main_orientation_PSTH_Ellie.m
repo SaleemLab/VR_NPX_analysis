@@ -1,26 +1,22 @@
 %%% For analysis of unit spiking in response to visual stimuli. ERB 2025
+% Depths of V1 L5 and CA1 are both based on best regional power per PSD analysis (for which, use PSD_analysis_UnProcessedLFP_ellie).
+% V1 L4 channel pair is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie
 
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
-% Choose your probe depth of interest
-L4_depth_range = 4500:4640; % 1/5. um. Set for each SESSION based on CSD +/- 70um
-V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
-CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
-Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
-depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1'
-
+% 1/4 Choose your probe depth of interest 
+depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
 SUBJECTS = {'M00013'};
-
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
-%%% 3/5
-Stimulus_type = 'TRAIN'; % OMIT
+%%% 2/4
+Stimulus_type = 'OP_Tuning'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
 % plot_choice 'struct' gives output of tuning metrics.
-plot_choice = 'single_units'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+plot_choice = 'struct'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
 sliced_plot_option = 'no'; % 'yes' if you want to plot traces by groups of 40 trials to look for changes during the session
 z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
@@ -28,10 +24,12 @@ z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs'
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250207\TRAIN') % 4/5 files will be saved here in the cd
 
+% 3/4 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\OP_Tuning') 
 
-for nsession = 8 %5/5 row number of recording date in "experiment_info" 
+% 4/4 
+for nsession = 4 % row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -48,6 +46,24 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters = clusters_ks4;
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'earliest_V1sink_CSD.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'depths_from_PSD.mat'))
+        files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel
+        file_to_load = fullfile(options.EPHYS_DATAPATH, files(1).name); %load() does not accept wildcards like *
+        load(file_to_load);
+        
+        Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
+        L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
+        L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
+        %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+        L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
+        CA1_depth = depths_from_PSD.CA1_depth_PSD;
+
+        L4_depth_range = [L4_channel_pair_depth - 70 , L4_channel_pair_depth + 70]; % based on CSD +/- 70um - errs on the large side
+        CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+        Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
+        Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
+        V1_depth_range = [L5_depth - 350, L4_channel_pair_depth + 570]; % low to high
 
         all_orientations = unique(Task_info.stim_orientation); % uniqe values sorted in ascending order
         %Task_info.stim_onset
@@ -66,6 +82,8 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                 depth_range = CA1_depth_range;
             case 'Sub_CA1'
                 depth_range = Sub_CA1_depth_range;
+            case 'Sub_HPC'
+                depth_range = Sub_HPC_depth_range;
         end
 
         if contains(Stimulus_type, 'OP_Tuning') && contains(plot_choice, 'single_units') 
@@ -1187,7 +1205,7 @@ for nsession = 8 %5/5 row number of recording date in "experiment_info"
                         xticks(-0.4:0.2:1.8);
                         xlabel('Time (s)');
                         
-                        legend([p1 p2], {blue_label, red_label}, 'Location', 'northeast');  
+                        legend([p1 p2], {blue_label, red_label}, 'Location', 'northeast', 'Interpreter', 'none');  
                         legend boxoff;
                         set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
 

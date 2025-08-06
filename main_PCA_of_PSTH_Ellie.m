@@ -4,20 +4,14 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
-% Choose your probe depth of interest
-L4_depth_range = 4440:4580; % 1/5. um. Set for each SESSION based on CSD +/- 70um
-V1_depth_range = (min(L4_depth_range) - 400) : (max(L4_depth_range) + 500); 
-CA1_depth_range = 3640:3940; % 2/5. um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
-Sub_CA1_depth_range = 1550:(min(CA1_depth_range));
+% 1/4 Choose your probe depth of interest
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1'
-
 SUBJECTS = {'M00013'};
-
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
-%%% 3/5
+%%% 2/4
 Stimulus_type = 'TRAIN'; % OMIT, 'TRAIN' 'GAVNIK_ABCD'
 temporal_structure = 'trial spikecounts'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
 % simple spikecounts gives better silhouette scores for my TRAIN protocol 20250203
@@ -33,10 +27,10 @@ gOSI_threshold = 0.2; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 
 gDSI_threshold = 0.0;
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN') % 4/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\TRAIN') % 3/4 files will be saved here in the cd
 
 
-for nsession = 4 %5/5 row number of recording date in "experiment_info" 
+for nsession = 4 %4/4 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -44,7 +38,7 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
     % % find right date number based on all experiment dates of the subject
     % iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
 
-    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+    for n = 1:length(session_info) % How many recording sessions 
         options = session_info(n).probe(1);
         subject_number = session_info(n).probe(1).SUBJECT;
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
@@ -53,7 +47,25 @@ for nsession = 4 %5/5 row number of recording date in "experiment_info"
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters = clusters_ks4;
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'earliest_V1sink_CSD.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'depths_from_PSD.mat'))
+        files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel
+        file_to_load = fullfile(options.EPHYS_DATAPATH, files(1).name); %load() does not accept wildcards like *
+        load(file_to_load);
         load(fullfile(fullfile(fileparts(options.ANALYSIS_DATAPATH), 'OP_Tuning'), 'OP_tuning.mat'));
+
+        Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
+        L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
+        L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
+        %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+        L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
+        CA1_depth = depths_from_PSD.CA1_depth_PSD;
+
+        L4_depth_range = [L4_channel_pair_depth - 70 , L4_channel_pair_depth + 70]; % based on CSD +/- 70um - errs on the large side
+        CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+        Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
+        Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
+        V1_depth_range = [L5_depth - 350, L4_channel_pair_depth + 570]; % low to high
 
         ordered_oris = unique(Task_info.stim_orientation, 'stable'); 
                

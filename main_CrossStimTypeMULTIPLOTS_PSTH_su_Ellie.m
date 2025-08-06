@@ -5,10 +5,11 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-session_specific_L4 = {15, 4510:4650;}; % 1/4. um. Set for each SESSION based on CSD +/- 70um
+%session_specific_L4 = {15, 4510:4650;}; % 1/4. um. Set for each SESSION based on CSD +/- 70um
 % 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; 
 % 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650;
-depth_for_analysis = 'L4'; % choose 'L4' or 'L2_3' (max(L4_depth_range) + 500) or 'L5_6' (min(L4_depth_range) - 400)
+depth_for_analysis = 'Sub_CA1'; % choose 'L4' or 'L2_3' (max(L4_depth_range) + 500) or 'L5_6' (min(L4_depth_range) - 400)
+                           % or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
 SUBJECTS = {'M00013'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
@@ -54,7 +55,25 @@ for nsession = sessions_to_plot
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
             clusters = clusters_ks4;
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH, '..', 'earliest_V1sink_CSD.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH, '..', 'depths_from_PSD.mat'))
+            files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel
+            file_to_load = fullfile(options.EPHYS_DATAPATH, files(1).name); %load() does not accept wildcards like *
+            load(file_to_load);
+            
+            Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
+            L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
+            L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
+            %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+            L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
+            CA1_depth = depths_from_PSD.CA1_depth_PSD;
     
+            L4_depth_range = [L4_channel_pair_depth - 70 , L4_channel_pair_depth + 70]; % based on CSD +/- 70um - errs on the large side
+            CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+            Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
+            Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
+            V1_depth_range = [L5_depth - 400, L4_channel_pair_depth + 570]; % low to high
+
             all_orientations = unique(Task_info.stim_orientation);
             %Task_info.stim_onset
             
@@ -63,17 +82,24 @@ for nsession = sessions_to_plot
             %params.orientation_tuned = ...
             psthBinSize = 0.01; % but use 1ms for raster plots
             
-            idx = find([session_specific_L4{:,1}] == nsession);
-            L4_depth_range = session_specific_L4{idx, 2};
-            
-            if strcmp(depth_for_analysis, 'L4') % choose 'L4' or 'L2/3' (max(L4_depth_range) + 500) or 'L5/6' (min(L4_depth_range) - 400)
-                depth_range = L4_depth_range;
-            elseif strcmp(depth_for_analysis, 'L2_3')
-                depth_range = (max(L4_depth_range) : max(L4_depth_range) + 500);
-            elseif strcmp(depth_for_analysis, 'L5_6')
-                depth_range = (min(L4_depth_range) - 400 : min(L4_depth_range));
+            switch depth_for_analysis
+                case 'L4' 
+                    depth_range = L4_depth_range;
+                case 'L2_3'
+                    depth_range = (max(L4_depth_range) : max(L4_depth_range) + 500);
+                case 'L5_6'
+                    depth_range = (min(L4_depth_range) - 400 : min(L4_depth_range));
+                case 'V1'
+                    depth_range = V1_depth_range;
+                case 'CA1' 
+                    depth_range = CA1_depth_range;
+                case 'Sub_CA1'
+                    depth_range = Sub_CA1_depth_range;
+                case 'Sub_HPC'
+                    depth_range = Sub_HPC_depth_range;
             end
-            
+                       
+
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 

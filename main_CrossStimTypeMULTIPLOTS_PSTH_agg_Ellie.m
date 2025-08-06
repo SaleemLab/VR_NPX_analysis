@@ -5,7 +5,8 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-session_specific_L4 = {15, 4510:4650;}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
+depth_for_analysis = 'Sub_CA1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
+%session_specific_L4 = {15, 4510:4650;}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
 % 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; 
 % 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650;
 SUBJECTS = {'M00013'};
@@ -72,6 +73,24 @@ for nsession = sessions_to_plot
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
             clusters = clusters_ks4;
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH, '..', 'earliest_V1sink_CSD.mat'))
+            load(fullfile(options.ANALYSIS_DATAPATH, '..', 'depths_from_PSD.mat'))
+            files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel
+            file_to_load = fullfile(options.EPHYS_DATAPATH, files(1).name); %load() does not accept wildcards like *
+            load(file_to_load);
+            
+            Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
+            L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
+            L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
+            %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+            L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
+            CA1_depth = depths_from_PSD.CA1_depth_PSD;
+    
+            L4_depth_range = [L4_channel_pair_depth - 70 , L4_channel_pair_depth + 70]; % based on CSD +/- 70um - errs on the large side
+            CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+            Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
+            Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
+            V1_depth_range = [L5_depth - 400, L4_channel_pair_depth + 570]; % low to high
     
             all_orientations = unique(Task_info.stim_orientation);
             %Task_info.stim_onset
@@ -81,9 +100,19 @@ for nsession = sessions_to_plot
             %params.orientation_tuned = ...
             psthBinSize = 0.01; % but use 1ms for raster plots
             
-            idx = find([session_specific_L4{:,1}] == nsession);
-            L4_depth_range = session_specific_L4{idx, 2};
-            depth_range = L4_depth_range;
+            switch depth_for_analysis
+                case 'L4' 
+                    depth_range = L4_depth_range;
+                case 'V1'
+                    depth_range = V1_depth_range;
+                case 'CA1' 
+                    depth_range = CA1_depth_range;
+                case 'Sub_CA1'
+                    depth_range = Sub_CA1_depth_range;
+                case 'Sub_HPC'
+                    depth_range = Sub_HPC_depth_range;
+            end
+
                     
     
             if contains(Stimulus_types{2}, 'GAVNIK DCBA') % only make this plot if GAVNIK DCBA is present
@@ -240,13 +269,13 @@ for nsession = sessions_to_plot
                         xline(0.45, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
                         
                     end
-                    sgtitle(sprintf('%s Aggregate L4 single unit activity %s vs %s', subject_number, Stimulus_types{1}, Stimulus_types{2}), 'Interpreter', 'none', 'FontSize', 16);
-                    filename = sprintf('%s L4 FRs %s vs %s.png', subject_number, Stimulus_types{1}, Stimulus_types{2});
+                    sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}), 'Interpreter', 'none', 'FontSize', 16);
+                    filename = sprintf('%s %s FRs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
                     save_path = fullfile(pwd, filename);
                     exportgraphics(fig1, save_path); 
     
                     % Also save as .fig
-                    fig_filename = sprintf('%s L4 FRs %s vs %s.fig', subject_number, Stimulus_types{1}, Stimulus_types{2});
+                    fig_filename = sprintf('%s %s FRs %s vs %s.fig', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
                     fig_save_path = fullfile(pwd, fig_filename);
                     savefig(fig1, fig_save_path);
                 end
@@ -411,13 +440,13 @@ for nsession = sessions_to_plot
                     xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
                     
                 end
-                sgtitle(sprintf('%s Aggregate L4 single unit activity %s vs %s vs %s', subject_number, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 16);
-                filename = sprintf('%s L4 FRs %s vs %s vs %s.png', subject_number, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
+                sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 16);
+                filename = sprintf('%s %s FRs %s vs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
                 save_path = fullfile(pwd, filename);
                 exportgraphics(fig1, save_path); 
 
                 % Also save as .fig
-                fig_filename = sprintf('%s L4 FRs %s vs %s vs %s.fig', subject_number, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
+                fig_filename = sprintf('%s %s FRs %s vs %s vs %s.fig', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
                 fig_save_path = fullfile(pwd, fig_filename);
                 savefig(fig1, fig_save_path);
 
