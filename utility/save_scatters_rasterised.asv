@@ -120,5 +120,5 @@ save_all_figures('P:\corticohippocampal_replay\V1-HPC sleep reactivation\context
 
 save_all_figures('P:\corticohippocampal_replay\V1-HPC sleep reactivation',[])
 
-plot()
+
 

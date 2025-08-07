@@ -250,16 +250,41 @@ bins_to_use = bin_centers>0 & bin_centers<0.1;
 
 
 
-% event_index = [T1_events T2_events];
-% z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
+% % event_index = [T1_events T2_events];
+% % z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
+% 
+track1_color = [0 0 1]; % blue
+track2_color = [1 0 0]; % red
+
+n_half = 80;     % Number of steps from red to white and white to blue
+n_white = 60;     % Number of extra white steps to make the white region broader
+
+% Red to white
+r2w = [linspace(1,1,n_half)', linspace(0,1,n_half)', linspace(0,1,n_half)'];
+
+% White to blue
+w2b = [linspace(1,0,n_half)', linspace(1,0,n_half)', linspace(1,1,n_half)'];
+
+% Extra white section
+white = ones(n_white, 3);
+
+
+% Combine
+red_white_blue = [r2w; white; w2b];
+% 
+
+
+
 
 nfig = figure;
-nfig.Name = 'KDE Bias PSTH all events (no thresholding)'; 
+nfig.Name = 'KDE Bias PSTH all events (no thresholding blue red white)'; 
 nfig.Position = [500 75 700/2 850];
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
 
 event_index = 1:length(z_bias);
 z_event = nanmean(z_bias(bins_to_use,event_index));
-[~,sorted_index] = sort(z_event);
+[~,sorted_index] = sort(z_event,'descend');
 
 nexttile
 h = imagesc(bin_centers,[],z_bias(:,event_index(sorted_index))');clim([-3 3])
@@ -267,17 +292,18 @@ yline([0.2*length(z_bias) 0.8*length(z_bias)],'r','LineWidth',1)
 set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
+colormap((red_white_blue))
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 % imagesc(z_bias_V1);colorbar;
 xlabel('Time (s)')
 ylabel('Ripple event')
 
 nexttile
-% bins_to_use = bin_centers>-0.1 & bin_centers<0.1;
+bins_to_use = bin_centers>0 & bin_centers<0.2;
 
 event_index = 1:length(z_bias_V1);
 z_event = nanmean(z_bias_V1(bins_to_use,event_index));
-[~,sorted_index] = sort(z_event);
+[~,sorted_index] = sort(z_event,'descend');
 
 
 h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
@@ -285,6 +311,7 @@ yline([0.2*length(z_bias) 0.8*length(z_bias)],'r','LineWidth',1)
 set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
+colormap((red_white_blue))
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 xlabel('Time (s)')
 ylabel('Ripple event')
@@ -293,17 +320,18 @@ ylabel('Ripple event')
 
 nexttile
 
-bins_to_use = bin_centers>-0.1 & bin_centers<0;
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
 
 event_index = 1:length(z_bias_V1);
 z_event = nanmean(z_bias_V1(bins_to_use,event_index));
-[~,sorted_index] = sort(z_event);
+[~,sorted_index] = sort(z_event,'descend');
 
 h= imagesc(bin_centers,[],z_bias_V1(:,event_index(sorted_index))');clim([-1 1])
 yline([0.2*length(z_bias) 0.8*length(z_bias)],'r','LineWidth',1)
 set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
 xlim([-0.5 0.5])
 colorbar;
+colormap((red_white_blue))
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 xlabel('Time (s)')
 ylabel('Ripple event')
@@ -786,7 +814,7 @@ ripple_events_tables.sig_events_high_spindles = length([temp1; temp2]);
 temp1 = intersect(T1_events_PRE,event_index);
 temp2 = intersect(T2_events_PRE,event_index);
 
-ripple_events_tables.sig_events_high_ripples_PRE = length([temp1; temp2]);
+ripple_events_tables.sig_events_high_spindles_PRE = length([temp1; temp2]);
 
 
 
@@ -798,23 +826,32 @@ spindle_index2 = ripple_info.spindle_amplitude(:,2) < prctile(ripple_info.spindl
 temp1 = intersect(T1_events,find(spindle_index2));
 temp2 = intersect(T2_events,find(spindle_index1));
 
-ripple_events_tables.all_events_low_ripples = length(event_index);
-ripple_events_tables.sig_events_low_ripples = length([temp1; temp2]);
+ripple_events_tables.all_events_low_spindles = length(event_index);
+ripple_events_tables.sig_events_low_spindles = length([temp1; temp2]);
 
 temp1 = intersect(T1_events_PRE,event_index);
 temp2 = intersect(T2_events_PRE,event_index);
 
-ripple_events_tables.sig_events_low_ripples_PRE = length([temp1; temp2]);
+ripple_events_tables.sig_events_low_spindles_PRE = length([temp1; temp2]);
+
+
+
+%%%%%%%%%%% Low spindles
+spindle_index1 = ripple_info.spindle_amplitude(:,1) < prctile(ripple_info.spindle_amplitude(:,1),[25]);
+spindle_index2 = ripple_info.spindle_amplitude(:,2) < prctile(ripple_info.spindle_amplitude(:,2),[25]);
+
+temp1 = intersect(T1_events,find(spindle_index2));
+temp2 = intersect(T2_events,find(spindle_index1));
+
+ripple_events_tables.all_events_low_spindles = length(event_index);
+ripple_events_tables.sig_events_low_spindles = length([temp1; temp2]);
+
+temp1 = intersect(T1_events_PRE,event_index);
+temp2 = intersect(T2_events_PRE,event_index);
+
+ripple_events_tables.sig_events_low_spindles_PRE = length([temp1; temp2]);
 
 
 
 
-
-
-
-ripple_events_tables.sig_events_high_ripples = length([T1_events T2_events]);
-
-
-ripple_events_tables.sig_events = length([T1_events T2_events]);
-
-ripple_events_tables.sig_events = length([T1_events T2_events]);
+writetable(event_number_tables, fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_events_tables.csv'));

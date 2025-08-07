@@ -1,3 +1,156 @@
+%% Plotting spatial representation
+clear all
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
+
+%%%%% Grab all cells' spatial PSTH
+all_PSTH = [];
+all_PSTH1 = [];
+all_PSTH2 = [];
+all_mean_FR = [];
+all_cell_types = [];
+all_regions = [];
+ncount = 1;
+
+for nsession = 1:length(session_clusters_all.spatial_response)
+    %%%% Cell types based on mean FR
+    cell_types = session_clusters_all.cell_type{nsession};
+    mean_FR = mean(session_clusters_all.mean_FR{nsession},2);
+    % regions = session_clusters_all.region{nsession};
+
+    all_mean_FR = [all_mean_FR; mean_FR];
+    all_cell_types = [all_cell_types; cell_types];
+    all_regions = [all_regions; session_clusters_all.region{nsession}];
+
+
+    for ncell = 1:length(session_clusters_all.spatial_response{nsession})
+        this_cell_PSTH = [mean(session_clusters_all.spatial_response{nsession}{ncell,1},'omitnan'); mean(session_clusters_all.spatial_response{nsession}{ncell,2},'omitnan')]';
+        all_PSTH(ncount,:,:) = this_cell_PSTH;
+
+        this_cell_PSTH = [mean(session_clusters_all.spatial_response{nsession}{ncell,1}(1:2:end,:),'omitnan'); mean(session_clusters_all.spatial_response{nsession}{ncell,2}(1:2:end,:),'omitnan')]';
+        all_PSTH1(ncount,:,:) = this_cell_PSTH;
+
+        this_cell_PSTH = [mean(session_clusters_all.spatial_response{nsession}{ncell,1}(2:2:end,:),'omitnan'); mean(session_clusters_all.spatial_response{nsession}{ncell,2}(2:2:end,:),'omitnan')]';
+        all_PSTH2(ncount,:,:) = this_cell_PSTH;
+
+
+        ncount = ncount+1;
+    end
+end
+
+
+is_V1R = find(contains(all_regions,'V1_R'));
+is_V1L = find(contains(all_regions,'V1_L'));
+is_V1 = find(contains(all_regions,'V1'));
+
+is_HPCR = find(contains(all_regions,'HPC_R'));
+is_HPCL = find(contains(all_regions,'HPC_L'));
+is_HPC = find(contains(all_regions,'HPC'));
+
+%%%%% all regions
+
+% region_text = {'V1 L','V1 R','HPC L','HPC R'};
+% region_index = {is_V1L,is_V1R,is_HPCL,is_HPCR};
+region_text = {'V1 L','V1 R','HPC','HPC'};
+region_index = {is_V1L,is_V1R,is_HPC};
+
+
+
+fig = figure;
+fig.Name = 'Context-selective spatial PSTH';
+fig.Position = [250 50 1500 950];
+
+for nregion = 1:3
+    [M,index1] = max(squeeze(all_PSTH1(region_index{nregion},:,1))');
+    [~,sorted_index1] = sort(index1);
+    [M,index2] = max(squeeze(all_PSTH1(region_index{nregion},:,2))');
+    [~,sorted_index2] = sort(index2);
+
+    map1 = all_PSTH2(region_index{nregion}(:),:,1);
+    map2 = all_PSTH2(region_index{nregion}(:),:,2);
+    nCells = size(map1, 1);
+
+    map1_norm = zeros(size(map1));
+    map2_norm = zeros(size(map2));
+
+    for i = 1:nCells
+        % Concatenate activity across both maps for this cell
+        all_vals = [map1(i,:) map2(i,:)];
+
+        min_val = min(all_vals);
+        max_val = max(all_vals);
+
+        % Avoid divide-by-zero
+        if max_val > min_val
+            map1_norm(i,:) = (map1(i,:) - min_val) / (max_val - min_val);
+            map2_norm(i,:) = (map2(i,:) - min_val) / (max_val - min_val);
+        else
+            map1_norm(i,:) = nan(1, size(map1,2));
+            map2_norm(i,:) = nan(1, size(map2,2));
+        end
+    end
+
+
+
+    nexttile
+    imagesc(map1_norm(sorted_index1,:))
+    xlabel('Position (cm)')
+    ylabel('Neuron ID')
+    colormap(flipud(gray))
+    colorbar
+    clim([0 1])
+    % clim([0.2 0.8])
+    xticks([30 50 70 90 110])
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+    title(sprintf('%s Track L (sorted by Track L)',region_text{nregion}))
+
+    nexttile
+    imagesc(map1_norm(sorted_index2,:))
+    xlabel('Position (cm)')
+    ylabel('Neuron ID')
+    colormap(flipud(gray))
+    colorbar
+    clim([0 1])
+    xticks([30 50 70 90 110])
+    % clim([0.2 0.8])
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+    title(sprintf('%s Track L (sorted by Track R)',region_text{nregion}))
+
+    nexttile
+    imagesc(map2_norm(sorted_index1,:))
+    xlabel('Position (cm)')
+    ylabel('Neuron ID')
+    colormap(flipud(gray))
+    colorbar
+    clim([0 1])
+    % clim([0.2 0.8])
+    xticks([30 50 70 90 110])
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+    title(sprintf('%s Track R (sorted by Track L)',region_text{nregion}))
+
+    nexttile
+    imagesc(map2_norm(sorted_index2,:))
+    xlabel('Position (cm)')
+    ylabel('Neuron ID')
+    colormap(flipud(gray))
+    colorbar
+    clim([0 1])
+    % clim([0.2 0.8])
+    xticks([30 50 70 90 110])
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+    title(sprintf('%s Track R (sorted by Track R)',region_text{nregion}))
+
+end
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC spatial representation'),[],'ContentType','vector')
+
 
 %% Plotting context selecitve ripple modulation
 % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
@@ -158,7 +311,7 @@ bins_to_use = bin_centers>0 & bin_centers<0.1;
 
 psthBinSize = 0.01;
 windows = [-1.5 1.5];
-
+sessions_to_process = 1:max(ripples_all(1).session_count);
 
 for nsession = 1:22
 
@@ -236,11 +389,11 @@ for nsession = 1:22
     cluster_id = zeros(length(Z),1);
     cluster_id(Z == nsession) = 1:sum(Z == nsession);
 
-    T2_cell = cluster_id(X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L'));
-    T2_cell_all = find((X < -0.4 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L')));
+    T2_cell = cluster_id(X < -0.3 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L'));
+    T2_cell_all = find((X < -0.3 & Y < -0.1 & Z == nsession & contains(regions_all','V1_L')));
 
-    T1_cell = cluster_id(X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R'));
-    T1_cell_all = find((X > 0.4 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R')));
+    T1_cell = cluster_id(X > 0.3 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R'));
+    T1_cell_all = find((X > 0.3 & Y > 0.1 & Z == nsession & contains(regions_all','V1_R')));
 
 
     
@@ -251,9 +404,9 @@ for nsession = 1:22
 
     if ~isempty(T2_cell)
         for ncell = 1:length(T2_cell)
-            fig = figure
+            fig = figure;
             fig.Position = [1385 650 470 340];
-            fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T1_cell_all(ncell));
+            fig.Name = sprintf('Session %i V1 L spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T2_cell(ncell)),T2_cell_all(ncell));
             tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
 
             %%% all ripples
@@ -266,6 +419,7 @@ for nsession = 1:22
             ylabel('Firing rate (Hz)')
             % ylim([0 20])
             xlim([0 140])
+            legend('Track L','Track R','box','off')
 
             nexttile
             % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
@@ -320,7 +474,7 @@ for nsession = 1:22
 
     if ~isempty(T1_cell)
         for ncell = 1:length(T1_cell)
-            fig = figure
+            fig = figure;
             fig.Position = [1385 650 470 340];
             fig.Name = sprintf('Session %i V1 R spatial and ripple PSTH %i (%i)', nsession,session_clusters_all.spatial_cell_id{nsession}(T1_cell(ncell)),T1_cell_all(ncell));
             tlo = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact'); % fixed 4-subplot layout
@@ -335,6 +489,7 @@ for nsession = 1:22
             ylabel('Firing rate (Hz)')
             % ylim([0 20])
             xlim([0 140])
+            legend('Track L','Track R','box','off')
 
             nexttile
             % plot(context_modulation_all.timebin,squeeze(all_PSTH(1,T2_cell_all(ncell),:)),'Color',colorlines(1,:));hold on;
@@ -423,6 +578,30 @@ Y = double(POST_ripple_FR_diff(contains(regions_all,'V1')));
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 xline(0,'k--')
 yline(0,'k--')
+
+
+% Track R
+X = double(z_FR_track_diff(3561)');
+Y = double(POST_ripple_FR_diff(3561));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+
+X = double(z_FR_track_diff(3506)');
+Y = double(POST_ripple_FR_diff(3506));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
+
+
+% Track L
+X = double(z_FR_track_diff(2107)');
+Y = double(POST_ripple_FR_diff(2107));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+X = double(z_FR_track_diff(578)');
+Y = double(POST_ripple_FR_diff(578));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
+
 % set(gca,'xscale','log')
 % set(gca,'yscale','log')
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
@@ -470,6 +649,26 @@ hold on
 xline(0,'k--')
 yline(0,'k--')
 
+
+% Track R
+X = double(z_FR_track_diff(3561)');
+Y = double(POST_ripple_FR_diff(3561));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+
+X = double(z_FR_track_diff(3506)');
+Y = double(POST_ripple_FR_diff(3506));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
+% Track L
+X = double(z_FR_track_diff(2107)');
+Y = double(POST_ripple_FR_diff(2107));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+X = double(z_FR_track_diff(578)');
+Y = double(POST_ripple_FR_diff(578));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
 valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
 X = X(valid_id);
 Y = Y(valid_id);
@@ -509,6 +708,26 @@ scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 hold on
 xline(0,'k--')
 yline(0,'k--')
+
+% Track R
+X = double(z_FR_track_diff(3561)');
+Y = double(POST_ripple_FR_diff(3561));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+
+X = double(z_FR_track_diff(3506)');
+Y = double(POST_ripple_FR_diff(3506));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
+% Track L
+X = double(z_FR_track_diff(2107)');
+Y = double(POST_ripple_FR_diff(2107));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 1)
+
+X = double(z_FR_track_diff(578)');
+Y = double(POST_ripple_FR_diff(578));
+scatter(X,Y,20,'k','filled','MarkerFaceAlpha', 0.5)
+
 
 valid_id = ~isnan(X) & ~isnan(Y) & ~isinf(X) & ~isinf(Y);
 X = X(valid_id);
@@ -652,6 +871,10 @@ ylim([-0.4 0.4])
 xlabel('Track FR diff (z)')
 ylabel('Ripple FR diff (z)')
 set(gca,'TickDir','out','Box','off','FontSize',12)
+
+
+
+
 
 
 

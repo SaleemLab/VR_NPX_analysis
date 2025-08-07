@@ -331,7 +331,8 @@ if isempty(fieldnames(PLS))
 
     region_name = {'Left','Right'};
 
-    colour_lines = [215,25,28;44,123,182]/256;
+    colour_lines = [44,123,182;215,25,28]/256;
+
     title_text = sprintf('%s %s Logistic Ridge regression of PLS components %s',options.SUBJECT,options.SESSION);
     nfigure = 1;
     fig(nfigure)=figure;
@@ -465,7 +466,8 @@ end
 if plot_option == 1
     region_name = {'Left','Right'};
 
-    colour_lines = [215,25,28;44,123,182]/256;
+    % colour_lines = [215,25,28;44,123,182]/256;
+    colour_lines = [44,123,182;215,25,28]/256;
     title_text = sprintf('%s %s PLS latent components visualisation %s',options.SUBJECT,options.SESSION);
     nfigure = 2;
     fig(nfigure)=figure;
@@ -481,8 +483,8 @@ if plot_option == 1
     % plsScores_ripples = n_ripples_residuals * W;
     % figure;
     subplot(2,2,1)
-    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);hold on;
     xlabel('PLS Component 1');
     ylabel('PLS Component 2');
     zlabel('PLS Component 3');
@@ -493,8 +495,8 @@ if plot_option == 1
 
 
     subplot(2,2,2)
-    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);hold on;
     plsScores_ripples = n_ripples * W;
     scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
     legend('Track 1', 'Track 2',event_type,'Box','off')
@@ -508,8 +510,8 @@ if plot_option == 1
 
 
     subplot(2,2,4)
-    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);  hold on;
-    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);hold on;
+    scatter3(plsScores_Track2(:, 1), plsScores_Track2(:, 2), plsScores_Track2(:, 3),10,'r','filled','MarkerFaceAlpha',0.1);  hold on;
+    scatter3(plsScores_Track1(:, 1), plsScores_Track1(:, 2), plsScores_Track1(:, 3),10,'b','filled','MarkerFaceAlpha',0.1);hold on;
     plsScores_ripples = n_ripples_residuals * W;
     scatter3(plsScores_ripples(:, 1), plsScores_ripples(:, 2), plsScores_ripples(:, 3),10,'m','filled','MarkerFaceAlpha',0.1);  hold on;
     legend('Track 1', 'Track 2','Event residuals','Box','off')
