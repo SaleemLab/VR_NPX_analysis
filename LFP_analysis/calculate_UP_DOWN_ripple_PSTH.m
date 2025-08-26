@@ -69,7 +69,9 @@ for nprobe = 1:length(slow_waves_all)
         UP_index_all = [UP_index_all; UP_index];
 
         ripples_index = find(ripples_all(nprobe).session_count == sessions_to_process(nsession)& ripples_all(nprobe).SWS_index == 1);
-        ripple_peaktimes = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+%         ripple_peaktimes = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        
+        ripple_peaktimes = ripples_all(nprobe).onset(ripples_index);
         % if contains(time_option,'peaktimes')
         ripples_index_all = [ripples_index_all; ripples_index];
 
