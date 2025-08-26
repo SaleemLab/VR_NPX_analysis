@@ -472,6 +472,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC behaviour'),[])
 %%%% Lick
 prop_anticipatory_correct=[];
 p_anticipatory_lick_dist=[];
+ks_anticipatory_lick_dist=[];
 prop_correct=[];
 p_lick_dist=[];
 first_side=[];
@@ -600,15 +601,17 @@ for iSub = 1:length(early_days_speed)
     [h,p,ks2stat] = kstest2([mid_days_T1_lick{iSub}{1}(~isnan(mid_days_manual{iSub}{1})) mid_days_T2_lick{iSub}{2}(~isnan(mid_days_manual{iSub}{2}))],...
         [early_days_T1_lick{iSub}{1}(~isnan(early_days_manual{iSub}{1})) early_days_T2_lick{iSub}{2}(~isnan(early_days_manual{iSub}{2}))],'Tail','larger');
     p_anticipatory_lick_dist(iSub,1) = p;
+    ks_anticipatory_lick_dist(iSub,1) = ks2stat;
 
     [h,p,ks2stat] = kstest2([late_days_T1_lick{iSub}{1}(~isnan(late_days_manual{iSub}{1})) late_days_T2_lick{iSub}{2}(~isnan(late_days_manual{iSub}{2}))],...
         [early_days_T1_lick{iSub}{1}(~isnan(early_days_manual{iSub}{1})) early_days_T2_lick{iSub}{2}(~isnan(early_days_manual{iSub}{2}))],'Tail','larger');
     p_anticipatory_lick_dist(iSub,2) = p;
+    ks_anticipatory_lick_dist(iSub,2) = ks2stat;
 
     [h,p,ks2stat] = kstest2([ephys_days_T1_lick{iSub}{1}(~isnan(ephys_days_manual{iSub}{1})) ephys_days_T2_lick{iSub}{2}(~isnan(ephys_days_manual{iSub}{2}))],...
         [early_days_T1_lick{iSub}{1}(~isnan(early_days_manual{iSub}{1})) early_days_T2_lick{iSub}{2}(~isnan(early_days_manual{iSub}{2}))],'Tail','larger');
     p_anticipatory_lick_dist(iSub,3) = p;
-
+    ks_anticipatory_lick_dist(iSub,3) = ks2stat;
 end
 
 

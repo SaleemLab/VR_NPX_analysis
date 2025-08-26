@@ -741,18 +741,64 @@ event_number_tables.HPC_neurons_no = temp2;
 
 writetable(event_number_tables, fullfile(analysis_folder,'V1-HPC sleep interaction','event_number_tables.csv'));
 
+%% Sleep NREM and REM time
+event_number_tables = readtable(fullfile(analysis_folder,'V1-HPC sleep interaction','event_number_tables.csv'));
+
+event_number_tables.SWS_time
+
+event_number_tables.REM_time
+
+event_number_tables.quiet_awake_time
+
+event_number_tables.movement_awake_time
+
+
 %% Event number based on V1 bias
 %%%%%%%%%%%%%%%
 
 ripple_events_tables = table();
 % ripple_events_tables.session =spindles_all(1).session;
 % ripple_events_tables.animal = spindles_all(1).subject;
+
 bins_to_use = bin_centers>0 & bin_centers<0.2;
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
 
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+T1_events_PRE = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+T2_events_PRE = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
+
+ripple_events_tables.all_events = length(z_bias);
+ripple_events_tables.sig_events = length([T1_events T2_events]);
+
+%%%%%%%%%%% Ripple power
+percentile_text = {'25','50','75','100'};
+power_thresholds = prctile(ripple_info.ripple_power,[0 25 50 75 100]);
+
+
+for n = 1:length(percentile_text)
+    power_index = ripple_info.ripple_power > power_thresholds(n) & ripple_info.ripple_power < power_thresholds(n+1);
+    event_index = find(power_index ==1);
+    % event_index = find((singlet_index+power_index)>1);
+    temp1 = intersect(T1_events,event_index);
+    temp2 = intersect(T2_events,event_index);
+
+    ripple_events_tables.(sprintf('all_events_%s_ripple_power',percentile_text{n})) = length(event_index);
+    ripple_events_tables.(sprintf('sig_events_%s_ripple_power',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,event_index);
+    temp2 = intersect(T2_events_PRE,event_index);
+
+    ripple_events_tables.(sprintf('sig_events_%s_ripple_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+%%%%%%%%%%% Spindle power
+bins_to_use = bin_centers>0 & bin_centers<0.2;
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
-
-
-
 log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
 T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
 T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
@@ -763,95 +809,190 @@ T1_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
 T2_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
 
 
-ripple_events_tables.all_events = length(z_bias_V1);
-ripple_events_tables.sig_events = length([T1_events T2_events]);
-
-%%%%%%%%%%% High ripples
-power_index = ripple_info.ripple_power > power_thresholds(end-1) & ripple_info.ripple_power < power_thresholds(end);
-event_index = find(power_index ==1);
-% event_index = find((singlet_index+power_index)>1);
-temp1 = intersect(T1_events,event_index);
-temp2 = intersect(T2_events,event_index);
-
-ripple_events_tables.all_events_high_ripples = length(event_index);
-ripple_events_tables.sig_events_high_ripples = length([temp1; temp2]);
-
-temp1 = intersect(T1_events_PRE,event_index);
-temp2 = intersect(T2_events_PRE,event_index);
-
-ripple_events_tables.sig_events_high_ripples_PRE = length([temp1; temp2]);
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = prctile(ripple_info.spindle_amplitude(:,1),[0 25 50 75 100]);
+power_thresholds2 = prctile(ripple_info.spindle_amplitude(:,2),[0 25 50 75 100]);
 
 
+for n = 1:length(percentile_text)
+    spindle_index1 = find(ripple_info.spindle_amplitude(:,1) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.spindle_amplitude(:,2) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,2) < power_thresholds1(n+1));
 
+    temp1 = intersect(T1_events,spindle_index2);
+    temp2 = intersect(T2_events,spindle_index1);
 
-%%%%%%%%%%% Low ripples
-power_index = ripple_info.ripple_power > power_thresholds(1) & ripple_info.ripple_power < power_thresholds(2);
-event_index = find(power_index ==1);
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power',percentile_text{n})) = length([spindle_index1; spindle_index2]);
+    ripple_events_tables.(sprintf('sig_events_%s_spindle_power',percentile_text{n})) = length([temp1; temp2]);
 
-temp1 = intersect(T1_events,event_index);
-temp2 = intersect(T2_events,event_index);
+    temp1 = intersect(T1_events_PRE,spindle_index2);
+    temp2 = intersect(T2_events_PRE,spindle_index1);
 
-ripple_events_tables.all_events_low_ripples = length(event_index);
-ripple_events_tables.sig_events_low_ripples = length([temp1; temp2]);
+    ripple_events_tables.(sprintf('sig_events_%s_spindle_power_PRE',percentile_text{n})) = length([temp1; temp2]);
 
-temp1 = intersect(T1_events_PRE,event_index);
-temp2 = intersect(T2_events_PRE,event_index);
-
-ripple_events_tables.sig_events_low_ripples_PRE = length([temp1; temp2]);
+end
 
 
 
-%%%%%%%%%%% High spindles
-spindle_index1 = ripple_info.spindle_amplitude(:,1) > prctile(ripple_info.spindle_amplitude(:,1),[75]);
-spindle_index2 = ripple_info.spindle_amplitude(:,2) > prctile(ripple_info.spindle_amplitude(:,2),[75]);
-% event_index = find((singlet_index+power_index)>1);
-temp1 = intersect(T1_events,event_index);
-temp2 = intersect(T2_events,event_index);
+%%%%%%%%%%% Spindle phase
+percentile_text = {'spindle_peak','spindle_trough'};
+index1 = {find(ripple_info.spindle_phase(:,1) < pi/2 & ripple_info.spindle_phase(:,1) > -pi/2),...
+    find((ripple_info.spindle_phase(:,1) >pi/2 & ripple_info.spindle_phase(:,1) <= pi) | (ripple_info.spindle_phase(:,1) <-pi/2 & ripple_info.spindle_phase(:,1) >= - pi))};
+index2 = {find(ripple_info.spindle_phase(:,2) < pi/2 & ripple_info.spindle_phase(:,2) > -pi/2),...
+    find((ripple_info.spindle_phase(:,2) >pi/2 & ripple_info.spindle_phase(:,2) <= pi) | (ripple_info.spindle_phase(:,2) <-pi/2 & ripple_info.spindle_phase(:,2) >= - pi))};
 
-ripple_events_tables.all_events_high_spindles = length(event_index);
-ripple_events_tables.sig_events_high_spindles = length([temp1; temp2]);
 
-temp1 = intersect(T1_events_PRE,event_index);
-temp2 = intersect(T2_events_PRE,event_index);
+for n = 1:length(percentile_text)
+    temp1 = intersect(T1_events,index2{n});
+    temp2 = intersect(T2_events,index1{n});
 
-ripple_events_tables.sig_events_high_spindles_PRE = length([temp1; temp2]);
+    ripple_events_tables.(sprintf('all_events_%s_left',percentile_text{n})) = length(index1{n});
+
+
+    ripple_events_tables.(sprintf('all_events_%s_right',percentile_text{n})) = length(index2{n});
+
+    % ripple_events_tables.(sprintf('all_events_%s',percentile_text{n})) = length(event_index);
+    ripple_events_tables.(sprintf('sig_events_%s',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,index2{n});
+    temp2 = intersect(T2_events_PRE,index1{n});
+
+    ripple_events_tables.(sprintf('sig_events_%s_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
 
 
 
 
-%%%%%%%%%%% Low spindles
-spindle_index1 = ripple_info.spindle_amplitude(:,1) < prctile(ripple_info.spindle_amplitude(:,1),[25]);
-spindle_index2 = ripple_info.spindle_amplitude(:,2) < prctile(ripple_info.spindle_amplitude(:,2),[25]);
+%%%%%%%%%%% SO power
+bins_to_use = bin_centers>0 & bin_centers<0.2;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
 
-temp1 = intersect(T1_events,find(spindle_index2));
-temp2 = intersect(T2_events,find(spindle_index1));
-
-ripple_events_tables.all_events_low_spindles = length(event_index);
-ripple_events_tables.sig_events_low_spindles = length([temp1; temp2]);
-
-temp1 = intersect(T1_events_PRE,event_index);
-temp2 = intersect(T2_events_PRE,event_index);
-
-ripple_events_tables.sig_events_low_spindles_PRE = length([temp1; temp2]);
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
 
 
-
-%%%%%%%%%%% Low spindles
-spindle_index1 = ripple_info.spindle_amplitude(:,1) < prctile(ripple_info.spindle_amplitude(:,1),[25]);
-spindle_index2 = ripple_info.spindle_amplitude(:,2) < prctile(ripple_info.spindle_amplitude(:,2),[25]);
-
-temp1 = intersect(T1_events,find(spindle_index2));
-temp2 = intersect(T2_events,find(spindle_index1));
-
-ripple_events_tables.all_events_low_spindles = length(event_index);
-ripple_events_tables.sig_events_low_spindles = length([temp1; temp2]);
-
-temp1 = intersect(T1_events_PRE,event_index);
-temp2 = intersect(T2_events_PRE,event_index);
-
-ripple_events_tables.sig_events_low_spindles_PRE = length([temp1; temp2]);
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = prctile(ripple_info.SO_amplitude(:,1),[0 25 50 75 100]);
+power_thresholds2 = prctile(ripple_info.SO_amplitude(:,2),[0 25 50 75 100]);
 
 
+for n = 1:length(percentile_text)
+    spindle_index1 = find(ripple_info.SO_amplitude(:,1) > power_thresholds1(n) & ripple_info.SO_amplitude(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.SO_amplitude(:,2) > power_thresholds1(n) & ripple_info.SO_amplitude(:,2) < power_thresholds1(n+1));
+
+    temp1 = intersect(T1_events,spindle_index2);
+    temp2 = intersect(T2_events,spindle_index1);
+
+    ripple_events_tables.(sprintf('all_events_%s_SO_power',percentile_text{n})) = length([spindle_index1; spindle_index2]);
+    ripple_events_tables.(sprintf('sig_events_%s_SO_power',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,spindle_index2);
+    temp2 = intersect(T2_events_PRE,spindle_index1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_SO_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+end
 
 
-writetable(event_number_tables, fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_events_tables.csv'));
+
+
+
+%%%%%%%%%%% SO phase
+percentile_text = {'SO_peak','SO_trough'};
+index1 = {find(ripple_info.SO_phase(:,1) < pi/2 & ripple_info.SO_phase(:,1) > -pi/2),...
+    find((ripple_info.SO_phase(:,1) >pi/2 & ripple_info.SO_phase(:,1) <= pi) | (ripple_info.SO_phase(:,1) <-pi/2 & ripple_info.SO_phase(:,1) >= - pi))};
+index2 = {find(ripple_info.SO_phase(:,2) < pi/2 & ripple_info.SO_phase(:,2) > -pi/2),...
+    find((ripple_info.SO_phase(:,2) >pi/2 & ripple_info.SO_phase(:,2) <= pi) | (ripple_info.SO_phase(:,2) <-pi/2 & ripple_info.SO_phase(:,2) >= - pi))};
+
+
+for n = 1:length(percentile_text)
+    temp1 = intersect(T1_events,index2{n});
+    temp2 = intersect(T2_events,index1{n});
+
+    ripple_events_tables.(sprintf('all_events_%s_left',percentile_text{n})) = length(index1{n});
+    ripple_events_tables.(sprintf('all_events_%s_right',percentile_text{n})) = length(index2{n});
+
+    % ripple_events_tables.(sprintf('all_events_%s',percentile_text{n})) = length(event_index);
+    ripple_events_tables.(sprintf('sig_events_%s',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,index2{n});
+    temp2 = intersect(T2_events_PRE,index1{n});
+
+    ripple_events_tables.(sprintf('sig_events_%s_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+
+
+%%%%%%%%%%% SO phase (uni vs bi)
+percentile_text = {'SO_peak','SO_trough'};
+index1 = {(ripple_info.SO_phase(:,1) < pi/2 & ripple_info.SO_phase(:,1) > -pi/2),...
+    ((ripple_info.SO_phase(:,1) >pi/2 & ripple_info.SO_phase(:,1) <= pi) | (ripple_info.SO_phase(:,1) <-pi/2 & ripple_info.SO_phase(:,1) >= - pi))};
+index2 = {(ripple_info.SO_phase(:,2) < pi/2 & ripple_info.SO_phase(:,2) > -pi/2),...
+    ((ripple_info.SO_phase(:,2) >pi/2 & ripple_info.SO_phase(:,2) <= pi) | (ripple_info.SO_phase(:,2) <-pi/2 & ripple_info.SO_phase(:,2) >= - pi))};
+
+T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+
+for n = 1:length(percentile_text)
+    bins_to_use = bin_centers>0 & bin_centers<0.2;
+
+    temp1 = find(index2{n}==1 & index1{n} == 1);
+    temp2 = find(index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('all_events_%s_bilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 1);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_bilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(index2{n}==1 & index1{n} == 0);
+    temp2 = find(index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('all_events_%s_unilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 0);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('sig_events_%s_unilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    %%%%%%%%%% PRE
+
+    bins_to_use = bin_centers>-0.2 & bin_centers<0;
+
+    temp1 = find(index2{n}==1 & index1{n} == 1);
+    temp2 = find(index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('all_events_%s_bilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 1);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_bilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(index2{n}==1 & index1{n} == 0);
+    temp2 = find(index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('all_events_%s_unilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 0);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('sig_events_%s_unilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+writetable(ripple_events_tables, fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_events_tables.csv'));

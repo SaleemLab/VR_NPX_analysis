@@ -118,7 +118,7 @@ close all
 
 save_all_figures('P:\corticohippocampal_replay\V1-HPC sleep reactivation\context-selective ripple PSTH',[])
 
-save_all_figures('P:\corticohippocampal_replay\V1-HPC sleep reactivation',[])
+save_all_figures('P:\corticohippocampal_replay\V1-HPC behaviour',[])
 
-plot()
+save_all_figures('P:\corticohippocampal_replay\V1-HPC behaviour\M24016 Ephys Day 5',[])
 

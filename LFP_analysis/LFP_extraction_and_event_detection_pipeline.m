@@ -644,11 +644,11 @@ for nprobe = 1:length(session_info.probe)
     % Detect CA1 ripple events
     [~,best_channel] = max(LFP(nprobe).best_HPC_power(:,6));
 % 
-    if nprobe == 1
-        best_channel = 2;
-    else
-        best_channel = 2;
-    end
+    % if nprobe == 1
+    %     best_channel = 2;
+    % else
+    %     best_channel = 2;
+    % end
 
     [ripples(probe_no)] = FindRipples_masa(LFP(nprobe).best_HPC(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'minDuration',30,'durations',[30 200],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
         'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on','best_channel',best_channel);
