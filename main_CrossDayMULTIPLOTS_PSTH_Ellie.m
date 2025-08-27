@@ -1,31 +1,30 @@
-%%% For analysis of unit spiking in response to visual stimuli
+%%% ERB 2025 For analysis of unit spiking in response to visual stimuli
+% Depths of putative L5 and putative CA1 are based on best regional power per PSD analysis (for which, use PSD_analysis_UnProcessedLFP_ellie).
+% L4 depth is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie)
 
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-session_specific_L4 = {11, 4500:4640; 15, 4510:4650}; % 1/5. um. Set for each SESSION based on CSD +/- 70um
-% 4, 4440:4580; 5, 4440:4580; 6, 4460:4600; 7, 4480:4620; 8, 4500:4640; %% M00013 TRAIN
-% 11, 4500:4640; 12, 4510:4650; 13, 4510:4650; 14, 4510:4650; 15, 4510:4650; %% M00013 GAVNIK
-% 
+depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
 
-SUBJECTS = {'M00013'};
+SUBJECTS = {'M00014'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_type = 'GAVNIK_ABCD'; 
+Stimulus_type = 'TRAIN'; % GAVNIK_ABCD   TRAIN'
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 neuron_type = 'All'; % for GAVNIK stimuli (coded for so far) set this to 'PYR only' if you want to include only putative pyramidal neurons. distinguish between putative PYR (wide waveform, lower tau rise than SOM), PV (narrow waveform) and SOM (wide waveform, higher tau rise in the ACG i.e. probability of spiking again increases quite slowly)
 z_score_period = 'entire_session'; % 'none' = no z scoring or z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis') % 3/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00014\analysis') % 3/5 files will be saved here in the cd
 
-sessions_to_plot = [11, 15]; %4/5 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8   11, 12, 13, 14, 15
+sessions_to_plot = [10, 14]; %4/5 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8   11, 12, 13, 14, 15
 colors = [
     1.0,  0.8,  0.0;  % 1st group - golden yellow (1,0, 1.0, 0.0 for pure yellow)
     %0.4,  0.8,  0.0;  % 2nd group - yellow-green (more yellowish)
@@ -72,9 +71,30 @@ for nsession = sessions_to_plot
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters = clusters_ks4;
-        
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
 
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'earliest_V1sink_CSD.mat'))
+        load(fullfile(options.ANALYSIS_DATAPATH, '..', 'depths_from_PSD.mat'))
+        files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel
+        file_to_load = fullfile(options.EPHYS_DATAPATH, files(1).name); %load() does not accept wildcards like *
+        load(file_to_load);
+        
+        Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
+        L4_channel_depth = earliest_V1sink_CSD.overall_best_halfmax_depth; % per CSD analysis
+        %L4_channel_depth = 4820; % enter manually if CSD analysis is not avaiable.
+        L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
+        CA1_depth = depths_from_PSD.CA1_depth_PSD;
+
+        L4_depth_range = [L4_channel_depth - 70 , L4_channel_depth + 70]; % based on CSD +/- 70um - see Allen atlas layer thickness, and note Allen brains are fixed and hence shrunken by ~10+%
+        CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump" which coincides with a dip in theta power
+        Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
+        Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
+        V1_depth_range = [L5_depth - 330, L5_depth + 700]; % Senzai 2019 - distance from mid L5 to lower L6 appears to be ~260um
+                                                           % Senzai 2019 - mid L5 appears to fall ~610um below the brain surface 
+        if min(V1_depth_range) < max(CA1_depth_range)
+            warning('V1 depth range overlaps with CA1 depth range! (min V1 < max CA1)')
+        end
+        
         all_orientations = unique(Task_info.stim_orientation);
         %Task_info.stim_onset
         
@@ -83,9 +103,18 @@ for nsession = sessions_to_plot
         %params.orientation_tuned = ...
         psthBinSize = 0.01; % but use 1ms for raster plots
         
-        idx = find([session_specific_L4{:,1}] == nsession);
-        L4_depth_range = session_specific_L4{idx, 2};
-        depth_range = L4_depth_range;
+        switch depth_for_analysis
+            case 'L4' 
+                depth_range = L4_depth_range;
+            case 'V1'
+                depth_range = V1_depth_range;
+            case 'CA1' 
+                depth_range = CA1_depth_range;
+            case 'Sub_CA1'
+                depth_range = Sub_CA1_depth_range;
+            case 'Sub_HPC'
+                depth_range = Sub_HPC_depth_range;
+        end
                 
 
         if contains(Stimulus_type, 'TRAIN') && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')        
@@ -146,7 +175,7 @@ for nsession = sessions_to_plot
 
                 if contains(z_score_period, 'none')
                     % Plot raw mean firing rate trace
-                    plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
+                    plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s %d–%d µm', experiment_info(nsession).date, depth_for_analysis, min(depth_range), max(depth_range)));
                     ylabel('Mean firing rate (Hz)', 'FontSize', 14);
                     ylim ([0 16]);
                 else 
@@ -162,7 +191,7 @@ for nsession = sessions_to_plot
                         colors(find(sessions_to_plot == nsession), :), ...
                         'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
 
-                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
+                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s %d–%d µm', experiment_info(nsession).date, depth_for_analysis, min(depth_range), max(depth_range)));
 
                     if contains(z_score_period, 'entire_session')
                         ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
@@ -260,13 +289,13 @@ for nsession = sessions_to_plot
             xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
             xline(0.90, 'k', (sprintf('D %d%s onset', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
                 
-            sgtitle(sprintf('%s - %s: Aggregate L4 single unit activity across days', subject_number, Stimulus_type), 'Interpreter', 'none');
-            filename = sprintf('%s - %s - Multiplot L4 FR traces across %d days.png', subject_number, Stimulus_type, length(sessions_to_plot));
+            sgtitle(sprintf('%s - %s: Aggregate %s single unit activity across days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
+            filename = sprintf('%s - %s - Multiplot %s FR traces across %d days.png', subject_number, Stimulus_type, depth_for_analysis, length(sessions_to_plot));
             save_path = fullfile(pwd, filename);
             exportgraphics(fig1, save_path); 
 
             % Also save as .fig
-            fig_filename = sprintf('%s - %s - Multiplot L4 FR traces across %d days.fig', subject_number, Stimulus_type, length(sessions_to_plot));
+            fig_filename = sprintf('%s - %s - Multiplot %s FR traces across %d days.fig', subject_number, Stimulus_type, depth_for_analysis, length(sessions_to_plot));
             fig_save_path = fullfile(pwd, fig_filename);
             savefig(fig1, fig_save_path);
             
@@ -383,7 +412,7 @@ for nsession = sessions_to_plot
             xticklabels(arrayfun(@(x) sprintf('Day %d', experiment_info(x).date), sessions_to_plot, 'UniformOutput', false));
             set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
             ylabel(sprintf('Cumulative Z-scored FR (z-scored over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 14);
-            sgtitle(sprintf('%s - %s: L4 Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type), 'Interpreter', 'none');
+            sgtitle(sprintf('%s - %s: %s Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
             legend({'Stim Peak', 'Stim Mean', 'Grey Peak', 'Grey Mean'}, 'Location', 'northeast', 'FontSize', 14);
             grid on;
 
@@ -478,7 +507,7 @@ for nsession = sessions_to_plot
                     end
                     
                     % Plot raw mean firing rate trace
-                    plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
+                    plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s %d–%d µm', experiment_info(nsession).date, depth_for_analysis, min(depth_range), max(depth_range)));
                     ylabel('Mean firing rate (Hz)', 'FontSize', 14);
                     
                 else 
@@ -517,7 +546,7 @@ for nsession = sessions_to_plot
                         fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                     end
 
-                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, L4 %d–%d µm', experiment_info(nsession).date, min(depth_range), max(depth_range)));
+                    plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s %d–%d µm', experiment_info(nsession).date, depth_for_analysis, min(depth_range), max(depth_range)));
                                         
                 end    
                 
@@ -594,13 +623,13 @@ for nsession = sessions_to_plot
             xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
             xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
 
-            sgtitle(sprintf('%s - %s: Aggregate L4 single unit activity across days', subject_number, Stimulus_type), 'Interpreter', 'none');
-            filename = sprintf('%s - %s - Multiplot L4 FR traces across %d days.png', subject_number, Stimulus_type, length(sessions_to_plot));
+            sgtitle(sprintf('%s - %s: Aggregate %s single unit activity across days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
+            filename = sprintf('%s - %s - Multiplot %s FR traces across %d days.png', subject_number, Stimulus_type, depth_for_analysis, length(sessions_to_plot));
             save_path = fullfile(pwd, filename);
             exportgraphics(fig1, save_path); 
 
             % Also save as .fig
-            fig_filename = sprintf('%s - %s - Multiplot L4 FR traces across %d days.fig', subject_number, Stimulus_type, length(sessions_to_plot));
+            fig_filename = sprintf('%s - %s - Multiplot %s FR traces across %d days.fig', subject_number, Stimulus_type, depth_for_analysis, length(sessions_to_plot));
             fig_save_path = fullfile(pwd, fig_filename);
             savefig(fig1, fig_save_path);
             
@@ -717,7 +746,7 @@ for nsession = sessions_to_plot
             ylabel(sprintf('Cumulative Z-scored FR (z-scored over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 14);
             xlabel('Training Day', 'FontSize', 14)
             set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 14);
-            sgtitle(sprintf('%s - %s: L4 Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type), 'Interpreter', 'none');
+            sgtitle(sprintf('%s - %s: %s Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
             legend({'Stim Peak', 'Stim Mean', 'Grey Peak', 'Grey Mean'}, 'Location', 'northeast', 'FontSize', 14);
             grid on;
 

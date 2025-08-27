@@ -55,9 +55,8 @@ for nsession = 4 %4/4 row number of recording date in "experiment_info"
         load(fullfile(fullfile(fileparts(options.ANALYSIS_DATAPATH), 'OP_Tuning'), 'OP_tuning.mat'));
 
         Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
-        L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
-        L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
-        %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+        L4_channel_depth = earliest_V1sink_CSD.overall_best_halfmax_depth; % per CSD analysis
+        %L4_channel_depth = 4820; % enter manually if CSD analysis is not avaiable.
         L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
         CA1_depth = depths_from_PSD.CA1_depth_PSD;
 
@@ -65,7 +64,11 @@ for nsession = 4 %4/4 row number of recording date in "experiment_info"
         CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
         Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
         Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
-        V1_depth_range = [L5_depth - 350, L4_channel_pair_depth + 570]; % low to high
+        V1_depth_range = [L5_depth - 330, L5_depth + 700]; % Senzai 2019 - distance from mid L5 to lower L6 appears to be ~260um
+                                                           % Senzai 2019 - mid L5 appears to fall ~610um below the brain surface 
+        if min(V1_depth_range) < max(CA1_depth_range)
+            warning('V1 depth range overlaps with CA1 depth range! (min V1 < max CA1)')
+        end
 
         ordered_oris = unique(Task_info.stim_orientation, 'stable'); 
                

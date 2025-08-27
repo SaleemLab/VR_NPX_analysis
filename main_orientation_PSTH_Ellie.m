@@ -14,22 +14,22 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/4
-Stimulus_type = 'OP_Tuning'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
+Stimulus_type = 'E_CD'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
 % plot_choice 'struct' gives output of tuning metrics.
-plot_choice = 'struct'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
+plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
 sliced_plot_option = 'no'; % 'yes' if you want to plot traces by groups of 40 trials to look for changes during the session
-z_score_period = 'none'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
+z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 
 % 3/4 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250203\OP_Tuning') 
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250211\E_CD') 
 
 % 4/4 
-for nsession = 4 % row number of recording date in "experiment_info" 
+for nsession = 10 % row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -53,17 +53,20 @@ for nsession = 4 % row number of recording date in "experiment_info"
         load(file_to_load);
         
         Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
-        L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
-        L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
-        %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
+        L4_channel_depth = earliest_V1sink_CSD.overall_best_halfmax_depth; % per CSD analysis
+        %L4_channel_depth = 4820; % enter manually if CSD analysis is not avaiable.
         L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
         CA1_depth = depths_from_PSD.CA1_depth_PSD;
 
-        L4_depth_range = [L4_channel_pair_depth - 70 , L4_channel_pair_depth + 70]; % based on CSD +/- 70um - errs on the large side
-        CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump"
+        L4_depth_range = [L4_channel_depth - 70 , L4_channel_depth + 70]; % based on CSD +/- 70um - see Allen atlas layer thickness, and note Allen brains are fixed and hence shrunken by ~10+%
+        CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump" which coincides with a dip in theta power
         Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
         Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
-        V1_depth_range = [L5_depth - 350, L4_channel_pair_depth + 570]; % low to high
+        V1_depth_range = [L5_depth - 330, L5_depth + 700]; % Senzai 2019 - distance from mid L5 to lower L6 appears to be ~260um
+                                                           % Senzai 2019 - mid L5 appears to fall ~610um below the brain surface 
+        if min(V1_depth_range) < max(CA1_depth_range)
+            warning('V1 depth range overlaps with CA1 depth range! (min V1 < max CA1)')
+        end
 
         all_orientations = unique(Task_info.stim_orientation); % uniqe values sorted in ascending order
         %Task_info.stim_onset
@@ -920,7 +923,7 @@ for nsession = 4 % row number of recording date in "experiment_info"
                     xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 end
                 if strcmp(Stimulus_type, 'E_CD')
-                    xline(0, 'k', (sprintf('Novel E %d%s onset', round(rad2deg(ordered_oris(5))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14); % E is always 5th orientation presented as E_CD is never the first sequence
+                    xline(0, 'k', sprintf('A %d%s or novel E %d%s onset', round(rad2deg(ordered_oris(1))), char(176), round(rad2deg(ordered_oris(5))), char(176)), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14); % E is always 5th orientation presented as E_CD is never the first sequence
                 end    
                 xline(0.30, 'k', (sprintf('B %d%s or grey onset', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);
                 xline(0.60, 'k', (sprintf('C %d%s onset', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 14);

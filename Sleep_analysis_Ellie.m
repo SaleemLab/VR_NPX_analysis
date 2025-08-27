@@ -2,7 +2,7 @@
 % detect slow waves, ripples and spindles, and saves the results. It plots V1 peri-ripplepeak spiking activity. 
 % For LFP analyses this script uses one channel from putative L5 and one from putative
 % CA1, both based on best regional power per PSD analysis (for which, use PSD_analysis_UnProcessedLFP_ellie).
-% L4 channel pair is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie)
+% L4 depth is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie)
 
 clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
@@ -35,16 +35,19 @@ for nsession = 5 %5/5 row number of recording date in "experiment_info"
         load(file_to_load);
 
         Brain_surface_depth = depths_from_PSD.surface_depth_PSD;
-        L4_channel_pair = earliest_V1sink_CSD(1).overall_median_channel_pair; % from CSD analysis
-        L4_channel_pair_depth = median(earliest_V1sink_CSD(1).overall_median_pair_depth); % take the median of the depths of the two channels
+        L4_channel_depth = earliest_V1sink_CSD.overall_best_halfmax_depth; % per CSD analysis
         %L4_channel_pair_depth = 4820; % enter manually if CSD analysis is not avaiable.
         L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
         best_V1_channel = find(ycoords == L5_depth, 1); % for simplicity, return the first channel at this depth (i.e. either xcoord 11 or 27)
         CA1_depth = depths_from_PSD.CA1_depth_PSD;
         best_HPC_channel = find(ycoords == CA1_depth, 1); % for simplicity, return the first channel at this depth (i.e. either xcoord 11 or 27)
         
-        V1_depth_range = [L5_depth - 400 , L4_channel_pair_depth + 570]; % low to high
-                
+        V1_depth_range = [L5_depth - 330, L5_depth + 700]; % Senzai 2019 - distance from mid L5 to lower L6 appears to be ~260um
+                                                           % Senzai 2019 - mid L5 appears to fall ~610um below the brain surface 
+        if min(V1_depth_range) < max(CA1_depth_range)
+            warning('V1 depth range overlaps with CA1 depth range! (min V1 < max CA1)')
+        end
+
         DIR = dir(fullfile(options.EPHYS_DATAPATH,'*lf.bin')); % Locate the file containing LF data
         % Load the channel map here 
         files = dir(fullfile(options.EPHYS_DATAPATH, '*ChanMap*.mat')); %the channel map has the y coordinate of each channel. The dir function lists the contents of a folder or provides information about files and directories matching a specified pattern
@@ -177,18 +180,51 @@ for nsession = 5 %5/5 row number of recording date in "experiment_info"
         
         % Plot
         figure; hold on;
-        area(tvec, movement_trace * 4, 'FaceColor', 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.6);
-        area(tvec, SWS_trace * 3,      'FaceColor', 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.6);
-        area(tvec, REM_trace * 2,      'FaceColor', 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.6);
-        area(tvec, quietWake_trace,    'FaceColor', 'g', 'EdgeColor', 'none', 'FaceAlpha', 0.6);
+        
+        % Movement
+        for i = 1:size(movement,1)
+            patch([movement(i,1) movement(i,2) movement(i,2) movement(i,1)], ...
+                  [3.5 3.5 4.5 4.5], 'k', 'EdgeColor','none','FaceAlpha',0.6);
+        end
+        
+        % Quiet Wake
+        for i = 1:size(quietWake,1)
+            patch([quietWake(i,1) quietWake(i,2) quietWake(i,2) quietWake(i,1)], ...
+                  [2.5 2.5 3.5 3.5], 'g', 'EdgeColor','none','FaceAlpha',0.6);
+        end
 
+
+        % SWS
+        for i = 1:size(SWS,1)
+            patch([SWS(i,1) SWS(i,2) SWS(i,2) SWS(i,1)], ...
+                  [1.5 1.5 2.5 2.5], 'b', 'EdgeColor','none','FaceAlpha',0.6);
+        end
+        
+        % REM
+        for i = 1:size(REM,1)
+            patch([REM(i,1) REM(i,2) REM(i,2) REM(i,1)], ...
+                  [0.5 0.5 1.5 1.5], 'r', 'EdgeColor','none','FaceAlpha',0.6);
+        end
+        
+        
         yticks([1 2 3 4])
-        yticklabels({'Quiet Wake', 'REM', 'SWS', 'Movement'})
+        ylim([0 5]);    
+        % Remove default labels
+        yticklabels({})
+        
+        % Add custom colored labels to the left of the axis
+        text(min(xlim)-0.01*range(xlim), 3, 'Quiet Wake', 'Color','g', ...
+            'FontSize',14, 'HorizontalAlignment','right', 'VerticalAlignment','middle')
+        text(min(xlim)-0.01*range(xlim), 1, 'REM', 'Color','r', ...
+            'FontSize',14, 'HorizontalAlignment','right', 'VerticalAlignment','middle')
+        text(min(xlim)-0.01*range(xlim), 2, 'SWS', 'Color','b', ...
+            'FontSize',14, 'HorizontalAlignment','right', 'VerticalAlignment','middle')
+        text(min(xlim)-0.01*range(xlim), 4, 'Movement', 'Color','k', ...
+            'FontSize',14, 'HorizontalAlignment','right', 'VerticalAlignment','middle')
         xlabel('Time (s)');
-        ylabel('State');
         set(gca,"TickDir","out",'box', 'off', 'FontSize', 14)
         sgtitle(sprintf('%s Sleep/Wake States over time Day %s %s ', subject_number, session_info.probe.SESSION, Stimulus_type), 'Interpreter', 'none', 'FontSize', 16);
-        ylim([0 5]);       
+           
 
         %%%% Save the behavioural states to a struct
         behavioural_state = struct();
