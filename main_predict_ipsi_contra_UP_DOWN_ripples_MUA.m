@@ -784,8 +784,8 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed 
 
 %%%%%%%%%%%% Control for lag and delta power by using perceding UP
 %%%%%%%%%%%% transition lag and delta power
-UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
-UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
+% UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
+% UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
 
 all_overlap_idx_UP = merged_event_info.UP_overlap_idx_all{end};
 lags =merged_event_info.UP_lags_all{end};
@@ -872,6 +872,13 @@ cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regress
 % load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
 summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'Ripples_V1depression_Summary.csv');
 
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_amp_phase_Ripples_output.mat'),'output');
+model_indices = 1:length(output(1).model);
+cd(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression SO spindle phase power'));
+% load('Ripples_V1synchrony_output.mat');  % Load your 'output' variable
+summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'SO_spindles_amp_phase_Ripples_Summary.csv');
 
 
 % output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
