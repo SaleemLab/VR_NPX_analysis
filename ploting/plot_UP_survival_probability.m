@@ -99,7 +99,7 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     end
 
     % Initialize outputs
-    boot_output = struct('b', [], 'p', [], 'name', []);
+    % boot_output = struct('b', [], 'p', [], 'name', []);
     barColors = [0,90,50;74,20,134]/256;
     % barData = nan(1,2); lowerCI = nan(1,2); upperCI = nan(1,2); p50 = nan(1,2);
 
