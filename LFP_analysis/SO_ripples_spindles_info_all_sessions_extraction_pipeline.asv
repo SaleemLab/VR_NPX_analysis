@@ -875,7 +875,7 @@ end
 load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 
 timebins = [20,100];
-title_text = 'PLS contextual discrimination RUN1';
+title_text = 'PLS contextual discrimination HPC RUN1';
 fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
 
 % title_text = 'PLS contextual discrimination RUN1';
@@ -913,8 +913,66 @@ for n = 1:2
     for i = 1:2
 
         mean_AUC = mean(AUC(i,:),'omitnan');
-        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:))),...  % lower error
-            prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
+        hold on
+        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    end
+
+    signrank(AUC(1,:),AUC(2,:),'tail','right')
+    
+    
+
+    xticks([1 2]);
+    xticklabels({'Real', 'Shuffled'});
+    ylabel('AUC');
+    ylim([0 1]);
+    title('Mean AUC – Real vs Shuffled');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+%%%%%%%%% V1
+timebins = [20,100];
+title_text = 'PLS contextual discrimination V1 RUN1';
+fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+
+% title_text = 'PLS contextual discrimination RUN1';
+for n = 1:2
+    nexttile
+    fpr = KDE_RUN_validations_all.FPR(1,:);
+    TPR_real = squeeze(mean(KDE_RUN_validations_all.V1_TPR(n,:,:),2))';
+    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:),2))';
+    CI_real = (std(squeeze(KDE_RUN_validations_all.V1_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR,2));
+    CI_shuf = (std(squeeze(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR_shuffled,2));
+    hold on
+    plot([0 1],[0 1],'--k')
+    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(fpr, TPR_real, 'Color', [231,41,138]/256);
+    plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
+    xlabel('True positive rate')
+    ylabel('False Positive rate')
+    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+    title(sprintf('ROC curve V1 %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+for n = 1:2
+    nexttile
+
+    AUC = [KDE_RUN_validations_all.V1_AUC(n,:);KDE_RUN_validations_all.V1_AUC_shuffled(n,:)];
+    bar_colors = [231,41,138; 0, 0, 0]/255;
+    x_pos=[1 2];
+    for i = 1:2
+
+        mean_AUC = mean(AUC(i,:),'omitnan');
+        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
         hold on
         bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
         errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
@@ -928,6 +986,10 @@ for n = 1:2
     title('Mean AUC – Real vs Shuffled');
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC spatial representation'),[],'ContentType','vector')
+
 
 
 %% Add on PLS KDE regression with log_odds and z-scored values

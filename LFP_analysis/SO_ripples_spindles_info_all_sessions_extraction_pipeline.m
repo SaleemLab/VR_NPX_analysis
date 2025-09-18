@@ -920,6 +920,9 @@ for n = 1:2
         errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
     end
 
+    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    
+    p
 
     xticks([1 2]);
     xticklabels({'Real', 'Shuffled'});
@@ -976,6 +979,10 @@ for n = 1:2
     end
 
 
+    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    
+    p
+    
     xticks([1 2]);
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
