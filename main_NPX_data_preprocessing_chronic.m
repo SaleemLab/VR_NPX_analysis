@@ -154,13 +154,20 @@ ROOTPATH = 'Z:\ibn-vision'; % New server mapped to z drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping(SUBJECTS,options);
-% experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
-% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-experiment_info=experiment_info([17 20 33 46 47 56 70 72 73]);
+% Famililar 
+experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
 
-% experiment_info=experiment_info([4 5 6 9]);
-% experiment_info=experiment_info([48 51]);
-% experiment_info=experiment_info(4:5);
+% Novel one side
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50]);
+% experiment_info=experiment_info([61 62 63 74 75 76]);
+% experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76]);
+
+% Novel Both sides
+experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53]);
+% experiment_info=experiment_info([64 65 66 77 78 79]);
+% experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 12 14 25 26 27 28 39 40 51 52 53]);
 % All_stimuli = {'Checkerboard'}
 % All_stimuli = {'SparseNoise_fullscreen','Checkerboard','StaticGratings'}
 All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
