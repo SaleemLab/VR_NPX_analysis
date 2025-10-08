@@ -3053,14 +3053,13 @@ for nsession =1:22
 
         for nevent = 1:length(event_sample_idx)
             ripple_windows = event_sample_idx(nevent) + win_full_samp; % ripple windows
-            if sum(ripple_windows > length(lfp_V1.SO_amplitude_LFP))>0
-                ripple_windows(sum(ripple_windows <= length(lfp_V1.SO_amplitude_LFP)):end) = nan;
-                % valid_bins = ~isnan(ripple_windows);
-            elseif   sum(ripple_windows < 1)>0
-                ripple_windows(ripple_windows<1) = nan;
 
+            if     sum(ripple_windows > length(lfp_V1.SO_amplitude_LFP))>0
+                ripple_windows(sum(ripple_windows <= length(lfp_V1.SO_amplitude_LFP)):end) = nan;
+                valid_bins = ~isnan(ripple_windows);
+            elseif                 ripple_windows(sum(ripple_windows <= length(lfp_V1.SO_amplitude_LFP)):end) = nan;
+                valid_bins = ~isnan(ripple_windows);
             end
-            valid_bins = ~isnan(ripple_windows);
 
             output = nan(length(ripple_windows),1);
             output(valid_bins) = lfp_V1.SO_amplitude_LFP(ripple_windows(valid_bins),nprobe);
@@ -3068,60 +3067,32 @@ for nsession =1:22
 
             output = nan(length(ripple_windows),1);
             output(valid_bins) = lfp_HPC.SO_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).SO_amplitude = [periripple_LFP_info_HPC(nprobe).SO_amplitude    output]; % SO amplitude
+            periripple_LFP_info_HPC(nprobe).SO_amplitude = [periripple_LFP_info_HPC(nprobe).SO_amplitude    lfp_HPC.SO_amplitude_LFP(ripple_windows,nprobe)]; % SO amplitude
 
+            periripple_LFP_info_V1(nprobe).spindle_amplitude = [periripple_LFP_info_V1(nprobe).spindle_amplitude    lfp_V1.spindle_amplitude_LFP(ripple_windows,nprobe)]; % Spindle amplitude
+            periripple_LFP_info_HPC(nprobe).spindle_amplitude = [periripple_LFP_info_HPC(nprobe).spindle_amplitude    lfp_HPC.spindle_amplitude_LFP(ripple_windows,nprobe)]; % Spindle amplitude
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.spindle_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).spindle_amplitude = [periripple_LFP_info_V1(nprobe).spindle_amplitude   output]; % Spindle amplitude
+            periripple_LFP_info_V1(nprobe).SO_phase = [periripple_LFP_info_V1(nprobe).SO_phase lfp_V1.SO_phase_LFP(ripple_windows,nprobe)];% SO phase
+            periripple_LFP_info_HPC(nprobe).SO_phase = [periripple_LFP_info_HPC(nprobe).SO_phase lfp_HPC.SO_phase_LFP(ripple_windows,nprobe)];% SO phase
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.spindle_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).spindle_amplitude = [periripple_LFP_info_HPC(nprobe).spindle_amplitude    output]; % Spindle amplitude
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.SO_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).SO_phase = [periripple_LFP_info_V1(nprobe).SO_phase output];% SO phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.SO_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).SO_phase = [periripple_LFP_info_HPC(nprobe).SO_phase output];% SO phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.spindle_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).spindle_phase = [periripple_LFP_info_V1(nprobe).spindle_phase output];% Spindle phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.spindle_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).spindle_phase = [periripple_LFP_info_HPC(nprobe).spindle_phase output];% Spindle phase
+            periripple_LFP_info_V1(nprobe).spindle_phase = [periripple_LFP_info_V1(nprobe).spindle_phase lfp_V1.spindle_phase_LFP(ripple_windows,nprobe)];% Spindle phase
+            periripple_LFP_info_HPC(nprobe).spindle_phase = [periripple_LFP_info_HPC(nprobe).spindle_phase lfp_HPC.spindle_phase_LFP(ripple_windows,nprobe)];% Spindle phase
 
         end
     end
     % end
 
 
-    % delete(fullfile(options.ANALYSIS_DATAPATH,'periripple_LFP_info_HPC.mat'));
-    % delete(fullfile(options.ANALYSIS_DATAPATH,'periripple_LFP_info_V1.mat'));
+
+    if contains(stimulus_name{n},'Masa2tracks')
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('periripple_LFP_info_HPC%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'periripple_LFP_info_HPC','-v7.3');
+        save(fullfile(options.ANALYSIS_DATAPATH,sprintf('periripple_LFP_info_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'periripple_LFP_info_V1','-v7.3');
+     
+    else
+        save(fullfile(options.ANALYSIS_DATAPATH,'periripple_LFP_info_HPC.mat'),'periripple_LFP_info_HPC','-v7.3');
+        save(fullfile(options.ANALYSIS_DATAPATH,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
+
+    end
 end
 
 
-if exist('D:\corticohippocampal_replay')>0
-    analysis_folder = 'D:\corticohippocampal_replay';
-elseif exist('P:\corticohippocampal_replay')>0
-    analysis_folder = 'P:\corticohippocampal_replay';
-end
-
-
-
-if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
-    save(fullfile(analysis_folder,'periripple_LFP_info_HPC.mat'),'periripple_LFP_info_HPC','-v7.3');
-    save(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
-
-elseif contains(Stimulus_type,'PRE')
-    save(fullfile(analysis_folder,'periripple_LFP_info_HPC_PRE.mat'),'periripple_LFP_info_HPC','-v7.3');
-    save(fullfile(analysis_folder,'periripple_LFP_info_V1_PRE.mat'),'periripple_LFP_info_V1','-v7.3');
-
-else
-    save(fullfile(analysis_folder,'periripple_LFP_info_HPC_RUN.mat'),'periripple_LFP_info_HPC','-v7.3');
-    save(fullfile(analysis_folder,'periripple_LFP_info_V1_RUN.mat'),'periripple_LFP_info_V1','-v7.3');
-end
