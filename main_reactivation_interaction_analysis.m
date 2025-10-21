@@ -1,4 +1,5 @@
 %% Loading extracted SO ripples spindles info for plotting and analysis 
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
@@ -46,21 +47,20 @@ half_bins = nbins / 2;
 KDE_reactivation_PSTH = struct();
 
 for region = ["V1", "HPC"]
+    up_bias_all = [];
+    down_bias_all = [];
+    up_bias_all_z = [];
+    down_bias_all_z = [];
+    up_bias_all_zshuff = [];
+    down_bias_all_zshuff = [];
+
+    up_logodds_all = [];
+    down_logodds_all = [];
+    up_logodds_all_z = [];
+    down_logodds_all_z = [];
+    up_logodds_all_zshuff = [];
+    down_logodds_all_zshuff = [];
     for nprobe = 1:2
-        up_bias_all = [];
-        down_bias_all = [];
-        up_bias_all_z = [];
-        down_bias_all_z = [];
-        up_bias_all_zshuff = [];
-        down_bias_all_zshuff = [];
-
-        up_logodds_all = [];
-        down_logodds_all = [];
-        up_logodds_all_z = [];
-        down_logodds_all_z = [];
-        up_logodds_all_zshuff = [];
-        down_logodds_all_zshuff = [];
-
         if region == "V1"
             up_struct = KDE_reactivation_V1_UP_all;
             down_struct = KDE_reactivation_V1_DOWN_all;

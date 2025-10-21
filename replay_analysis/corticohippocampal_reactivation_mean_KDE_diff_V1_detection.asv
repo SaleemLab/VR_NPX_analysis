@@ -2755,6 +2755,9 @@ for npower = 1:nBins
     prop_events_shifted_boot = NaN(nBoot, nThresh);
 
 
+
+
+
     parfor iBoot = 1:nBoot
         s = RandStream('philox4x32_10', 'Seed', iBoot);
         idx = randi(s, selected_events, selected_events, 1);
@@ -3387,7 +3390,9 @@ for npower = 1:nBins
     bias_diff_shifted_boot = NaN(nBoot, nThresh);
     prop_events_shifted_boot = NaN(nBoot, nThresh);
 
+
     % event_phase = ripple_info.SO_phase';
+
 
     parfor iBoot = 1:nBoot
         s = RandStream('philox4x32_10', 'Seed', iBoot);
@@ -4046,7 +4051,6 @@ for npower = 1:nBins
         diff_tmp_shifted = NaN(1, nThresh);
         prop_tmp_shifted = NaN(1, nThresh);
         event_phase = ripple_info.SO_phase(true_idx(idx),:)';
-        event_phase_shifted = ripple_info.SO_phase(true_idx,:)';
 
         for i = 1:nThresh
             th = thresholds(i);
@@ -4075,8 +4079,8 @@ for npower = 1:nBins
 
                 t1s = bb_shift >= th;
                 t2s = bb_shift <= -th;
-                t1s = t1s & (event_phase_shifted(1,:) >= -pi/2 & event_phase_shifted(1,:) <= pi/2) & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi);
-                t2s = t2s & (event_phase_shifted(2,:) >= -pi/2 & event_phase_shifted(2,:) <= pi/2) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
+                t1s = t1s & (event_phase_shifted(1,:) >= -pi/2 & event_phase_shifted(1,:) <= pi/2) & (event_phase_shifted(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi);
+                t2s = t2s & (event_phase_shifted(2,:) >= -pi/2 & event_phase_shifted(2,:) <= pi/2) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
 
                 t1_V1 = boot_V1(t1s);
                 t2_V1 = boot_V1(t2s);
@@ -4105,8 +4109,8 @@ for npower = 1:nBins
 
                 t1s = bb_shift >= th;
                 t2s = bb_shift <= -th;
-                t1s = t1s & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
-                t2s = t2s & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
+                t1s = t1s & (event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
+                t2s = t2s & (event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
 
 
                 t1_V1 = boot_V1(t1s);
@@ -4367,7 +4371,6 @@ for npower = 1:nBins
         diff_tmp_shifted = NaN(1, nThresh);
         prop_tmp_shifted = NaN(1, nThresh);
         event_phase = ripple_info.SO_phase(true_idx(idx),:)';
-        event_phase_shifted = ripple_info.SO_phase(true_idx,:)';
 
         for i = 1:nThresh
             th = thresholds(i);
@@ -4396,8 +4399,8 @@ for npower = 1:nBins
 
                 t1s = bb_shift >= th;
                 t2s = bb_shift <= -th;
-                t1s = t1s & (event_phase_shifted(1,:) >= -pi/2 & event_phase_shifted(1,:) <= pi/2) & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi);
-                t2s = t2s & (event_phase_shifted(2,:) >= -pi/2 & event_phase_shifted(2,:) <= pi/2) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
+                t1s = t1s & (event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2) & (event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi);
+                t2s = t2s & (event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
 
                 t1_V1 = boot_V1(t1s);
                 t2_V1 = boot_V1(t2s);
@@ -4426,8 +4429,8 @@ for npower = 1:nBins
 
                 t1s = bb_shift >= th;
                 t2s = bb_shift <= -th;
-                t1s = t1s & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
-                t2s = t2s & (event_phase_shifted(2,:) >= -pi & event_phase_shifted(2,:) <= -pi/2 | event_phase_shifted(2,:) >= pi/2 & event_phase_shifted(2,:) <= pi) & (event_phase_shifted(1,:) >= -pi & event_phase_shifted(1,:) <= -pi/2 | event_phase_shifted(1,:) >= pi/2 & event_phase_shifted(1,:) <= pi);
+                t1s = t1s & (event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
+                t2s = t2s & (event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi) & (event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi);
 
 
                 t1_V1 = boot_V1(t1s);

@@ -23,11 +23,16 @@ load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
 
+
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+% probability_normalised = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 probability_psth_whole = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
 probability_psth = probability;
+
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
 PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
@@ -336,6 +341,8 @@ hemi_labels = {'L', 'R'};
 region_labels = {'L_V1','R_V1','L_HPC','R_HPC'};
 varnames = {
     'time_from_last_ripples'
+    'first_ripples_index'
+    'last_ripples_index'
     'first_ripples_power'
     'last_ripples_power'
     'first_ripples_lag'
