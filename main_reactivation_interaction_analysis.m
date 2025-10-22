@@ -1,4 +1,933 @@
-%% Loading extracted SO ripples spindles info for plotting and analysis 
+%% Extract and Process reactivation data
+
+%% Grab PLS KDE RUN vaidation summary
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+% [1 2 3 4 9 10 12 14]
+% Stimulus_types_all = {'RUN'};
+% Stimulus_types_all = {'RUN','POST'};
+KDE_RUN_validations_all = struct();
+% KDE_RUN_validations_POST_all = struc();
+
+for nsession =1:length(experiment_info)
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+        options = session_info(n).probe(1);
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+        if isempty(DIR)
+            continue
+        end
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
+
+        % 20ms ROC AUC decoding performance
+        KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{2}.FPR);
+
+        KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{2}.AUC_real);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{2}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_real);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_shuffle);
+        
+        KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_real);
+        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_real);
+        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_shuffle);
+        
+        % 100ms ROC AUC decoding performance
+        KDE_RUN_validations_all.HPC_AUC(2,nsession) = mean(KDE_RUN_validations{end}.AUC_real);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations{end}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_TPR(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_real);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_shuffle);
+
+
+        KDE_RUN_validations_all.V1_AUC(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_real);
+        KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_TPR(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_real);
+        KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_shuffle);
+        
+    end
+end
+
+% spindles_all = rmfield(spindles_all, 'detectorinfo');
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all','-v7.3')
+
+
+%% Plotting ROC AUC of RUN 2 track discrimination 
+% spindles_all = rmfield(spindles_all, 'detectorinfo');
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
+
+timebins = [20,100];
+title_text = 'PLS contextual discrimination HPC RUN1';
+fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+
+% title_text = 'PLS contextual discrimination RUN1';
+for n = 1:2
+    nexttile
+    fpr = KDE_RUN_validations_all.FPR(1,:);
+    TPR_real = squeeze(mean(KDE_RUN_validations_all.HPC_TPR(n,:,:),2))';
+    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:),2))';
+    CI_real = (std(squeeze(KDE_RUN_validations_all.HPC_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR,2));
+    CI_shuf = (std(squeeze(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR_shuffled,2));
+    hold on
+    plot([0 1],[0 1],'--k')
+    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(fpr, TPR_real, 'Color', [231,41,138]/256);
+    plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
+    xlabel('True positive rate')
+    ylabel('False Positive rate')
+    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+    title(sprintf('ROC curve HPC %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+
+
+for n = 1:2
+    nexttile
+
+    AUC = [KDE_RUN_validations_all.HPC_AUC(n,:);KDE_RUN_validations_all.HPC_AUC_shuffled(n,:)];
+    bar_colors = [231,41,138; 0, 0, 0]/255;
+    x_pos=[1 2];
+    for i = 1:2
+
+        mean_AUC = mean(AUC(i,:),'omitnan');
+        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
+        hold on
+        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    end
+
+    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    
+    p
+
+    xticks([1 2]);
+    xticklabels({'Real', 'Shuffled'});
+    ylabel('AUC');
+    ylim([0 1]);
+    title('Mean AUC – Real vs Shuffled');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+%%%%%%%%% V1
+timebins = [20,100];
+title_text = 'PLS contextual discrimination V1 RUN1';
+fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+
+% title_text = 'PLS contextual discrimination RUN1';
+for n = 1:2
+    nexttile
+    fpr = KDE_RUN_validations_all.FPR(1,:);
+    TPR_real = squeeze(mean(KDE_RUN_validations_all.V1_TPR(n,:,:),2))';
+    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:),2))';
+    CI_real = (std(squeeze(KDE_RUN_validations_all.V1_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR,2));
+    CI_shuf = (std(squeeze(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR_shuffled,2));
+    hold on
+    plot([0 1],[0 1],'--k')
+    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    plot(fpr, TPR_real, 'Color', [231,41,138]/256);
+    plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
+    xlabel('True positive rate')
+    ylabel('False Positive rate')
+    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+    title(sprintf('ROC curve V1 %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+for n = 1:2
+    nexttile
+
+    AUC = [KDE_RUN_validations_all.V1_AUC(n,:);KDE_RUN_validations_all.V1_AUC_shuffled(n,:)];
+    bar_colors = [231,41,138; 0, 0, 0]/255;
+    x_pos=[1 2];
+    for i = 1:2
+
+        mean_AUC = mean(AUC(i,:),'omitnan');
+        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
+        hold on
+        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    end
+
+
+    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    
+    p
+    
+    xticks([1 2]);
+    xticklabels({'Real', 'Shuffled'});
+    ylabel('AUC');
+    ylim([0 1]);
+    title('Mean AUC – Real vs Shuffled');
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+end
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC spatial representation'),[],'ContentType','vector')
+
+
+
+%% Add on PLS KDE regression with log_odds and z-scored values
+% -- Initialization and setup
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+SUBJECTS = {'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS, option);
+experiment_info = experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'SleepChronic';
+
+session_count = 0;
+
+KDE_reactivation_V1_all = struct();
+KDE_reactivation_V1_UP_all = struct();
+KDE_reactivation_V1_DOWN_all = struct();
+
+KDE_reactivation_UP_all = struct();
+KDE_reactivation_DOWN_all = struct();
+KDE_reactivation_all = struct();
+
+for nsession = 1:length(experiment_info)
+    tic
+    fprintf('session %i\n', nsession);
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName, Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName, Stimulus_type));
+    if isempty(stimulus_name), continue; end
+
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT}, option);
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH, '..', 'best_channels.mat'));
+
+    if length(stimulus_name) > 1
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2'));
+        else
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+            n = length(stimulus_name) > 1 && find(contains(stimulus_name,'_2')) || 1;
+        end
+    else
+        n = 1;
+    end
+
+    session_count = session_count + 1;
+    options = session_info(n).probe(1);
+
+    if isempty(dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'))), continue; end
+
+    if exist(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'), 'file')
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        session_clusters_RUN = session_clusters;
+        clear session_clusters
+    end
+    if exist(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'), 'file')
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN = session_clusters;
+        clear session_clusters
+    end
+
+    % --- V1 data ---
+    if contains(stimulus_name{n},'Sleep')
+        load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation_V1.mat'),'KDE_reactivation_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_DOWN.mat'),'KDE_reactivation_V1_DOWN');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_UP.mat'),'KDE_reactivation_V1_UP');
+    end
+
+    for nprobe = 1:length(KDE_reactivation_V1)
+        structures = {
+            'KDE_reactivation_V1','KDE_reactivation_V1_all';
+            'KDE_reactivation_V1_UP','KDE_reactivation_V1_UP_all';
+            'KDE_reactivation_V1_DOWN','KDE_reactivation_V1_DOWN_all'
+        };
+
+        all_log_odds = [
+            log(KDE_reactivation_V1(nprobe).event_T1_probability ./ KDE_reactivation_V1(nprobe).event_T2_probability);
+            log(KDE_reactivation_V1_UP(nprobe).event_T1_probability ./ KDE_reactivation_V1_UP(nprobe).event_T2_probability);
+            log(KDE_reactivation_V1_DOWN(nprobe).event_T1_probability ./ KDE_reactivation_V1_DOWN(nprobe).event_T2_probability)
+        ];
+        all_log_odds = all_log_odds((isfinite(all_log_odds)));
+
+        all_bias = [
+            KDE_reactivation_V1(nprobe).event_bias;
+            KDE_reactivation_V1_UP(nprobe).event_bias;
+            KDE_reactivation_V1_DOWN(nprobe).event_bias
+        ];
+
+        for s = 1:size(structures,1)
+            src = eval(structures{s,1});
+            dst = structures{s,2};
+
+            real_bias = src(nprobe).event_bias(:)';
+            shuffled = src(nprobe).event_T1_probability_shuffled ./ (src(nprobe).event_T1_probability_shuffled + src(nprobe).event_T2_probability_shuffled);
+            nbin = size(shuffled, 2);
+            zscored_bias_shuffled = nan(1, nbin);
+            percentile = nan(1, nbin);
+            for i = 1:nbin
+                valid = shuffled(:, i);
+                valid = valid(~isnan(valid));
+                if ~isempty(valid) && ~isnan(real_bias(i))
+                    percentile(i) = sum(valid < real_bias(i), 'omitnan') / sum(~isnan(valid)) * 100;
+                    zscored_bias_shuffled(i) = (real_bias(i) - mean(valid, 'omitnan')) / std(valid, 'omitnan');
+                end
+            end
+
+            log_odds = log(src(nprobe).event_T1_probability ./ src(nprobe).event_T2_probability);
+            log_odds_shuffled = log(src(nprobe).event_T1_probability_shuffled ./ src(nprobe).event_T2_probability_shuffled);
+            zscored_log_odds_shuffled = nan(1, size(log_odds_shuffled, 2));
+            log_odds_percentile = nan(1, size(log_odds_shuffled, 2));
+            for i = 1:size(log_odds_shuffled,2)
+                valid = log_odds_shuffled(:, i);
+                valid = valid(~isnan(valid));
+                if ~isempty(valid) && ~isnan(log_odds(i))
+                    zscored_log_odds_shuffled(i) = (log_odds(i) - mean(valid, 'omitnan')) / std(valid, 'omitnan');
+                    log_odds_percentile(i) = sum(valid < log_odds(i), 'omitnan') / sum(~isnan(valid)) * 100;
+                end
+            end
+
+            eval([dst '(nprobe).bias{nsession} = real_bias;']);
+            eval([dst '(nprobe).zscored_bias{nsession} = (real_bias - mean(all_bias,''omitnan'')) ./ std(all_bias,''omitnan'');']);
+            eval([dst '(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_shuffled;']);
+            eval([dst '(nprobe).percentile{nsession} = percentile;']);
+
+            eval([dst '(nprobe).log_odds{nsession} = log_odds;']);
+            eval([dst '(nprobe).zscored_log_odds{nsession} = (log_odds - mean(all_log_odds,''omitnan'')) ./ std(all_log_odds,''omitnan'');']);
+            eval([dst '(nprobe).zscored_log_odds_shuffled{nsession} = zscored_log_odds_shuffled;']);
+            eval([dst '(nprobe).log_odds_percentile{nsession} = log_odds_percentile;']);
+
+            % New: Save event metadata
+            eval([dst '(nprobe).event_bins{nsession} = src(nprobe).event_bins;']);
+            eval([dst '(nprobe).event_id{nsession} = src(nprobe).event_id;']);
+        end
+    end
+    clear KDE_reactivation_V1 KDE_reactivation_V1_DOWN KDE_reactivation_V1_UP
+
+    % --- General (non-V1) data ---
+    load(fullfile(options.ANALYSIS_DATAPATH,'PLS_KDE_reactivation.mat'),'KDE_reactivation');
+    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_DOWN.mat'),'KDE_reactivation_DOWN');
+    load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_UP.mat'),'KDE_reactivation_UP');
+
+    for nprobe = 1:length(KDE_reactivation)
+        structures = {
+            'KDE_reactivation','KDE_reactivation_all';
+            'KDE_reactivation_UP','KDE_reactivation_UP_all';
+            'KDE_reactivation_DOWN','KDE_reactivation_DOWN_all'
+        };
+
+        all_log_odds = [
+            log(KDE_reactivation(nprobe).event_T1_probability ./ KDE_reactivation(nprobe).event_T2_probability);
+            log(KDE_reactivation_UP(nprobe).event_T1_probability ./ KDE_reactivation_UP(nprobe).event_T2_probability);
+            log(KDE_reactivation_DOWN(nprobe).event_T1_probability ./ KDE_reactivation_DOWN(nprobe).event_T2_probability)
+        ];
+        all_log_odds = all_log_odds((isfinite(all_log_odds)));
+
+        all_bias = [
+            KDE_reactivation(nprobe).event_bias;
+            KDE_reactivation_UP(nprobe).event_bias;
+            KDE_reactivation_DOWN(nprobe).event_bias
+        ];
+
+        for s = 1:size(structures,1)
+            src = eval(structures{s,1});
+            dst = structures{s,2};
+
+            real_bias = src(nprobe).event_bias(:)';
+            shuffled = src(nprobe).event_T1_probability_shuffled ./ (src(nprobe).event_T1_probability_shuffled + src(nprobe).event_T2_probability_shuffled);
+            nbin = size(shuffled, 2);
+            zscored_bias_shuffled = nan(1, nbin);
+            percentile = nan(1, nbin);
+            for i = 1:nbin
+                valid = shuffled(:, i);
+                valid = valid(~isnan(valid));
+                if ~isempty(valid) && ~isnan(real_bias(i))
+                    percentile(i) = sum(valid < real_bias(i), 'omitnan') / sum(~isnan(valid)) * 100;
+                    zscored_bias_shuffled(i) = (real_bias(i) - mean(valid, 'omitnan')) / std(valid, 'omitnan');
+                end
+            end
+
+            log_odds = log(src(nprobe).event_T1_probability ./ src(nprobe).event_T2_probability);
+            log_odds_shuffled = log(src(nprobe).event_T1_probability_shuffled ./ src(nprobe).event_T2_probability_shuffled);
+            zscored_log_odds_shuffled = nan(1, size(log_odds_shuffled, 2));
+            log_odds_percentile = nan(1, size(log_odds_shuffled, 2));
+            for i = 1:size(log_odds_shuffled,2)
+                valid = log_odds_shuffled(:, i);
+                valid = valid(~isnan(valid));
+                if ~isempty(valid) && ~isnan(log_odds(i))
+                    zscored_log_odds_shuffled(i) = (log_odds(i) - mean(valid, 'omitnan')) / std(valid, 'omitnan');
+                    log_odds_percentile(i) = sum(valid < log_odds(i), 'omitnan') / sum(~isnan(valid)) * 100;
+                end
+            end
+
+            eval([dst '(nprobe).bias{nsession} = real_bias;']);
+            eval([dst '(nprobe).zscored_bias{nsession} = (real_bias - mean(all_bias,''omitnan'')) ./ std(all_bias,''omitnan'');']);
+            eval([dst '(nprobe).zscored_bias_shuffled{nsession} = zscored_bias_shuffled;']);
+            eval([dst '(nprobe).percentile{nsession} = percentile;']);
+
+            eval([dst '(nprobe).log_odds{nsession} = log_odds;']);
+            eval([dst '(nprobe).zscored_log_odds{nsession} = (log_odds - mean(all_log_odds,''omitnan'')) ./ std(all_log_odds,''omitnan'');']);
+            eval([dst '(nprobe).zscored_log_odds_shuffled{nsession} = zscored_log_odds_shuffled;']);
+            eval([dst '(nprobe).log_odds_percentile{nsession} = log_odds_percentile;']);
+
+            % New: Save event time metadata
+            eval([dst '(nprobe).event_bins{nsession} = src(nprobe).event_bins;']);
+            eval([dst '(nprobe).event_id{nsession} = src(nprobe).event_id;']);
+        end
+    end
+    clear KDE_reactivation KDE_reactivation_DOWN KDE_reactivation_UP
+    toc
+end
+
+% Save all results
+if exist('D:\\corticohippocampal_replay','dir')
+    analysis_folder = 'D:\\corticohippocampal_replay';
+elseif exist('P:\\corticohippocampal_replay','dir')
+    analysis_folder = 'P:\\corticohippocampal_replay';
+end
+
+save(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
+save(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
+save(fullfile(analysis_folder,'KDE_reactivation_all_POST.mat'),'KDE_reactivation_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_DOWN_all_POST.mat'),'KDE_reactivation_V1_DOWN_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
+
+
+%% Add on PLS KDE regression Ripples
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'SleepChronic';
+
+session_count = 0;
+
+KDE_reactivation_V1_ripples_all= struct();
+KDE_reactivation_ripples_all = struct();
+
+for nsession =1:length(experiment_info)
+
+    tic
+    disp(sprintf('session %i',nsession))
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    if length(stimulus_name)>1
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2'));
+        else
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+            if length(stimulus_name)>1
+                disp('Same stimuli multiple recordings. Will take _2')
+                n = find(contains(stimulus_name,'_2'));
+            else
+                n =1;
+            end
+        end
+    else
+        n = 1;
+    end
+
+    session_count = session_count + 1;
+    options = session_info(n).probe(1);
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+    if isempty(DIR)
+        continue
+    end
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+    if ~isempty(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    if ~isempty(DIR1)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    if contains(stimulus_name{n},'Sleep')
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_ripples.mat'),'KDE_reactivation_V1_ripples');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_ripples.mat'),'KDE_reactivation_ripples');
+    end
+
+    for nprobe = 1:length(KDE_reactivation_V1_ripples)
+        real_bias = KDE_reactivation_V1_ripples(nprobe).event_bias(:)';
+        bias_distribution = [real_bias];
+
+        log_odds = log(KDE_reactivation_V1_ripples(nprobe).event_T1_probability ./ KDE_reactivation_V1_ripples(nprobe).event_T2_probability)';
+        log_odds_distribution = log_odds((isfinite(log_odds)));
+
+        KDE_reactivation_V1_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_ripples(nprobe).event_bins;
+        KDE_reactivation_V1_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_V1_ripples(nprobe).event_id;
+
+        KDE_reactivation_V1_ripples_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_V1_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
+
+        KDE_reactivation_V1_ripples_all(nprobe).log_odds{nsession} = log_odds;
+        KDE_reactivation_V1_ripples_all(nprobe).zscored_log_odds{nsession} = (log_odds - mean(log_odds_distribution,'omitnan')) ./ std(log_odds_distribution,'omitnan');
+    end
+
+    for nprobe = 1:length(KDE_reactivation_ripples)
+        real_bias = KDE_reactivation_ripples(nprobe).event_bias(:)';
+        bias_distribution = [real_bias];
+
+        log_odds = log(KDE_reactivation_ripples(nprobe).event_T1_probability ./ KDE_reactivation_ripples(nprobe).event_T2_probability)';
+        log_odds_distribution = log_odds((isfinite(log_odds)));
+
+        KDE_reactivation_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
+        KDE_reactivation_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
+
+        KDE_reactivation_ripples_all(nprobe).bias{nsession} = real_bias;
+        KDE_reactivation_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
+
+        KDE_reactivation_ripples_all(nprobe).log_odds{nsession} = log_odds;
+        KDE_reactivation_ripples_all(nprobe).zscored_log_odds{nsession} = (log_odds - mean(log_odds_distribution,'omitnan')) ./ std(log_odds_distribution,'omitnan');
+    end
+    clear KDE_reactivation_ripples KDE_reactivation_V1_ripples
+    toc
+end
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+save(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
+save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
+
+
+%% Add on Log odds bayesian bias
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'SleepChronic';
+
+session_count = 0;
+
+bayesian_reactivation_all= struct();
+bayesian_reactivation_V1_all= struct();
+
+
+for nsession =1:length(experiment_info)
+
+    tic
+    disp(sprintf('session %i',nsession))
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    if length(stimulus_name)>1
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2'));
+        else
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+            if length(stimulus_name)>1
+                disp('Same stimuli multiple recordings. Will take _2')
+                n = find(contains(stimulus_name,'_2'));
+            else
+                n =1;
+            end
+        end
+    else
+        n = 1;
+    end
+
+    session_count = session_count + 1;
+    options = session_info(n).probe(1);
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+    if isempty(DIR)
+        continue
+    end
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+    if ~isempty(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    if ~isempty(DIR1)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    if contains(stimulus_name{n},'Sleep')
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_shuffled.mat'),'decoded_ripple_events_shuffled');
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_V1.mat'),'decoded_ripple_events_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_V1_shuffled.mat'),'decoded_ripple_events_V1_shuffled');
+    end
+
+    %%%% Re-enter PV threshold used for decoding
+    load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','population_vector_corr_HPC_combined_RUN1.mat'),'PPvector');
+    PPvector_HPC=PPvector;
+    load(fullfile(options.ANALYSIS_DATAPATH,'..','Masa2tracks','population_vector_corr_V1_combined_RUN1.mat'),'PPvector');
+    PPvector_V1=PPvector;
+
+    across_tracks_pairs = [3 4 7 8 9 10 13 14];
+    within_tracks_pairs = setdiff(1:16,across_tracks_pairs);
+    x_bin_width =5;
+
+
+    position_bins = 1:2:140;
+    bad_bins = position_bins(sum((PPvector_V1.pval(:,across_tracks_pairs)<0.05).*(PPvector_V1.population_vector(:,across_tracks_pairs)>0),2) +...
+        sum(PPvector_V1.pval(:,within_tracks_pairs)>0.05,2)>0);
+    good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+
+    PV_thresholds = [];
+    PV_threshold = [];
+    if length(good_bins)<5
+        PV_thresholds = 0.3:0.05:0.5;
+        for i = 1:length(PV_thresholds)
+            PV_threshold = PV_thresholds(i);
+
+            % Identify bad bins
+            bad_bins = position_bins( ...
+                sum((PPvector_V1.population_vector(:,across_tracks_pairs) > PV_threshold) .* ...
+                (PPvector_V1.population_vector(:,across_tracks_pairs) > 0), 2) + ...
+                sum(PPvector_V1.pval(:,within_tracks_pairs) > 0.05, 2) > 0);
+
+            % Histogram to count which bins are "bad"
+            bin_hist = histcounts(bad_bins, 0:x_bin_width:140);
+
+            % Good bins: those not present in bad_bins
+            good_bins = find(bin_hist < 1);
+
+            % Exit condition
+            if length(good_bins) >= 5
+                break;
+            end
+        end
+    end
+
+    for nprobe = 1:length(decoded_ripple_events_V1)
+
+        % Store bin quality and threshold
+        decoded_ripple_events_V1(nprobe).good_bins = good_bins;
+        decoded_ripple_events_V1(nprobe).PV_threshold = PV_threshold;
+
+        bayesian_reactivation_V1_all(nprobe).good_bins{nsession} = good_bins;
+        bayesian_reactivation_V1_all(nprobe).PV_threshold{nsession} = PV_threshold;
+
+        % -- Compute bias and log-odds distributions for z-scoring
+        summed_probability_distribution = [
+            decoded_ripple_events_V1(nprobe).track(1).replay_events(:).summed_probability;
+            decoded_ripple_events_V1(nprobe).track(2).replay_events(:).summed_probability
+            ];
+        bias_distribution = summed_probability_distribution(1,:) ./ sum(summed_probability_distribution, 1, 'omitnan');
+        bias_mean = mean(bias_distribution, 'omitnan');
+        bias_std = std(bias_distribution, 0, 'omitnan');
+
+        log_odds_distribution = log(summed_probability_distribution(1,:) ./ summed_probability_distribution(2,:));
+        log_odds_mean = mean(log_odds_distribution, 'omitnan');
+        log_odds_std = std(log_odds_distribution, 0, 'omitnan');
+
+        % -- Initialize accumulation
+        if session_count == 1 || ~isfield(bayesian_reactivation_V1_all(nprobe), 'decoded_matrix')
+            bayesian_reactivation_V1_all(nprobe).decoded_matrix = [];
+            bayesian_reactivation_V1_all(nprobe).summed_probability = [];
+            bayesian_reactivation_V1_all(nprobe).bias = [];
+            bayesian_reactivation_V1_all(nprobe).z_bias = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds = [];
+            bayesian_reactivation_V1_all(nprobe).z_log_odds = [];
+            bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled = [];
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile = [];
+        end
+
+        for nevent = 1:length(decoded_ripple_events_V1(nprobe).track(1).replay_events)
+            % Decode info
+            replay1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).replay;
+            replay2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).replay;
+            sumprob1 = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).summed_probability;
+            sumprob2 = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).summed_probability;
+
+            % Bin alignment
+            time_edges = decoded_ripple_events_V1(nprobe).track(1).replay_events(nevent).timebins_edges;
+            onset_time = decoded_ripple_events_V1(nprobe).track(2).replay_events(nevent).onset;
+            [~, onset_bin] = min(abs(time_edges - onset_time));
+            shift = 26 - onset_bin;
+
+            [npos, nbins] = size(replay1);
+            bin_range = (1:nbins) + shift;
+            valid_idx = bin_range > 0 & bin_range <= 50;
+
+            mat1 = nan(npos, 50);
+            mat2 = nan(npos, 50);
+            mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
+            mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
+            combined_matrix = cat(1, mat1, mat2);
+
+            bayesian_reactivation_V1_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
+
+            sp_nan = nan(2, 50);
+            sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
+            sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
+            bayesian_reactivation_V1_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
+
+            % Bias
+            total_prob = sum(sp_nan, 1, 'omitnan');
+            bias = sp_nan(1,:) ./ total_prob;
+            z_bias = (bias - bias_mean) ./ bias_std;
+            bayesian_reactivation_V1_all(nprobe).bias(:,end+1) = bias;
+            bayesian_reactivation_V1_all(nprobe).z_bias(:,end+1) = z_bias;
+
+            % Log odds and shuffled z-score
+            shuffled1 = decoded_ripple_events_V1_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
+            shuffled2 = decoded_ripple_events_V1_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
+            sp_shuf = log(shuffled1 ./ shuffled2);
+
+            shuf_nan = nan(size(sp_shuf,1), 50);
+            for s = 1:size(sp_shuf,1)
+                shuf_nan(s, bin_range(valid_idx)) = sp_shuf(s, valid_idx);
+            end
+
+            data = log(sp_nan(1,:) ./ sp_nan(2,:));
+            bayesian_reactivation_V1_all(nprobe).z_log_odds_shuffled(:,end+1) = ...
+                (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');
+
+            bayesian_reactivation_V1_all(nprobe).z_log_odds(:,end+1) = ...
+                (data - log_odds_mean) ./ log_odds_std;
+
+            % Percentiles
+            log_odds_pct = nan(1, 50);
+            for i = 1:50
+                dist = shuf_nan(:, i);
+                log_odds_pct(i) = sum(dist <= data(i), 'omitnan') / sum(~isnan(dist)) * 100;
+            end
+            bayesian_reactivation_V1_all(nprobe).log_odds_percentile(:,end+1) = log_odds_pct;
+        end
+    end
+
+
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events_V1.mat'),'decoded_ripple_events_V1');
+
+
+    %%%%%%%% HPC
+    position_bins = 1:2:140;
+    bad_bins = position_bins(sum((PPvector_HPC.pval(:,across_tracks_pairs)<0.05).*(PPvector_HPC.population_vector(:,across_tracks_pairs)>0),2) +...
+        sum(PPvector_HPC.pval(:,within_tracks_pairs)>0.05,2)>0);
+    good_bins = find(histcounts(bad_bins,0:x_bin_width:140)<1);
+
+    PV_thresholds = [];
+    PV_threshold = [];
+    if length(good_bins)<5
+        PV_thresholds = 0.3:0.05:0.5;
+        for i = 1:length(PV_thresholds)
+            PV_threshold = PV_thresholds(i);
+
+            % Identify bad bins
+            bad_bins = position_bins( ...
+                sum((PPvector_HPC.population_vector(:,across_tracks_pairs) > PV_threshold) .* ...
+                (PPvector_HPC.population_vector(:,across_tracks_pairs) > 0), 2) + ...
+                sum(PPvector_HPC.pval(:,within_tracks_pairs) > 0.05, 2) > 0);
+
+            % Histogram to count which bins are "bad"
+            bin_hist = histcounts(bad_bins, 0:x_bin_width:140);
+
+            % Good bins: those not present in bad_bins
+            good_bins = find(bin_hist < 1);
+
+            % Exit condition
+            if length(good_bins) >= 5
+                break;
+            end
+        end
+    end
+
+    for nprobe = 1:length(decoded_ripple_events)
+
+        % Store bin quality and threshold
+        decoded_ripple_events(nprobe).good_bins = good_bins;
+        decoded_ripple_events(nprobe).PV_threshold = PV_threshold;
+
+        bayesian_reactivation_all(nprobe).good_bins{nsession} = good_bins;
+        bayesian_reactivation_all(nprobe).PV_threshold{nsession} = PV_threshold;
+
+        % -- Compute bias and log-odds distributions for z-scoring
+        summed_probability_distribution = [
+            decoded_ripple_events(nprobe).track(1).replay_events(:).summed_probability;
+            decoded_ripple_events(nprobe).track(2).replay_events(:).summed_probability
+            ];
+        bias_distribution = summed_probability_distribution(1,:) ./ sum(summed_probability_distribution, 1, 'omitnan');
+        bias_mean = mean(bias_distribution, 'omitnan');
+        bias_std = std(bias_distribution, 0, 'omitnan');
+
+        log_odds_distribution = log(summed_probability_distribution(1,:) ./ summed_probability_distribution(2,:));
+        log_odds_mean = mean(log_odds_distribution, 'omitnan');
+        log_odds_std = std(log_odds_distribution, 0, 'omitnan');
+
+        % -- Initialize accumulation
+        if session_count == 1 || ~isfield(bayesian_reactivation_all(nprobe), 'decoded_matrix')
+            bayesian_reactivation_all(nprobe).decoded_matrix = [];
+            bayesian_reactivation_all(nprobe).summed_probability = [];
+            bayesian_reactivation_all(nprobe).bias = [];
+            bayesian_reactivation_all(nprobe).z_bias = [];
+            bayesian_reactivation_all(nprobe).log_odds = [];
+            bayesian_reactivation_all(nprobe).z_log_odds = [];
+            bayesian_reactivation_all(nprobe).z_log_odds_shuffled = [];
+            bayesian_reactivation_all(nprobe).log_odds_percentile = [];
+        end
+
+        for nevent = 1:length(decoded_ripple_events(nprobe).track(1).replay_events)
+            % Decode info
+            replay1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).replay;
+            replay2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).replay;
+            sumprob1 = decoded_ripple_events(nprobe).track(1).replay_events(nevent).summed_probability;
+            sumprob2 = decoded_ripple_events(nprobe).track(2).replay_events(nevent).summed_probability;
+
+            % Bin alignment
+            time_edges = decoded_ripple_events(nprobe).track(1).replay_events(nevent).timebins_edges;
+            onset_time = decoded_ripple_events(nprobe).track(2).replay_events(nevent).onset;
+            [~, onset_bin] = min(abs(time_edges - onset_time));
+            shift = 26 - onset_bin;
+
+            [npos, nbins] = size(replay1);
+            bin_range = (1:nbins) + shift;
+            valid_idx = bin_range > 0 & bin_range <= 50;
+
+            mat1 = nan(npos, 50);
+            mat2 = nan(npos, 50);
+            mat1(:, bin_range(valid_idx)) = replay1(:, valid_idx);
+            mat2(:, bin_range(valid_idx)) = replay2(:, valid_idx);
+            combined_matrix = cat(1, mat1, mat2);
+
+            bayesian_reactivation_all(nprobe).decoded_matrix(:,:,end+1) = combined_matrix;
+
+            sp_nan = nan(2, 50);
+            sp_nan(1, bin_range(valid_idx)) = sumprob1(valid_idx);
+            sp_nan(2, bin_range(valid_idx)) = sumprob2(valid_idx);
+            bayesian_reactivation_all(nprobe).summed_probability(:,:,end+1) = sp_nan;
+
+            % Bias
+            total_prob = sum(sp_nan, 1, 'omitnan');
+            bias = sp_nan(1,:) ./ total_prob;
+            z_bias = (bias - bias_mean) ./ bias_std;
+            bayesian_reactivation_all(nprobe).bias(:,end+1) = bias;
+            bayesian_reactivation_all(nprobe).z_bias(:,end+1) = z_bias;
+
+            % Log odds and shuffled z-score
+            shuffled1 = decoded_ripple_events_shuffled(nprobe).track(1).replay_events(nevent).summed_probability;
+            shuffled2 = decoded_ripple_events_shuffled(nprobe).track(2).replay_events(nevent).summed_probability;
+            sp_shuf = log(shuffled1 ./ shuffled2);
+
+            shuf_nan = nan(size(sp_shuf,1), 50);
+            for s = 1:size(sp_shuf,1)
+                shuf_nan(s, bin_range(valid_idx)) = sp_shuf(s, valid_idx);
+            end
+
+            data = log(sp_nan(1,:) ./ sp_nan(2,:));
+            bayesian_reactivation_all(nprobe).z_log_odds_shuffled(:,end+1) = ...
+                (data - mean(shuf_nan,1,'omitnan')) ./ std(shuf_nan,0,1,'omitnan');
+
+            bayesian_reactivation_all(nprobe).z_log_odds(:,end+1) = ...
+                (data - log_odds_mean) ./ log_odds_std;
+
+            % Percentiles
+            log_odds_pct = nan(1, 50);
+            for i = 1:50
+                dist = shuf_nan(:, i);
+                log_odds_pct(i) = sum(dist <= data(i), 'omitnan') / sum(~isnan(dist)) * 100;
+            end
+            bayesian_reactivation_all(nprobe).log_odds_percentile(:,end+1) = log_odds_pct;
+        end
+    end
+
+
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
+
+
+end
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+save(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'),'bayesian_reactivation_all')
+save(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'),'bayesian_reactivation_V1_all')
+
+%%
+%%%%%
+%%%%%
+%%%%%
+%%%%%
+%% Process and extract KDE reactivation
+
 clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
@@ -47,20 +976,21 @@ half_bins = nbins / 2;
 KDE_reactivation_PSTH = struct();
 
 for region = ["V1", "HPC"]
-    up_bias_all = [];
-    down_bias_all = [];
-    up_bias_all_z = [];
-    down_bias_all_z = [];
-    up_bias_all_zshuff = [];
-    down_bias_all_zshuff = [];
-
-    up_logodds_all = [];
-    down_logodds_all = [];
-    up_logodds_all_z = [];
-    down_logodds_all_z = [];
-    up_logodds_all_zshuff = [];
-    down_logodds_all_zshuff = [];
     for nprobe = 1:2
+        up_bias_all = [];
+        down_bias_all = [];
+        up_bias_all_z = [];
+        down_bias_all_z = [];
+        up_bias_all_zshuff = [];
+        down_bias_all_zshuff = [];
+
+        up_logodds_all = [];
+        down_logodds_all = [];
+        up_logodds_all_z = [];
+        down_logodds_all_z = [];
+        up_logodds_all_zshuff = [];
+        down_logodds_all_zshuff = [];
+
         if region == "V1"
             up_struct = KDE_reactivation_V1_UP_all;
             down_struct = KDE_reactivation_V1_DOWN_all;
@@ -211,23 +1141,23 @@ for region = ["V1", "HPC"]
         end
 
         prefix = sprintf('%s_', region);
-        KDE_reactivation_PSTH.([prefix 'UP']) = up_bias_all;
-        KDE_reactivation_PSTH.([prefix 'DOWN']) = down_bias_all;
-        KDE_reactivation_PSTH.([prefix 'UP_z']) = up_bias_all_z;
-        KDE_reactivation_PSTH.([prefix 'DOWN_z']) = down_bias_all_z;
-        KDE_reactivation_PSTH.([prefix 'UP_zshuff']) = up_bias_all_zshuff;
-        KDE_reactivation_PSTH.([prefix 'DOWN_zshuff']) = down_bias_all_zshuff;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP']) = up_bias_all;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN']) = down_bias_all;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP_z']) = up_bias_all_z;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_z']) = down_bias_all_z;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP_zshuff']) = up_bias_all_zshuff;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_zshuff']) = down_bias_all_zshuff;
 
-        KDE_reactivation_PSTH.([prefix 'UP_log_odds']) = up_logodds_all;
-        KDE_reactivation_PSTH.([prefix 'DOWN_log_odds']) = down_logodds_all;
-        KDE_reactivation_PSTH.([prefix 'UP_log_odds_z']) = up_logodds_all_z;
-        KDE_reactivation_PSTH.([prefix 'DOWN_log_odds_z']) = down_logodds_all_z;
-        KDE_reactivation_PSTH.([prefix 'UP_log_odds_zshuff']) = up_logodds_all_zshuff;
-        KDE_reactivation_PSTH.([prefix 'DOWN_log_odds_zshuff']) = down_logodds_all_zshuff;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP_log_odds']) = up_logodds_all;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_log_odds']) = down_logodds_all;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP_log_odds_z']) = up_logodds_all_z;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_log_odds_z']) = down_logodds_all_z;
+        KDE_reactivation_PSTH(nprobe).([prefix 'UP_log_odds_zshuff']) = up_logodds_all_zshuff;
+        KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_log_odds_zshuff']) = down_logodds_all_zshuff;
     end
 end
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH','-v7.3');
 
 
 %%%%% HPC ripples
