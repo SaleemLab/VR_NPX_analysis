@@ -27,7 +27,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 15:length(experiment_info)
+for nsession = 20:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -183,61 +183,72 @@ for nsession = 15:length(experiment_info)
         Task_info.track_ID_all = session_clusters_RUN.track_ID_all{1};
         Task_info.start_time_all = session_clusters_RUN.start_time_all{1};
         Task_info.end_time_all = session_clusters_RUN.end_time_all{1};
+        
+        RUN_log_odds_DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'));
 
-        [decoded_Bayesian_RUN_HPC] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[]);
+        if ~isempty(RUN_log_odds_DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'),'Bayesian_log_odds_RUN_HPC_validation');
+            % find bins with above chance track decodability
+            good_bins = Bayesian_log_odds_RUN_HPC_validation.good_bins;
+            if length(good_bins)<7
+                good_bins = find(prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_shuffle',[97.5]));
+                Bayesian_log_odds_RUN_HPC_validation.good_bins_LIBERAL = good_bins;
+            end
+        else
+            [decoded_Bayesian_RUN_HPC] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[]);
 
-        clear decoded_Bayesian_RUN_HPC_shuffled
-        parfor nshuffle = 1:1000
-            tic
-            place_fields_temp = place_fields_BAYESIAN;
-            s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-            random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
+            clear decoded_Bayesian_RUN_HPC_shuffled
+            parfor nshuffle = 1:1000
+                tic
+                place_fields_temp = place_fields_BAYESIAN;
+                s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
+                random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
 
-            place_fields_temp(1).cluster_id = random_cell_index;
-            place_fields_temp(2).cluster_id = random_cell_index;
+                place_fields_temp(1).cluster_id = random_cell_index;
+                place_fields_temp(2).cluster_id = random_cell_index;
 
-            [decoded_Bayesian_RUN_HPC_shuffled{nshuffle}] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_temp,Behaviour,Task_info,[]);
-            toc
+                [decoded_Bayesian_RUN_HPC_shuffled{nshuffle}] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_temp,Behaviour,Task_info,[]);
+                toc
+            end
+
+            %%%% HPC
+            %%%% Remove spatial bins with poor contextual discrimination based
+            %%%% on 95% CI
+            Bayesian_log_odds_RUN_HPC_validation = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_HPC,decoded_Bayesian_RUN_HPC_shuffled,options,'event_type','HPC RUN');
+
+            % find bins with above chance track decodability
+            good_bins = Bayesian_log_odds_RUN_HPC_validation.good_bins;
+            if length(good_bins)<7
+                good_bins = find(prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_shuffle',[97.5]));
+                Bayesian_log_odds_RUN_HPC_validation.good_bins_LIBERAL = good_bins;
+            end
+
+            %%%%%%
+            %%%%%% 20ms validation
+            [decoded_Bayesian_RUN_HPC_20ms] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[],'time_bin',0.02);
+
+            clear decoded_Bayesian_RUN_HPC_shuffled_20ms
+            parfor nshuffle = 1:1000
+                tic
+                place_fields_temp = place_fields_BAYESIAN;
+                s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
+                random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
+
+                place_fields_temp(1).cluster_id = random_cell_index;
+                place_fields_temp(2).cluster_id = random_cell_index;
+
+                [decoded_Bayesian_RUN_HPC_shuffled_20ms{nshuffle}] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_temp,Behaviour,Task_info,[],'time_bin',0.02);
+                toc
+            end
+
+            Bayesian_log_odds_RUN_HPC_validation_20ms = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_HPC_20ms,decoded_Bayesian_RUN_HPC_shuffled_20ms,options,'time_bin_size',0.02,'good_bins',good_bins,'event_type','RUN');
+
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'),'Bayesian_log_odds_RUN_HPC_validation','Bayesian_log_odds_RUN_HPC_validation_20ms');
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_HPC.mat'),'decoded_Bayesian_RUN_HPC','decoded_Bayesian_RUN_HPC_shuffled','decoded_Bayesian_RUN_HPC_20ms','decoded_Bayesian_RUN_HPC_shuffled_20ms','-v7.3');
+
+            clear decoded_Bayesian_RUN_HPC decoded_Bayesian_RUN_HPC_20ms decoded_Bayesian_RUN_HPC_shuffled decoded_Bayesian_RUN_HPC_shuffled_20ms Bayesian_log_odds_RUN_HPC_validation_20ms
         end
-
-        %%%% HPC
-        %%%% Remove spatial bins with poor contextual discrimination based
-        %%%% on 95% CI
-        Bayesian_log_odds_RUN_HPC_validation = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_HPC,decoded_Bayesian_RUN_HPC_shuffled,options,'event_type','HPC RUN');
-
-        % find bins with above chance track decodability
-        good_bins = Bayesian_log_odds_RUN_HPC_validation.good_bins;
-        if length(good_bins)<7
-            good_bins = find(prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_shuffle',[97.5]));
-            Bayesian_log_odds_RUN_HPC_validation.good_bins_LIBERAL = good_bins;
-        end
-
-        %%%%%%
-        %%%%%% 20ms validation
-        [decoded_Bayesian_RUN_HPC_20ms] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[],'time_bin',0.02);
-
-        clear decoded_Bayesian_RUN_HPC_shuffled_20ms
-        parfor nshuffle = 1:1000
-            tic
-            place_fields_temp = place_fields_BAYESIAN;
-            s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-            random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
-
-            place_fields_temp(1).cluster_id = random_cell_index;
-            place_fields_temp(2).cluster_id = random_cell_index;
-
-            [decoded_Bayesian_RUN_HPC_shuffled_20ms{nshuffle}] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_temp,Behaviour,Task_info,[],'time_bin',0.02);
-            toc
-        end
-
-        Bayesian_log_odds_RUN_HPC_validation_20ms = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_HPC_20ms,decoded_Bayesian_RUN_HPC_shuffled_20ms,options,'time_bin_size',0.02,'good_bins',good_bins,'event_type','RUN');
-
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'),'Bayesian_log_odds_RUN_HPC_validation','Bayesian_log_odds_RUN_HPC_validation_20ms');
-        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_HPC.mat'),'decoded_Bayesian_RUN_HPC','decoded_Bayesian_RUN_HPC_shuffled','decoded_Bayesian_RUN_HPC_20ms','decoded_Bayesian_RUN_HPC_shuffled_20ms','-v7.3');
-
-        clear decoded_Bayesian_RUN_HPC decoded_Bayesian_RUN_HPC_20ms decoded_Bayesian_RUN_HPC_shuffled decoded_Bayesian_RUN_HPC_shuffled_20ms Bayesian_log_odds_RUN_HPC_validation_20ms
-
 
         clear decoded_ripple_events decoded_ripple_events_shuffled
         cd(options.ANALYSIS_DATAPATH)
@@ -322,61 +333,71 @@ for nsession = 15:length(experiment_info)
         place_fields_BAYESIAN = calculate_spatial_cells(V1_clusters_RUN,HPC_clusters_RUN.tvec{1},...
             HPC_clusters_RUN.position{1},speed,HPC_clusters_RUN.track_ID_all{1},HPC_clusters_RUN.start_time_all{1},HPC_clusters_RUN.end_time_all{1},x_window,x_bin_width);
 
- 
-        [decoded_Bayesian_RUN_V1] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[]);
+        RUN_log_odds_DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_V1_validation.mat'));
 
-        clear decoded_Bayesian_RUN_V1_shuffled
-        parfor nshuffle = 1:1000
-            tic
-            place_fields_temp = place_fields_BAYESIAN;
-            s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-            random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
+        if ~isempty(RUN_log_odds_DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_V1_validation.mat'),'Bayesian_log_odds_RUN_V1_validation');
+            % find bins with above chance track decodability
+            good_bins = Bayesian_log_odds_RUN_V1_validation.good_bins;
+            if length(good_bins)<7
+                good_bins = find(prctile(Bayesian_log_odds_RUN_V1_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_V1_validation.AUC_shuffle',[97.5]));
+                Bayesian_log_odds_RUN_V1_validation.good_bins_LIBERAL = good_bins;
+            end
+        else
+            [decoded_Bayesian_RUN_V1] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[]);
 
-            place_fields_temp(1).cluster_id = random_cell_index;
-            place_fields_temp(2).cluster_id = random_cell_index;
+            clear decoded_Bayesian_RUN_V1_shuffled
+            parfor nshuffle = 1:1000
+                tic
+                place_fields_temp = place_fields_BAYESIAN;
+                s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
+                random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
 
-            [decoded_Bayesian_RUN_V1_shuffled{nshuffle}] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_temp,Behaviour,Task_info,[]);
-            toc
+                place_fields_temp(1).cluster_id = random_cell_index;
+                place_fields_temp(2).cluster_id = random_cell_index;
+
+                [decoded_Bayesian_RUN_V1_shuffled{nshuffle}] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_temp,Behaviour,Task_info,[]);
+                toc
+            end
+
+            %%%% V1
+            %%%% Remove spatial bins with poor contextual discrimination based
+            %%%% on 95% CI
+            Bayesian_log_odds_RUN_V1_validation = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_V1,decoded_Bayesian_RUN_V1_shuffled,options,'event_type','V1 RUN');
+
+            % find bins with above chance track decodability
+            good_bins = Bayesian_log_odds_RUN_V1_validation.good_bins;
+            if length(good_bins)<7
+                good_bins = find(prctile(Bayesian_log_odds_RUN_V1_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_V1_validation.AUC_shuffle',[97.5]));
+                Bayesian_log_odds_RUN_V1_validation.good_bins_LIBERAL = good_bins;
+            end
+
+            %%%%%%
+            %%%%%% 20ms validation
+            [decoded_Bayesian_RUN_V1_20ms] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[],'time_bin',0.02);
+
+            clear decoded_Bayesian_RUN_V1_shuffled_20ms
+            parfor nshuffle = 1:1000
+                tic
+                place_fields_temp = place_fields_BAYESIAN;
+                s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
+                random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
+
+                place_fields_temp(1).cluster_id = random_cell_index;
+                place_fields_temp(2).cluster_id = random_cell_index;
+
+                [decoded_Bayesian_RUN_V1_shuffled_20ms{nshuffle}] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_temp,Behaviour,Task_info,[],'time_bin',0.02);
+                toc
+            end
+
+            Bayesian_log_odds_RUN_V1_validation_20ms = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_V1_20ms,decoded_Bayesian_RUN_V1_shuffled_20ms,options,'time_bin_size',0.02,'good_bins',good_bins,'event_type','V1 RUN');
+
+
+            save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_V1_validation.mat'),'Bayesian_log_odds_RUN_V1_validation','Bayesian_log_odds_RUN_V1_validation_20ms');
+            save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_V1.mat'),'decoded_Bayesian_RUN_V1','decoded_Bayesian_RUN_V1_shuffled','decoded_Bayesian_RUN_V1_20ms','decoded_Bayesian_RUN_V1_shuffled_20ms','-v7.3');
+
+            clear decoded_Bayesian_RUN_V1 decoded_Bayesian_RUN_V1_20ms decoded_Bayesian_RUN_V1_shuffled decoded_Bayesian_RUN_V1_shuffled_20ms
         end
-
-        %%%% V1
-        %%%% Remove spatial bins with poor contextual discrimination based
-        %%%% on 95% CI
-        Bayesian_log_odds_RUN_V1_validation = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_V1,decoded_Bayesian_RUN_V1_shuffled,options,'event_type','V1 RUN');
-
-        % find bins with above chance track decodability
-        good_bins = Bayesian_log_odds_RUN_V1_validation.good_bins;
-        if length(good_bins)<7
-            good_bins = find(prctile(Bayesian_log_odds_RUN_V1_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_V1_validation.AUC_shuffle',[97.5]));
-            Bayesian_log_odds_RUN_V1_validation.good_bins_LIBERAL = good_bins;
-        end
-
-        %%%%%%
-        %%%%%% 20ms validation
-        [decoded_Bayesian_RUN_V1_20ms] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[],'time_bin',0.02);
-
-        clear decoded_Bayesian_RUN_V1_shuffled_20ms
-        parfor nshuffle = 1:1000
-            tic
-            place_fields_temp = place_fields_BAYESIAN;
-            s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-            random_cell_index = randperm(s,length(place_fields_BAYESIAN(1).cluster_id));
-
-            place_fields_temp(1).cluster_id = random_cell_index;
-            place_fields_temp(2).cluster_id = random_cell_index;
-
-            [decoded_Bayesian_RUN_V1_shuffled_20ms{nshuffle}] = bayesian_decoding_RUN_CV(V1_clusters_RUN,place_fields_temp,Behaviour,Task_info,[],'time_bin',0.02);
-            toc
-        end
-
-        Bayesian_log_odds_RUN_V1_validation_20ms = Bayesian_log_odds_ROC_test(decoded_Bayesian_RUN_V1_20ms,decoded_Bayesian_RUN_V1_shuffled_20ms,options,'time_bin_size',0.02,'good_bins',good_bins,'event_type','V1 RUN');
-
-
-        save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_V1_validation.mat'),'Bayesian_log_odds_RUN_V1_validation','Bayesian_log_odds_RUN_V1_validation_20ms');
-        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_V1.mat'),'decoded_Bayesian_RUN_V1','decoded_Bayesian_RUN_V1_shuffled','decoded_Bayesian_RUN_V1_20ms','decoded_Bayesian_RUN_V1_shuffled_20ms','-v7.3');
-
-        clear decoded_Bayesian_RUN_V1 decoded_Bayesian_RUN_V1_20ms decoded_Bayesian_RUN_V1_shuffled decoded_Bayesian_RUN_V1_shuffled_20ms
-
 
 
         clear decoded_ripple_events_V1 decoded_ripple_events_V1_shuffled
@@ -638,6 +659,7 @@ for nsession = 15:length(experiment_info)
         clear decoded_ripple_events_global_remapped decoded_ripple_events_shuffled_global_remapped
         clear decoded_ripple_events_V1 decoded_ripple_events_V1_shuffled
         clear decoded_ripple_events decoded_ripple_events_shuffled
+        clear Bayesian_log_odds_RUN_HPC_validation Bayesian_log_odds_RUN_V1_validation
     end
 end
 
