@@ -46,7 +46,7 @@ elseif size(start_time,2)>1 && size(end_time,2)>1 %if there's a vector for start
     end
 %     t.run_edges = []; % don't want to run this if just checking replay events
 else  % if there's only one start and end time input
-    if end_time-start_time < 1.3  % if decoding a replay event (short duration)
+    if end_time-start_time < 2.1  % if decoding a replay event (short duration)
         for i = 1: length(start_time)
             event_duration = end_time(i) - start_time(i);
             num_bins = floor(event_duration / replay_bin_width);
