@@ -6,6 +6,10 @@ function estimated_position = bayesian_decoding(place_fields_BAYESIAN,bayesian_s
     % estimated_position structure. 
 % Loads: 'extracted_position','extracted_place_fields_BAYESIAN','bayesian_spike_count'
 % This code is modified for NPX 2 probe analysis. Things will change
+
+% option - use original or ratemap track id swap shuffle for z log-odds
+% modify - global remapped (Cell id shuffle) or ratemap track id swap shuffle
+
 % 26/09/2023 Masa place_field_index changed to good place cells LIBERAL
 
 parameters = list_of_parameters;

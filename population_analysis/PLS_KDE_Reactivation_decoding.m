@@ -878,11 +878,13 @@ else
                 subplot(10,10,count)
                 plot(x,(KDE_bias(this_event_bins)),'r')
                 hold on
-                y = mean(KDE_bias_shuffled(:,this_event_bins));
-                CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
-                CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
-                PLOT = plot(x,y,'Color','k');hold on;
-                ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
+                if shuffle_option == 1
+                    y = mean(KDE_bias_shuffled(:,this_event_bins));
+                    CI_U = prctile(KDE_bias_shuffled(:,this_event_bins),97.5,1);
+                    CI_L = prctile(KDE_bias_shuffled(:,this_event_bins),2.5,1);
+                    PLOT = plot(x,y,'Color','k');hold on;
+                    ERROR_SHADE = patch([x fliplr(x)],[CI_U fliplr(CI_L)],'k','FaceAlpha','0.3','LineStyle','none');
+                end
                 ylim([0 1])
                 set(gca,"TickDir","out",'box', 'off','Color','none')
             end
