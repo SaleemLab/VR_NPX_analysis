@@ -27,7 +27,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession = 2:length(experiment_info)
+for nsession = 15:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -234,7 +234,7 @@ for nsession = 2:length(experiment_info)
 
 
         save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'),'Bayesian_log_odds_RUN_HPC_validation','Bayesian_log_odds_RUN_HPC_validation_20ms');
-        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_HPC.mat'),'decoded_Bayesian_RUN_HPC','decoded_Bayesian_RUN_HPC_shuffled','decoded_Bayesian_RUN_HPC_20ms','decoded_Bayesian_RUN_HPC_shuffled_20ms');
+        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_HPC.mat'),'decoded_Bayesian_RUN_HPC','decoded_Bayesian_RUN_HPC_shuffled','decoded_Bayesian_RUN_HPC_20ms','decoded_Bayesian_RUN_HPC_shuffled_20ms','-v7.3');
 
         clear decoded_Bayesian_RUN_HPC decoded_Bayesian_RUN_HPC_20ms decoded_Bayesian_RUN_HPC_shuffled decoded_Bayesian_RUN_HPC_shuffled_20ms Bayesian_log_odds_RUN_HPC_validation_20ms
 
@@ -373,7 +373,7 @@ for nsession = 2:length(experiment_info)
 
 
         save(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_V1_validation.mat'),'Bayesian_log_odds_RUN_V1_validation','Bayesian_log_odds_RUN_V1_validation_20ms');
-        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_V1.mat'),'decoded_Bayesian_RUN_V1','decoded_Bayesian_RUN_V1_shuffled','decoded_Bayesian_RUN_V1_20ms','decoded_Bayesian_RUN_V1_shuffled_20ms');
+        save(fullfile(options.ANALYSIS_DATAPATH,'decoded_Bayesian_RUN_V1.mat'),'decoded_Bayesian_RUN_V1','decoded_Bayesian_RUN_V1_shuffled','decoded_Bayesian_RUN_V1_20ms','decoded_Bayesian_RUN_V1_shuffled_20ms','-v7.3');
 
         clear decoded_Bayesian_RUN_V1 decoded_Bayesian_RUN_V1_20ms decoded_Bayesian_RUN_V1_shuffled decoded_Bayesian_RUN_V1_shuffled_20ms
 
