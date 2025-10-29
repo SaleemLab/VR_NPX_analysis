@@ -2761,20 +2761,28 @@ Stimulus_type = 'Sleep';
 
 for nprobe = 1:2
     periripple_LFP_info_V1(nprobe).SO_amplitude = [];
+    periripple_LFP_info_V1(nprobe).SO_amplitude{2} = [];
+
     periripple_LFP_info_HPC(nprobe).SO_amplitude = [];
+    periripple_LFP_info_HPC(nprobe).SO_amplitude{2} = [];
 
     periripple_LFP_info_V1(nprobe).spindle_amplitude = [];
     periripple_LFP_info_HPC(nprobe).spindle_amplitude = [];
+    periripple_LFP_info_V1(nprobe).spindle_amplitude{2} = [];
+    periripple_LFP_info_HPC(nprobe).spindle_amplitude{2} = [];
 
     periripple_LFP_info_V1(nprobe).SO_phase = [];
     periripple_LFP_info_HPC(nprobe).SO_phase = [];
+    periripple_LFP_info_V1(nprobe).SO_phase{2} = [];
+    periripple_LFP_info_HPC(nprobe).SO_phase{2} = [];
 
     periripple_LFP_info_V1(nprobe).spindle_phase = [];
     periripple_LFP_info_HPC(nprobe).spindle_phase = [];
+    periripple_LFP_info_V1(nprobe).spindle_phase{2} = [];
+    periripple_LFP_info_HPC(nprobe).spindle_phase{2} = [];
 
-
-    periripple_LFP_info_HPC(nprobe).tvec = -1:0.05:1;
-    periripple_LFP_info_V1(nprobe).tvec = -1:0.05:1;
+    periripple_LFP_info_HPC(nprobe).tvec = -1:0.02:1;
+    periripple_LFP_info_V1(nprobe).tvec = -1:0.02:1;
 end
 
 for nsession =1:22
@@ -3045,7 +3053,7 @@ for nsession =1:22
 
 
     fs = single(lfp_V1.samplingRate);
-    win_full_samp = round([-1:0.05:1] * fs);
+    win_full_samp = round([-1:0.02:1] * fs);
 
     for nprobe = 1:2
         event_sample_idx = round(interp1(lfp_V1.timestamps, 1:length(lfp_V1.timestamps), ripples(nprobe).onset, 'nearest', 'extrap'));
@@ -3062,38 +3070,42 @@ for nsession =1:22
             end
             valid_bins = ~isnan(ripple_windows);
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.SO_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).SO_amplitude = [periripple_LFP_info_V1(nprobe).SO_amplitude    output]; % SO amplitude
+            for mprobe = 1:2
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_V1.SO_amplitude_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_V1(nprobe).SO_amplitude{mprobe} = [periripple_LFP_info_V1(nprobe).SO_amplitude{mprobe}    output]; % SO amplitude
+                
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_HPC.SO_amplitude_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_HPC(nprobe).SO_amplitude{mprobe} = [periripple_LFP_info_HPC(nprobe).SO_amplitude{mprobe}    output]; % SO amplitude
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.SO_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).SO_amplitude = [periripple_LFP_info_HPC(nprobe).SO_amplitude    output]; % SO amplitude
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_V1.spindle_amplitude_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_V1(nprobe).spindle_amplitude{mprobe} = [periripple_LFP_info_V1(nprobe).spindle_amplitude{mprobe}    output]; % Spindle amplitude
+
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_HPC.spindle_amplitude_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_HPC(nprobe).spindle_amplitude{mprobe} = [periripple_LFP_info_HPC(nprobe).spindle_amplitude{mprobe}    output]; % Spindle amplitude
+
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_V1.SO_phase_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_V1(nprobe).SO_phase{mprobe} = [periripple_LFP_info_V1(nprobe).SO_phase{mprobe} output];% SO phase
+
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_HPC.SO_phase_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_HPC(nprobe).SO_phase{mprobe} = [periripple_LFP_info_HPC(nprobe).SO_phase{mprobe} output];% SO phase
+
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_V1.spindle_phase_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_V1(nprobe).spindle_phase{mprobe} = [periripple_LFP_info_V1(nprobe).spindle_phase{mprobe} output];% Spindle phase
+
+                output = nan(length(ripple_windows),1);
+                output(valid_bins) = lfp_HPC.spindle_phase_LFP(ripple_windows(valid_bins),mprobe);
+                periripple_LFP_info_HPC(nprobe).spindle_phase{mprobe} = [periripple_LFP_info_HPC(nprobe).spindle_phase{mprobe} output];% Spindle phase
 
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.spindle_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).spindle_amplitude = [periripple_LFP_info_V1(nprobe).spindle_amplitude   output]; % Spindle amplitude
+            end
 
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.spindle_amplitude_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).spindle_amplitude = [periripple_LFP_info_HPC(nprobe).spindle_amplitude    output]; % Spindle amplitude
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.SO_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).SO_phase = [periripple_LFP_info_V1(nprobe).SO_phase output];% SO phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.SO_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).SO_phase = [periripple_LFP_info_HPC(nprobe).SO_phase output];% SO phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_V1.spindle_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_V1(nprobe).spindle_phase = [periripple_LFP_info_V1(nprobe).spindle_phase output];% Spindle phase
-
-            output = nan(length(ripple_windows),1);
-            output(valid_bins) = lfp_HPC.spindle_phase_LFP(ripple_windows(valid_bins),nprobe);
-            periripple_LFP_info_HPC(nprobe).spindle_phase = [periripple_LFP_info_HPC(nprobe).spindle_phase output];% Spindle phase
 
         end
     end
