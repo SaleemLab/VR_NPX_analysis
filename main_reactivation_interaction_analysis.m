@@ -908,8 +908,6 @@ for nsession =1:length(experiment_info)
 
 
     %     save(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'),'decoded_ripple_events');
-
-
 end
 
 if exist('D:\corticohippocampal_replay')>0
