@@ -78,6 +78,7 @@ for nsession = 1:14
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+            load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
             load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
 
@@ -183,16 +184,56 @@ for nsession = 1:14
         Task_info.track_ID_all = session_clusters_RUN.track_ID_all{1};
         Task_info.start_time_all = session_clusters_RUN.start_time_all{1};
         Task_info.end_time_all = session_clusters_RUN.end_time_all{1};
-        
-        RUN_log_odds_DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'));
 
-        if ~isempty(RUN_log_odds_DIR)
-            load(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_log_odds_RUN_HPC_validation.mat'),'Bayesian_log_odds_RUN_HPC_validation');
+        % Extended poisson gaussian proces latent variable model --- Train and 5-fold CV on RUN data
+        run_out = epgplvm_decoding_RUN( ...
+            HPC_clusters_RUN.spike_times, HPC_clusters_RUN.spike_id, ...
+            HPC_clusters_RUN.tvec{1}, HPC_clusters_RUN.position{1}, HPC_clusters_RUN.speed{1},HPC_clusters_RUN.track_ID{1}, ...
+            struct('latentDim',3,'KNN_K',25,'nIter_train',60));
+
+
+        disp(run_out.cv.summary);
+
+        % --- Decode replay events
+        sleep = epgplvm_decoding( ...
+            spike_times, spike_ids, ...
+            replay_onset, replay_offset, ...
+            run_out.model, ...
+            struct('pbe_binSize',0.005,'nShuffles',200));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        RUN_position_DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_position_RUN_HPC_validation.mat'));
+
+        if ~isempty(RUN_position_DIR)
+            load(fullfile(options.ANALYSIS_DATAPATH,'Bayesian_position_RUN_HPC_validation.mat'),'Bayesian_position_RUN_HPC_validation');
             % find bins with above chance track decodability
-            good_bins = Bayesian_log_odds_RUN_HPC_validation.good_bins;
+            good_bins = Bayesian_position_RUN_HPC_validation.good_bins;
             if length(good_bins)<7
-                good_bins = find(prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_real',[2.5]) > prctile(Bayesian_log_odds_RUN_HPC_validation.AUC_shuffle',[97.5]));
-                Bayesian_log_odds_RUN_HPC_validation.good_bins_LIBERAL = good_bins;
+                good_bins = find(prctile(Bayesian_position_RUN_HPC_validation.AUC_real',[2.5]) > prctile(Bayesian_position_RUN_HPC_validation.AUC_shuffle',[97.5]));
+                Bayesian_position_RUN_HPC_validation.good_bins_LIBERAL = good_bins;
             end
         else
             % [decoded_Bayesian_RUN_HPC] = bayesian_decoding_RUN_CV(HPC_clusters_RUN,place_fields_BAYESIAN,Behaviour,Task_info,[]);
