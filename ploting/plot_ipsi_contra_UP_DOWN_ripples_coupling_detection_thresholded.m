@@ -282,8 +282,11 @@ end
 
 
 % lags =all_lags(all_lags>=-0.05 & all_lags<=0.05);
-power_thresholds = prctile(SWpeakmag_UD(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
-delta_power =SWpeakmag_UD;
+power_thresholds = prctile(SWpeakmag_DU(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+delta_power =SWpeakmag_DU;
+% power_thresholds = prctile(SWpeakmag_UD(all_overlap_idx(all_lags>=-0.15 & all_lags<=0.15)),[0 20 40 60 80 100]);
+% delta_power =SWpeakmag_UD;
+
 % power_thresholds = prctile(Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15),[0 20 40 60 80 100]);
 % delta_power =Delta_peaks_zscore_DU(all_lags>=-0.15 & all_lags<=0.15);
 
@@ -292,8 +295,10 @@ for n = 1:length(power_thresholds)-1
     event_idx{4}{n} =intersect(all_overlap_idx(abs(all_lags)<=0.15),find(delta_power>power_thresholds(n)&delta_power <power_thresholds(n+1)));
 end
 
-power_thresholds = prctile(SWpeakmag_UD,[0 20 40 60 80 100]);
-delta_power =SWpeakmag_UD;
+power_thresholds = prctile(SWpeakmag_DU,[0 20 40 60 80 100]);
+delta_power =SWpeakmag_DU;
+% power_thresholds = prctile(SWpeakmag_UD,[0 20 40 60 80 100]);
+% delta_power =SWpeakmag_UD;
 % power_thresholds = prctile(Delta_peaks_zscore_DU,[0 20 40 60 80 100]);
 % delta_power =Delta_peaks_zscore_DU;
 
@@ -461,7 +466,7 @@ time_bin = 0.02;
 x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
 %%%%%%%%% Plot DU transition
-for ngroup = 1:length(event_idx)
+for ngroup = [4 5]
     fig = figure('Color','w');
     fig.Position = [350 59 1650 465];
     fig.Name =title_names{ngroup};

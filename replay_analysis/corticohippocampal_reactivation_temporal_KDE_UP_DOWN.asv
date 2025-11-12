@@ -141,7 +141,7 @@ ripple_info.SO_amplitude = SO_amplitude';
 ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
 
 
-%%% early UP transition co-occurance
+%%% early UP transition 
 [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
 ripple_info.early_UP_index = UP_index;
 ripple_info.early_UP_index_hemi = zeros(size(UP_index));
@@ -151,7 +151,7 @@ ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemispher
 ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first);
 ripple_info.early_UP_index_hemi = ripple_info.early_UP_index_hemi(event_ids_first);
 
-%%% late UP transition co-occurance
+%%% late UP transition 
 [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
 ripple_info.late_UP_index = UP_index;
 ripple_info.late_UP_index_hemi = zeros(size(UP_index));
@@ -162,25 +162,58 @@ ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first);
 ripple_info.late_UP_index_hemi = ripple_info.late_UP_index_hemi(event_ids_first);
 
 
+%----------------------------------------------------------------------------------------------------------------------------------------------
 
 
-%%% UP and DOWN transition co-occurance
-ripple_info.UP_index=[];
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,2)]);
-ripple_info.UP_index(:,1) = UP_index;
+for nprobe = 1:2
 
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,2)]);
-ripple_info.UP_index(:,2) = UP_index;
-ripple_info.UP_index = ripple_info.UP_index(event_ids_first,:);
+    % event_info (based on UP DOWN)
+    UP_info = [];
+    if nprobe == 1
+        UP_info{1} = event_info(1).L_ripple_normalised_UP_duration;
+        UP_info{2} = event_info(2).L_ripple_normalised_UP_duration;
+    else
+        UP_info{1} = event_info(1).R_ripple_normalised_UP_duration;
+        UP_info{2} = event_info(2).R_ripple_normalised_UP_duration;
+    end
 
-%%% DOWN transition co-occurance
-ripple_info.DOWN_index=[];
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,2)]);
-ripple_info.DOWN_index(:,1) = DOWN_index;
 
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,2)]);
-ripple_info.DOWN_index(:,2) = DOWN_index;
-ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first,:);
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_UP_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_UP_duration = ripple_info.normalised_UP_duration(event_ids_first,:);
+
+
+% 
+% %%% UP and DOWN transition co-occurance
+% ripple_info.UP_index=[];
+% [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,2)]);
+% ripple_info.UP_index(:,1) = UP_index;
+% 
+% [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,2)]);
+% ripple_info.UP_index(:,2) = UP_index;
+% ripple_info.UP_index = ripple_info.UP_index(event_ids_first,:);
+% 
+% %%% DOWN transition co-occurance
+% ripple_info.DOWN_index=[];
+% [~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,2)]);
+% ripple_info.DOWN_index(:,1) = DOWN_index;
+% 
+% [~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,2)]);
+% ripple_info.DOWN_index(:,2) = DOWN_index;
+% ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first,:);
 
 
 %%%%%%
@@ -232,8 +265,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -266,9 +299,10 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%% Temporal log odds AUC with different spindle powers (V1→HPC)
-spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
-nBins = length(spindle_thresholds) - 1;
+%% Temporal log odds AUC of ripples that occur during first half and second half of UP state 
+% duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
+duration_thresholds = [0, 0.5, 1;0, 0.5, 1]';
+nBins = length(duration_thresholds) - 1;
 
 % Time windows
 win_size  = 0.1;   % 100 ms selection window for V1
@@ -340,12 +374,13 @@ for t = 1:nTime
                 t1 = boot_V1 >= th;     % Track 1
                 t2 = boot_V1 <= -th;    % Track 2
 
-                % --- Spindle power condition ---
+                % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
-                t1 = t1' + (ripple_info.spindle_amplitude(true_idx(idx),2) > spindle_thresholds(npower,2) & ...
-                    ripple_info.spindle_amplitude(true_idx(idx),2) <= spindle_thresholds(npower+1,2)) > 1';
-                t2 = t2' + (ripple_info.spindle_amplitude(true_idx(idx),1) > spindle_thresholds(npower,1) & ...
-                    ripple_info.spindle_amplitude(true_idx(idx),1) <= spindle_thresholds(npower+1,1)) > 1';
+
+                t1 = t1' + (ripple_info.normalised_UP_duration(true_idx(idx),2) > duration_thresholds(npower,2) & ...
+                    ripple_info.normalised_UP_duration(true_idx(idx),2) <= duration_thresholds(npower+1,2)) > 1';
+                t2 = t2' + (ripple_info.normalised_UP_duration(true_idx(idx),1) > duration_thresholds(npower,1) & ...
+                    ripple_info.normalised_UP_duration(true_idx(idx),1) <= duration_thresholds(npower+1,1)) > 1';
 
                 % HPC bias difference between Track 1 and Track 2
                 t1_HPC = boot_HPC(t1);
@@ -357,10 +392,12 @@ for t = 1:nTime
                 % --- Shifted pairing (null) ---
                 t1s = boot_V1_shift >= th;
                 t2s = boot_V1_shift <= -th;
-                t1s = t1s' + (ripple_info.spindle_amplitude(true_idx,2) > spindle_thresholds(npower,2) & ...
-                    ripple_info.spindle_amplitude(true_idx,2) <= spindle_thresholds(npower+1,2)) > 1';
-                t2s = t2s' + (ripple_info.spindle_amplitude(true_idx,1) > spindle_thresholds(npower,1) & ...
-                    ripple_info.spindle_amplitude(true_idx,1) <= spindle_thresholds(npower+1,1)) > 1';
+
+
+                t1s = t1s' + (ripple_info.normalised_UP_duration(true_idx,2) > duration_thresholds(npower,2) & ...
+                    ripple_info.normalised_UP_duration(true_idx,2) <= duration_thresholds(npower+1,2)) > 1';
+                t2s = t2s' + (ripple_info.normalised_UP_duration(true_idx,1) > duration_thresholds(npower,1) & ...
+                    ripple_info.normalised_UP_duration(true_idx,1) <= duration_thresholds(npower+1,1)) > 1';
                 t1_HPCs = boot_HPC(t1s);
                 t2_HPCs = boot_HPC(t2s);
                 if any(t1s) && any(t2s)
@@ -385,10 +422,10 @@ for t = 1:nTime
 end
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
+fig = figure('Name','Temporal HPC log-odds AUC by normalised UP duration (0.1s win 0.02s step)','Position',[640 100 400 900]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_U.mat'),'AUC')
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
 for npower = 1:nBins
     nexttile; hold on;
