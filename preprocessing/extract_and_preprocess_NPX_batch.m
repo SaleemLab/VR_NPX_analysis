@@ -120,6 +120,7 @@ for nsession =1:length(experiment_info)
         if isempty(DIR_SORTER) % if spike interface sorter folder is not present, skip
               continue
         end
+        
         if isempty(dir(options.segment_frames))
             options.segment_frames = fullfile(options.EPHYS_DATAPATH,'..','..','..',['probe',num2str(options.probe_id),'segment_frames.csv']);
         end
@@ -174,19 +175,19 @@ for nsession =1:length(experiment_info)
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
 
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort2'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,...
                         sprintf('extracted_clusters_ks2%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks2')
                 end
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort3'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort3'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,...
                         sprintf('extracted_clusters_ks3%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks3')
                 end
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort4'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,...
                         sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},Stimulus_type))),'clusters_ks4')
@@ -199,17 +200,17 @@ for nsession =1:length(experiment_info)
         else
             if ~isempty(DIR_SORTER) % if spike interface sorter folder is present
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort2'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort2'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks2.mat'),'clusters_ks2')
                 end
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort3'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort3'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks3.mat'),'clusters_ks3')
                 end
 
-                temp = dir(fullfile(options.SORTER_DATAPATH,'sorters','kilosort4'));
+                temp = dir(fullfile(options.SORTER_DATAPATH,'waveform','kilosort4'));
                 if ~isempty(temp)
                     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'),'clusters_ks4')
                 end

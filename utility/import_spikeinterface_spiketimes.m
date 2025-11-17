@@ -165,6 +165,8 @@ if contains(options.sorter_folder,'kilosort')
         for nchannel = 1:size( cluster_coordinates,1)
             all_good_channels(nchannel) = chan_config.Channel(chan_config.Ks_xcoord ==  cluster_coordinates(nchannel,1)+27 & chan_config.Ks_ycoord ==  cluster_coordinates(nchannel,2)+15);
         end
+
+        
     else
         for nchannel = 1:size( cluster_coordinates,1)
             % for these good channels used for spike sorting, what is the actual channel number
