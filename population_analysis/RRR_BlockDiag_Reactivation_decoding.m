@@ -1,4 +1,4 @@
-function [RRR, RUN, RIP] = RRR_BlockDiag_Reactivation_decoding( ...
+function [RRR, RRR_RUN, RRR_reactivation] = RRR_BlockDiag_Reactivation_decoding( ...
     tvec_template, position, speed, lap_times, track_ID, ...
     spikes_template, event_times, spike_target, options, varargin)
 % RRR_BlockDiag_Reactivation_decoding
@@ -70,6 +70,9 @@ addParameter(p,'time_bin_size',0.02,@isnumeric);
 addParameter(p,'time_bin_size_moving',0.01,@isnumeric);
 addParameter(p,'shuffle_option',1,@isnumeric);
 addParameter(p,'plot_option',1,@isnumeric);
+addParameter(p,'B_final',[],@isnumeric);
+
+
 % addParameter(p,'analysis_option',1,@isnumeric);% 1 is reactivation only, 2 is sequence
 
 parse(p,varargin{:});
@@ -79,10 +82,11 @@ time_bin_size     = p.Results.time_bin_size;
 time_bin_size_moving = p.Results.time_bin_size_moving;
 shuffle_option    = p.Results.shuffle_option;
 plot_option       = p.Results.plot_option;
+B_final       = p.Results.B_final;
 
 RRR = struct();
-RUN = struct();
-RIP = struct();
+RRR_RUN = struct();
+RRR_reactivation = struct();
 
 %% ------------------------------------------------------------------------
 %  RUN binning and spike counts (same as your existing pipeline)
@@ -179,498 +183,541 @@ coeff = (mean_ripple_activity' * n_ripples) / ...
 ripple_global_pattern = mean_ripple_activity * coeff;
 n_ripples_residuals = zscore(n_ripples - ripple_global_pattern, 0, 1);
 
-%% ------------------------------------------------------------------------
-%  Build RUN design matrices for RRR 
-% -------------------------------------------------------------------------
-X_run_full = [n(T1_bins,:); n(T2_bins,:)]; % N_run x C
-Y_track    = [ones(sum(T1_bins),1); 2*ones(sum(T2_bins),1)]; % N_run x 1
 
-pos_run_full = [position_interp1(T1_bins) position_interp1(T2_bins)]';
-pos_run_full = pos_run_full(:); % N_run x 1
+if isempty(B_final) % if RRR not trained before
+    %% ------------------------------------------------------------------------
+    %  Build RUN design matrices for RRR
+    % -------------------------------------------------------------------------
+    X_run_full = [n(T1_bins,:); n(T2_bins,:)]; % N_run x C
+    Y_track    = [ones(sum(T1_bins),1); 2*ones(sum(T2_bins),1)]; % N_run x 1
 
-N_run   = size(X_run_full,1);
-nCells  = size(X_run_full,2);
+    pos_run_full = [position_interp1(T1_bins) position_interp1(T2_bins)]';
+    pos_run_full = pos_run_full(:); % N_run x 1
 
-% Z-score spikes across RUN bins (per neuron)
-muX = mean(X_run_full,1);
-sdX = std(X_run_full,[],1);
-sdX(sdX==0) = 1;
-X_run_z = (X_run_full - muX) ./ sdX;
+    N_run   = size(X_run_full,1);
+    nCells  = size(X_run_full,2);
 
-% Position bins (used to build one-hot basis)
-pos_bins = unique(pos_run_full);
-nPos     = numel(pos_bins);
+    % Z-score spikes across RUN bins (per neuron)
+    muX = mean(X_run_full,1);
+    sdX = std(X_run_full,[],1);
+    sdX(sdX==0) = 1;
+    X_run_z = (X_run_full - muX) ./ sdX;
 
-% Position indices per RUN bin
-[~,pos_idx] = ismember(pos_run_full,pos_bins);
+    % Position bins (used to build one-hot basis)
+    pos_bins = unique(pos_run_full);
+    nPos     = numel(pos_bins);
 
-% Build block-diagonal bases Φ_L, Φ_R
-Phi_L = zeros(N_run, nPos);
-Phi_R = zeros(N_run, nPos);
+    % Position indices per RUN bin
+    [~,pos_idx] = ismember(pos_run_full,pos_bins);
 
-idx_T1 = (Y_track == 1);
-idx_T2 = (Y_track == 2);
+    % Build block-diagonal bases Φ_L, Φ_R
+    Phi_L = zeros(N_run, nPos);
+    Phi_R = zeros(N_run, nPos);
 
-Phi_L(sub2ind(size(Phi_L), find(idx_T1), pos_idx(idx_T1))) = 1;
-Phi_R(sub2ind(size(Phi_R), find(idx_T2), pos_idx(idx_T2))) = 1;
+    idx_T1 = (Y_track == 1);
+    idx_T2 = (Y_track == 2);
 
-Y_basis = [Phi_L Phi_R]; % N_run x (2*nPos)
+    Phi_L(sub2ind(size(Phi_L), find(idx_T1), pos_idx(idx_T1))) = 1;
+    Phi_R(sub2ind(size(Phi_R), find(idx_T2), pos_idx(idx_T2))) = 1;
 
-%% ------------------------------------------------------------------------
-%  Hyperparameter search: ridge-regularised RRR over (lambda, rank)
-% -------------------------------------------------------------------------
-lambda_grid = logspace(-2,4,30);      % you can tweak this
-max_rank    = min([nCells, 2*nPos 10]);
-rank_grid   = 1:max_rank;
+    Y_basis = [Phi_L Phi_R]; % N_run x (2*nPos)
 
-nLambda = numel(lambda_grid);
-nRank   = numel(rank_grid);
+    %% ------------------------------------------------------------------------
+    %  Hyperparameter search: ridge-regularised RRR over (lambda, rank)
+    % -------------------------------------------------------------------------
+    lambda_grid = logspace(-2,4,30);      % you can tweak this
+    max_rank    = min([nCells, 2*nPos 10]);
+    rank_grid   = 1:max_rank;
 
-cv_track_AUC  = nan(nLambda, nRank);
-cv_pos_err_cm = nan(nLambda, nRank);
+    nLambda = numel(lambda_grid);
+    nRank   = numel(rank_grid);
 
-rng(200);
-Kfold = 10;
-cv = cvpartition(Y_track, 'KFold', Kfold);
-tic
-for il = 1:nLambda
-    lambda = lambda_grid(il);
-    for ir = 1:nRank
-        r = rank_grid(ir);
+    cv_track_AUC  = nan(nLambda, nRank);
+    cv_pos_err_cm = nan(nLambda, nRank);
 
-        AUC_fold = nan(Kfold,1);
-        err_fold = nan(Kfold,1);
-        err_fold_false = nan(Kfold,1);
+    rng(200);
+    Kfold = 10;
+    cv = cvpartition(Y_track, 'KFold', Kfold);
+    tic
+    for il = 1:nLambda
+        lambda = lambda_grid(il);
+        for ir = 1:nRank
+            r = rank_grid(ir);
 
-        for f = 1:Kfold
-            trIdx = training(cv,f);
-            teIdx = test(cv,f);
+            AUC_fold = nan(Kfold,1);
+            err_fold = nan(Kfold,1);
+            err_fold_false = nan(Kfold,1);
 
-            Xtr = X_run_z(trIdx,:);
-            Xte = X_run_z(teIdx,:);
-            Ytr = Y_basis(trIdx,:);
-            pos_true   = pos_run_full(teIdx);
-            track_true = Y_track(teIdx);
+            for f = 1:Kfold
+                trIdx = training(cv,f);
+                teIdx = test(cv,f);
 
-            % Fit ridge+RRR
-            B = fit_ridge_rrr(Xtr, Ytr, lambda, r);
+                Xtr = X_run_z(trIdx,:);
+                Xte = X_run_z(teIdx,:);
+                Ytr = Y_basis(trIdx,:);
+                pos_true   = pos_run_full(teIdx);
+                track_true = Y_track(teIdx);
 
-            % Predict
-            Yhat = Xte * B;
+                % Fit ridge+RRR
+                B = fit_ridge_rrr(Xtr, Ytr, lambda, r);
 
-            [logodds, track_hat, pos_hat_T1, pos_hat_T2, ~] = ...
-                decode_track_pos_from_Yhat(Yhat,pos_bins);
+                % Predict
+                Yhat = Xte * B;
+                Yhat = softmax(Yhat', 'DataFormat', 'CB')';
 
-            % ROC for log odds 
-            fpr = 0:0.01:1;
-            log_odds = logodds;
-  
-            %                 [~, ~, ~, AUC_real(i)] = perfcurve(track_true(idx), log_odds(idx),1,'XVals', fpr);
-            [x,y,~,AUC_real] = perfcurve(track_true, log_odds,1, 'XVals', fpr);
+                [logodds, track_hat, pos_hat_T1, pos_hat_T2, ~] = ...
+                    decode_track_pos_from_Yhat(Yhat,pos_bins);
 
-            
-            AUC_fold(f) = mean(AUC_real);
+                % ROC for log odds
+                fpr = 0:0.01:1;
+                log_odds = logodds;
 
-            % Position error using true track
-            pos_pred_true = pos_hat_T1;
-            pos_pred_true(track_true==2) = pos_hat_T2(track_true==2);
-            err_fold(f) = mean(abs(pos_pred_true - pos_true));
+                %                 [~, ~, ~, AUC_real(i)] = perfcurve(track_true(idx), log_odds(idx),1,'XVals', fpr);
+                [x,y,~,AUC_real] = perfcurve(track_true, log_odds,1, 'XVals', fpr);
 
-            pos_pred_false = pos_hat_T2;
-            pos_pred_false(track_true==2) = pos_hat_T1(track_true==2);
-            err_fold_false(f) = mean(abs(pos_pred_false - pos_true));
+
+                AUC_fold(f) = mean(AUC_real);
+
+                % Position error using true track
+                pos_pred_true = pos_hat_T1;
+                pos_pred_true(track_true==2) = pos_hat_T2(track_true==2);
+                err_fold(f) = mean(abs(pos_pred_true - pos_true));
+
+                pos_pred_false = pos_hat_T2;
+                pos_pred_false(track_true==2) = pos_hat_T1(track_true==2);
+                err_fold_false(f) = mean(abs(pos_pred_false - pos_true));
+            end
+
+            cv_track_AUC(il,ir)  = mean(AUC_fold);
+            cv_pos_err_cm(il,ir) = mean(err_fold);
+            cv_pos_err_cm_false(il,ir) = mean(err_fold_false);
         end
-
-        cv_track_AUC(il,ir)  = mean(AUC_fold);
-        cv_pos_err_cm(il,ir) = mean(err_fold);
-        cv_pos_err_cm_false(il,ir) = mean(err_fold_false);
     end
-end
 
-% Choose best (lambda, rank): maximise track AUC, then minimize pos error
-[~,idx_best] = max(cv_track_AUC(:));
-[best_il, best_ir] = ind2sub(size(cv_track_AUC), idx_best);
-lambda_opt = lambda_grid(best_il);
-rank_opt   = rank_grid(best_ir);
+    % Choose best (lambda, rank): maximise track AUC, then minimize pos error
+    [~,idx_best] = max(cv_track_AUC(:));
+    [best_il, best_ir] = ind2sub(size(cv_track_AUC), idx_best);
+    lambda_opt = lambda_grid(best_il);
+    rank_opt   = rank_grid(best_ir);
 
-fprintf('RRR: chosen lambda = %.3g, rank = %d, CV track AUC = %.3f, CV pos err = %.1f cm\n', ...
-    lambda_opt, rank_opt, cv_track_AUC(best_il,best_ir), cv_pos_err_cm(best_il,best_ir));
-toc
-
+    fprintf('RRR: chosen lambda = %.3g, rank = %d, CV track AUC = %.3f, CV pos err = %.1f cm\n', ...
+        lambda_opt, rank_opt, cv_track_AUC(best_il,best_ir), cv_pos_err_cm(best_il,best_ir));
+    toc
 
 
-%% ------------------------------------------------------------------------
-%  Cross-validated RUN predictions using (lambda_opt, rank_opt)
-% -------------------------------------------------------------------------
-logodds_cv      = nan(N_run,1);
-% track_hat_cv    = nan(N_run,1);
-pos_hat_T1_cv   = nan(N_run,1);
-pos_hat_T2_cv   = nan(N_run,1);
-pos_hat_true_cv = nan(N_run,1);
 
-for f = 1:Kfold
-    trIdx = training(cv,f);
-    teIdx = test(cv,f);
-
-    Xtr = X_run_z(trIdx,:);
-    Xte = X_run_z(teIdx,:);
-    Ytr = Y_basis(trIdx,:);
-
-    B = fit_ridge_rrr(Xtr, Ytr, lambda_opt, rank_opt);
-    Yhat = Xte * B;
-
-    [logodds, track_hat, pos_hat_T1, pos_hat_T2, ~] = ...
-        decode_track_pos_from_Yhat(Yhat,pos_bins);
-
-    logodds_cv(teIdx)    = logodds;
-%     track_hat_cv(teIdx)  = track_hat;
-    pos_hat_T1_cv(teIdx) = pos_hat_T1;
-    pos_hat_T2_cv(teIdx) = pos_hat_T2;
-
-    pos_hat_true = pos_hat_T1;
-    pos_hat_true(Y_track(teIdx)==2) = pos_hat_T2(Y_track(teIdx)==2);
-    pos_hat_true_cv(teIdx) = pos_hat_true;
-
-    pos_hat_false = pos_hat_T1;
-    pos_hat_false(Y_track(teIdx)==1) = pos_hat_T2(Y_track(teIdx)==1);
-    pos_hat_false_cv(teIdx) = pos_hat_false;
-end
-
-
-%% ------------------------------------------------------------------------
-%  Cell-ID shuffle CV on RUN (using lambda_opt, rank_opt)
-% -------------------------------------------------------------------------
-if shuffle_option
-    nShuffle = 1000;
-else
-    nShuffle = 0;
-end
-
-
-shuffle_pos_err_cm = nan(nShuffle,1);
-logodds_shuffled      = nan(nShuffle,N_run);
-
-for nsh = 1:nShuffle
-    s = RandStream('mrg32k3a','Seed',nsh+1e6);
-    perm = randperm(s,nCells);
-    X_sh = X_run_z(:,perm);
-
-    AUC_fold = nan(Kfold,1);
-    err_fold = nan(Kfold,1);
+    %% ------------------------------------------------------------------------
+    %  Cross-validated RUN predictions using (lambda_opt, rank_opt)
+    % -------------------------------------------------------------------------
+    logodds_cv      = nan(N_run,1);
+    % track_hat_cv    = nan(N_run,1);
+    pos_hat_T1_cv   = nan(N_run,1);
+    pos_hat_T2_cv   = nan(N_run,1);
+    pos_hat_true_cv = nan(N_run,1);
+    Yhat_cv= nan(N_run,nPos*2);
 
     for f = 1:Kfold
         trIdx = training(cv,f);
         teIdx = test(cv,f);
 
         Xtr = X_run_z(trIdx,:);
-        Xte = X_sh(teIdx,:);
+        Xte = X_run_z(teIdx,:);
         Ytr = Y_basis(trIdx,:);
 
         B = fit_ridge_rrr(Xtr, Ytr, lambda_opt, rank_opt);
         Yhat = Xte * B;
+        Yhat = softmax(Yhat', 'DataFormat', 'CB')';
 
         [logodds, track_hat, pos_hat_T1, pos_hat_T2, ~] = ...
             decode_track_pos_from_Yhat(Yhat,pos_bins);
 
-        track_true = Y_track(teIdx);
-        pos_true   = pos_run_full(teIdx);
+        logodds_cv(teIdx)    = logodds;
+        Yhat_cv(teIdx,:)  = Yhat;
+        pos_hat_T1_cv(teIdx) = pos_hat_T1;
+        pos_hat_T2_cv(teIdx) = pos_hat_T2;
 
-        fpr = 0:0.01:1;
-        logodds_shuffled(nsh,teIdx) = logodds;
+        pos_hat_true = pos_hat_T1;
+        pos_hat_true(Y_track(teIdx)==2) = pos_hat_T2(Y_track(teIdx)==2);
+        pos_hat_true_cv(teIdx) = pos_hat_true;
 
-        pos_pred_true = pos_hat_T1;
-        pos_pred_true(track_true==2) = pos_hat_T2(track_true==2);
-        err_fold(f) = mean(abs(pos_pred_true - pos_true));
+        pos_hat_false = pos_hat_T1;
+        pos_hat_false(Y_track(teIdx)==1) = pos_hat_T2(Y_track(teIdx)==1);
+        pos_hat_false_cv(teIdx) = pos_hat_false;
     end
 
-%     shuffle_track_AUC(nsh)  = mean(AUC_fold);
-    shuffle_pos_err_cm(nsh) = mean(err_fold);
-end
+
+    %% ------------------------------------------------------------------------
+    %  Cell-ID shuffle CV on RUN (using lambda_opt, rank_opt)
+    % -------------------------------------------------------------------------
+    nShuffle = 1000;
 
 
-% ROC for log odds
-fpr = 0:0.01:1;
-TPR_real = zeros(1000, length(fpr));
-track_AUC_cv = zeros(1,1000);
-log_odds = logodds_cv;
-parfor i = 1:1000
-    s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
-    idx = randsample(s,length(Y_track), length(Y_track), true);
-    %                 [~, ~, ~, AUC_real(i)] = perfcurve(track_true(idx), log_odds(idx),1,'XVals', fpr);
-    [x,y,~,track_AUC_cv(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
-    [C,ia,ic] = unique(x);
-    y = y(ia);
-    x = x(ia);
+    shuffle_pos_err_cm = nan(nShuffle,1);
+    logodds_shuffled      = nan(nShuffle,N_run);
 
-    TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
-    TPR_real(i,:) = TPR_interp;
-end
+    for nsh = 1:nShuffle
+        s = RandStream('mrg32k3a','Seed',nsh+1e6);
+        perm = randperm(s,nCells);
+        X_sh = X_run_z(:,perm);
 
+        AUC_fold = nan(Kfold,1);
+        err_fold = nan(Kfold,1);
 
-% ROC for log odds cell id shuffled
-fpr = 0:0.01:1;
-TPR_cellID_shuf = zeros(1000, length(fpr));
-cellID_shuffle_track_AUC = zeros(1,1000);
-log_odds = logodds_shuffled;
-% log_odds = logodds_cv;
-parfor i = 1:1000
-    s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
-    idx = randsample(s,length(Y_track), length(Y_track), true);
-%     [x,y,~,cellID_shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds,1, 'XVals', fpr);
-    [x,y,~,cellID_shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
-    [C,ia,ic] = unique(x);
-    y = y(ia);
-    x = x(ia);
+        for f = 1:Kfold
+            trIdx = training(cv,f);
+            teIdx = test(cv,f);
 
-    TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
-    TPR_cellID_shuf(i,:) = TPR_interp;
-end
+            Xtr = X_run_z(trIdx,:);
+            Xte = X_sh(teIdx,:);
+            Ytr = Y_basis(trIdx,:);
 
-% ROC for log odds track label shuffled
-fpr = 0:0.01:1;
-TPR_shuf = zeros(1000, length(fpr));
-shuffle_track_AUC = zeros(1,1000);
-% log_odds = logodds_shuffled;
-log_odds = logodds_cv;
-parfor i = 1:1000
-    s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
-    idx = randsample(s,length(Y_track), length(Y_track), true);
-    [x,y,~,shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds,1, 'XVals', fpr);
-%     [x,y,~,shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
-    [C,ia,ic] = unique(x);
-    y = y(ia);
-    x = x(ia);
+            B = fit_ridge_rrr(Xtr, Ytr, lambda_opt, rank_opt);
+            Yhat = Xte * B;
+            Yhat = softmax(Yhat', 'DataFormat', 'CB')';
 
-    TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
-    TPR_shuf(i,:) = TPR_interp;
-end
+            [logodds, track_hat, pos_hat_T1, pos_hat_T2, ~] = ...
+                decode_track_pos_from_Yhat(Yhat,pos_bins);
+
+            track_true = Y_track(teIdx);
+            pos_true   = pos_run_full(teIdx);
+
+            fpr = 0:0.01:1;
+            logodds_shuffled(nsh,teIdx) = logodds;
+
+            pos_pred_true = pos_hat_T1;
+            pos_pred_true(track_true==2) = pos_hat_T2(track_true==2);
+            err_fold(f) = mean(abs(pos_pred_true - pos_true));
+        end
+
+        %     shuffle_track_AUC(nsh)  = mean(AUC_fold);
+        shuffle_pos_err_cm(nsh) = mean(err_fold);
+    end
 
 
+    % ROC for log odds
+    fpr = 0:0.01:1;
+    TPR_real = zeros(1000, length(fpr));
+    track_AUC_cv = zeros(1,1000);
+    log_odds = logodds_cv;
+    parfor i = 1:1000
+        s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+        idx = randsample(s,length(Y_track), length(Y_track), true);
+        %                 [~, ~, ~, AUC_real(i)] = perfcurve(track_true(idx), log_odds(idx),1,'XVals', fpr);
+        [x,y,~,track_AUC_cv(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
+        [C,ia,ic] = unique(x);
+        y = y(ia);
+        x = x(ia);
 
-mean_abs_pos_err_cv = mean(abs(pos_hat_true_cv - pos_run_full));
-
-% Confusion matrices
-[~, true_pos_idx] = ismember(pos_run_full,pos_bins);
-[~, pred_pos_idx_true] = ismember(pos_hat_true_cv, pos_bins);
-
-% track_confmat_cv = confusionmat(Y_track, track_hat_cv);
-
-pos_confmat_T1   = confusionmat(true_pos_idx(track_true ==1), pos_hat_T1_cv(track_true ==1)/bin_size);
-pos_confmat_T2   = confusionmat(true_pos_idx(track_true ==2), pos_hat_T2_cv(track_true ==2)/bin_size);
+        TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
+        TPR_real(i,:) = TPR_interp;
+    end
 
 
-if plot_option
-    title_text = sprintf('%s %s %s RRR ROC validation %.0f ms bins', ...
-        options.SUBJECT, options.SESSION, event_type, time_bin_size_RUN*1000);
+    % ROC for log odds cell id shuffled
+    fpr = 0:0.01:1;
+    TPR_cellID_shuf = zeros(1000, length(fpr));
+    cellID_shuffle_track_AUC = zeros(1,1000);
+    log_odds = logodds_shuffled;
+    % log_odds = logodds_cv;
+    parfor i = 1:1000
+        s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+        idx = randsample(s,length(Y_track), length(Y_track), true);
+        %     [x,y,~,cellID_shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds,1, 'XVals', fpr);
+        [x,y,~,cellID_shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
+        [C,ia,ic] = unique(x);
+        y = y(ia);
+        x = x(ia);
 
-    fig = figure('Name', title_text, 'Position', [200 100 866 741]); hold on;
+        TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
+        TPR_cellID_shuf(i,:) = TPR_interp;
+    end
 
-    nexttile
-    CI_real = prctile(TPR_real, [0.5 99.5]);
-    CI_shuf = prctile(TPR_shuf, [0.5 99.5]);
-    hold on
-    plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
-        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
-        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
-    plot(fpr, mean(TPR_shuf,1), 'k', 'LineWidth', 1.5);
-    xlabel('True positive rate')
-    ylabel('False Positive rate')
-    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    % ROC for log odds track label shuffled
+    fpr = 0:0.01:1;
+    TPR_shuf = zeros(1000, length(fpr));
+    shuffle_track_AUC = zeros(1,1000);
+    % log_odds = logodds_shuffled;
+    log_odds = logodds_cv;
+    parfor i = 1:1000
+        s = RandStream('mrg32k3a','Seed',i); % Set random seed for resampling
+        idx = randsample(s,length(Y_track), length(Y_track), true);
+        [x,y,~,shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds,1, 'XVals', fpr);
+        %     [x,y,~,shuffle_track_AUC(i)] = perfcurve(Y_track(idx), log_odds(idx),1, 'XVals', fpr);
+        [C,ia,ic] = unique(x);
+        y = y(ia);
+        x = x(ia);
 
-    nexttile
+        TPR_interp = interp1(x, y, fpr, 'linear', 'extrap');  % force to match fpr
+        TPR_shuf(i,:) = TPR_interp;
+    end
 
-    AUC = [track_AUC_cv;shuffle_track_AUC];
-    bar_colors = [231,41,138; 0, 0, 0]/255;
-    x_pos=[1 2];
-    for i = 1:2
 
-        mean_AUC = mean(AUC(i,:),'omitnan');
-        auc_errors = [mean_AUC-prctile(AUC(i,:), [0.5]),...  % lower error
-            prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+
+    mean_abs_pos_err_cv = mean(abs(pos_hat_true_cv - pos_run_full));
+
+    % Confusion matrices
+    [~, true_pos_idx] = ismember(pos_run_full,pos_bins);
+    [~, pred_pos_idx_true] = ismember(pos_hat_true_cv, pos_bins);
+
+    % track_confmat_cv = confusionmat(Y_track, track_hat_cv);
+
+    pos_confmat_T1   = confusionmat(true_pos_idx(Y_track ==1), pos_hat_T1_cv(Y_track ==1)/bin_size);
+    pos_confmat_T2   = confusionmat(true_pos_idx(Y_track ==2), pos_hat_T2_cv(Y_track ==2)/bin_size);
+    pos_confmat_combined = pos_confmat_T1 + pos_confmat_T2;
+    pos_confmat_T1_false   = confusionmat(true_pos_idx(Y_track ==1), pos_hat_T2_cv(Y_track ==1)/bin_size);
+    pos_confmat_T2_false   = confusionmat(true_pos_idx(Y_track ==2), pos_hat_T1_cv(Y_track ==2)/bin_size);
+    pos_confmat_combined_false = pos_confmat_T1 + pos_confmat_T2;
+
+    % Normalise into probability
+    pos_confmat_combined = pos_confmat_combined./sum(pos_confmat_combined,2);
+    pos_confmat_T1   = pos_confmat_T1./sum(pos_confmat_T1, 2);
+    pos_confmat_T2   = pos_confmat_T2./sum(pos_confmat_T2, 2);
+    pos_confmat_combined_false = pos_confmat_combined_false./sum(pos_confmat_combined_false,2);
+    pos_confmat_T1_false   = pos_confmat_T1_false./sum(pos_confmat_T1_false, 2);
+    pos_confmat_T2_false   = pos_confmat_T2_false./sum(pos_confmat_T2_false, 2);
+
+    if plot_option
+        title_text = sprintf('%s %s %s RRR ROC validation %.0f ms bins', ...
+            options.SUBJECT, options.SESSION, event_type, time_bin_size_RUN*1000);
+
+        fig = figure('Name', title_text, 'Position', [200 100 866 741]); hold on;
+
+        nexttile
+        CI_real = prctile(TPR_real, [0.5 99.5]);
+        CI_shuf = prctile(TPR_shuf, [0.5 99.5]);
         hold on
-        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
-        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
-    end
+        plot([0 1],[0 1],'--k')
+        PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
+            [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
+            'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
+        plot(fpr, mean(TPR_shuf,1), 'k', 'LineWidth', 1.5);
+        xlabel('True positive rate')
+        ylabel('False Positive rate')
+        %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+        title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+        set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+        nexttile
+
+        AUC = [track_AUC_cv;shuffle_track_AUC];
+        bar_colors = [231,41,138; 0, 0, 0]/255;
+        x_pos=[1 2];
+        for i = 1:2
+
+            mean_AUC = mean(AUC(i,:),'omitnan');
+            auc_errors = [mean_AUC-prctile(AUC(i,:), [0.5]),...  % lower error
+                prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+            hold on
+            bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+            errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+        end
 
 
-    xticks([1 2]);
-    xticklabels({'Real', 'Shuffled'});
-    ylabel('AUC');
-    ylim([0 1]);
-    title('Mean AUC – Real vs Shuffled');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+        xticks([1 2]);
+        xticklabels({'Real', 'Shuffled'});
+        ylabel('AUC');
+        ylim([0 1]);
+        title('Mean AUC – Real vs Shuffled');
+        set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 
-    nexttile
-    CI_real = prctile(TPR_real, [0.5 99.5]);
-    CI_shuf = prctile(TPR_cellID_shuf, [0.5 99.5]);
-    hold on
-    plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
-        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
-        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
-    plot(fpr, mean(TPR_cellID_shuf,1), 'k', 'LineWidth', 1.5);
-    xlabel('True positive rate')
-    ylabel('False Positive rate')
-    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-
-    nexttile
-
-    AUC = [track_AUC_cv;cellID_shuffle_track_AUC];
-    bar_colors = [231,41,138; 0, 0, 0]/255;
-    x_pos=[1 2];
-    for i = 1:2
-
-        mean_AUC = mean(AUC(i,:),'omitnan');
-        auc_errors = [mean_AUC-prctile(AUC(i,:), [0.5]),...  % lower error
-            prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+        nexttile
+        CI_real = prctile(TPR_real, [0.5 99.5]);
+        CI_shuf = prctile(TPR_cellID_shuf, [0.5 99.5]);
         hold on
-        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
-        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+        plot([0 1],[0 1],'--k')
+        PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
+            [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
+            'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
+        plot(fpr, mean(TPR_cellID_shuf,1), 'k', 'LineWidth', 1.5);
+        xlabel('True positive rate')
+        ylabel('False Positive rate')
+        %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+        title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+        set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+        nexttile
+
+        AUC = [track_AUC_cv;cellID_shuffle_track_AUC];
+        bar_colors = [231,41,138; 0, 0, 0]/255;
+        x_pos=[1 2];
+        for i = 1:2
+
+            mean_AUC = mean(AUC(i,:),'omitnan');
+            auc_errors = [mean_AUC-prctile(AUC(i,:), [0.5]),...  % lower error
+                prctile(AUC(i,:), [99.5])-mean_AUC];   % upper error
+            hold on
+            bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+            errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+        end
+
+
+        xticks([1 2]);
+        xticklabels({'Real', 'Cell ID Shuffled'});
+        ylabel('AUC');
+        ylim([0 1]);
+        title('Mean AUC – Real vs Shuffled');
+        set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+        %%%%%%%% confusion matrix
+        title_text = sprintf('%s %s %s RRR confusion matrix CV %.0f ms bins', ...
+            options.SUBJECT, options.SESSION, event_type, time_bin_size_RUN*1000);
+
+        fig = figure('Name', title_text, 'Position', [200 100 770 550]); hold on;
+        confmat_mat = {pos_confmat_T1,pos_confmat_T2,pos_confmat_T1_false,pos_confmat_T2_false};
+        title_label = {'Track 1','Track 2','Track 2 decoded positions on Track 1','Track 1 decoded position on Track 2'};
+
+        for n = 1:length(confmat_mat)
+            subplot(2,2,n)
+            imagesc(confmat_mat{n})
+            colorbar
+            tick_positions = [1, 4, 7, 10, 14];       % The bin numbers (1st, 4th, 7th...)
+            tick_labels    = {'10', '40', '70', '100', '140'}; % The corresponding 'cm' labels
+            xlabel('Predicted Position (cm)');ylabel('True Position (cm)')
+            title(title_label{n})
+            set(gca, ...
+                'TickDir', 'out', ...
+                'Box', 'off', ...
+                'FontSize', 12, ...
+                'XTick', tick_positions, ...       % Set X-axis tick marks
+                'YTick', tick_positions, ...       % Set Y-axis tick marks
+                'XTickLabel', tick_labels, ...     % Set X-axis labels
+                'YTickLabel', tick_labels);        % Set Y-axis labels
+        end
     end
 
 
-    xticks([1 2]);
-    xticklabels({'Real', 'Cell ID Shuffled'});
-    ylabel('AUC');
-    ylim([0 1]);
-    title('Mean AUC – Real vs Shuffled');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    %% ------------------------------------------------------------------------
+    %  Final RUN model fit on all bins (FULL)
+    % -------------------------------------------------------------------------
+    B_final = fit_ridge_rrr(X_run_z, Y_basis, lambda_opt, rank_opt);
+%     Yhat_full = X_run_z * B_final;
 
 
+    %%%%% Save models output
+    RRR.method            = 'ridge_RRR_blockdiag_position';
+    RRR.lambda_opt        = lambda_opt;
+    RRR.rank_opt          = rank_opt;
+    RRR.pos_bins          = pos_bins;
+    RRR.B                 = B_final;
+    RRR.muX               = muX;
+    RRR.sdX               = sdX;
+    RRR.cv_track_AUC      = cv_track_AUC;
+    RRR.cv_pos_err_cm     = cv_pos_err_cm;
+    RRR.cv_pos_err_cm_false     = cv_pos_err_cm_false;
+    RRR.lambda_grid       = lambda_grid;
+    RRR.rank_grid         = rank_grid;
+
+    % CV RRR Data
+    RRR_RUN.B                 = B_final;
+    RRR_RUN.track_true        = Y_track;
+    RRR_RUN.pos_true          = pos_run_full;
+    RRR_RUN.pos_bins          = pos_bins;
+
+    RRR_RUN.logodds        = logodds_cv;
+%     RRR_RUN.track_hat      = track_hat_cv;
+    RRR_RUN.pos_hat_T1     = pos_hat_T1_cv;
+    RRR_RUN.pos_hat_T2     = pos_hat_T2_cv;
+    RRR_RUN.pos_hat_true   = pos_hat_true_cv;
+    %     RRR_RUN.track_confmat  = track_confmat_cv;
+    %     RRR_RUN.pos_confmat    = pos_confmat_cv;
+    RRR_RUN.pos_confmat_T1 = pos_confmat_T1;
+    RRR_RUN.pos_confmat_T2 = pos_confmat_T2;
+    RRR_RUN.pos_confmat_T1_false = pos_confmat_T1_false;
+    RRR_RUN.pos_confmat_T2_false = pos_confmat_T2_false;
+    RRR_RUN.track_AUC      = track_AUC_cv;
+    RRR_RUN.mean_abs_pos_err_cm = mean_abs_pos_err_cv;
+    RRR_RUN.track_AUC_shuffled = shuffle_track_AUC;
+    RRR_RUN.mean_pos_err_cm_shuffled = shuffle_pos_err_cm;
+
+    RRR_RUN.shuffle_track_AUC = shuffle_track_AUC;
+    RRR_RUN.cellID_shuffle_track_AUC = cellID_shuffle_track_AUC;
 
 end
-
-
-%% ------------------------------------------------------------------------
-%  Final RUN model fit on all bins (FULL)
-% -------------------------------------------------------------------------
-B_final = fit_ridge_rrr(X_run_z, Y_basis, lambda_opt, rank_opt);
-Yhat_full = X_run_z * B_final;
 
 %% ------------------------------------------------------------------------
 %  Project new data with RRR model to get log-odds and positions
 % -------------------------------------------------------------------------
-X_rip_z = (n_ripples_residuals - muX) ./ sdX;
-Yhat_rip = X_rip_z * B_final;
+X_rip_z = zscore(n_ripples_residuals,0,1);
+
+Yhat_raw = X_rip_z * B_final;
+Yhat_rip = softmax(Yhat_raw', 'DataFormat', 'CB')';
+
+% Yhat_rip = (normalize(Yhat_raw','range'))';
 
 [logodds_rip, track_hat_rip, pos_hat_T1_rip, pos_hat_T2_rip, pos_hat_rip] = ...
-    decode_track_pos_from_Yhat(Yhat_rip,pos_bins);
+    decode_track_pos_from_Yhat(Yhat_rip,bin_size*1:bin_size:bin_size*no_bins);
+
+mean_log_odds = mean(logodds_rip,'omitnan');
+std_log_odds = std(logodds_rip,'omitnan');
+
+z_log_odds = zscore(logodds_rip);
 
 event_id_vec = ripples_id(:);
 event_bins   = ripple_bins;
 
 nEvents = max(event_id_vec);
-event_peak_logodds = nan(nEvents,1);
-event_peak_idx     = nan(nEvents,1);
 
-for e = 1:nEvents
-    idx = find(event_id_vec == e);
-    if isempty(idx), continue; end
+% for e = 1:nEvents
+%     idx = find(event_id_vec == e);
+% %     figure;subplot(2,2,1);imagesc(Yhat_rip(idx,:)');colorbar
+% %     subplot(2,2,2);imagesc(Yhat_raw(idx,:)');colorbar
+% 
+% %     plot(z_log_odds(idx))
+%     if isempty(idx), continue; end
+% 
+% 
+% %     % Peak by absolute log-odds
+% %     [~,rel] = max(abs(logodds_rip(idx)));
+% %     event_peak_logodds(e) = logodds_rip(idx(rel));
+% %     event_peak_idx(e)     = idx(rel);
+% end
 
-    % Peak by absolute log-odds
-    [~,rel] = max(abs(logodds_rip(idx)));
-    event_peak_logodds(e) = logodds_rip(idx(rel));
-    event_peak_idx(e)     = idx(rel);
-end
+
+% for nsh = 1:nShuffle
+%     s = RandStream('mrg32k3a','Seed',nsh+1e6);
+%     perm = randperm(s,nCells);
+% 
+%     Yhat_shuffled = X_rip_z(:,perm) * B_final;
+%     Yhat_shuffled = softmax(Yhat_shuffled', 'DataFormat', 'CB')';
+% 
+%     [logodds_temp, track_hat_rip, pos_hat_T1_rip, pos_hat_T2_rip, pos_hat_rip] = ...
+%         decode_track_pos_from_Yhat(Yhat_rip,pos_bins);
+% 
+%     logodds_shuffled(nsh,:,:) = ;
+% end
+
 
 %% ------------------------------------------------------------------------
 %  Pack outputs
 % -------------------------------------------------------------------------
-RRR.method            = 'ridge_RRR_blockdiag_position';
-RRR.lambda_opt        = lambda_opt;
-RRR.rank_opt          = rank_opt;
-RRR.pos_bins          = pos_bins;
-RRR.B                 = B_final;
-RRR.muX               = muX;
-RRR.sdX               = sdX;
-RRR.cv_track_AUC      = cv_track_AUC;
-RRR.cv_pos_err_cm     = cv_pos_err_cm;
-RRR.cv_pos_err_cm_false     = cv_pos_err_cm_false;
-RRR.lambda_grid       = lambda_grid;
-RRR.rank_grid         = rank_grid;
 
-RUN.track_true        = Y_track;
-RUN.pos_true          = pos_run_full;
-RUN.pos_bins          = pos_bins;
+RRR_reactivation = [];
+RRR_reactivation.B = B_final;
+RRR_reactivation.event_id = ripples_id;
+RRR_reactivation.event_spike_counts = n_ripples_residuals;
+RRR_reactivation.event_bins = ripple_bins;
+RRR_reactivation.decoded_probabiity = Yhat_raw;
+RRR_reactivation.z_log_odds = z_log_odds;
+RRR_reactivation.log_odds = logodds_rip;
 
-RUN.logodds        = logodds_cv;
-RUN.track_hat      = track_hat_cv;
-RUN.pos_hat_T1     = pos_hat_T1_cv;
-RUN.pos_hat_T2     = pos_hat_T2_cv;
-RUN.pos_hat_true   = pos_hat_true_cv;
-RUN.track_confmat  = track_confmat_cv;
-RUN.pos_confmat    = pos_confmat_cv;
-RUN.track_AUC      = track_AUC_cv;
-RUN.mean_abs_pos_err_cm = mean_abs_pos_err_cv;
-RUN.track_AUC_shuffled = shuffle_track_AUC;
-RUN.mean_pos_err_cm_shuffled = shuffle_pos_err_cm;
+% RRR_reactivation.event_T2_probability = pdf_T2;
 
-
-RIP.event_id          = event_id_vec;
-RIP.event_bins        = event_bins;
-RIP.logodds           = logodds_rip;
-RIP.track_hat         = track_hat_rip;
-RIP.pos_hat_T1        = pos_hat_T1_rip;
-RIP.pos_hat_T2        = pos_hat_T2_rip;
-RIP.pos_hat           = pos_hat_rip;
-RIP.event_peak_logodds= event_peak_logodds;
-RIP.event_peak_idx    = event_peak_idx;
-RIP.pos_bins          = pos_bins;
+if shuffle_option == 1
+%     KDE_bias_shuffled = pdf_T1_shuffled./(pdf_T1_shuffled+pdf_T2_shuffled);
+%     KDE_reactivation.event_T1_probability_shuffled = pdf_T1_shuffled;
+%     KDE_reactivation.event_T2_probability_shuffled = pdf_T2_shuffled;
+end
 
 %% ------------------------------------------------------------------------
 %  (Optional) minimal plotting
 % -------------------------------------------------------------------------
 if plot_option
-    try
-        % Track decoding performance vs shuffle
-        figure('Name','RRR RUN decoding performance','Color','w');
-        subplot(1,2,1);
-        histogram(shuffle_track_acc,30,'FaceAlpha',0.5,'EdgeColor','none');
-        hold on;
-        yl = ylim;
-        plot([track_AUC track_acc_full], yl, 'r','LineWidth',2);
-        xlabel('Track decoding accuracy'); ylabel('Count');
-        title('Track decoding (shuffle vs real)');
-        box off; set(gca,'TickDir','out');
 
-        subplot(1,2,2);
-        histogram(shuffle_pos_err_cm,30,'FaceAlpha',0.5,'EdgeColor','none');
-        hold on;
-        yl = ylim;
-        plot([mean_abs_pos_err_full mean_abs_pos_err_full], yl, 'r','LineWidth',2);
-        xlabel('Mean |pos error| (cm)'); ylabel('Count');
-        title('Position error (shuffle vs real)');
-        box off; set(gca,'TickDir','out');
-
-        % Ripple log-odds examples
-        figure('Name','RRR ripple log-odds','Color','w');
-        ev_ids = unique(event_id_vec);
-        nShow = min(20, numel(ev_ids));
-        for k = 1:nShow
-            e = ev_ids(k);
-            idx = find(event_id_vec==e);
-            t = (0:numel(idx)-1) * time_bin_size_moving;
-            subplot(4,5,k);
-            plot(t, logodds_rip(idx));
-            yline(0,'k--');
-            xlabel('Time (s)');
-            ylabel('log P(T1) - log P(T2)');
-            title(sprintf('Event %d',e));
-            box off; set(gca,'TickDir','out');
-        end
-    catch
-        warning('Plotting failed, but decoding completed successfully.');
-    end
 end
 
 fprintf('RRR BlockDiag decoding finished.\n');
@@ -703,9 +750,6 @@ Y_L  = Yhat(:,1:nPos);
 Y_R  = Yhat(:,nPos+1:end);
 
 % Rectify to get non-negative pseudo-probabilities
-Y_L(Y_L<0) = 0;
-Y_R(Y_R<0) = 0;
-
 sumL = sum(Y_L,2) + eps;
 sumR = sum(Y_R,2) + eps;
 
@@ -737,3 +781,17 @@ pos_hat_all = pos_hat_T1;
 pos_hat_all(track_hat==2) = pos_hat_T2(track_hat==2);
 
 end
+
+
+% function P = softmax_normalise(E)
+%     % E is your input vector (e.g., 28x1)
+%     
+%     % Subtract the max for numerical stability
+%     E_stable = E - max(E);
+%     
+%     % Exponentiate
+%     exp_E = exp(E_stable);
+%     
+%     % Normalize to get probabilities
+%     P = exp_E / sum(exp_E);
+% end
