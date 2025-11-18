@@ -1,4 +1,5 @@
 function result = pgplvm_la(yy,xx,ff,setopt)
+%%%% Modified by Masahiro Takigawa 2025 
 % Initialize the log of spike rates with the square root of spike counts.
 ffmat = sqrt(yy);
 
@@ -14,12 +15,18 @@ xplds = setopt.xplds;
 
 % generate grid values as inducing points
 tgrid = [1:nt]';
-switch nf
-    case 1
-        xgrid = gen_grid([min(xx(:,1)) max(xx(:,1))],25,nf); % x grid (for plotting purposes)
-    case 2
-        xgrid = gen_grid([min(xx(:,1)) max(xx(:,1)); min(xx(:,2)) max(xx(:,2))],10,nf); % x grid (for plotting purposes)
-end
+
+% switch nf
+%     case 1
+%         xgrid = gen_grid([min(xx(:,1)) max(xx(:,1))],25,nf); % x grid (for plotting purposes)
+%     case 2
+%         xgrid = gen_grid([min(xx(:,1)) max(xx(:,1)); min(xx(:,2)) max(xx(:,2))],10,nf); % x grid (for plotting purposes)
+% end
+
+% General latent grid, works for nf >= 1
+ng     = choose_ng(nf);                         % your helper
+ranges = [min(xx); max(xx)]';                   % [nf x 2]
+xgrid  = gen_grid(ranges, ng, nf);              % [Ng x nf]
 
 % set hypers
 hypers = [setopt.rhoxx, setopt.lenxx, setopt.rhoff, setopt.lenff]; % rho for Kxx; len for Kxx; rho for Kff; len for Kff
@@ -107,7 +114,7 @@ for iter = 1:niter
     [L,dL,ffnew] = lmlifun_poiss(ffnew);
     ffmat = ffnew;
     
-    subplot(412),plot([ff(:,20),exp(ffnew(:,20))]),title('exp(ff)'),legend('true ff','P-GPLVM ff'),drawnow
+    % subplot(412),plot([ff(:,20),exp(ffnew(:,20))]),title('exp(ff)'),legend('true ff','P-GPLVM ff'),drawnow
     
     %% 2. Find optimal latent xx, actually search in u space, xx=K^{1/2}*u
     uu = Bfun(xxsamp,1);
@@ -233,5 +240,19 @@ result.lenxx = lenxx;
 result.rhoff = rhoff;
 result.lenff = lenff;
 
+end
 
 
+function ng = choose_ng(nf)
+% Roughly match LMT demo grid sizes
+switch nf
+    case 1, ng = 25;
+    case 2, ng = 10;
+    case 3, ng = 6;
+    case 4, ng = 5;
+    case 5, ng = 4;
+    case 6, ng = 3;
+    case 7, ng = 2;
+    otherwise, ng = 2;
+end
+end

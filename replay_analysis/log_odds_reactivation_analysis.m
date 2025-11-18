@@ -135,14 +135,19 @@ replay_ends = replay.offset;
 replayEvents_bayesian_spike_count = create_spike_count_masa(place_fields_BAYESIAN,clusters,...
     replay_starts,replay_ends,[],timebin);
 
-%     save replayEvents_bayesian_spike_count replayEvents_bayesian_spike_count
+% For reactivation analysis, removing cells that are silent during [-1 1]
+% ripple windows
+active_cells = sum(replayEvents_bayesian_spike_count.n.replay,2)>0;
 
-%     replay_decoding_split_events
+for track_id = 1:2
+    place_fields_BAYESIAN(track_id).template=place_fields_BAYESIAN(track_id).template(active_cells,:);
+    place_fields_BAYESIAN(track_id).all_good_place_cells_LIBERAL=place_fields_BAYESIAN(track_id).all_good_place_cells_LIBERAL(active_cells);
+end
+replayEvents_bayesian_spike_count.n.replay = replayEvents_bayesian_spike_count.n.replay(active_cells,:);
 
 % Run bayesian decoding
 fprintf('Decoding %s...\n',modify)
 
-bayesian_spike_count = replayEvents_bayesian_spike_count;
 % if contains(stimulus_name,'RUN')|contains(stimulus_name,'Track')
 %     estimated_position = bayesian_decoding(place_fields_BAYESIAN,replayEvents_bayesian_spike_count,position,[],modify,[],timebin);
 % else
