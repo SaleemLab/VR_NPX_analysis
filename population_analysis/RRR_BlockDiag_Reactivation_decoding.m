@@ -294,7 +294,7 @@ if isempty(B_final) % if RRR not trained before
         end
     end
 
-    % Choose best (lambda, rank): maximise track AUC, then minimize pos error
+    % Choose best (lambda, rank): maximise track AUC
     [~,idx_best] = max(cv_track_AUC(:));
     [best_il, best_ir] = ind2sub(size(cv_track_AUC), idx_best);
     lambda_opt = lambda_grid(best_il);
