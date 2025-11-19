@@ -3137,3 +3137,464 @@ else
     save(fullfile(analysis_folder,'periripple_LFP_info_HPC_RUN.mat'),'periripple_LFP_info_HPC','-v7.3');
     save(fullfile(analysis_folder,'periripple_LFP_info_V1_RUN.mat'),'periripple_LFP_info_V1','-v7.3');
 end
+
+
+
+%%
+%%
+
+
+%% Ripple events LFP SO and spindle power and spindle
+
+% pyversion('C:\Users\masahiro.takigawa\.conda\envs\fooof\python')
+% pyversion('C:\Users\masah\anaconda3\envs\fooof\python')
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+% addpath(genpath('C:\Users\masah\Documents\GitHub\fieldtrip'))
+% addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\fieldtrip'))
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+
+SO_phase_ripple_HPC_MUA_spike_rate = [];
+SO_phase_HPC_MUA_spike_rate = [];
+V1_SO_FR = [];
+HPC_SO_FR = [];
+
+
+for nsession =1:22
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
+    % find right date number based on all experiment dates of the subject
+    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
+    if isempty(stimulus_name)
+        continue
+    end
+    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
+
+    if length(stimulus_name)>1 % Based on if POST or PRE
+        if contains(Stimulus_type,'PRE')
+            disp('Same stimuli multiple recordings. Will take _2')
+            n = find(contains(stimulus_name,'_2')); % Usually because first stimulus is crashed.
+        else
+
+            session_info = session_info(~contains(stimulus_name,'PRE'));
+            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
+
+            if length(stimulus_name)>1
+                disp('Same stimuli multiple recordings. Will take _2')
+                n = find(contains(stimulus_name,'_2')); % Usually because first stimulus is crashed.
+            else
+                n =1;
+            end
+        end
+    else
+        n = 1;
+    end
+
+
+    % for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
+    options = session_info(n).probe(1);
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+    if isempty(DIR)
+        continue
+    end
+
+    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+
+    if ~isempty(DIR)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+
+    if ~isempty(DIR1)
+        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
+        session_clusters_RUN=session_clusters;
+        clear session_clusters
+    end
+    tic
+    if contains(stimulus_name{n},'Masa2tracks')
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP');
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_task_info%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_behaviour%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
+        clusters=clusters_ks4;
+    elseif contains(stimulus_name{n},'Sleep')
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+        %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events_V1.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_spindle_events.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+        % load(fullfile(options.ANALYSIS_DATAPATH,'decoded_ripple_events.mat'));
+        %             load(fullfile(options.ANALYSIS_DATAPATH,'reactivation_strength.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'..',sprintf('session_clusters_%s.mat',erase(stimulus_name{n},'Chronic'))),'session_clusters');
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters=clusters_ks4;
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
+    else
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
+        % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_task_info.mat'));
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
+
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
+        clusters=clusters_ks4;
+    end
+    toc
+
+
+    params = create_cluster_selection_params('sorting_option','masa');
+    % PSD slope quantification using fooof ()
+    tvec = LFP(1).tvec;
+    SR = round(1/mean(diff(tvec)));
+    nfft_seconds= 2;
+    nfft = 2^(nextpow2(SR*nfft_seconds));
+    win  = hanning(nfft);
+
+    %%%%%%%%%%%% Cortical wave direction during DOWN state peak
+
+    filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+    filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
+    filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+    filterparms.lowgammafilter = [30 60];%heuristically defined.  room for improvement here.
+    filterparms.highgammafilter = [60 100];%heuristically defined.  room for improvement here.
+    filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
+    % filterparms.gammafilter = [100 400];
+    % filterparms.gammasmoothwin = 0.08; %window for smoothing gamma power (s)
+    % filterparms.gammanormwin = 20; %window for gamma normalization (s)
+
+    %         for nprobe = 1:length(session_info(n).probe)
+    nprobe = 1;
+    probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+    if length(LFP(1).best_HPC) < length(LFP(2).best_HPC)
+        time_idx = 1:length(LFP(1).best_HPC);
+    elseif length(LFP(1).best_HPC) > length(LFP(2).best_HPC)
+
+        time_idx = 1:length(LFP(2).best_HPC);
+    else
+        time_idx = 1:length(LFP(1).best_HPC) ;
+    end
+
+    lfp.samplingRate = single(round(1/mean(diff(LFP(probe_no).tvec))));
+    lfp.timestamps = single(LFP(probe_no).tvec(time_idx));
+    tvec = single(LFP(probe_no).tvec(time_idx));
+
+    lfp_V1 = lfp;
+    lfp_HPC = lfp;
+    lfp_V1.data=[];
+    lfp_HPC.data=[];
+
+    if isfield(LFP(probe_no),'best_HPC') % if exist best HPC channels
+        probe_id = [];
+
+        if length(LFP)==1
+            lfp_HPC.data= single([LFP(probe_no).best_HPC(:,time_idx)']);
+            lfp_V1.data= single([LFP(probe_no).best_V1(:,time_idx)']);
+        else
+            lfp_HPC.data= single([LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)']);
+            lfp_V1.data= single([LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)']);
+        end
+    end
+    %         end
+
+
+    %%% get
+    HPC_ref_shank=[];
+    ref_shank = [];
+    for nprobe = 1:length(session_info(n).probe)
+        probe_no = session_info(n).probe(nprobe).probe_id+1;
+
+        ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+            &slow_waves(probe_no).probe_hemisphere == probe_no);
+        cortex_ref_shank(probe_no) = ref_shank;
+
+        shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
+        HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
+    end
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%% Bandpass filtter %%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    lfp = [];
+    for nregion = 1:2
+        if nregion == 1
+            lfp = lfp_V1;
+            lfp.data = lfp.data(:,cortex_ref_shank);
+        else
+            lfp = lfp_HPC;
+            lfp.data = lfp.data(:,HPC_ref_shank);
+        end
+
+        % grab delta LFP
+        deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+        zscored_LFP = zscore(deltaLFP.data);
+        lfp.SO_phase_LFP = deltaLFP.phase;
+        lfp.SO_amplitude_LFP = zscore(deltaLFP.amp);
+        deltaLFP = [];
+        % 
+        % % grab spindles LFP
+        % filter_type  = 'bandpass';
+        % passband = [9 17];
+        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        % b_spindle = fir1(filter_order, norm_freq_range,filter_type);
+        % 
+        % signal = [];
+        % for nShank = 1:size(lfp.data,2)
+        %     signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
+        % end
+        % %                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+        % %                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+        % lfp.spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        % lfp.spindle_phase_LFP = angle(hilbert(signal)); % phase
+        % signal = [];
+        % 
+        % 
+        % % grab ripples LFP
+        % filter_type  = 'bandpass';
+        % passband = [125 300];
+        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        % b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+        % 
+        % signal = [];
+        % for nShank = 1:size(lfp.data,2)
+        %     signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+        % end
+        % lfp.ripple_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        % lfp.ripple_phase_LFP = angle(hilbert(signal)); % phase
+        % signal = [];
+        % 
+        % 
+        % 
+        % % grab gamma LFP
+        % filter_type  = 'bandpass';
+        % passband = [30 60];
+        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        % b_theta = fir1(filter_order, norm_freq_range,filter_type);
+        % 
+        % signal = [];
+        % for nShank = 1:size(lfp.data,2)
+        %     signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+        % end
+        % 
+        % lfp.gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        % lfp.gamma_phase_LFP = angle(hilbert(signal)); % phase
+
+
+        if nregion == 1
+            lfp_V1  = lfp;
+
+        else
+            lfp_HPC = lfp;
+        end
+
+    end
+
+    % From cell structure back to spike times and spike id
+    session_clusters.spike_id = vertcat(session_clusters.spike_id{:});
+    session_clusters.spike_times = vertcat(session_clusters.spike_times{:});
+    [session_clusters.spike_times, index] = sort(session_clusters.spike_times);
+    session_clusters.spike_id = session_clusters.spike_id(index);
+
+    
+    % session_clusters.spike_id
+    % spike_phase_amplitude
+    SO_phase_distribution=[];
+    SO_phase_distribution_ripples=[];
+    % SO_phase_distribution_SO=[];
+
+    ripple_times = [ripples(1).onset ripples(1).offset; ripples(2).onset ripples(2).offset];
+    ripple_times = ConsolidateIntervals(ripple_times);
+    sleep_times = [behavioural_state_merged.SWS];
+    % sleep_times = ConsolidateIntervals(sleep_times);
+    % SO_times = [slow_waves(1).DOWN_ints(:,1) slow_waves(1).DOWN_ints(:,2)];
+    % SO_times = ConsolidateIntervals(SO_times);
+
+    no_phase_bins = 10;
+    phase_bin_edges = -pi:pi/no_phase_bins:pi;
+    phase_bins = -pi+pi/no_phase_bins/2:pi/no_phase_bins:pi-pi/no_phase_bins/2;
+
+    for hemi = 1:2
+        [~, ~,loc] = histcounts(lfp_V1.timestamps, reshape(sleep_times', [], 1));
+        % [~, ~,loc] = histcounts(lfp_V1.timestamps, reshape(behavioural_state_merged.SWS', [], 1));
+        tidx = mod(loc, 2) == 1;
+        SO_phase_distribution(hemi,:) = histcounts(lfp_V1.SO_phase_LFP(tidx,1),phase_bin_edges)./lfp_V1.samplingRate;
+
+
+        % [~, ~,loc] = histcounts(lfp_V1.timestamps, reshape(SO_times', [], 1));
+        % % [~, ~,loc] = histcounts(lfp_V1.timestamps, reshape(behavioural_state_merged.SWS', [], 1));
+        % tidx = mod(loc, 2) == 1;
+        % SO_phase_distribution_SO(hemi,:) = histcounts(lfp_V1.SO_phase_LFP(tidx,1),phase_bin_edges)./lfp_V1.samplingRate;
+
+        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(ripple_times', [], 1));
+        tidx = mod(loc, 2) == 1;
+        SO_phase_distribution_ripples(hemi,:) = histcounts(lfp_V1.SO_phase_LFP(tidx,1),phase_bin_edges)./lfp_V1.samplingRate;
+    end
+
+    hemispheres = {'L','R'};
+    SO_phase_MUA_spike_rate{nsession} = [];
+
+    for hemi = 1:2
+        cell_id = session_clusters.cluster_id(session_clusters.firing_rate<=5 & contains(session_clusters.region,'V1') & contains(session_clusters.region,hemispheres{hemi}));
+        spike_index = ismember(session_clusters.spike_id,cell_id);
+
+        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(behavioural_state_merged.SWS', [], 1));
+        spike_index_sleep = mod(loc, 2) == 1;
+        spike_index_sleep = (spike_index+spike_index_sleep)>1;
+
+        % ripple_times = [ripples_all(1).onset(ripples_all(1).session_count ==nsession) ripples_all(1).offset(ripples_all(1).session_count ==nsession)
+        %     ripples_all(2).onset(ripples_all(2).session_count ==nsession) ripples_all(2).offset(ripples_all(2).session_count ==nsession)];
+
+        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(ripple_times', [], 1));
+        ripple_spike_index = mod(loc, 2) == 1;
+        ripple_spike_index = (ripple_spike_index+spike_index)>1;
+
+        % [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(SO_times', [], 1));
+        % SO_spike_index = mod(loc, 2) == 1;
+        % SO_spike_index = (SO_spike_index+spike_index)>1;
+
+        %%%%%% SWS
+        SO_phase_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution(1,:)/length(cell_id);
+        SO_phase_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution(2,:)/length(cell_id);
+        % SO_phase_SO_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(SO_spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution_SO(1,:)/length(cell_id);
+        % SO_phase_SO_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(SO_spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution_SO(2,:)/length(cell_id);
+        SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(ripple_spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution_ripples(1,:)/length(cell_id);
+        SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(ripple_spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution_ripples(2,:)/length(cell_id);
+
+
+        %%%% HPC
+        cell_id = session_clusters.cluster_id(session_clusters.firing_rate<=5&contains(session_clusters.region,'HPC') & contains(session_clusters.region,hemispheres{hemi}));
+        spike_index = ismember(session_clusters.spike_id,cell_id);
+
+        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(behavioural_state_merged.SWS', [], 1));
+        spike_index_sleep = mod(loc, 2) == 1;
+        spike_index_sleep = (spike_index+spike_index_sleep)>1;
+
+        % ripple_times = [ripples_all(1).onset(ripples_all(1).session_count ==nsession) ripples_all(1).offset(ripples_all(1).session_count ==nsession)
+        %     ripples_all(2).onset(ripples_all(2).session_count ==nsession) ripples_all(2).offset(ripples_all(2).session_count ==nsession)];
+
+        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(ripple_times', [], 1));
+        ripple_spike_index = mod(loc, 2) == 1;
+        ripple_spike_index = (ripple_spike_index+spike_index)>1;
+
+        % [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(SO_times', [], 1));
+        % SO_spike_index = mod(loc, 2) == 1;
+        % SO_spike_index = (SO_spike_index+spike_index)>1;
+
+        %%%%%% SWS
+        SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution(1,:)/length(cell_id);
+        SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution(2,:)/length(cell_id);
+        % SO_phase_SO_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(SO_spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution_SO(1,:)/length(cell_id);
+        % SO_phase_SO_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(SO_spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution_SO(2,:)/length(cell_id);
+        SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:) = histcounts(spike_phase_amplitude.SO_phase(ripple_spike_index,cortex_ref_shank(1)),phase_bin_edges)./SO_phase_distribution_ripples(1,:)/length(cell_id);
+        SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:) = histcounts(spike_phase_amplitude.SO_phase(ripple_spike_index,cortex_ref_shank(2)),phase_bin_edges)./SO_phase_distribution_ripples(2,:)/length(cell_id);
+    end
+
+    fig = figure;
+    fig.Name = sprintf('%s %s SO phase MUA firing',options.SUBJECT,options.SESSION)
+    sgtitle(fig.Name)
+    fig.Position= [844 66 560 906];
+    counter = 1;
+    
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)');
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+        
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+
+    % counter = 1;
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('HPC %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        title(sprintf('HPC %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+
+    for hemi = 1:2
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:));
+        V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:));
+        V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+
+        temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:));
+        HPC_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+        temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:));
+        HPC_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+    end
+    
+    % save_all_figures('D:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots',[]);
+    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots'),[])
+end
+
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+
+if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
+    save(fullfile(analysis_folder,'SO_phase_MUA.mat'),'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_MUA_spike_rate','HPC_SO_FR','V1_SO_FR');
+    % save(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
+
+elseif contains(Stimulus_type,'PRE')
+    % save(fullfile(analysis_folder,'periripple_LFP_info_HPC_PRE.mat'),'periripple_LFP_info_HPC','-v7.3');
+    % save(fullfile(analysis_folder,'periripple_LFP_info_V1_PRE.mat'),'periripple_LFP_info_V1','-v7.3');
+
+else
+    % save(fullfile(analysis_folder,'periripple_LFP_info_HPC_RUN.mat'),'periripple_LFP_info_HPC','-v7.3');
+    % save(fullfile(analysis_folder,'periripple_LFP_info_V1_RUN.mat'),'periripple_LFP_info_V1','-v7.3');
+end
