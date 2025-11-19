@@ -3168,6 +3168,12 @@ SO_phase_HPC_MUA_spike_rate = [];
 V1_SO_FR = [];
 HPC_SO_FR = [];
 
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
 
 for nsession =1:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -3452,7 +3458,7 @@ for nsession =1:22
         % tidx = mod(loc, 2) == 1;
         % SO_phase_distribution_SO(hemi,:) = histcounts(lfp_V1.SO_phase_LFP(tidx,1),phase_bin_edges)./lfp_V1.samplingRate;
 
-        [~, ~,loc] = histcounts(session_clusters.spike_times, reshape(ripple_times', [], 1));
+        [~, ~,loc] = histcounts(lfp_V1.timestamps, reshape(ripple_times', [], 1));
         tidx = mod(loc, 2) == 1;
         SO_phase_distribution_ripples(hemi,:) = histcounts(lfp_V1.SO_phase_LFP(tidx,1),phase_bin_edges)./lfp_V1.samplingRate;
     end
@@ -3579,11 +3585,7 @@ for nsession =1:22
 end
 
 
-if exist('D:\corticohippocampal_replay')>0
-    analysis_folder = 'D:\corticohippocampal_replay';
-elseif exist('P:\corticohippocampal_replay')>0
-    analysis_folder = 'P:\corticohippocampal_replay';
-end
+
 
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')

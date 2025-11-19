@@ -34,10 +34,10 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 % load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
 % load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
 load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
-% load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_TF_stats_POST.mat'))
 %     load(fullfile(analysis_folder,'session_clusters_all_POST.mat'),'session_clusters_all','-v7.3')
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+
 
 %%%%%%% Find reference channel/shank
 cortex_ref_shank = [];
@@ -57,51 +57,8 @@ for nsession = 1:max(ripples_all(1).session_count)
     end
 end
 
-
-
-
-%% Ripple PSTH MUA in V1 and HPC
-hemispheres = {'L','R'};
-MUA_PSTH = [];
-psthBinSize = 0.01;
-windows = [-1 1];
-
-figure;
-for nsession = 1:length(sessions_to_process)
-
-    % session_clusters_all.SO_phase{nsession}
-    % session_clusters_all.SO_amplitude{nsession}
-    %
-    % session_clusters_all.spindle_phase{nsession}
-    % session_clusters_all.spindle_amplitude{nsession}
-    %
-    % session_clusters_all.region{nsession}
-    for hemi = 1:2
-
-        cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
-
-        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
-        event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-        event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-        
-        spike_id = session_clusters_all.spike_id{nsession};spike_id(spike_id>0)=1;
-        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
-            'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
-
-    end
-
-
-    %
-    % MUA_PSTH.ripple
-
-end
-
-
-MUA_PSTH_ripple_and_phase
-
 %% Ripple modulation in V1 and HPC
 ripple_modulation_PSTH_all = [];
-ripple_PSTH_MUA_all = [];
 psthBinSize = 0.01;
 windows = [-1 1];
 for nsession = 1:length(sessions_to_process)
@@ -118,7 +75,6 @@ for nsession = 1:length(sessions_to_process)
         'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',0,'shuffle_option',1);
     ripple_modulation_PSTH_all{nsession} = ripple_modulation;
     toc
-    
 end
 
 save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all','-v7.3')

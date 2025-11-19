@@ -34,10 +34,10 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 % load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
 % load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
 load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
+% load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_TF_stats_POST.mat'))
 %     load(fullfile(analysis_folder,'session_clusters_all_POST.mat'),'session_clusters_all','-v7.3')
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
-
 
 %%%%%%% Find reference channel/shank
 cortex_ref_shank = [];
@@ -57,8 +57,43 @@ for nsession = 1:max(ripples_all(1).session_count)
     end
 end
 
+
+
+
+%% Ripple PSTH and Phase modulation of MUA in V1 and HPC
+hemispheres = {'L','R'};
+MUA_PSTH_ripple_and_phase = []
+for nsession = 1:length(sessions_to_process)
+
+    session_clusters_all.SO_phase{nsession}
+    session_clusters_all.SO_amplitude{nsession}
+
+    session_clusters_all.spindle_phase{nsession}
+    session_clusters_all.spindle_amplitude{nsession}
+
+    session_clusters_all.region{nsession}
+    for hemi = 1:2
+
+        if contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi})
+            cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+
+            intersect(session_clusters_all.spike_id{nsession},cell_id)
+        else contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi})
+            cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+
+
+        end
+
+
+
+    end
+end
+
+
+
 %% Ripple modulation in V1 and HPC
 ripple_modulation_PSTH_all = [];
+ripple_PSTH_MUA_all = [];
 psthBinSize = 0.01;
 windows = [-1 1];
 for nsession = 1:length(sessions_to_process)
@@ -75,6 +110,7 @@ for nsession = 1:length(sessions_to_process)
         'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',0,'shuffle_option',1);
     ripple_modulation_PSTH_all{nsession} = ripple_modulation;
     toc
+    
 end
 
 save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all','-v7.3')
@@ -3361,13 +3397,15 @@ nfig.Position = [   842   345   954   578];
 
 subplot(2,3,1)
 % X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-
-is_V1R = contains(regions_all, 'V1_R')&all_cell_types'~=2&all_mean_FR'<=10;
-is_V1L = contains(regions_all, 'V1_L')&all_cell_types'~=2&all_mean_FR'<=10;
-is_V1 = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=10;
-% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0;
-% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0;
-
+% 
+% is_V1R = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=10;
+% is_V1L = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=10;
+% is_V1 = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_cell_types'~=2&all_mean_FR'<=5;
+is_V1 = contains(regions_all, 'V1')&all_mean_FR'<=5;
+is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_mean_FR'<=5;
+is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_mean_FR'<=5;
 
 scolors = repmat([nan nan nan], length(regions_all), 1);  % red
 scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
@@ -3378,7 +3416,7 @@ hold on
 X = double(z_FR_track_diff(is_V1))';
 % X = double(FR_track_ratio(contains(regions_all,'V1')))';
 % FR_track_ratio = FR_track(1,:)-FR_track(2,:)./( FR_track(1,:)+FR_track(2,:));
-Y = double(POST_ripple_FR_diff(contains(regions_all,'V1')));
+Y = double(POST_ripple_FR_diff(is_V1));
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 xline(0,'k--')
 yline(0,'k--')
@@ -3396,7 +3434,7 @@ y_fit = polyval(coeffs, x_fit);
 plot(x_fit, y_fit, 'r-', 'LineWidth', 2)
 glme = fitlme(tbl_V1,'POST_ripple_FR_diff_HIGH ~ z_FR_track_diff + (1|subjectID)');
 
-text(prctile(X,99.9), prctile(Y,99.9), ...
+text(prctile(X,99), prctile(Y,99), ...
     sprintf('R^2 = %.3f\np = %.2e', glme.Rsquared.Adjusted, glme.Coefficients.pValue(2)), ...
     'FontSize',10,'Color','r');
 
@@ -3420,8 +3458,8 @@ scolors(isnan(scolors(:,1)),:) = [];
 
 hold on
 
-X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-Y = double(PRE_ripple_FR_diff(contains(regions_all,'V1')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(PRE_ripple_FR_diff(is_V1));
 
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
@@ -3460,8 +3498,8 @@ scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
 hold on
-X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-Y = double(shifted_ripple_FR_diff(contains(regions_all,'V1')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(shifted_ripple_FR_diff(is_V1));
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
@@ -3492,19 +3530,23 @@ set(gca,'TickDir','out','Box','off','FontSize',12)
 
 subplot(2,3,4)
 
-is_V1R = contains(regions_all, 'HPC_R');
-is_V1L = contains(regions_all, 'HPC_L');
+% is_V1R = contains(regions_all, 'HPC_R');
+% is_V1L = contains(regions_all, 'HPC_L');
 
-% is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0;
-% is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0;
+% is_V1 = contains(regions_all, 'HPC')&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff<0&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff>0&all_cell_types'~=2&all_mean_FR'<=5;
+is_V1 = contains(regions_all, 'HPC')&all_mean_FR'<=5;
+is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0&all_mean_FR'<=5;
+is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0&all_mean_FR'<=5;
 
 scolors = repmat([nan nan nan], length(regions_all), 1);  % red
 scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
 scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(POST_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(POST_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3545,8 +3587,8 @@ scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(PRE_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(PRE_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3583,8 +3625,8 @@ scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
 scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(shifted_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(shifted_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3617,27 +3659,22 @@ set(gca,'TickDir','out','Box','off','FontSize',12)
 
 
 
-%%%%%%%%%%%%% High ripple
-
-all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_high_ripple{:});
-POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
-PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
-shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
-
-
 nfig = figure;
-nfig.Name = 'Context selective ripple modulation in V1 and HPC regression (high ripples Track prefering)';
+nfig.Name = 'Context selective ripple modulation in V1 and HPC regression (high ripples interneruon cell)';
 nfig.Position = [   842   345   954   578];
 
 
 subplot(2,3,1)
 % X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-
-% is_V1R = contains(regions_all, 'V1_R');
-% is_V1L = contains(regions_all, 'V1_L');
-is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0;
-is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0;
-
+% 
+% is_V1R = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=10;
+% is_V1L = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=10;
+% is_V1 = contains(regions_all, 'V1')&all_cell_types'>1&all_mean_FR'>5;
+% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_cell_types'>1&all_mean_FR'>5;
+% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_cell_types'>1&all_mean_FR'>5;
+is_V1 = contains(regions_all, 'V1')&all_mean_FR'>5;
+is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_mean_FR'>5;
+is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_mean_FR'>5;
 
 scolors = repmat([nan nan nan], length(regions_all), 1);  % red
 scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
@@ -3645,10 +3682,10 @@ scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
 hold on
-X = double(z_FR_track_diff(contains(regions_all,'V1')))';
+X = double(z_FR_track_diff(is_V1))';
 % X = double(FR_track_ratio(contains(regions_all,'V1')))';
 % FR_track_ratio = FR_track(1,:)-FR_track(2,:)./( FR_track(1,:)+FR_track(2,:));
-Y = double(POST_ripple_FR_diff(contains(regions_all,'V1')));
+Y = double(POST_ripple_FR_diff(is_V1));
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 xline(0,'k--')
 yline(0,'k--')
@@ -3690,8 +3727,8 @@ scolors(isnan(scolors(:,1)),:) = [];
 
 hold on
 
-X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-Y = double(PRE_ripple_FR_diff(contains(regions_all,'V1')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(PRE_ripple_FR_diff(is_V1));
 
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
@@ -3730,8 +3767,8 @@ scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
 hold on
-X = double(z_FR_track_diff(contains(regions_all,'V1')))';
-Y = double(shifted_ripple_FR_diff(contains(regions_all,'V1')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(shifted_ripple_FR_diff(is_V1));
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
@@ -3761,20 +3798,24 @@ set(gca,'TickDir','out','Box','off','FontSize',12)
 
 
 subplot(2,3,4)
-% 
+
 % is_V1R = contains(regions_all, 'HPC_R');
 % is_V1L = contains(regions_all, 'HPC_L');
 
-is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0;
-is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0;
+is_V1 = contains(regions_all, 'HPC')&all_mean_FR'>5;
+is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0&all_mean_FR'>5;
+is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0&all_mean_FR'>5;
+% is_V1 = contains(regions_all, 'HPC')&all_cell_types'>1&all_mean_FR'>5;
+% is_V1R = contains(regions_all, 'HPC')&z_FR_track_diff>0&all_cell_types'>1&all_mean_FR'>5;
+% is_V1L = contains(regions_all, 'HPC')&z_FR_track_diff<0&all_cell_types'>1&all_mean_FR'>5;
 
 scolors = repmat([nan nan nan], length(regions_all), 1);  % red
 scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
 scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(POST_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(POST_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3815,8 +3856,8 @@ scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(PRE_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(PRE_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3853,8 +3894,8 @@ scolors(is_V1R, :) = repmat(colorlines(1,:), sum(is_V1R), 1);  % red
 scolors(is_V1L, :) = repmat(colorlines(2,:), sum(is_V1L), 1);  % blue
 scolors(isnan(scolors(:,1)),:) = [];
 
-X = double(z_FR_track_diff(contains(regions_all,'HPC')))';
-Y = double(shifted_ripple_FR_diff(contains(regions_all,'HPC')));
+X = double(z_FR_track_diff(is_V1))';
+Y = double(shifted_ripple_FR_diff(is_V1));
 % scatter(X,Y,'k','filled','MarkerFaceAlpha', 0.1)
 scatter(X,Y,20,scolors,'filled','MarkerFaceAlpha', 0.1)
 
@@ -3884,21 +3925,214 @@ set(gca,'TickDir','out','Box','off','FontSize',12)
 
 
 
-%%%% Loop though bins
+
+
+
+
+
+%%%% KS (pyramidal cells)
 
 
 %%%%%%%%%%% kstest2
 ks2stat_all = nan(1000,10);
 
 nfig = figure;
-nfig.Name = 'Context selective ripple modulation in V1 (high ripples bins) (200ms bins)';
+nfig.Name = 'Context selective ripple modulation in V1 (high ripples pyramidal) (200ms bins)';
 nfig.Position = [640         253        1239         725];
 
 all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_high_ripple{:});
-POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
-PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
-% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
-shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
+% POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
+% PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
+% % shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
+% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
+is_V1 = contains(regions_all, 'V1')&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_cell_types'~=2&all_mean_FR'<=5;
+% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_cell_types'~=2&all_mean_FR'<=5;
+is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_mean_FR'<=5;
+is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_mean_FR'<=5;
+% timewindows = -1:0.2:1;
+timewindows = -1:0.2:1;
+for nbin = 1:length(timewindows)-1
+    nexttile
+
+    POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(nbin)&context_modulation_all.timebin<timewindows(nbin+1)),2,'omitnan');
+    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(is_V1R),POST_ripple_FR_diff(is_V1L),'Tail','smaller');
+
+
+    hold on;histogram(POST_ripple_FR_diff(is_V1L),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
+    hold on;histogram(POST_ripple_FR_diff(is_V1R),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
+    text(0.4,0.05,sprintf('p = %.3e',pval))
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ylim([0 1])
+    xline(0,'k--','LineWidth',2)
+    xlabel('Track L - Track R Ripple FR diff (z)')
+    ylabel('cum prop of cells')
+    legend('V1 Track R prefering','V1 Track L prefering','box','off')
+    title(sprintf('%.1f to %.1fs relative to ripples',timewindows(nbin),timewindows(nbin+1)))
+    set(gca,'TickDir','out','Box','off','FontSize',12)
+end
+
+
+
+%%%%%%%%%%% kstest2
+ks2stat_all = nan(1000,10);
+
+nfig = figure;
+nfig.Name = 'Context selective ripple modulation in V1 (low ripples pyramidal) (200ms bins)';
+nfig.Position = [640         253        1239         725];
+
+all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_low_ripple{:});
+% POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
+% PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
+% % shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
+% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
+
+timewindows = -1:0.2:1;
+
+for nbin = 1:length(timewindows)-1
+    nexttile
+
+    POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(nbin)&context_modulation_all.timebin<timewindows(nbin+1)),2,'omitnan');
+    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(is_V1R),POST_ripple_FR_diff(is_V1L),'Tail','smaller');
+
+
+    hold on;histogram(POST_ripple_FR_diff(is_V1L),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
+    hold on;histogram(POST_ripple_FR_diff(is_V1R),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
+    text(0.4,0.05,sprintf('p = %.3e',pval))
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ylim([0 1])
+    xline(0,'k--','LineWidth',2)
+    xlabel('Track L - Track R Ripple FR diff (z)')
+    ylabel('cum prop of cells')
+    legend('V1 Track R prefering','V1 Track L prefering','box','off')
+    title(sprintf('%.1f to %.1fs relative to ripples',timewindows(nbin),timewindows(nbin+1)))
+    set(gca,'TickDir','out','Box','off','FontSize',12)
+  
+end
+
+% 
+% 
+% %%%%%%%%%%% KS max difference bootstrap
+% bin_width = 0.1;    % 50 ms
+% step_size = 0.01;   % 10 ms
+% t_start = -0.5;
+% t_end = 0.5;
+% 
+% % Bin centers
+% bin_centers = t_start:step_size:t_end;
+% 
+% % Bin edges (each bin spans 100 ms centered at bin_centers)
+% timewindows = [bin_centers - bin_width/2; bin_centers + bin_width/2];
+% ks2stat_all = nan(1000,length(timewindows)-1);
+% 
+% %%% Low ripples
+% all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_low_ripple{:});
+% for nbin = 1:length(timewindows)-1
+%     POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(1,nbin)&context_modulation_all.timebin<timewindows(2,nbin)),2,'omitnan');
+% 
+%     T1_FR_dff = POST_ripple_FR_diff(is_V1R);
+%     T2_FR_dff = POST_ripple_FR_diff(is_V1L);
+%     num_neurons = min([length(T1_FR_dff) length(T2_FR_dff)]);
+% 
+% 
+%     parfor iBoot = 1:1000
+%         temp1 = [];temp2 = [];
+%         s = RandStream('philox4x32_10', 'Seed', iBoot);
+%         index1 = randsample(s, 1:length(T1_FR_dff), num_neurons, true);
+%         temp1 = T1_FR_dff(index1);
+%         index2 = randsample(s, 1:length(T2_FR_dff), num_neurons, true);
+%         temp2 = T2_FR_dff(index2);
+%         [h,pval,ks2stat_boot] = kstest2(temp1,temp2);
+%         ks2stat_all(iBoot,nbin) = ks2stat_boot;
+%     end
+% end
+% ks2stat_low_ripples = ks2stat_all;
+% 
+% %%%% High ripples
+% all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_high_ripple{:});
+% ks2stat_all = nan(1000,length(timewindows)-1);
+% 
+% for nbin = 1:length(timewindows)-1
+%     POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(1,nbin)&context_modulation_all.timebin<timewindows(2,nbin)),2,'omitnan');
+% 
+%     T1_FR_dff = POST_ripple_FR_diff(is_V1R);
+%     T2_FR_dff = POST_ripple_FR_diff(is_V1L);
+%     num_neurons = min([length(T1_FR_dff) length(T2_FR_dff)]);
+% 
+% 
+%     parfor iBoot = 1:1000
+%         temp1 = [];temp2 = [];
+%         s = RandStream('philox4x32_10', 'Seed', iBoot);
+%         index1 = randsample(s, 1:length(T1_FR_dff), num_neurons, true);
+%         temp1 = T1_FR_dff(index1);
+%         index2 = randsample(s, 1:length(T2_FR_dff), num_neurons, true);
+%         temp2 = T2_FR_dff(index2);
+%         [h,pval,ks2stat_boot] = kstest2(temp1,temp2);
+%         ks2stat_all(iBoot,nbin) = ks2stat_boot;
+%     end
+% end
+% ks2stat_high_ripples = ks2stat_all;
+% 
+% 
+% 
+% nfig = figure;
+% nfig.Name = 'Context selective ripple modulation in V1 KS difference time series (high vs low ripple pyramidal)';
+% nfig.Position = [ 1150         322         363         282];
+% timewindows = [bin_centers - bin_width/2; bin_centers + bin_width/2];
+% % x = timewindows(1:end-1)+mean(diff(timewindows))/2;
+% x = mean(timewindows);
+% x = x(1:end-1)+mean(diff(x))/2;
+% colour_lines = [158,202,225;33,113,181]/256;% two blue 
+% 
+% nexttile
+% % x = timewindows(1:end-1)+mean(diff(timewindows))/2;
+% plot(x,mean(ks2stat_low_ripples),'Color',colour_lines(1,:));hold on;
+% ci_low  = prctile(ks2stat_low_ripples, 2.5, 1);
+% ci_high = prctile(ks2stat_low_ripples, 97.5, 1);
+% 
+% % Fill 95% CI
+% F(1) = fill([x, fliplr(x)], [ci_low, fliplr(ci_high)], ...
+%     colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+% 
+% plot(x,mean(ks2stat_high_ripples),'Color',colour_lines(end,:));hold on;
+% ci_low  = prctile(ks2stat_high_ripples, 2.5, 1);
+% ci_high = prctile(ks2stat_high_ripples, 97.5, 1);
+% 
+% % Fill 95% CI
+% F(2)=fill([x, fliplr(x)], [ci_low, fliplr(ci_high)], ...
+%     colour_lines(end,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+% set(gca,'TickDir','out','Box','off','FontSize',12)
+% xticks([-0.5 -0.25 0 0.25 0.5])
+% xline(0,'r')
+% 
+% legend(F(1:2),{'low ripples','high ripples'},'box','off')
+% xlabel('Time relative to ripple onset (s)')
+% ylabel('Maximum empirical cumulative distribution difference');
+
+
+
+%%%% Loop though bins (interneruon)
+
+
+%%%%%%%%%%% kstest2
+ks2stat_all = nan(1000,10);
+
+nfig = figure;
+nfig.Name = 'Context selective ripple modulation in V1 (high ripples interneruon) (200ms bins)';
+nfig.Position = [640         253        1239         725];
+
+all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_high_ripple{:});
+% POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
+% PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
+% % shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
+% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
+is_V1 = contains(regions_all, 'V1')&all_cell_types'>1&all_mean_FR'>5;
+% is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_cell_types'>1&all_mean_FR'>5;
+% is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_cell_types'>1&all_mean_FR'>5;
+is_V1R = contains(regions_all, 'V1')&z_FR_track_diff>0&all_mean_FR'>5;
+is_V1L = contains(regions_all, 'V1')&z_FR_track_diff<0&all_mean_FR'>5;
 
 % timewindows = -1:0.2:1;
 timewindows = -1:0.2:1;
@@ -3906,11 +4140,11 @@ for nbin = 1:length(timewindows)-1
     nexttile
 
     POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(nbin)&context_modulation_all.timebin<timewindows(nbin+1)),2,'omitnan');
-    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0),'Tail','smaller');
+    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(is_V1R),POST_ripple_FR_diff(is_V1L),'Tail','smaller');
 
 
-    hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
-    hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
+    hold on;histogram(POST_ripple_FR_diff(is_V1L),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
+    hold on;histogram(POST_ripple_FR_diff(is_V1R),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
     text(0.4,0.05,sprintf('p = %.3e',pval))
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
@@ -3929,14 +4163,14 @@ end
 ks2stat_all = nan(1000,10);
 
 nfig = figure;
-nfig.Name = 'Context selective ripple modulation in V1 (low ripples bins) (200ms bins)';
+nfig.Name = 'Context selective ripple modulation in V1 (low ripples interneruon) (200ms bins)';
 nfig.Position = [640         253        1239         725];
 
 all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_low_ripple{:});
-POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
-PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
-% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
-shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
+% POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>0&context_modulation_all.timebin<0.2),2,'omitnan');
+% PRE_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.2&context_modulation_all.timebin<0),2,'omitnan');
+% % shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-1&context_modulation_all.timebin<-0.8),2,'omitnan');
+% shifted_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>-0.4&context_modulation_all.timebin<-0.2),2,'omitnan');
 
 timewindows = -1:0.2:1;
 
@@ -3944,11 +4178,11 @@ for nbin = 1:length(timewindows)-1
     nexttile
 
     POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(nbin)&context_modulation_all.timebin<timewindows(nbin+1)),2,'omitnan');
-    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0),'Tail','smaller');
+    [h,pval,ks2stat] = kstest2(POST_ripple_FR_diff(is_V1R),POST_ripple_FR_diff(is_V1L),'Tail','smaller');
 
 
-    hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
-    hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
+    hold on;histogram(POST_ripple_FR_diff(is_V1L),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
+    hold on;histogram(POST_ripple_FR_diff(is_V1R),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
     text(0.4,0.05,sprintf('p = %.3e',pval))
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
@@ -3959,108 +4193,9 @@ for nbin = 1:length(timewindows)-1
     legend('V1 Track R prefering','V1 Track L prefering','box','off')
     title(sprintf('%.1f to %.1fs relative to ripples',timewindows(nbin),timewindows(nbin+1)))
     set(gca,'TickDir','out','Box','off','FontSize',12)
-   
 
 end
 
-
-
-%%%%%%%%%%% KS max difference bootstrap
-bin_width = 0.1;    % 50 ms
-step_size = 0.01;   % 10 ms
-t_start = -0.5;
-t_end = 0.5;
-
-% Bin centers
-bin_centers = t_start:step_size:t_end;
-
-% Bin edges (each bin spans 100 ms centered at bin_centers)
-timewindows = [bin_centers - bin_width/2; bin_centers + bin_width/2];
-ks2stat_all = nan(1000,length(timewindows)-1);
-
-%%% Low ripples
-all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_low_ripple{:});
-for nbin = 1:length(timewindows)-1
-    POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(1,nbin)&context_modulation_all.timebin<timewindows(2,nbin)),2,'omitnan');
-
-    T1_FR_dff = POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0);
-    T2_FR_dff = POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0);
-    num_neurons = min([length(T1_FR_dff) length(T2_FR_dff)]);
-
-
-    parfor iBoot = 1:1000
-        temp1 = [];temp2 = [];
-        s = RandStream('philox4x32_10', 'Seed', iBoot);
-        index1 = randsample(s, 1:length(T1_FR_dff), num_neurons, true);
-        temp1 = T1_FR_dff(index1);
-        index2 = randsample(s, 1:length(T2_FR_dff), num_neurons, true);
-        temp2 = T2_FR_dff(index2);
-        [h,pval,ks2stat_boot] = kstest2(temp1,temp2);
-        ks2stat_all(iBoot,nbin) = ks2stat_boot;
-    end
-end
-ks2stat_low_ripples = ks2stat_all;
-
-%%%% High ripples
-all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff_high_ripple{:});
-ks2stat_all = nan(1000,length(timewindows)-1);
-
-for nbin = 1:length(timewindows)-1
-    POST_ripple_FR_diff = mean(all_PSTH_diff(:,context_modulation_all.timebin>timewindows(1,nbin)&context_modulation_all.timebin<timewindows(2,nbin)),2,'omitnan');
-
-    T1_FR_dff = POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0);
-    T2_FR_dff = POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0);
-    num_neurons = min([length(T1_FR_dff) length(T2_FR_dff)]);
-
-
-    parfor iBoot = 1:1000
-        temp1 = [];temp2 = [];
-        s = RandStream('philox4x32_10', 'Seed', iBoot);
-        index1 = randsample(s, 1:length(T1_FR_dff), num_neurons, true);
-        temp1 = T1_FR_dff(index1);
-        index2 = randsample(s, 1:length(T2_FR_dff), num_neurons, true);
-        temp2 = T2_FR_dff(index2);
-        [h,pval,ks2stat_boot] = kstest2(temp1,temp2);
-        ks2stat_all(iBoot,nbin) = ks2stat_boot;
-    end
-end
-ks2stat_high_ripples = ks2stat_all;
-
-
-
-nfig = figure;
-nfig.Name = 'Context selective ripple modulation in V1 KS difference time series (high vs low ripple)';
-nfig.Position = [ 1150         322         363         282];
-timewindows = [bin_centers - bin_width/2; bin_centers + bin_width/2];
-% x = timewindows(1:end-1)+mean(diff(timewindows))/2;
-x = mean(timewindows);
-x = x(1:end-1)+mean(diff(x))/2;
-colour_lines = [158,202,225;33,113,181]/256;% two blue 
-
-nexttile
-% x = timewindows(1:end-1)+mean(diff(timewindows))/2;
-plot(x,mean(ks2stat_low_ripples),'Color',colour_lines(1,:));hold on;
-ci_low  = prctile(ks2stat_low_ripples, 2.5, 1);
-ci_high = prctile(ks2stat_low_ripples, 97.5, 1);
-
-% Fill 95% CI
-F(1) = fill([x, fliplr(x)], [ci_low, fliplr(ci_high)], ...
-    colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-
-plot(x,mean(ks2stat_high_ripples),'Color',colour_lines(end,:));hold on;
-ci_low  = prctile(ks2stat_high_ripples, 2.5, 1);
-ci_high = prctile(ks2stat_high_ripples, 97.5, 1);
-
-% Fill 95% CI
-F(2)=fill([x, fliplr(x)], [ci_low, fliplr(ci_high)], ...
-    colour_lines(end,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-set(gca,'TickDir','out','Box','off','FontSize',12)
-xticks([-0.5 -0.25 0 0.25 0.5])
-xline(0,'r')
-
-legend(F(1:2),{'low ripples','high ripples'},'box','off')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Maximum empirical cumulative distribution difference');
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
