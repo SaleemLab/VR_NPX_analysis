@@ -3534,12 +3534,16 @@ for nsession =1:22
         plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
         xlabel('SO Phase');ylabel('FR (Hz)');
         set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
         title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
         counter = counter+1;
         
         subplot(4,2,counter)
         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
         set(gca,'TickDir','out','Box','off','FontSize',12)
         title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
         counter = counter+1;
@@ -3586,6 +3590,215 @@ end
 
 
 
+no_phase_bins = 10;
+phase_bin_edges = -pi:pi/no_phase_bins:pi;
+phase_bins = -pi+pi/no_phase_bins/2:pi/no_phase_bins:pi-pi/no_phase_bins/2;
+
+
+V1_phase = [];
+
+for hemi = 1:2
+    
+    for nession = 1:22
+        V1_phase{hemi}(1,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,1,:);
+        V1_phase{hemi}(2,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,2,:);
+        %         V1_phase{hemi}(1,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,1,:),'range');
+        % V1_phase{hemi}(2,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,2,:),'range');
+    end
+end
+
+mean_phases_ipsi = mean([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))]);
+mean_phases_contra = mean([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))]);
+
+SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
+SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
+
+
+% 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
+c_ipsi = [35,139,69]/256; 
+c_contra = [106,81,163]/256;
+
+% 2. Ensure inputs are row vectors for the fill command
+x = phase_bins(:)'; 
+
+% 3. Pre-calculate Upper and Lower bounds for shading
+% Ipsi Bounds
+ipsi_upper = (mean_phases_ipsi(:)' + SE_phases_ipsi(:)');
+ipsi_lower = (mean_phases_ipsi(:)' - SE_phases_ipsi(:)');
+% Contra Bounds
+contra_upper = (mean_phases_contra(:)' + SE_phases_contra(:)');
+contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
+
+%%%% Plot SO V1 phase
+fig = figure;
+fig.Name = 'V1 SO phase Peak vs Trough';
+sgtitle(fig.Name)
+fig.Position= [844 66 560 906];
+
+subplot(3,2,1)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, mean_phases_ipsi, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, mean_phases_contra, 'Color', c_contra, 'LineWidth', 2);
+
+% --- Formatting ---
+yline(0, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+xline(-pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+xline(pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+
+xlabel('Phases');
+ylabel('Mean firing rate (Hz)');
+title('Ipsi vs Contra Phase Preference');
+
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
+
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([min(x) max(x)]);
+ylim([3 5])
+hold off;
+
+% paired t test
+peak_vs_trough_ipsi = [];
+peak_vs_trough_contra = [];
+peak_vs_trough_ipsi(:,1) =  mean([squeeze(V1_SO_FR(:,1,1,1)) squeeze(V1_SO_FR(:,2,2,1))],2);
+peak_vs_trough_ipsi(:,2) =  mean([squeeze(V1_SO_FR(:,1,1,2)) squeeze(V1_SO_FR(:,2,2,2))],2);
+
+peak_vs_trough_contra(:,1) =  mean([squeeze(V1_SO_FR(:,1,2,1)) squeeze(V1_SO_FR(:,2,1,1))],2);
+peak_vs_trough_contra(:,2) =  mean([squeeze(V1_SO_FR(:,1,2,2)) squeeze(V1_SO_FR(:,2,1,2))],2);
+%
+% peak_vs_trough =  squeeze(V1_SO_FR(:,2,1,:));
+% peak_vs_trough =  squeeze(V1_SO_FR(:,2,2,:));
+
+
+%%% Plot peak vs trough phases
+% 1. Setup the figure and colors
+peak_vs_trough = {peak_vs_trough_ipsi,peak_vs_trough_contra};
+conditions = {'V1 ipsi','V1 contra'};
+
+% fig = figure;
+% fig.Name = 'V1 SO phase Peak vs Trough';
+% sgtitle(fig.Name)
+% fig.Position= [844 66 560 906];
+% counter = 1;
+
+for iplot = 1:2
+    subplot(2,2,iplot+2)
+    hold on;
+
+    % Define colors
+    color_col1 = [0.1 0.5 0.9];  % Blue for condition 1
+    color_col2 = [0.9 0.4 0.1];  % Orange for condition 2
+    color_link = [0.5 0.5 0.5];  % Gray linking lines
+
+    % Get the number of pairs (rows)
+    num_pairs = size(peak_vs_trough{iplot}, 1);
+
+    jitter_col1 = (rand(num_pairs, 1) - 0.5) * 0.2;
+    jitter_col2 = (rand(num_pairs, 1) - 0.5) * 0.2;
+
+    % 2. Draw the linking lines (One line per pair)
+    for i = 1:num_pairs
+        % X-values are fixed at [1 2] (the categories)
+        % Y-values are the data [value_at_1 value_at_2]
+        plot([1 + jitter_col1(i), 2 + jitter_col2(i)], peak_vs_trough{iplot}(i, :), ...
+            'Color', color_link, ...
+            'LineWidth', 0.5);
+    end
+
+    % 3. Plot the scatter points on top
+    % Scatter for Condition 1 (at X=1)
+    scatter(ones(num_pairs, 1)+jitter_col1, peak_vs_trough{iplot}(:, 1), ...
+        70, color_col1, 'filled', ...
+        'DisplayName', 'Condition 1');
+
+    % Scatter for Condition 2 (at X=2)
+    scatter(2 * ones(num_pairs, 1)+jitter_col2, peak_vs_trough{iplot}(:, 2), ...
+        70, color_col2, 'filled', ...
+        'DisplayName', 'Condition 2');
+
+
+    % 4. Formatting and Labels
+    ylabel('Mean firing rate (Hz)');
+    % xlabel('Condition');
+    title(conditions{iplot});
+
+    % Set X-axis to show categories 1 and 2 clearly
+    xlim([0.5 2.5]);
+    xticks([1 2]);
+    xticklabels({'Peak', 'Trough'}); % Use descriptive labels
+
+    % Clean up the axes
+    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    grid on;
+
+    legend('off'); % Turn off legend since the categories are labeled on the X-axis
+    hold off;
+end
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots'),[])
+
+
+%%%%%% Individual sessions
+for nsession = 1:22
+    options = experiment_info(nsession).experiment_ID;
+    fig = figure;
+    fig.Name = sprintf('%s SO phase MUA firing',options(1).experiment_ID)
+    sgtitle(fig.Name)
+    fig.Position= [844 66 560 906];
+    counter = 1;
+
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)');
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+
+    % counter = 1;
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('HPC %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        title(sprintf('HPC %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+end
 
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
