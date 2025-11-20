@@ -275,18 +275,18 @@ for nprobe = 1:length(slow_waves_all)
             if ~contains(shuffle_option,'baseline')
                 timebin_edges_all = DOWN_ints(:,1) + bins_centre;  % Absolute times of peri-event window
                 for i = 1:size(DOWN_ints,1)
-                    % Previous DOWN (skip if this is the first UP)
+                    % Previous DOWN (skip if this is the first DOWN)
                     if i > 1
                         prev_offset = DOWN_ints(i-1,2);
-                        % Find peri-time indices within the previous UP state
+                        % Find peri-time indices within the previous DOWN state
                         mask_prev =  timebin_edges_all(i,:) <= prev_offset;
                         temp(i, mask_prev) = NaN;
                     end
 
-                    % Next DOWN (skip if this is the last UP)
+                    % Next DOWN (skip if this is the last DOWN)
                     if i < size(DOWN_ints,1)
                         next_onset = DOWN_ints(i+1,1);
-                        % Find peri-time indices within the next UP state
+                        % Find peri-time indices within the next DOWN state
                         mask_next = timebin_edges_all(i,:) >= next_onset;
                         temp(i, mask_next) = NaN;
                     end

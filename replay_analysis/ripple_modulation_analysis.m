@@ -33,7 +33,7 @@ spike_times_events = spike_times;
 for iCell = 1:no_cluster
     cluster_spike_id = spike_id == unit_id(iCell);
     y = histcounts(spike_times_events(cluster_spike_id), timevec_edge)';
-    y = conv(y, gaussianWindow, 'same');
+%     y = conv(y, gaussianWindow, 'same');
 
     binnedArrays = cell(1, n_conditions);
     psth = cell(1, n_conditions);

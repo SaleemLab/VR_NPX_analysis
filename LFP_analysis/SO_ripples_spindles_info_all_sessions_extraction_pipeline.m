@@ -1087,4 +1087,161 @@ UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','baseline');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_MUA_baseline.mat'),'UP_DOWN_relative_PSTH_MUA');
 
+%% Extract UP and SO (UP+DOWN) normalised time
+
+
+sessions_to_process = 1:max(slow_waves_all(1).DOWN_session_count);
+duration_threshold = 10;
+for nprobe = 1:2
+    slow_waves_all(nprobe).DOWN_intervals = [];
+    slow_waves_all(nprobe).DOWN_intervals_session = [];
+end
+num_bins = 20;
+
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+    ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
+    ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
+    ripple_index1 = find(ripples_all(1).session_count==nsession);
+    ripple_index2 = find(ripples_all(2).session_count==nsession);
+
+    %     ripples_all.onset
+
+    for nprobe = 1:2
+        %%%%% Ripple distribution during normalised SO
+        DOWN_peaktimes = slow_waves_all(nprobe).timestamps(slow_waves_all(nprobe).DOWN_session_count==nsession);
+        down_peak_intervals = diff(DOWN_peaktimes);
+        down_intervals = [DOWN_peaktimes(1:end-1), DOWN_peaktimes(2:end)];
+
+        DOWN_index = find(down_peak_intervals<10);
+        slow_waves_all(nprobe).DOWN_intervals = [slow_waves_all(nprobe).DOWN_intervals; down_intervals];
+        slow_waves_all(nprobe).DOWN_intervals_session = [slow_waves_all(nprobe).DOWN_intervals_session; nsession*ones(size(down_intervals,1),1)];
+    end
+
+end
+
+for nprobe = 1:2
+    SO_normalised_duration(nprobe).L_ripple = [];
+    SO_normalised_duration(nprobe).R_ripple = [];
+    UP_normalised_duration(nprobe).L_ripple = [];
+    UP_normalised_duration(nprobe).R_ripple = [];
+    DOWN_normalised_duration(nprobe).L_ripple = [];
+    DOWN_normalised_duration(nprobe).R_ripple = [];
+end
+
+for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
+    ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
+    ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
+    ripple_index1 = find(ripples_all(1).session_count==nsession);
+    ripple_index2 = find(ripples_all(2).session_count==nsession);
+
+    %     ripples_all.onset
+
+    for nprobe = 1:2
+        %%%%% Ripple distribution during normalised SO
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_intervals_session == sessions_to_process(nsession)); % Find UP this session
+        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
+        down_intervals = slow_waves_all(nprobe).DOWN_intervals(DOWN_index,2)-slow_waves_all(nprobe).DOWN_intervals(DOWN_index,1);
+        DOWN_index = DOWN_index(down_intervals<=duration_threshold);
+%         UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        down_intervals = slow_waves_all(nprobe).DOWN_intervals(DOWN_index,:);
+
+        %         slow_waves_all(nprobe).DOWN_intervals = [slow_waves_all(nprobe).DOWN_intervals; down_intervals];
+
+
+        % (event_index -> 1 is ripple index, 2 is SO interval index, 3 is normalized duration)
+        [~,event_index1,~,temp] = ...
+            calculate_relative_event_probability(down_intervals,ripple_times1,num_bins,0);
+
+        [~,event_index2,~,temp] = ...
+            calculate_relative_event_probability(down_intervals,ripple_times2,num_bins,0);
+
+        if ~isempty(event_index1)
+            SO_normalised_duration(nprobe).L_ripple = [SO_normalised_duration(nprobe).L_ripple;   [ripple_index1(event_index1(:,1)) DOWN_index(event_index1(:,2)) event_index1(:,3)]];
+        else
+            event_index1 = [0 0 0];
+        end
+
+        if ~isempty(event_index2)
+            SO_normalised_duration(nprobe).R_ripple = [SO_normalised_duration(nprobe).R_ripple;   [ripple_index2(event_index2(:,1)) DOWN_index(event_index2(:,2)) event_index2(:,3)]];
+        else
+            event_index2 = [0 0 0];
+        end
+
+
+        % Find UP
+        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
+        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_index = UP_index(UP_duration<=duration_threshold);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+
+
+        % Find DOWN index
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
+        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+
+        %         if contains(option,'UD')
+        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+%         elseif contains(option,'DU')
+%             [C,ia,ib] = intersect(UP_ints(:,1),DOWN_ints(:,2));
+%         end
+
+        % [C,ia,ib] = intersect(UP_ints(:,2)+0.01,DOWN_ints(:,1));
+        UP_index = UP_index(ia);
+        DOWN_index = DOWN_index(ib);
+        % DOWN_index_all = [DOWN_index_all; DOWN_index];
+
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+        % UP_index_all = [UP_index_all; UP_index];
+
+        %%%%% UP
+        % (event_index -> 1 is ripple index, 2 is UP index, 3 is normalized duration)
+        [~,event_index1,~,temp] = ...
+            calculate_relative_event_probability(UP_ints,ripple_times1,num_bins,0);
+
+        [~,event_index2,~,temp] = ...
+            calculate_relative_event_probability(UP_ints,ripple_times2,num_bins,0);
+
+        if ~isempty(event_index1)
+            UP_normalised_duration(nprobe).L_ripple = [UP_normalised_duration(nprobe).L_ripple;   [ripple_index1(event_index1(:,1)) UP_index(event_index1(:,2)) event_index1(:,3)]];
+        else
+            event_index1 = [0 0 0];
+        end
+
+        if ~isempty(event_index2)
+            UP_normalised_duration(nprobe).R_ripple = [UP_normalised_duration(nprobe).R_ripple;   [ripple_index2(event_index2(:,1)) UP_index(event_index2(:,2)) event_index2(:,3)]];
+        else
+            event_index2 = [0 0 0];
+        end
+
+        %%%%% DOWN
+        % (event_index -> 1 is ripple index, 2 is UP index, 3 is normalized duration)
+        [~,event_index1,~,temp] = ...
+            calculate_relative_event_probability(DOWN_ints,ripple_times1,num_bins,0);
+
+        [~,event_index2,~,temp] = ...
+            calculate_relative_event_probability(DOWN_ints,ripple_times2,num_bins,0);
+
+        if ~isempty(event_index1)
+            DOWN_normalised_duration(nprobe).L_ripple = [DOWN_normalised_duration(nprobe).L_ripple;   [ripple_index1(event_index1(:,1)) DOWN_index(event_index1(:,2)) event_index1(:,3)]];
+        else
+            event_index1 = [0 0 0];
+        end
+
+        if ~isempty(event_index2)
+            DOWN_normalised_duration(nprobe).R_ripple = [DOWN_normalised_duration(nprobe).R_ripple;   [ripple_index2(event_index2(:,1)) DOWN_index(event_index2(:,2)) event_index2(:,3)]];
+        else
+            event_index2 = [0 0 0];
+        end
+
+    end
+end
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'),'DOWN_normalised_duration','UP_normalised_duration','SO_normalised_duration');
+
+save(fullfile(analysis_folder,'slow_waves_all_POST.mat'),'slow_waves_all','-v7.3');
+
+
+
 end

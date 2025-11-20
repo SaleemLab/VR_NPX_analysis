@@ -1351,7 +1351,7 @@ end
 
 % Combine and store
 for region = regions
-    region = char(region)
+    region = char(region);
     KDE_reactivation_ripples_PSTH.([region '_ripples'])             = [ripple_bias_masked_SWS.(region).bias{1};              ripple_bias_masked_SWS.(region).bias{2}];
     KDE_reactivation_ripples_PSTH.([region '_z_ripples'])           = [ripple_bias_masked_SWS.(region).zscored_bias{1};      ripple_bias_masked_SWS.(region).zscored_bias{2}];
     KDE_reactivation_ripples_PSTH.([region '_logodds_ripples'])     = [ripple_bias_masked_SWS.(region).log_odds{1};          ripple_bias_masked_SWS.(region).log_odds{2}];
@@ -1396,13 +1396,13 @@ Stimulus_type = 'SleepChronic';
 
 session_count = 0;
 
-% KDE_reactivation_V1_all = struct();
+RRR_reactivation_V1_ripples_all = struct();
 RRR_reactivation_V1_UP_all = struct();
 RRR_reactivation_V1_DOWN_all = struct();
 
 RRR_reactivation_UP_all = struct();
 RRR_reactivation_DOWN_all = struct();
-% RRR_reactivation_all = struct();
+RRR_reactivation_ripples_all = struct();
 
 for nsession = 1:length(experiment_info)
     tic
@@ -1452,7 +1452,7 @@ for nsession = 1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'RRR_reactivation_V1_UP.mat'),'RRR_reactivation_V1_UP');
     end
 
-    for nprobe = 1:length(KDE_reactivation_V1)
+    for nprobe = 1:length(RRR_reactivation_V1_ripples)
         structures = {
             'RRR_reactivation_V1_ripples','RRR_reactivation_V1_ripples_all';
             'RRR_reactivation_V1_UP','RRR_reactivation_V1_UP_all';
@@ -1468,7 +1468,7 @@ for nsession = 1:length(experiment_info)
 
         all_log_odds_ripples = [
             % log(KDE_reactivation(nprobe).event_T1_probability ./ KDE_reactivation(nprobe).event_T2_probability);
-            RRR_reactivation_ripples(nprobe).log_odds;
+            RRR_reactivation_V1_ripples(nprobe).log_odds;
             ];
         all_log_odds_ripples = all_log_odds_ripples((isfinite(all_log_odds_ripples)));
 
@@ -1511,7 +1511,7 @@ for nsession = 1:length(experiment_info)
     load(fullfile(options.ANALYSIS_DATAPATH,'RRR_reactivation_DOWN.mat'),'RRR_reactivation_DOWN');
     load(fullfile(options.ANALYSIS_DATAPATH,'RRR_reactivation_UP.mat'),'RRR_reactivation_UP');
 
-    for nprobe = 1:length(KDE_reactivation)
+    for nprobe = 1:length(RRR_reactivation_ripples)
         structures = {
             'RRR_reactivation_ripples','RRR_reactivation_ripples_all';
             'RRR_reactivation_UP','RRR_reactivation_UP_all';
@@ -1567,7 +1567,7 @@ for nsession = 1:length(experiment_info)
     clear RRR_reactivation RRR_reactivation_DOWN RRR_reactivation_UP
     toc
 end
-
+% KDE_reactivation_V1
 % Save all results
 if exist('D:\\corticohippocampal_replay','dir')
     analysis_folder = 'D:\\corticohippocampal_replay';
@@ -1581,139 +1581,11 @@ save(fullfile(analysis_folder,'RRR_reactivation_UP_all_POST.mat'),'RRR_reactivat
 save(fullfile(analysis_folder,'RRR_reactivation_V1_DOWN_all_POST.mat'),'RRR_reactivation_V1_DOWN_all')
 save(fullfile(analysis_folder,'RRR_reactivation_V1_UP_all_POST.mat'),'RRR_reactivation_V1_UP_all')
 % save(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
-save(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
+save(fullfile(analysis_folder,'RRR_reactivation_ripples_all_POST.mat'),'RRR_reactivation_ripples_all')
+save(fullfile(analysis_folder,'RRR_reactivation_V1_ripples_all_POST.mat'),'RRR_reactivation_V1_ripples_all')
 
-
-%% Add on PLS KDE regression Ripples
-
-addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
-addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
-
-clear all
-SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
-option = 'bilateral';
-experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
-experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
-Stimulus_type = 'SleepChronic';
-
-session_count = 0;
-
-KDE_reactivation_V1_ripples_all= struct();
-KDE_reactivation_ripples_all = struct();
-
-for nsession =1:length(experiment_info)
-
-    tic
-    disp(sprintf('session %i',nsession))
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
-    iDate = find([SUBJECT_experiment_info(:).date] == str2double(session_info(1).probe(1).SESSION));
-    if isempty(stimulus_name)
-        continue
-    end
-    load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
-
-    if length(stimulus_name)>1
-        if contains(Stimulus_type,'PRE')
-            disp('Same stimuli multiple recordings. Will take _2')
-            n = find(contains(stimulus_name,'_2'));
-        else
-            session_info = session_info(~contains(stimulus_name,'PRE'));
-            stimulus_name = stimulus_name(~contains(stimulus_name,'PRE'));
-            if length(stimulus_name)>1
-                disp('Same stimuli multiple recordings. Will take _2')
-                n = find(contains(stimulus_name,'_2'));
-            else
-                n =1;
-            end
-        end
-    else
-        n = 1;
-    end
-
-    session_count = session_count + 1;
-    options = session_info(n).probe(1);
-
-    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
-    if isempty(DIR)
-        continue
-    end
-
-    DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-    DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-
-    if ~isempty(DIR)
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
-        session_clusters_RUN=session_clusters;
-        clear session_clusters
-    end
-
-    if ~isempty(DIR1)
-        load(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
-        session_clusters_RUN=session_clusters;
-        clear session_clusters
-    end
-
-    if contains(stimulus_name{n},'Sleep')
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_V1_ripples.mat'),'KDE_reactivation_V1_ripples');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_reactivation_ripples.mat'),'KDE_reactivation_ripples');
-    end
-
-    for nprobe = 1:length(KDE_reactivation_V1_ripples)
-        real_bias = KDE_reactivation_V1_ripples(nprobe).event_bias(:)';
-        bias_distribution = [real_bias];
-
-        log_odds = log(KDE_reactivation_V1_ripples(nprobe).event_T1_probability ./ KDE_reactivation_V1_ripples(nprobe).event_T2_probability)';
-        log_odds_distribution = log_odds((isfinite(log_odds)));
-
-        KDE_reactivation_V1_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_V1_ripples(nprobe).event_bins;
-        KDE_reactivation_V1_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_V1_ripples(nprobe).event_id;
-
-        KDE_reactivation_V1_ripples_all(nprobe).bias{nsession} = real_bias;
-        KDE_reactivation_V1_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
-
-        KDE_reactivation_V1_ripples_all(nprobe).log_odds{nsession} = log_odds;
-        KDE_reactivation_V1_ripples_all(nprobe).zscored_log_odds{nsession} = (log_odds - mean(log_odds_distribution,'omitnan')) ./ std(log_odds_distribution,'omitnan');
-    end
-
-    for nprobe = 1:length(KDE_reactivation_ripples)
-        real_bias = KDE_reactivation_ripples(nprobe).event_bias(:)';
-        bias_distribution = [real_bias];
-
-        log_odds = log(KDE_reactivation_ripples(nprobe).event_T1_probability ./ KDE_reactivation_ripples(nprobe).event_T2_probability)';
-        log_odds_distribution = log_odds((isfinite(log_odds)));
-
-        KDE_reactivation_ripples_all(nprobe).event_bins{nsession} = KDE_reactivation_ripples(nprobe).event_bins;
-        KDE_reactivation_ripples_all(nprobe).event_id{nsession} = KDE_reactivation_ripples(nprobe).event_id;
-
-        KDE_reactivation_ripples_all(nprobe).bias{nsession} = real_bias;
-        KDE_reactivation_ripples_all(nprobe).zscored_bias{nsession} = (real_bias - mean(bias_distribution,'omitnan')) ./ std(bias_distribution,'omitnan');
-
-        KDE_reactivation_ripples_all(nprobe).log_odds{nsession} = log_odds;
-        KDE_reactivation_ripples_all(nprobe).zscored_log_odds{nsession} = (log_odds - mean(log_odds_distribution,'omitnan')) ./ std(log_odds_distribution,'omitnan');
-    end
-    clear KDE_reactivation_ripples KDE_reactivation_V1_ripples
-    toc
-end
-
-if exist('D:\corticohippocampal_replay')>0
-    analysis_folder = 'D:\corticohippocampal_replay';
-elseif exist('P:\corticohippocampal_replay')>0
-    analysis_folder = 'P:\corticohippocampal_replay';
-end
-
-save(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
-save(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
-
-
-%%
 %%%%%
-%%%%%
-%%%%%
-%%%%%
-%% Process and extract KDE reactivation PSTH
+%% Process and extract RRR reactivation PSTH
 
 clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
@@ -1740,14 +1612,14 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MU
 
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 
-load(fullfile(analysis_folder,'KDE_reactivation_DOWN_all_POST.mat'),'KDE_reactivation_DOWN_all')
-load(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
+load(fullfile(analysis_folder,'RRR_reactivation_DOWN_all_POST.mat'),'RRR_reactivation_DOWN_all')
+load(fullfile(analysis_folder,'RRR_reactivation_UP_all_POST.mat'),'RRR_reactivation_UP_all')
 % load(fullfile(analysis_folder,'KDE_reactivation_all_POST.mat'),'KDE_reactivation_all')
-load(fullfile(analysis_folder,'KDE_reactivation_V1_DOWN_all_POST.mat'),'KDE_reactivation_V1_DOWN_all')
-load(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
+load(fullfile(analysis_folder,'RRR_reactivation_V1_DOWN_all_POST.mat'),'RRR_reactivation_V1_DOWN_all')
+load(fullfile(analysis_folder,'RRR_reactivation_V1_UP_all_POST.mat'),'RRR_reactivation_V1_UP_all')
 % load(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
 
-
+% KDE_reactivation_V1
 %%%% Combined V1 and HPC PSTH extraction for both bias and log odds
 
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
@@ -1944,150 +1816,21 @@ for region = ["V1", "HPC"]
     end
 end
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH','-v7.3');
-
-% 
-% %%%%% HPC ripples
-% % Parameters
-% ripple_window = [0, 0.2];  % seconds
-% psth_step = 0.01;          % 10 ms
-% nbins = round(diff(ripple_window) / psth_step);
-% 
-% % Metrics to extract
-% % metric_names = {'bias', 'zscored_bias', 'zscored_bias_shuffled'};
-% metric_names = {'bias', 'zscored_bias', 'log_odds', 'zscored_log_odds','zscored_log_odds_shuffled','log_odds_percentile'};
-% % Output containers
-% ripple_bias_masked_SWS = struct();
-% ripple_bias_masked_nonSWS = struct();
-% for region = ["HPC", "V1"]
-%     for metric = metric_names
-%         ripple_bias_masked_SWS.(region).(metric{1})     = cell(1, 2);
-%         ripple_bias_masked_nonSWS.(region).(metric{1})  = cell(1, 2);
-%     end
-% end
-% 
-% % Main loop
-% for isSWS = [1, 0]
-%     for nprobe = 1:2
-%         for region = ["HPC", "V1"]
-% 
-%             if contains(region,'V1')
-%                 temp = KDE_reactivation_V1_all;
-%             else
-%                 temp = KDE_reactivation_all;
-%             end
-% 
-%             for metric = metric_names
-%                 metric_str = metric{1};
-%                 masked_all = [];
-% 
-%                 for nsession = 1:length(temp(nprobe).(metric_str))
-%                     % Get all ripple indices for this session
-%                     session_mask = ripples_all(nprobe).session_count == nsession;
-%                     ripple_idx_all = find(session_mask);
-% 
-%                     % Get SWS or non-SWS ripple subset
-%                     state_mask = ripples_all(nprobe).SWS_index == isSWS;
-%                     [ripple_idx_all,ripple_idx_session,~] = intersect(ripple_idx_all,find(state_mask));
-% 
-%                     if isempty(ripple_idx_session), continue; end
-% 
-%                     ripple_times = [ ...
-%                         ripples_all(nprobe).onset(ripple_idx_all), ...
-%                         ripples_all(nprobe).offset(ripple_idx_all)];
-% 
-%                     % Get data
-%                     bias_vals = temp(nprobe).(metric_str){nsession};
-%                     time_bins = temp(nprobe).event_bins{nsession}(:,1)';
-%                     event_ids = temp(nprobe).event_id{nsession};
-% 
-%                     for i = 1:length(ripple_idx_session)
-%                         ripple_id = ripple_idx_session(i);
-%                         t_start = ripple_times(i, 1);
-% 
-%                         rel_time = time_bins - t_start;
-%                         idx = find(event_ids == ripple_id & rel_time >= 0 & rel_time <= 0.2);
-% 
-%                         ripple_bias = nan(1, nbins);
-% 
-%                         ripple_bias(1:length(idx)) = bias_vals(idx);
-%                         % Mask if another ripple starts within this window
-%                         all_starts = ripples_all(nprobe).onset(ripple_idx_all);
-%                         next_ripple = all_starts > t_start & all_starts < (t_start + 0.2);
-%                         if any(next_ripple)
-%                             t_next = min(all_starts(next_ripple));
-%                             mask_start = round((t_next - t_start) / psth_step) + 1;
-%                             ripple_bias(mask_start:end) = nan;
-%                         end
-% 
-%                         masked_all = [masked_all; ripple_bias];
-%                     end
-%                 end
-% 
-%                 % Save result
-%                 if isSWS
-%                     ripple_bias_masked_SWS.(region).(metric_str){nprobe} = masked_all;
-%                 else
-%                     ripple_bias_masked_nonSWS.(region).(metric_str){nprobe} = masked_all;
-%                 end
-%             end
-%         end
-%     end
-% end
-% 
-% 
-% % SWS ripples
-% % SWS ripples
-% % bias
-% KDE_reactivation_content.HPC_ripples                  = [ripple_bias_masked_SWS.HPC.bias{1}; ripple_bias_masked_SWS.HPC.bias{2}];
-% KDE_reactivation_content.V1_ripples                   = [ripple_bias_masked_SWS.V1.bias{1}; ripple_bias_masked_SWS.V1.bias{2}];
-% KDE_reactivation_content.HPC_awake_ripples            = [ripple_bias_masked_nonSWS.HPC.bias{1}; ripple_bias_masked_nonSWS.HPC.bias{2}];
-% KDE_reactivation_content.V1_awake_ripples             = [ripple_bias_masked_nonSWS.V1.bias{1}; ripple_bias_masked_nonSWS.V1.bias{2}];
-% 
-% % zscored_bias
-% KDE_reactivation_content.HPC_z_ripples                = [ripple_bias_masked_SWS.HPC.zscored_bias{1}; ripple_bias_masked_SWS.HPC.zscored_bias{2}];
-% KDE_reactivation_content.V1_z_ripples                 = [ripple_bias_masked_SWS.V1.zscored_bias{1}; ripple_bias_masked_SWS.V1.zscored_bias{2}];
-% KDE_reactivation_content.HPC_z_awake_ripples          = [ripple_bias_masked_nonSWS.HPC.zscored_bias{1}; ripple_bias_masked_nonSWS.HPC.zscored_bias{2}];
-% KDE_reactivation_content.V1_z_awake_ripples           = [ripple_bias_masked_nonSWS.V1.zscored_bias{1}; ripple_bias_masked_nonSWS.V1.zscored_bias{2}];
-% 
-% % log_odds
-% KDE_reactivation_content.HPC_logodds_ripples         = [ripple_bias_masked_SWS.HPC.log_odds{1}; ripple_bias_masked_SWS.HPC.log_odds{2}];
-% KDE_reactivation_content.V1_logodds_ripples          = [ripple_bias_masked_SWS.V1.log_odds{1}; ripple_bias_masked_SWS.V1.log_odds{2}];
-% KDE_reactivation_content.HPC_logodds_awake_ripples   = [ripple_bias_masked_nonSWS.HPC.log_odds{1}; ripple_bias_masked_nonSWS.HPC.log_odds{2}];
-% KDE_reactivation_content.V1_logodds_awake_ripples    = [ripple_bias_masked_nonSWS.V1.log_odds{1}; ripple_bias_masked_nonSWS.V1.log_odds{2}];
-% 
-% % zscored_log_odds
-% KDE_reactivation_content.HPC_z_logodds_ripples       = [ripple_bias_masked_SWS.HPC.zscored_log_odds{1}; ripple_bias_masked_SWS.HPC.zscored_log_odds{2}];
-% KDE_reactivation_content.V1_z_logodds_ripples        = [ripple_bias_masked_SWS.V1.zscored_log_odds{1}; ripple_bias_masked_SWS.V1.zscored_log_odds{2}];
-% KDE_reactivation_content.HPC_z_logodds_awake_ripples = [ripple_bias_masked_nonSWS.HPC.zscored_log_odds{1}; ripple_bias_masked_nonSWS.HPC.zscored_log_odds{2}];
-% KDE_reactivation_content.V1_z_logodds_awake_ripples  = [ripple_bias_masked_nonSWS.V1.zscored_log_odds{1}; ripple_bias_masked_nonSWS.V1.zscored_log_odds{2}];
-% 
-% % zscored_log_odds_shuffled
-% KDE_reactivation_content.HPC_zshuff_logodds_ripples       = [ripple_bias_masked_SWS.HPC.zscored_log_odds_shuffled{1}; ripple_bias_masked_SWS.HPC.zscored_log_odds_shuffled{2}];
-% KDE_reactivation_content.V1_zshuff_logodds_ripples        = [ripple_bias_masked_SWS.V1.zscored_log_odds_shuffled{1}; ripple_bias_masked_SWS.V1.zscored_log_odds_shuffled{2}];
-% KDE_reactivation_content.HPC_zshuff_logodds_awake_ripples = [ripple_bias_masked_nonSWS.HPC.zscored_log_odds_shuffled{1}; ripple_bias_masked_nonSWS.HPC.zscored_log_odds_shuffled{2}];
-% KDE_reactivation_content.V1_zshuff_logodds_awake_ripples  = [ripple_bias_masked_nonSWS.V1.zscored_log_odds_shuffled{1}; ripple_bias_masked_nonSWS.V1.zscored_log_odds_shuffled{2}];
-% 
-% % log_odds_percentile
-% KDE_reactivation_content.HPC_logodds_percentile_ripples         = [ripple_bias_masked_SWS.HPC.log_odds_percentile{1}; ripple_bias_masked_SWS.HPC.log_odds_percentile{2}];
-% KDE_reactivation_content.V1_logodds_percentile_ripples          = [ripple_bias_masked_SWS.V1.log_odds_percentile{1}; ripple_bias_masked_SWS.V1.log_odds_percentile{2}];
-% KDE_reactivation_content.HPC_logodds_percentile_awake_ripples   = [ripple_bias_masked_nonSWS.HPC.log_odds_percentile{1}; ripple_bias_masked_nonSWS.HPC.log_odds_percentile{2}];
-% KDE_reactivation_content.V1_logodds_percentile_awake_ripples    = [ripple_bias_masked_nonSWS.V1.log_odds_percentile{1}; ripple_bias_masked_nonSWS.V1.log_odds_percentile{2}];
-% 
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'),'KDE_reactivation_content');
-
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_PSTH.mat'),'RRR_reactivation_PSTH','-v7.3');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Load data
-load(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
-load(fullfile(analysis_folder,'KDE_reactivation_V1_ripples_all_POST.mat'),'KDE_reactivation_V1_ripples_all')
+% load(fullfile(analysis_folder,'KDE_reactivation_ripples_all_POST.mat'),'KDE_reactivation_ripples_all')
+load(fullfile(analysis_folder,'RRR_reactivation_ripples_all_POST.mat'),'RRR_reactivation_ripples_all')
+load(fullfile(analysis_folder,'RRR_reactivation_V1_ripples_all_POST.mat'),'RRR_reactivation_V1_ripples_all')
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 
 ripple_window = [-1, 1];
 psth_step = 0.01;
 nbins = round(diff(ripple_window) / psth_step);
-metric_names = {'bias', 'zscored_bias', 'log_odds', 'zscored_log_odds'};
+metric_names = {'log_odds', 'zscored_log_odds'};
 regions = ["HPC", "V1"];
 
 % Initialize
@@ -2115,9 +1858,9 @@ for isSWS = [1, 0]
 
         for region = regions
             if region == "V1"
-                temp = KDE_reactivation_V1_ripples_all;
+                temp = RRR_reactivation_V1_ripples_all;
             else
-                temp = KDE_reactivation_ripples_all;
+                temp = RRR_reactivation_ripples_all;
             end
 
             for metric = metric_names
@@ -2148,7 +1891,7 @@ for isSWS = [1, 0]
                         metric_all = [metric_all; ripple_vec];
 
                         % Only compute mask once (on HPC region, one metric)
-                        if strcmp(region, 'HPC') && strcmp(metric_str, 'bias')
+                        if strcmp(region, 'HPC') && strcmp(metric_str, 'log_odds')
                             nan_row = zeros(1, nbins);  % 0 = keep, NaN = mask
 
                             all_onsets = ripple_times(:,1);
@@ -2199,21 +1942,23 @@ end
 
 % Combine and store
 for region = regions
-    region = char(region)
-    KDE_reactivation_ripples_PSTH.([region '_ripples'])             = [ripple_bias_masked_SWS.(region).bias{1};              ripple_bias_masked_SWS.(region).bias{2}];
-    KDE_reactivation_ripples_PSTH.([region '_z_ripples'])           = [ripple_bias_masked_SWS.(region).zscored_bias{1};      ripple_bias_masked_SWS.(region).zscored_bias{2}];
-    KDE_reactivation_ripples_PSTH.([region '_logodds_ripples'])     = [ripple_bias_masked_SWS.(region).log_odds{1};          ripple_bias_masked_SWS.(region).log_odds{2}];
-    KDE_reactivation_ripples_PSTH.([region '_z_logodds_ripples'])   = [ripple_bias_masked_SWS.(region).zscored_log_odds{1};  ripple_bias_masked_SWS.(region).zscored_log_odds{2}];
+    region = char(region);
+%     RRR_reactivation_ripples_PSTH.([region '_ripples'])             = [ripple_bias_masked_SWS.(region).bias{1};              ripple_bias_masked_SWS.(region).bias{2}];
+%     RRR_reactivation_ripples_PSTH.([region '_z_ripples'])           = [ripple_bias_masked_SWS.(region).zscored_bias{1};      ripple_bias_masked_SWS.(region).zscored_bias{2}];
+    RRR_reactivation_ripples_PSTH.([region '_logodds_ripples'])     = [ripple_bias_masked_SWS.(region).log_odds{1};          ripple_bias_masked_SWS.(region).log_odds{2}];
+    RRR_reactivation_ripples_PSTH.([region '_z_logodds_ripples'])   = [ripple_bias_masked_SWS.(region).zscored_log_odds{1};  ripple_bias_masked_SWS.(region).zscored_log_odds{2}];
 
-    KDE_reactivation_ripples_PSTH.([region '_awake_ripples'])             = [ripple_bias_masked_nonSWS.(region).bias{1};              ripple_bias_masked_nonSWS.(region).bias{2}];
-    KDE_reactivation_ripples_PSTH.([region '_z_awake_ripples'])           = [ripple_bias_masked_nonSWS.(region).zscored_bias{1};      ripple_bias_masked_nonSWS.(region).zscored_bias{2}];
-    KDE_reactivation_ripples_PSTH.([region '_logodds_awake_ripples'])     = [ripple_bias_masked_nonSWS.(region).log_odds{1};          ripple_bias_masked_nonSWS.(region).log_odds{2}];
-    KDE_reactivation_ripples_PSTH.([region '_z_logodds_awake_ripples'])   = [ripple_bias_masked_nonSWS.(region).zscored_log_odds{1};  ripple_bias_masked_nonSWS.(region).zscored_log_odds{2}];
+%     KDE_reactivation_ripples_PSTH.([region '_awake_ripples'])             = [ripple_bias_masked_nonSWS.(region).bias{1};              ripple_bias_masked_nonSWS.(region).bias{2}];
+%     KDE_reactivation_ripples_PSTH.([region '_z_awake_ripples'])           = [ripple_bias_masked_nonSWS.(region).zscored_bias{1};      ripple_bias_masked_nonSWS.(region).zscored_bias{2}];
+    RRR_reactivation_ripples_PSTH.([region '_logodds_awake_ripples'])     = [ripple_bias_masked_nonSWS.(region).log_odds{1};          ripple_bias_masked_nonSWS.(region).log_odds{2}];
+    RRR_reactivation_ripples_PSTH.([region '_z_logodds_awake_ripples'])   = [ripple_bias_masked_nonSWS.(region).zscored_log_odds{1};  ripple_bias_masked_nonSWS.(region).zscored_log_odds{2}];
 end
 
 % Add nan masks
-KDE_reactivation_ripples_PSTH.nan_mask        = [nan_mask{1}; nan_mask{2}];
-KDE_reactivation_ripples_PSTH.nan_mask_awake  = [nan_mask_awake{1}; nan_mask_awake{2}];
+RRR_reactivation_ripples_PSTH.nan_mask        = [nan_mask{1}; nan_mask{2}];
+RRR_reactivation_ripples_PSTH.nan_mask_awake  = [nan_mask_awake{1}; nan_mask_awake{2}];
 
 % Save
-save(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'KDE_reactivation_ripples_PSTH.mat'), 'KDE_reactivation_ripples_PSTH');
+save(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'RRR_reactivation_ripples_PSTH.mat'), 'RRR_reactivation_ripples_PSTH');
+% load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'KDE_reactivation_ripples_PSTH.mat'), 'KDE_reactivation_ripples_PSTH');
+

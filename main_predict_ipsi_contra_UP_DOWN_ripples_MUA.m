@@ -546,7 +546,7 @@ clear idx1 idx2
 clear ripple_regions ripple_types global_regions global_prefixes
 clear region prefix base_name L_field R_field ipsi_name contra_name
 
-
+merged_event_info
 
 %%%%% Grab DOWN/UP info
 varnames = {
