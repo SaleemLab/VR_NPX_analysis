@@ -61,43 +61,98 @@ end
 
 
 %% Ripple PSTH MUA in V1 and HPC
-hemispheres = {'L','R'};
-MUA_PSTH = [];
+
+ripple_MUA_PSTH_all = [];
+ripple_MSUA_PSTH_all = [];
+
+ripple_V1_MUA_PSTH_all = [];
+ripple_V1_MSUA_PSTH_all = [];
+
+% ripple_PSTH_MUA_all = [];
 psthBinSize = 0.01;
-windows = [-1 1];
+windows = [-2 2];
+hemispheres = {'L','R'};
 
-figure;
 for nsession = 1:length(sessions_to_process)
+    %     ripple_modulation_PSTH_all{nsession} = [];
 
-    % session_clusters_all.SO_phase{nsession}
-    % session_clusters_all.SO_amplitude{nsession}
-    %
-    % session_clusters_all.spindle_phase{nsession}
-    % session_clusters_all.spindle_amplitude{nsession}
-    %
-    % session_clusters_all.region{nsession}
+    %     all_clusters = session_clusters_all.spatial_cell_id{nsession};
+    ripple_MUA_PSTH_all{1}{nsession} = [];
+    ripple_MUA_PSTH_all{2}{nsession} = [];
+    tic
     for hemi = 1:2
 
-        cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+        %       plot(unique(session_clusters_all.spike_id{nsession}));hold on;plot(all_clusters)
 
-        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+        %         for nprobe = 1:length(ripples_all)
         event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
         event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-        
-        spike_id = session_clusters_all.spike_id{nsession};spike_id(spike_id>0)=1;
-        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
+      
+
+        %%%%%%%%%% HPC
+        cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+        spike_id(spike_id>0)=1;
+
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
             'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
 
+        ripple_MUA_PSTH_all{1}{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(1).PSTH),0,2);
+        ripple_MUA_PSTH_all{2}{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(2).PSTH),0,2);
+
+
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+%         spike_id(spike_id>0)=1;
+
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
+
+        clear cell_PSTH
+        for ncell = 1:length(cell_id)
+            cell_PSTH(1,ncell,:) = mean(zscore(squeeze(ripple_modulation(1).PSTH(ncell,:,:)),0,2),'omitnan');
+            cell_PSTH(2,ncell,:) = mean(zscore(squeeze(ripple_modulation(2).PSTH(ncell,:,:)),0,2),'omitnan');
+        end
+
+        ripple_MSUA_PSTH_all{1}{nsession}(hemi,:) = mean(squeeze(cell_PSTH(1,:,:)),'omitnan');
+        ripple_MSUA_PSTH_all{2}{nsession}(hemi,:) = mean(squeeze(cell_PSTH(2,:,:)),'omitnan');
+
+
+        %%%%%%%%%%%% V1
+        cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+        spike_id(spike_id>0)=1;
+
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+            'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
+
+        ripple_V1_MUA_PSTH_all{1}{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(1).PSTH),0,2);
+        ripple_V1_MUA_PSTH_all{2}{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(2).PSTH),0,2);
+
+
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+%         spike_id(spike_id>0)=1;
+
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
+
+        clear cell_PSTH
+        for ncell = 1:length(cell_id)
+            cell_PSTH(1,ncell,:) = mean(zscore(squeeze(ripple_modulation(1).PSTH(ncell,:,:)),0,2),'omitnan');
+            cell_PSTH(2,ncell,:) = mean(zscore(squeeze(ripple_modulation(2).PSTH(ncell,:,:)),0,2),'omitnan');
+        end
+
+        ripple_V1_MSUA_PSTH_all{1}{nsession}(hemi,:) = mean(squeeze(cell_PSTH(1,:,:)),'omitnan');
+        ripple_V1_MSUA_PSTH_all{2}{nsession}(hemi,:) = mean(squeeze(cell_PSTH(2,:,:)),'omitnan');
+
     end
-
-
-    %
-    % MUA_PSTH.ripple
-
+    toc
 end
 
-
-MUA_PSTH_ripple_and_phase
+save(fullfile(analysis_folder,'ripple_MUA_PSTH_all_POST.mat'),'ripple_MUA_PSTH_all','ripple_MSUA_PSTH_all','-v7.3')
 
 %% Ripple modulation in V1 and HPC
 ripple_modulation_PSTH_all = [];
