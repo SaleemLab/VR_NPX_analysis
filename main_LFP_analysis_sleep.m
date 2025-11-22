@@ -230,10 +230,10 @@ experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
 % all_stimulus_type={'RUN'};
-all_stimulus_type={'SleepChronic','RUN'};
+all_stimulus_type={'SleepChronic'};
 
 for nstimuli = 1:length(all_stimulus_type)
-    for nsession = 1:length(experiment_info)
+    for nsession = 2:length(experiment_info)
 
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,all_stimulus_type{nstimuli}));
@@ -248,8 +248,9 @@ for nstimuli = 1:length(all_stimulus_type)
             % LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
             % extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
             % detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
-            detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
-            
+%             detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
+            extract_LFP_NPX_add_on(session_info(n),stimulus_name{n},best_channels)
+
         end
     end
 end
@@ -3258,7 +3259,7 @@ for nsession =1:22
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters=clusters_ks4;
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
+%         load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
     else
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -3318,14 +3319,23 @@ for nsession =1:22
 
         if length(LFP)==1
             lfp_HPC.data= single([LFP(probe_no).best_HPC(:,time_idx)']);
-            lfp_V1.data= single([LFP(probe_no).best_V1(:,time_idx)']);
+            %             lfp_V1.data= single([LFP(probe_no).best_V1(:,time_idx)']);
+            lfp_V1.data= single([LFP(probe_no).best_SO_V1(:,time_idx)']);
+            
         else
             lfp_HPC.data= single([LFP(1).best_HPC(:,time_idx)' LFP(2).best_HPC(:,time_idx)']);
-            lfp_V1.data= single([LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)']);
+            %             lfp_V1.data= single([LFP(1).average_V1(:,time_idx)' LFP(2).average_V1(:,time_idx)']);
+            lfp_V1.data= single([LFP(1).best_SO_V1(:,time_idx)' LFP(2).best_SO_V1(:,time_idx)']);
         end
     end
     %         end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %%% get
     HPC_ref_shank=[];
@@ -3333,9 +3343,11 @@ for nsession =1:22
     for nprobe = 1:length(session_info(n).probe)
         probe_no = session_info(n).probe(nprobe).probe_id+1;
 
-        ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
-            &slow_waves(probe_no).probe_hemisphere == probe_no);
+        [~,ref_shank] = max(LFP(nprobe).best_SO_V1_trough_peak_ratio);
         cortex_ref_shank(probe_no) = ref_shank;
+%         ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
+%             &slow_waves(probe_no).probe_hemisphere == probe_no);
+%         cortex_ref_shank(probe_no) = ref_shank;
 
         shank_id = find(ripples(probe_no).probe_hemisphere == probe_no);
         HPC_ref_shank(probe_no) = shank_id(ripples(probe_no).best_channel);
@@ -3361,56 +3373,56 @@ for nsession =1:22
         lfp.SO_phase_LFP = deltaLFP.phase;
         lfp.SO_amplitude_LFP = zscore(deltaLFP.amp);
         deltaLFP = [];
-        % 
-        % % grab spindles LFP
-        % filter_type  = 'bandpass';
-        % passband = [9 17];
-        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
-        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        % b_spindle = fir1(filter_order, norm_freq_range,filter_type);
-        % 
-        % signal = [];
-        % for nShank = 1:size(lfp.data,2)
-        %     signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
-        % end
-        % %                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
-        % %                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
-        % lfp.spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
-        % lfp.spindle_phase_LFP = angle(hilbert(signal)); % phase
-        % signal = [];
-        % 
-        % 
-        % % grab ripples LFP
-        % filter_type  = 'bandpass';
-        % passband = [125 300];
-        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
-        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        % b_ripple = fir1(filter_order, norm_freq_range,filter_type);
-        % 
-        % signal = [];
-        % for nShank = 1:size(lfp.data,2)
-        %     signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
-        % end
-        % lfp.ripple_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
-        % lfp.ripple_phase_LFP = angle(hilbert(signal)); % phase
-        % signal = [];
-        % 
-        % 
-        % 
-        % % grab gamma LFP
-        % filter_type  = 'bandpass';
-        % passband = [30 60];
-        % filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
-        % norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-        % b_theta = fir1(filter_order, norm_freq_range,filter_type);
-        % 
-        % signal = [];
-        % for nShank = 1:size(lfp.data,2)
-        %     signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
-        % end
-        % 
-        % lfp.gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
-        % lfp.gamma_phase_LFP = angle(hilbert(signal)); % phase
+
+        % grab spindles LFP
+        filter_type  = 'bandpass';
+        passband = [9 17];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_spindle = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
+        end
+        %                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+        %                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+        lfp.spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.spindle_phase_LFP = angle(hilbert(signal)); % phase
+        signal = [];
+
+
+        % grab ripples LFP
+        filter_type  = 'bandpass';
+        passband = [125 300];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+        end
+        lfp.ripple_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.ripple_phase_LFP = angle(hilbert(signal)); % phase
+        signal = [];
+
+
+
+        % grab gamma LFP
+        filter_type  = 'bandpass';
+        passband = [30 60];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+        end
+
+        lfp.gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.gamma_phase_LFP = angle(hilbert(signal)); % phase
 
 
         if nregion == 1
@@ -3422,11 +3434,110 @@ for nsession =1:22
 
     end
 
+
+    % phase and amplitude
+    SO_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    SO_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    SO_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    SO_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    spindle_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    spindle_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
+
+    spindle_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    spindle_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
+
+    SO_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    SO_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+    SO_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    SO_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+    % SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    % spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    % SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    ripple_peak_amplitude = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    ripple_onset_amplitude = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).onset));
+    spindle_peak_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+    spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
+    gamma_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    gamma_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
+    for nevent = 1:length(ripples(probe_no).onset)
+        [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
+
+        % peak ampltiude and phase
+        SO_phase_ripple_peaktime(:,nevent) = lfp_V1.SO_phase_LFP(tidx,:);
+        spindle_phase_ripple_peaktime(:,nevent) = lfp_V1.spindle_phase_LFP(tidx,:);
+        SO_amplitude_ripple_peaktime(:,nevent) = lfp_V1.SO_amplitude_LFP(tidx,:);
+        spindle_amplitude_ripple_peaktime(:,nevent) = lfp_V1.spindle_amplitude_LFP(tidx,:);
+        ripple_peak_amplitude(:,nevent) = lfp_HPC.ripple_amplitude_LFP(tidx,:);
+        gamma_phase_ripple_peaktime(:, nevent) = lfp_V1.gamma_phase_LFP(tidx, :);
+        gamma_amplitude_ripple_peaktime(:, nevent) = lfp_V1.gamma_amplitude_LFP(tidx, :);
+
+
+        [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
+        % onset amplitude and phase
+        SO_phase_ripple_onset(:,nevent) = lfp_V1.SO_phase_LFP(tidx,:);
+        spindle_phase_ripple_onset(:,nevent) = lfp_V1.spindle_phase_LFP(tidx,:);
+        SO_amplitude_ripple_onset(:,nevent) = lfp_V1.SO_amplitude_LFP(tidx,:);
+        spindle_amplitude_ripple_onset(:,nevent) = lfp_V1.spindle_amplitude_LFP(tidx,:);
+        ripple_onset_amplitude(:,nevent) = lfp_HPC.ripple_amplitude_LFP(tidx,:);
+        gamma_phase_ripple_onset(:, nevent) = lfp_V1.gamma_phase_LFP(tidx, :);
+        gamma_amplitude_ripple_onset(:, nevent) = lfp_V1.gamma_amplitude_LFP(tidx, :);
+    end
+
+    ripples(probe_no).SO_phase_ripple_peaktime = SO_phase_ripple_peaktime;
+    ripples(probe_no).spindle_phase_ripple_peaktime = spindle_phase_ripple_peaktime;
+    ripples(probe_no).SO_amplitude_ripple_peaktime = SO_amplitude_ripple_peaktime;
+    ripples(probe_no).spindle_amplitude_ripple_peaktime = spindle_amplitude_ripple_peaktime;
+    ripples(probe_no).ripple_peak_amplitude = ripple_peak_amplitude;
+
+    ripples(probe_no).SO_phase_ripple_onset = SO_phase_ripple_onset;
+    ripples(probe_no).spindle_phase_ripple_onset = spindle_phase_ripple_onset;
+    ripples(probe_no).SO_amplitude_ripple_onset = SO_amplitude_ripple_onset;
+    ripples(probe_no).spindle_amplitude_ripple_onset = spindle_amplitude_ripple_onset;
+    ripples(probe_no).ripple_onset_amplitude = ripple_onset_amplitude;
+
+    ripples(probe_no).gamma_phase_ripple_peaktime = gamma_phase_ripple_peaktime;
+    ripples(probe_no).gamma_amplitude_ripple_peaktime = gamma_amplitude_ripple_peaktime;
+    ripples(probe_no).gamma_phase_ripple_onset = gamma_phase_ripple_onset;
+    ripples(probe_no).gamma_amplitude_ripple_onset = gamma_amplitude_ripple_onset;
+
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_V1_best_SO_channel.mat'),'ripples');
+
     % From cell structure back to spike times and spike id
     session_clusters.spike_id = vertcat(session_clusters.spike_id{:});
     session_clusters.spike_times = vertcat(session_clusters.spike_times{:});
     [session_clusters.spike_times, index] = sort(session_clusters.spike_times);
     session_clusters.spike_id = session_clusters.spike_id(index);
+
+    %%%%% spikes
+    % Unwrap phase to allow for linear interpolation across the -pi/pi boundary
+    phi_unwrapped = unwrap(deltaLFP);
+
+    % Interpolate LFP phase to the exact spike times
+    spike_phases_unwrapped = interp1(tvec, phi_unwrapped, session_clusters.spike_times, 'linear');
+
+    % Re-wrap spike phases back to [-pi, pi]
+    spike_phases = mod(spike_phases_unwrapped + pi, 2*pi) - pi;
+
+    %%%%%%%%%%%%%% Temporary (currently only one ref shank for one probe)
+    cortex_ref_shank = [1 2];
+    spike_phase_amplitude.SO_phase(:,cortex_ref_shank(1));
+
+
 
     
     % session_clusters.spike_id
@@ -3586,6 +3697,8 @@ for nsession =1:22
     
     % save_all_figures('D:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots',[]);
     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots'),[])
+
+
 end
 
 
@@ -3813,3 +3926,17 @@ else
     % save(fullfile(analysis_folder,'periripple_LFP_info_HPC_RUN.mat'),'periripple_LFP_info_HPC','-v7.3');
     % save(fullfile(analysis_folder,'periripple_LFP_info_V1_RUN.mat'),'periripple_LFP_info_V1','-v7.3');
 end
+
+load((fullfile(analysis_folder,'SO_phase_MUA.mat')));
+
+for nsession = 1:22
+    plot(  squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)))
+
+    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:))
+
+    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:)
+
+    SO_phase_MUA_spike_rate
+end
+
+%%

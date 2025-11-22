@@ -143,8 +143,8 @@ end
 hemisphere_text = {'L','R'}
 time_index = 6:45;
 time_index = reshape(time_index, 5, [])';
-time_edges = -0.5:0.02:0.5;
-time_windows = time_edges(1)+0.02/2:0.02:time_edges(end)-0.02/2;
+time_edges = -0.5:0.1:0.5;
+time_windows = time_edges(1)+0.1/2:0.1:time_edges(end)-0.1/2;
 % time_windows = reshape(time_windows, 5, [])';
 nfigure = 1;
 for nprobe = 1:2

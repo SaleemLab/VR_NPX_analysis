@@ -122,6 +122,7 @@ z_V1_population_ripple_PSTH{2} = [];
 V1_reactivation_modulation_all = struct();
 % context_corr_all = struct();
 tic
+
 for nsession = 1:length(sessions_to_process)
 
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];

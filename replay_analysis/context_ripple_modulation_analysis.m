@@ -61,7 +61,7 @@ end
 
 
 %% Ripple PSTH MUA in V1 and HPC
-
+sessions_to_process = 1:22;
 ripple_MUA_PSTH_all = [];
 ripple_MSUA_PSTH_all = [];
 
@@ -87,7 +87,10 @@ for nsession = 1:length(sessions_to_process)
         %         for nprobe = 1:length(ripples_all)
         event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
         event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-      
+        %         merge_bilateral_ripple_events(event_id,event_times,0.3);
+        remove_id = find(diff(event_times)<0.2)+1;
+        event_times(remove_id)=[];
+        event_id(remove_id)=[];
 
         %%%%%%%%%% HPC
         cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
@@ -154,6 +157,140 @@ end
 
 save(fullfile(analysis_folder,'ripple_MUA_PSTH_all_POST.mat'),'ripple_MUA_PSTH_all','ripple_MSUA_PSTH_all','-v7.3')
 
+
+temp_PSTH1 = [];temp_PSTH2 = [];temp_PSTH =[];
+for hemi = 1:2
+    temp_PSTH1{hemi}=[];
+    temp_PSTH2{hemi}=[];
+    for nsession = 1:22
+        temp_PSTH1{hemi} = [temp_PSTH1{hemi}; squeeze(ripple_V1_MUA_PSTH_all{hemi}{nsession}(1,:,:))];
+        temp_PSTH2{hemi} =  [temp_PSTH2{hemi}; squeeze(ripple_V1_MUA_PSTH_all{hemi}{nsession}(2,:,:))];
+    end
+end
+
+x = ripple_modulation(1).bins;
+temp_PSTH(1,:,:)= [temp_PSTH1{1}; temp_PSTH2{2}];
+temp_PSTH(2,:,:) = [temp_PSTH2{1}; temp_PSTH1{2}];
+
+
+ipsi_lower = prctile(temp_PSTH(1,:,:),25);
+ipsi_upper = mean(squeeze(temp_PSTH(1,:,:))) + std(squeeze(temp_PSTH(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(temp_PSTH(1,:,:)));
+
+contra_lower = mean(squeeze(temp_PSTH(2,:,:))) - std(squeeze(temp_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(temp_PSTH(2,:,:))) + std(squeeze(temp_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(temp_PSTH(2,:,:)));
+
+%%%%%%%%%%%%%%%%
+
+temp_PSTH1 = [];temp_PSTH2 = [];temp_PSTH =[];
+temp_HPC_PSTH1 = [];temp_HPC_PSTH2 = [];temp_HPC_PSTH =[];
+for nsession = 1:22
+    for hemi = 1:2
+        temp_PSTH1(hemi,nsession,:) = mean(squeeze(ripple_V1_MUA_PSTH_all{hemi}{nsession}(1,:,:)));
+        temp_PSTH2(hemi,nsession,:) =  mean(squeeze(ripple_V1_MUA_PSTH_all{hemi}{nsession}(2,:,:)));
+    end
+
+    temp_PSTH(1,nsession,:) = mean([squeeze(temp_PSTH1(1,nsession,:)) squeeze(temp_PSTH2(2,nsession,:))],2);
+    temp_PSTH(2,nsession,:) = mean([squeeze(temp_PSTH1(2,nsession,:)) squeeze(temp_PSTH2(1,nsession,:))],2);
+    %     temp_PSTH2(hemi,nsession,:) =  mean(squeeze(ripple_V1_MUA_PSTH_all{hemi}{nsession}(2,:,:)));
+
+    for hemi = 1:2
+        temp_HPC_PSTH1(hemi,nsession,:) = mean(squeeze(ripple_MUA_PSTH_all{hemi}{nsession}(1,:,:)));
+        temp_HPC_PSTH2(hemi,nsession,:) =  mean(squeeze(ripple_MUA_PSTH_all{hemi}{nsession}(2,:,:)));
+    end
+
+    temp_HPC_PSTH(1,nsession,:) = mean([squeeze(temp_HPC_PSTH1(1,nsession,:)) squeeze(temp_HPC_PSTH2(2,nsession,:))],2);
+    temp_HPC_PSTH(2,nsession,:) = mean([squeeze(temp_HPC_PSTH1(2,nsession,:)) squeeze(temp_HPC_PSTH2(1,nsession,:))],2);
+end
+
+% temp_PSTH1 = [];temp_PSTH2 = [];temp_PSTH =[];
+% 
+% for nsession = 1:22
+%     for hemi = 1:2
+%         temp_PSTH1(hemi,nsession,:) = ripple_V1_MSUA_PSTH_all{hemi}{nsession}(1,:) ;
+%         temp_PSTH2(hemi,nsession,:) = ripple_V1_MSUA_PSTH_all{hemi}{nsession}(2,:);
+%     end
+%     temp_PSTH(1,nsession,:) = mean([squeeze(temp_PSTH1(1,nsession,:)) squeeze(temp_PSTH2(2,nsession,:))],2);
+%     temp_PSTH(2,nsession,:) = mean([squeeze(temp_PSTH1(2,nsession,:)) squeeze(temp_PSTH2(1,nsession,:))],2);
+% end
+
+
+
+fig = figure;
+fig.Name = 'ipsi-contra ripple V1 and HPC MUA PSTH (0.1s inter-rippe threshold)';
+fig.Position = [988 440 820 530];
+
+
+ipsi_lower = mean(squeeze(temp_PSTH(1,:,:))) - std(squeeze(temp_PSTH(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(temp_PSTH(1,:,:))) + std(squeeze(temp_PSTH(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(temp_PSTH(1,:,:)));
+
+contra_lower = mean(squeeze(temp_PSTH(2,:,:))) - std(squeeze(temp_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(temp_PSTH(2,:,:))) + std(squeeze(temp_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(temp_PSTH(2,:,:)));
+
+psthBinSize = 0.01;
+windows = [-2 2];
+
+c_ipsi = [35,139,69]/256; 
+c_contra = [106,81,163]/256;
+% subplot(3,2,1)
+
+
+subplot(2,2,1)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1 1])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('V1 MUA (z)');
+title('V1');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-0.5 0.5])
+
+ipsi_lower = mean(squeeze(temp_HPC_PSTH(1,:,:))) - std(squeeze(temp_HPC_PSTH(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(temp_HPC_PSTH(1,:,:))) + std(squeeze(temp_HPC_PSTH(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(temp_HPC_PSTH(1,:,:)));
+
+contra_lower = mean(squeeze(temp_HPC_PSTH(2,:,:))) - std(squeeze(temp_HPC_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(temp_HPC_PSTH(2,:,:))) + std(squeeze(temp_HPC_PSTH(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(temp_HPC_PSTH(2,:,:)));
+
+subplot(2,2,2)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1 1])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('HPC MUA (z)');
+title('HPC');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-0.5 0.5])
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
+
 %% Ripple modulation in V1 and HPC
 ripple_modulation_PSTH_all = [];
 ripple_PSTH_MUA_all = [];
@@ -178,7 +315,6 @@ end
 
 save(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all','-v7.3')
 %  = struct();
-
 
 %% context-selective ripple modulation
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
