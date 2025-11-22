@@ -453,7 +453,7 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % 
 Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
 Duration(Duration>10)=[];
-event_duration_threshold = [0 1 10];
+event_duration_threshold = [0 1.5 10];
 
 % duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:33:100);
 % duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
@@ -532,34 +532,67 @@ for t = 1:nTime
                 % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
 
+                if npower == 1 % UP and not UP
+                    t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),2)>event_duration_threshold(npower) ...
+                        & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0 & ...
+                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),1))) > 1';
+                    t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),1)>event_duration_threshold(npower) ...
+                        & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0 & ...
+                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),2))) > 1';
 
-                t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),2)>event_duration_threshold(npower) ...
-                    & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0) > 1';
-                t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),1)>event_duration_threshold(npower) ...
-                    & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0) > 1';
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
 
-                % HPC bias difference between Track 1 and Track 2
-                t1_HPC = boot_HPC(t1);
-                t2_HPC = boot_HPC(t2);
-                if any(t1) && any(t2)
-                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
+
+                    t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),2)>event_duration_threshold(npower) ...
+                        & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0 & ...
+                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),1))) > 1';
+                    t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx(idx),1)>event_duration_threshold(npower) ...
+                        & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0 & ...
+                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),2))) > 1';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
+
+                else
+                    t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0 & ...
+                        ripple_info.normalised_UP_duration(true_idx(idx),1) > 0) > 1';
+                    t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0 & ...
+                        ripple_info.normalised_UP_duration(true_idx(idx),2) > 0) > 1';
+
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
+
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
+
+                    t1s = t1s' + (ripple_info.UP_duration(true_idx,2)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,2) > 0 & ...
+                        ripple_info.normalised_UP_duration(true_idx,1) > 0) > 1';
+                    t2s = t2s' + (ripple_info.UP_duration(true_idx,1)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,1) > 0 & ...
+                        ripple_info.normalised_UP_duration(true_idx,2) > 0) > 1';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
+
                 end
-
-                % --- Shifted pairing (null) ---
-                t1s = boot_V1_shift >= th;
-                t2s = boot_V1_shift <= -th;
-
-                t1s = t1s' + (ripple_info.UP_duration(true_idx,2)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx,2)>event_duration_threshold(npower) ...
-                    & ripple_info.normalised_UP_duration(true_idx,2) > 0) > 1';
-                t2s = t2s' + (ripple_info.UP_duration(true_idx,1)<event_duration_threshold(npower+1) & ripple_info.UP_duration(true_idx,1)>event_duration_threshold(npower) ...
-                    & ripple_info.normalised_UP_duration(true_idx,1) > 0) > 1';
-
-                t1_HPCs = boot_HPC(t1s);
-                t2_HPCs = boot_HPC(t2s);
-                if any(t1s) && any(t2s)
-                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
-                end
-
 
             end
 
@@ -579,15 +612,15 @@ for t = 1:nTime
     end
 end
 % -------- save --------
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_duration.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_duration.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by UP state duration (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC by UP states (less than 1.5s) (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % spindle_thresholds = {'SO trough and power 0-25','SO trough and power 25-50','SO trough and power 50-75','SO trough and power 75-100'};
-UP_thresholds = {'UP less than 1s','UP longer than 1s'};
+UP_thresholds = {'Unilateral UP','Bilateral UP'};
 
 for npower = 1:nBins
     nexttile; hold on;
@@ -620,7 +653,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by short UP vs long UP (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC by Unilateral UP vs Bilateral UP (less than 1.5s) (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -642,7 +675,7 @@ for npower = [1 2]
     yline(0,'--r');
     xlabel('Time (s relative to ripple)');
     ylabel('HPC bias AUC');
-    title(' Short Vs long UP state');
+    title(' 1st vs 2nd half UP state');
     set(gca,'TickDir','out','Box','off','FontSize',12);
     xlim([-0.5 0.5]);
     ylim([-0.1 0.25])
