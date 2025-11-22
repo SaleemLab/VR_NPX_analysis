@@ -248,8 +248,9 @@ for nstimuli = 1:length(all_stimulus_type)
             % LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
             % extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
             % detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
-            detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
-            
+%             detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
+            extract_LFP_NPX_add_on(session_info(n),stimulus_name{n},best_channels)
+
         end
     end
 end
@@ -3258,7 +3259,7 @@ for nsession =1:22
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters_ks4.mat'));
         clusters=clusters_ks4;
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
+%         load(fullfile(options.ANALYSIS_DATAPATH,'spike_phase_amplitude.mat'));
     else
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
@@ -3326,6 +3327,12 @@ for nsession =1:22
     end
     %         end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %%% get
     HPC_ref_shank=[];
@@ -3422,11 +3429,125 @@ for nsession =1:22
 
     end
 
+
+
+
+    % phase and amplitude
+    SO_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    SO_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    SO_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    SO_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    spindle_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    spindle_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
+
+    spindle_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    spindle_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).onset));
+
+    SO_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    SO_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+    SO_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    SO_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+    % SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    % spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    % SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    ripple_peak_amplitude = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    ripple_onset_amplitude = nan(length(ripples(probe_no).shank_id), length(ripples(probe_no).onset));
+    spindle_peak_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).peaktimes));
+    spindle_onset_amplitude = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
+    gamma_phase_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_phase_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_amplitude_ripple_peaktime = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+    gamma_amplitude_ripple_onset = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
+
+    gamma_phase_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_phase_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_amplitude_spindle_peaktime = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+    gamma_amplitude_spindle_onset = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
+
+
+    for nevent = 1:length(ripples(probe_no).onset)
+        [~,tidx]=min(abs(tvec-ripples(probe_no).peaktimes(nevent)));
+
+        % peak ampltiude and phase
+        SO_phase_ripple_peaktime(:,nevent) = SO_phase_LFP(tidx,:);
+        spindle_phase_ripple_peaktime(:,nevent) = spindle_phase_LFP(tidx,:);
+        SO_amplitude_ripple_peaktime(:,nevent) = SO_amplitude_LFP(tidx,:);
+        spindle_amplitude_ripple_peaktime(:,nevent) = spindle_amplitude_LFP(tidx,:);
+        ripple_peak_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+        gamma_phase_ripple_peaktime(:, nevent) = gamma_phase_LFP(tidx, :);
+        gamma_amplitude_ripple_peaktime(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
+
+        [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
+        % onset amplitude and phase
+        SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
+        spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
+        SO_amplitude_ripple_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
+        spindle_amplitude_ripple_onset(:,nevent) = spindle_amplitude_LFP(tidx,:);
+        ripple_onset_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+        gamma_phase_ripple_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+        gamma_amplitude_ripple_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
+
+        time_ranges = ripples(probe_no).onset(nevent)-(-1:0.1:1);
+        [~,tidx]=min(abs(tvec-ripples(probe_no).onset(nevent)));
+        % onset amplitude and phase
+        SO_phase_ripple_onset(:,nevent) = SO_phase_LFP(tidx,:);
+        spindle_phase_ripple_onset(:,nevent) = spindle_phase_LFP(tidx,:);
+        SO_amplitude_ripple_onset(:,nevent) = SO_amplitude_LFP(tidx,:);
+        spindle_amplitude_ripple_onset(:,nevent) = spindle_amplitude_LFP(tidx,:);
+        ripple_onset_amplitude(:,nevent) = ripple_amplitude_LFP(tidx,:);
+        gamma_phase_ripple_onset(:, nevent) = gamma_phase_LFP(tidx, :);
+        gamma_amplitude_ripple_onset(:, nevent) = gamma_amplitude_LFP(tidx, :);
+
+    end
+
+    ripples(probe_no).SO_phase_ripple_peaktime = SO_phase_ripple_peaktime;
+    ripples(probe_no).spindle_phase_ripple_peaktime = spindle_phase_ripple_peaktime;
+    ripples(probe_no).SO_amplitude_ripple_peaktime = SO_amplitude_ripple_peaktime;
+    ripples(probe_no).spindle_amplitude_ripple_peaktime = spindle_amplitude_ripple_peaktime;
+    ripples(probe_no).ripple_peak_amplitude = ripple_peak_amplitude;
+
+    ripples(probe_no).SO_phase_ripple_onset = SO_phase_ripple_onset;
+    ripples(probe_no).spindle_phase_ripple_onset = spindle_phase_ripple_onset;
+    ripples(probe_no).SO_amplitude_ripple_onset = SO_amplitude_ripple_onset;
+    ripples(probe_no).spindle_amplitude_ripple_onset = spindle_amplitude_ripple_onset;
+    ripples(probe_no).ripple_onset_amplitude = ripple_onset_amplitude;
+
+    ripples(probe_no).gamma_phase_ripple_peaktime = gamma_phase_ripple_peaktime;
+    ripples(probe_no).gamma_amplitude_ripple_peaktime = gamma_amplitude_ripple_peaktime;
+    ripples(probe_no).gamma_phase_ripple_onset = gamma_phase_ripple_onset;
+    ripples(probe_no).gamma_amplitude_ripple_onset = gamma_amplitude_ripple_onset;
+
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_V1_best_SO_channel.mat'),'ripples');
+
     % From cell structure back to spike times and spike id
     session_clusters.spike_id = vertcat(session_clusters.spike_id{:});
     session_clusters.spike_times = vertcat(session_clusters.spike_times{:});
     [session_clusters.spike_times, index] = sort(session_clusters.spike_times);
     session_clusters.spike_id = session_clusters.spike_id(index);
+
+    %%%%% spikes
+    % Unwrap phase to allow for linear interpolation across the -pi/pi boundary
+    phi_unwrapped = unwrap(deltaLFP);
+
+    % Interpolate LFP phase to the exact spike times
+    spike_phases_unwrapped = interp1(tvec, phi_unwrapped, session_clusters.spike_times, 'linear');
+
+    % Re-wrap spike phases back to [-pi, pi]
+    spike_phases = mod(spike_phases_unwrapped + pi, 2*pi) - pi;
+
+    %%%%%%%%%%%%%% Temporary (currently only one ref shank for one probe)
+    cortex_ref_shank = [1 2];
+    spike_phase_amplitude.SO_phase(:,cortex_ref_shank(1));
+
+
 
     
     % session_clusters.spike_id
@@ -3534,12 +3655,16 @@ for nsession =1:22
         plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
         xlabel('SO Phase');ylabel('FR (Hz)');
         set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
         title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
         counter = counter+1;
         
         subplot(4,2,counter)
         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
         set(gca,'TickDir','out','Box','off','FontSize',12)
         title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
         counter = counter+1;
@@ -3582,6 +3707,8 @@ for nsession =1:22
     
     % save_all_figures('D:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots',[]);
     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots'),[])
+
+
 end
 
 
@@ -3596,27 +3723,23 @@ V1_phase = [];
 for hemi = 1:2
     
     for nession = 1:22
-        V1_phase{hemi}(1,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,hemi,:),'range');
-        V1_phase{hemi}(2,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,abs(hemi-3),:),'range');
+        V1_phase{hemi}(1,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,1,:);
+        V1_phase{hemi}(2,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,2,:);
+        %         V1_phase{hemi}(1,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,1,:),'range');
+        % V1_phase{hemi}(2,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,2,:),'range');
     end
-
-    % squeeze(HPC_SO_FR(:,hemi,1,:));
-    
-
-    SE_phases = squeeze(std(V1_phase{hemi}(1,:,:)))/sqrt(length(SO_phase_MUA_spike_rate));
-    % plot(phase_bins,HPC_SO_FR(:,hemi,1,:))
 end
 
 mean_phases_ipsi = mean([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))]);
 mean_phases_contra = mean([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))]);
 
-SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))]);
-SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))]);
+SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
+SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
 
 
 % 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
-c_ipsi = [0 0.5 0.5]; 
-c_contra = [0.85 0.33 0.1];
+c_ipsi = [35,139,69]/256; 
+c_contra = [106,81,163]/256;
 
 % 2. Ensure inputs are row vectors for the fill command
 x = phase_bins(:)'; 
@@ -3629,8 +3752,14 @@ ipsi_lower = (mean_phases_ipsi(:)' - SE_phases_ipsi(:)');
 contra_upper = (mean_phases_contra(:)' + SE_phases_contra(:)');
 contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
 
-figure; hold on;
+%%%% Plot SO V1 phase
+fig = figure;
+fig.Name = 'V1 SO phase Peak vs Trough';
+sgtitle(fig.Name)
+fig.Position= [844 66 560 906];
 
+subplot(3,2,1)
+hold on;
 % --- Plot Ipsi (Shading first, then Line) ---
 fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
     c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
@@ -3646,8 +3775,8 @@ yline(0, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from l
 xline(-pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
 xline(pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
 
-xlabel('Phase Bins');
-ylabel('Phase (rad)'); % Assuming radians, adjust if degrees
+xlabel('Phases');
+ylabel('Mean firing rate (Hz)');
 title('Ipsi vs Contra Phase Preference');
 
 % Add a legend (using the plot handles h1 and h2)
@@ -3655,30 +3784,35 @@ legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
 
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 xlim([min(x) max(x)]);
-
+ylim([3 5])
 hold off;
 
 % paired t test
 peak_vs_trough_ipsi = [];
 peak_vs_trough_contra = [];
-peak_vs_trough_ipsi(:,1) =  mean([squeeze(V1_SO_FR(:,1,1,1)) squeeze(V1_SO_FR(:,2,2,1))],1);
-peak_vs_trough_ipsi(:,2) =  mean([squeeze(V1_SO_FR(:,1,1,2)) squeeze(V1_SO_FR(:,2,2,2))],1);
+peak_vs_trough_ipsi(:,1) =  mean([squeeze(V1_SO_FR(:,1,1,1)) squeeze(V1_SO_FR(:,2,2,1))],2);
+peak_vs_trough_ipsi(:,2) =  mean([squeeze(V1_SO_FR(:,1,1,2)) squeeze(V1_SO_FR(:,2,2,2))],2);
 
-peak_vs_trough_contra(:,1) =  mean([squeeze(V1_SO_FR(:,1,2,1)) squeeze(V1_SO_FR(:,2,1,1))],1);
-peak_vs_trough_contra(:,2) =  mean([squeeze(V1_SO_FR(:,1,2,2)) squeeze(V1_SO_FR(:,2,1,2))],1);
-% 
+peak_vs_trough_contra(:,1) =  mean([squeeze(V1_SO_FR(:,1,2,1)) squeeze(V1_SO_FR(:,2,1,1))],2);
+peak_vs_trough_contra(:,2) =  mean([squeeze(V1_SO_FR(:,1,2,2)) squeeze(V1_SO_FR(:,2,1,2))],2);
+%
 % peak_vs_trough =  squeeze(V1_SO_FR(:,2,1,:));
 % peak_vs_trough =  squeeze(V1_SO_FR(:,2,2,:));
 
-% --- Assume peak_vs_trough is a 22 x 2 matrix ---
 
+%%% Plot peak vs trough phases
 % 1. Setup the figure and colors
 peak_vs_trough = {peak_vs_trough_ipsi,peak_vs_trough_contra};
+conditions = {'V1 ipsi','V1 contra'};
 
+% fig = figure;
+% fig.Name = 'V1 SO phase Peak vs Trough';
+% sgtitle(fig.Name)
+% fig.Position= [844 66 560 906];
+% counter = 1;
 
-figure;
-for i = 1:2
-    subplot(2,2,i)
+for iplot = 1:2
+    subplot(2,2,iplot+2)
     hold on;
 
     % Define colors
@@ -3687,33 +3821,36 @@ for i = 1:2
     color_link = [0.5 0.5 0.5];  % Gray linking lines
 
     % Get the number of pairs (rows)
-    num_pairs = size(peak_vs_trough{}, 1);
+    num_pairs = size(peak_vs_trough{iplot}, 1);
+
+    jitter_col1 = (rand(num_pairs, 1) - 0.5) * 0.2;
+    jitter_col2 = (rand(num_pairs, 1) - 0.5) * 0.2;
 
     % 2. Draw the linking lines (One line per pair)
     for i = 1:num_pairs
         % X-values are fixed at [1 2] (the categories)
         % Y-values are the data [value_at_1 value_at_2]
-        plot([1 2], peak_vs_trough(i, :), ...
+        plot([1 + jitter_col1(i), 2 + jitter_col2(i)], peak_vs_trough{iplot}(i, :), ...
             'Color', color_link, ...
             'LineWidth', 0.5);
     end
 
     % 3. Plot the scatter points on top
     % Scatter for Condition 1 (at X=1)
-    scatter(ones(num_pairs, 1), peak_vs_trough(:, 1), ...
+    scatter(ones(num_pairs, 1)+jitter_col1, peak_vs_trough{iplot}(:, 1), ...
         70, color_col1, 'filled', ...
         'DisplayName', 'Condition 1');
 
     % Scatter for Condition 2 (at X=2)
-    scatter(2 * ones(num_pairs, 1), peak_vs_trough(:, 2), ...
+    scatter(2 * ones(num_pairs, 1)+jitter_col2, peak_vs_trough{iplot}(:, 2), ...
         70, color_col2, 'filled', ...
         'DisplayName', 'Condition 2');
 
 
     % 4. Formatting and Labels
-    ylabel('Observed Value (Y)');
-    xlabel('Condition');
-    title('Paired Comparison of Values (Condition 1 vs 2)');
+    ylabel('Mean firing rate (Hz)');
+    % xlabel('Condition');
+    title(conditions{iplot});
 
     % Set X-axis to show categories 1 and 2 clearly
     xlim([0.5 2.5]);
@@ -3729,6 +3866,64 @@ for i = 1:2
 end
 
 
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots'),[])
+
+
+%%%%%% Individual sessions
+for nsession = 1:22
+    options = experiment_info(nsession).experiment_ID;
+    fig = figure;
+    fig.Name = sprintf('%s SO phase MUA firing',options(1).experiment_ID)
+    sgtitle(fig.Name)
+    fig.Position= [844 66 560 906];
+    counter = 1;
+
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)');
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+
+    % counter = 1;
+    for hemi = 1:2
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        title(sprintf('HPC %s SO Phase',hemispheres{hemi}))
+        counter = counter+1;
+
+        subplot(4,2,counter)
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+        xlabel('SO Phase');ylabel('FR (Hz)')
+        set(gca,'TickDir','out','Box','off','FontSize',12)
+        xticks([-pi -pi/2 0 pi/2 pi])
+        xticklabels({'-π','-π/2','0','π/2','π'})
+        title(sprintf('HPC %s SO Phase (ripples)',hemispheres{hemi}))
+        counter = counter+1;
+    end
+end
+
+
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
     save(fullfile(analysis_folder,'SO_phase_MUA.mat'),'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_MUA_spike_rate','HPC_SO_FR','V1_SO_FR');
     % save(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
@@ -3741,3 +3936,17 @@ else
     % save(fullfile(analysis_folder,'periripple_LFP_info_HPC_RUN.mat'),'periripple_LFP_info_HPC','-v7.3');
     % save(fullfile(analysis_folder,'periripple_LFP_info_V1_RUN.mat'),'periripple_LFP_info_V1','-v7.3');
 end
+
+load((fullfile(analysis_folder,'SO_phase_MUA.mat')));
+
+for nsession = 1:22
+    plot(  squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)))
+
+    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:))
+
+    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:)
+
+    SO_phase_MUA_spike_rate
+end
+
+%%

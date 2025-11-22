@@ -227,7 +227,7 @@ for nprobe = 1:length(session_info.probe)
     centers = (edges(1:end-1) + edges(2:end)) / 2;
 
 
-    for nChannel = 1:length(good_V1_channels)
+    parfor nChannel = 1:length(good_V1_channels)
         tic
         deltaLFP=[];
         %             gammaLFP=[];

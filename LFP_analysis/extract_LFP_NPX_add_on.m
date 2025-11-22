@@ -1,4 +1,4 @@
-function extract_LFP_NPX(session_info,stimulus_name,best_channels)
+function extract_LFP_NPX_add_on(session_info,stimulus_name,best_channels)
 
 options = session_info.probe(1);
 % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_behaviour.mat'));
@@ -106,26 +106,26 @@ for nprobe = 1:length(session_info.probe)
         elseif contains(all_fields{nregion},'V1')
             region_channels(chan_config.Ks_ycoord(region_channels) < mean(chan_config.Ks_ycoord))=[];
         end
-        
+
         if contains(all_fields{nregion},'sparse') % want sparsely sampled channels
             selected_channels = [selected_channels region_channels'];
             channel_regions = [channel_regions nregion*ones(1,length(region_channels))];
-%             shank_id = [shank_id chan_config.Shank(region_channels)'];
+            %             shank_id = [shank_id chan_config.Shank(region_channels)'];
         else % Just want the best channel
             selected_channels = [selected_channels channels_temp];
             channel_regions = [channel_regions nregion*ones(1,length(channels_temp))];
-%             shank_id = [shank_id chan_config.Shank(region_channels)'];
+            %             shank_id = [shank_id chan_config.Shank(region_channels)'];
         end
         %                     shank_id = [shank_id chan_config.Shank(channels_temp)'];
     end
 
     channel_regions(isnan(selected_channels)) = []; % remove nan channel (Missing best channels for some shanks e.g. only 3 shanks with CA1)
-%     shank_id(isnan(selected_channels)) = [];
+    %     shank_id(isnan(selected_channels)) = [];
     selected_channels(isnan(selected_channels)) = [];
     [unique_selected_channels,ia,ic] = unique(selected_channels);
     shank_id = chan_config.Shank(selected_channels);
     unique_shank_id = chan_config.Shank(unique_selected_channels);
-%     unique_shank_id = shank_id(ia);
+    %     unique_shank_id = shank_id(ia);
 
     % Extract LFP
     [raw_LFP,tvec,SR,chan_config,~] = load_LFP_NPX(options,[],'selected_channels',unique_selected_channels);
@@ -147,9 +147,9 @@ for nprobe = 1:length(session_info.probe)
         not_this_shank = unique_shank_id(HPC_channel_id(nChannel))~=unique_shank_id(HPC_channel_id);% find channels not this shanks
         this_shank = unique_shank_id(HPC_channel_id(nChannel))==unique_shank_id(HPC_channel_id);% find channels this shanks
         bad_channels(nChannel,:) = rms_values(nChannel) > mean(rms_values) + 3 * std(rms_values) | channel_std(nChannel) > 5 * median(channel_std); % remove noisy channels based RMS and STD
-%         power{nprobe}(HPC_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:))
+        %         power{nprobe}(HPC_channel_id(nChannel),:)>2*mean(power{nprobe}(not_this_shank,:))
     end
-%     bad_channels = sum(bad_channels,2)>3;
+    %     bad_channels = sum(bad_channels,2)>3;
 
     good_HPC_channels=[];
     good_HPC_channels = HPC_channel_id(~bad_channels);
@@ -166,7 +166,7 @@ for nprobe = 1:length(session_info.probe)
         [~,channel_id]=max(power{nprobe}(good_HPC_channels(this_shank),6)); % Best CA1 channel with highest ripple power
         best_HPC_shank_channel_id(nShank) = good_HPC_channels(this_shank(channel_id));
     end
-    
+
     %%%%% Find best V1 channels in terms of high freq power
     V1_channel_id = find(ismember(unique_selected_channels,selected_channels(channel_regions==find(contains(all_fields,'V1_sparse')))));
     V1_channels = unique_selected_channels(V1_channel_id);
@@ -175,7 +175,7 @@ for nprobe = 1:length(session_info.probe)
         not_this_shank = unique_shank_id(V1_channel_id(nChannel))~=unique_shank_id(V1_channel_id);% find channels not this shanks
         bad_channels(nChannel,:) = rms_values(nChannel) > mean(rms_values) + 3 * std(rms_values) | channel_std(nChannel) > 5 * median(channel_std); % remove noisy channels based RMS and STD
     end
-%     bad_channels = sum(bad_channels,2)>3;
+    %     bad_channels = sum(bad_channels,2)>3;
 
     good_V1_channels=[];
     good_V1_channels = V1_channel_id(~bad_channels);
@@ -213,7 +213,7 @@ for nprobe = 1:length(session_info.probe)
     tvec_edges = [tvec(1)-1/(1/mean(diff(tvec))*2) tvec+1/(1/mean(diff(tvec))*2)];
 
 
-    %%%%%% Identify best LFP with SO phase 
+    %%%%%% Identify best LFP with SO phase
 
     deltaspikecorr=[];
     gammaspikecorr=[];
@@ -221,7 +221,7 @@ for nprobe = 1:length(session_info.probe)
     filterparms.deltafilter = [0.5 4];
     lfp.timestamps = tvec;
 
-%     chan_config.Ks_ycoord(ismember(chan_config.Channel,V1_channels))
+    %     chan_config.Ks_ycoord(ismember(chan_config.Channel,V1_channels))
     n_bins = 20; % Number of phase bins
     edges = linspace(-pi, pi, n_bins+1);
     centers = (edges(1:end-1) + edges(2:end)) / 2;
@@ -231,17 +231,17 @@ for nprobe = 1:length(session_info.probe)
         tic
         deltaLFP=[];
         %             gammaLFP=[];
-        
-%         lfp.data= raw_LFP(good_V1_channels(nChannel),:)';
-%         deltaLFP1 = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+
+        %         lfp.data= raw_LFP(good_V1_channels(nChannel),:)';
+        %         deltaLFP1 = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
 
         filt_order = round(1*LFP_SR./filterparms.deltafilter(1));
         [b a] = fir1(filt_order,filterparms.deltafilter/LFP_SR*2);
         deltaLFP = filtfilt(b,a,double(raw_LFP(good_V1_channels(nChannel),:)));
         deltaLFP= angle(hilbert(deltaLFP));
 
-%         deltaLFP.phase = interp1(deltaLFP.timestamps,deltaLFP.phase',tvec_NREM,'nearest');
-%         deltaLFP.phase = interp1(deltaLFP.timestamps,deltaLFP.phase',tvec_NREM,'nearest');
+        %         deltaLFP.phase = interp1(deltaLFP.timestamps,deltaLFP.phase',tvec_NREM,'nearest');
+        %         deltaLFP.phase = interp1(deltaLFP.timestamps,deltaLFP.phase',tvec_NREM,'nearest');
         %% 1. Settings
 
         %% 2. Pre-processing: Filter Spikes & Unwrap Phase
@@ -304,12 +304,12 @@ for nprobe = 1:length(session_info.probe)
     Region = 'best_SO_V1';
 
     best_V1_channel_index = [];
-%     trough_peak_ratio=[];
+    %     trough_peak_ratio=[];
     for nShank = 1:length(unique_shanks)
         channel_id = find(ismember(good_V1_channels,good_V1_channels(chan_config.Shank(ismember(chan_config.Channel,unique_selected_channels(good_V1_channels)))==unique_shanks(nShank))));
         [temp,index] = max(((trough_bins(channel_id)-peak_bins(channel_id))./(trough_bins(channel_id)+peak_bins(channel_id))));
         best_V1_channel_index(nShank) = good_V1_channels(channel_id(index));
-%         trough_peak_ratio(nShank) = temp;
+        %         trough_peak_ratio(nShank) = temp;
 
         LFP(nprobe).(sprintf('%s_trough_peak_ratio',Region))(nShank)=temp;
         LFP(nprobe).(sprintf('%s_phase_FR',Region))(nShank,:) =phase_FR(channel_id(index),:);
@@ -328,111 +328,26 @@ for nprobe = 1:length(session_info.probe)
     LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_channel_index,:);
 
     %         LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
-
-
-    % Save average V1 LFP per shank
-    V1_channels=unique_selected_channels(good_V1_channels);
-    unique_shanks = unique(chan_config.Shank(ismember(chan_config.Channel,V1_channels)));
-    mean_shank_LFP=[];
-    Region = 'average_V1';
-    for nShank = 1:length(unique_shanks)
-        channel_id = ismember(unique_selected_channels,V1_channels(chan_config.Shank(ismember(chan_config.Channel,V1_channels))==unique_shanks(nShank)));
-
-        LFP(nprobe).(Region)(nShank,:) = mean(raw_LFP(channel_id,:));
-        LFP(nprobe).(sprintf('%s_shank_id',Region))(nShank) = unique_shanks(nShank); % only avaliable shanks
-    end
-    LFP(nprobe).(sprintf('%s_channel',Region)) = V1_channels; % Record all good V1 channels;
-    LFP(nprobe).(sprintf('%s_depth',Region)) = chan_config.Ks_ycoord(ismember(chan_config.Channel,V1_channels)); % Record all good V1 channels;
-    LFP(nprobe).(sprintf('%s_xcoord',Region)) = chan_config.Ks_xcoord(ismember(chan_config.Channel,V1_channels)); % Record all good V1 channels;
-
-
-%     if ~isempty(SWS)
-%         % Save best SW V1 channels (here is equivalent of L5 based on high freq power)
-%         Region = 'best_V1';
-%         LFP(nprobe).(Region) = raw_LFP(best_V1_high_power_shank_channel_id,:);
-%         LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_high_power_shank_channel_id); % only avaliable shanks
-%         LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_V1_high_power_shank_channel_id);
-% 
-%         [xcoord,sorted_order] = sort(chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id))));
-%         ycoord = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id)))';
-%         ycoord=ycoord(sorted_order);
-% 
-%         LFP(nprobe).(sprintf('%s_depth',Region))=ycoord';
-%         LFP(nprobe).(sprintf('%s_xcoord',Region))=xcoord';
-%         LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_high_power_shank_channel_id,:);
-% %         LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_shank_channel_id,:);
-%     end
-
-    % Save best V1 channels based on high freq power (eqivalent of L5 if channel didn't move much)
-    Region = 'best_V1_high_freq';
-    LFP(nprobe).(Region) = raw_LFP(best_V1_high_power_shank_channel_id,:);
-    LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_V1_high_power_shank_channel_id); % only avaliable shanks
-    LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_V1_high_power_shank_channel_id);
-
-    [xcoord,sorted_order] = sort(chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id))));
-    ycoord = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_V1_high_power_shank_channel_id)))';
-    ycoord=ycoord(sorted_order);
-
-    LFP(nprobe).(sprintf('%s_depth',Region))=ycoord';
-    LFP(nprobe).(sprintf('%s_xcoord',Region))=xcoord';
-    LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_V1_high_power_shank_channel_id,:);
-
-
-
-    % Save best HPC channels based on ripple power
-    Region = 'best_HPC';
-    LFP(nprobe).(Region) = raw_LFP(best_HPC_shank_channel_id,:);
-    LFP(nprobe).(sprintf('%s_shank_id',Region)) = unique_shank_id(best_HPC_shank_channel_id); % only avaliable shanks
-    LFP(nprobe).(sprintf('%s_channel',Region))= unique_selected_channels(best_HPC_shank_channel_id);
-
-    [xcoord,sorted_order] = sort(chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_HPC_shank_channel_id))));
-    ycoord = chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_HPC_shank_channel_id)))';
-    ycoord=ycoord(sorted_order);
-
-    LFP(nprobe).(sprintf('%s_depth',Region))=ycoord';
-    LFP(nprobe).(sprintf('%s_xcoord',Region))=xcoord';
-
-    LFP(nprobe).(sprintf('%s_depth',Region))=chan_config.Ks_ycoord(ismember(chan_config.Channel,unique_selected_channels(best_HPC_shank_channel_id)))';
-    LFP(nprobe).(sprintf('%s_xcoord',Region))=chan_config.Ks_xcoord(ismember(chan_config.Channel,unique_selected_channels(best_HPC_shank_channel_id)))';
-    LFP(nprobe).(sprintf('%s_power',Region))=power{nprobe}(best_HPC_shank_channel_id,:);
-
-
-    all_fields(contains(all_fields,'V1_sparse'))=[];%remove
-    all_fields(contains(all_fields,'HPC_sparse'))=[];%remove
-    % Save other region-specific channels (based on checkerboard channel characterisation)
-    for nregion = 1:length(all_fields)
-        if sum(channel_regions == nregion)>0
-            LFP(nprobe).(all_fields{nregion}) = raw_LFP(ismember(unique_selected_channels,selected_channels(channel_regions == nregion)),:);
-            LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = shank_id(channel_regions == nregion); % only avaliable shanks
-            LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = selected_channels(channel_regions == nregion);
-            LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
-            LFP(nprobe).(sprintf('%s_xcoord',all_fields{nregion})) = chan_config.Ks_xcoord(selected_channels(channel_regions == nregion));
-            LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = power{nprobe}(ismember(unique_selected_channels,selected_channels(channel_regions == nregion)),:);
-        else
-            LFP(nprobe).(all_fields{nregion}) = [];
-            LFP(nprobe).(sprintf('%s_shank_id',all_fields{nregion})) = []; % only avaliable shanks
-            LFP(nprobe).(sprintf('%s_channel',all_fields{nregion})) = [];
-            LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = [];
-            LFP(nprobe).(sprintf('%s_xcoord',all_fields{nregion})) = [];
-            LFP(nprobe).(sprintf('%s_power',all_fields{nregion})) = [];
-        end
-        %                 LFP(nprobe).(sprintf('%s_depth',all_fields{nregion})) = chan_config.Ks_ycoord(selected_channels(channel_regions == nregion));
-    end
-
 end
+
 if contains(stimulus_name,'Masa2tracks')
     % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_slow_wave_events%s.mat',erase(stimulus_name,'Masa2tracks'))),'slow_waves')
     % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('behavioural_state%s.mat',erase(stimulus_name,'Masa2tracks'))),'behavioural_state')
-    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))),'PSD')
-    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))),'PSD')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_PSD%s.mat',erase(stimulus_name,'Masa2tracks'))),'PSD')
+    save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP_V1_SO%s.mat',erase(stimulus_name,'Masa2tracks'))),'LFP','-v7.3')
 else
 
     % save(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'),'slow_waves')
     % save(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state.mat'),'behavioural_state')
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
-    % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
-end
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
+    %     % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP','-v7.3')
 
+    %     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'),'PSD','power')% save PSD for the sleep session
+    % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_LFP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'LFP','-v7.3')
+    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP_V1_SO.mat'),'LFP','-v7.3')
+end
 
 close all
