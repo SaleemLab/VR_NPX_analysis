@@ -142,7 +142,7 @@ ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%UP_normalised_durationUP_normalised_durationUP_normalised_duration
 %%%%%%%%%%%%%%%%%%%%%%%
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'));
 
@@ -187,6 +187,8 @@ end
 ripple_info.early_UP_index=[];
 ripple_info.late_UP_index = [];
 % ripple_info.early_UP_index=[];
+ripple_info.after_SO_index = [];
+ripple_info.before_SO_index = [];
 
 for nprobe = 1:2
 
@@ -453,7 +455,7 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % 
 Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
 Duration(Duration>10)=[];
-event_duration_threshold = [0 1 10];
+event_duration_threshold = [0 1.5 10];
 
 % duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:33:100);
 % duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
@@ -672,7 +674,9 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal 
 Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
 Duration(Duration>10)=[];
 
-event_duration_threshold = prctile(Duration,50);
+event_duration_threshold = 1;
+
+prctile(Duration,50)
 
 % duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:33:100);
 % duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
@@ -751,11 +755,11 @@ for t = 1:nTime
                 % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
 
-                if npower == 1 % UP and not UP
+                if npower == 1 % UP (1.5s) and UP (not 1.5s or less)
                     t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),1))) > 1';
+                        ~(ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold)) > 1';
                     t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),2))) > 1';
+                        ~(ripple_info.UP_duration(true_idx(idx),2)<event_duration_threshold)) > 1';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -769,9 +773,9 @@ for t = 1:nTime
                     t2s = boot_V1_shift <= -th;
 
                     t1s = t1s' + (ripple_info.UP_duration(true_idx,2)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,2) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx,1))) > 1';
+                        ~(ripple_info.UP_duration(true_idx,1)<event_duration_threshold)) > 1';
                     t2s = t2s' + (ripple_info.UP_duration(true_idx,1)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,1) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx,2))) > 1';
+                        ~(ripple_info.UP_duration(true_idx,2)<event_duration_threshold)) > 1';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -797,9 +801,9 @@ for t = 1:nTime
                     t2s = boot_V1_shift <= -th;
 
                     t1s = t1s' + (ripple_info.UP_duration(true_idx,2)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,2) > 0 & ...
-                        ripple_info.normalised_UP_duration(true_idx,1) > 0) > 1';
+                        ripple_info.UP_duration(true_idx,1)<event_duration_threshold) > 1';
                     t2s = t2s' + (ripple_info.UP_duration(true_idx,1)<event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,1) > 0 & ...
-                        ripple_info.normalised_UP_duration(true_idx,2) > 0) > 1';
+                        ripple_info.UP_duration(true_idx,2)<event_duration_threshold) > 1';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -827,11 +831,11 @@ for t = 1:nTime
     end
 end
 % -------- save --------
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short_1s.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_UP_short.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by UP states (less than 1.5s) (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC by UP states (less than 1s) (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % spindle_thresholds = {'SO trough and power 0-25','SO trough and power 25-50','SO trough and power 50-75','SO trough and power 75-100'};
@@ -868,7 +872,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by Unilateral UP vs Bilateral UP (less than 1.5s) (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC by Unilateral UP vs Bilateral UP (less than 1s) (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -1000,11 +1004,11 @@ for t = 1:nTime
                 % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
 
-                if npower == 1 % UP and not UP
+                if npower == 1 % UP (1.5s) and UP (not 1.5s or less)
                     t1 = t1' + (ripple_info.UP_duration(true_idx(idx),2)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),2) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),1))) > 1';
+                        ~(ripple_info.UP_duration(true_idx(idx),1)>event_duration_threshold)) > 1';
                     t2 = t2' + (ripple_info.UP_duration(true_idx(idx),1)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx(idx),1) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx(idx),2))) > 1';
+                        ~(ripple_info.UP_duration(true_idx(idx),2)>event_duration_threshold)) > 1';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -1018,9 +1022,9 @@ for t = 1:nTime
                     t2s = boot_V1_shift <= -th;
 
                     t1s = t1s' + (ripple_info.UP_duration(true_idx,2)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,2) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx,1))) > 1';
+                        ~(ripple_info.UP_duration(true_idx,1)>event_duration_threshold)) > 1';
                     t2s = t2s' + (ripple_info.UP_duration(true_idx,1)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,1) > 0 & ...
-                        isnan(ripple_info.normalised_UP_duration(true_idx,2))) > 1';
+                        ~(ripple_info.UP_duration(true_idx,2)>event_duration_threshold)) > 1';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -1046,9 +1050,9 @@ for t = 1:nTime
                     t2s = boot_V1_shift <= -th;
 
                     t1s = t1s' + (ripple_info.UP_duration(true_idx,2)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,2) > 0 & ...
-                        ripple_info.normalised_UP_duration(true_idx,1) > 0) > 1';
+                        ripple_info.UP_duration(true_idx,1)>event_duration_threshold) > 1';
                     t2s = t2s' + (ripple_info.UP_duration(true_idx,1)>event_duration_threshold & ripple_info.normalised_UP_duration(true_idx,1) > 0 & ...
-                        ripple_info.normalised_UP_duration(true_idx,2) > 0) > 1';
+                        ripple_info.UP_duration(true_idx,2)>event_duration_threshold) > 1';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -1139,7 +1143,7 @@ for npower = [1 2]
     yline(0,'--r');
     xlabel('Time (s relative to ripple)');
     ylabel('HPC bias AUC');
-    title(' 1st vs 2nd half UP state');
+    title(' Unilateral vs Bilateral UP');
     set(gca,'TickDir','out','Box','off','FontSize',12);
     xlim([-0.5 0.5]);
     ylim([-0.1 0.25])
@@ -1318,7 +1322,7 @@ for npower = 1:nBins
     yline(0,'--r');
     xlabel('Time (s relative to ripple)');
     ylabel('HPC bias AUC');
-    title(sprintf('Normalised SO duration %d (%.2f–%.2f)', npower, ...
+    title(sprintf('Normalised UP duration %d (%.2f–%.2f)', npower, ...
         duration_thresholds(npower), duration_thresholds(npower+1)));
     set(gca,'TickDir','out','Box','off','FontSize',12);
     xlim([-0.5 0.5]);
@@ -1585,12 +1589,18 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal 
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%
-%% Temporal log odds AUC of ripples that occur during normalised SO 'peak' vs 'trough'
+%% Temporal log odds AUC of ripples that occur during normalised SO 'peak' vs 'trough' (less than 1.5s)
 
 % duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
 % duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
 % duration_thresholds = [0, 1/2 1;0 1/2, 1]';
 nBins = 2 ;
+
+Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
+Duration(Duration>10)=[];
+
+% event_duration_threshold = 2;
+event_duration_threshold = prctile(Duration,50);
 
 % Time windows
 win_size  = 0.1;   % 100 ms selection window for V1
@@ -1665,10 +1675,10 @@ for t = 1:nTime
                 % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
                 if npower == 1 % close to DOWN
-                    t1 = t1' + (ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.25 | ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.75) > 1';
-                    t2 = t2' + (ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.25 | ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.75) > 1';
+                    t1 = t1' + (ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.75) > 2';
+                    t2 = t2' + (ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.75) > 2';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -1681,10 +1691,10 @@ for t = 1:nTime
                     t1s = boot_V1_shift >= th;
                     t2s = boot_V1_shift <= -th;
 
-                    t1s = t1s' + (ripple_info.normalised_SO_duration(true_idx,2) < 0.25 | ...
-                        ripple_info.normalised_SO_duration(true_idx,2) > 0.75) > 1';
-                    t2s = t2s' + (ripple_info.normalised_SO_duration(true_idx,1) < 0.25 | ...
-                        ripple_info.normalised_SO_duration(true_idx,1) > 0.75) > 1';
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,2) > 0.75) > 2';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,1) > 0.75) > 2';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -1693,10 +1703,10 @@ for t = 1:nTime
                     end
 
                 else % Away from DOWN
-                    t1 = t1' + (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 1';
-                    t2 = t2' + (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 1';
+                    t1 = t1' +(ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 2';
+                    t2 = t2' +(ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 2';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -1709,10 +1719,10 @@ for t = 1:nTime
                     t1s = boot_V1_shift >= th;
                     t2s = boot_V1_shift <= -th;
 
-                    t1s = t1s' + (ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 1';
-                    t2s = t2s' + (ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 1';
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 2';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 2';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -1740,13 +1750,15 @@ for t = 1:nTime
     end
 end
 % -------- save --------
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_long.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_long.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_short.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_short.mat'))
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'),'AUC')
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by normalised UP duration peak vs trough (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC by normalised UP duration peak vs trough less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 duration_thresholds = {'Normalised SO peak','Normalised SO trough'}
@@ -1781,7 +1793,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC normalised SO peak vs trough (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO peak vs trough less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -1819,33 +1831,19 @@ plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
 
 
-%%
 
+%% Temporal log odds AUC of ripples that occur during normalised SO 'peak' vs 'trough' (less than 1.5s)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-%% Temporal log odds AUC of ripples that occur during first half and second half of SO state 
 % duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
 % duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
-duration_thresholds = [0, 1/2 1;0 1/2, 1]';
-nBins = length(duration_thresholds)-1 ;
+% duration_thresholds = [0, 1/2 1;0 1/2, 1]';
+nBins = 2 ;
+
+Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
+Duration(Duration>10)=[];
+
+% event_duration_threshold = 2;
+event_duration_threshold = prctile(Duration,50);
 
 % Time windows
 win_size  = 0.1;   % 100 ms selection window for V1
@@ -1919,32 +1917,71 @@ for t = 1:nTime
 
                 % --- Normalised duration ---
                 % Track 1 → use right probe (2), Track 2 → left probe (1)
+                if npower == 1 % Unilateral trough
+                    t1 = t1' + (ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 3';
+                    t2 = t2' + (ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 3';
 
-                t1 = t1' + (ripple_info.normalised_SO_duration(true_idx(idx),2) > duration_thresholds(npower,2) & ...
-                    ripple_info.normalised_SO_duration(true_idx(idx),2) <= duration_thresholds(npower+1,2)) > 1';
-                t2 = t2' + (ripple_info.normalised_SO_duration(true_idx(idx),1) > duration_thresholds(npower,1) & ...
-                    ripple_info.normalised_SO_duration(true_idx(idx),1) <= duration_thresholds(npower+1,1)) > 1';
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
 
-                % HPC bias difference between Track 1 and Track 2
-                t1_HPC = boot_HPC(t1);
-                t2_HPC = boot_HPC(t2);
-                if any(t1) && any(t2)
-                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
-                end
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
 
-                % --- Shifted pairing (null) ---
-                t1s = boot_V1_shift >= th;
-                t2s = boot_V1_shift <= -th;
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,1) > 0.75) + (ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 3';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,2) > 0.75) + (ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 3';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
+
+                else % Bilateral SO trough
+                    t1 = t1' +(ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 3';
+                    t2 = t2' +(ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 3';
+
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
+
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
+
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) + (ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 3';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) + (ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 3';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
 
 
-                t1s = t1s' + (ripple_info.normalised_SO_duration(true_idx,2) > duration_thresholds(npower,2) & ...
-                    ripple_info.normalised_SO_duration(true_idx,2) <= duration_thresholds(npower+1,2)) > 1';
-                t2s = t2s' + (ripple_info.normalised_SO_duration(true_idx,1) > duration_thresholds(npower,1) & ...
-                    ripple_info.normalised_SO_duration(true_idx,1) <= duration_thresholds(npower+1,1)) > 1';
-                t1_HPCs = boot_HPC(t1s);
-                t2_HPCs = boot_HPC(t2s);
-                if any(t1s) && any(t2s)
-                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
                 end
             end
 
@@ -1964,13 +2001,483 @@ for t = 1:nTime
     end
 end
 % -------- save --------
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'))
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'),'AUC')
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by normalised SO duration (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO trough synchony less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+duration_thresholds = {'Normalised SO peak','Normalised SO trough'}
+for npower = 1:nBins
+    nexttile; hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+        [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+    plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title(duration_thresholds{npower});
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO unilateral vs bilateral trough less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+% figure
+for npower = [1 2]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),1);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),1,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('Normalised SO peak vs trough');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.35])
+
+    xline(0,'--k');
+end
+
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+% Save results
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+%%
+
+
+
+%% Temporal log odds AUC of ripples that occur during normalised SO 'peak' vs 'trough' (longer than 1.5s)
+
+% duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
+% duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
+% duration_thresholds = [0, 1/2 1;0 1/2, 1]';
+nBins = 2 ;
+
+Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
+Duration(Duration>10)=[];
+
+event_duration_threshold = prctile(Duration,50);
+
+% Time windows
+win_size  = 0.1;   % 100 ms selection window for V1
+step_size = 0.02;  % 50 ms step
+time_bins = -1:step_size:1;
+nTime = numel(time_bins);
+nBoot = 1000;
+
+% Fixed HPC window (always 0–0.1 s)
+bins_to_use = bin_centers >= 0 & bin_centers < 0.1;
+
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    % 226, 132, 187;
+    212,  78, 156;
+    231,  41, 138] / 256;
+
+% Storage
+AUC.mean = nan(nTime, nBins);
+AUC.ci = nan(nTime, nBins, 2);
+AUC.shifted_mean = nan(nTime, nBins);
+AUC.shifted_ci = nan(nTime, nBins, 2);
+
+for t = 1:nTime
+    t0 = time_bins(t);
+    t1 = t0 + win_size;
+
+    % Sliding V1 window (used for event selection)
+    bins_to_select = bin_centers >= t0 & bin_centers < t1;
+
+    fprintf('Processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
+
+    for npower = 1:nBins
+        % All events included, spindle bin applied later conditional on track side
+        event_index = true(1, length(z_bias));
+
+        % Compute mean log-odds
+        mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan'); % selector
+        mean_bias_HPC = mean(z_bias(bins_to_use, event_index), 'omitnan');       % measure
+        total_events = length(mean_bias_V1);
+        if total_events < 10, continue; end
+
+        % Quantile thresholds on |V1 bias|
+        thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+        thresholds = thresholds(1:end-1);
+        nThresh = numel(thresholds);
+
+        bias_diff_boot = NaN(nBoot, nThresh);
+        bias_diff_shift_boot = NaN(nBoot, nThresh);
+
+        parfor iBoot = 1:nBoot
+            s = RandStream('philox4x32_10', 'Seed', iBoot);
+            idx = randi(s, total_events, total_events, 1);
+            true_idx = find(event_index);
+
+            boot_V1  = mean_bias_V1(idx);
+            boot_HPC = mean_bias_HPC(idx);
+
+            % “Shifted”: randomise pairing between V1 & HPC
+            boot_V1_shift = mean_bias_V1;
+            diff_tmp = NaN(1, nThresh);
+            diff_tmp_shift = NaN(1, nThresh);
+
+            for i = 1:nThresh
+                th = thresholds(i);
+
+                % Identify Track 1 (positive V1 bias) and Track 2 (negative V1 bias)
+                t1 = boot_V1 >= th;     % Track 1
+                t2 = boot_V1 <= -th;    % Track 2
+
+                % --- Normalised duration ---
+                % Track 1 → use right probe (2), Track 2 → left probe (1)
+                if npower == 1 % close to DOWN
+                    t1 = t1' + (ripple_info.SO_event_duration(true_idx(idx),2) > event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.75) > 2';
+                    t2 = t2' + (ripple_info.SO_event_duration(true_idx(idx),1) > event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.75) > 2';
+
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
+
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
+
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) > event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,2) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,2) > 0.75) > 2';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) > event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,1) < 0.25 | ...
+                        ripple_info.normalised_SO_duration(true_idx,1) > 0.75) > 2';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
+
+                else % Away from DOWN
+                    t1 = t1' +(ripple_info.SO_event_duration(true_idx(idx),2) > event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 2';
+                    t2 = t2' +(ripple_info.SO_event_duration(true_idx(idx),1) > event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 2';
+
+                    % HPC bias difference between Track 1 and Track 2
+                    t1_HPC = boot_HPC(t1);
+                    t2_HPC = boot_HPC(t2);
+                    if any(t1) && any(t2)
+                        diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                    end
+
+                    % --- Shifted pairing (null) ---
+                    t1s = boot_V1_shift >= th;
+                    t2s = boot_V1_shift <= -th;
+
+                    t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) > event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 2';
+                    t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) > event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 2';
+
+                    t1_HPCs = boot_HPC(t1s);
+                    t2_HPCs = boot_HPC(t2s);
+                    if any(t1s) && any(t2s)
+                        diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                    end
+
+
+                end
+            end
+
+            bias_diff_boot(iBoot, :) = diff_tmp;
+            bias_diff_shift_boot(iBoot, :) = diff_tmp_shift;
+        end
+
+        % Quantile-based AUC
+        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+        auc_shift_boot = (trapz(thresholds, bias_diff_shift_boot') / (max(thresholds)-min(thresholds)))';
+
+        % Store summaries
+        AUC.mean(t, npower) = mean(auc_boot, 'omitnan');
+        AUC.ci(t, npower, :) = prctile(auc_boot, [2.5 97.5]);
+        AUC.shifted_mean(t, npower) = mean(auc_shift_boot, 'omitnan');
+        AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
+    end
+end
+% -------- save --------
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_long.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_long.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC by normalised UP duration peak vs trough longer than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+duration_thresholds = {'Normalised SO peak','Normalised SO trough'}
+for npower = 1:nBins
+    nexttile; hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+        [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+    plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title(duration_thresholds{npower});
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO peak vs trough longer than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+% figure
+for npower = [1 2]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),1);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),1,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('Normalised SO peak vs trough');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.35])
+
+    xline(0,'--k');
+end
+
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+% Save results
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%% Temporal log odds AUC of ripples that occur during first half and second half of SO state 
+% duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
+% duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
+duration_thresholds = [0, 1/2 1;0 1/2, 1]';
+nBins = length(duration_thresholds)-1 ;
+
+
+Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
+Duration(Duration>10)=[];
+event_duration_threshold = 2;
+% event_duration_threshold = prctile(Duration,50);
+
+% Time windows
+win_size  = 0.1;   % 100 ms selection window for V1
+step_size = 0.02;  % 50 ms step
+time_bins = -1:step_size:1;
+nTime = numel(time_bins);
+nBoot = 1000;
+
+% Fixed HPC window (always 0–0.1 s)
+bins_to_use = bin_centers >= 0 & bin_centers < 0.1;
+
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    % 226, 132, 187;
+    212,  78, 156;
+    231,  41, 138] / 256;
+
+% Storage
+AUC.mean = nan(nTime, nBins);
+AUC.ci = nan(nTime, nBins, 2);
+AUC.shifted_mean = nan(nTime, nBins);
+AUC.shifted_ci = nan(nTime, nBins, 2);
+
+for t = 1:nTime
+    t0 = time_bins(t);
+    t1 = t0 + win_size;
+
+    % Sliding V1 window (used for event selection)
+    bins_to_select = bin_centers >= t0 & bin_centers < t1;
+
+    fprintf('Processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
+
+    for npower = 1:nBins
+        % All events included, spindle bin applied later conditional on track side
+        event_index = true(1, length(z_bias));
+
+        % Compute mean log-odds
+        mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan'); % selector
+        mean_bias_HPC = mean(z_bias(bins_to_use, event_index), 'omitnan');       % measure
+        total_events = length(mean_bias_V1);
+        if total_events < 10, continue; end
+
+        % Quantile thresholds on |V1 bias|
+        thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+        thresholds = thresholds(1:end-1);
+        nThresh = numel(thresholds);
+
+        bias_diff_boot = NaN(nBoot, nThresh);
+        bias_diff_shift_boot = NaN(nBoot, nThresh);
+
+        parfor iBoot = 1:nBoot
+            s = RandStream('philox4x32_10', 'Seed', iBoot);
+            idx = randi(s, total_events, total_events, 1);
+            true_idx = find(event_index);
+
+            boot_V1  = mean_bias_V1(idx);
+            boot_HPC = mean_bias_HPC(idx);
+
+            % “Shifted”: randomise pairing between V1 & HPC
+            boot_V1_shift = mean_bias_V1;
+            diff_tmp = NaN(1, nThresh);
+            diff_tmp_shift = NaN(1, nThresh);
+
+            for i = 1:nThresh
+                th = thresholds(i);
+
+                % Identify Track 1 (positive V1 bias) and Track 2 (negative V1 bias)
+                t1 = boot_V1 >= th;     % Track 1
+                t2 = boot_V1 <= -th;    % Track 2
+
+                % --- Normalised duration ---
+                t1 = t1' +(ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),2) > duration_thresholds(npower) & ...
+                    ripple_info.normalised_SO_duration(true_idx(idx),2) < duration_thresholds(npower+1)) > 2';
+                t2 = t2' +(ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),1) > duration_thresholds(npower) & ...
+                    ripple_info.normalised_SO_duration(true_idx(idx),1) < duration_thresholds(npower+1)) > 2';
+
+                % HPC bias difference between Track 1 and Track 2
+                t1_HPC = boot_HPC(t1);
+                t2_HPC = boot_HPC(t2);
+                if any(t1) && any(t2)
+                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                end
+
+
+                % --- Shifted pairing (null) ---
+                t1s = boot_V1_shift >= th;
+                t2s = boot_V1_shift <= -th;
+
+                t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,2) > duration_thresholds(npower) & ...
+                    ripple_info.normalised_SO_duration(true_idx,2) < duration_thresholds(npower+1)) > 2';
+                t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,1) > duration_thresholds(npower) & ...
+                    ripple_info.normalised_SO_duration(true_idx,1) < duration_thresholds(npower+1)) > 2';
+
+                t1_HPCs = boot_HPC(t1s);
+                t2_HPCs = boot_HPC(t2s);
+                if any(t1s) && any(t2s)
+                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                end
+
+            end
+
+            bias_diff_boot(iBoot, :) = diff_tmp;
+            bias_diff_shift_boot(iBoot, :) = diff_tmp_shift;
+        end
+
+        % Quantile-based AUC
+        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+        auc_shift_boot = (trapz(thresholds, bias_diff_shift_boot') / (max(thresholds)-min(thresholds)))';
+
+        % Store summaries
+        AUC.mean(t, npower) = mean(auc_boot, 'omitnan');
+        AUC.ci(t, npower, :) = prctile(auc_boot, [2.5 97.5]);
+        AUC.shifted_mean(t, npower) = mean(auc_shift_boot, 'omitnan');
+        AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
+    end
+end
+% -------- save --------
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_short.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_short.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC by normalised SO duration less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 
@@ -2006,7 +2513,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC first half vs second half SO (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC first half vs second half SO less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
