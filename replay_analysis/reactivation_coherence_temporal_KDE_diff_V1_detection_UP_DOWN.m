@@ -15,6 +15,8 @@ end
 load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+
+% load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
@@ -1832,18 +1834,15 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal 
 
 
 
-%% Temporal log odds AUC of ripples that occur during normalised SO 'peak' vs 'trough' (less than 1.5s)
+%% Temporal log odds AUC of ripples that occur during unilateral vs bilateral normalised SO 'trough' (less than 1.5s)
 
-% duration_thresholds = prctile(ripple_info.normalised_UP_duration, 0:50:100);
-% duration_thresholds = [0, 1/3,2/3, 1;0, 1/3,2/3, 1]';
-% duration_thresholds = [0, 1/2 1;0 1/2, 1]';
 nBins = 2 ;
 
 Duration = [ripple_info.UP_duration(:,1); ripple_info.UP_duration(:,2)];
 Duration(Duration>10)=[];
 
-% event_duration_threshold = 2;
-event_duration_threshold = prctile(Duration,50);
+event_duration_threshold = 3;
+% event_duration_threshold = prctile(Duration,50);
 
 % Time windows
 win_size  = 0.1;   % 100 ms selection window for V1
@@ -1920,10 +1919,10 @@ for t = 1:nTime
                 if npower == 1 % Unilateral trough
                     t1 = t1' + (ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.25 | ...
                         ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) + (ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold)> 4';
                     t2 = t2' + (ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.25 | ...
                         ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) +(ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)> 4';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -1938,10 +1937,10 @@ for t = 1:nTime
 
                     t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,1) < 0.25 | ...
                         ripple_info.normalised_SO_duration(true_idx,1) > 0.75) + (ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) > 4';
                     t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) + (ripple_info.normalised_SO_duration(true_idx,2) < 0.25 | ...
                         ripple_info.normalised_SO_duration(true_idx,2) > 0.75) + (ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold)> 4';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -1952,10 +1951,10 @@ for t = 1:nTime
                 else % Bilateral SO trough
                     t1 = t1' +(ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
                         ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) + (ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold) > 4';
                     t2 = t2' +(ripple_info.SO_event_duration(true_idx(idx),1) < event_duration_threshold)+ (ripple_info.normalised_SO_duration(true_idx(idx),1) > 0.25 & ...
                         ripple_info.normalised_SO_duration(true_idx(idx),1) < 0.75) + (ripple_info.normalised_SO_duration(true_idx(idx),2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx(idx),2) < 0.75) + (ripple_info.SO_event_duration(true_idx(idx),2) < event_duration_threshold)>4';
 
                     % HPC bias difference between Track 1 and Track 2
                     t1_HPC = boot_HPC(t1);
@@ -1970,10 +1969,10 @@ for t = 1:nTime
 
                     t1s = t1s' + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
                         ripple_info.normalised_SO_duration(true_idx,2) < 0.75) + (ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx,1) < 0.75) + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) > 4';
                     t2s = t2s' + (ripple_info.SO_event_duration(true_idx,1) < event_duration_threshold) +(ripple_info.normalised_SO_duration(true_idx,1) > 0.25 & ...
                         ripple_info.normalised_SO_duration(true_idx,1) < 0.75) + (ripple_info.normalised_SO_duration(true_idx,2) > 0.25 & ...
-                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) > 3';
+                        ripple_info.normalised_SO_duration(true_idx,2) < 0.75) + (ripple_info.SO_event_duration(true_idx,2) < event_duration_threshold)> 4';
 
                     t1_HPCs = boot_HPC(t1s);
                     t2_HPCs = boot_HPC(t2s);
@@ -2003,13 +2002,15 @@ end
 % -------- save --------
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'),'AUC')
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_2s.mat'))
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony_3s.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_synchrony_3s.mat'))
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'),'AUC')
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC normalised SO trough synchony less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO trough synchony less than 3s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 duration_thresholds = {'Normalised SO peak','Normalised SO trough'}
@@ -2044,7 +2045,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC normalised SO unilateral vs bilateral trough less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC normalised SO unilateral vs bilateral trough less than 3s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -2077,6 +2078,11 @@ end
 fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
     [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
 plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+
+
+
+
 
 % Save results
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
