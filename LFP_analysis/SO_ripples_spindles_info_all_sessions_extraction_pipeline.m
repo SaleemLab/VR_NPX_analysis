@@ -1096,7 +1096,6 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_relative_PSTH_
 
 %% Extract UP and SO (UP+DOWN) normalised time
 
-
 sessions_to_process = 1:max(slow_waves_all(1).DOWN_session_count);
 duration_threshold = 10;
 for nprobe = 1:2
@@ -1106,10 +1105,10 @@ end
 num_bins = 20;
 
 for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
-    ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
-    ripple_index1 = find(ripples_all(1).session_count==nsession);
-    ripple_index2 = find(ripples_all(2).session_count==nsession);
+    % ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
+    % ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
+    % ripple_index1 = find(ripples_all(1).session_count==nsession);
+    % ripple_index2 = find(ripples_all(2).session_count==nsession);
 
     %     ripples_all.onset
 
@@ -1144,11 +1143,22 @@ end
 % column 4 - Duration of this SO or UP or DOWN
 
 for nsession = 1:max(slow_waves_all(1).DOWN_session_count)
-    ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
-    ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
+    % ripple_index1 = find(ripples_all(1).session_count == sessions_to_process(nsession)& ripples_all(1).SWS_index == 1);
+    ripple_times1 = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 1,:))';
+    % ripple_times1 = min(ripples_all(1).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(1).probe_hemisphere{sessions_to_process(nsession)} == 1,ripples_all(1).SWS_index(ripples_all(1).session_count == sessions_to_process(nsession))==1))';
+
+    % ripple_index2 = find(ripples_all(2).session_count == sessions_to_process(nsession)& ripples_all(2).SWS_index == 1);
+    ripple_times2 = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,:))';
+    % ripple_times2 = min(ripples_all(2).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(2).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(2).SWS_index(ripples_all(2).session_count == sessions_to_process(nsession))==1))';
+
+    % ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession& ripples_all(1).SWS_index == 1);
+    % ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession& ripples_all(2).SWS_index == 1);
+
+    % ripple_times1 = ripples_all(1).onset(ripples_all(1).session_count==nsession);
+    % ripple_times2 = ripples_all(2).onset(ripples_all(2).session_count==nsession);
+
     ripple_index1 = find(ripples_all(1).session_count==nsession);
     ripple_index2 = find(ripples_all(2).session_count==nsession);
-
     %     ripples_all.onset
 
     for nprobe = 1:2
@@ -1257,6 +1267,8 @@ end
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'),'DOWN_normalised_duration','UP_normalised_duration','SO_normalised_duration');
 
 save(fullfile(analysis_folder,'slow_waves_all_POST.mat'),'slow_waves_all','-v7.3');
+
+
 
 
 

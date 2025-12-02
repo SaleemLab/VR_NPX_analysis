@@ -365,6 +365,11 @@ for nsession = 1:length(sessions_to_process)
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
 
+
+    [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(event_id,event_times,0.05);
+    event_times = event_times(event_ids_first);
+    event_id = event_id(event_ids_first);
+
     ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
         'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
     % bins = ripple_modulation.bins > 0 & ripple_modulation.bins < 0.5;
@@ -384,7 +389,7 @@ for nsession = 1:length(sessions_to_process)
     % Get mean bias for each ripple event in HPC and get within session
     % Track 1 and Track 2 biased ripple events based on HPC bias
     mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
-    log_odds_threshold = prctile(mean_bias,[20 80]);
+    log_odds_threshold = prctile(mean_bias,[25 75]);
     T1_index = find(mean_bias > log_odds_threshold(2));
     T2_index = find(mean_bias < log_odds_threshold(1));
 
@@ -625,311 +630,6 @@ for nsession = 1:length(sessions_to_process)
     end
 
 
-    %%%%%%%%%%%% spindle phase
-    event_phase=[];
-
-    for nprobe = 1:2
-        session_event_index = find(ripples_all(nprobe).session_count == nsession);
-        [C,ia,ib] = intersect(session_event_index,find(ripples_all(nprobe).session_count == nsession&ripples_all(nprobe).SWS_index==1));
-        event_phase = [event_phase ripples_all(nprobe).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),ia)];
-    end
-    
-    is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
-    is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
-    T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1);
-    T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1);
-
-    for nCell = 1:length(all_clusters)
-        % Ripple PSTH
-        context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-        context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-        % Difference PSTH (stim1 - stim2)
-        context_modulation_all.PSTH_diff_peak_spindle{nsession}(nCell,:) = ...
-            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(1,nCell,:))' - ...
-            squeeze(context_modulation_all.PSTH_peak_spindle{nsession}(2,nCell,:))';
-    end
-
-
-
-    is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
-    is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
-    T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1);
-    T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1);
-
-    for nCell = 1:length(all_clusters)
-        % Ripple PSTH
-        context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-        context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-        % Difference PSTH (stim1 - stim2)
-        context_modulation_all.PSTH_diff_trough_spindle{nsession}(nCell,:) = ...
-            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(1,nCell,:))' - ...
-            squeeze(context_modulation_all.PSTH_trough_spindle{nsession}(2,nCell,:))';
-    end
-
-
-    hemi_id = [ones(1,sum((ripples_all(1).SWS_index==1 & ripples_all(1).session_count==nsession)>0)) 2*ones(1,sum((ripples_all(2).SWS_index==1 & ripples_all(2).session_count==nsession)>0))];
-
-    %%%%%%%%%%%% SO power (different timing)
-    log_odds_threshold = prctile(mean_bias,[20 80]);
-
-    for n = 1:3
-        temp = [squeeze(ripples_TF_stats.V1_amp{nsession}(1,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_amp{nsession}(2,1,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_amp{nsession}(2,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_amp{nsession}(1,1,timebins(n),hemi_id == 2))'];
-        temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        %%%%% LOW
-        T1_index = find(mean_bias > log_odds_threshold(2) & temp_percentile(2,:) <= 0.25);
-        T2_index = find(mean_bias < log_odds_threshold(1) & temp_percentile(1,:) <= 0.25);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_low_SO_time{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_low_SO_time{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_low_SO_time{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_low_SO_time{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_low_SO_time{nsession}(2,nCell,:))';
-        end
-
-        %%%%% High
-        T1_index = find(mean_bias > log_odds_threshold(2) & temp_percentile(2,:) >= 0.75);
-        T2_index = find(mean_bias < log_odds_threshold(1) & temp_percentile(1,:) >= 0.75);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_high_SO_time{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_high_SO_time{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_high_SO_time{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_high_SO_time{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_high_SO_time{nsession}(2,nCell,:))';
-        end
-
-    end
-
-
-    %%%%%%%%%%%% SO phase with different times
-    event_phase = [];
-    for n = 1:3
-        event_phase = [squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 2))'];
-        % temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
-        is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_peak_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_peak_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_peak_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_peak_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_peak_SO_time{n}{nsession}(2,nCell,:))';
-        end
-
-   
-
-        is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
-        is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_trough_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_trough_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_trough_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_trough_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_trough_SO_time{n}{nsession}(2,nCell,:))';
-        end
-    end
-
-    %%%%%%%%%%%% SO phase (Sync)
-
-    event_phase = [];
-    for n = 1:3
-        event_phase = [squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 2))'];
-        % temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
-        is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1 & is_peak_phase_1 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1 & is_peak_phase_2 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_sync_peak_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_sync_peak_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_sync_peak_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_sync_peak_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_sync_peak_SO_time{n}{nsession}(2,nCell,:))';
-        end
-
-   
-
-        is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
-        is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1 & is_trough_phase_1 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1 & is_trough_phase_2 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_sync_trough_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_sync_trough_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_sync_trough_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_sync_trough_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_sync_trough_SO_time{n}{nsession}(2,nCell,:))';
-        end
-    end
-
-
-    %%%%%%%%%%%% SO phase (Anti phase)
-    event_phase = [];
-    for n = 1:3
-        event_phase = [squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_phase_median{nsession}(2,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_phase_median{nsession}(1,1,timebins(n),hemi_id == 2))'];
-        % temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        is_peak_phase_1 = event_phase(1,:) >= -pi/2 & event_phase(1,:) <= pi/2;
-        is_peak_phase_2 =  event_phase(2,:) >= -pi/2 & event_phase(2,:) <= pi/2;
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_peak_phase_2 == 1 & is_peak_phase_1 == 0);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_peak_phase_1 == 1 & is_peak_phase_2 == 0);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_dsync_peak_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_dsync_peak_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_dsync_peak_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_dsync_peak_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_dsync_peak_SO_time{n}{nsession}(2,nCell,:))';
-        end
-
-
-
-        is_trough_phase_1 = event_phase(1,:) >= -pi & event_phase(1,:) <= -pi/2 | event_phase(1,:) >= pi/2 & event_phase(1,:) <= pi;
-        is_trough_phase_2 =  event_phase(2,:) >= -pi & event_phase(2,:) <= -pi/2 | event_phase(2,:) >= pi/2 & event_phase(2,:) <= pi;
-        T1_index = find(mean_bias > log_odds_threshold(2) & is_trough_phase_2 == 1 & is_trough_phase_1 == 0);
-        T2_index = find(mean_bias < log_odds_threshold(1) & is_trough_phase_1 == 1 & is_trough_phase_2 == 0);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_dsync_trough_SO_time{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_dsync_trough_SO_time{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_dsync_trough_SO_time{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_dsync_trough_SO_time{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_dsync_trough_SO_time{n}{nsession}(2,nCell,:))';
-        end
-    end
-
-    %%%%%%%%%%%% SO V1 HPC PLV
-    temp = [];
-    for n = 1:3
-        temp = [squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(1,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(2,1,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(2,1,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(1,1,timebins(n),hemi_id == 2))'];
-        temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        SO_index1 = temp_percentile(1,:) < 0.25;
-        SO_index2 = temp_percentile(2,:) < 0.25;
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & SO_index2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & SO_index1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_low_V1_HPC_SO_PLV{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_low_V1_HPC_SO_PLV{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_low_V1_HPC_SO_PLV{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_low_V1_HPC_SO_PLV{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_low_V1_HPC_SO_PLV{n}{nsession}(2,nCell,:))';
-        end
-
-        SO_index1 = temp_percentile(1,:) > 0.75;
-        SO_index2 = temp_percentile(2,:) > 0.75;
-
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & SO_index2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & SO_index1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_high_V1_HPC_SO_PLV{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_high_V1_HPC_SO_PLV{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_high_V1_HPC_SO_PLV{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_high_V1_HPC_SO_PLV{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_high_V1_HPC_SO_PLV{n}{nsession}(2,nCell,:))';
-        end
-    end
-
-    %%%%%%%%%%%% Spindle V1 HPC PLV
-
-    temp = [];
-    for n = 1:3
-        temp = [squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(1,3,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(2,3,timebins(n),hemi_id == 2))'; ...
-            squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(2,3,timebins(n),hemi_id == 1))' squeeze(ripples_TF_stats.V1_HPC_PLV{nsession}(1,3,timebins(n),hemi_id == 2))'];
-        temp_percentile = tiedrank(temp.').' / size(temp, 2);
-
-        SO_index1 = temp_percentile(1,:) < 0.25;
-        SO_index2 = temp_percentile(2,:) < 0.25;
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & SO_index2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & SO_index1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_low_V1_HPC_spindle_PLV{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_low_V1_HPC_spindle_PLV{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_low_V1_HPC_spindle_PLV{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_low_V1_HPC_spindle_PLV{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_low_V1_HPC_spindle_PLV{n}{nsession}(2,nCell,:))';
-        end
-
-        SO_index1 = temp_percentile(1,:) > 0.75;
-        SO_index2 = temp_percentile(2,:) > 0.75;
-
-
-        T1_index = find(mean_bias > log_odds_threshold(2) & SO_index2 == 1);
-        T2_index = find(mean_bias < log_odds_threshold(1) & SO_index1 == 1);
-
-        for nCell = 1:length(all_clusters)
-            % Ripple PSTH
-            context_modulation_all.PSTH_high_V1_HPC_spindle_PLV{n}{nsession}(1,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T1_index,:)));
-            context_modulation_all.PSTH_high_V1_HPC_spindle_PLV{n}{nsession}(2,nCell,:) = mean(squeeze(ripple_modulation.PSTH_zscored(nCell,T2_index,:)));
-
-            % Difference PSTH (stim1 - stim2)
-            context_modulation_all.PSTH_diff_high_V1_HPC_spindle_PLV{n}{nsession}(nCell,:) = ...
-                squeeze(context_modulation_all.PSTH_high_V1_HPC_spindle_PLV{n}{nsession}(1,nCell,:))' - ...
-                squeeze(context_modulation_all.PSTH_high_V1_HPC_spindle_PLV{n}{nsession}(2,nCell,:))';
-        end
-    end
-
-
 
     context_modulation_all.ripple_modulation_percentile{nsession} = max([ripple_modulation_PSTH_all{nsession}(1).ripple_modulation_percentile; ripple_modulation_PSTH_all{nsession}(2).ripple_modulation_percentile]);
     context_modulation_all.modulation_percentile_PRE{nsession} = max([ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE; ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE]);
@@ -946,116 +646,6 @@ save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_al
     % subplot(2,2,2)
     % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
 %     % 
-%%  Spatial correlation and ripple correlation in V1 and HPC 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%% Spatial corr vs ripple corr
-% context_corr_all = struct();
-% 
-% for nsession = 1:length(sessions_to_process)
-%     tic
-%     all_clusters = session_clusters_all.spatial_cell_id{nsession};
-% 
-%     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-%     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-% 
-%     % ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession},session_clusters_all.spike_id{nsession},windows,psthBinSize,...
-%     %     'unit_id',all_clusters,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
-%     % bins = ripple_modulation.bins > 0 & ripple_modulation.bins < 0.5;
-% 
-%     % all_clusters = session_clusters_all.spatial_cell_id{nsession};
-%     all_regions = session_clusters_all.region{nsession};
-%     V1_id = find(contains(all_regions,'V1'));
-%     HPC_id = find(contains(all_regions,'HPC'));
-% 
-%     % Get mean bias for each ripple event in HPC and get within session
-%     % Track 1 and Track 2 biased ripple events based on HPC bias
-%     mean_bias = mean(z_bias(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
-%     log_odds_threshold = prctile(mean_bias,[20 80]);
-%     T1_index = find(mean_bias > log_odds_threshold(2));
-%     T2_index = find(mean_bias < log_odds_threshold(1));
-%     %%%%%%%% Spatial Corr context diff and Ripple corr context diff
-%     V1_cell_spatial_psth=[];
-%     V1_cell_psth=[];
-% 
-%     HPC_cell_spatial_psth=[];
-%     HPC_cell_psth=[];
-% 
-%     % Ensure parallel pool is open
-%     if isempty(gcp('nocreate'))
-%         parpool;
-%     end
-% 
-% 
-% 
-%     [pair_corr, pair_pval,lags] = compute_ripple_xcorr_cell_pair(...
-%         session_clusters_all.spike_times{nsession}, ...
-%         session_clusters_all.spike_id{nsession}, ...
-%         all_clusters(V1_id), all_clusters(HPC_id), event_times,'lag_range',[0],'window',0.2,'step', 0.2,'shuffle_option',0);
-% 
-%     context_corr_all.ripple_corr_all{nsession} = pair_corr;
-%     context_corr_all.ripple_corr_pval_all{nsession} = pair_pval;
-% 
-%     [pair_corr_T1, pair_pval,lags] = compute_ripple_xcorr_cell_pair(...
-%         session_clusters_all.spike_times{nsession}, ...
-%         session_clusters_all.spike_id{nsession}, ...
-%         all_clusters(V1_id), all_clusters(HPC_id), event_times(T1_index),'lag_range',[0],'window',0.2,'step', 0.2,'shuffle_option',0);
-% 
-%     context_corr_all.ripple_corr_T1{nsession} = pair_corr_T1;
-%     context_corr_all.ripple_corr_pval_T1{nsession} = pair_pval;
-% 
-%     [pair_corr_T2,pair_pval,lags] = compute_ripple_xcorr_cell_pair(...
-%         session_clusters_all.spike_times{nsession}, ...
-%         session_clusters_all.spike_id{nsession}, ...
-%         all_clusters(V1_id), all_clusters(HPC_id), event_times(T2_index),'lag_range',[0],'window',0.2,'step', 0.2,'shuffle_option',0);
-% 
-%     context_corr_all.ripple_corr_T2{nsession} = pair_corr_T2;
-%     context_corr_all.ripple_corr_pval_T2{nsession} = pair_pval;
-% 
-% 
-%     pair_pval_T1 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
-%     pair_corr_T1 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
-%     pair_pval_T2 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
-%     pair_corr_T2 = nan(length(HPC_id),length(V1_id));           % 1D array (linear index)
-% 
-%     spatial_raw  = session_clusters_all.spatial_response_raw{nsession};
-% 
-%     HPC_spatial = cell(length(HPC_id), 2);
-%     for mCell = 1:length(HPC_id)
-%         HPC_spatial{mCell,1} = reshape(spatial_raw {HPC_id(mCell), 1}, 1, []);
-%         HPC_spatial{mCell,2} = reshape(spatial_raw {HPC_id(mCell), 2}, 1, []);
-%     end
-% 
-%     for nCell = 1:length(V1_id)
-%         V1_spatial{1} = reshape(spatial_raw {V1_id(nCell), 1}, 1, []);
-%         V1_spatial{2} = reshape(spatial_raw {V1_id(nCell), 2}, 1, []);
-% 
-%         % === Preload HPC cell responses for this loop ===
-% 
-% 
-%         parfor mCell = 1:length(HPC_id)
-%             [r1, p1] = corr(HPC_spatial{mCell,1}', V1_spatial{1}', 'type', 'Spearman', 'Rows', 'complete');
-%             [r2, p2] = corr(HPC_spatial{mCell,2}', V1_spatial{2}', 'type', 'Spearman', 'Rows', 'complete');
-% 
-%             pair_pval_T1(mCell, nCell) = p1;
-%             pair_corr_T1(mCell, nCell) = r1;
-%             pair_pval_T2(mCell, nCell) = p2;
-%             pair_corr_T2(mCell, nCell) = r2;
-%         end
-%     end
-% 
-% 
-%     % pair_pval = reshape(pair_pval, nHPC, nV1); % Reshape to 2D [nHPC x nV1]
-% 
-%     context_corr_all.spatial_corr_T1{nsession}= pair_corr_T1;
-%     context_corr_all.spatial_corr_pval_T1{nsession} = pair_pval_T1;
-% 
-%     context_corr_all.spatial_corr_T2{nsession} = pair_corr_T2;
-%     context_corr_all.spatial_corr_pval_T2{nsession} = pair_pval_T1;
-%     toc
-% end
-% 
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_corr_all.mat'),'context_corr_all')
-% % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','z_V1_population_ripple_PSTH.mat'),'z_V1_population_ripple_PSTH')
-
 
 %% Plotting context selecitve ripple modulation (low vs high ripples)
 % scatter(context_modulation_all.z_FR_track(1,V1_id) - context_modulation_all.z_FR_track(2,V1_id),context_modulation_all.PRE_ripple_FR(V1_id))
@@ -3413,13 +3003,14 @@ for nbin = 1:length(timewindows)-1
 
     hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff<0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(2,:));
     hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
-    text(0.4,0.05,sprintf('p = %.3e',pval))
+    xlim([-0.3 0.3])
+    text(0.3,0.05,sprintf('p = %.3e',pval))
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
     % ylim([0 1])
     xline(0,'k--','LineWidth',2)
     xlabel('Track L - Track R Ripple FR diff (z)')
-    ylabel('cum prop of cells')
+    ylabel('prop of cells')
     legend('V1 Track R prefering','V1 Track L prefering','box','off')
     title(sprintf('%.1f to %.1fs relative to ripples',timewindows(nbin),timewindows(nbin+1)))
     set(gca,'TickDir','out','Box','off','FontSize',12)
@@ -3453,7 +3044,7 @@ for nbin = 1:length(timewindows)-1
     hold on;histogram(POST_ripple_FR_diff(contains(regions_all,'V1')&z_FR_track_diff>0),-0.5:0.02:0.5,'Normalization','probability','FaceColor',colorlines(1,:))
     text(0.4,0.05,sprintf('p = %.3e',pval))
     set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
+    xlim([-0.3 0.3])
     % ylim([0 1])
     xline(0,'k--','LineWidth',2)
     xlabel('Track L - Track R Ripple FR diff (z)')

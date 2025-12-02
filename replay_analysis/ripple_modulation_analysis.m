@@ -7,6 +7,8 @@ addParameter(p,'event_id',[],@isnumeric);
 addParameter(p,'shuffle_option',1,@isnumeric);
 addParameter(p,'unit_id',unique(spike_id),@isnumeric);
 addParameter(p,'saving_PSTH',1,@isnumeric);
+addParameter(p,'smooth_option',1,@isnumeric);
+
 
 parse(p,varargin{:});
 event_times = p.Results.event_times;
@@ -14,6 +16,7 @@ event_id =  p.Results.event_id;
 unit_id = p.Results.unit_id;
 shuffle_option = p.Results.shuffle_option;
 saving_PSTH = p.Results.saving_PSTH;
+smooth_option = p.Results.smooth_option;
 
 event_conditions = unique(event_id(:))';
 n_conditions = numel(event_conditions);
@@ -52,8 +55,13 @@ for iCell = 1:no_cluster
             end
         end
 
-        binnedArrays{ncond} = smoothed;
-        psth{ncond} = mean(smoothed, 'omitnan');
+        if smooth_option==1
+            binnedArrays{ncond} = smoothed;
+            psth{ncond} = mean(smoothed, 'omitnan');
+        else
+            binnedArrays{ncond} = binnedArray;
+            psth{ncond} = mean(binnedArray, 'omitnan');
+        end
     end
 
     if shuffle_option == 1
@@ -79,7 +87,7 @@ for iCell = 1:no_cluster
     for ncond = 1:n_conditions
         ripple_modulation(ncond).bins = bins;
 
-        if saving_PSTH
+        if saving_PSTH==1
             ripple_modulation(ncond).PSTH(iCell,:,:) = single(binnedArrays{ncond}) / psthBinSize;  % normalize by condition 1
             ripple_modulation(ncond).PSTH_zscored(iCell,:,:) = single((binnedArrays{ncond} - mean(y)) ./ std(y));
         end
