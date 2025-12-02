@@ -97,9 +97,7 @@ for nsession =1:length(experiment_info)
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_candidate_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'behavioural_state_merged.mat'));
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_V1_best_SO_channel.mat'));
-%         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_2Hz_SO.mat'),'ripples');
-
+        load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_.mat'));
 %         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
         load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
         % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_markov_events.mat'));
@@ -279,207 +277,207 @@ for nsession =1:length(experiment_info)
             ripples_all(probe_no).session_count = [ripples_all(probe_no).session_count;session_count_events];
         end
     end
-% 
-%     % put all spindles in one struct
-%     field_names = fieldnames(spindles);
-% 
-%     for nprobe = 1:length(spindles)
-%         probe_no = session_info(n).probe(nprobe).probe_hemisphere;
-%         spindles_all(probe_no).subject(session_count,:) = options.SUBJECT;
-%         spindles_all(probe_no).session(session_count,:) = options.SESSION;
-%         spindles_all(probe_no).session_day(session_count) = iDate;
-% 
-%         for iField =1:length(field_names)
-%             if session_count == 1
-%                 if ismember(field_names{iField}, {
-%                         'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
-%                         'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
-%                         'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
-%                         'spindle_peak_amplitude','spindle_onset_amplitude', ...
-%                         'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
-%                         'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
-%                         'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
-%                         })
-% 
-%                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
-%                 else
-%                     spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
-% 
-%                 end
-%             else
-%                 if ismember(field_names{iField}, {
-%                         'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
-%                         'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
-%                         'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
-%                         'spindle_peak_amplitude','spindle_onset_amplitude', ...
-%                         'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
-%                         'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
-%                         'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
-%                         })
-% 
-%                     spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
-%                 else
-%                     A = spindles_all(probe_no).(field_names{iField});
-%                     B = spindles(nprobe).(field_names{iField});
-%                     try
-%                         spindles_all(probe_no).(field_names{iField}) = [A;B];
-%                     catch
-%                         spindles_all(probe_no).(field_names{iField}) = [A B];
-%                     end
-%                 end
-%             end
-%         end
-% 
-%         session_count_events = repmat(session_count,size(spindles(nprobe).onset));
+
+    % put all spindles in one struct
+    field_names = fieldnames(spindles);
+
+    for nprobe = 1:length(spindles)
+        probe_no = session_info(n).probe(nprobe).probe_hemisphere;
+        spindles_all(probe_no).subject(session_count,:) = options.SUBJECT;
+        spindles_all(probe_no).session(session_count,:) = options.SESSION;
+        spindles_all(probe_no).session_day(session_count) = iDate;
+
+        for iField =1:length(field_names)
+            if session_count == 1
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
+                        'spindle_peak_amplitude','spindle_onset_amplitude', ...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
+                        'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
+                        'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
+                        })
+
+                    spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
+                else
+                    spindles_all(probe_no).(field_names{iField}) = spindles(nprobe).(field_names{iField});
+
+                end
+            else
+                if ismember(field_names{iField}, {
+                        'sharp_wave_zscore','sharp_wave_peaktimes','SWR_zscore','SWR_peaktimes','shank_id','probe_hemisphere', ...
+                        'amp_corr','xcorr_lag','xcorr_r','pd','plv', ...
+                        'SO_phase_spindle_peaktime','SO_phase_spindle_onset', ...
+                        'spindle_peak_amplitude','spindle_onset_amplitude', ...
+                        'SO_amplitude_spindle_peaktime','SO_amplitude_spindle_onset', ...
+                        'gamma_phase_spindle_peaktime','gamma_amplitude_spindle_peaktime', ...
+                        'gamma_phase_spindle_onset','gamma_amplitude_spindle_onset'
+                        })
+
+                    spindles_all(probe_no).(field_names{iField}){session_count} = spindles(nprobe).(field_names{iField});
+                else
+                    A = spindles_all(probe_no).(field_names{iField});
+                    B = spindles(nprobe).(field_names{iField});
+                    try
+                        spindles_all(probe_no).(field_names{iField}) = [A;B];
+                    catch
+                        spindles_all(probe_no).(field_names{iField}) = [A B];
+                    end
+                end
+            end
+        end
+
+        session_count_events = repmat(session_count,size(spindles(nprobe).onset));
+        if session_count == 1
+            spindles_all(probe_no).session_count = session_count_events;
+        else
+            spindles_all(probe_no).session_count = [spindles_all(probe_no).session_count;session_count_events];
+        end
+    end
+
+    % put all slow waves in one struct
+    field_names = fieldnames(slow_waves);
+%     field_names = fieldnames(slow_waves_markov);
+%     slow_waves = slow_waves_markov;
+    
+    for nprobe = 1:length(slow_waves)
+        probe_no = session_info(n).probe(nprobe).probe_hemisphere;
+        slow_waves_all(probe_no).subject(session_count,:) = options.SUBJECT;
+        slow_waves_all(probe_no).session(session_count,:) = options.SESSION;
+        slow_waves_all(probe_no).session_day(session_count) = iDate;
+
+        for iField =1:length(field_names)
+            if session_count == 1
+                if strcmp(field_names{iField},'ints')
+                    slow_waves_all(probe_no).UP_ints = slow_waves(nprobe).ints.UP;
+                    slow_waves_all(probe_no).DOWN_ints = slow_waves(nprobe).ints.DOWN;
+
+                elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
+                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
+                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
+                        'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
+                    slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
+                else
+                    slow_waves_all(probe_no).(field_names{iField}) = slow_waves(nprobe).(field_names{iField});
+                end
+            else
+                if strcmp(field_names{iField},'ints')
+                    A = slow_waves_all(probe_no).UP_ints;
+                    B = slow_waves(nprobe).ints.UP;
+                    try
+                        slow_waves_all(probe_no).UP_ints = [A;B];
+                    catch
+                        slow_waves_all(probe_no).UP_ints = [A B];
+                    end
+
+
+                    A = slow_waves_all(probe_no).DOWN_ints;
+                    B = slow_waves(nprobe).ints.DOWN;
+                    try
+                        slow_waves_all(probe_no).DOWN_ints = [A;B];
+                    catch
+                        slow_waves_all(probe_no).DOWN_ints = [A B];
+                    end
+                elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
+                        'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
+                        'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
+                        'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
+                        'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
+
+                    slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
+                else
+                    A = slow_waves_all(probe_no).(field_names{iField});
+                    B = slow_waves(nprobe).(field_names{iField});
+
+
+                    try
+                        slow_waves_all(probe_no).(field_names{iField}) = [A;B];
+                    catch
+                        slow_waves_all(probe_no).(field_names{iField}) = [A B];
+                    end
+                end
+            end
+        end
+        % slow_waves_all(probe_no).UP_PSD_slope
+        % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.DOWN,1),1]);
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_ints,1),1]);
+        if session_count == 1
+            slow_waves_all(probe_no).DOWN_session_count = session_count_events;
+        else
+            slow_waves_all(probe_no).DOWN_session_count = [slow_waves_all(probe_no).DOWN_session_count;session_count_events];
+        end
+
+        % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.UP,1),1]);
+        session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_ints,1),1]);
+        if session_count == 1
+            slow_waves_all(probe_no).UP_session_count = session_count_events;
+        else
+            slow_waves_all(probe_no).UP_session_count = [slow_waves_all(probe_no).UP_session_count;session_count_events];
+        end
+
+%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_DOWN_index,1),1]);
 %         if session_count == 1
-%             spindles_all(probe_no).session_count = session_count_events;
+%             slow_waves_all(probe_no).UP_DOWN_session_count = session_count_events;
 %         else
-%             spindles_all(probe_no).session_count = [spindles_all(probe_no).session_count;session_count_events];
+%             slow_waves_all(probe_no).UP_DOWN_session_count = [slow_waves_all(probe_no).UP_DOWN_session_count;session_count_events];
 %         end
-%     end
 % 
-%     % put all slow waves in one struct
-%     field_names = fieldnames(slow_waves);
-% %     field_names = fieldnames(slow_waves_markov);
-% %     slow_waves = slow_waves_markov;
-%     
-%     for nprobe = 1:length(slow_waves)
-%         probe_no = session_info(n).probe(nprobe).probe_hemisphere;
-%         slow_waves_all(probe_no).subject(session_count,:) = options.SUBJECT;
-%         slow_waves_all(probe_no).session(session_count,:) = options.SESSION;
-%         slow_waves_all(probe_no).session_day(session_count) = iDate;
-% 
-%         for iField =1:length(field_names)
-%             if session_count == 1
-%                 if strcmp(field_names{iField},'ints')
-%                     slow_waves_all(probe_no).UP_ints = slow_waves(nprobe).ints.UP;
-%                     slow_waves_all(probe_no).DOWN_ints = slow_waves(nprobe).ints.DOWN;
-% 
-%                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
-%                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-%                         'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
-%                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
-%                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
-%                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
-%                 else
-%                     slow_waves_all(probe_no).(field_names{iField}) = slow_waves(nprobe).(field_names{iField});
-%                 end
-%             else
-%                 if strcmp(field_names{iField},'ints')
-%                     A = slow_waves_all(probe_no).UP_ints;
-%                     B = slow_waves(nprobe).ints.UP;
-%                     try
-%                         slow_waves_all(probe_no).UP_ints = [A;B];
-%                     catch
-%                         slow_waves_all(probe_no).UP_ints = [A B];
-%                     end
-% 
-% 
-%                     A = slow_waves_all(probe_no).DOWN_ints;
-%                     B = slow_waves(nprobe).ints.DOWN;
-%                     try
-%                         slow_waves_all(probe_no).DOWN_ints = [A;B];
-%                     catch
-%                         slow_waves_all(probe_no).DOWN_ints = [A B];
-%                     end
-%                 elseif  ismember(field_names{iField},{'power','timebin_edges','PSD_slope','frequency',...
-%                         'deltaspikecorr','gammaspikecorr','deltagammacorr','channel','shank','depth',...
-%                         'xcoord','gamma_t','viterbi_states','p','DOWN_peaktimes','DOWN_peaks_zscore','shank_id','probe_hemisphere',...
-%                         'amp_corr_DU','amp_corr_UD','amp_corr_UP','amp_corr_DOWN','mean_phase_UP','mean_phase_DOWN',...
-%                         'xcorr_lag_UD','xcorr_lag_DU','xcorr_r_UD','xcorr_r_DU','plv_UD','plv_DU','pd_UD','pd_DU'})
-% 
-%                     slow_waves_all(probe_no).(field_names{iField}){session_count} = slow_waves(nprobe).(field_names{iField});
-%                 else
-%                     A = slow_waves_all(probe_no).(field_names{iField});
-%                     B = slow_waves(nprobe).(field_names{iField});
-% 
-% 
-%                     try
-%                         slow_waves_all(probe_no).(field_names{iField}) = [A;B];
-%                     catch
-%                         slow_waves_all(probe_no).(field_names{iField}) = [A B];
-%                     end
-%                 end
-%             end
-%         end
-%         % slow_waves_all(probe_no).UP_PSD_slope
-%         % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.DOWN,1),1]);
-%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_ints,1),1]);
+%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_UP_index,1),1]);
 %         if session_count == 1
-%             slow_waves_all(probe_no).DOWN_session_count = session_count_events;
+%             slow_waves_all(probe_no).DOWN_UP_session_count = session_count_events;
 %         else
-%             slow_waves_all(probe_no).DOWN_session_count = [slow_waves_all(probe_no).DOWN_session_count;session_count_events];
+%             slow_waves_all(probe_no).DOWN_UP_session_count = [slow_waves_all(probe_no).DOWN_UP_session_count;session_count_events];
 %         end
-% 
-%         % session_count_events = repmat(session_count,[size(slow_waves(nprobe).ints.UP,1),1]);
-%         session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_ints,1),1]);
-%         if session_count == 1
-%             slow_waves_all(probe_no).UP_session_count = session_count_events;
-%         else
-%             slow_waves_all(probe_no).UP_session_count = [slow_waves_all(probe_no).UP_session_count;session_count_events];
-%         end
-% 
-% %         session_count_events = repmat(session_count,[size(slow_waves(nprobe).UP_DOWN_index,1),1]);
-% %         if session_count == 1
-% %             slow_waves_all(probe_no).UP_DOWN_session_count = session_count_events;
-% %         else
-% %             slow_waves_all(probe_no).UP_DOWN_session_count = [slow_waves_all(probe_no).UP_DOWN_session_count;session_count_events];
-% %         end
-% % 
-% %         session_count_events = repmat(session_count,[size(slow_waves(nprobe).DOWN_UP_index,1),1]);
-% %         if session_count == 1
-% %             slow_waves_all(probe_no).DOWN_UP_session_count = session_count_events;
-% %         else
-% %             slow_waves_all(probe_no).DOWN_UP_session_count = [slow_waves_all(probe_no).DOWN_UP_session_count;session_count_events];
-% %         end
-% 
-% 
-%         if probe_no==1
-%             metric_param =[];
-%             % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             metric_param.region = @(x) contains(x,'V1_L');
-%             [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
-%             slow_waves_all(probe_no).V1_MUA_spiketimes{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'HPC_L');
-%             [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
-%             slow_waves_all(probe_no).HPC_MUA_spiketimes{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'V1_L');
-%             metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             slow_waves_all(probe_no).V1_spike_times{session_count} = selected_clusters.spike_times;
-%             slow_waves_all(probe_no).V1_spike_id{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'HPC_L');
-%             metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             slow_waves_all(probe_no).HPC_spike_times{session_count} = selected_clusters.spike_times;
-%             slow_waves_all(probe_no).HPC_spike_id{session_count} = selected_clusters.spike_times;
-%         elseif probe_no==2
-%             metric_param =[];
-%             % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             metric_param.region = @(x) contains(x,'V1_R');
-%             [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
-%             slow_waves_all(probe_no).V1_MUA_spiketimes{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'HPC_R');
-%             [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
-%             slow_waves_all(probe_no).HPC_MUA_spiketimes{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'V1_L');
-%             metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             slow_waves_all(probe_no).V1_spike_times{session_count} = selected_clusters.spike_times;
-%             slow_waves_all(probe_no).V1_spike_id{session_count} = selected_clusters.spike_times;
-% 
-%             metric_param.region = @(x) contains(x,'HPC_L');
-%             metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
-%             [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
-%             slow_waves_all(probe_no).HPC_spike_times{session_count} = selected_clusters.spike_times;
-%             slow_waves_all(probe_no).HPC_spike_id{session_count} = selected_clusters.spike_times;
-%         end
-%     end
+
+
+        if probe_no==1
+            metric_param =[];
+            % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            metric_param.region = @(x) contains(x,'V1_L');
+            [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
+            slow_waves_all(probe_no).V1_MUA_spiketimes{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'HPC_L');
+            [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
+            slow_waves_all(probe_no).HPC_MUA_spiketimes{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'V1_L');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            slow_waves_all(probe_no).V1_spike_times{session_count} = selected_clusters.spike_times;
+            slow_waves_all(probe_no).V1_spike_id{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'HPC_L');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            slow_waves_all(probe_no).HPC_spike_times{session_count} = selected_clusters.spike_times;
+            slow_waves_all(probe_no).HPC_spike_id{session_count} = selected_clusters.spike_times;
+        elseif probe_no==2
+            metric_param =[];
+            % metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            metric_param.region = @(x) contains(x,'V1_R');
+            [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
+            slow_waves_all(probe_no).V1_MUA_spiketimes{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'HPC_R');
+            [selected_clusters,cluster_id] = select_clusters(MUA_combined,metric_param);
+            slow_waves_all(probe_no).HPC_MUA_spiketimes{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'V1_L');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            slow_waves_all(probe_no).V1_spike_times{session_count} = selected_clusters.spike_times;
+            slow_waves_all(probe_no).V1_spike_id{session_count} = selected_clusters.spike_times;
+
+            metric_param.region = @(x) contains(x,'HPC_L');
+            metric_param.cluster_id = @(x) ismember(x,clusters_combined.cluster_id(spatial_cell_index));
+            [selected_clusters,cluster_id] = select_clusters(clusters_combined,metric_param);
+            slow_waves_all(probe_no).HPC_spike_times{session_count} = selected_clusters.spike_times;
+            slow_waves_all(probe_no).HPC_spike_id{session_count} = selected_clusters.spike_times;
+        end
+    end
 end
 
 % 
@@ -517,10 +515,6 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-% save(fullfile(analysis_folder,'ripples_all_2Hz_SO_POST.mat'),'ripples_all','-v7.3')
-% 
-save(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'),'ripples_all')
-
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
     save(fullfile(analysis_folder,'slow_waves_all_POST.mat'),'slow_waves_all','-v7.3')
