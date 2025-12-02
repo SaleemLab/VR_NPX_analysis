@@ -125,6 +125,8 @@ hemispheres = {'L','R'};
 for hemi = 1:2
     for track_id = 1:2
         V1_SUA_reactivation_PSTH{hemi}{track_id}=[];
+        V1_SUA_reactivation_PSTH_odd{hemi}{track_id}=[];
+        V1_SUA_reactivation_PSTH_even{hemi}{track_id}=[];
         V1_SUA_track_difference{hemi}=[];
     end
 end
@@ -136,11 +138,11 @@ for nsession = 1:length(sessions_to_process)
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
 
-    threshold = prctile(ripple_powers,50);
+    threshold = prctile(ripple_powers,25);
     % threshold = 0;
     [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(event_id,event_times,0.05);
-    high_ripple_index = find( ripple_powers > threshold);
-    event_ids_first = intersect(high_ripple_index,event_ids_first);
+%     high_ripple_index = find( ripple_powers > threshold);
+%     event_ids_first = intersect(high_ripple_index,event_ids_first);
 
 
     event_times = event_times(event_ids_first);
@@ -189,6 +191,12 @@ for nsession = 1:length(sessions_to_process)
         % for track_id = 1:2
         V1_SUA_reactivation_PSTH{hemi}{1}=[V1_SUA_reactivation_PSTH{hemi}{1}; squeeze(mean(V1_PSTH{hemi}(:,T1_index,:),2))];
         V1_SUA_reactivation_PSTH{hemi}{2}=[V1_SUA_reactivation_PSTH{hemi}{2}; squeeze(mean(V1_PSTH{hemi}(:,T2_index,:),2))];
+
+        V1_SUA_reactivation_PSTH_odd{hemi}{1}=[V1_SUA_reactivation_PSTH_odd{hemi}{1}; squeeze(mean(V1_PSTH{hemi}(:,T1_index(1:2:end),:),2))];
+        V1_SUA_reactivation_PSTH_odd{hemi}{2}=[V1_SUA_reactivation_PSTH_odd{hemi}{2}; squeeze(mean(V1_PSTH{hemi}(:,T2_index(1:2:end),:),2))];
+
+        V1_SUA_reactivation_PSTH_even{hemi}{1}=[V1_SUA_reactivation_PSTH_even{hemi}{1}; squeeze(mean(V1_PSTH{hemi}(:,T1_index(2:2:end),:),2))];
+        V1_SUA_reactivation_PSTH_even{hemi}{2}=[V1_SUA_reactivation_PSTH_even{hemi}{2}; squeeze(mean(V1_PSTH{hemi}(:,T2_index(2:2:end),:),2))];
     end
 
     
@@ -211,14 +219,27 @@ for nsession = 1:length(sessions_to_process)
     end
 end
 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH.mat'),'V1_SUA_reactivation_PSTH',...
+%     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_high.mat'),'V1_SUA_reactivation_PSTH',...
+%     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_low.mat'),'V1_SUA_reactivation_PSTH',...
+%     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),'V1_SUA_reactivation_PSTH','V1_SUA_reactivation_PSTH');
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH.mat'),'V1_SUA_reactivation_PSTH');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_high.mat'),'V1_SUA_reactivation_PSTH');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_low.mat'),'V1_SUA_reactivation_PSTH');
 
 % ripple_modulation(1).bins(100)
 
 
-
-
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH.mat'),'V1_SUA_reactivation_PSTH',...
+    'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_high.mat'),'V1_SUA_reactivation_PSTH',...
+%     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_low.mat'),'V1_SUA_reactivation_PSTH',...
+%     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+% V1_SUA_reactivation_PSTH_low = V1_SUA_reactivation_PSTH;
+V1_SUA_reactivation_PSTH_high = V1_SUA_reactivation_PSTH;
 %%% Colormap
 track1_color = [0 0 1]; % blue
 track2_color = [1 0 0]; % red
@@ -237,6 +258,7 @@ white = ones(n_white, 3);
 
 % Combine
 red_white_blue = [r2w; white; w2b];
+red_white_blue = flip(red_white_blue);
 % 
 %%%%%%%%%%%%%%%%%%%%%
 % set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
@@ -247,22 +269,40 @@ red_white_blue = [r2w; white; w2b];
 %%%%%%%%%%%%%%%%%%%%%
 
 Fig = figure;
-Fig.Name = 'V1 response to track-selective reactivations';
-Fig.Position = [60 60 1280 406];
+Fig.Name = 'V1 response to track-selective reactivations (even by odd)';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s even by odd)';
+% Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s even by odd)';
+
+% Fig.Name = 'V1 response to track-selective reactivations (even by odd high)';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s even by odd high)';
+% Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s even by odd high)';
+
+% Fig.Name = 'V1 response to track-selective reactivations';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
+% Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s)';
+% Fig.Name = 'V1 response to track-selective reactivations (high ripples)';
+% Fig.Name = 'V1 response to track-selective reactivations (low ripples)';
+% Fig.Position = [60 60 1280 406];
 % Fig.Position = [60 60 1876 1023];
 Fig.Position = [60 60 1296 953];
 
 
 % [595 645 1296 406]
+x_bins = ripple_modulation(1).bins;
+% bins_selected = x_bins > -0.5 & x_bins < 0.5;
+bins_selected = x_bins >-0.2 & x_bins < 0.2;
+% figure
+
 subplot(1,4,1)
-[~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(V1_SUA_track_difference{1});
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH_odd{1}{2}(:,bins_selected),2));
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
-h = imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{1}(index,:));
+h = imagesc(x_data,y_data,V1_SUA_reactivation_PSTH_even{1}{1}(index,:));
 
 % xticks
 % xticklabels([])
-colorbar;colormap((red_white_blue));clim([-0.4 0.3])
+colorbar;colormap((red_white_blue));clim([-0.3 0.3])
 xlim([-0.5 0.5])
 xline(0,'--')
 title('L V1 Track 1 ripples')
@@ -271,14 +311,30 @@ ylabel('Cell ID')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-
-subplot(1,4,3)
-[~,index] = sort(V1_SUA_track_difference{2});
+subplot(1,4,2)
 % [~,index] = sort(V1_SUA_track_difference{1});
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH_odd{1}{2}(:,bins_selected),2));
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{1}(index,:));
-colorbar;clim([-0.4 0.3])
+imagesc(x_data,y_data,V1_SUA_reactivation_PSTH_even{1}{2}(index,:));
+colorbar;colormap((red_white_blue));clim([-0.3 0.3])
+% xlim([100 200])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('L V1 Track 2 ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+subplot(1,4,3)
+% [~,index] = sort(V1_SUA_track_difference{2});
+% [~,index] = sort(V1_SUA_track_difference{1});
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH_odd{2}{1}(:,bins_selected),2));
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+imagesc(x_data,y_data,V1_SUA_reactivation_PSTH_even{2}{1}(index,:));
+colorbar;colormap((red_white_blue));clim([-0.3 0.3])
 % xlim([100 200])
 xlim([-0.5 0.5])
 xline(0,'--')
@@ -288,28 +344,14 @@ ylabel('Cell ID')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-% figure
-subplot(1,4,2)
-[~,index] = sort(V1_SUA_track_difference{1});
-x_data = ripple_modulation(1).bins;
-y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{2}(index,:));
-colorbar;clim([-0.4 0.3])
-% xlim([100 200])
-xlim([-0.5 0.5])
-xline(0,'--')
-title('L V1 Track 2 ripples')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Cell ID')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
 subplot(1,4,4)
-[~,index] = sort(V1_SUA_track_difference{2});
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH_odd{2}{1}(:,bins_selected),2));
+% [~,index] = sort(V1_SUA_track_difference{2});
 % [~,index] = sort(V1_SUA_track_difference{1});
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{2}(index,:));
-colorbar;clim([-0.4 0.3])
+imagesc(x_data,y_data,V1_SUA_reactivation_PSTH_even{2}{2}(index,:));
+colorbar;colormap((red_white_blue));clim([-0.25 0.25])
 % xlim([100 200])
 xlim([-0.5 0.5])
 xline(0,'--')
@@ -320,236 +362,92 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
 
-
-% P:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots best
-%% Low ripple
-load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
-% load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'),'DOWN_normalised_duration','UP_normalised_duration','SO_normalised_duration');
-
-%  = struct();
-
-%%%% KDE bias
-timebin = 0.01;
-time_windows = [-1 1];
-% Generate bin edges
-bin_edges = time_windows(1):timebin:time_windows(2);
-% Generate bin centers
-bin_centers = bin_edges(1:end-1) + timebin/2;
-bins_to_use = bin_centers>0 & bin_centers<0.1;
-% bins_to_use
-
-session_id = [ripples_all(1).session_count(ripples_all(1).SWS_index); ripples_all(2).session_count(ripples_all(2).SWS_index)];
-%%% PLS KDE
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-
-z_bias1 = z_bias(isfinite(z_bias));
-z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
-z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
-
-z_bias1 = z_bias(isfinite(z_bias_V1));
-z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
-z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
-clear z_bias1
-
-z_bias_KDE = z_bias;
-z_bias_V1_KDE = z_bias_V1;
-
-%%% RRR 
-z_bias = RRR_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-z_bias_V1 = RRR_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-
-z_bias1 = z_bias(isfinite(z_bias));
-z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
-z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
-
-z_bias1 = z_bias(isfinite(z_bias_V1));
-z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
-z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
-clear z_bias1
-z_bias_RRR = z_bias;
-z_bias_V1_RRR = z_bias_V1;
-
-psthBinSize = 0.01;
-windows = [-1.5 1.5];
-
-% timebins = [5 6 10]; % Timebin of the LFP metric relative to ripples where 1 is -1 to -0.8s and 10 is 0.8 to 1s
-
-V1_reactivation_modulation_all = struct();
-% context_corr_all = struct();
-tic
-hemispheres = {'L','R'};
-
-
-%%%% high ripple
-for hemi = 1:2
-    for track_id = 1:2
-        V1_SUA_reactivation_PSTH{hemi}{track_id}=[];
-        V1_SUA_track_difference{hemi}=[];
-    end
-end
-
-
-for nsession = 1:length(sessions_to_process)
-
-    ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-
-    threshold = prctile(ripple_powers,25);
-    [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(event_id,event_times,0.05);
-    high_ripple_index = find( ripple_powers < threshold);
-    event_ids_first = intersect(high_ripple_index,event_ids_first);
-
-
-    event_times = event_times(event_ids_first);
-    event_id = event_id(event_ids_first);
-
-    %%%%%%%%%% V1
-    V1_PSTH=cell(1,2);
-    track_difference=cell(1,2);
-    for hemi = 1:2
-        % cell_index
-
-        cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
-            session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') &...
-            contains(session_clusters_all.region{nsession},hemispheres{hemi}));
-
-        cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
-
-        track_difference{hemi} = session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
-        V1_SUA_track_difference{hemi} = [V1_SUA_track_difference{hemi};  track_difference{hemi}];
-
-        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
-
-        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
-        % spike_id(spike_id>0)=1;
-
-        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
-
-        V1_PSTH{hemi} = [zscore(squeeze(ripple_modulation(1).PSTH),0,2) zscore(squeeze(ripple_modulation(2).PSTH),0,2)];
-        % V1_PSTH{hemi} = ;
-        
-    end
-
-    % Get mean bias for each ripple event in HPC and get within session
-    % Track 1 and Track 2 biased ripple events based on HPC bias
-    mean_bias = mean(z_bias_KDE(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
-    log_odds_threshold = prctile(mean_bias,[25 75]);
-
-    mean_bias = mean_bias(event_ids_first);
-
-    log_odds_threshold = prctile(mean_bias,[25 75]);
-    T1_index = find(mean_bias > log_odds_threshold(2));
-    T2_index = find(mean_bias < log_odds_threshold(1));
-
-    for hemi = 1:2
-        % for track_id = 1:2
-        V1_SUA_reactivation_PSTH{hemi}{1}=[V1_SUA_reactivation_PSTH{hemi}{1}; squeeze(mean(V1_PSTH{hemi}(:,T1_index,:),2))];
-        V1_SUA_reactivation_PSTH{hemi}{2}=[V1_SUA_reactivation_PSTH{hemi}{2}; squeeze(mean(V1_PSTH{hemi}(:,T2_index,:),2))];
-    end
-
-    
-    % mean_bias = mean(z_bias_V1_KDE(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
-    % log_odds_threshold = prctile(mean_bias,[25 75]);
-    % T1_index_V1 = find(mean_bias > log_odds_threshold(2));
-    % T2_index_V1 = find(mean_bias < log_odds_threshold(1));
-    % 
-    % T1_index = intersect(T1_index,T1_index_V1);
-    % T2_index = intersect(T2_index,T2_index_V1);
-
-    % bin_centers>0 & bin_centers<0.1;
-
-    % z_bias_KDE
-
-    % z_bias_V1_KDE
-    for hemi = 1:2
-        
-        squeeze(mean(V1_PSTH{hemi}(:,T2_index,:),2));
-    end
-end
-
-V1_SUA_reactivation_PSTH_low = V1_SUA_reactivation_PSTH;
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),'V1_SUA_reactivation_PSTH_low','V1_SUA_reactivation_PSTH_low');
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_low.mat'),'V1_SUA_reactivation_PSTH_low');
-
-% ripple_modulation(1).bins(100)
-
-
-Fig = figure;
-Fig.Name = 'V1 response to track-selective reactivations (low ripples)';
-Fig.Position = [60 60 1280 860];
-
-subplot(1,4,1)
-[~,index] = sort(V1_SUA_track_difference{1});
-x_data = ripple_modulation(1).bins;
-y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{1}(index,:));
-% xticks
-% xticklabels([])
-colorbar;clim([-0.4 0.3])
-xlim([-0.5 0.5])
-xline(0,'--')
-title('L V1 Track 1 ripples')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Cell ID')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-
-subplot(1,4,2)
-[~,index] = sort(V1_SUA_track_difference{2});
-% [~,index] = sort(V1_SUA_track_difference{1});
-x_data = ripple_modulation(1).bins;
-y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{1}(index,:));
-colorbar;clim([-0.4 0.3])
-% xlim([100 200])
-xlim([-0.5 0.5])
-xline(0,'--')
-title('R V1 Track 1 ripples')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Cell ID')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-% figure
-subplot(1,4,3)
-[~,index] = sort(V1_SUA_track_difference{1});
-x_data = ripple_modulation(1).bins;
-y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{2}(index,:));
-colorbar;clim([-0.4 0.3])
-% xlim([100 200])
-xlim([-0.5 0.5])
-xline(0,'--')
-title('L V1 Track 2 ripples')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Cell ID')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-subplot(1,4,4)
-[~,index] = sort(V1_SUA_track_difference{2});
-% [~,index] = sort(V1_SUA_track_difference{1});
-x_data = ripple_modulation(1).bins;
-y_data = 1:length(index);
-imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{2}(index,:));
-colorbar;clim([-0.4 0.3])
-% xlim([100 200])
-xlim([-0.5 0.5])
-xline(0,'--')
-title('R V1 Track 2 ripples')
-xlabel('Time relative to ripple onset (s)')
-ylabel('Cell ID')
-set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
-
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
-
+% 
+% Fig = figure;
+% % Fig.Name = 'V1 response to track-selective reactivations';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
+% % Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s)';
+% % Fig.Name = 'V1 response to track-selective reactivations (high ripples)';
+% % Fig.Name = 'V1 response to track-selective reactivations (low ripples)';
+% Fig.Position = [60 60 1280 406];
+% % Fig.Position = [60 60 1876 1023];
+% Fig.Position = [60 60 1296 953];
+% 
+% 
+% % [595 645 1296 406]
+% x_bins = ripple_modulation(1).bins;
+% % bins_selected = x_bins > -0.5 & x_bins < 0.5;
+% bins_selected = x_bins > 0 & x_bins < 0.2;
+% % figure
+% 
+% subplot(1,4,1)
+% % [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+% x_data = ripple_modulation(1).bins;
+% y_data = 1:length(index);
+% h = imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{1}(index,:));
+% 
+% % xticks
+% % xticklabels([])
+% colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+% xlim([-0.5 0.5])
+% xline(0,'--')
+% title('L V1 Track 1 ripples')
+% xlabel('Time relative to ripple onset (s)')
+% ylabel('Cell ID')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% 
+% subplot(1,4,2)
+% % [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+% x_data = ripple_modulation(1).bins;
+% y_data = 1:length(index);
+% imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{2}(index,:));
+% colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+% % xlim([100 200])
+% xlim([-0.5 0.5])
+% xline(0,'--')
+% title('L V1 Track 2 ripples')
+% xlabel('Time relative to ripple onset (s)')
+% ylabel('Cell ID')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% 
+% subplot(1,4,3)
+% % [~,index] = sort(V1_SUA_track_difference{2});
+% % [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2));
+% x_data = ripple_modulation(1).bins;
+% y_data = 1:length(index);
+% imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{1}(index,:));
+% colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+% % xlim([100 200])
+% xlim([-0.5 0.5])
+% xline(0,'--')
+% title('R V1 Track 1 ripples')
+% xlabel('Time relative to ripple onset (s)')
+% ylabel('Cell ID')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% 
+% subplot(1,4,4)
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2));
+% % [~,index] = sort(V1_SUA_track_difference{2});
+% % [~,index] = sort(V1_SUA_track_difference{1});
+% x_data = ripple_modulation(1).bins;
+% y_data = 1:length(index);
+% imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{2}(index,:));
+% colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+% % xlim([100 200])
+% xlim([-0.5 0.5])
+% xline(0,'--')
+% title('R V1 Track 2 ripples')
+% xlabel('Time relative to ripple onset (s)')
+% ylabel('Cell ID')
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% 
+% save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
 
 %% V1 activity before and after coherent reactivations
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
@@ -896,6 +794,7 @@ V1_reactivation_coherence_modulation(2).time_bins =  xbins(xbins>=-1&xbins<=1);
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_coherence_modulation.mat'),'V1_reactivation_coherence_modulation','-v7.3');
 
 
+
 %% CCA analysis
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_coherence_modulation.mat'));
 nbin = 1;
@@ -908,7 +807,7 @@ T2_coherent_PRE = V1_reactivation_coherence_modulation(2).event_type_PRE(nbin,:)
 
 clear CCA
 % warning('off', 'stats:canoncorr:NotFullRank'); % Place it here
-for nsession = 1:max(V1_reactivation_coherence_modulation(track_id).session_id)
+for nsession = 1:max(V1_reactivation_coherence_modulation(1).session_id)
     tic
 
     for track_id = 1:2
@@ -962,7 +861,7 @@ for nsession = 1:max(V1_reactivation_coherence_modulation(track_id).session_id)
         for t = 1:size(psth_v1,3)
             tidx = find(bin_centers<bin_centers(t)+t_win & bin_centers>=bin_centers(t));
 
-            parfor i_lag = 1:n_lags
+            for i_lag = 1:n_lags
                 lag = lag_bins(i_lag);
                 % Determine the time indices to use for each population based on the lag
                 % The lag shifts the HPC data relative to the V1 data.
@@ -990,7 +889,7 @@ for nsession = 1:max(V1_reactivation_coherence_modulation(track_id).session_id)
                 % canoncorr requires the number of observations (rows) to be greater
                 % than the number of variables (columns). This is typically true here
                 % since nEvent * nTime >> nNeuron.
-                warnState = warning('off', 'stats:canoncorr:NotFullRank')
+                warnState = warning('off', 'stats:canoncorr:NotFullRank');
                 [A, B, r, ~, ~] = canoncorr(v1_lagged_data,hpc_lagged_data);
 
                 % Store the maximum canonical correlation (r(1))
@@ -1030,6 +929,35 @@ for nsession = 1:max(V1_reactivation_coherence_modulation(track_id).session_id)
     toc
 end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_CCA.mat'),'CCA','-v7.3');
+
+for track_id = 1:2
+    figure
+    for nsession = 1:22
+        CCA_matrix = CCA(track_id).corr_coef{nsession};
+        % V1_leading = mean(CCA_matrix(:,1:end/2),2);
+        % V1_lagging = mean(CCA_matrix(:,end/2+1:end),2);
+        % V1_leading = normalize(mean(CCA_matrix(:,1:end/2),2),'range');
+        % V1_lagging = normalize(mean(CCA_matrix(:,end/2+1:end),2),'range');
+        V1_before = normalize(mean(CCA_matrix(bin_centers>-0.2 & bin_centers<0,:)),'range');
+        V1_after = normalize(mean(CCA_matrix(bin_centers>0 & bin_centers<0.2,:)),'range');
+
+        % V1_leading(bin_centers>)
+        subplot(5,5,nsession)
+        % plot(bin_centers,V1_leading);hold on; plot(bin_centers,V1_lagging)
+        % xlim([-0.2 0.2])
+
+        plot(lag_times,V1_before);hold on; plot(lag_times,V1_after)
+        xlim([-0.2 0.2])
+        % imagesc(CCA(track_id).corr_coef{nsession});
+        % dist = reshape(CCA(track_id).corr_coef{nsession},1,[]);
+        % 
+        % if prctile(dist,20)<1
+        %     clim([prctile(dist,20) prctile(dist,80)]);
+        % end
+        % 
+        % colorbar
+    end
+end
 
 
 %% Distribution of neurons active before vs after ripple
