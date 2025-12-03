@@ -3213,7 +3213,7 @@ elseif exist('P:\corticohippocampal_replay')>0
 end
 
 
-for nsession =1:22
+for nsession =1:length(experiment_info)
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
@@ -3333,7 +3333,7 @@ for nsession =1:22
     %%%%%%%%%%%% Cortical wave direction during DOWN state peak
 
     %     filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
-    filterparms.deltafilter = [0.5 2];%heuristically defined.  room for improvement here.
+    filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
     filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
     filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
     filterparms.lowgammafilter = [30 60];%heuristically defined.  room for improvement here.
@@ -3398,13 +3398,17 @@ for nsession =1:22
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %%% get
+    cortex_ref_shank_probe = [];
     HPC_ref_shank=[];
     ref_shank = [];
+    cortex_ref_shank=[];
     for nprobe = 1:length(session_info(n).probe)
         probe_no = session_info(n).probe(nprobe).probe_id+1;
 
         [~,ref_shank] = max(LFP(nprobe).best_SO_V1_trough_peak_ratio);
-        cortex_ref_shank(probe_no) = ref_shank;
+        
+        cortex_ref_shank(probe_no)=  find(slow_waves(probe_no).probe_hemisphere== probe_no & slow_waves(probe_no).shank_id == ref_shank);
+        cortex_ref_shank_probe(probe_no) = ref_shank;
         %         ref_shank = find(slow_waves(probe_no).shank_id == slow_waves(probe_no).shank(slow_waves(probe_no).channel == slow_waves(probe_no).best_channel)...
         %             &slow_waves(probe_no).probe_hemisphere == probe_no);
         %         cortex_ref_shank(probe_no) = ref_shank;
@@ -3575,10 +3579,10 @@ for nsession =1:22
         ripples(probe_no).gamma_phase_ripple_onset = gamma_phase_ripple_onset;
         ripples(probe_no).gamma_amplitude_ripple_onset = gamma_amplitude_ripple_onset;
 
-        ripples(probe_no).cortex_SO_ref_shank = cortex_ref_shank;
+        ripples(probe_no).cortex_SO_ref_shank = cortex_ref_shank_probe;
     end
 %     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_V1_best_SO_channel.mat'),'ripples');
-    save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_2Hz_SO.mat'),'ripples');
+%     save(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events_2Hz_SO.mat'),'ripples');
     %   load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'),'ripples');
 
     % From cell structure back to spike times and spike id
@@ -3594,6 +3598,8 @@ for nsession =1:22
     %
     %
     % Unwrap phase to allow for linear interpolation across the -pi/pi boundary
+%     cortex_ref_shank
+
     phi_unwrapped = unwrap(lfp_V1.SO_phase_LFP(:,cortex_ref_shank));
     % Interpolate LFP phase to the exact spike times
     spike_phases_unwrapped = interp1(tvec, phi_unwrapped, session_clusters.spike_times, 'linear');
@@ -3818,32 +3824,32 @@ for nsession =1:22
     end
 
 
-    for hemi = 1:2
-        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:));
-        V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:));
-        V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-
-        temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:));
-        HPC_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:));
-        HPC_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-    end
+%     for hemi = 1:2
+%         temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:));
+%         V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+%         temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:));
+%         V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+% 
+%         temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:));
+%         HPC_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+%         temp = squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:));
+%         HPC_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
+%     end
     
     % save_all_figures('D:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots',[]);
-%     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots best'),[])
-    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots (2Hz)'),[])
+    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots best'),[])
+%     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots (2Hz)'),[])
 end
 
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
-%     save(fullfile(analysis_folder,'SO_phase_MUA_best_V1_SO.mat'),...
-%         'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
-%         'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
-
-    save(fullfile(analysis_folder,'SO_phase_MUA_SO_2Hz.mat'),...
+    save(fullfile(analysis_folder,'SO_phase_MUA_best_V1_SO.mat'),...
         'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
         'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
+
+%     save(fullfile(analysis_folder,'SO_phase_MUA_SO_2Hz.mat'),...
+%         'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
+%         'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
 
     % save(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
 
@@ -3882,8 +3888,8 @@ V1_phase = [];
 for hemi = 1:2
     
     for nession = 1:22
-        V1_phase{hemi}(1,nession,:) = SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,1,:);
-        V1_phase{hemi}(2,nession,:) = SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,2,:);
+        V1_phase{hemi}(1,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,1,:);
+        V1_phase{hemi}(2,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,2,:);
         %         V1_phase{hemi}(1,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,1,:),'range');
         % V1_phase{hemi}(2,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,2,:),'range');
     end
@@ -3892,8 +3898,8 @@ end
 mean_phases_ipsi = mean([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))]);
 mean_phases_contra = mean([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))]);
 
-SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_DOWN_MUA_spike_rate{nsession}));
-SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_DOWN_MUA_spike_rate{nsession}));
+SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
+SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
 
 
 % 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
@@ -3913,7 +3919,8 @@ contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
 
 %%%% Plot SO V1 phase
 fig = figure;
-fig.Name = 'V1 SO phase Peak vs Trough (DOWN 2Hz)';
+fig.Name = 'V1 SO phase Peak vs Troug (sleep)';
+% fig.Name = 'V1 SO phase Peak vs Trough (DOWN 2Hz)';
 sgtitle(fig.Name)
 fig.Position= [844 66 560 906];
 
@@ -3940,9 +3947,10 @@ title('Ipsi vs Contra Phase Preference');
 
 % Add a legend (using the plot handles h1 and h2)
 legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
-
+xticks([-pi -pi/2 0 pi/2 pi])
+xticklabels({'-pi','-pi/2','0','pi/2','pi'})
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-xlim([min(x) max(x)]);
+xlim([-pi pi]);
 ylim([1 6])
 hold off;
 
@@ -3951,14 +3959,14 @@ hold off;
 %%%%%% paired t test
 for nsession = 1:22
     for hemi = 1:2
-        temp = squeeze(SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,1,:));
+        temp = squeeze(SO_phase_SO_MUA_spike_rate{nsession}(hemi,1,:));
         V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,2,:));
+        temp = squeeze(SO_phase_SO_MUA_spike_rate{nsession}(hemi,2,:));
         V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
 
-        temp = squeeze(SO_phase_DOWN_HPC_MUA_spike_rate{nsession}(hemi,1,:));
+        temp = squeeze(SO_phase_SO_HPC_MUA_spike_rate{nsession}(hemi,1,:));
         HPC_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_DOWN_HPC_MUA_spike_rate{nsession}(hemi,2,:));
+        temp = squeeze(SO_phase_SO_HPC_MUA_spike_rate{nsession}(hemi,2,:));
         HPC_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
     end
 end
