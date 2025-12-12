@@ -14,8 +14,8 @@ elseif exist('P:\corticohippocampal_replay')>0
 end
 load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
-% load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 
+% load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
 
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
@@ -37,6 +37,11 @@ load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
 load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
 
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+
+
+load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+
+
 %% Extract key information for DOWN UP, ripples and spindles
  
 load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
@@ -46,11 +51,13 @@ HPC_ref_shank = [];
 
 for nsession = 1:max(ripples_all(1).session_count)
     for probe_no = 1:2
-        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
-        %     &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
 
-        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
-            & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
+        %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+
+        % cortex_ref_shank(nsession,probe_no) = ripples_all;
         % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
         % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
         % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
@@ -60,6 +67,7 @@ for nsession = 1:max(ripples_all(1).session_count)
 
     end
 end
+
 
 %%%%%%%%%%%%%%%%%% Ripple info
 
@@ -119,7 +127,8 @@ SO_phase=[];
 for probe_no = 1:2
     SO_phase{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        % SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -143,46 +152,236 @@ ripple_info.SO_amplitude = SO_amplitude';
 ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
 
 
-%%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
-ripple_info.early_UP_index = UP_index;
-ripple_info.early_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%UP_normalised_durationUP_normalised_durationUP_normalised_duration
+%%%%%%%%%%%%%%%%%%%%%%%
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'));
 
-ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first);
-ripple_info.early_UP_index_hemi = ripple_info.early_UP_index_hemi(event_ids_first);
+% add time for each sessions for later sorting
+sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+UP_ints=[];
+DOWN_ints=[];
+ripple_peaktimes=[];
+ripple_ints=[];
+SO_ints=[];
 
-%%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
-ripple_info.late_UP_index = UP_index;
-ripple_info.late_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
+for nprobe = 1:2
+    UP_ints{nprobe}=slow_waves_all(nprobe).UP_ints;
+    DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints;
+    SO_ints{nprobe} = slow_waves_all(nprobe).DOWN_intervals;
+    ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes;
+    ripple_ints{nprobe}=[ripples_all(nprobe).onset ripples_all(nprobe).offset];
+    % spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
+    % spindle_ints{nprobe}=[spindles_all(nprobe).onset(spindles_all(nprobe).SWS_index == 1) spindles_all(nprobe).offset(spindles_all(nprobe).SWS_index == 1)];
 
-ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first);
-ripple_info.late_UP_index_hemi = ripple_info.late_UP_index_hemi(event_ids_first);
+    for nsession = 1:max(slow_waves_all(1).UP_session_count)
+        index = find(slow_waves_all(nprobe).DOWN_intervals_session == sessions_to_process(nsession));
+        SO_ints{nprobe}(index,:) = SO_ints{nprobe}(index,:) + nsession * 1000000;
+
+        index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession));
+        UP_ints{nprobe}(index,:) = UP_ints{nprobe}(index,:) + nsession * 1000000;
+
+        index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession));
+        DOWN_ints{nprobe}(index,:) = DOWN_ints{nprobe}(index,:) + nsession * 1000000;
+
+        index = find(ripples_all(nprobe).SWS_index == 1 &ripples_all(nprobe).session_count == sessions_to_process(nsession));
+        ripple_ints{nprobe}(index,:) = ripple_ints{nprobe}(index,:) + nsession * 1000000;
+        ripple_peaktimes{nprobe}(index,:) = ripple_peaktimes{nprobe}(index,:) + nsession * 1000000;
+
+        % [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).SWS_index == 1));
+        % spindle_ints{nprobe}(ib,:) = spindle_ints{nprobe}(ib,:) + nsession * 1000000;
+    end
+end
 
 
+%%% early and late UP transition
+ripple_info.early_UP_index=[];
+ripple_info.late_UP_index = [];
+% ripple_info.early_UP_index=[];
+ripple_info.after_SO_index = [];
+ripple_info.before_SO_index = [];
+
+for nprobe = 1:2
+
+    % temp =  merged_event_info.DOWN_hemisphere_id==nprobe;
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[UP_ints{nprobe}(:,1) UP_ints{nprobe}(:,1)+0.25]);
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2) mean(merged_event_info.DOWN_ints(temp,:),2)+0.25]);
+    ripple_info.early_UP_index(:,nprobe) = UP_index;
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2)-0.25 mean(merged_event_info.DOWN_ints(temp,:),2)]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[DOWN_ints{nprobe}(:,1)-0.25 DOWN_ints{nprobe}(:,1)]);
+    ripple_info.late_UP_index(:,nprobe) = UP_index;
 
 
-%%% UP and DOWN transition co-occurance
-ripple_info.UP_index=[];
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,2)]);
-ripple_info.UP_index(:,1) = UP_index;
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1) SO_ints{nprobe}(:,1)+0.25]);
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2) mean(merged_event_info.DOWN_ints(temp,:),2)+0.25]);
+    ripple_info.after_SO_index(:,nprobe) = UP_index;
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2)-0.25 mean(merged_event_info.DOWN_ints(temp,:),2)]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1)-0.25 SO_ints{nprobe}(:,1)]);
+    ripple_info.before_SO_index(:,nprobe) = UP_index;
+end
 
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,2)]);
-ripple_info.UP_index(:,2) = UP_index;
-ripple_info.UP_index = ripple_info.UP_index(event_ids_first,:);
+ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first,:);
+ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first,:);
 
-%%% DOWN transition co-occurance
-ripple_info.DOWN_index=[];
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,2)]);
-ripple_info.DOWN_index(:,1) = DOWN_index;
 
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,2)]);
-ripple_info.DOWN_index(:,2) = DOWN_index;
-ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first,:);
+ripple_info.after_SO_index = ripple_info.after_SO_index(event_ids_first,:);
+ripple_info.before_SO_index = ripple_info.before_SO_index(event_ids_first,:);
+
+
+% 
+% figure;
+% histogram(ripple_info.SO_phase(ripple_info.early_UP_index(:,1)==1,1),'Normalization','probability')
+% hold on;histogram(ripple_info.SO_phase(ripple_info.late_UP_index(:,1)==1,1),'Normalization','probability')
+% 
+% 
+% figure;
+% histogram(ripple_info.SO_phase(ripple_info.early_UP_index(:,2)==1,2),'Normalization','probability')
+% hold on;histogram(ripple_info.SO_phase(ripple_info.late_UP_index(:,2)==1,2),'Normalization','probability')
+%%%% Normalised SO (from DOWN peak to DOWN peak)
+
+%%% First half and second half SO
+for nprobe = 1:2
+
+    % event_info (based on DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_DOWN_duration;
+        UP_info{1} = SO_normalised_duration(1).L_ripple;
+        UP_info{2} = SO_normalised_duration(2).L_ripple;
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_DOWN_duration;
+        UP_info{1} = SO_normalised_duration(1).R_ripple;
+        UP_info{2} = SO_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+    event_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+                event_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,4);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_SO_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_SO_duration = ripple_info.normalised_SO_duration(event_ids_first,:);
+
+ripple_info.SO_event_duration = [event_duration{1}; event_duration{2}];
+ripple_info.SO_event_duration = ripple_info.SO_event_duration(event_ids_first,:);
+
+
+%%%% UP
+%%% First half and second half 
+for nprobe = 1:2
+
+    % event_info (based on UP DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_UP_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_UP_duration;
+        UP_info{1} = UP_normalised_duration(1).L_ripple;
+        UP_info{2} = UP_normalised_duration(2).L_ripple;
+        
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_UP_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_UP_duration;
+        UP_info{1} = UP_normalised_duration(1).R_ripple;
+        UP_info{2} = UP_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+    event_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+                event_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,4);
+
+            end
+        end
+    end
+end
+
+ripple_info.normalised_UP_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_UP_duration = ripple_info.normalised_UP_duration(event_ids_first,:);
+
+ripple_info.UP_duration = [event_duration{1}; event_duration{2}];
+ripple_info.UP_duration = ripple_info.UP_duration(event_ids_first,:);
+ripple_info.UP_duration(ripple_info.SO_event_duration>10)=nan;
+
+%%% First half and second half DOWN
+for nprobe = 1:2
+
+    % event_info (based on DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_DOWN_duration;
+        UP_info{1} = DOWN_normalised_duration(1).L_ripple;
+        UP_info{2} = DOWN_normalised_duration(2).L_ripple;
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_DOWN_duration;
+        UP_info{1} = DOWN_normalised_duration(1).R_ripple;
+        UP_info{2} = DOWN_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+    event_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+                event_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,4);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_DOWN_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_DOWN_duration = ripple_info.normalised_DOWN_duration(event_ids_first,:);
+
+ripple_info.DOWN_duration = [event_duration{1}; event_duration{2}];
+ripple_info.DOWN_duration = ripple_info.DOWN_duration(event_ids_first,:);
+ripple_info.DOWN_duration(ripple_info.SO_event_duration>10)=nan;
+ripple_info.SO_event_duration(ripple_info.SO_event_duration>10)=nan;
+
+
+% figure
+% temp1 = ripple_info.normalised_DOWN_duration(:,1)<0.5 | ripple_info.normalised_DOWN_duration(:,2)<0.5;
+% temp2 = ripple_info.normalised_DOWN_duration(:,1)>0.5 | ripple_info.normalised_DOWN_duration(:,2)>0.5;
+% hold on;
+% histogram(ripple_info.SO_phase(temp1,1),'Normalization','probability')
+% histogram(ripple_info.SO_phase(temp2,1),'Normalization','probability')
+% 
+% figure
+% temp1 = ripple_info.normalised_UP_duration(:,1)<0.33 | ripple_info.normalised_UP_duration(:,2)<0.33;
+% temp2 = ripple_info.normalised_UP_duration(:,1)>0.33 & ripple_info.normalised_UP_duration(:,1)<0.66|  ripple_info.normalised_UP_duration(:,2)>0.33 & ripple_info.normalised_UP_duration(:,2)<0.66;
+% temp3 = ripple_info.normalised_UP_duration(:,1)>0.66 | ripple_info.normalised_UP_duration(:,2)>0.66;
+% hold on;
+% histogram(ripple_info.SO_phase(temp1,1),-pi:0.1:pi,'Normalization','probability')
+% histogram(ripple_info.SO_phase(temp2,1),-pi:0.1:pi,'Normalization','probability')
+% histogram(ripple_info.SO_phase(temp3,1),-pi:0.1:pi,'Normalization','probability')
 
 
 %%%%%%
@@ -195,11 +394,6 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 
 % merged_event_info.ripples_hemisphere_id
 % singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
-
-
-
-% singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
-cd(fullfile(analysis_folder,'V1-HPC sleep reactivation'))
 
 
 %%
@@ -270,7 +464,10 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 
 
-load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
+
 spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
 spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
 spindle_amplitude = nan([size(spindle_amplitude1),2]);
