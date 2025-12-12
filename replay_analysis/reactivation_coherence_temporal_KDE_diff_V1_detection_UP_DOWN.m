@@ -191,23 +191,24 @@ ripple_info.late_UP_index = [];
 % ripple_info.early_UP_index=[];
 ripple_info.after_SO_index = [];
 ripple_info.before_SO_index = [];
+twin = 0.25;
 
 for nprobe = 1:2
 
     % temp =  merged_event_info.DOWN_hemisphere_id==nprobe;
-    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[UP_ints{nprobe}(:,1) UP_ints{nprobe}(:,1)+0.25]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[UP_ints{nprobe}(:,1) UP_ints{nprobe}(:,1)+twin]);
     % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2) mean(merged_event_info.DOWN_ints(temp,:),2)+0.25]);
     ripple_info.early_UP_index(:,nprobe) = UP_index;
     % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2)-0.25 mean(merged_event_info.DOWN_ints(temp,:),2)]);
-    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[DOWN_ints{nprobe}(:,1)-0.25 DOWN_ints{nprobe}(:,1)]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[DOWN_ints{nprobe}(:,1)-twin DOWN_ints{nprobe}(:,1)]);
     ripple_info.late_UP_index(:,nprobe) = UP_index;
 
 
-    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1) SO_ints{nprobe}(:,1)+0.25]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1) SO_ints{nprobe}(:,1)+twin]);
     % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2) mean(merged_event_info.DOWN_ints(temp,:),2)+0.25]);
     ripple_info.after_SO_index(:,nprobe) = UP_index;
     % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2)-0.25 mean(merged_event_info.DOWN_ints(temp,:),2)]);
-    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1)-0.25 SO_ints{nprobe}(:,1)]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[SO_ints{nprobe}(:,1)-twin SO_ints{nprobe}(:,1)]);
     ripple_info.before_SO_index(:,nprobe) = UP_index;
 end
 
@@ -2483,7 +2484,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_nor
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_normalised_SO_duration_tertiles.mat'))
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by normalised SO duration less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
+fig = figure('Name','Temporal HPC log-odds AUC by normalised SO duration less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4*2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 
@@ -2519,7 +2520,7 @@ end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC first half vs second half SO less than 1.5s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC first half vs second half SO less than 2s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -2822,6 +2823,7 @@ AUC.mean = nan(nTime, nBins);
 AUC.ci = nan(nTime, nBins, 2);
 AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
+event_duration_threshold =10;
 
 for t = 1:nTime
     t0 = time_bins(t);
@@ -2873,13 +2875,13 @@ for t = 1:nTime
                 if npower == 1
                     % Early
                     % Track 1 → use right probe (2), Track 2 → left probe (1)
-                    t1 = t1' & ripple_info.early_UP_index(true_idx(idx),2)==1;
-                    t2 = t2' & ripple_info.early_UP_index(true_idx(idx),1)==1;
+                    t1 = t1' & ripple_info.early_UP_index(true_idx(idx),2)==1 & ripple_info.SO_event_duration(true_idx(idx),2)<event_duration_threshold;
+                    t2 = t2' & ripple_info.early_UP_index(true_idx(idx),1)==1 & ripple_info.SO_event_duration(true_idx(idx),1)<event_duration_threshold;
                 else
                     % Late
                     % Track 1 → use right probe (2), Track 2 → left probe (1)
-                    t1 = t1' & ripple_info.late_UP_index(true_idx(idx),2)==1;
-                    t2 = t2' & ripple_info.late_UP_index(true_idx(idx),1)==1;
+                    t1 = t1' & ripple_info.late_UP_index(true_idx(idx),2)==1 & ripple_info.SO_event_duration(true_idx(idx),2)<event_duration_threshold;
+                    t2 = t2' & ripple_info.late_UP_index(true_idx(idx),1)==1 & ripple_info.SO_event_duration(true_idx(idx),1)<event_duration_threshold;
                 end
 
                 % HPC bias difference between Track 1 and Track 2
@@ -2897,13 +2899,13 @@ for t = 1:nTime
                 if npower == 1
                     % Early
                     % Track 1 → use right probe (2), Track 2 → left probe (1)
-                    t1s = t1s' & ripple_info.early_UP_index(true_idx,2)==1;
-                    t2s = t2s' & ripple_info.early_UP_index(true_idx,1)==1;
+                    t1s = t1s' & ripple_info.early_UP_index(true_idx,2)==1 & ripple_info.SO_event_duration(true_idx,2)<event_duration_threshold;
+                    t2s = t2s' & ripple_info.early_UP_index(true_idx,1)==1 & ripple_info.SO_event_duration(true_idx,1)<event_duration_threshold;
                 else
                     % Late
                     % Track 1 → use right probe (2), Track 2 → left probe (1)
-                    t1s = t1s' & ripple_info.late_UP_index(true_idx,2)==1;
-                    t2s = t2s' & ripple_info.late_UP_index(true_idx,1)==1;
+                    t1s = t1s' & ripple_info.late_UP_index(true_idx,2)==1& ripple_info.SO_event_duration(true_idx,2)<event_duration_threshold;
+                    t2s = t2s' & ripple_info.late_UP_index(true_idx,1)==1& ripple_info.SO_event_duration(true_idx,1)<event_duration_threshold;
                 end
 
                 t1_HPCs = boot_HPC(t1s);
@@ -2930,11 +2932,16 @@ for t = 1:nTime
 end
 
 % -------- save --------
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'))
-
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DU_UD_500ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DU_UD_500ms.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DU_UD_250ms_10s.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DU_UD_250ms_10s.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'))
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by DOWN peak (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+% fig = figure('Name','Temporal HPC log-odds AUC by DOWN-UP transitions 500ms (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+fig = figure('Name','Temporal HPC log-odds AUC by DOWN-UP transitions 250ms 10s (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+% fig = figure('Name','Temporal HPC log-odds AUC by DOWN-UP transitions (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 duration_thresholds = {'DOWN-UP transition','UP-DOWN transition','all'}
@@ -2962,14 +2969,16 @@ for npower = 1:nBins
     title( duration_thresholds{npower});
     set(gca,'TickDir','out','Box','off','FontSize',12);
     xlim([-0.5 0.5]);
-    ylim([-0.1 0.25])
+    ylim([-0.1 0.35])
 
     xline(0,'--k');
 end
 
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by before vs after DOWN peak (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by DU and UD transition 500ms (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC by DU and UD transition 250ms 10s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by DU and UD transition 250ms (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 % figure
@@ -3005,6 +3014,232 @@ plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
 
 % Save results
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+
+
+
+
+
+%% After and before SO peak (0.25 second)
+
+% ripple_info.early_UP_index 
+% ripple_info.late_UP_index
+% Time windows
+nBins = 2;
+win_size  = 0.1;   % 100 ms selection window for V1
+step_size = 0.02;  % 50 ms step
+time_bins = -1:step_size:1;
+nTime = numel(time_bins);
+nBoot = 1000;
+
+% Fixed HPC window (always 0–0.1 s)
+bins_to_use = bin_centers >= 0 & bin_centers < 0.1;
+event_duration_threshold = 10;
+
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    % 226, 132, 187;
+    212,  78, 156;
+    231,  41, 138] / 256;
+
+% Storage
+AUC.mean = nan(nTime, nBins);
+AUC.ci = nan(nTime, nBins, 2);
+AUC.shifted_mean = nan(nTime, nBins);
+AUC.shifted_ci = nan(nTime, nBins, 2);
+
+for t = 1:nTime
+    t0 = time_bins(t);
+    t1 = t0 + win_size;
+
+    % Sliding V1 window (used for event selection)
+    bins_to_select = bin_centers >= t0 & bin_centers < t1;
+
+    fprintf('Processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
+
+    for npower = 1:nBins
+        % All events included, spindle bin applied later conditional on track side
+        event_index = true(1, length(z_bias));
+
+        % Compute mean log-odds
+        mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan'); % selector
+        mean_bias_HPC = mean(z_bias(bins_to_use, event_index), 'omitnan');       % measure
+        total_events = length(mean_bias_V1);
+        if total_events < 10, continue; end
+
+        % Quantile thresholds on |V1 bias|
+        thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+        thresholds = thresholds(1:end-1);
+        nThresh = numel(thresholds);
+
+        bias_diff_boot = NaN(nBoot, nThresh);
+        bias_diff_shift_boot = NaN(nBoot, nThresh);
+
+        parfor iBoot = 1:nBoot
+            s = RandStream('philox4x32_10', 'Seed', iBoot);
+            idx = randi(s, total_events, total_events, 1);
+            true_idx = find(event_index);
+
+            boot_V1  = mean_bias_V1(idx);
+            boot_HPC = mean_bias_HPC(idx);
+
+            % “Shifted”: randomise pairing between V1 & HPC
+            boot_V1_shift = mean_bias_V1;
+            diff_tmp = NaN(1, nThresh);
+            diff_tmp_shift = NaN(1, nThresh);
+
+            for i = 1:nThresh
+                th = thresholds(i);
+
+                % Identify Track 1 (positive V1 bias) and Track 2 (negative V1 bias)
+                t1 = boot_V1 >= th;     % Track 1
+                t2 = boot_V1 <= -th;    % Track 2
+                
+                if npower == 1
+                    % Early
+                    % Track 1 → use right probe (2), Track 2 → left probe (1)
+                    t1 = t1' & ripple_info.after_SO_index(true_idx(idx),2)==1 & ripple_info.SO_event_duration(true_idx(idx),2)<event_duration_threshold;
+                    t2 = t2' & ripple_info.after_SO_index(true_idx(idx),1)==1 & ripple_info.SO_event_duration(true_idx(idx),1)<event_duration_threshold;
+                else
+                    % Late
+                    % Track 1 → use right probe (2), Track 2 → left probe (1)
+                    t1 = t1' & ripple_info.before_SO_index(true_idx(idx),2)==1 & ripple_info.SO_event_duration(true_idx(idx),2)<event_duration_threshold;
+                    t2 = t2' & ripple_info.before_SO_index(true_idx(idx),1)==1 & ripple_info.SO_event_duration(true_idx(idx),1)<event_duration_threshold;
+                end
+
+                % HPC bias difference between Track 1 and Track 2
+                t1_HPC = boot_HPC(t1);
+                t2_HPC = boot_HPC(t2);
+                if any(t1) && any(t2)
+                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                end
+
+                % --- Shifted pairing (null) ---
+                t1s = boot_V1_shift >= th;
+                t2s = boot_V1_shift <= -th;
+
+
+                if npower == 1
+                    % Early
+                    % Track 1 → use right probe (2), Track 2 → left probe (1)
+                    t1s = t1s' & ripple_info.after_SO_index(true_idx,2)==1 & ripple_info.SO_event_duration(true_idx,2)<event_duration_threshold;
+                    t2s = t2s' & ripple_info.after_SO_index(true_idx,1)==1 & ripple_info.SO_event_duration(true_idx,1)<event_duration_threshold;
+                else
+                    % Late
+                    % Track 1 → use right probe (2), Track 2 → left probe (1)
+                    t1s = t1s' & ripple_info.before_SO_index(true_idx,2)==1& ripple_info.SO_event_duration(true_idx,2)<event_duration_threshold;
+                    t2s = t2s' & ripple_info.before_SO_index(true_idx,1)==1& ripple_info.SO_event_duration(true_idx,1)<event_duration_threshold;
+                end
+
+                t1_HPCs = boot_HPC(t1s);
+                t2_HPCs = boot_HPC(t2s);
+                if any(t1s) && any(t2s)
+                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                end
+            end
+
+            bias_diff_boot(iBoot, :) = diff_tmp;
+            bias_diff_shift_boot(iBoot, :) = diff_tmp_shift;
+        end
+
+        % Quantile-based AUC
+        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+        auc_shift_boot = (trapz(thresholds, bias_diff_shift_boot') / (max(thresholds)-min(thresholds)))';
+
+        % Store summaries
+        AUC.mean(t, npower) = mean(auc_boot, 'omitnan');
+        AUC.ci(t, npower, :) = prctile(auc_boot, [2.5 97.5]);
+        AUC.shifted_mean(t, npower) = mean(auc_shift_boot, 'omitnan');
+        AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
+    end
+end
+
+% -------- save --------
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms_10s.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms_10s.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_500ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_500ms.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_DOWN_peak_250ms.mat'))
+% -------- Plot --------
+% fig = figure('Name','Temporal HPC log-odds AUC by DOWN peak (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+% fig = figure('Name','Temporal HPC log-odds AUC by DOWN peak 500ms (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+fig = figure('Name','Temporal HPC log-odds AUC by DOWN peak 250ms 10s (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+duration_thresholds = {'After SO peak','Before SO peak','all'}
+for npower = 1:nBins
+    nexttile; hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+        [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+    plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title( duration_thresholds{npower});
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+
+% -------- Plot --------
+% fig = figure('Name','Temporal HPC log-odds AUC by before vs after DOWN peak 500ms (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by before vs after DOWN peak (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+fig = figure('Name','Temporal HPC log-odds AUC by before vs after DOWN peak 250ms 10s (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+% figure
+for npower = [1 nBins]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),2);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),2,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title(' 1st vs 2nd half UP state');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.35])
+
+    xline(0,'--k');
+end
+
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+% Save results
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
 
 
 %% Temporal log odds AUC with UP state + spindle power (V1→HPC)
