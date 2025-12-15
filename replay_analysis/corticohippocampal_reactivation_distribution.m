@@ -53,7 +53,7 @@ for nsession = 1:max(ripples_all(1).session_count)
     for probe_no = 1:2
         cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
             &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
-
+        % 
         % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
         %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
 
@@ -563,10 +563,12 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'Conte
 
 
 fig = figure
-fig.Name = 'Ripple-SO phase-locking (merged)'
+% fig.Name = 'Ripple-SO phase-locking (merged)'
+fig.Name = 'Ripple-SO phase-locking (combined)'
 fig.Position=[158 358 702 546];
 
-temp = ripple_info.SO_phase(:,1);
+% temp = ripple_info.SO_phase(:,1);
+temp = [ripple_info.SO_phase(:,1); ripple_info.SO_phase(:,2)];
 
 mean_angles = [];
 vector_lengths = [];
@@ -574,7 +576,7 @@ pvals = [];
 % angles_wrapped = mod(spindle_phase, 2*pi);
 
 nexttile
-h = polarhistogram(temp, 'BinWidth', pi/12);  % 12 bins (adjust as needed)
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 rmax = max(h.Values);  % get max count from histogram
 
 mean_length = circ_r(temp);
@@ -609,7 +611,7 @@ for i = 1:max(session_count)
     pvals(i) = circ_rtest(phases);
 end
 angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/12);  % 12 bins (adjust as needed)
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('Left V1 SO phase')
 
@@ -624,7 +626,7 @@ pvals = [];
 % angles_wrapped = mod(spindle_phase, 2*pi);
 
 nexttile
-h = polarhistogram(temp, 'BinWidth', pi/12);  % 12 bins (adjust as needed)
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 rmax = max(h.Values);  % get max count from histogram
 
 mean_length = circ_r(temp);
@@ -659,7 +661,7 @@ for i = 1:max(session_count)
     pvals(i) = circ_rtest(phases);
 end
 angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/12);  % 12 bins (adjust as needed)
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('Right V1 SO phase')
 

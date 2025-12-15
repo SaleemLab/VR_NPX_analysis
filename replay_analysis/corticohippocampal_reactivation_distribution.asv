@@ -51,8 +51,8 @@ HPC_ref_shank = [];
 
 for nsession = 1:max(ripples_all(1).session_count)
     for probe_no = 1:2
-        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
-        %     &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
 
         cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
             & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
@@ -74,11 +74,14 @@ end
 % if merge events to bilateral events as one event
 [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id,merged_event_info.ripples_peaktimes,0.05);
 
-event_ids_first = 1
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
+
+% event_ids_first = (1:length(session_count))';
+% event_ids_second = (1:length(session_count))';
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
+
 
 ripple_info.event_id = event_ids_first;
 %%% ripple power
@@ -571,7 +574,7 @@ pvals = [];
 % angles_wrapped = mod(spindle_phase, 2*pi);
 
 nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 rmax = max(h.Values);  % get max count from histogram
 
 mean_length = circ_r(temp);
@@ -606,7 +609,7 @@ for i = 1:max(session_count)
     pvals(i) = circ_rtest(phases);
 end
 angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('Left V1 SO phase')
 
@@ -621,7 +624,7 @@ pvals = [];
 % angles_wrapped = mod(spindle_phase, 2*pi);
 
 nexttile
-h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 rmax = max(h.Values);  % get max count from histogram
 
 mean_length = circ_r(temp);
@@ -656,7 +659,7 @@ for i = 1:max(session_count)
     pvals(i) = circ_rtest(phases);
 end
 angles_wrapped = mod(mean_angles, 2*pi);
-polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('Right V1 SO phase')
 

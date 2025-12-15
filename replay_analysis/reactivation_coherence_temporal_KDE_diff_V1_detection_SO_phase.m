@@ -17,7 +17,7 @@ load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 
 % load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
-load(fullfile(analysis_folder,'ripples_all_2Hz_SO_POST.mat'))
+% load(fullfile(analysis_folder,'ripples_all_2Hz_SO_POST.mat'))
 
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
@@ -52,11 +52,11 @@ HPC_ref_shank = [];
 
 for nsession = 1:max(ripples_all(1).session_count)
     for probe_no = 1:2
-        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
-        %     &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
 
-        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
-            & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
+        %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
 
         % cortex_ref_shank(nsession,probe_no) = ripples_all;
         % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
