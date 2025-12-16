@@ -3333,7 +3333,7 @@ for nsession =1:length(experiment_info)
     %%%%%%%%%%%% Cortical wave direction during DOWN state peak
 
     %     filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
-    filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+    filterparms.deltafilter = [0.5 2];%heuristically defined.  room for improvement here.
     filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
     filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
     filterparms.lowgammafilter = [30 60];%heuristically defined.  room for improvement here.
@@ -3837,19 +3837,19 @@ for nsession =1:length(experiment_info)
 %     end
     
     % save_all_figures('D:\corticohippocampal_replay\V1-HPC sleep reactivation\SO phase plots',[]);
-    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots best'),[])
-%     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots (2Hz)'),[])
+%     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots best'),[])
+    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase plots (2Hz)'),[])
 end
 
 
 if contains(Stimulus_type,'Sleep') & ~contains(Stimulus_type,'PRE')
-    save(fullfile(analysis_folder,'SO_phase_MUA_best_V1_SO.mat'),...
-        'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
-        'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
-
-%     save(fullfile(analysis_folder,'SO_phase_MUA_SO_2Hz.mat'),...
+%     save(fullfile(analysis_folder,'SO_phase_MUA_best_V1_SO.mat'),...
 %         'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
 %         'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
+
+    save(fullfile(analysis_folder,'SO_phase_MUA_SO_2Hz.mat'),...
+        'SO_phase_ripple_HPC_MUA_spike_rate','SO_phase_HPC_MUA_spike_rate','SO_phase_SO_HPC_MUA_spike_rate','SO_phase_DOWN_HPC_MUA_spike_rate',...
+        'SO_phase_ripple_MUA_spike_rate','SO_phase_MUA_spike_rate','SO_phase_SO_MUA_spike_rate','SO_phase_DOWN_MUA_spike_rate');
 
     % save(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'),'periripple_LFP_info_V1','-v7.3');
 
@@ -3919,7 +3919,7 @@ contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
 
 %%%% Plot SO V1 phase
 fig = figure;
-fig.Name = 'V1 SO phase Peak vs Troug (sleep)';
+fig.Name = 'V1 SO phase Peak vs Trough (sleep)';
 % fig.Name = 'V1 SO phase Peak vs Trough (DOWN 2Hz)';
 sgtitle(fig.Name)
 fig.Position= [844 66 560 906];
@@ -3955,18 +3955,19 @@ ylim([1 6])
 hold off;
 
 
+% SO_phase_DOWN_MUA_spike_rate
 
 %%%%%% paired t test
 for nsession = 1:22
     for hemi = 1:2
-        temp = squeeze(SO_phase_SO_MUA_spike_rate{nsession}(hemi,1,:));
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:));
         V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_SO_MUA_spike_rate{nsession}(hemi,2,:));
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:));
         V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
 
-        temp = squeeze(SO_phase_SO_HPC_MUA_spike_rate{nsession}(hemi,1,:));
+        temp = squeeze(SO_phase_DOWN_HPC_MUA_spike_rate{nsession}(hemi,1,:));
         HPC_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_SO_HPC_MUA_spike_rate{nsession}(hemi,2,:));
+        temp = squeeze(SO_phase_DOWN_HPC_MUA_spike_rate{nsession}(hemi,2,:));
         HPC_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
     end
 end
@@ -3984,14 +3985,17 @@ p=[];
 p(1) =signrank(peak_vs_trough_ipsi(:,1),peak_vs_trough_ipsi(:,2));
 p(2) =signrank(peak_vs_trough_contra(:,1),peak_vs_trough_contra(:,2));
 
+p(3) =signrank(peak_vs_trough_ipsi(:,1),peak_vs_trough_contra(:,1));% ipsi vs contra peak
+p(4) =signrank(peak_vs_trough_ipsi(:,2),peak_vs_trough_contra(:,2));% ipsi vs contra trough
+
 % peak_vs_trough =  squeeze(V1_SO_FR(:,2,1,:));
 % peak_vs_trough =  squeeze(V1_SO_FR(:,2,2,:));
 
 
 %%% Plot peak vs trough phases
 % 1. Setup the figure and colors
-peak_vs_trough = {peak_vs_trough_ipsi,peak_vs_trough_contra};
-conditions = {'V1 ipsi','V1 contra'};
+peak_vs_trough = {peak_vs_trough_ipsi,peak_vs_trough_contra,[peak_vs_trough_ipsi(:,1) peak_vs_trough_contra(:,1)],[peak_vs_trough_ipsi(:,2) peak_vs_trough_contra(:,2)]};
+conditions = {'V1 ipsi','V1 contra','V1 ipsi vs contra peak','V1 ipsi vs contra trough'};
 
 % fig = figure;
 % fig.Name = 'V1 SO phase Peak vs Trough';
@@ -3999,8 +4003,8 @@ conditions = {'V1 ipsi','V1 contra'};
 % fig.Position= [844 66 560 906];
 % counter = 1;
 
-for iplot = 1:2
-    subplot(2,2,iplot+2)
+for iplot = 1:4
+    subplot(3,2,iplot+2)
     hold on;
 
     % Define colors
@@ -4010,8 +4014,10 @@ for iplot = 1:2
 
     % Get the number of pairs (rows)
     num_pairs = size(peak_vs_trough{iplot}, 1);
-
+    
+    rng(1);
     jitter_col1 = (rand(num_pairs, 1) - 0.5) * 0.2;
+    rng(2);
     jitter_col2 = (rand(num_pairs, 1) - 0.5) * 0.2;
 
     % 2. Draw the linking lines (One line per pair)
@@ -4043,9 +4049,13 @@ for iplot = 1:2
     % Set X-axis to show categories 1 and 2 clearly
     xlim([0.5 2.5]);
     xticks([1 2]);
-    xticklabels({'Peak', 'Trough'}); % Use descriptive labels
+    if iplot <3
+        xticklabels({'Peak', 'Trough'}); % Use descriptive labels
+    else
+        xticklabels({'Ipsi', 'contra'}); % Use descriptive labels
+    end
 
-    text(1.5,6,sprintf('p = %.3e',p(iplot)))
+    text(1.5,4,sprintf('p = %.3e',p(iplot)))
     % Clean up the axes
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
     grid on;
@@ -4064,72 +4074,63 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\SO phase pl
 
 
 
+% 
+% %%%%%% Individual sessions
+% for nsession = 1:22
+%     options = experiment_info(nsession).experiment_ID;
+%     fig = figure;
+%     fig.Name = sprintf('%s SO phase MUA firing',options(1).experiment_ID)
+%     sgtitle(fig.Name)
+%     fig.Position= [844 66 560 906];
+%     counter = 1;
+% 
+%     for hemi = 1:2
+%         subplot(4,2,counter)
+%         plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+%         plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+%         xlabel('SO Phase');ylabel('FR (Hz)');
+%         set(gca,'TickDir','out','Box','off','FontSize',12)
+%         xticks([-pi -pi/2 0 pi/2 pi])
+%         xticklabels({'-π','-π/2','0','π/2','π'})
+%         title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
+%         counter = counter+1;
+% 
+%         subplot(4,2,counter)
+%         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+%         plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+%         xticks([-pi -pi/2 0 pi/2 pi])
+%         xticklabels({'-π','-π/2','0','π/2','π'})
+%         set(gca,'TickDir','out','Box','off','FontSize',12)
+%         title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
+%         counter = counter+1;
+%     end
+% 
+%     % counter = 1;
+%     for hemi = 1:2
+%         subplot(4,2,counter)
+%         plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+%         plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+%         xlabel('SO Phase');ylabel('FR (Hz)')
+%         xticks([-pi -pi/2 0 pi/2 pi])
+%         xticklabels({'-π','-π/2','0','π/2','π'})
+%         set(gca,'TickDir','out','Box','off','FontSize',12)
+%         title(sprintf('HPC %s SO Phase',hemispheres{hemi}))
+%         counter = counter+1;
+% 
+%         subplot(4,2,counter)
+%         plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
+%         plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
+%         xlabel('SO Phase');ylabel('FR (Hz)')
+%         set(gca,'TickDir','out','Box','off','FontSize',12)
+%         xticks([-pi -pi/2 0 pi/2 pi])
+%         xticklabels({'-π','-π/2','0','π/2','π'})
+%         title(sprintf('HPC %s SO Phase (ripples)',hemispheres{hemi}))
+%         counter = counter+1;
+%     end
+% end
+% 
+% 
+% load((fullfile(analysis_folder,'SO_phase_MUA.mat')));
 
-%%%%%% Individual sessions
-for nsession = 1:22
-    options = experiment_info(nsession).experiment_ID;
-    fig = figure;
-    fig.Name = sprintf('%s SO phase MUA firing',options(1).experiment_ID)
-    sgtitle(fig.Name)
-    fig.Position= [844 66 560 906];
-    counter = 1;
-
-    for hemi = 1:2
-        subplot(4,2,counter)
-        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
-        plot(phase_bins,squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:)),'b')
-        xlabel('SO Phase');ylabel('FR (Hz)');
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xticks([-pi -pi/2 0 pi/2 pi])
-        xticklabels({'-π','-π/2','0','π/2','π'})
-        title(sprintf('V1 %s SO Phase',hemispheres{hemi}))
-        counter = counter+1;
-
-        subplot(4,2,counter)
-        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
-        plot(phase_bins,squeeze(SO_phase_ripple_MUA_spike_rate{nsession}(hemi,2,:)),'b')
-        xticks([-pi -pi/2 0 pi/2 pi])
-        xticklabels({'-π','-π/2','0','π/2','π'})
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        title(sprintf('V1 %s SO Phase (ripples)',hemispheres{hemi}))
-        counter = counter+1;
-    end
-
-    % counter = 1;
-    for hemi = 1:2
-        subplot(4,2,counter)
-        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
-        plot(phase_bins,squeeze(SO_phase_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
-        xlabel('SO Phase');ylabel('FR (Hz)')
-        xticks([-pi -pi/2 0 pi/2 pi])
-        xticklabels({'-π','-π/2','0','π/2','π'})
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        title(sprintf('HPC %s SO Phase',hemispheres{hemi}))
-        counter = counter+1;
-
-        subplot(4,2,counter)
-        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)),'r');hold on;
-        plot(phase_bins,squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,2,:)),'b')
-        xlabel('SO Phase');ylabel('FR (Hz)')
-        set(gca,'TickDir','out','Box','off','FontSize',12)
-        xticks([-pi -pi/2 0 pi/2 pi])
-        xticklabels({'-π','-π/2','0','π/2','π'})
-        title(sprintf('HPC %s SO Phase (ripples)',hemispheres{hemi}))
-        counter = counter+1;
-    end
-end
-
-
-load((fullfile(analysis_folder,'SO_phase_MUA.mat')));
-
-for nsession = 1:22
-    plot(  squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,1,:)))
-
-    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:))
-
-    squeeze(SO_phase_ripple_HPC_MUA_spike_rate{nsession}(hemi,hemi,:)
-
-    SO_phase_MUA_spike_rate
-end
 
 %%
