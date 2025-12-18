@@ -314,8 +314,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -429,4 +429,46 @@ for npower = 1:nBins
 end
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_ripple_power.mat'),'AUC')
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_ripple_power.mat'),'AUC')
+
+
+% Plot temporal AUC traces
+fig = figure('Name','Temporal V1 log-odds AUC low vs high ripple powers','Position',[640 100 1100/3 900/4]);
+tiledlayout(nBins, 1, 'TileSpacing','compact');
+
+for npower = [1 4]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    % Real (coloured)
+    fill([tvec fliplr(tvec)], ...
+        [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    yline(0, '--r');
+    xlabel('Time (s relative to ripple onset)');
+    ylabel('V1 bias AUC');
+    title(sprintf('Ripple power bin %d (%.2f–%.2f)', ...
+        npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.2])
+end
+
+
+% Shifted (black)
+fill([tvec fliplr(tvec)], ...
+    [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])

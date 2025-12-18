@@ -15,8 +15,8 @@ end
 load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
 % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
 
-% load(fullfile(analysis_folder,'ripples_all_POST.mat'))
-load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+% load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
 
 load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
@@ -44,7 +44,7 @@ load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
 
 %% Extract key information for DOWN UP, ripples and spindles
  
-load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
+% load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
 %%%%%%% Find reference channel/shank
 cortex_ref_shank = [];
 HPC_ref_shank = [];
@@ -424,8 +424,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -464,9 +464,9 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 
 
-load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
-% load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
-periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
+load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+% periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
 
 spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
 spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
@@ -483,7 +483,7 @@ spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-bins_to_select = bin_centers>0 & bin_centers<0.2;
+bins_to_select = bin_centers>0 & bin_centers<0.15;
 bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
 nBoot = 1000;
 
@@ -618,6 +618,15 @@ for npower = 1:nBins
     spindle_power_KDE_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
     spindle_power_KDE_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
 
+    % store AUC
+    auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+    auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
+
+    spindle_power_KDE_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    spindle_power_KDE_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
+
     % ----------- PLOTS (A, B, C) ----------------
 
     % A: Bias vs. Threshold
@@ -701,7 +710,7 @@ end
 
 bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
 bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:);
 
 hold on;
 x2 = [thresholds, fliplr(thresholds)];
@@ -752,7 +761,87 @@ legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'b
 
 % Save results
 save('spindle_power_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
+
+
+
+
+
+%%%%% AUC mean + CI bar plot
+% Plot layout
+fig = figure;
+fig.Position = [640 100 281 325]
+fig.Name = 'KDE bias V1 AUC low vs high moving spindle powers';
+data = spindle_power_KDE_bias_difference;
+n_bins = length(data);
+bar_width = 0.3;      % Width of the bars
+group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
+hold on;
+clear BAR
+for i = 1:nBins
+    % --- 1. Plot Shuffled Data (Left Bar) ---
+    x_shuf = i - group_offset;
+    y_shuf = data(i).AUC_mean_shuffled;
+
+    % Calculate Error Deltas (Errorbar requires length relative to mean, not absolute values)
+    % CI is [lower, upper]
+    neg_err_shuf = y_shuf - data(i).AUC_CI_shuffled(1);
+    pos_err_shuf = data(i).AUC_CI_shuffled(2) - y_shuf;
+
+    % Plot Bar
+    if i == 1
+        BAR(1) = bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    else
+        bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    end
+
+    % Plot Error Bar
+    E = errorbar(x_shuf, y_shuf, neg_err_shuf, pos_err_shuf, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+
+    % --- 2. Plot Real Data (Right Bar) ---
+    x_real = i + group_offset;
+    y_real = data(i).AUC_mean;
+
+    neg_err_real = y_real - data(i).AUC_CI(1);
+    pos_err_real = data(i).AUC_CI(2) - y_real;
+
+    % Get specific color for this power bin
+    % Assuming colour_lines is size [n_bins x 3]
+    this_color = colour_lines(i, :);
+
+    % Plot Bar
+    BAR(i+1) = bar(x_real, y_real, bar_width, ...
+        'FaceColor', this_color, ...
+        'FaceAlpha', 0.3, ...
+        'EdgeColor', 'none');
+
+    errorbar(x_real, y_real, neg_err_real, pos_err_real, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+end
+
+hold off;
+% Set X-ticks to be centered on the groups
+set(gca, 'XTick', 1:nBins);
+xlim([0.5, nBins + 0.5]);
+
+% Labels
+ylabel('V1 bias AUC');
+xlabel('Power Bins');
+legend([BAR(1:end)],{'Shuffled','0-25','25-50','50-75','75-100'},'box','off')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%% PRE Spindle power binning
@@ -773,7 +862,7 @@ spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-bins_to_select = bin_centers>-0.2 & bin_centers<0;
+bins_to_select = bin_centers>-0.15 & bin_centers<0;
 bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
 nBoot = 1000;
 
@@ -907,6 +996,15 @@ for npower = 1:nBins
     spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
     spindle_power_KDE_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
     spindle_power_KDE_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+
+    % store AUC
+    auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+    auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
+
+    spindle_power_KDE_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    spindle_power_KDE_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
 
     % ----------- PLOTS (A, B, C) ----------------
 
@@ -1043,6 +1141,81 @@ legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'b
 
 % Save results
 save('spindle_power_KDE_bias_difference_based_on_PRE_V1_bias.mat', 'spindle_power_KDE_bias_difference');
+
+
+%%%%% AUC mean + CI bar plot
+% Plot layout
+fig = figure;
+fig.Position = [640 100 281 325]
+fig.Name = 'KDE bias V1 AUC low vs high moving spindle powers (PRE)';
+data = spindle_power_KDE_bias_difference;
+n_bins = length(data);
+bar_width = 0.3;      % Width of the bars
+group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
+hold on;
+clear BAR
+for i = 1:nBins
+    % --- 1. Plot Shuffled Data (Left Bar) ---
+    x_shuf = i - group_offset;
+    y_shuf = data(i).AUC_mean_shuffled;
+
+    % Calculate Error Deltas (Errorbar requires length relative to mean, not absolute values)
+    % CI is [lower, upper]
+    neg_err_shuf = y_shuf - data(i).AUC_CI_shuffled(1);
+    pos_err_shuf = data(i).AUC_CI_shuffled(2) - y_shuf;
+
+    % Plot Bar
+    if i == 1
+        BAR(1) = bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    else
+        bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    end
+
+    % Plot Error Bar
+    E = errorbar(x_shuf, y_shuf, neg_err_shuf, pos_err_shuf, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+
+    % --- 2. Plot Real Data (Right Bar) ---
+    x_real = i + group_offset;
+    y_real = data(i).AUC_mean;
+
+    neg_err_real = y_real - data(i).AUC_CI(1);
+    pos_err_real = data(i).AUC_CI(2) - y_real;
+
+    % Get specific color for this power bin
+    % Assuming colour_lines is size [n_bins x 3]
+    this_color = colour_lines(i, :);
+
+    % Plot Bar
+    BAR(i+1) = bar(x_real, y_real, bar_width, ...
+        'FaceColor', this_color, ...
+        'FaceAlpha', 0.3, ...
+        'EdgeColor', 'none');
+
+    errorbar(x_real, y_real, neg_err_real, pos_err_real, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+end
+
+hold off;
+% Set X-ticks to be centered on the groups
+set(gca, 'XTick', 1:nBins);
+xlim([0.5, nBins + 0.5]);
+
+% Labels
+ylabel('V1 bias AUC');
+xlabel('Power Bins');
+legend([BAR(1:end)],{'Shuffled','0-25','25-50','50-75','75-100'},'box','off')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
 
 

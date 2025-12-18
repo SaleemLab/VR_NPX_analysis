@@ -185,7 +185,8 @@ session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripp
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
-
+session_count = session_count(event_ids_first);
+subject_id = subject_id(event_ids_first);
 % singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
@@ -204,11 +205,12 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-%%%%%%%%%%%%%%% KDE reactivation bias 
+%%%%%%%%%%%%%%% RRR reactivation bias 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
-
-timebin = 0.02;
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_ripples_PSTH.mat'))
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_content.mat'))
+timebin = 0.01;
 time_windows = [-1 1];
 % Generate bin edges
 bin_edges = time_windows(1):timebin:time_windows(2);
@@ -223,16 +225,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
-% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-
-nan_mask = KDE_reactivation_ripples_PSTH.nan_mask(:,1:2:end)'; %KDE nan mask 10ms bin, make it 20ms bin
-
-z_bias = [bayesian_reactivation_all(1).z_log_odds(:,ripples_all(1).SWS_index==1) bayesian_reactivation_all(2).z_log_odds(:,ripples_all(2).SWS_index==1)];
-z_bias_V1 = [bayesian_reactivation_V1_all(1).z_log_odds(:,ripples_all(1).SWS_index==1) bayesian_reactivation_V1_all(2).z_log_odds(:,ripples_all(2).SWS_index==1)];
-
-z_bias = z_bias + nan_mask;
-z_bias_V1 = z_bias_V1 + nan_mask;
+z_bias = RRR_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = RRR_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -248,17 +242,15 @@ z_bias = z_bias(:,event_ids_first);
 z_bias_V1 = z_bias_V1(:,event_ids_first);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-bins_to_use = bin_centers>0 & bin_centers<0.1;
+%%%%%%
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
-
-singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
-
+session_count = session_count(event_ids_first);
+subject_id = subject_id(event_ids_first);
+% singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -291,11 +283,11 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % event_index = (singlet_index+power_index)>1;
 
 
-
 %% Ripple power binning
 power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
 nBins = length(power_thresholds) - 1;
 bins_to_use = bin_centers>0 & bin_centers<0.1;
+% bins_to_use = bin_centers>0 & bin_centers<0.1;
 bins_to_select = bin_centers>0 & bin_centers<0.2;
 bins_to_use_shifted = bin_centers>-1 & bin_centers<-0.9;
 nBoot = 1000;
@@ -317,7 +309,7 @@ colour_lines = [ ...
 % Plot layout
 fig = figure;
 fig.Position = [640 100 1100 650*2]
-fig.Name = 'Bayesian bias difference in V1 with different ripple powers';
+fig.Name = 'RRR bias difference in V1 with different ripple powers';
 tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 
 for npower = 1:nBins
@@ -404,13 +396,12 @@ for npower = 1:nBins
     prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
 
     % Store results
-    ripple_power_Bayesian_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_mean = bias_mean;
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).prop_mean = prop_mean;
-    ripple_power_Bayesian_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).thresholds = thresholds;
-
+    ripple_power_RRR_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_RRR_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_RRR_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_RRR_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_RRR_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_RRR_bias_difference(npower).thresholds = thresholds;
 
     % % Compute stats for shuffled (shifted) bias
     bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
@@ -422,20 +413,20 @@ for npower = 1:nBins
     prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
 
     % Store shifted (shuffled) results
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
-    ripple_power_Bayesian_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
-
+    ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    ripple_power_RRR_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    ripple_power_RRR_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
 
     % store AUC
     auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
     auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
 
-    ripple_power_Bayesian_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
-    ripple_power_Bayesian_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
-    ripple_power_Bayesian_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
-    ripple_power_Bayesian_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
+    ripple_power_RRR_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    ripple_power_RRR_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    ripple_power_RRR_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    ripple_power_RRR_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
+
 
     % ---- Plot A: Bias difference vs. threshold ----
     nexttile((npower-1)*3 + 1);
@@ -538,14 +529,14 @@ clear Fill
 % Plot layout
 fig = figure;
 fig.Position = [640 100 2*1100/3 650/2]
-fig.Name = 'Bayesian bias difference in V1 low vs high ripples';
+fig.Name = 'RRR bias difference in V1 low vs high ripples';
 % tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 % colour_lines = [158,202,225;33,113,181]/256;% two blue
 nexttile
 for npower = [1 4]
-    bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(2,:)
+    bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_CI(2,:)
 
     hold on;
     x2 = [thresholds, fliplr(thresholds)];
@@ -561,9 +552,9 @@ for npower = [1 4]
     %     grid on;
 end
 
-bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(2,:)
+bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(2,:)
 
 hold on;
 x2 = [thresholds, fliplr(thresholds)];
@@ -578,10 +569,10 @@ legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box',
 
 nexttile
 for npower = [1 4]
-    bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(2,:)
-    prop_mean = ripple_power_Bayesian_bias_difference(npower).prop_mean;
+    bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_RRR_bias_difference(npower).prop_mean;
 
     hold on;
     y2 = [prop_mean, fliplr(prop_mean)];
@@ -598,10 +589,10 @@ for npower = [1 4]
 end
 
 
-bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(2,:)
-prop_mean = ripple_power_Bayesian_bias_difference(npower).prop_shifted_mean;
+bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = ripple_power_RRR_bias_difference(npower).prop_shifted_mean;
 
 hold on;
 y2 = [prop_mean, fliplr(prop_mean)];
@@ -614,14 +605,10 @@ xline(0,'--r')
 legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
 
 
-
 % Save results
-% Save results
-save('ripple_power_Bayesian_bias_difference_based_on_V1_bias.mat', 'ripple_power_Bayesian_bias_difference');
-% load('ripple_power_Bayesian_bias_difference_based_on_V1_bias.mat', 'ripple_power_Bayesian_bias_difference');
+save('ripple_power_RRR_bias_difference_based_on_V1_bias.mat', 'ripple_power_RRR_bias_difference');
 % 
 % load('ripple_power_KDE_bias_difference_based_on_V1_bias.mat', 'ripple_power_KDE_bias_difference');
-
 
 
 %%%%% AUC mean + CI bar plot
@@ -629,8 +616,8 @@ save('ripple_power_Bayesian_bias_difference_based_on_V1_bias.mat', 'ripple_power
 % Plot layout
 fig = figure;
 fig.Position = [640 100 281 325]
-fig.Name = 'Bayesian bias V1 AUC low vs high ripples';
-data = ripple_power_Bayesian_bias_difference;
+fig.Name = 'RRR bias V1 AUC low vs high ripples';
+data = ripple_power_RRR_bias_difference;
 n_bins = length(data);
 bar_width = 0.3;      % Width of the bars
 group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
@@ -697,13 +684,11 @@ xlabel('Power Bins');
 legend([BAR(1:end)],{'Shuffled','0-25','25-50','50-75','75-100'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
-save_all_figures(fullfile(analysis_folder, 'V1-HPC sleep reactivation'), []);
-
-
 %% Ripple power binning (PRE)
 power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
 nBins = length(power_thresholds) - 1;
 bins_to_use = bin_centers>0 & bin_centers<0.1;
+% bins_to_use = bin_centers>0 & bin_centers<0.1;
 bins_to_select = bin_centers>-0.2 & bin_centers<0;
 bins_to_use_shifted = bin_centers>-1 & bin_centers<-0.9;
 nBoot = 1000;
@@ -725,7 +710,7 @@ colour_lines = [ ...
 % Plot layout
 fig = figure;
 fig.Position = [640 100 1100 650*2]
-fig.Name = 'Bayesian bias difference in V1 with different ripple powers (PRE)';
+fig.Name = 'RRR bias difference in V1 with different ripple powers (PRE)';
 tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 
 for npower = 1:nBins
@@ -812,12 +797,12 @@ for npower = 1:nBins
     prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
 
     % Store results
-    ripple_power_Bayesian_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_mean = bias_mean;
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).prop_mean = prop_mean;
-    ripple_power_Bayesian_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).thresholds = thresholds;
+    ripple_power_RRR_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_RRR_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_RRR_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_RRR_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_RRR_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_RRR_bias_difference(npower).thresholds = thresholds;
 
 
     % % Compute stats for shuffled (shifted) bias
@@ -830,20 +815,19 @@ for npower = 1:nBins
     prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
 
     % Store shifted (shuffled) results
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
-    ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
-    ripple_power_Bayesian_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
-    ripple_power_Bayesian_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+    ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    ripple_power_RRR_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    ripple_power_RRR_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
 
     % store AUC
     auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
     auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
 
-    ripple_power_Bayesian_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
-    ripple_power_Bayesian_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
-    ripple_power_Bayesian_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
-    ripple_power_Bayesian_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
-
+    ripple_power_RRR_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    ripple_power_RRR_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    ripple_power_RRR_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    ripple_power_RRR_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
 
     % ---- Plot A: Bias difference vs. threshold ----
     nexttile((npower-1)*3 + 1);
@@ -946,14 +930,14 @@ clear Fill
 % Plot layout
 fig = figure;
 fig.Position = [640 100 2*1100/3 650/2]
-fig.Name = 'Bayesian bias difference in V1 low vs high ripples (PRE)';
+fig.Name = 'RRR bias difference in V1 low vs high ripples (PRE)';
 % tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 % colour_lines = [158,202,225;33,113,181]/256;% two blue
 nexttile
 for npower = [1 4]
-    bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(2,:)
+    bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_CI(2,:)
 
     hold on;
     x2 = [thresholds, fliplr(thresholds)];
@@ -969,9 +953,9 @@ for npower = [1 4]
     %     grid on;
 end
 
-bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(2,:)
+bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(2,:)
 
 hold on;
 x2 = [thresholds, fliplr(thresholds)];
@@ -986,10 +970,10 @@ legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box',
 
 nexttile
 for npower = [1 4]
-    bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_mean;
-    bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(1,:);
-    bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_CI(2,:)
-    prop_mean = ripple_power_Bayesian_bias_difference(npower).prop_mean;
+    bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_RRR_bias_difference(npower).prop_mean;
 
     hold on;
     y2 = [prop_mean, fliplr(prop_mean)];
@@ -1006,10 +990,10 @@ for npower = [1 4]
 end
 
 
-bias_mean = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_Bayesian_bias_difference(npower).bias_diff_shifted_CI(2,:)
-prop_mean = ripple_power_Bayesian_bias_difference(npower).prop_shifted_mean;
+bias_mean = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_RRR_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = ripple_power_RRR_bias_difference(npower).prop_shifted_mean;
 
 hold on;
 y2 = [prop_mean, fliplr(prop_mean)];
@@ -1021,10 +1005,11 @@ plot(bias_mean, prop_mean, 'Color','k', 'LineWidth', 2);
 xline(0,'--r')
 legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
 
-% Save results
-% Save results
-save('ripple_power_Bayesian_bias_difference_based_on_PRE_V1_bias.mat', 'ripple_power_Bayesian_bias_difference');
 
+% Save results
+% load('ripple_power_RRR_bias_difference_based_on_PRE_V1_bias.mat', 'ripple_power_RRR_bias_difference');
+save('ripple_power_RRR_bias_difference_based_on_PRE_V1_bias.mat', 'ripple_power_RRR_bias_difference');
+% 
 
 
 %%%%% AUC mean + CI bar plot
@@ -1032,8 +1017,8 @@ save('ripple_power_Bayesian_bias_difference_based_on_PRE_V1_bias.mat', 'ripple_p
 % Plot layout
 fig = figure;
 fig.Position = [640 100 281 325]
-fig.Name = 'Bayesian bias V1 AUC low vs high ripples (PRE)';
-data = ripple_power_Bayesian_bias_difference;
+fig.Name = 'RRR bias V1 AUC low vs high ripples (PRE)';
+data = ripple_power_RRR_bias_difference;
 n_bins = length(data);
 bar_width = 0.3;      % Width of the bars
 group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
@@ -1101,7 +1086,8 @@ legend([BAR(1:end)],{'Shuffled','0-25','25-50','50-75','75-100'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
-save_all_figures(fullfile(analysis_folder, 'V1-HPC sleep reactivation'), []);
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
 
 
 
@@ -1213,16 +1199,6 @@ for isess = 1:length(unique_sessions)
         ripple_power_KDE_bias_difference(npower).prop_mean = prop_mean;
         ripple_power_KDE_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
         ripple_power_KDE_bias_difference(npower).thresholds = thresholds;
-
-        % store AUC
-        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
-        auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
-
-        ripple_power_Bayesian_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
-        ripple_power_Bayesian_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
-        ripple_power_Bayesian_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
-        ripple_power_Bayesian_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
-
 
         % ---- Plot A: Bias difference vs. threshold ----
         nexttile((npower-1)*3 + 1); hold on;

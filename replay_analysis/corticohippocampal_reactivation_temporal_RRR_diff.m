@@ -195,6 +195,8 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
 
 %%%%%
+
+%%%%%
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,10 +206,11 @@ singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%%
-%%%%%%%%%%%%%%% KDE reactivation bias 
+%%%%%%%%%%%%%%% RRR reactivation bias 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
-
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_ripples_PSTH.mat'))
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_reactivation_content.mat'))
 timebin = 0.01;
 time_windows = [-1 1];
 % Generate bin edges
@@ -223,8 +226,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias = RRR_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = RRR_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -240,17 +243,15 @@ z_bias = z_bias(:,event_ids_first);
 z_bias_V1 = z_bias_V1(:,event_ids_first);
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-bins_to_use = bin_centers>0 & bin_centers<0.1;
+%%%%%%
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
-
-singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+session_count = session_count(event_ids_first);
+subject_id = subject_id(event_ids_first);
+% singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -284,7 +285,7 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % event_index = (singlet_index+power_index)>1;
 
 
-%% Temporal log odds AUC with different ripple power
+%% Temporal RRR log odds AUC with different ripple power
 % Ripple power binning
 power_thresholds = prctile(ripple_info.ripple_power, 0:99.9/4:99.9);
 nBins = length(power_thresholds) - 1;
@@ -314,8 +315,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -393,7 +394,7 @@ for t = 1:nTime
 end
 
 % Plot temporal AUC traces
-fig = figure('Name','Temporal V1 log-odds AUC different ripple powers','Position',[640 100 1100/3 900]);
+fig = figure('Name','Temporal V1 RRR log-odds AUC different ripple powers','Position',[640 100 1100/3 900]);
 tiledlayout(nBins, 1, 'TileSpacing','compact');
 
 for npower = 1:nBins
@@ -428,5 +429,46 @@ for npower = 1:nBins
     ylim([-0.1 0.2])
 end
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_ripple_power.mat'),'AUC')
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_temporal_bias_ripple_power.mat'),'AUC')
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','RRR_temporal_bias_ripple_power.mat'),'AUC')
+
+% Plot temporal AUC traces
+fig = figure('Name','Temporal V1 RRR log-odds AUC low vs high ripple powers','Position',[640 100 1100/3 900/4]);
+tiledlayout(nBins, 1, 'TileSpacing','compact');
+
+for npower = [1 4]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    % Real (coloured)
+    fill([tvec fliplr(tvec)], ...
+        [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    yline(0, '--r');
+    xlabel('Time (s relative to ripple onset)');
+    ylabel('V1 bias AUC');
+    title(sprintf('Ripple power bin %d (%.2f–%.2f)', ...
+        npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.2])
+end
+
+
+% Shifted (black)
+fill([tvec fliplr(tvec)], ...
+    [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal RRR bias difference'),[])
+
+

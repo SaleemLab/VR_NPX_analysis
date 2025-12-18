@@ -511,8 +511,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t)-win_size/2;
-    t1 = time_bins(t) + win_size/2;
+    t0 = time_bins(t);
+    t1 = t0 + win_size;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -776,8 +776,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 % true_idx
 for t = 1:nTime
-    t0 = time_bins(t)-win_size/2;
-    t1 = time_bins(t) + win_size/2;
+    t0 = time_bins(t);
+    t1 = t0 + win_size;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;

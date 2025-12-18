@@ -493,8 +493,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -655,8 +655,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -812,8 +812,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('Spindle phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -1049,8 +1049,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('spindle phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -1290,8 +1290,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('spindle phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -1526,9 +1526,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
-
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
@@ -1691,8 +1690,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -1937,8 +1936,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -2186,8 +2185,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -2433,8 +2432,8 @@ colour_lines = [ ...
     ] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -2688,8 +2687,8 @@ colour_lines = [ ...
     231,  41, 138] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -2928,8 +2927,8 @@ colour_lines = [ ...
     231,  41, 138] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -3163,8 +3162,8 @@ colour_lines = [ ...
     231,  41, 138] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -3397,8 +3396,8 @@ colour_lines = [ ...
     231,  41, 138] / 256;
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
     fprintf('SO phase: processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
@@ -3627,8 +3626,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -3872,9 +3871,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
-
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
 
@@ -4113,8 +4111,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;
@@ -4350,8 +4348,8 @@ AUC.shifted_mean = nan(nTime, nBins);
 AUC.shifted_ci = nan(nTime, nBins, 2);
 
 for t = 1:nTime
-    t0 = time_bins(t);
-    t1 = t0 + win_size;
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
 
     % Sliding V1 window (used for event selection)
     bins_to_select = bin_centers >= t0 & bin_centers < t1;

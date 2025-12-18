@@ -131,6 +131,29 @@ for hemi = 1:2
     end
 end
 
+% 
+% for nsession = 1:length(sessions_to_process)
+%     track_difference=cell(1,2);
+%     for hemi = 1:2
+%         % cell_index
+% 
+%         cell_index = (contains(session_clusters_all.region{nsession},'V1') &...
+%             contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+% 
+%         % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
+%         %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1'));
+% 
+%         % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
+%         %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') &...
+%         %     contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+% 
+%         cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+% 
+%         track_difference{hemi} = session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
+%         V1_SUA_track_difference{hemi} = [V1_SUA_track_difference{hemi};  track_difference{hemi}];
+%     end
+% end
+
 
 for nsession = 1:length(sessions_to_process)
 
@@ -281,17 +304,27 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence 
 
 
 %%% Colormap
-track1_color = [0 0 1]; % blue
-track2_color = [1 0 0]; % red
+% track1_color = [0 0 1]; % blue
+% track2_color = [1 0 0]; % red
+track1_color = [145,191,219]/256; % blue
+track2_color = [252,141,89]/256; % red
+
 
 n_half = 80;     % Number of steps from red to white and white to blue
 n_white = 40;     % Number of extra white steps to make the white region broader
 
 % Red to white
-r2w = [linspace(1,1,n_half)', linspace(0,1,n_half)', linspace(0,1,n_half)'];
+r2w = [ ...
+    linspace(track2_color(1), white(1), n_half)', ...
+    linspace(track2_color(2), white(2), n_half)', ...
+    linspace(track2_color(3), white(3), n_half)' ];
 
 % White to blue
-w2b = [linspace(1,0,n_half)', linspace(1,0,n_half)', linspace(1,1,n_half)'];
+w2b =[ ...
+    linspace(white(1), track1_color(1), n_half)', ...
+    linspace(white(2), track1_color(2), n_half)', ...
+    linspace(white(3), track1_color(3), n_half)' ];
+
 
 % Extra white section
 white = ones(n_white, 3);
@@ -336,7 +369,14 @@ Fig.Position = [60 60 1296 953];
 
 
 % [595 645 1296 406]
-x_bins = ripple_modulation(1).bins;
+
+psthBinSize = 0.01;
+windows = [-1.5 1.5];
+x_bins = windows(1)+ timebin/2 : timebin:windows(end)-timebin/2;
+ripple_modulation(1).bins = x_bins;
+
+psthBinSize = 0.01;
+windows = [-1.5 1.5];
 x_bins = windows(1)+ timebin/2 : timebin:windows(end)-timebin/2;
 % bins_selected = x_bins > -0.5 & x_bins < 0.5;
 bins_selected = x_bins >-0.2 & x_bins < 0.2;
@@ -425,9 +465,6 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 
 
-
-
-
 Fig = figure;
 % Fig.Name = 'All V1 response to track-selective reactivations';
 Fig.Name = 'All V1 response to track-selective reactivations (high)';
@@ -449,6 +486,7 @@ x_bins = ripple_modulation(1).bins;
 bins_selected = x_bins > -0.2 & x_bins < 0.2;
 % figure
 
+
 subplot(1,4,1)
 % [~,index] = sort(V1_SUA_track_difference{1});
 [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
@@ -521,10 +559,10 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 
 
-
 Fig = figure;
 % Fig.Name = 'All V1 response to track-selective reactivations';
-Fig.Name = 'All V1 response to track-selective reactivations (sorted by high)';
+Fig.Name = 'All V1 response to track-selective reactivations (sorted by diff)';
+% Fig.Name = 'All V1 response to track-selective reactivations (high sorted by diff)';
 
 % Fig.Name = 'Track-selective V1 response to track-selective reactivations';
 % Fig.Name = 'V1 response to track-selective reactivations';
@@ -543,13 +581,10 @@ x_bins = ripple_modulation(1).bins;
 bins_selected = x_bins > -0.2 & x_bins < 0.2;
 % figure
 
+
 subplot(1,4,1)
 % [~,index] = sort(V1_SUA_track_difference{1});
-[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
-temp_id = find(index > round(length(index)/2));
-[~,index1] = max((V1_SUA_reactivation_PSTH{1}{2}(index(temp_id),bins_selected))');
-[~,index1] = sort(index1);
-index(temp_id) = index1 + round(length(index)/2);
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
 
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
@@ -558,7 +593,7 @@ h = imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{1}(index,:));
 % xticks
 % xticklabels([])
 colorbar;colormap((red_white_blue));clim([-0.2 0.2])
-xlim([-1 1])
+xlim([-0.5 0.5])
 xline(0,'--')
 title('L V1 Track 1 ripples')
 xlabel('Time relative to ripple onset (s)')
@@ -568,16 +603,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 subplot(1,4,2)
 % [~,index] = sort(V1_SUA_track_difference{1});
-[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
-temp_id = find(index > round(length(index)/2));
-
-[~,index1] = max((V1_SUA_reactivation_PSTH{1}{2}(index(temp_id),bins_selected))');
-[~,index1] = sort(index1);
-index(temp_id) = index1 + round(length(index)/2);
-
-
-% [~,index] = max((V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected))');
-% [~,index] = sort(index);
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
 
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
@@ -595,8 +621,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(1,4,3)
 % [~,index] = sort(V1_SUA_track_difference{2});
 % [~,index] = sort(V1_SUA_track_difference{1});
-[~,index] = max((V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected))');
-[~,index] = sort(index);
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{2}{2}(:,bins_selected),2));
+
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
 imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{1}(index,:));
@@ -611,8 +637,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
 subplot(1,4,4)
-[~,index] = max((V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected))');
-[~,index] = sort(index);
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{2}{2}(:,bins_selected),2));
+
 % [~,index] = sort(V1_SUA_track_difference{2});
 % [~,index] = sort(V1_SUA_track_difference{1});
 x_data = ripple_modulation(1).bins;
@@ -631,10 +657,10 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 
 
-
-
 Fig = figure;
-Fig.Name = 'V1 response diff to track-selective reactivations';
+Fig.Name = 'All V1 response diff to track-selective reactivations';
+
+% Fig.Name = 'All V1 response diff to track-selective reactivations (high)';
 % Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
 % Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s)';
 % Fig.Name = 'V1 response to track-selective reactivations (high ripples)';
@@ -653,6 +679,8 @@ bins_selected = x_bins > 0 & x_bins < 0.2;
 subplot(1,4,1)
 % [~,index] = sort(V1_SUA_track_difference{1});
 [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
+
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
 h = imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{1}{2}(index,:) - V1_SUA_reactivation_PSTH{1}{1}(index,:));
@@ -671,6 +699,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 subplot(1,4,2)
 % [~,index] = sort(V1_SUA_track_difference{1});
 [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2));
+[~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{2}{1}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{2}{2}(:,bins_selected),2));
+
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
 imagesc(x_data,y_data,V1_SUA_reactivation_PSTH{2}{1}(index,:)-V1_SUA_reactivation_PSTH{2}{2}(index,:));
@@ -683,9 +713,366 @@ xlabel('Time relative to ripple onset (s)')
 ylabel('Cell ID')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
 
+%%
+
+psthBinSize = 0.01;
+windows = [-1.5 1.5];
+x_bins = windows(1)+ timebin/2 : timebin:windows(end)-timebin/2;
+ripple_modulation(1).bins = x_bins;
+
+PRE_windows = x_bins > -0.2 & x_bins < 0;
+all_windows = x_bins > -0.2 & x_bins < 0.2;
+POST_windows = x_bins > 0 & x_bins < 0.2;
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_all.mat'),'V1_SUA_reactivation_PSTH',...
+    'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_all_high.mat'),'V1_SUA_reactivation_PSTH',...
+    'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+
+% dist1 = mean(V1_SUA_reactivation_PSTH{1}{2}(:,all_windows)-V1_SUA_reactivation_PSTH{1}{1}(:,all_windows),2,'omitnan');
+% dist2 = mean(V1_SUA_reactivation_PSTH{2}{1}(:,all_windows)-V1_SUA_reactivation_PSTH{2}{2}(:,all_windows),2,'omitnan');
+
+
+dist1 = mean(V1_SUA_reactivation_PSTH{1}{2}(:,all_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{1}{1}(:,all_windows),2,'omitnan');
+dist2 = mean(V1_SUA_reactivation_PSTH{2}{1}(:,all_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{2}{2}(:,all_windows),2,'omitnan');
+
+dist1 = mean(V1_SUA_reactivation_PSTH{1}{2}(:,POST_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{1}{1}(:,POST_windows),2,'omitnan');
+dist2 = mean(V1_SUA_reactivation_PSTH{2}{1}(:,POST_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{2}{2}(:,POST_windows),2,'omitnan');
+
+dist1 = mean(V1_SUA_reactivation_PSTH{1}{2}(:,PRE_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{1}{1}(:,PRE_windows),2,'omitnan');
+dist2 = mean(V1_SUA_reactivation_PSTH{2}{1}(:,PRE_windows),2,'omitnan')-mean(V1_SUA_reactivation_PSTH{2}{2}(:,PRE_windows),2,'omitnan');
+
+
+figure
+subplot(2,4,1)
+hold on;histogram(dist1);histogram(dist2);
+
+subplot(2,4,2)
+dist1 = mean(V1_SUA_reactivation_PSTH{1}{2}(:,all_windows),2);
+dist2 = mean(V1_SUA_reactivation_PSTH{1}{1}(:,all_windows),2);
+hold on;histogram(dist1);histogram(dist2);
+
+subplot(2,4,3)
+dist1 = mean(V1_SUA_reactivation_PSTH{2}{1}(:,all_windows),2);
+dist2 = mean(V1_SUA_reactivation_PSTH{2}{2}(:,all_windows),2);
+hold on;histogram(dist1);histogram(dist2);
+
+
+
+
+Fig = figure;
+Fig.Name = 'All track preferring V1 response to track-selective reactivations';
+Fig.Name = 'All track preferring V1 response to track-selective reactivations (high)';
+% Fig.Name = 'All V1 response diff to track-selective reactivations (high)';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
+% Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s)';
+% Fig.Name = 'V1 response to track-selective reactivations (high ripples)';
+% Fig.Name = 'V1 response to track-selective reactivations (low ripples)';
+Fig.Position = [60 60 1280 406];
+% Fig.Position = [60 60 1876 1023];
+Fig.Position = [60 60 1296 953];
+
+
+% [595 645 1296 406]
+x_bins = ripple_modulation(1).bins;
+% bins_selected = x_bins > -0.5 & x_bins < 0.5;
+bins_selected = x_bins > 0 & x_bins < 0.2;
+% figure
+
+track_difference = [-V1_SUA_track_difference{1}; V1_SUA_track_difference{2}];% Track L - Track R;
+psth1 = [V1_SUA_reactivation_PSTH{1}{1}(:,:); V1_SUA_reactivation_PSTH{2}{1}(:,:)];
+psth2 = [V1_SUA_reactivation_PSTH{1}{2}(:,:); V1_SUA_reactivation_PSTH{2}{2}(:,:)];
+
+subplot(1,4,1)
+% [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
+% [~,index] = sort(track_difference);
+index = find(track_difference>0);
+
+[~,index1] = sort(nanmean(psth1(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth1(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track L ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+subplot(1,4,2)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference>0);
+
+[~,index1] = sort(nanmean(psth1(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth2(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track R ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+subplot(1,4,3)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference<0);
+
+[~,index1] = sort(nanmean(psth2(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth1(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All R prefering V1 responding to Track L ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+subplot(1,4,4)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference<0);
+
+[~,index1] = sort(nanmean(psth2(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth2(index,:));
+
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All R prefering V1 responding to Track R ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
+
+
+
+
+
+Fig = figure;
+Fig.Name = 'All track preferring V1 response to track-selective reactivations (sorted by diff)';
+% Fig.Name = 'All track preferring V1 response to track-selective reactivations (sorted by diff high)';
+% Fig.Name = 'All V1 response diff to track-selective reactivations (high)';
+% Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
+% Fig.Name = 'V1 response to track-selective reactivations (-0.2-0s)';
+% Fig.Name = 'V1 response to track-selective reactivations (high ripples)';
+% Fig.Name = 'V1 response to track-selective reactivations (low ripples)';
+Fig.Position = [60 60 1280 406];
+% Fig.Position = [60 60 1876 1023];
+Fig.Position = [60 60 1296 953];
+
+
+% [595 645 1296 406]
+x_bins = ripple_modulation(1).bins;
+% bins_selected = x_bins > -0.5 & x_bins < 0.5;
+bins_selected = x_bins > 0 & x_bins < 0.2;
+% figure
+
+track_difference = [-V1_SUA_track_difference{1}; V1_SUA_track_difference{2}];% Track L - Track R;
+psth1 = [V1_SUA_reactivation_PSTH{1}{1}(:,:); V1_SUA_reactivation_PSTH{2}{1}(:,:)];
+psth2 = [V1_SUA_reactivation_PSTH{1}{2}(:,:); V1_SUA_reactivation_PSTH{2}{2}(:,:)];
+
+subplot(1,4,1)
+% [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
+% [~,index] = sort(track_difference);
+index = find(track_difference>0);
+
+[~,index1] = sort(nanmean(psth1(index,bins_selected),2)-nanmean(psth2(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth1(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track L ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+subplot(1,4,2)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference>0);
+
+[~,index1] = sort(nanmean(psth1(index,bins_selected),2)-nanmean(psth2(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth2(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track R ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+subplot(1,4,3)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference<0);
+
+[~,index1] = sort(nanmean(psth2(index,bins_selected),2)-nanmean(psth1(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth1(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All R prefering V1 responding to Track L ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+subplot(1,4,4)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference<0);
+
+[~,index1] = sort(nanmean(psth2(index,bins_selected),2)-nanmean(psth1(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth2(index,:));
+
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All R prefering V1 responding to Track R ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
+
+
+
+
+
+Fig = figure;
+Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (sorted by diff)';
+Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (sorted by diff high)';
+Fig.Position = [60 60 1280 406];
+% Fig.Position = [60 60 1876 1023];
+Fig.Position = [60 60 1296 953];
+
+
+% [595 645 1296 406]
+x_bins = ripple_modulation(1).bins;
+% bins_selected = x_bins > -0.5 & x_bins < 0.5;
+bins_selected = x_bins > 0 & x_bins < 0.2;
+% figure
+
+track_difference = [-V1_SUA_track_difference{1}; V1_SUA_track_difference{2}];% Track L - Track R;
+psth1 = [V1_SUA_reactivation_PSTH{1}{1}(:,:); V1_SUA_reactivation_PSTH{2}{1}(:,:)];
+psth2 = [V1_SUA_reactivation_PSTH{1}{2}(:,:); V1_SUA_reactivation_PSTH{2}{2}(:,:)];
+
+subplot(1,4,1)
+% [~,index] = sort(V1_SUA_track_difference{1});
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2));
+% [~,index] = sort(nanmean(V1_SUA_reactivation_PSTH{1}{2}(:,bins_selected),2)-nanmean(V1_SUA_reactivation_PSTH{1}{1}(:,bins_selected),2));
+% [~,index] = sort(track_difference);
+index = find(track_difference>0);
+
+[~,index1] = sort(nanmean(psth1(index,bins_selected),2)-nanmean(psth2(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth1(index,:)-psth2(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track L ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+subplot(1,4,2)
+% [~,index] = sort(V1_SUA_track_difference{1});
+index = find(track_difference<0);
+
+[~,index1] = sort(nanmean(psth2(index,bins_selected),2)-nanmean(psth1(index,bins_selected),2));
+index = index(index1);
+
+x_data = ripple_modulation(1).bins;
+y_data = 1:length(index);
+h = imagesc(x_data,y_data,psth2(index,:)-psth1(index,:));
+
+% xticks
+% xticklabels([])
+colorbar;colormap((red_white_blue));clim([-0.2 0.2])
+xlim([-0.5 0.5])
+xline(0,'--')
+title('All L prefering V1 responding to Track R ripples')
+xlabel('Time relative to ripple onset (s)')
+ylabel('Cell ID')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
+
+
+
+
 
 %% V1 activity before and after coherent reactivations
 load(fullfile(analysis_folder,'ripple_modulation_PSTH_all_POST.mat'),'ripple_modulation_PSTH_all')
