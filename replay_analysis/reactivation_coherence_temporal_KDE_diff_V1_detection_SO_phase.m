@@ -2650,7 +2650,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal 
 %%%%%%%%%%%%%%%%%%%%%%%% spindle phase binning
 % Spindle power binning across both probes
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
-spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/2:99.9);
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 
 
 % spindle_thresholds1 = prctile(ripple_info.spindle_amplitude(ripple_info.spindle_amplitude(:,1)>0,1), 0:99.9/2:99.9);
@@ -2682,8 +2682,8 @@ AUC.shifted_ci = nan(nTime, nBins, 2);
 % Colour scheme
 colour_lines = [ ...
     241, 182, 218;
-    % 226, 132, 187;
-    % 212,  78, 156;
+    226, 132, 187;
+    212,  78, 156;
     231,  41, 138] / 256;
 
 for t = 1:nTime
@@ -2801,10 +2801,10 @@ end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_SO_trough_spindle_power.mat'),'AUC')
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_SO_trough_spindle_power.mat'))
 
-% spindle_thresholds = {'SO trough and spindle 0-25','SO trough and spindle 25-50','SO trough and spindle 50-75','SO trough and spindle 75-100'};
-spindle_thresholds = {'SO trough and spindle low','SO trough and spindle high'};
+spindle_thresholds = {'SO trough and spindle 0-25','SO trough and spindle 25-50','SO trough and spindle 50-75','SO trough and spindle 75-100'};
+% spindle_thresholds = {'SO trough and spindle low','SO trough and spindle high'};
 
-fig = figure('Name','Temporal HPC log-odds AUC by SO trough with different spindle power (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+fig = figure('Name','Temporal HPC log-odds AUC by SO trough with different spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
 

@@ -142,47 +142,6 @@ ripple_info.SO_amplitude = SO_amplitude';
 ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
 
 
-
-%%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
-ripple_info.early_UP_index = UP_index;
-ripple_info.early_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
-
-ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first);
-ripple_info.early_UP_index_hemi = ripple_info.early_UP_index_hemi(event_ids_first);
-
-%%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
-ripple_info.late_UP_index = UP_index;
-ripple_info.late_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
-
-ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first);
-ripple_info.late_UP_index_hemi = ripple_info.late_UP_index_hemi(event_ids_first);
-
-%%% UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,2)]);
-ripple_info.UP_index = UP_index;
-ripple_info.UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
-
-ripple_info.UP_index = ripple_info.UP_index(event_ids_first);
-ripple_info.UP_index_hemi = ripple_info.UP_index_hemi(event_ids_first);
-%%% DOWN transition co-occurance
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1) merged_event_info.DOWN_ints(:,2)]);
-ripple_info.DOWN_index = DOWN_index;
-ripple_info.DOWN_index_hemi = zeros(size(DOWN_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.DOWN_index_hemi(find(DOWN_index)) = merged_event_info.DOWN_hemisphere_id(index);
-
-ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first);
-ripple_info.DOWN_index_hemi = ripple_info.DOWN_index_hemi(event_ids_first);
-
-
 %%%%%%
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));

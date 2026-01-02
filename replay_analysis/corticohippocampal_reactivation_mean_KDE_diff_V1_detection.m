@@ -484,9 +484,9 @@ for npower = [1 4]
     % ylim([0 1])
 end
 
-bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
 
 hold on;
 x2 = [thresholds, fliplr(thresholds)];
@@ -519,10 +519,10 @@ for npower = [1 4]
 end
 
 
-bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
-bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
-bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
-prop_mean = ripple_power_KDE_bias_difference(npower).prop_shifted_mean;
+bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = spindle_power_KDE_bias_difference(npower).prop_shifted_mean;
 
 hold on;
 y2 = [prop_mean, fliplr(prop_mean)];
@@ -539,13 +539,7 @@ legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'b
 save('spindle_power_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
 
-
-
-
-
-
-
-
+load('spindle_power_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
 
 
 
@@ -2122,11 +2116,9 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias 
 
 
 
-
+%% SO phases
 %%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%% SO phase binning
-% Spindle power binning across both probes
+% SO phase binning across both probes
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 % SO_thresholds = prctile(ripple_info.SO_phase, 0:99.9/4:99.9);
 SO_thresholds = {'peak','trough'};
@@ -2536,8 +2528,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias 
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%% SO phase binning
-% Spindle power binning across both probes
+%%%%%%%%%%%%%%%%%%%%%%%% SO phase binning PRE
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 % SO_thresholds = prctile(ripple_info.SO_phase, 0:99.9/4:99.9);
 SO_thresholds = {'peak','trough'};

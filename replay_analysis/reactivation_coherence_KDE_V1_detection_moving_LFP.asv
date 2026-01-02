@@ -914,8 +914,8 @@ for i = 1:10
     % [pVal, Fstat] = coefTest(lme_joint, H);
 
     % lme = fitlme(tbl, 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1 | AnimalID)');
-    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + SpindlePower_NonMatch*SpindlePower_Match + (1 | AnimalID)');
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
+    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
     lme.Coefficients
     %
     spindle_power_modulation_lme(i).variable = lme.Coefficients.Name;
@@ -944,59 +944,64 @@ for i = 1:10
     % non_match_beta_CI(i,:) = [lme.Coefficients.Lower(4) lme.Coefficients.Upper(4)];
     % lme.Coefficients
     % lme.Coefficients.Lower(5)
-end
-% 
-%     VariableNames = tbl.Properties.VariableNames;
-%     %
-% 
-%     tic
-%     beta_boot=[];
-%     non_match_beta_boot=[];
-%     t_boot=[];
-%     non_match_t_boot=[];
-%     parfor iBoot = 1:1000
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',true);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_boot(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_boot(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_boot(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_boot(iBoot) = [lme.Coefficients.tStat(6)];
-% 
-% 
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',false);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-%         tbl_temp.HPC_logodds = tbl.HPC_logodds;
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_shuffled(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_shuffled(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_shuffled(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_shuffled(iBoot) = [lme.Coefficients.tStat(6)];
-%     end
-%     toc
-% 
-%     % spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     % spindle_power_modulation_lme(i).t_stat_boot = t_boot;
-% 
-%     spindle_power_modulation_lme(i).b_shuffle = beta_shuffled;
-%     spindle_power_modulation_lme(i).t_stat_shuffle = t_shuffled;
-%     spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     spindle_power_modulation_lme(i).t_stat_boot = t_boot;
 % end
+
+    VariableNames = tbl.Properties.VariableNames;
+    %
+
+    tic
+    beta_boot=[];
+    non_match_beta_boot=[];
+    t_boot=[];
+    non_match_t_boot=[];
+    parfor iBoot = 1:1000
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',true);
+
+        tbl_temp = tbl;
+        for var = 1:length(VariableNames)
+            tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
+        end
+
+        lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
+
+        beta_boot(iBoot) = [lme.Coefficients.Estimate(:)];
+        non_match_beta_boot(iBoot,:) = [lme.Coefficients.tStat(6)];
+        % t_boot(iBoot) = [lme.Coefficients.tStat(5)];
+        % non_match_t_boot(iBoot) = [lme.Coefficients.tStat(6)];
+
+
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',false);
+
+        tbl_temp = tbl;
+        for var = 1:length(VariableNames)
+            tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
+        end
+        tbl_temp.HPC_logodds = tbl.HPC_logodds;
+
+        lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
+
+        beta_shuffled(iBoot,:) = [lme.Coefficients.Estimate(:)];
+        t_shuffled(iBoot,:) = [lme.Coefficients.tStat(:)];
+        % t_shuffled(iBoot) = [lme.Coefficients.tStat(5)];
+        % non_match_t_shuffled(iBoot) = [lme.Coefficients.tStat(6)];
+    end
+    toc
+
+    % spindle_power_modulation_lme(i).b_boot = beta_boot;
+    % spindle_power_modulation_lme(i).t_stat_boot = t_boot;
+
+    spindle_power_modulation_lme(i).b_shuffle = beta_shuffled;
+    spindle_power_modulation_lme(i).t_stat_shuffle = t_shuffled;
+    spindle_power_modulation_lme(i).b_boot = beta_boot;
+    spindle_power_modulation_lme(i).t_stat_boot = t_boot;
+
+    spindle_power_modulation_lme(i).non_match_b_shuffle = non_match_beta_shuffled;
+    spindle_power_modulation_lme(i).non_match_t_stat_shuffle = non_match_t_shuffled;
+    spindle_power_modulation_lme(i).non_match_b_boot = non_match_beta_boot;
+    spindle_power_modulation_lme(i).non_match_t_stat_boot = non_match_t_boot;
+end
 
 
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation\KDE bias difference based on V1 bias','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
@@ -1004,33 +1009,23 @@ end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation\KDE bias difference based on V1 bias','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
 
 clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
-
-clear b_CI
 for i = 1:10
-    % match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).b_boot,[2.5 97.5]);
-    % non_match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_boot,[2.5 97.5]);
-    % 
-    % match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).b_shuffle,[2.5 97.5]);
-    % non_match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_shuffle,[2.5 97.5]);
-    b_CI(i,:,:) = [spindle_power_modulation_lme(i).b_CI];
+    match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).b_boot,[2.5 97.5]);
+    non_match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_boot,[2.5 97.5]);
+
+    match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).b_shuffle,[2.5 97.5]);
+    non_match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_shuffle,[2.5 97.5]);
+
 % spindle_power_modulation_lme(i).non_match_b_shuffle
 end
 
-% figure;plot(squeeze(non_match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(non_match_beta_CI(2,:,:)),'k');;yline(0,'k')
-% 
-% figure;plot(squeeze(match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(match_beta_CI(2,:,:)),'k');yline(0,'k')
+figure;plot(squeeze(non_match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(non_match_beta_CI(2,:,:)),'k');;yline(0,'k')
+
+figure;plot(squeeze(match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(match_beta_CI(2,:,:)),'k');yline(0,'k')
 
 
-figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');plot(squeeze(b_CI(:,5,:)),'b');yline(0,'k')
 
-for i = 1:3
-    % Plot Bar
-    bar(b_CI(i,5,),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    % Plot 95% CI Error Bar
-    errorbar(x(i)+ group_offset, mean_boot(i), ci_boot(1,i), ci_boot(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-end
 
-    spindle_power_modulation_lme(i).b_CI 
 
 
 
