@@ -576,7 +576,7 @@ for nsession = 1:length(sessions_to_process)
             (mean(mean(session_clusters_all.spatial_response_raw{nsession}{nCell,1})) - mean(FR_distribution)) ./ std(FR_distribution);
 
         context_modulation_all.z_FR_track{nsession}(2,nCell) = ...
-            (session_clusters_all.mean_FR{nsession}(nCell,2) - mean(FR_distribution)) ./ std(FR_distribution);
+             (mean(mean(session_clusters_all.spatial_response_raw{nsession}{nCell,2})) - mean(FR_distribution)) ./ std(FR_distribution);
 
         context_modulation_all.region{nsession}(nCell) = all_regions(nCell);
 
