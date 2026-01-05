@@ -460,6 +460,319 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%  Moving spindle power binning (100ms example)
+% Spindle power binning across both probes
+% all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
+
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
+load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+% periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
+
+spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude = nan([size(spindle_amplitude1),2]);
+spindle_amplitude(:,:,1) = spindle_amplitude1;
+spindle_amplitude(:,:,2) = spindle_amplitude2;
+
+ripple_info.spindle_amplitude_temporal = spindle_amplitude;
+ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
+LFP_tvec = periripple_LFP_info_V1(1).tvec;
+
+
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
+nBins = length(spindle_thresholds) - 1;
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+bins_to_select = bin_centers>-0.05 & bin_centers<0.05;
+% bins_to_select = bin_centers>0 & bin_centers<0.15;
+bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
+nBoot = 1000;
+
+spindle_power_KDE_bias_difference = struct;
+% colour_lines = [158,202,225;107,174,214;66,146,198;33,113,181]/256;
+
+colour_lines = [ ...
+    241, 182, 218;   % original end (lightest)
+    226, 132, 187;   % interpolated 2/3
+    212,  78, 156;   % interpolated 1/3
+    231, 41, 138    % original start (darkest)
+] / 256;
+
+
+
+fig = figure;
+fig.Position = [640 100 1100 650*2];
+fig.Name = 'KDE bias difference in HPC with different moving spindle powers (100ms example)';
+tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+
+for npower = 1:nBins
+    tic
+    % Sliding V1 window (used for event selection)
+    [~,LFP_bin] = min(abs(LFP_tvec - mean(bin_centers(bins_to_select))));
+    spindle_thresholds = prctile(squeeze(ripple_info.spindle_amplitude_temporal(LFP_bin,:,:)),0:99.9/4:99.9);
+
+
+    event_index =1:length(z_bias);
+    % event_index = find(power_index);
+
+    mean_bias = mean(z_bias_V1(bins_to_select, event_index), 'omitnan');
+    % mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+    mean_bias_V1 = mean(z_bias(bins_to_use, event_index), 'omitnan');
+    selected_events = length(mean_bias);
+
+    thresholds = prctile(abs(mean_bias), 0:10:100);
+    thresholds = thresholds(1:end-1);
+    nThresh = length(thresholds);
+
+    bias_diff_boot = NaN(nBoot, nThresh);
+    prop_events_boot = NaN(nBoot, nThresh);
+    bias_diff_shifted_boot = NaN(nBoot, nThresh);
+    prop_events_shifted_boot = NaN(nBoot, nThresh);
+
+
+    parfor iBoot = 1:nBoot
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = randi(s, selected_events, selected_events, 1);
+
+        true_idx = find(event_index);
+
+        bb = mean_bias(idx);
+        bb_shift = mean_bias;
+        boot_V1 = mean_bias_V1(idx);
+
+        diff_tmp = NaN(1, nThresh);
+        prop_tmp = NaN(1, nThresh);
+        diff_tmp_shifted = NaN(1, nThresh);
+        prop_tmp_shifted = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+
+            t1 = bb >= th;
+            t2 = bb <= -th;
+
+            t1 = t1' + (ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),2)' > spindle_thresholds(npower,2) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),2)' <= spindle_thresholds(npower+1,2)) > 1';
+            t2 = t2' + (ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),1)' > spindle_thresholds(npower,1) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),1)' <= spindle_thresholds(npower+1,1)) > 1';
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+            if any(t1) && any(t2)
+                diff_tmp(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            total_events = mean([sum(ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),1)' > spindle_thresholds(npower,1) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),1)' <= spindle_thresholds(npower+1,1)) ...
+                sum(ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),2)' > spindle_thresholds(npower,2) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx(idx),2)' <= spindle_thresholds(npower+1,2))]);
+
+            prop_tmp(i) = (sum(t1) + sum(t2)) / total_events;
+
+
+
+            t1s = bb_shift >= th;
+            t2s = bb_shift <= -th;
+            t1s = t1s' + (ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx,2)' > spindle_thresholds(npower,2) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx,2)' <= spindle_thresholds(npower+1,2)) > 1';
+            t2s = t2s' + (ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx,1)' > spindle_thresholds(npower,1) & ...
+                ripple_info.spindle_amplitude_temporal(LFP_bin,true_idx,1)' <= spindle_thresholds(npower+1,1)) > 1';
+            t1_V1 = boot_V1(t1s);
+            t2_V1 = boot_V1(t2s);
+
+            if any(t1s) && any(t2s)
+                diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
+            end
+            prop_tmp_shifted(i) = (sum(t1s) + sum(t2s)) / total_events;
+        end
+
+        bias_diff_boot(iBoot, :) = diff_tmp;
+        prop_events_boot(iBoot, :) = prop_tmp;
+        bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
+        prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
+    end
+
+    % Stats
+    bias_mean = mean(bias_diff_boot, 1, 'omitnan');
+    bias_CI_lo = prctile(bias_diff_boot, 2.5, 1);
+    bias_CI_hi = prctile(bias_diff_boot, 97.5, 1);
+    prop_mean = mean(prop_events_boot, 1, 'omitnan');
+    prop_CI_lo = prctile(prop_events_boot, 2.5, 1);
+    prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
+    bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
+    bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
+    bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
+    prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
+    prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
+    prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
+
+    % Store
+    spindle_power_KDE_bias_difference(npower).power_range = ...
+        [spindle_thresholds(npower), spindle_thresholds(npower+1)];
+    spindle_power_KDE_bias_difference(npower).bias_diff_mean = bias_mean;
+    spindle_power_KDE_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    spindle_power_KDE_bias_difference(npower).prop_mean = prop_mean;
+    spindle_power_KDE_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    spindle_power_KDE_bias_difference(npower).thresholds = thresholds;
+    spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    spindle_power_KDE_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    spindle_power_KDE_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+
+    % store AUC
+    auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+    auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
+
+    spindle_power_KDE_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    spindle_power_KDE_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    spindle_power_KDE_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
+
+    % ----------- PLOTS (A, B, C) ----------------
+
+    % A: Bias vs. Threshold
+    nexttile((npower-1)*3 + 1);
+    hold on;
+    fill([thresholds, fliplr(thresholds)], [bias_CI_lo, fliplr(bias_CI_hi)], ...
+        colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+    fill([thresholds, fliplr(thresholds)], ...
+         [bias_shifted_CI_lo, fliplr(bias_shifted_CI_hi)], ...
+         [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
+    ylim([-0.15 0.35]); xlim([0 1]); yline(0, '--r');
+    xlabel('V1 bias threshold'); ylabel('HPC bias diff (T1 - T2)');
+    title(sprintf('Spindle bin %d: %.2f–%.2f', npower, ...
+           spindle_thresholds(npower), spindle_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+    % B: Proportion vs Bias Diff
+    nexttile((npower-1)*3 + 2);
+    hold on;
+    valid = isfinite(bias_mean) & isfinite(prop_mean);
+    fill([bias_CI_lo(valid), fliplr(bias_CI_hi(valid))], ...
+         [prop_mean(valid), fliplr(prop_mean(valid))], ...
+         colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(bias_mean(valid), prop_mean(valid), '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+    fill([bias_shifted_CI_lo(valid), fliplr(bias_shifted_CI_hi(valid))], ...
+         [prop_shifted_mean(valid), fliplr(prop_shifted_mean(valid))], ...
+         [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(bias_shifted_mean(valid), prop_shifted_mean(valid), 'k-', 'LineWidth', 1.5);
+    xlim([-0.1 0.35]); xline(0, '--r');
+    xlabel('HPC bias diff (T1 - T2)'); ylabel('Proportion of events detected');
+    title('Event Proportion vs. Bias Difference');
+    set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+    % C: Proportion CI vs Bias Diff
+    nexttile((npower-1)*3 + 3);
+    hold on;
+    fill([bias_mean(valid), fliplr(bias_mean(valid))], ...
+         [prop_CI_lo(valid), fliplr(prop_CI_hi(valid))], ...
+         colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(bias_mean(valid), prop_mean(valid), '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+    fill([bias_shifted_mean(valid), fliplr(bias_shifted_mean(valid))], ...
+         [prop_shifted_CI_lo(valid), fliplr(prop_shifted_CI_hi(valid))], ...
+         [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(bias_shifted_mean(valid), prop_shifted_mean(valid), 'k-', 'LineWidth', 1.5);
+    xlim([-0.1 0.35]); xline(0, '--r');
+    xlabel('HPC bias diff (T1 - T2)'); ylabel('Proportion of events detected');
+    title('Proportion vs. HPC Bias Difference');
+    set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+    toc
+end
+
+clear Fill
+
+fig = figure;
+fig.Position = [640 100 2*1100/3 650/2];
+fig.Name = 'KDE bias difference in HPC low vs high moving spindle power (100ms example)';
+
+% Select bins (1 = low, 4 = high)
+nexttile;
+for npower = [1 4]
+    bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_CI(2,:);
+    thresholds = spindle_power_KDE_bias_difference(npower).thresholds;
+
+    hold on;
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), ...
+        'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+    ylim([-0.1 0.35]);
+    % ylim([0 1])
+end
+
+bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:);
+
+hold on;
+x2 = [thresholds, fliplr(thresholds)];
+y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end +1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(thresholds, bias_mean, 'Color','k', 'LineWidth', 2);
+
+yline(0, '--r');
+legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'box', 'off');
+
+nexttile;
+for npower = [1 4]
+    bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_CI(2,:);
+    prop_mean = spindle_power_KDE_bias_difference(npower).prop_mean;
+
+    hold on;
+    y2 = [prop_mean, fliplr(prop_mean)];
+    x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), ...
+        'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(bias_mean, prop_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12);
+    xlim([-0.1 0.35]);
+    ylim([0 1])
+end
+
+
+bias_mean = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = spindle_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = spindle_power_KDE_bias_difference(npower).prop_shifted_mean;
+
+hold on;
+y2 = [prop_mean, fliplr(prop_mean)];
+x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end + 1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(bias_mean, prop_mean, 'Color','k', 'LineWidth', 2);
+
+
+xline(0, '--r');
+legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'box', 'off');
+
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%  Moving spindle power binning
@@ -844,193 +1157,6 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
-
-
-
-%%%%%% mixed effect model (spindle power)
-% bins_to_select = bin_centers>-0.2 & bin_centers<0;
-bins_to_select = bin_centers>0 & bin_centers<0.2;
-[~,LFP_bin] = min(abs(LFP_tvec - mean(bin_centers(bins_to_select))));
-% for npower = 1:nBins
-
-mean_bias_V1 = mean(z_bias_V1(bins_to_select, :), 'omitnan');
-% mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
-mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
-% selected_events = length(mean_bias);
-
-thresholds = prctile(abs(mean_bias_V1), 0:10:100);
-thresholds = thresholds(1:end-1);
-
-% spindle_power_log_odds
-
-mean_beta = [];
-spindle_power_modulation_lme = struct();
-
-for i = 1:10
-
-    th = thresholds(i);
-    t1 = find(mean_bias_V1 >= th);
-    t2 = find(mean_bias_V1 <= -th);
-    % %
-    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0);
-    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0);
-    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) >0);
-    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2) >0);
-
-    % t1 = t1(ripple_info.spindle_amplitude(t1,2) >0 & ripple_info.spindle_amplitude(t1,1) >0);
-    % t2 = t2(ripple_info.spindle_amplitude(t2,1) > 0 & ripple_info.spindle_amplitude(t2,2) >0);
-    selected_events = [t1 t2];
-    %
-    % tbl = table([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],...
-    %     [ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],...
-    %     mean_bias(selected_events)',mean_bias_V1(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
-
-    tbl = table([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)]',...
-        [ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)]',...
-        mean_bias(selected_events)',mean_bias_V1(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
-
-
-    tbl.Match_High = tbl.SpindlePower_Match > median(tbl.SpindlePower_Match);
-    tbl.NonMatch_High = tbl.SpindlePower_NonMatch > median(tbl.SpindlePower_NonMatch);
-
-    % 2. Combine into a categorical 'State' variable
-    % tbl.JointState = categorical(2 * tbl.Match_High + tbl.NonMatch_High);
-
-    tbl.JointState = (2 * tbl.Match_High + tbl.NonMatch_High);
-    % tbl.JointState(tbl.JointState >2) = 2;
-    tbl.JointState = categorical(tbl.JointState);
-
-    % lme_joint = fitlme(tbl, 'HPC_logodds ~ V1_trackID * JointState + (1 | AnimalID)');
-    % lme_joint.Coefficients
-    % match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(7) lme_joint.Coefficients.Upper(7)];
-    % non_match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(6) lme_joint.Coefficients.Upper(6)];
-    % bilateral_match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(8) lme_joint.Coefficients.Upper(8)];
-    % mean_beta(i,:) = [lme_joint.Coefficients.Estimate(5) lme_joint.Coefficients.Estimate(6)];
-    % non_match_mean_beta = [lme_joint.Coefficients.Lower(6) lme_joint.Coefficients.Upper(6)];
-
-    % H = [0 0 0 0 0 1 0 -1];
-    % [pVal, Fstat] = coefTest(lme_joint, H);
-
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1 | AnimalID)');
-    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + SpindlePower_NonMatch*SpindlePower_Match + (1 | AnimalID)');
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
-    lme.Coefficients
-    %
-    spindle_power_modulation_lme(i).variable = lme.Coefficients.Name;
-    spindle_power_modulation_lme(i).p = lme.Coefficients.pValue(:);
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    spindle_power_modulation_lme(i).b = lme.Coefficients.Estimate(:);
-    spindle_power_modulation_lme(i).t = lme.Coefficients.tStat(:);
-    spindle_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
-    % spindle_power_modulation_lme(i).b_CI = ;
-
-    % spindle_power_modulation_lme(i).t_CI = lme.Coefficients.Estimate(:);
-
-    % match_beta_CI(i,:) = [lme.Coefficients.Lower(5) lme.Coefficients.Upper(5)];
-    % non_match_beta_CI(i,:) = [lme.Coefficients.Lower(6) lme.Coefficients.Upper(6)];
-    % mean_beta(i,:) = [lme.Coefficients.Estimate(5) lme.Coefficients.Estimate(6)];
-    % non_match_mean_beta(i,:) = [lme.Coefficients.Estimate(6) lme.Coefficients.Estimate(6)];
-
-    %
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + (1 | AnimalID)');
-
-    % lme.Coefficients
-    % match_beta_CI(i,:) = [lme.Coefficients.Lower(4) lme.Coefficients.Upper(4)];
-    %
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-    % mean_beta(i,:) = [lme.Coefficients.Estimate(5) lme.Coefficients.Estimate(6)];
-    % non_match_beta_CI(i,:) = [lme.Coefficients.Lower(4) lme.Coefficients.Upper(4)];
-    % lme.Coefficients
-    % lme.Coefficients.Lower(5)
-end
-% 
-%     VariableNames = tbl.Properties.VariableNames;
-%     %
-% 
-%     tic
-%     beta_boot=[];
-%     non_match_beta_boot=[];
-%     t_boot=[];
-%     non_match_t_boot=[];
-%     parfor iBoot = 1:1000
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',true);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_boot(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_boot(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_boot(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_boot(iBoot) = [lme.Coefficients.tStat(6)];
-% 
-% 
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',false);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-%         tbl_temp.HPC_logodds = tbl.HPC_logodds;
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_shuffled(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_shuffled(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_shuffled(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_shuffled(iBoot) = [lme.Coefficients.tStat(6)];
-%     end
-%     toc
-% 
-%     % spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     % spindle_power_modulation_lme(i).t_stat_boot = t_boot;
-% 
-%     spindle_power_modulation_lme(i).b_shuffle = beta_shuffled;
-%     spindle_power_modulation_lme(i).t_stat_shuffle = t_shuffled;
-%     spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     spindle_power_modulation_lme(i).t_stat_boot = t_boot;
-% end
-
-
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\KDE bias difference based on V1 bias','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
-
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\KDE bias difference based on V1 bias','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
-
-clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
-
-clear b_CI
-for i = 1:10
-    % match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).b_boot,[2.5 97.5]);
-    % non_match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_boot,[2.5 97.5]);
-    % 
-    % match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).b_shuffle,[2.5 97.5]);
-    % non_match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_shuffle,[2.5 97.5]);
-    b_CI(i,:,:) = [spindle_power_modulation_lme(i).b_CI];
-% spindle_power_modulation_lme(i).non_match_b_shuffle
-end
-
-% figure;plot(squeeze(non_match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(non_match_beta_CI(2,:,:)),'k');;yline(0,'k')
-% 
-% figure;plot(squeeze(match_beta_CI(1,:,:)),'r');hold on; plot(squeeze(match_beta_CI(2,:,:)),'k');yline(0,'k')
-
-
-figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');plot(squeeze(b_CI(:,5,:)),'b');yline(0,'k')
-
-for i = 1:3
-    % Plot Bar
-    bar(b_CI(i,5,),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    % Plot 95% CI Error Bar
-    errorbar(x(i)+ group_offset, mean_boot(i), ci_boot(1,i), ci_boot(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-end
-
-    spindle_power_modulation_lme(i).b_CI 
 
 
 
