@@ -374,7 +374,7 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all','-v7.3')
+save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
 
 
 %% Plotting ROC AUC of RUN 2 track discrimination 
@@ -387,121 +387,308 @@ end
 load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 
 timebins = [20,100];
-title_text = 'PLS contextual discrimination HPC RUN1';
-fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+% title_text = 'PLS contextual discrimination HPC RUN1';
+title_text = 'PLS contextual discrimination HPC RUN1 scatter';
+fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
-% title_text = 'PLS contextual discrimination RUN1';
+% % title_text = 'PLS contextual discrimination RUN1';
+% for n = 1:2
+%     nexttile
+%     fpr = KDE_RUN_validations_all.FPR(1,:);
+%     TPR_real = squeeze(mean(KDE_RUN_validations_all.HPC_TPR(n,:,:),2))';
+%     TPR_shuf = squeeze(mean(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:),2))';
+%     CI_real = (std(squeeze(KDE_RUN_validations_all.HPC_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR,2));
+%     CI_shuf = (std(squeeze(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR_shuffled,2));
+%     hold on
+%     plot([0 1],[0 1],'--k')
+%     PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+%         [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+%     PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+%         'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+%     plot(fpr, TPR_real, 'Color', [231,41,138]/256);
+%     plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
+%     xlabel('True positive rate')
+%     ylabel('False Positive rate')
+%     %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+%     title(sprintf('ROC curve HPC %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+%     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% end
+
 for n = 1:2
     nexttile
+    % Extract base data
     fpr = KDE_RUN_validations_all.FPR(1,:);
-    TPR_real = squeeze(mean(KDE_RUN_validations_all.HPC_TPR(n,:,:),2))';
-    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:),2))';
-    CI_real = (std(squeeze(KDE_RUN_validations_all.HPC_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR,2));
-    CI_shuf = (std(squeeze(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.HPC_TPR_shuffled,2));
+    % These should be (sessions x fpr_points)
+    data_real = squeeze(KDE_RUN_validations_all.HPC_TPR(n,:,:));
+    data_shuf = squeeze(KDE_RUN_validations_all.HPC_TPR_shuffled(n,:,:));
+    
+    % Calculate Means
+    TPR_real_mean = mean(data_real, 1, 'omitnan');
+    TPR_shuf_mean = mean(data_shuf, 1, 'omitnan');
+    
     hold on
-    plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
-        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
-        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    plot(fpr, TPR_real, 'Color', [231,41,138]/256);
-    plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
-    xlabel('True positive rate')
-    ylabel('False Positive rate')
-    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(sprintf('ROC curve HPC %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    % 1. Plot the diagonal chance line
+    plot([0 1],[0 1],'--k', 'HandleVisibility', 'off')
+    
+    % 2. Plot individual session lines (Low Alpha)
+    % Color definitions
+    real_col = [231,41,138]/255;
+    shuf_col = [0, 0, 0]/255;
+    
+    % Plot all individual Real lines
+    p_indiv_real = plot(fpr, data_real', 'Color', [real_col, 0.3], 'LineWidth', 0.5, 'HandleVisibility', 'off');
+    
+    % Plot all individual Shuffled lines
+    p_indiv_shuf = plot(fpr, data_shuf', 'Color', [shuf_col, 0.3], 'LineWidth', 0.5, 'HandleVisibility', 'off');
+    
+    % 3. Plot Mean lines (Thick)
+    PLOT(1) = plot(fpr, TPR_real_mean, 'Color', real_col, 'LineWidth', 2.5);
+    PLOT(2) = plot(fpr, TPR_shuf_mean, 'Color', shuf_col, 'LineWidth', 2.5);
+    
+    % Formatting
+    xlabel('False Positive Rate')
+    ylabel('True Positive Rate')
+    title(sprintf('ROC curve HPC %i ms bins', timebins(n)));
+    
+    legend(PLOT(1:2), {'Real Mean', 'Shuffle Mean'}, 'Location', 'southeast', 'Box', 'off');
+    
+    xlim([0 1]); ylim([0 1]);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
 
 
 
-
 for n = 1:2
     nexttile
-
-    AUC = [KDE_RUN_validations_all.HPC_AUC(n,:);KDE_RUN_validations_all.HPC_AUC_shuffled(n,:)];
+    % Extract data for the current condition
+    real_data = KDE_RUN_validations_all.HPC_AUC(n,:);
+    shuffled_data = KDE_RUN_validations_all.HPC_AUC_shuffled(n,:);
+    
+    % Combine for easier mean calculation
+    % AUC = [real_data; shuffled_data];
+    mean_real = mean(real_data, 'omitnan');
+    mean_shuf = mean(shuffled_data, 'omitnan');
     bar_colors = [231,41,138; 0, 0, 0]/255;
-    x_pos=[1 2];
-    for i = 1:2
+    x_pos = [1 2];
+    
+    hold on
 
-        mean_AUC = mean(AUC(i,:),'omitnan');
-        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
-            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
-        hold on
-        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
-        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    % 1. Plot the Bars (Mean only, no error bars)
+    plot([x_pos(1)-line_w, x_pos(1)+line_w], [mean_real, mean_real], 'Color', bar_colors(1,:), 'LineWidth', 4);
+    plot([x_pos(2)-line_w, x_pos(2)+line_w], [mean_shuf, mean_shuf], 'Color', bar_colors(2,:), 'LineWidth', 4);
+
+    % 2. Plot Raw Data Points and Connections with Jitter
+    rng(1); % Seed for consistent jitter appearance
+    jitter_strength = 0.2; % Adjusted for better visibility of distributions
+    
+    for s = 1:length(real_data)
+        if ~isnan(real_data(s)) && ~isnan(shuffled_data(s))
+            % Calculate jittered x-positions
+            % This spreads the dots randomly around the x_pos center
+            x1 = x_pos(1) + (rand - 0.5) * jitter_strength;
+            x2 = x_pos(2) + (rand - 0.5) * jitter_strength;
+            
+            % Plot the connection line first (so it's behind the dots)
+            plot([x1, x2], [real_data(s), shuffled_data(s)], 'Color', [0.8 0.8 0.8 0.4], 'LineWidth', 0.5);
+            
+            % Plot the individual dots
+            scatter(x1, real_data(s), 50, bar_colors(1,:), 'filled', 'MarkerFaceAlpha', 0.3);
+            scatter(x2, shuffled_data(s), 50, bar_colors(2,:), 'filled', 'MarkerFaceAlpha', 0.3);
+        end
     end
 
-    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    % Statistics and Formatting
+    [p, h] = signrank(real_data, shuffled_data, 'tail', 'right');
     
-    p
-
+    xlim([-0.5 3.5])
     xticks([1 2]);
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
-    ylim([0 1]);
-    title('Mean AUC – Real vs Shuffled');
+    ylim([0 1.1]);
+    title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
+% for n = 1:2
+%     nexttile
+% 
+%     AUC = [KDE_RUN_validations_all.HPC_AUC(n,:);KDE_RUN_validations_all.HPC_AUC_shuffled(n,:)];
+%     bar_colors = [231,41,138; 0, 0, 0]/255;
+%     x_pos=[1 2];
+%     for i = 1:2
+% 
+%         mean_AUC = mean(AUC(i,:),'omitnan');
+%         auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+%             std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
+%         hold on
+%         bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+%         errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+%     end
+% 
+%     [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+% 
+% 
+%     xticks([1 2]);
+%     xticklabels({'Real', 'Shuffled'});
+%     ylabel('AUC');
+%     ylim([0 1]);
+%     title('Mean AUC – Real vs Shuffled');
+%     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% end
 
 
 %%%%%%%%% V1
 timebins = [20,100];
-title_text = 'PLS contextual discrimination V1 RUN1';
-fig = figure('Name', title_text, 'Position', [200 100 475*2 880]); hold on;
+% title_text = 'PLS contextual discrimination V1 RUN1';
+ title_text = 'PLS contextual discrimination V1 RUN1 scatter';
+fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
-% title_text = 'PLS contextual discrimination RUN1';
+% % title_text = 'PLS contextual discrimination RUN1';
+% for n = 1:2
+%     nexttile
+%     fpr = KDE_RUN_validations_all.FPR(1,:);
+%     TPR_real = squeeze(mean(KDE_RUN_validations_all.V1_TPR(n,:,:),2))';
+%     TPR_shuf = squeeze(mean(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:),2))';
+%     CI_real = (std(squeeze(KDE_RUN_validations_all.V1_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR,2));
+%     CI_shuf = (std(squeeze(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR_shuffled,2));
+%     hold on
+%     plot([0 1],[0 1],'--k')
+%     PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
+%         [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+%     PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
+%         'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+%     plot(fpr, TPR_real, 'Color', [231,41,138]/256);
+%     plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
+%     xlabel('True positive rate')
+%     ylabel('False Positive rate')
+%     %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
+%     title(sprintf('ROC curve V1 %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+%     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% end
+
+
 for n = 1:2
     nexttile
+    % Extract base data
     fpr = KDE_RUN_validations_all.FPR(1,:);
-    TPR_real = squeeze(mean(KDE_RUN_validations_all.V1_TPR(n,:,:),2))';
-    TPR_shuf = squeeze(mean(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:),2))';
-    CI_real = (std(squeeze(KDE_RUN_validations_all.V1_TPR(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR,2));
-    CI_shuf = (std(squeeze(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:)),'omitnan'))./sqrt(size(KDE_RUN_validations_all.V1_TPR_shuffled,2));
+    % These should be (sessions x fpr_points)
+    data_real = squeeze(KDE_RUN_validations_all.V1_TPR(n,:,:));
+    data_shuf = squeeze(KDE_RUN_validations_all.V1_TPR_shuffled(n,:,:));
+    
+    % Calculate Means
+    TPR_real_mean = mean(data_real, 1, 'omitnan');
+    TPR_shuf_mean = mean(data_shuf, 1, 'omitnan');
+    
     hold on
-    plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [TPR_real+CI_real fliplr(TPR_real-CI_real)], ...
-        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [TPR_shuf+CI_shuf fliplr(TPR_shuf-CI_shuf)], ...
-        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    plot(fpr, TPR_real, 'Color', [231,41,138]/256);
-    plot(fpr, TPR_shuf, 'k', 'LineWidth', 1.5);
-    xlabel('True positive rate')
-    ylabel('False Positive rate')
-    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(sprintf('ROC curve V1 %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
+    % 1. Plot the diagonal chance line
+    plot([0 1],[0 1],'--k', 'HandleVisibility', 'off')
+    
+    % 2. Plot individual session lines (Low Alpha)
+    % Color definitions
+    real_col = [231,41,138]/255;
+    shuf_col = [0, 0, 0]/255;
+    
+    % Plot all individual Real lines
+    p_indiv_real = plot(fpr, data_real', 'Color', [real_col, 0.3], 'LineWidth', 0.5, 'HandleVisibility', 'off');
+    
+    % Plot all individual Shuffled lines
+    p_indiv_shuf = plot(fpr, data_shuf', 'Color', [shuf_col, 0.3], 'LineWidth', 0.5, 'HandleVisibility', 'off');
+    
+    % 3. Plot Mean lines (Thick)
+    PLOT(1) = plot(fpr, TPR_real_mean, 'Color', real_col, 'LineWidth', 2.5);
+    PLOT(2) = plot(fpr, TPR_shuf_mean, 'Color', shuf_col, 'LineWidth', 2.5);
+    
+    % Formatting
+    xlabel('False Positive Rate')
+    ylabel('True Positive Rate')
+    title(sprintf('ROC curve V1 %i ms bins', timebins(n)));
+    
+    legend(PLOT(1:2), {'Real Mean', 'Shuffle Mean'}, 'Location', 'southeast', 'Box', 'off');
+    
+    xlim([0 1]); ylim([0 1]);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
 
 
+
 for n = 1:2
     nexttile
-
-    AUC = [KDE_RUN_validations_all.V1_AUC(n,:);KDE_RUN_validations_all.V1_AUC_shuffled(n,:)];
+    % Extract data for the current condition
+    real_data = KDE_RUN_validations_all.V1_AUC(n,:);
+    shuffled_data = KDE_RUN_validations_all.V1_AUC_shuffled(n,:);
+    
+    % Combine for easier mean calculation
+    % AUC = [real_data; shuffled_data];
+    mean_real = mean(real_data, 'omitnan');
+    mean_shuf = mean(shuffled_data, 'omitnan');
     bar_colors = [231,41,138; 0, 0, 0]/255;
-    x_pos=[1 2];
-    for i = 1:2
+    x_pos = [1 2];
+    
+    hold on
 
-        mean_AUC = mean(AUC(i,:),'omitnan');
-        auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
-            std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
-        hold on
-        bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
-        errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+    % 1. Plot the Bars (Mean only, no error bars)
+    plot([x_pos(1)-line_w, x_pos(1)+line_w], [mean_real, mean_real], 'Color', bar_colors(1,:), 'LineWidth', 4);
+    plot([x_pos(2)-line_w, x_pos(2)+line_w], [mean_shuf, mean_shuf], 'Color', bar_colors(2,:), 'LineWidth', 4);
+
+    % 2. Plot Raw Data Points and Connections with Jitter
+    rng(1); % Seed for consistent jitter appearance
+    jitter_strength = 0.2; % Adjusted for better visibility of distributions
+    
+    for s = 1:length(real_data)
+        if ~isnan(real_data(s)) && ~isnan(shuffled_data(s))
+            % Calculate jittered x-positions
+            % This spreads the dots randomly around the x_pos center
+            x1 = x_pos(1) + (rand - 0.5) * jitter_strength;
+            x2 = x_pos(2) + (rand - 0.5) * jitter_strength;
+            
+            % Plot the connection line first (so it's behind the dots)
+            plot([x1, x2], [real_data(s), shuffled_data(s)], 'Color', [0.8 0.8 0.8 0.4], 'LineWidth', 0.5);
+            
+            % Plot the individual dots
+            scatter(x1, real_data(s), 50, bar_colors(1,:), 'filled', 'MarkerFaceAlpha', 0.3);
+            scatter(x2, shuffled_data(s), 50, bar_colors(2,:), 'filled', 'MarkerFaceAlpha', 0.3);
+        end
     end
 
-
-    [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+    % Statistics and Formatting
+    [p, h] = signrank(real_data, shuffled_data, 'tail', 'right');
     
-    p
-    
+    xlim([-0.5 3.5])
     xticks([1 2]);
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
-    ylim([0 1]);
-    title('Mean AUC – Real vs Shuffled');
+    ylim([0 1.1]);
+    title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
+
+% for n = 1:2
+%     nexttile
+% 
+%     AUC = [KDE_RUN_validations_all.V1_AUC(n,:);KDE_RUN_validations_all.V1_AUC_shuffled(n,:)];
+%     bar_colors = [231,41,138; 0, 0, 0]/255;
+%     x_pos=[1 2];
+%     for i = 1:2
+% 
+%         mean_AUC = mean(AUC(i,:),'omitnan');
+%         auc_errors = [std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2)),...  % lower error
+%             std(AUC(i,:),'omitnan')./sqrt(size(AUC(i,:),2))];   % upper error
+%         hold on
+%         bar(x_pos(i), mean_AUC, 0.4, 'FaceAlpha',0.5, 'FaceColor', bar_colors(i,:), 'EdgeColor', 'none');
+%         errorbar(x_pos(i), mean_AUC, auc_errors(1), auc_errors(2), 'k', 'linestyle', 'none', 'linewidth', 1);
+%     end
+% 
+% 
+%     [p,h,stats] = signrank(AUC(1,:),AUC(2,:),'tail','right');
+% 
+%     p
+% 
+%     xticks([1 2]);
+%     xticklabels({'Real', 'Shuffled'});
+%     ylabel('AUC');
+%     ylim([0 1]);
+%     title('Mean AUC – Real vs Shuffled');
+%     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% end
 
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC spatial representation'),[],'ContentType','vector')
