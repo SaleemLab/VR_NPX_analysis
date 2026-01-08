@@ -14,7 +14,7 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_type = 'TRAIN_2'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
+Stimulus_type = 'TRAIN'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
 % plot_choice 'struct' gives output of tuning metrics.
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
@@ -26,7 +26,7 @@ z_score_period = 'entire_session'; % z score either over 'entire_session' or 'fi
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 
 % 3/5 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis\20251127\TRAIN_2') 
+cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis\20251126\TRAIN_1') 
 
 %% SET THIS 4/5***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -47,7 +47,7 @@ elseif probe_type == 1
 end
 
 % 5/5 
-for nsession = 12 % row number of recording date in "experiment_info" 
+for nsession = 9 % row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -882,7 +882,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
 
 
         if (contains(Stimulus_type, 'OMIT') || strcmp(Stimulus_type, 'E_CD')... 
-                && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR'))
+                && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                 

@@ -36,7 +36,11 @@ else % If based on photodiode timestamp in case trial info not saved properly
     specialFileTypes = {'StaticGratings_short','StaticGratings_long','StaticGratings','DriftingGratings','SparseNoise','SparseNoise_fullscreen',...
         'StaticTF','Grey','GratingsPhase','OriAdapt','PosAdapt','DriftingTF','Checkerboard','FullScreenFlash', 'OP_Tuning',...
         'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'GAVNIK_ABCD', 'GAVNIK_A_CD',...
-        'GAVNIK_E_CD', 'GAVNIK DCBA','Direction_Tuning'};
+        'GAVNIK_E_CD', 'GAVNIK DCBA', 'GAVNIK_D___', 'GAVNIK_A___', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2', 'GAVNIK_D_CD',...
+        'TRAIN_1', 'TRAIN_2', 'D___', 'A___', 'D_CD',...
+        'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', 'Direction_Tuning'...
+        'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
+        'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD'};
 
     % See if there is a match within the file name that indicates that this is
     % from the special list
@@ -139,7 +143,8 @@ eyeData.sglxTime = interp1(photodiode.ArduinoTime(ia),photodiode.sglxTime(ia),ey
 
 disp(['StimulusName: ', StimulusName]);
 switch(StimulusName)
-    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'} % for GAVNIK stimuli, the PD quad begins grey, goes white for first stim A, black for second B,
+    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA', 'GAVNIK_A___', 'GAVNIK_D___', 'GAVNIK_ABCD_1',...
+            'GAVNIK_ABCD_2', 'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD',} % for GAVNIK stimuli, the PD quad begins grey, goes white for first stim A, black for second B,
             % white for third C, black for fourth D and then grey for the greyscreen period between the sequences of four stimuli
         
         % Compute the trailing moving median (of the current value and the four values prior)
@@ -149,9 +154,26 @@ switch(StimulusName)
         pd_ON_OFF = zeros(size(photodiode.Photodiode));
 
         % Threshold conditions
-        up_condition_1 = (photodiode_median < 280 & photodiode_median > 220);  
-        up_condition_2 = (photodiode_median < 110);
-        down_condition = (photodiode_median > 380);
+        %up_condition_1 = (photodiode_median < 280 & photodiode_median > 220);  
+        %up_condition_2 = (photodiode_median < 110);
+        %down_condition = (photodiode_median > 380);
+
+        % Cluster the photodiode signal into 3 levels (black, grey, white)
+        [idx, centers] = kmeans(double(photodiode.Photodiode(:)), 3);  
+        centers = sort(centers);  % ensure order: low < mid < high
+        centers = centers(:)';    % force row vector [1×3]
+
+        low_center  = centers(1);
+        mid_center  = centers(2);
+        high_center = centers(3);
+
+        % Assign photodiode_median to the closest cluster
+        [~, cluster_id] = min(abs(photodiode_median(:) - centers), [], 2);
+        
+        % Define conditions by cluster ID
+        up_condition_1 = (cluster_id == 2);  % grey/mid
+        up_condition_2 = (cluster_id == 1);  % black/low
+        down_condition = (cluster_id == 3);  % white/high
 
         % Track the last detected transition
         last_transition = -1;  % -1 means no transition detected yet
@@ -159,9 +181,13 @@ switch(StimulusName)
 
         % Loop through the signal to detect transitions
         for i = 1:length(photodiode.Photodiode)-50 % Ensure index is within bounds
+            
+            % Define tolerance (you can tweak this)
+            tol = 0.3 * (high_center - mid_center);
+
         % Check upward transitions (only if last transition was NOT up)
-            if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+2:i+3) > 350)) || ...% if coming from grey quad and the next value and three subsequent values exceed 280
-                                          (up_condition_2(i) && all(photodiode.Photodiode(i+5:i+7) > 350))) % if coming from black quad and the values of positions 4-7 ahead exceed 350 (i.e. when the quad is going to white but not grey, an upswing will be detected).
+            if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+4:i+5) > (high_center - tol))) || ...% if coming from grey quad and the next value and three subsequent values exceed 280
+                                  (up_condition_2(i) && all(photodiode.Photodiode(i+7:i+9) > (high_center - tol)))) % if coming from black quad and the values of positions 4-7 ahead exceed 350 (i.e. when the quad is going to white but not grey, an upswing will be detected).
                 pd_ON_OFF(i) = 1;
                 state = 1;          % Set state to ON
                 last_transition = 1;  % Mark last transition as UP
@@ -174,7 +200,7 @@ switch(StimulusName)
             end
 
             % Check downward transitions (only if last transition was NOT down)
-            if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < 400))
+            if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < (high_center - tol)))
                 pd_ON_OFF(i) = 0;
                 state = 0;          % Set state to OFF
                 last_transition = 0;  % Mark last transition as DOWN
@@ -263,6 +289,13 @@ photodiodeData = [];
 photodiodeData.stim_on.sglxTime = photodiode.sglxTime(pd_ON(blocks_ind)');
 photodiodeData.stim_off.sglxTime = photodiode.sglxTime(pd_OFF(blocks_ind)');
 
+whos photodiodeData photodiodeData.stim_off
+class(photodiodeData.stim_off.sglxTime), size(photodiodeData.stim_off.sglxTime)
+
+whos Nidq
+class(Nidq.sglxTime), size(Nidq.sglxTime)
+
+
 if photodiodeData.stim_off.sglxTime(end) > Nidq.sglxTime(end)
     % if last visual stimuli is later than last timestamp of the recording
     % then it is probably because of wrong alignment (happens normally only during short sessions such as checkerboard)
@@ -309,7 +342,7 @@ end
 % Step 6: extract stimulus times
 disp(['StimulusName: ', StimulusName]);
 switch(StimulusName)
-    case {'sparsenoise','sparsenoise_fullscreen','checkerboard'}
+    case {'sparsenoise', 'SparseNoise_1', 'SparseNoise_2', 'sparsenoise_fullscreen','checkerboard'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend');
         %         fprintf('\n\tUsing both photodiode upward and downward transitions as timestamps for stimulus timing')
         if contains(StimulusName,'SparseNoise')
@@ -328,10 +361,13 @@ switch(StimulusName)
 
         end
 
-    case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'staticgratings','staticgratings_short','staticgratings_long'}
+    case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'D___', 'A___', 'TRAIN_1', 'TRAIN_2', 'D_CD',...
+            'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'staticgratings','staticgratings_short','staticgratings_long',...
+            'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend'); %cases where a stimulus is on the screen only when the quad is white
     
-    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'}
+    case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA', 'GAVNIK_D___', 'GAVNIK_A___', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
+            'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend'); % Sort the concatenated array in ascending (i.e. chronological) order
     
     case 'grey'

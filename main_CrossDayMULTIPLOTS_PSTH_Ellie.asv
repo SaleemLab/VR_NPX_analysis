@@ -7,7 +7,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % Choose your probe depth of interest
-depth_for_analysis = 'sub_L4'; % choose 'L4' or 'V1' or 'supra_L4' or 'sub_L4', 'CA1' or 'Sub_CA1' or 'Sub_HPC'
+depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'supra-L4' or 'sub-L4', 'CA1' or 'Sub_CA1' or 'Sub_HPC'
 
 SUBJECTS = {'M00069'};
 
@@ -180,8 +180,6 @@ for nsession = sessions_to_plot
         
             L4_depth_range{iShank}   = [L4_channel_depth - 70, L4_channel_depth + 70];
             V1_depth_range{iShank}   = [L5_depth - 330, L5_depth + 700];
-            supra_L4_depth_range{iShank} = [L4_channel_depth + 70, L5_depth + 700];
-            sub_L4_depth_range{iShank} = [L5_depth - 330, L4_channel_depth - 70];
 
             CA1_depth_range{iShank}  = [CA1_depth - 150, CA1_depth + 150];
             Sub_CA1_depth_range{iShank} = [min(CA1_depth_range{iShank}) - 1000, min(CA1_depth_range{iShank})];  
@@ -200,10 +198,7 @@ for nsession = sessions_to_plot
                 depth_ranges = L4_depth_range;
             case 'V1'
                 depth_ranges = V1_depth_range;
-            case 'supra_L4' 
-                depth_ranges = supra_L4_depth_range;
-            case 'sub_L4' 
-                depth_ranges = sub_L4_depth_range;
+
 
             case 'CA1' 
                 depth_ranges = CA1_depth_range;

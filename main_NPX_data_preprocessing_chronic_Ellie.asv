@@ -173,18 +173,16 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % All_stimuli = {'GAVNIK_E_CD'};
 % All_stimuli = {'GAVNIK DCBA'};
 
-All_stimuli = {'GAVNIK_E_CD', 'GAVNIK_A_CD', 'GAVNIK_A___', 'GAVNIK DCBA', 'GAVNIK_ABCD', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
-    'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'DCBA', 'OMIT', 'E_CD'};
+%All_stimuli = {'GAVNIK_E_CD', 'GAVNIK_A_CD', 'GAVNIK_A___', 'GAVNIK DCBA', 'GAVNIK_ABCD', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
+% 'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'DCBA', 'OMIT', 'E_CD'}
 
 % 'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', , 'D_CD', 'OP_Tuning', 'D___', 'GAVNIK_D_CD', 'GAVNIK_D___', ...
 % 'ADCD', 'Direction_Tuning', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'D___', 
 
 % All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'};
-
 %All_stimuli = {'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
  %   'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD',...
   %  'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'OP_Tuning', 'DCBA', 'OMIT', 'E_CD', 'D_CD', 'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey'};
-
 
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch_Ellie(experiment_info,All_stimuli{n})

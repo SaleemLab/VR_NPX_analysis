@@ -7,23 +7,23 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % 1/5 Choose your probe depth of interest and mouse
-depth_for_analysis = 'L4'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-SUBJECTS = {'M00013'};
+depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
+SUBJECTS = {'M00014'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK DCBA'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_score_period = 'entire_session'; % 'none' = no z scoring or z score either over 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250221') % 3/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00014\analysis\20250321') % 3/5 files will be saved here in the cd
 
 %%%% 4/5 row numbers of recording dates in "experiment_info" 15, 9
-sessions_to_plot = [15]; 
+sessions_to_plot = [9]; 
 
 if contains(Stimulus_types{2}, 'GAVNIK DCBA')
     stimulus_colors = [
@@ -178,7 +178,7 @@ for nsession = sessions_to_plot
                         if contains(z_score_period, 'none')
                             % Plot raw mean firing rate trace
                             plot(bins, mean_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
-                            ylabel('Mean firing rate (Hz)', 'FontSize', 14);
+                            ylabel('Mean firing rate (Hz)', 'FontSize', 24);
                             ylim ([0 16]);
                         else 
                             baseline_mean = mean(zscore_counts);
@@ -196,10 +196,10 @@ for nsession = sessions_to_plot
                                 'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
 
                             if contains(z_score_period, 'entire_session')
-                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
+                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
                                 ylim([-1 5]);
                             elseif contains(z_score_period, 'first30secs')
-                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
+                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                                 ylim([-1 8]);
                             end
                                                    
@@ -248,10 +248,10 @@ for nsession = sessions_to_plot
                         all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                         all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                         
-                        xlim([-0.5 1.5]);
+                        xlim([-0.3 1.35]);
                         xticks(-0.4:0.2:1.4);
-                        xlabel('Time (s)', 'FontSize', 14)
-                        set(gca, 'FontSize', 14);  % Tick labels font size
+                        xlabel('Time (s)', 'FontSize', 24)
+                        set(gca, 'FontSize', 24);  % Tick labels font size
                         legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'Interpreter', 'none');
                         hold on;                
                     end
@@ -268,13 +268,13 @@ for nsession = sessions_to_plot
                         fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                     end
                     if (contains(Stimulus_types{stim_idx}, 'GAVNIK_ABCD')) % to label the plot only once
-                        xline(0, 'k', (sprintf('A %d%s or D onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.15, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.30, 'k', (sprintf('C %d%s or B onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.45, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0, 'k', (sprintf('A %d%s or D onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.15, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.30, 'k', (sprintf('C %d%s or B onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.45, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         
                     end
-                    sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}), 'Interpreter', 'none', 'FontSize', 16);
+                    sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}), 'Interpreter', 'none', 'FontSize', 24);
                     filename = sprintf('%s %s FRs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
                     save_path = fullfile(pwd, filename);
                     exportgraphics(fig1, save_path); 
@@ -349,7 +349,7 @@ for nsession = sessions_to_plot
                         if contains(z_score_period, 'none')
                             % Plot raw mean firing rate trace
                             plot(bins, mean_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
-                            ylabel('Mean firing rate (Hz)', 'FontSize', 14);
+                            ylabel('Mean firing rate (Hz)', 'FontSize', 24);
                             ylim ([0 16]);
                         else 
                             baseline_mean = mean(zscore_counts);
@@ -367,10 +367,10 @@ for nsession = sessions_to_plot
                             
                             plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
                             if contains(z_score_period, 'entire_session')
-                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 14);
+                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
                                 ylim([-1 5]);
                             elseif contains(z_score_period, 'first30secs')
-                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 14);
+                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                                 ylim([-1 8]);
                             end                   
                         end    
@@ -418,11 +418,11 @@ for nsession = sessions_to_plot
                         all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                         all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                         
-                        xlim([-0.5 1.5]);
+                        xlim([-0.3 1.35]);
                         ylim([-1 5]);
                         xticks(-0.4:0.2:1.4);
-                        xlabel('Time (s)', 'FontSize', 14)
-                        set(gca, 'FontSize', 14);  % Tick labels font size
+                        xlabel('Time (s)', 'FontSize', 24)
+                        set(gca, 'FontSize', 24);  % Tick labels font size
                         legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'Interpreter', 'none');
                         hold on;                
                     end
@@ -439,13 +439,13 @@ for nsession = sessions_to_plot
                         fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                     end
                     if (contains(Stimulus_types{stim_idx}, 'GAVNIK_ABCD')) % to label the plot only once
-                        xline(0, 'k', (sprintf('A %d%s or E novel onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.15, 'k', (sprintf('B %d%s or grey onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
-                        xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 14);
+                        xline(0, 'k', (sprintf('A %d%s or E novel onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.15, 'k', (sprintf('B %d%s or grey onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.30, 'k', (sprintf('C %d%s onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.45, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         
                     end
-                    sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 16);
+                    sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 24);
                     filename = sprintf('%s %s FRs %s vs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
                     save_path = fullfile(pwd, filename);
                     exportgraphics(fig1, save_path); 

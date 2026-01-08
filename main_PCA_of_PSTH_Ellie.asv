@@ -491,13 +491,9 @@ for nsession = 9 %4/4 row number of recording date in "experiment_info"
                            'Interpreter', 'none');  % Avoid italicizing if any LaTeX characters
 
                 hold off;
-                if strcmp(subject_number, 'M00013') || strcmp(subject_number, 'M00014')
-                    sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, gDSI > %0.2f,Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, gDSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
-                    fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, gDSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, gDSI_threshold);
-                else 
-                    sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, experiment_info(nsession).date), 'Interpreter', 'none');
-                    fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset).fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2));
-                end    
+                
+                sgtitle(sprintf('%s - %s: PCA of %s %s (%.2f–%.2fs after stim onset) Z-scored over %s, gOSI > %0.2f, gDSI > %0.2f,Day %d', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), z_score_period, gOSI_threshold, gDSI_threshold, experiment_info(nsession).date), 'Interpreter', 'none');
+                fig_filename1 = sprintf('%s - %s - PCA of %s %s (%.2f–%.2fs after stim onset), gOSI over %0.2f, gDSI over %0.2f.fig', subject_number, Stimulus_type, depth_for_analysis, temporal_structure, stim_window(1), stim_window(2), gOSI_threshold, gDSI_threshold);
                 savefig(fig1, fullfile(pwd, fig_filename1));
                         
                 
