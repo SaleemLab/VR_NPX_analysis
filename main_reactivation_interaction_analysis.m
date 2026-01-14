@@ -923,6 +923,45 @@ save(fullfile(analysis_folder,'KDE_reactivation_V1_DOWN_all_POST.mat'),'KDE_reac
 save(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
 % save(fullfile(analysis_folder,'KDE_reactivation_V1_all_POST.mat'),'KDE_reactivation_V1_all')
 
+%% Extract all UP state log odds
+
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'SleepChronic';
+load(fullfile(analysis_folder,'KDE_reactivation_UP_all_POST.mat'),'KDE_reactivation_UP_all')
+load(fullfile(analysis_folder,'KDE_reactivation_V1_UP_all_POST.mat'),'KDE_reactivation_V1_UP_all')
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_combined.mat'));
+probability_psth_whole = probability;
+
+KDE_log_odds_UP = struct();
+for nprobe = 1:2
+    for nsession =1:length(experiment_info)
+        event_id = find(slow_waves_all(nprobe).UP_session_count == nsession);
+        temp_event_id = KDE_reactivation_UP_all(nprobe).event_id{nsession};
+        temp_log_odds = KDE_reactivation_UP_all(nprobe).zscored_log_odds{nsession};
+        temp1 = temp_log_odds(isfinite(temp_log_odds));
+        temp_log_odds(temp_log_odds>=inf) = prctile(temp1,99.5);
+        temp_log_odds(temp_log_odds<=-inf) = prctile(temp1,0.5);
+
+        temp_log_odds_V1 = KDE_reactivation_V1_UP_all(nprobe).zscored_log_odds{nsession};
+        temp1 = temp_log_odds_V1(isfinite(temp_log_odds_V1));
+        temp_log_odds_V1(temp_log_odds_V1>=inf) = prctile(temp1,99.5);
+        temp_log_odds_V1(temp_log_odds_V1<=-inf) = prctile(temp1,0.5);
+
+        for nevent = 1:max(KDE_reactivation_UP_all(nprobe).event_id{nsession})
+%             event_duration = diff(slow_waves_all(1).UP_ints(event_id(nevent),:));
+%             temp = temp_log_odds(temp_event_id == nevent);
+%             nbins = floor(event_duration/0.01); 
+            KDE_log_odds_UP(nprobe).HPC{event_id(nevent)} = temp_log_odds(temp_event_id == nevent);
+            KDE_log_odds_UP(nprobe).V1{event_id(nevent)} = temp_log_odds_V1(temp_event_id == nevent);
+        end
+    end
+end
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_log_odds_UP.mat'),'KDE_log_odds_UP');
 
 %% Add on PLS KDE regression Ripples
 
@@ -1098,6 +1137,9 @@ psth_step = 0.01;
 nbins = round(diff(psth_window) / psth_step);
 half_bins = nbins / 2;
 
+psth_window = [-1 1];
+psth_step = 0.01;
+% bins = psth_window(1)+psth_step/2 : psth_step: psth_window(end)-psth_step/2; 
 % Initialize PSTH structure
 KDE_reactivation_PSTH = struct();
 
@@ -1146,18 +1188,22 @@ for region = ["V1", "HPC"]
             event_id_down = down_struct(nprobe).event_id{nsession};
 
             up_all = find(slow_waves_all(nprobe).UP_session_count == nsession);
-            UP_event_index = intersect(up_all, probability(nprobe).UP_all_index);
+            %             UP_event_index = intersect(up_all, probability(nprobe).UP_all_index);
+            UP_event_index = up_all;
 
             temp_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
             [~, ia, ib] = intersect(slow_waves_all(nprobe).DOWN_ints(temp_index, 2), ...
-                                    slow_waves_all(nprobe).UP_ints(UP_event_index, 1));
+                slow_waves_all(nprobe).UP_ints(UP_event_index, 1));
 
             up_ints = slow_waves_all(nprobe).UP_ints(up_all, :);
             previous_DOWN_event_index = ia;
             UP_event_index = find(ismember(up_all, UP_event_index));
 
+
             down_all = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
-            DOWN_event_index = intersect(down_all, probability(nprobe).DOWN_all_index);
+            %             DOWN_event_index = intersect(down_all, probability(nprobe).DOWN_all_index);
+            %             DOWN_event_index = find(ismember(down_all, DOWN_event_index));
+            DOWN_event_index = down_all;
             DOWN_event_index = find(ismember(down_all, DOWN_event_index));
             down_ints = slow_waves_all(nprobe).DOWN_ints(down_all, :);
 
@@ -1282,7 +1328,9 @@ for region = ["V1", "HPC"]
         % KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_log_odds_zshuff']) = down_logodds_all_zshuff;
     end
 end
-
+for nprobe = 1:2
+    KDE_reactivation_PSTH(nprobe).tvec = psth_window(1)+psth_step/2 : psth_step: psth_window(end)-psth_step/2;
+end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH','-v7.3');
 
 % 

@@ -12,7 +12,8 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     addParameter(p, 'title_name', [], @ischar);
     addParameter(p, 'timebin', 0.015);
     addParameter(p, 'subject_id', []);
-
+    addParameter(p, 'bilateral_merging', []);
+    addParameter(p, 'shuffle_option', []);
 
     parse(p, varargin{:});
     title_name = p.Results.title_name;
@@ -20,17 +21,23 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     count_option = p.Results.count_option;
     timebin = p.Results.timebin;
     subject_id = p.Results.subject_id;
+    bilateral_merging = p.Results.bilateral_merging;
+    shuffle_option = p.Results.shuffle_option;
 
     binEdges = 0:timebin:0.3;
     binCenters = binEdges(1:end-1) + diff(binEdges)/2;
 
-    % Colors: first row for low, second row for high
     colour_lines{1} = [116,196,118; 0,90,50] / 256;      % ipsi
     colour_lines{2} = [158,154,200; 74,20,134] / 256;    % contra
+    if isempty(bilateral_merging)
+        % Colors: first row for low, second row for high
 
-    group_name = {'ipsi','contra'};
+        group_name = {'ipsi','contra'};
+    else
+        group_name = {'bilateral'};
+    end
 
-    for hemi = 1:2  % 1 = ipsi, 2 = contra
+    for hemi = 1:length(ripple_feature)  % 1 = ipsi, 2 = contra
 
         feature = ripple_feature{hemi};
         ttt = timeToTransition{hemi};
@@ -48,13 +55,14 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
         ttt_valid = ttt(valid_idx);
         subject_used =  subject_id(valid_idx);
 
-        if isempty(event_option)
-            % Compute thresholds
-            low_thresh = prctile(feature_valid, 25);
-            high_thresh = prctile(feature_valid, 75);
-            % else
-            %
-        end
+%         if isempty(event_option)
+%             % Compute thresholds
+%             low_thresh = prctile(feature_valid, 25);
+%             high_thresh = prctile(feature_valid, 75);
+%         else
+%             low_thresh = 0;
+%             high_thresh = 1;
+%         end
 
         cox_time = ttt_valid;
         cox_event = ones(size(cox_time));  % All UPs transition
@@ -67,10 +75,19 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
             boot_p = nan(nBoot, 1);
             parfor iBoot = 1:nBoot
                 s = RandStream('mrg32k3a','Seed',iBoot);
-                boot_idx = datasample(s, 1:length(cox_time), length(cox_time));
-                feat_sample = feature_used(boot_idx);
-                time_sample = cox_time(boot_idx);
-                subj_sample = subject_used(boot_idx);
+
+                if shuffle_option==1
+                    boot_idx = datasample(s, 1:length(cox_time), length(cox_time),'Replace',false);
+                    feat_sample = feature_used(boot_idx);
+                    time_sample = cox_time;
+                    subj_sample = subject_used(boot_idx);
+                else
+                    boot_idx = datasample(s, 1:length(cox_time), length(cox_time));
+                    feat_sample = feature_used(boot_idx);
+                    time_sample = cox_time(boot_idx);
+                    subj_sample = subject_used(boot_idx);
+                end
+
                 try
                     [b_tmp, ~, ~, stats_tmp] = coxphfit(feat_sample, time_sample, ...
                         'Censoring', zeros(size(time_sample)), ...
@@ -111,7 +128,7 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     end
 
     x_pos = [1 2];
-    for hemi = 1:2
+    for  hemi = 1:length(ripple_feature)  % 1 = ipsi, 2 = contra
         hold on
         bar(x_pos(hemi), barData(hemi), 0.4, 'FaceColor', 'flat', ...
             'CData', barColors(hemi,:), 'EdgeColor', 'none', 'FaceAlpha', 0.5);
@@ -140,7 +157,7 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     end
 
 
-    for hemi = 1:2  % 1 = ipsi, 2 = contra
+    for hemi = 1:length(ripple_feature)  % 1 = ipsi, 2 = contra
         subplot_offset = (hemi - 1) * 2;
         feature = ripple_feature{hemi};
         ttt = timeToTransition{hemi};
@@ -156,26 +173,27 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
         end
         feature_valid = feature(valid_idx)';
         ttt_valid = ttt(valid_idx);
+        if shuffle_option == 1
+            ttt_valid = ttt(valid_idx);
+
+        end
 
         if isempty(event_option)
             % Compute thresholds
             low_thresh = prctile(feature_valid, 25);
             high_thresh = prctile(feature_valid, 75);
-        % else
-        % 
+        else
+            low_thresh = 0;
+            high_thresh = 1;
         end
 
 
         for n = 1:2  % 1 = low, 2 = high
 
-            if isempty(event_option)
-                if n == 1
-                    event_id = find(feature_valid < low_thresh);
-                else
-                    event_id = find(feature_valid > high_thresh);
-                end
+            if n == 1
+                event_id = find(feature_valid <= low_thresh);
             else
-                % event_id = event_index{n};
+                event_id = find(feature_valid >= high_thresh);
             end
 
 
@@ -184,7 +202,12 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
             y_boot = [];
             for iBoot = 1:1000
                 s = RandStream('mrg32k3a','Seed',iBoot);
-                sampled_times = ttt_valid(datasample(s, event_id, length(event_id)));
+                if shuffle_option == 1
+                    sampled_times = ttt_valid(datasample(s, 1:length(ttt_valid), length(event_id),'Replace',false));
+                else
+                    sampled_times = ttt_valid(datasample(s, event_id, length(event_id)));
+                end
+
                 [temp_y, temp_x] = ecdf(sampled_times, 'Function', 'survivor');
                 temp_x(isnan(temp_y)) = []; temp_y(isnan(temp_y)) = [];
                 [temp_x, idx] = unique(temp_x);

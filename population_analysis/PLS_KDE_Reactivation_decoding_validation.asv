@@ -250,11 +250,11 @@ for i = 1:1000
 
 end
 
-% -------------------- STEP 7: Plot ROC track label shuffle --------------------
+% -------------------- STEP 7: Plot ROC --------------------
 if plot_option
     title_text = sprintf('%s %s %s ROC validation %.0f ms bins', ...
         options.SUBJECT, options.SESSION, event_type, time_bin_size*1000);
-    fig = figure('Name', title_text, 'Position', [200 100 600 580]); hold on;
+    fig = figure('Name', title_text, 'Position', [200 100 475 880]); hold on;
     
     nexttile
     CI_real = prctile(TPR_real, [0.5 99.5]);
@@ -270,23 +270,6 @@ if plot_option
     xlabel('True positive rate')
     ylabel('False Positive rate')
 %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
-    title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-
-    nexttile
-    CI_real = prctile(TPR_real, [0.5 99.5]);
-    CI_shuf = prctile(TPR_shuf_cell, [0.5 99.5]);
-    hold on
-    plot([0 1],[0 1],'--k')
-    PLOT(1) = fill([fpr fliplr(fpr)], [CI_real(2,:) fliplr(CI_real(1,:))], ...
-        [231,41,138]/256, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    PLOT(2) = fill([fpr fliplr(fpr)], [CI_shuf(2,:) fliplr(CI_shuf(1,:))], ...
-        'k', 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    plot(fpr, mean(TPR_real,1), 'Color', [231,41,138]/256);
-    plot(fpr, mean(TPR_shuf,1), 'k', 'LineWidth', 1.5);
-    xlabel('True positive rate')
-    ylabel('False Positive rate')
-    %     xline(0.5, '--k'); xlabel('False Positive Rate'); ylabel('True Positive Rate');
     title(title_text); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
@@ -337,7 +320,6 @@ if plot_option
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 end
-
 
 
 % -------------------- PLS Component Projection Visualisation --------------------

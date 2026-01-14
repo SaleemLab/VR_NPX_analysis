@@ -1088,6 +1088,416 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
 
 
+
+%% Ripple power 100ms example
+power_thresholds = prctile(ripple_info.ripple_power,0:99.9/4:99.9);
+nBins = length(power_thresholds) - 1;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+% bins_to_use = bin_centers>0 & bin_centers<0.1;
+bins_to_select = bin_centers>-0.05 & bin_centers<0.05;
+bins_to_use_shifted = bin_centers>-1 & bin_centers<-0.9;
+nBoot = 1000;
+
+% Storage structure
+ripple_power_bias_difference = struct;
+
+% colour_lines = [158,202,225;33,113,181]/256;% two blue
+% colour_lines = [158,202,225;107,174,214;66,146,198;33,113,181]/256;% two blue
+
+colour_lines = [ ...
+    241, 182, 218;   % original end (lightest)
+    226, 132, 187;   % interpolated 2/3
+    212,  78, 156;   % interpolated 1/3
+    231, 41, 138    % original start (darkest)
+] / 256;
+
+
+% Plot layout
+fig = figure;
+fig.Position = [640 100 1100 650*2]
+fig.Name = 'KDE bias difference in V1 with different ripple powers';
+tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+
+for npower = 1:nBins
+    % Ripple power bin index
+    power_index = ripple_info.ripple_power > power_thresholds(npower) & ...
+        ripple_info.ripple_power <= power_thresholds(npower+1);
+
+    event_index = power_index >0;
+    mean_bias = mean(z_bias(bins_to_use, event_index), 'omitnan');
+    mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+    mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan');
+    total_events = length(mean_bias);
+
+    % Thresholds for bias
+    thresholds = prctile(abs(mean_bias),0:10:100);
+    thresholds = thresholds(1:end-1);
+    nThresh = length(thresholds);
+
+    % Bootstrap storage
+    bias_diff_boot = NaN(nBoot, nThresh);
+    prop_events_boot = NaN(nBoot, nThresh);
+    % bias_diff_shifted_boot = NaN(nBoot, nThresh);
+    % prop_events_shifted_boot = NaN(nBoot, nThresh);
+
+    parfor iBoot = 1:nBoot
+        s = RandStream('philox4x32_10', 'Seed', iBoot);
+        idx = randi(s, total_events, total_events, 1);
+
+        
+        boot_bias_shifted = mean_bias;
+        boot_bias = mean_bias(idx);
+        boot_V1 = mean_bias_V1(idx);
+
+        diff_tmp = NaN(1, nThresh);
+        prop_tmp = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias >= th;
+            t2 = boot_bias <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_boot(iBoot, :) = diff_tmp;
+        prop_events_boot(iBoot, :) = prop_tmp;
+        % 
+        diff_tmp_shifted = NaN(1, nThresh);
+        prop_tmp_shifted = NaN(1, nThresh);
+
+        for i = 1:nThresh
+            th = thresholds(i);
+            t1 = boot_bias_shifted >= th;
+            t2 = boot_bias_shifted <= -th;
+
+            t1_V1 = boot_V1(t1);
+            t2_V1 = boot_V1(t2);
+
+            if ~isempty(t1_V1) && ~isempty(t2_V1)
+                diff_tmp_shifted(i) = mean(t1_V1) - mean(t2_V1);
+            end
+
+            prop_tmp_shifted(i) = (sum(t1) + sum(t2)) / total_events;
+        end
+
+        bias_diff_shifted_boot(iBoot, :) = diff_tmp_shifted;
+        prop_events_shifted_boot(iBoot, :) = prop_tmp_shifted;
+    end
+
+    % Compute stats
+    bias_mean = mean(bias_diff_boot, 1, 'omitnan');
+    bias_CI_lo = prctile(bias_diff_boot, 2.5, 1);
+    bias_CI_hi = prctile(bias_diff_boot, 97.5, 1);
+
+    prop_mean = mean(prop_events_boot, 1, 'omitnan');
+    prop_CI_lo = prctile(prop_events_boot, 2.5, 1);
+    prop_CI_hi = prctile(prop_events_boot, 97.5, 1);
+
+    % Store results
+    ripple_power_KDE_bias_difference(npower).power_range = [power_thresholds(npower), power_thresholds(npower+1)];
+    ripple_power_KDE_bias_difference(npower).bias_diff_mean = bias_mean;
+    ripple_power_KDE_bias_difference(npower).bias_diff_CI = [bias_CI_lo; bias_CI_hi];
+    ripple_power_KDE_bias_difference(npower).prop_mean = prop_mean;
+    ripple_power_KDE_bias_difference(npower).prop_CI = [prop_CI_lo; prop_CI_hi];
+    ripple_power_KDE_bias_difference(npower).thresholds = thresholds;
+
+
+    % % Compute stats for shuffled (shifted) bias
+    bias_shifted_mean = mean(bias_diff_shifted_boot, 1, 'omitnan');
+    bias_shifted_CI_lo = prctile(bias_diff_shifted_boot, 2.5, 1);
+    bias_shifted_CI_hi = prctile(bias_diff_shifted_boot, 97.5, 1);
+
+    prop_shifted_mean = mean(prop_events_shifted_boot, 1, 'omitnan');
+    prop_shifted_CI_lo = prctile(prop_events_shifted_boot, 2.5, 1);
+    prop_shifted_CI_hi = prctile(prop_events_shifted_boot, 97.5, 1);
+
+    % Store shifted (shuffled) results
+    ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean = bias_shifted_mean;
+    ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI = [bias_shifted_CI_lo; bias_shifted_CI_hi];
+    ripple_power_KDE_bias_difference(npower).prop_shifted_mean = prop_shifted_mean;
+    ripple_power_KDE_bias_difference(npower).prop_shifted_CI = [prop_shifted_CI_lo; prop_shifted_CI_hi];
+
+    % store AUC
+    auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+    auc_shift_boot = (trapz(thresholds, bias_diff_shifted_boot') / (max(thresholds)-min(thresholds)))';
+
+    ripple_power_KDE_bias_difference(npower).AUC_mean = mean(auc_boot, 'omitnan');
+    ripple_power_KDE_bias_difference(npower).AUC_CI = prctile(auc_boot, [2.5 97.5]);
+    ripple_power_KDE_bias_difference(npower).AUC_mean_shuffled = mean(auc_shift_boot, 'omitnan');
+    ripple_power_KDE_bias_difference(npower).AUC_CI_shuffled = prctile(auc_shift_boot, [2.5 97.5]);
+    % ---- Plot A: Bias difference vs. threshold ----
+    nexttile((npower-1)*3 + 1);
+    hold on;
+
+    % Real
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(thresholds, bias_mean, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+    % 
+    % Time-shifted
+    y_shift_lo = bias_shifted_CI_lo;
+    y_shift_hi = bias_shifted_CI_hi;
+    y2s = [y_shift_lo, fliplr(y_shift_hi)];
+    fill(x2, y2s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(thresholds, bias_shifted_mean, 'k-', 'LineWidth', 1.5);
+
+    ylim([-0.15 0.35])
+    xlim([0 1.4])
+    yline(0,'--r')
+    xlabel('HPC bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot B: Proportion vs. Bias Difference (X = bias, Y = proportion) ----
+    nexttile((npower-1)*3 + 2);
+    hold on;
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    x_lo = bias_CI_lo(valid_idx);
+    x_hi = bias_CI_hi(valid_idx);
+    x_shade = [x_lo, fliplr(x_hi)];
+    y_shade = [y_vals, fliplr(y_vals)];
+
+    % Real
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    x_lo_s = bias_shifted_CI_lo(valid_idx);
+    x_hi_s = bias_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_lo_s, fliplr(x_hi_s)];
+    y_shade_s = [y_vals_shift, fliplr(y_vals_shift)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.1 0.35])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Event Proportion vs. Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+    % ---- Plot C: V1 Bias Difference vs. Proportion, shaded CI on Y ----
+    nexttile((npower-1)*3 + 3);
+    hold on;
+
+    % Real
+    valid_idx = isfinite(bias_mean) & isfinite(prop_mean);
+    x_vals = bias_mean(valid_idx);
+    y_vals = prop_mean(valid_idx);
+    y_lo = prop_CI_lo(valid_idx);
+    y_hi = prop_CI_hi(valid_idx);
+    x_shade = [x_vals, fliplr(x_vals)];
+    y_shade = [y_lo, fliplr(y_hi)];
+
+    fill(x_shade, y_shade, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    plot(x_vals, y_vals, '-', 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    % Time-shifted
+    x_vals_shift = bias_shifted_mean(valid_idx);
+    y_vals_shift = prop_shifted_mean(valid_idx);
+    y_lo_s = prop_shifted_CI_lo(valid_idx);
+    y_hi_s = prop_shifted_CI_hi(valid_idx);
+    x_shade_s = [x_vals_shift, fliplr(x_vals_shift)];
+    y_shade_s = [y_lo_s, fliplr(y_hi_s)];
+
+    fill(x_shade_s, y_shade_s, [0 0 0], 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+    plot(x_vals_shift, y_vals_shift, 'k-', 'LineWidth', 1.5);
+
+    xlim([-0.1 0.35])
+    xline(0,'--r')
+    xlabel('V1 bias diff (T1 - T2)');
+    ylabel('Proportion of events detected');
+    title('Proportion vs. V1 Bias Difference');
+%     grid on;
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+end
+
+clear Fill
+% Plot layout
+fig = figure;
+fig.Position = [640 100 2*1100/3 650/2]
+fig.Name = 'KDE bias difference in V1 low vs high ripples (100ms example)';
+% tiledlayout(nBins, 3, 'TileSpacing', 'compact');
+% colour_lines = [158,202,225;33,113,181]/256;% two blue
+nexttile
+for npower = [1 4]
+    bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_CI(2,:)
+
+    hold on;
+    x2 = [thresholds, fliplr(thresholds)];
+    y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(thresholds, bias_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('V1 bias diff (T1 - T2)');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+    ylim([-0.1 0.35])
+    %     grid on;
+end
+
+bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+
+hold on;
+x2 = [thresholds, fliplr(thresholds)];
+y2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end +1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(thresholds, bias_mean, 'Color','k', 'LineWidth', 2);
+
+
+
+yline(0,'--r')
+legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
+
+nexttile
+for npower = [1 4]
+    bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_mean;
+    bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_CI(1,:);
+    bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_CI(2,:)
+    prop_mean = ripple_power_KDE_bias_difference(npower).prop_mean;
+
+    hold on;
+    y2 = [prop_mean, fliplr(prop_mean)];
+    x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+    Fill(npower) = fill(x2, y2, colour_lines(npower,:), 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+    plot(bias_mean, prop_mean, 'Color',colour_lines(npower,:), 'LineWidth', 2);
+
+    xlabel('HPC Bias threshold');
+    ylabel('Proportion of events detected');
+    %     title(sprintf('Power bin %d: %.2f–%.2f', npower, power_thresholds(npower), power_thresholds(npower+1)));
+    set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+        xlim([-0.1 0.35])
+    %     grid on;
+end
+
+
+bias_mean = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_mean;
+bias_CI_lo = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(1,:);
+bias_CI_hi = ripple_power_KDE_bias_difference(npower).bias_diff_shifted_CI(2,:)
+prop_mean = ripple_power_KDE_bias_difference(npower).prop_shifted_mean;
+
+hold on;
+y2 = [prop_mean, fliplr(prop_mean)];
+x2 = [bias_CI_lo, fliplr(bias_CI_hi)];
+Fill(end + 1) = fill(x2, y2, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(bias_mean, prop_mean, 'Color','k', 'LineWidth', 2);
+
+
+xline(0,'--r')
+legend(Fill([1 4 5]) ,{'Low ripple power','High ripple power','Shuffled'},'box','off')
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
+
+
+
+% 
+% 
+% % Save results
+% save('ripple_power_KDE_bias_difference_based_on_V1_bias.mat', 'ripple_power_KDE_bias_difference');
+% % 
+% % load('ripple_power_KDE_bias_difference_based_on_V1_bias.mat', 'ripple_power_KDE_bias_difference');
+
+
+%%%%% AUC mean + CI bar plot
+% Plot layout
+fig = figure;
+fig.Position = [640 100 281 325]
+fig.Name = 'KDE bias V1 AUC low vs high ripples';
+data = ripple_power_KDE_bias_difference;
+n_bins = length(data);
+bar_width = 0.3;      % Width of the bars
+group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
+hold on;
+clear BAR
+for i = 1:nBins
+    % --- 1. Plot Shuffled Data (Left Bar) ---
+    x_shuf = i - group_offset;
+    y_shuf = data(i).AUC_mean_shuffled;
+
+    % Calculate Error Deltas (Errorbar requires length relative to mean, not absolute values)
+    % CI is [lower, upper]
+    neg_err_shuf = y_shuf - data(i).AUC_CI_shuffled(1);
+    pos_err_shuf = data(i).AUC_CI_shuffled(2) - y_shuf;
+
+    % Plot Bar
+    if i == 1
+        BAR(1) = bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    else
+        bar(x_shuf, y_shuf, bar_width, ...
+            'FaceColor', 'k', ...
+            'FaceAlpha', 0.15, ...
+            'EdgeColor', 'none');
+    end
+
+    % Plot Error Bar
+    E = errorbar(x_shuf, y_shuf, neg_err_shuf, pos_err_shuf, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+
+    % --- 2. Plot Real Data (Right Bar) ---
+    x_real = i + group_offset;
+    y_real = data(i).AUC_mean;
+
+    neg_err_real = y_real - data(i).AUC_CI(1);
+    pos_err_real = data(i).AUC_CI(2) - y_real;
+
+    % Get specific color for this power bin
+    % Assuming colour_lines is size [n_bins x 3]
+    this_color = colour_lines(i, :);
+
+    % Plot Bar
+    BAR(i+1) = bar(x_real, y_real, bar_width, ...
+        'FaceColor', this_color, ...
+        'FaceAlpha', 0.3, ...
+        'EdgeColor', 'none');
+
+    errorbar(x_real, y_real, neg_err_real, pos_err_real, ...
+        'Color', 'k', 'LineWidth', 1.5, 'CapSize', 8, 'LineStyle', 'none');
+
+end
+
+hold off;
+% Set X-ticks to be centered on the groups
+set(gca, 'XTick', 1:nBins);
+xlim([0.5, nBins + 0.5]);
+
+% Labels
+ylabel('V1 bias AUC');
+xlabel('Power Bins');
+legend([BAR(1:end)],{'Shuffled','0-25','25-50','50-75','75-100'},'box','off')
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% WIthin session
 
 timebin = 0.01;

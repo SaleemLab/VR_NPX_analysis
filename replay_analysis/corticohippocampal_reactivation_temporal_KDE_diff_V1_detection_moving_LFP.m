@@ -169,7 +169,7 @@ for nprobe = 1:2
     DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints;
     SO_ints{nprobe} = slow_waves_all(nprobe).DOWN_intervals;
     ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes;
-    ripple_ints{nprobe}=[ripples_all(nprobe).onset ripples_all(nprobe).offset];
+    ripple_ints{nprobe}=[ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1) ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
     % spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
     % spindle_ints{nprobe}=[spindles_all(nprobe).onset(spindles_all(nprobe).SWS_index == 1) spindles_all(nprobe).offset(spindles_all(nprobe).SWS_index == 1)];
 
@@ -183,7 +183,7 @@ for nprobe = 1:2
         index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession));
         DOWN_ints{nprobe}(index,:) = DOWN_ints{nprobe}(index,:) + nsession * 1000000;
 
-        index = find(ripples_all(nprobe).SWS_index == 1 &ripples_all(nprobe).session_count == sessions_to_process(nsession));
+        index = find(ripples_all(nprobe).session_count(ripples_all(nprobe).SWS_index == 1) == sessions_to_process(nsession));
         ripple_ints{nprobe}(index,:) = ripple_ints{nprobe}(index,:) + nsession * 1000000;
         ripple_peaktimes{nprobe}(index,:) = ripple_peaktimes{nprobe}(index,:) + nsession * 1000000;
 
@@ -365,6 +365,7 @@ ripple_info.DOWN_duration = ripple_info.DOWN_duration(event_ids_first,:);
 ripple_info.DOWN_duration(ripple_info.SO_event_duration>10)=nan;
 ripple_info.SO_event_duration(ripple_info.SO_event_duration>10)=nan;
 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info.mat'),'ripple_info')
 
 % figure
 % temp1 = ripple_info.normalised_DOWN_duration(:,1)<0.5 | ripple_info.normalised_DOWN_duration(:,2)<0.5;

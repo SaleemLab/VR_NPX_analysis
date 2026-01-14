@@ -1098,6 +1098,10 @@ for nsession =1:length(experiment_info)
             continue
         end
 
+        if contains(options.StimulusName,'PRE')
+            continue
+        end
+        
         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN.mat'));
         DIR1 = dir(fullfile(options.ANALYSIS_DATAPATH,'..','session_clusters_RUN1.mat'));
 

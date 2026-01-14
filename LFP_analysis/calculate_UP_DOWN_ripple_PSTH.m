@@ -9,7 +9,8 @@ addParameter(p,'time_bin',0.01,@isnumeric);
 addParameter(p,'num_bins',20,@isnumeric);
 addParameter(p,'duration_threshold',2,@isnumeric);
 addParameter(p,'shuffle_option','time_circular_shift',@ischar);
-% addParameter(p,'shuffle_option','time_circular_shift',@ischar);
+% addParameter(p,'merged','time_circular_shift',@ischar);
+addParameter(p,'merging_threshold',[],@isnumeric);
 
 parse(p,varargin{:})
 option = p.Results.option;

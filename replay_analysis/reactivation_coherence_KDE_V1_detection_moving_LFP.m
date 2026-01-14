@@ -83,6 +83,7 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 %%% ripple power
 ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
 ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
+% ripple_info.ripple_power = mean([ripple_info.ripple_power(:) ripple_info.ripple_power(:)],2);
 
 
 %%% spindle co-occurance

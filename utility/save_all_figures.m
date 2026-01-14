@@ -3,11 +3,12 @@ function save_all_figures(save_path,filename,varargin)
 % Default values
 p = inputParser;
 addParameter(p,'ContentType','vector',@isstr)
+addParameter(p,'SVG_option',[])
 
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
 ContentType = p.Results.ContentType;
-
+SVG_option = p.Results.SVG_option;
 
 
 
@@ -44,8 +45,14 @@ for i = 1 : numel(figlist)
         saveas(figlist(i),[save_path,'\',name,'.fig']);
 %         saveas(figlist(i),[save_path,'\',name,'.png']);
 %         saveas(figlist(i),[save_path,'\',name,'.pdf']);
-        exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType',ContentType)
+
          % exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','image')
+        if ~isempty(SVG_option)
+            print(figlist(i), [save_path,'\',name,'.svg'], '-dsvg', '-painters');
+            exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType','image')
+        else
+            exportgraphics(figlist(i),[save_path,'\',name,'.pdf'],'ContentType',ContentType)
+        end
     end
     close  
 end

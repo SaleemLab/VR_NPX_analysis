@@ -913,6 +913,12 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1])
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'),'probability');
 
+%%%%%% P(ripples) during UP DOWN with L and R ripple combined
+probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','whole','merging_threshold',0.05)
+probability_normalised = probability;
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_combined.mat'),'probability_normalised');
+probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1],'merging_threshold',0.05)
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_combined.mat'),'probability');
 
 
 %%%% P(UP) and P(DOWN) during ripples
@@ -964,6 +970,19 @@ probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, 
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_baseline.mat'),'probability');
 
 
+%%%%%% P(ripples) during spindles with L and R ripple combined
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','whole','time_windows',[-1 1],'merging_threshold',0.05)
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole_combined.mat'),'probability');
+
+probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'shuffle_option','baseline','option','absolute', 'time_option','whole','time_windows',[-1 1],'merging_threshold',0.05)
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole_baseline_combined.mat'),'probability');
+
+
+% probability = calculate_spindle_ripple_probability(slow_waves_all, ripples_all, spindles_all, sessions_to_process,'option','absolute', 'time_option','whole','time_windows',[-1 1])
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole.mat'),'probability');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','spindles_ripples_probability_whole_combined.mat'),'probability');
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% baseline shuffle (-3s before each UP or DOWN events)
 %%%% P(ripples) during UP DOWN
@@ -979,6 +998,14 @@ probability_normalised = probability;
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'),'probability_normalised');
 probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1],'shuffle_option','baseline')
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'),'probability');
+
+%%% L and R ripples combined
+probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','normalised','time_option','whole','merging_threshold',0.05,'shuffle_option','baseline')
+probability_normalised = probability;
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline_combined.mat'),'probability_normalised');
+
+probability = calculate_UP_DOWN_ripple_probability(slow_waves_all,ripples_all,sessions_to_process,'option','absolute','time_option','whole','time_windows',[-1 1],'merging_threshold',0.05,'shuffle_option','baseline')
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline_combined.mat'),'probability');
 
 %%%%%% baseline shuffle (-3s before each ripples)
 %%%% P(UP) and P(DOWN) during ripples
@@ -1072,20 +1099,31 @@ save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;
 
-
-PSTH_MUA_1ms = calculate_UP_DOWN_ripple_PSTH_1ms...
-    (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','PSTH_MUA_1ms.mat'),'PSTH_MUA_1ms','-v7.3');
+% 
+% PSTH_MUA_1ms = calculate_UP_DOWN_ripple_PSTH_1ms...
+%     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','PSTH_MUA_1ms.mat'),'PSTH_MUA_1ms','-v7.3');
 
 
 
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','no');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+
 UP_DOWN_ripple_PSTH_MUA = calculate_UP_DOWN_ripple_PSTH...
     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','time_option','absolute','shuffle_option','baseline');
 save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'),'UP_DOWN_ripple_PSTH_MUA');
 
+
+% UP_DOWN_ripple_PSTH_MUA_temp = calculate_UP_DOWN_ripple_PSTH_temp...
+%     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','no');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+
+% UP_DOWN_ripple_PSTH_MUA_temp = calculate_UP_DOWN_ripple_PSTH_temp...
+%     (slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','baseline');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'),'UP_DOWN_ripple_PSTH_MUA');
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'),'UP_DOWN_ripple_PSTH_MUA');
 
 UP_DOWN_relative_PSTH_MUA = calculate_UP_DOWN_relative_PSTH...
     (slow_waves_all,ripples_all,behavioural_state_merged_all,sessions_to_process,'option','MUA','shuffle_option','no');
