@@ -426,6 +426,7 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 
 z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
 z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1_original = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -435,9 +436,14 @@ z_bias1 = z_bias(isfinite(z_bias_V1));
 z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
 z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
 
+z_bias1 = z_bias(isfinite(z_bias_V1_original));
+z_bias_V1_original(z_bias_V1_original>=inf) = prctile(z_bias1,99.5);
+z_bias_V1_original(z_bias_V1_original<=-inf) = prctile(z_bias1,0.5);
+
 %%%% Only grab unique ripple events
 z_bias = z_bias(:,event_ids_first);
 z_bias_V1 = z_bias_V1(:,event_ids_first);
+z_bias_V1_original = z_bias_V1_original(:,event_ids_first);
 % event_ids_first
 
 
@@ -458,11 +464,331 @@ session_count = session_count(event_ids_first);
 singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
 
+%% Ripple power
+nBoot = 1000;
+colour_lines = [ ...
+    241, 182, 218;   % original end (lightest)
+    226, 132, 187;   % interpolated 2/3
+    % 212,  78, 156;   % interpolated 1/3
+    231, 41, 138    % original start (darkest)
+] / 256;
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%  Moving spindle power binning
+
+%%%%%% mixed effect model (ripple power)
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+bins_to_select = bin_centers>-0.2& bin_centers<0;
+
+bins_to_select = bin_centers>0 & bin_centers<0.2;
+
+[~,LFP_bin] = min(abs(LFP_tvec - mean(bin_centers(bins_to_select))));
+% for npower = 1:nBins
+
+% bins_to_select = bin_centers>-0.2 & bin_centers<0;
+mean_bias_V1 = mean(z_bias_V1(bins_to_select, :), 'omitnan');
+% mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
+% selected_events = length(mean_bias);
+
+thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+thresholds = thresholds(1:end-1);
+
+% spindle_power_log_odds
+
+mean_beta = [];
+ripple_power_modulation_lme = struct();
+
+for i = 1:10
+
+    th = thresholds(i);
+    t1 = find(mean_bias >= th);
+    t2 = find(mean_bias <= -th);
+
+    selected_events = [t1 t2];
+    %
+    tbl = table([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)],...
+        mean_bias(selected_events)',mean_bias_V1(selected_events)',categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+        categorical(subject_id(selected_events)),'VariableNames',{'RipplePower','V1_logodds','HPC_logodds','HPC_trackID','AnimalID'});
+
+
+    % lme = fitlme(tbl, 'V1_logodds ~ HPC_trackID + (1 | AnimalID)');
+    lme = fitlme(tbl, 'V1_logodds ~ HPC_trackID * RipplePower + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'V1_logodds ~ HPC_logodds * RipplePower + (1 | AnimalID)');
+    lme.Coefficients
+    %
+    ripple_power_modulation_lme(i).variable = lme.Coefficients.Name;
+    ripple_power_modulation_lme(i).p = lme.Coefficients.pValue(:);
+    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
+    ripple_power_modulation_lme(i).b = lme.Coefficients.Estimate(:);
+    ripple_power_modulation_lme(i).t = lme.Coefficients.tStat(:);
+    ripple_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+    ripple_power_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
+    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    ripple_power_modulation_lme(i).marginal_R2 = marginal_R2;
+end
+
+% log_odds_lme = ripple_power_modulation_lme;
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','log_odds_lme_PRE.mat'),'log_odds_lme');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','log_odds_lme.mat'),'log_odds_lme');
+% 
+% 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme.mat'),'ripple_power_modulation_lme');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme_PRE.mat'),'ripple_power_modulation_lme');
+
+
+
+%%%%% Plot glme beta CI and p value
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme_PRE.mat'),'ripple_power_modulation_lme');
+
+clear b_CI b_mean
+for i = 1:10
+
+    b_CI(i,:,:) = [ripple_power_modulation_lme(i).b_CI];
+    b_mean(i,:) = [ripple_power_modulation_lme(i).b];
+% spindle_power_modulation_lme(i).non_match_b_shuffle
+end
+
+fig = figure('Name','Ripple power KDE reactivation coherence','Position',[482 111 665 851]);
+sgtitle('Ripple power KDE reactivation coherence')
+
+subplot(2,2,1)
+for i = 1:10
+    lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+    uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+
+    % subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ i*group_offset,b_mean(i,4),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    % bar(1+group_offset*2,b_mean(i,6), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+    % Plot 95% CI Error Bar
+    % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+ i*group_offset, b_mean(i,4), uci_boot(i,4), uci_boot(i,4), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % errorbar(1+2*group_offset, b_mean(i,6), uci_boot(i,6), uci_boot(i,6), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    text(1+ i*group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(4)))
+    % text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(6)))
+
+    xlabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    % xlim([0.5 2.3])
+    % ylim([-0.03 0.05])
+    % title(i)
+end
+title('-0.2 -0s')
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme.mat'),'ripple_power_modulation_lme');
+
+clear b_CI b_mean
+for i = 1:10
+
+    b_CI(i,:,:) = [ripple_power_modulation_lme(i).b_CI];
+    b_mean(i,:) = [ripple_power_modulation_lme(i).b];
+% spindle_power_modulation_lme(i).non_match_b_shuffle
+end
+
+
+subplot(2,2,2)
+for i = 1:10
+    lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+    uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+
+    % subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ i*group_offset,b_mean(i,4),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    % bar(1+group_offset*2,b_mean(i,6), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+    % Plot 95% CI Error Bar
+    % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+ i*group_offset, b_mean(i,4), uci_boot(i,4), uci_boot(i,4), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % errorbar(1+2*group_offset, b_mean(i,6), uci_boot(i,6), uci_boot(i,6), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    text(1+ i*group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(4)))
+    % text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(6)))
+
+    xlabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    % xlim([0.5 2.3])
+    % ylim([-0.03 0.05])
+    % title(i)
+end
+title('0 -0.2s')
+
+
+% 
+% clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
+% 
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme_PRE.mat'),'ripple_power_modulation_lme');
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme.mat'),'ripple_power_modulation_lme');
+% 
+% clear b_CI b_mean
+% for i = 1:10
+%     % match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).b_boot,[2.5 97.5]);
+%     % non_match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_boot,[2.5 97.5]);
+%     % 
+%     % match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).b_shuffle,[2.5 97.5]);
+%     % non_match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_shuffle,[2.5 97.5]);
+%     b_CI(i,:,:) = [ripple_power_modulation_lme(i).b_CI];
+%     b_mean(i,:) = [ripple_power_modulation_lme(i).b];
+% % spindle_power_modulation_lme(i).non_match_b_shuffle
+% end
+% 
+% % fig = figure('Name','Ripple power KDE reactivation coherence PRE','Position',[482 111 665 851]);
+% % sgtitle('Ripple power KDE reactivation coherence PRE')
+% 
+% 
+% 
+% 
+% fig = figure('Name','Ripple power KDE reactivation coherence','Position',[482 111 665 851]);
+% sgtitle('Ripple power KDE reactivation coherence')
+% for i = 1:10
+%     lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+%     uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+% 
+%     subplot(3,4,i)
+%     bar_width = 0.3;      % Width of the bars
+%     group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+%     % Plot Bar
+%     hold on;
+%     % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+%     bar(1+ group_offset,b_mean(i,4),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+%     % bar(1+group_offset*2,b_mean(i,6), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+% 
+%     % Plot 95% CI Error Bar
+%     % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+%     errorbar(1+ group_offset, b_mean(i,4), uci_boot(i,4), uci_boot(i,4), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+%     % errorbar(1+2*group_offset, b_mean(i,6), uci_boot(i,6), uci_boot(i,6), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+%     % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+%     text(1+ group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(4)))
+%     % text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(6)))
+% 
+%     xlabel('Standardised b')
+%     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+%     xlim([0.5 2.3])
+%     ylim([-0.03 0.05])
+%     title(i)
+% end
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
+
+
+
+
+
+%%%%% Plot glme beta CI and p value
+clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
+
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','log_odds_lme_PRE.mat'),'log_odds_lme');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme_PRE.mat'),'ripple_power_modulation_lme');
+
+clear b_CI b_mean
+for i = 1:10
+
+    % b_CI(i,:,:) = [log_odds_lme(i).b_CI];
+    % b_mean(i,:) = [log_odds_lme(i).b];
+    b_CI(i,:,:) = [ripple_power_modulation_lme(i).b_CI];
+    b_mean(i,:) = [ripple_power_modulation_lme(i).b];
+    % spindle_power_modulation_lme(i).non_match_b_shuffle
+end
+
+% figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
+
+fig = figure('Name','log odds KDE reactivation coherence (ripple power model)','Position',[482 111 665 660]);
+sgtitle('log odds KDE reactivation coherence')
+subplot(2,2,1)
+for i = 1:10
+    lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+    uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+
+    % subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    % bar(1+ i*group_offset,b_mean(i,2),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ i*group_offset,b_mean(i,3),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+
+    % Plot 95% CI Error Bar
+    errorbar(1+ i*group_offset, b_mean(i,3), uci_boot(i,3), uci_boot(i,3), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % errorbar(1+ i*group_offset, b_mean(i,2), uci_boot(i,2), uci_boot(i,2), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    % text(1+ i*group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(2)))
+    text(1+ i*group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(3)))
+
+
+    xlabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    % xlim([0.5 2.3])
+    % ylim([-0.03 0.05])
+    % title(i)
+end
+ylim([0 2.7])
+title('-0.2 -0s')
+
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','log_odds_lme.mat'),'log_odds_lme');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme.mat'),'ripple_power_modulation_lme');
+
+clear b_CI b_mean
+for i = 1:10
+    % b_CI(i,:,:) = [log_odds_lme(i).b_CI];
+    % b_mean(i,:) = [log_odds_lme(i).b];
+    b_CI(i,:,:) = [ripple_power_modulation_lme(i).b_CI];
+    b_mean(i,:) = [ripple_power_modulation_lme(i).b];
+% spindle_power_modulation_lme(i).non_match_b_shuffle
+end
+
+
+subplot(2,2,2)
+for i = 1:10
+    lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+    uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+
+    % subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    % bar(1+ i*group_offset,b_mean(i,2),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ i*group_offset,b_mean(i,3),bar_width, 'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+    % Plot 95% CI Error Bar
+    % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % errorbar(1+ i*group_offset, b_mean(i,2), uci_boot(i,2), uci_boot(i,2), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+ i*group_offset, b_mean(i,3), uci_boot(i,3), uci_boot(i,3), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    text(1+ i*group_offset,0.03,sprintf('%.3e',ripple_power_modulation_lme(i).p(3)))
+    % text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(6)))
+
+    xlabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    % xlim([0.5 2.3])
+    % ylim([-0.03 0.05])
+    % title(i)
+end
+title('0 -0.2s')
+ylim([0 2.7])
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
+
+
+
+
+
+%%  Moving spindle power binning
 % Spindle power binning across both probes
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 
@@ -509,7 +835,9 @@ bins_to_select = bin_centers>0 & bin_centers<0.2;
 % for npower = 1:nBins
 
 % bins_to_select = bin_centers>-0.2 & bin_centers<0;
+% mean_bias_V1 = mean(z_bias_V1_original(bins_to_select, :), 'omitnan');
 mean_bias_V1 = mean(z_bias_V1(bins_to_select, :), 'omitnan');
+
 % mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
 mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
 % selected_events = length(mean_bias);
@@ -521,6 +849,8 @@ thresholds = thresholds(1:end-1);
 
 mean_beta = [];
 spindle_power_modulation_lme = struct();
+
+% s
 
 for i = 1:10
 
@@ -558,129 +888,96 @@ for i = 1:10
         categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
 
 
-    tbl.Match_High = tbl.SpindlePower_Match > median(tbl.SpindlePower_Match,'omitnan');
-    tbl.NonMatch_High = tbl.SpindlePower_NonMatch > median(tbl.SpindlePower_NonMatch,'omitnan');
-
-    % 2. Combine into a categorical 'State' variable
-    % tbl.JointState = categorical(2 * tbl.Match_High + tbl.NonMatch_High);
-
-    tbl.JointState = (2 * tbl.Match_High + tbl.NonMatch_High);
-    % tbl.JointState(tbl.JointState >2) = 2;
-    tbl.JointState = categorical(tbl.JointState);
-
-    % lme_joint = fitlme(tbl, 'HPC_logodds ~ V1_trackID * JointState + (1 | AnimalID)');
-    % lme_joint.Coefficients
-
-    % match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(7) lme_joint.Coefficients.Upper(7)];
-    % non_match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(6) lme_joint.Coefficients.Upper(6)];
-    % bilateral_match_beta_CI(i,:) = [lme_joint.Coefficients.Lower(8) lme_joint.Coefficients.Upper(8)];
-    % mean_beta(i,:) = [lme_joint.Coefficients.Estimate(5) lme_joint.Coefficients.Estimate(6)];
-    % non_match_mean_beta = [lme_joint.Coefficients.Lower(6) lme_joint.Coefficients.Upper(6)];
-
-    % H = [0 0 0 0 0 1 0 -1];
-    % [pVal, Fstat] = coefTest(lme_joint, H);
-
-    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-    % lme = fitlme(tbl, 'HPC_logodds ~SpindlePower_NonMatch*SpindlePower_Match + (1 | AnimalID)');
+    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~V1_trackID*SpindlePower_Match + (1 | AnimalID)');
     % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + SpindlePower_NonMatch*SpindlePower_Match + (1 | AnimalID)');
-    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
-    lme.Coefficients
-    %
+    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
+
     spindle_power_modulation_lme(i).variable = lme.Coefficients.Name;
-    spindle_power_modulation_lme(i).p = lme.Coefficients.pValue(:);
     % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
     spindle_power_modulation_lme(i).b = lme.Coefficients.Estimate(:);
     spindle_power_modulation_lme(i).t = lme.Coefficients.tStat(:);
     spindle_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+    spindle_power_modulation_lme(i).p = lme.Coefficients.pValue(:);
+    spindle_power_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
+    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    spindle_power_modulation_lme(i).marginal_R2 = marginal_R2;
 
-    % H = [0,0, 0, 0, 0,1 , -1,0];
-     % H = [0,0, 0, 0, 1,-1];
-    % lme.Coefficients
-    % [pVal, FStat] = coefTest(lme, H);
-% pVal
+    % 
+    % 
+    % tbl = table(normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % 
+    % R2_shuffled = [];
+    % R2_shuffled = [];
+    % for iBoot = 1:1000
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %     idx = datasample(1:length(selected_events), length(selected_events), 'Replace', false);
+    %     % tbl.SpindlePower_NonMatch = tbl.SpindlePower_NonMatch(idx);
+    % 
+    %     targetPredictor = 'SpindlePower_Match';
+    %     shuffledTbl = tbl;
+    %     shuffledTbl.SpindlePower_Match = tbl.SpindlePower_Match(idx);
+    % 
+    %     animals = unique(tbl.AnimalID);
+    % 
+    %     for i = 1:numel(animals)
+    %         % Find indices for the current animal
+    %         animalIdx = find(tbl.AnimalID == animals(i));
+    % 
+    %         % Use your specific sampling logic:
+    %         % datasample without replacement on indices is equivalent to a shuffle
+    %         shuffled_indices = datasample(s, animalIdx, length(animalIdx), 'Replace', false);
+    % 
+    %         % Assign the original values to the shuffled positions for this animal
+    %         shuffledTbl.(targetPredictor)(animalIdx) = tbl.(targetPredictor)(shuffled_indices);
+    %     end
+    % 
+    % 
+    %     lme = fitlme(shuffledTbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match   + (1 | AnimalID)');
+    %        % lme = fitlme(shuffledTbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match* SpindlePower_NonMatch   + (1 | AnimalID)');
+    %     [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    %     % spindle_power_modulation_lme(i).marginal_R2 = marginal_R2;
+    %     R2_shuffled(1,iBoot) = marginal_R2;
+    % end
+    % spindle_power_modulation_lme(i).R2_shuffled(1,:) = R2_shuffled;
+    % 
+    % spindle_power_modulation_lme(i).marginal_R2 -  R2_shuffled(1,iBoot)
+
 end
 
 
-% 
-%     VariableNames = tbl.Properties.VariableNames;
-%     %
-% 
-%     tic
-%     beta_boot=[];
-%     non_match_beta_boot=[];
-%     t_boot=[];
-%     non_match_t_boot=[];
-%     parfor iBoot = 1:1000
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',true);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_boot(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_boot(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_boot(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_boot(iBoot) = [lme.Coefficients.tStat(6)];
-% 
-% 
-%         s = RandStream('philox4x32_10', 'Seed', iBoot);
-%         idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',false);
-% 
-%         tbl_temp = tbl;
-%         for var = 1:length(VariableNames)
-%             tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
-%         end
-%         tbl_temp.HPC_logodds = tbl.HPC_logodds;
-% 
-%         lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * SpindlePower_Match +  V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
-% 
-%         beta_shuffled(iBoot,:) = [lme.Coefficients.Estimate(:)];
-%         t_shuffled(iBoot,:) = [lme.Coefficients.tStat(:)];
-%         % t_shuffled(iBoot) = [lme.Coefficients.tStat(5)];
-%         % non_match_t_shuffled(iBoot) = [lme.Coefficients.tStat(6)];
-%     end
-%     toc
-% 
-%     % spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     % spindle_power_modulation_lme(i).t_stat_boot = t_boot;
-% 
-%     spindle_power_modulation_lme(i).b_shuffle = beta_shuffled;
-%     spindle_power_modulation_lme(i).t_stat_shuffle = t_shuffled;
-%     spindle_power_modulation_lme(i).b_boot = beta_boot;
-%     spindle_power_modulation_lme(i).t_stat_boot = t_boot;
-% end
-
-% 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
 
 %%%%% Plot glme beta CI and p value
 clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
 
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
 
 clear b_CI b_mean
 for i = 1:10
-    % match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).b_boot,[2.5 97.5]);
-    % non_match_beta_CI(1,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_boot,[2.5 97.5]);
-    % 
-    % match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).b_shuffle,[2.5 97.5]);
-    % non_match_beta_CI(2,i,:) = prctile(spindle_power_modulation_lme(i).non_match_b_shuffle,[2.5 97.5]);
     b_CI(i,:,:) = [spindle_power_modulation_lme(i).b_CI];
     b_mean(i,:) = [spindle_power_modulation_lme(i).b];
-% spindle_power_modulation_lme(i).non_match_b_shuffle
+end
+
+clear VariableIdx
+Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
+
+for i = 1:length(Variablenames)
+    VariableIdx(i) = find(contains(spindle_power_modulation_lme(1).variable,Variablenames{i}));
 end
 
 % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
 
 % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
 % sgtitle('Spindle power KDE reactivation coherence PRE')
-
+% 
 fig = figure('Name','Spindle power KDE reactivation coherence','Position',[482 111 665 851]);
 sgtitle('Spindle power KDE reactivation coherence')
 for i = 1:10
@@ -692,22 +989,24 @@ for i = 1:10
     group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
     % Plot Bar
     hold on;
-    bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    bar(1+ group_offset,b_mean(i,7),bar_width, 'FaceColor', colour_lines(2,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    bar(1+group_offset*2,b_mean(i,6), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ group_offset,b_mean(i,VariableIdx(1)),bar_width, 'FaceColor', colour_lines(2,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+group_offset*2,b_mean(i,VariableIdx(2)), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
 
     % Plot 95% CI Error Bar
-    errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-    errorbar(1+ group_offset, b_mean(i,7), uci_boot(i,7), uci_boot(i,7), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-    errorbar(1+2*group_offset, b_mean(i,6), uci_boot(i,6), uci_boot(i,6), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-    text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
-    text(1+ group_offset,0.03,sprintf('%.3e',spindle_power_modulation_lme(i).p(7)))
-    text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(6)))
+    % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+ group_offset, b_mean(i,VariableIdx(1)), uci_boot(i,VariableIdx(1)), uci_boot(i,VariableIdx(1)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+2*group_offset, b_mean(i,VariableIdx(2)), uci_boot(i,VariableIdx(2)), uci_boot(i,VariableIdx(2)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    text(1+ group_offset,0.03,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(1))))
+    text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(2))))
 
     xlabel('Standardised b')
     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
     xlim([0.5 2.3])
-    ylim([-0.03 0.05])
+    % ylim([-0.03 0.05])
+
+    ylim([-0.03 0.07])
     title(i)
 end
 
@@ -718,6 +1017,237 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivat
 
 
 
+%%  Moving spindle power diff
+% Spindle power binning across both probes
+% all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
+
+
+
+load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
+
+LFP_tvec = periripple_LFP_info_V1(1).tvec;
+% nan_mask = interp1(bin_centers, KDE_reactivation_ripples_PSTH.nan_mask',LFP_tvec, 'previous');
+% spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)] + nan_mask;
+% spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)]+ nan_mask;
+% % 
+spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)] ;
+spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude = nan([size(spindle_amplitude1),2]);
+spindle_amplitude(:,:,1) = spindle_amplitude1;
+spindle_amplitude(:,:,2) = spindle_amplitude2;
+
+ripple_info.spindle_amplitude_temporal = spindle_amplitude;
+ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
+
+
+
+nBoot = 1000;
+colour_lines = [ ...
+    241, 182, 218;   % original end (lightest)
+    226, 132, 187;   % interpolated 2/3
+    % 212,  78, 156;   % interpolated 1/3
+    231, 41, 138    % original start (darkest)
+] / 256;
+
+
+
+%%%%%% mixed effect model (spindle power)
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+bins_to_select = bin_centers>-0.2& bin_centers<0;
+
+bins_to_select = bin_centers>0 & bin_centers<0.2;
+
+[~,LFP_bin] = min(abs(LFP_tvec - mean(bin_centers(bins_to_select))));
+% for npower = 1:nBins
+
+% bins_to_select = bin_centers>-0.2 & bin_centers<0;
+% mean_bias_V1 = mean(z_bias_V1_original(bins_to_select, :), 'omitnan');
+mean_bias_V1 = mean(z_bias_V1(bins_to_select, :), 'omitnan');
+
+% mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
+mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
+% selected_events = length(mean_bias);
+
+thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+thresholds = thresholds(1:end-1);
+
+% spindle_power_log_odds
+
+mean_beta = [];
+spindle_power_modulation_lme = struct();
+
+% s
+
+for i = 1:10
+
+    th = thresholds(i);
+    t1 = find(mean_bias_V1 >= th);
+    t2 = find(mean_bias_V1 <= -th);
+    % %
+    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0);
+    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0);
+    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) >0);
+    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2) >0);
+
+    % t1 = t1(ripple_info.spindle_amplitude(t1,2) >0 & ripple_info.spindle_amplitude(t1,1) >0);
+    % t2 = t2(ripple_info.spindle_amplitude(t2,1) > 0 & ripple_info.spindle_amplitude(t2,2) >0);
+    selected_events = [t1 t2];
+    %
+    % tbl = table([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],...
+    %     [ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],...
+    %     mean_bias(selected_events)',mean_bias_V1(selected_events)',categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+
+    % tbl = table([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)]',...
+    %     [ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)]',...
+    %     mean_bias(selected_events)',mean_bias_V1(selected_events)',categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % 
+    % tbl = table(normalize([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],'zscore'),...
+    %     normalize([ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],'zscore'),...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % % 
+    tbl = table(normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
+        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+        normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+        categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+
+    tbl = table(normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2)-ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1)...
+        ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)- ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+        normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+        categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_diff','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+
+    
+    lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~V1_trackID*SpindlePower_Match + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match + V1_trackID * SpindlePower_NonMatch + SpindlePower_NonMatch*SpindlePower_Match + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match * SpindlePower_NonMatch + (1 | AnimalID)');
+
+    spindle_power_modulation_lme(i).variable = lme.Coefficients.Name;
+    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
+    spindle_power_modulation_lme(i).b = lme.Coefficients.Estimate(:);
+    spindle_power_modulation_lme(i).t = lme.Coefficients.tStat(:);
+    spindle_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+    spindle_power_modulation_lme(i).p = lme.Coefficients.pValue(:);
+    spindle_power_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
+    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    spindle_power_modulation_lme(i).marginal_R2 = marginal_R2;
+
+    % 
+    % 
+    % tbl = table(normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % 
+    % R2_shuffled = [];
+    % R2_shuffled = [];
+    % for iBoot = 1:1000
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %     idx = datasample(1:length(selected_events), length(selected_events), 'Replace', false);
+    %     % tbl.SpindlePower_NonMatch = tbl.SpindlePower_NonMatch(idx);
+    % 
+    %     targetPredictor = 'SpindlePower_Match';
+    %     shuffledTbl = tbl;
+    %     shuffledTbl.SpindlePower_Match = tbl.SpindlePower_Match(idx);
+    % 
+    %     animals = unique(tbl.AnimalID);
+    % 
+    %     for i = 1:numel(animals)
+    %         % Find indices for the current animal
+    %         animalIdx = find(tbl.AnimalID == animals(i));
+    % 
+    %         % Use your specific sampling logic:
+    %         % datasample without replacement on indices is equivalent to a shuffle
+    %         shuffled_indices = datasample(s, animalIdx, length(animalIdx), 'Replace', false);
+    % 
+    %         % Assign the original values to the shuffled positions for this animal
+    %         shuffledTbl.(targetPredictor)(animalIdx) = tbl.(targetPredictor)(shuffled_indices);
+    %     end
+    % 
+    % 
+    %     lme = fitlme(shuffledTbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match   + (1 | AnimalID)');
+    %        % lme = fitlme(shuffledTbl, 'HPC_logodds ~ V1_trackID * SpindlePower_Match* SpindlePower_NonMatch   + (1 | AnimalID)');
+    %     [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    %     % spindle_power_modulation_lme(i).marginal_R2 = marginal_R2;
+    %     R2_shuffled(1,iBoot) = marginal_R2;
+    % end
+    % spindle_power_modulation_lme(i).R2_shuffled(1,:) = R2_shuffled;
+    % 
+    % spindle_power_modulation_lme(i).marginal_R2 -  R2_shuffled(1,iBoot)
+
+end
+
+
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
+
+%%%%% Plot glme beta CI and p value
+clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
+
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme_PRE.mat'),'spindle_power_modulation_lme');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
+
+clear b_CI b_mean
+for i = 1:10
+    b_CI(i,:,:) = [spindle_power_modulation_lme(i).b_CI];
+    b_mean(i,:) = [spindle_power_modulation_lme(i).b];
+end
+
+clear VariableIdx
+Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
+
+for i = 1:length(Variablenames)
+    VariableIdx(i) = find(contains(spindle_power_modulation_lme(1).variable,Variablenames{i}));
+end
+
+% figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
+
+% fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
+% sgtitle('Spindle power KDE reactivation coherence PRE')
+% 
+fig = figure('Name','Spindle power KDE reactivation coherence','Position',[482 111 665 851]);
+sgtitle('Spindle power KDE reactivation coherence')
+for i = 1:10
+    lci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+    uci_boot = [b_mean - squeeze(b_CI(:,:,1))];
+
+    subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    % bar(1,b_mean(i,5),bar_width, 'FaceColor', colour_lines(1,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+ group_offset,b_mean(i,VariableIdx(1)),bar_width, 'FaceColor', colour_lines(2,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    bar(1+group_offset*2,b_mean(i,VariableIdx(2)), bar_width,'FaceColor', colour_lines(3,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+    % Plot 95% CI Error Bar
+    % errorbar(1, b_mean(i,5), uci_boot(i,5), uci_boot(i,5), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+ group_offset, b_mean(i,VariableIdx(1)), uci_boot(i,VariableIdx(1)), uci_boot(i,VariableIdx(1)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(1+2*group_offset, b_mean(i,VariableIdx(2)), uci_boot(i,VariableIdx(2)), uci_boot(i,VariableIdx(2)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    % text(1,0.02,sprintf('%.3e',spindle_power_modulation_lme(i).p(5)))
+    text(1+ group_offset,0.03,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(1))))
+    text(1+ 2*group_offset,0.04,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(2))))
+
+    xlabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    xlim([0.5 2.3])
+    % ylim([-0.03 0.05])
+
+    ylim([-0.03 0.07])
+    title(i)
+end
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
+
+    % spindle_power_modulation_lme(i).b_CI 
 
 
 
@@ -839,20 +1369,27 @@ for i = 1:10
     tbl.JointState = (2 * tbl.Match_trough + tbl.NonMatch_trough);
     % tbl.JointState(tbl.JointState >2) = 2;
     tbl.JointState = categorical(tbl.JointState);
-
+    % 0 is when both were peak, 1 is when only non matching was trough, 2 is
+    % when only matching was trough and 3 is when both were trough.
     lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID * JointState + (1 | AnimalID)');
     H = [0,0, 0, 0, 0, 0, 1 , -1];
     lme.Coefficients
     [pVal, FStat] = coefTest(lme, H);
 
 
-    %
     SO_phase_modulation_lme(i).variable = lme.Coefficients.Name;
     SO_phase_modulation_lme(i).p = lme.Coefficients.pValue(:);
     % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
     SO_phase_modulation_lme(i).b = lme.Coefficients.Estimate(:);
     SO_phase_modulation_lme(i).t = lme.Coefficients.tStat(:);
     SO_phase_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+
+
+    SO_phase_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
+    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    SO_phase_modulation_lme(i).marginal_R2 = marginal_R2;
+
     % 
     % VariableNames = tbl.Properties.VariableNames;
     % beta_boot=[];
@@ -905,8 +1442,8 @@ prctile(beta_boot(:,7)-beta_boot(:,8),[1.5 99.5])
 % prctile(beta_boot,[2.5 97.5])
 
 % 
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme.mat'),'SO_phase_modulation_lme');
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme_PRE.mat'),'SO_phase_modulation_lme');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme.mat'),'SO_phase_modulation_lme');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme_PRE.mat'),'SO_phase_modulation_lme');
 
 %%%%% Plot glme beta CI and p value
 clear match_beta_CI non_match_beta_CI mean_beta non_match_mean_beta
@@ -1001,9 +1538,10 @@ ripple_info.SO_phase_temporal = SO_phase;
 ripple_info.SO_phase_temporal = ripple_info.SO_phase_temporal(:,event_ids_first,:);
 
 
-
-spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)] ;
-spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)]+nan_mask ;
+spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)]+nan_mask;
+% spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)] ;
+% spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
 spindle_amplitude = nan([size(spindle_amplitude1),2]);
 spindle_amplitude(:,:,1) = spindle_amplitude1;
 spindle_amplitude(:,:,2) = spindle_amplitude2;
@@ -1074,12 +1612,12 @@ for i = 1:10
     %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
     % 
 
-    tbl = table([ripple_info.SO_phase_temporal(LFP_bin,t1,2) ripple_info.SO_phase_temporal(LFP_bin,t2,1)]',...
-        [ripple_info.SO_phase_temporal(LFP_bin,t1,1) ripple_info.SO_phase_temporal(LFP_bin,t2,2)]',...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
-        normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % tbl = table([ripple_info.SO_phase_temporal(LFP_bin,t1,2) ripple_info.SO_phase_temporal(LFP_bin,t2,1)]',...
+    %     [ripple_info.SO_phase_temporal(LFP_bin,t1,1) ripple_info.SO_phase_temporal(LFP_bin,t2,2)]',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
 
     % 
     tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
@@ -1090,20 +1628,18 @@ for i = 1:10
         categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
 
 
-
-
-    LFP_bin_PRE = 46;
-    LFP_bin_POST = 56;
-
-    tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
-        [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,1)],'zscore')',...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,2)],'zscore')',...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,1)],'zscore')',...
-        normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,2)],'zscore')',...
-        normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match_PRE','SpindlePower_NonMatch_PRE',...
-        'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % LFP_bin_PRE = 46;
+    % LFP_bin_POST = 56;
+    % 
+    % tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
+    %     [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,2)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match_PRE','SpindlePower_NonMatch_PRE',...
+    %     'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
 
 
     tbl.Match_trough = tbl.SOPhase_Match < -pi/2 | tbl.SOPhase_Match > pi/2 ;
@@ -1116,15 +1652,16 @@ for i = 1:10
     % tbl.JointState(tbl.JointState >2) = 2;
     tbl.JointState = categorical(tbl.JointState);
 
-    % lme = fitlme(tbl, 'HPC_logodds ~ SpindlePower_Match * V1_trackID  + (1 | AnimalID)');
+    % lme = fitlme(tbl, 'HPC_logodds ~SpindlePower_NonMatch *V1_trackID + SpindlePower_Match * V1_trackID  + (1 | AnimalID)');
 
     lme = fitlme(tbl, 'HPC_logodds ~ SpindlePower_Match * V1_trackID * JointState + (1 | AnimalID)');
+    lme.Coefficients
 
     % lme = fitlme(tbl, 'HPC_logodds ~ SpindlePower_Match_PRE * V1_trackID + SpindlePower_Match * V1_trackID + (1 | AnimalID)');
 
-
-    H = [0,0, 0, 0, 0, 0, 1 , -1];
-    [pVal, FStat] = coefTest(lme, H);
+    % 
+    % H = [0,0, 0, 0, 0, 0, 1 , -1];
+    % [pVal, FStat] = coefTest(lme, H);
 
 
     %
