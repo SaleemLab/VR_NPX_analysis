@@ -5,9 +5,7 @@ addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
 
 
-if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
-    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
-elseif exist('D:\corticohippocampal_replay')>0
+if exist('D:\corticohippocampal_replay')>0
     analysis_folder = 'D:\corticohippocampal_replay';
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
@@ -87,14 +85,50 @@ ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index=
 ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
 
 
-%%% spindle co-occurance
-[~,spindle_index,~,index] =RestrictInts(merged_event_info.ripples_ints,merged_event_info.spindles_ints);
-ripple_info.spindle_presence = spindle_index;
-ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.spindle_presence_hemi(find(spindle_index)) = merged_event_info.spindles_hemisphere_id(index);
 
-ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first);
-ripple_info.spindle_presence_hemi = ripple_info.spindle_presence_hemi(event_ids_first);
+%%% spindle co-occurance
+[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==1,:));
+ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+ripple_info.spindle_presence(spindle_index,1) = 1;
+
+[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==2,:));
+% ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+ripple_info.spindle_presence(spindle_index,2) = 1;
+ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first,:);
+
+ripple_info.spindle_presence_PRE = zeros(size(merged_event_info.ripples_ints,1),2);
+for hemi = 1:2
+    ripple_interval = [merged_event_info.ripples_ints(:,1)-0.2 merged_event_info.ripples_ints(:,1)];
+    spindle_interval = [merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==hemi,:)];
+
+    for ii = 1:size(ripple_interval, 1)
+        % Find the first index in restrictints that overlaps with the current int
+        idx = find(ripple_interval(ii,1) <= spindle_interval(:,2) & ripple_interval(ii,2) >= spindle_interval(:,1), 1, 'first');
+
+        if ~isempty(idx)
+            ripple_info.spindle_presence_PRE(ii,hemi) = 1;
+        end
+    end
+end
+ripple_info.spindle_presence_PRE = ripple_info.spindle_presence_PRE(event_ids_first,:);
+
+
+ripple_info.spindle_presence_POST = zeros(size(merged_event_info.ripples_ints,1),2);
+for hemi = 1:2
+    ripple_interval = [merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,1)+0.2];
+    spindle_interval = [merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==hemi,:)];
+
+    for ii = 1:size(ripple_interval, 1)
+        % Find the first index in restrictints that overlaps with the current int
+        idx = find(ripple_interval(ii,1) <= spindle_interval(:,2) & ripple_interval(ii,2) >= spindle_interval(:,1), 1, 'first');
+
+        if ~isempty(idx)
+            ripple_info.spindle_presence_POST(ii,hemi) = 1;
+        end
+    end
+end
+ripple_info.spindle_presence_POST = ripple_info.spindle_presence_POST(event_ids_first,:);
+
 
 %%% spindle phase
 spindle_phase=[];
@@ -411,7 +445,7 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 %%%%%%%%%%%%
 %%%%%%%%%%%%%%% KDE reactivation bias 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
 
 timebin = 0.01;
 time_windows = [-1 1];
@@ -466,6 +500,34 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
 
 %% Temporal log odds AUC with different spindle powers (V1→HPC)
+
+
+%%% spindle power
+spindle_amplitude=[];
+spindle_percentile = [];
+for probe_no = 1:2
+    spindle_amplitude{probe_no}=[];
+    spindle_percentile{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+        % temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+    end
+end
+spindle_percentile = [spindle_percentile{1}(:,ripples_all(1).SWS_index==1) spindle_percentile{2}(:,ripples_all(2).SWS_index==1)];
+ripple_info.spindle_percentile = spindle_percentile';
+ripple_info.spindle_percentile = ripple_info.spindle_percentile(event_ids_first,:);
+ripple_info.spindle_amplitude = ripple_info.spindle_percentile;
+ % ripple_info.spindle_amplitude_onset= ripple_info.spindle_percentile;
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+
+
+% spindle_thresholds = prctile(ripple_info.spindle_amplitude(ripple_info.spindle_amplitude>=0), 0:99.9/2:99.9);
 spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
@@ -582,13 +644,35 @@ for t = 1:nTime
         AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
     end
 end
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile.mat'))
 
-% -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
-tiledlayout(nBins,1,'TileSpacing','compact');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_onset.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_onset.mat'))
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset.mat'),'AUC')
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
+
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
+nBins = length(spindle_thresholds) - 1;
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    226, 132, 187;
+    212,  78, 156;
+    231,  41, 138] / 256;
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC by spindle power percentile onset(0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power onset (0.1s win 0.02s step)','Position',[640 100 400 900]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+
 for npower = 1:nBins
     nexttile; hold on;
     m  = AUC.mean(:,npower);
@@ -620,6 +704,43 @@ for npower = 1:nBins
 end
 
 
+
+fig = figure('Name','Temporal HPC log-odds AUC by low vs high spindle power percentile onset (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+for npower = [1 4]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),2);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),2,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('low vs high spindle');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
 % Save results
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
 % 
@@ -627,8 +748,61 @@ end
 %%%%%%%%
 %%%%%%%%
 
-%% Temporal log odds AUC with spindle power in matching and non-matching (V1→HPC)
-spindle_thresholds = prctile(ripple_info.spindle_amplitude>0, 99.9/2:99.9);
+
+
+%% Temporal log odds AUC with different PRE or POST spindle powers (V1→HPC)
+
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+session_count = session_count(event_ids_first);
+%%% spindle power
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+load(fullfile(analysis_folder,'periripple_LFP_info_V1_best_SO.mat'));
+periripple_LFP_info_V1 = periripple_LFP_info_V1_best_SO;
+
+spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+spindle_amplitude = nan([size(spindle_amplitude1),2]);
+spindle_amplitude(:,:,1) = spindle_amplitude1;
+spindle_amplitude(:,:,2) = spindle_amplitude2;
+
+ripple_info.spindle_amplitude_temporal = spindle_amplitude;
+ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
+LFP_tvec = periripple_LFP_info_V1(1).tvec;
+
+
+spindle_amplitude=[];
+spindle_percentile = [];
+for probe_no = 1:2
+    spindle_amplitude{probe_no}=[];
+    spindle_percentile{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+
+        % temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>0&LFP_tvec<=0.2,session_count==nsession,probe_no));
+        % temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.2&LFP_tvec<=0,session_count==nsession,probe_no));
+        % temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.2&LFP_tvec<=0.2,session_count==nsession,probe_no));
+        temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.1&LFP_tvec<=0.1,session_count==nsession,probe_no));
+        % temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+    end
+end
+spindle_percentile = [spindle_percentile{1}; spindle_percentile{2}];
+ripple_info.spindle_percentile = spindle_percentile';
+ripple_info.spindle_amplitude = ripple_info.spindle_percentile;
+
+
+ % ripple_info.spindle_amplitude_onset= ripple_info.spindle_percentile;
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+
+
+% spindle_thresholds = prctile(ripple_info.spindle_amplitude(ripple_info.spindle_amplitude>=0), 0:99.9/2:99.9);
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
 % Time windows
@@ -744,13 +918,47 @@ for t = 1:nTime
         AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
     end
 end
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_both_100ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_both_100ms.mat'))
+
+
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_both_200ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_both_200ms.mat'))
+
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_POST_200ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_POST_200ms.mat'))
+% 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_PRE_200ms.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_PRE_200ms.mat'))
+
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_onset.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_onset.mat'))
+% 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset.mat'),'AUC')
+% 
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
+
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
+nBins = length(spindle_thresholds) - 1;
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    226, 132, 187;
+    212,  78, 156;
+    231,  41, 138] / 256;
 
 % -------- Plot --------
-fig = figure('Name','Temporal HPC log-odds AUC by spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
+fig = figure('Name','Temporal HPC log-odds AUC by Both 100ms spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by PRE spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by POST spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power onset (0.1s win 0.02s step)','Position',[640 100 400 900]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
 for npower = 1:nBins
     nexttile; hold on;
     m  = AUC.mean(:,npower);
@@ -780,6 +988,535 @@ for npower = 1:nBins
 
     xline(0,'--k');
 end
+
+fig = figure('Name','Temporal HPC log-odds AUC by low vs high Both 100ms spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by low vs high PRE spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by low vs high POST spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by low vs high spindle power percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+for npower = [1 4]
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),2);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),2,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('low vs high spindle');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+% Save results
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
+% 
+%%%%%%%%
+%%%%%%%%
+%%%%%%%%
+
+
+
+%% Temporal log odds AUC with spindle power in matching and non-matching (V1→HPC)
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, [99.9/2 99.9]);
+% nBins = length(spindle_thresholds) - 1;
+nBins = 2;
+
+% Time windows
+win_size  = 0.1;   % 100 ms selection window for V1
+step_size = 0.02;  % 50 ms step
+time_bins = -1:step_size:1;
+nTime = numel(time_bins);
+nBoot = 1000;
+
+% Fixed HPC window (always 0–0.1 s)
+bins_to_use = bin_centers >= 0 & bin_centers < 0.1;
+
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    % 226, 132, 187;
+    % 212,  78, 156;
+    231,  41, 138] / 256;
+
+% Storage
+AUC.mean = nan(nTime, nBins);
+AUC.ci = nan(nTime, nBins, 2);
+AUC.shifted_mean = nan(nTime, nBins);
+AUC.shifted_ci = nan(nTime, nBins, 2);
+
+for t = 1:nTime
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
+
+    % Sliding V1 window (used for event selection)
+    bins_to_select = bin_centers >= t0 & bin_centers < t1;
+
+    fprintf('Processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
+
+    for npower = 1:nBins
+        % All events included, spindle bin applied later conditional on track side
+        event_index = true(1, length(z_bias));
+
+        % Compute mean log-odds
+        mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan'); % selector
+        mean_bias_HPC = mean(z_bias(bins_to_use, event_index), 'omitnan');       % measure
+        total_events = length(mean_bias_V1);
+        if total_events < 10, continue; end
+
+        % Quantile thresholds on |V1 bias|
+        thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+        thresholds = thresholds(1:end-1);
+        nThresh = numel(thresholds);
+
+        bias_diff_boot = NaN(nBoot, nThresh);
+        bias_diff_shift_boot = NaN(nBoot, nThresh);
+
+        parfor iBoot = 1:nBoot
+            s = RandStream('philox4x32_10', 'Seed', iBoot);
+            idx = randi(s, total_events, total_events, 1);
+            true_idx = find(event_index);
+
+            boot_V1  = mean_bias_V1(idx);
+            boot_HPC = mean_bias_HPC(idx);
+
+            % “Shifted”: randomise pairing between V1 & HPC
+            boot_V1_shift = mean_bias_V1;
+            diff_tmp = NaN(1, nThresh);
+            diff_tmp_shift = NaN(1, nThresh);
+
+            for i = 1:nThresh
+                th = thresholds(i);
+
+                % Identify Track 1 (positive V1 bias) and Track 2 (negative V1 bias)
+                t1 = boot_V1 >= th;     % Track 1
+                t2 = boot_V1 <= -th;    % Track 2
+
+                % --- Spindle power condition ---
+                % Track 1 → use right probe (2), Track 2 → left probe (1)
+                if npower == 1 % only context matching high spindle
+                    t1 = t1' + (ripple_info.spindle_amplitude(true_idx(idx),2) > spindle_thresholds(1,2) & ...
+                        ripple_info.spindle_amplitude(true_idx(idx),1) < spindle_thresholds(1,1) ) > 1';
+                    t2 = t2' + (ripple_info.spindle_amplitude(true_idx(idx),1) > spindle_thresholds(1,1) & ... 
+                        ripple_info.spindle_amplitude(true_idx(idx),2) < spindle_thresholds(1,2) ) > 1';
+                elseif npower == 2  % Both high spindle
+                    t1 = t1' + ( ripple_info.spindle_amplitude(true_idx(idx),2) > spindle_thresholds(1,2) & ...
+                        ripple_info.spindle_amplitude(true_idx(idx),1) > spindle_thresholds(1,1) ) > 1';
+                    t2 = t2' + (ripple_info.spindle_amplitude(true_idx(idx),1) > spindle_thresholds(1,1) & ...
+                        ripple_info.spindle_amplitude(true_idx(idx),2) > spindle_thresholds(1,2) ) > 1';
+                end
+
+                % HPC bias difference between Track 1 and Track 2
+                t1_HPC = boot_HPC(t1);
+                t2_HPC = boot_HPC(t2);
+                if any(t1) && any(t2)
+                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                end
+
+                % --- Shifted pairing (null) ---
+                t1s = boot_V1_shift >= th;
+                t2s = boot_V1_shift <= -th;
+
+                if npower == 1
+                    t1s = t1s' + (ripple_info.spindle_amplitude(true_idx,2) > spindle_thresholds(1,2) & ...
+                        ripple_info.spindle_amplitude(true_idx,1) < spindle_thresholds(1,1)) > 1';
+                    t2s = t2s' + (ripple_info.spindle_amplitude(true_idx,1) > spindle_thresholds(1,1) & ...
+                        ripple_info.spindle_amplitude(true_idx,2) < spindle_thresholds(1,2)) > 1';
+                else
+                    t1s = t1s' + (ripple_info.spindle_amplitude(true_idx,2) > spindle_thresholds(1,2) & ...
+                        ripple_info.spindle_amplitude(true_idx,1) > spindle_thresholds(1,1)) > 1';
+                    t2s = t2s' + (ripple_info.spindle_amplitude(true_idx,1) > spindle_thresholds(1,1) & ...
+                        ripple_info.spindle_amplitude(true_idx,2) > spindle_thresholds(1,2)) > 1';
+                end
+                t1_HPCs = boot_HPC(t1s);
+                t2_HPCs = boot_HPC(t2s);
+                if any(t1s) && any(t2s)
+                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                end
+            end
+
+            bias_diff_boot(iBoot, :) = diff_tmp;
+            bias_diff_shift_boot(iBoot, :) = diff_tmp_shift;
+        end
+
+        % Quantile-based AUC
+        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+        auc_shift_boot = (trapz(thresholds, bias_diff_shift_boot') / (max(thresholds)-min(thresholds)))';
+
+        % Store summaries
+        AUC.mean(t, npower) = mean(auc_boot, 'omitnan');
+        AUC.ci(t, npower, :) = prctile(auc_boot, [2.5 97.5]);
+        AUC.shifted_mean(t, npower) = mean(auc_shift_boot, 'omitnan');
+        AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
+    end
+end
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_synchonry.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_synchonry.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_synchonry.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_percentile_synchonry.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset_percentile_synchonry.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power_onset_percentile_synchonry.mat'))
+
+% -------- Plot --------
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power synchrony (0.1s win 0.02s step)','Position',[640 100 400 900]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle power onset percentile synchrony (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+fig = figure('Name','Temporal HPC log-odds AUC by spindle power percentile synchrony (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+
+for npower = 1:nBins
+    nexttile; hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+        [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+    plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title(sprintf('Spindle power bin %d (%.2f–%.2f)', npower, ...
+        spindle_thresholds(npower), spindle_thresholds(npower+1)));
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+
+fig = figure('Name','Temporal HPC log-odds AUC by unilateral vs bilateral spindle percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by unilateral vs bilateral spindle onset percentile (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by unilateral vs bilateral spindle (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+for npower = 1:nBins
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),2);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),2,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('Spindle unilateral vs bilateral trough');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.25])
+
+    xline(0,'--k');
+end
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+
+
+%% Temporal log odds AUC with Spindle presence
+
+
+ripple_info.spindle_presence_BOTH = zeros(size(merged_event_info.ripples_ints,1),2);
+for hemi = 1:2
+    ripple_interval = [merged_event_info.ripples_ints(:,1)-0.2 merged_event_info.ripples_ints(:,1)];
+    % ripple_interval = [merged_event_info.ripples_ints(:,1)-0.2 merged_event_info.ripples_ints(:,1)+0.2];
+    spindle_interval = [merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==hemi,:)];
+
+    for ii = 1:size(ripple_interval, 1)
+        % Find the first index in restrictints that overlaps with the current int
+        idx = find(ripple_interval(ii,1) <= spindle_interval(:,2) & ripple_interval(ii,2) >= spindle_interval(:,1), 1, 'first');
+
+        if ~isempty(idx)
+            ripple_info.spindle_presence_BOTH(ii,hemi) = 1;
+        end
+    end
+end
+ripple_info.spindle_presence_BOTH = ripple_info.spindle_presence_BOTH(event_ids_first,:);
+
+
+
+spindle_thresholds = prctile(ripple_info.spindle_amplitude, [99.9/2 99.9]);
+% nBins = length(spindle_thresholds) - 1;
+nBins = 2;
+
+% Time windows
+win_size  = 0.1;   % 100 ms selection window for V1
+step_size = 0.02;  % 50 ms step
+time_bins = -1:step_size:1;
+nTime = numel(time_bins);
+nBoot = 1000;
+
+% Fixed HPC window (always 0–0.1 s)
+bins_to_use = bin_centers >= 0 & bin_centers < 0.1;
+
+% Colour scheme
+colour_lines = [ ...
+    241, 182, 218;
+    % 226, 132, 187;
+    % 212,  78, 156;
+    231,  41, 138] / 256;
+
+% Storage
+AUC.mean = nan(nTime, nBins);
+AUC.ci = nan(nTime, nBins, 2);
+AUC.shifted_mean = nan(nTime, nBins);
+AUC.shifted_ci = nan(nTime, nBins, 2);
+
+for t = 1:nTime
+    t0 = time_bins(t)-win_size/2;
+    t1 = time_bins(t) + win_size/2;
+
+    % Sliding V1 window (used for event selection)
+    bins_to_select = bin_centers >= t0 & bin_centers < t1;
+
+    fprintf('Processing V1 window %.3f–%.3f s (HPC fixed 0–0.1 s)\n', t0, t1);
+
+    for npower = 1:nBins
+        % All events included, spindle bin applied later conditional on track side
+        event_index = true(1, length(z_bias));
+
+        % Compute mean log-odds
+        mean_bias_V1 = mean(z_bias_V1(bins_to_select, event_index), 'omitnan'); % selector
+        mean_bias_HPC = mean(z_bias(bins_to_use, event_index), 'omitnan');       % measure
+        total_events = length(mean_bias_V1);
+        if total_events < 10, continue; end
+
+        % Quantile thresholds on |V1 bias|
+        thresholds = prctile(abs(mean_bias_V1), 0:10:100);
+        thresholds = thresholds(1:end-1);
+        nThresh = numel(thresholds);
+
+        bias_diff_boot = NaN(nBoot, nThresh);
+        bias_diff_shift_boot = NaN(nBoot, nThresh);
+
+        parfor iBoot = 1:nBoot
+            s = RandStream('philox4x32_10', 'Seed', iBoot);
+            idx = randi(s, total_events, total_events, 1);
+            true_idx = find(event_index);
+
+            boot_V1  = mean_bias_V1(idx);
+            boot_HPC = mean_bias_HPC(idx);
+
+            % “Shifted”: randomise pairing between V1 & HPC
+            boot_V1_shift = mean_bias_V1;
+            diff_tmp = NaN(1, nThresh);
+            diff_tmp_shift = NaN(1, nThresh);
+
+            for i = 1:nThresh
+                th = thresholds(i);
+
+                % Identify Track 1 (positive V1 bias) and Track 2 (negative V1 bias)
+                t1 = boot_V1 >= th;     % Track 1
+                t2 = boot_V1 <= -th;    % Track 2
+
+                % --- Spindle power condition ---
+                % Track 1 → use right probe (2), Track 2 → left probe (1)
+                if npower == 1 % Spindle not present
+                    t11 =t1' & ripple_info.spindle_presence_BOTH(true_idx(idx),2) ==1; 
+                    % t11 =ripple_info.spindle_presence(true_idx(idx),2) ==1;
+                    t1 = find(t1' & ripple_info.spindle_presence_BOTH(true_idx(idx),2) ==0);
+                    t1 = datasample(s, t1, sum(t11));
+
+                    t22 =t2' & ripple_info.spindle_presence_BOTH(true_idx(idx),1) ==1;
+                    % t22 = ripple_info.spindle_presence(true_idx(idx),1) ==1;
+                    t2 = find(t2' & ripple_info.spindle_presence_BOTH(true_idx(idx),1) ==0); 
+                    t2 = datasample(s, t2, sum(t22));
+
+                elseif npower == 2  % Spindle presence
+
+                    t1 = t1' & ripple_info.spindle_presence_BOTH(true_idx(idx),2) ==1;
+                    t2 = t2' & ripple_info.spindle_presence_BOTH(true_idx(idx),1) ==1;
+                    % t11 =t1' & ripple_info.spindle_presence(true_idx(idx),2) ==1; 
+                    % t11 =ripple_info.spindle_presence(true_idx(idx),2) ==1;
+                    % t1 = find(t1' & ripple_info.spindle_presence(true_idx(idx),2) ==1);
+                    % t1 = datasample(s, t1, sum(t11));
+                    % 
+                    % % t22 =t2' & ripple_info.spindle_presence(true_idx(idx),1) ==1;
+                    % t22 = ripple_info.spindle_presence(true_idx(idx),1) ==1;
+                    % t2 = find(t2' & ripple_info.spindle_presence(true_idx(idx),1) ==1); 
+                    % t2 = datasample(s, t2, sum(t22));
+                end
+
+                % HPC bias difference between Track 1 and Track 2
+                t1_HPC = boot_HPC(t1);
+                t2_HPC = boot_HPC(t2);
+                if any(t1) && any(t2)
+                    diff_tmp(i) = mean(t1_HPC, 'omitnan') - mean(t2_HPC, 'omitnan');
+                end
+
+                % --- Shifted pairing (null) ---
+                t1s = boot_V1_shift >= th;
+                t2s = boot_V1_shift <= -th;
+
+                if npower == 1 % Spindle not present
+                    t11 =t1s' & ripple_info.spindle_presence_BOTH(true_idx(idx),2) ==1;
+                    % t11 =ripple_info.spindle_presence(true_idx,2) ==1;
+                    t1s = find(t1s' & ripple_info.spindle_presence_BOTH(true_idx,2) ==0);
+                    t1s = datasample(s, t1s, sum(t11));
+
+                    % t22 =ripple_info.spindle_presence(true_idx,1) ==1;
+                    t22 =t2s' & ripple_info.spindle_presence_BOTH(true_idx(idx),1) ==1;
+                    t2s = find(t2s' & ripple_info.spindle_presence_BOTH(true_idx,1) ==0);
+                    t2s = datasample(s, t2s, sum(t22));
+                elseif npower == 2  % Spindle presence
+                    t1s = find(t1s' & ripple_info.spindle_presence_BOTH(true_idx,2) ==1);
+                    t2s = find(t2s' & ripple_info.spindle_presence_BOTH(true_idx,1) ==1);
+                    % t11 =ripple_info.spindle_presence(true_idx,2) ==1;
+                    % t1s = find(t1s' & ripple_info.spindle_presence(true_idx,2) ==1);
+                    % t1s = datasample(s, t1s, sum(t11));
+                    % 
+                    % t22 =ripple_info.spindle_presence(true_idx,1) ==1;
+                    % t2s = find(t2s' & ripple_info.spindle_presence(true_idx,1) ==1);
+                    % t2s = datasample(s, t2s, sum(t22));
+                end
+                t1_HPCs = boot_HPC(t1s);
+                t2_HPCs = boot_HPC(t2s);
+                if any(t1s) && any(t2s)
+                    diff_tmp_shift(i) = mean(t1_HPCs, 'omitnan') - mean(t2_HPCs, 'omitnan');
+                end
+            end
+
+            bias_diff_boot(iBoot, :) = diff_tmp;
+            bias_diff_shift_boot(iBoot, :) = diff_tmp_shift;
+        end
+
+        % Quantile-based AUC
+        auc_boot = (trapz(thresholds, bias_diff_boot') / (max(thresholds)-min(thresholds)))';
+        auc_shift_boot = (trapz(thresholds, bias_diff_shift_boot') / (max(thresholds)-min(thresholds)))';
+
+        % Store summaries
+        AUC.mean(t, npower) = mean(auc_boot, 'omitnan');
+        AUC.ci(t, npower, :) = prctile(auc_boot, [2.5 97.5]);
+        AUC.shifted_mean(t, npower) = mean(auc_shift_boot, 'omitnan');
+        AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
+    end
+end
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence.mat'))
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence_BOTH.mat'),'AUC')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence_BOTH.mat'))
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence_PRE.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_presence_PRE.mat'))
+
+% -------- Plot --------
+fig = figure('Name','Temporal HPC log-odds AUC by spindle presence PRE (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle presence BOTH (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle presence (0.1s win 0.02s step)','Position',[640 100 400 900/2]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+
+for npower = 1:nBins
+    nexttile; hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),npower);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),npower,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+    fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+        [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+    plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title(sprintf('Spindle power bin %d (%.2f–%.2f)', npower, ...
+        spindle_thresholds(npower), spindle_thresholds(npower+1)));
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.35])
+
+    xline(0,'--k');
+end
+
+fig = figure('Name','Temporal HPC log-odds AUC by spindle vs no spindle PRE (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle vs no spindle BOTH (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+% fig = figure('Name','Temporal HPC log-odds AUC by spindle vs no spindle (0.1s win 0.02s step)','Position',[640 100 400 900/4]);
+tiledlayout(nBins,1,'TileSpacing','compact');
+
+for npower = 1:nBins
+    hold on;
+    m  = AUC.mean(:,npower);
+    ci = squeeze(AUC.ci(~isnan(m),npower,:));
+    m_shift  = AUC.shifted_mean(~isnan(m),1);
+    ci_shift = squeeze(AUC.shifted_ci(~isnan(m),1,:));
+    tvec = time_bins(~isnan(m));
+    m(isnan(m)) = [];
+
+
+    fill([tvec fliplr(tvec)], [ci(:,1)' fliplr(ci(:,2)')], ...
+        colour_lines(npower,:), 'EdgeColor','none','FaceAlpha',0.3);
+    plot(tvec, m, 'Color', colour_lines(npower,:), 'LineWidth', 2);
+
+
+    yline(0,'--r');
+    xlabel('Time (s relative to ripple)');
+    ylabel('HPC bias AUC');
+    title('Spindle vs No spindle');
+    set(gca,'TickDir','out','Box','off','FontSize',12);
+    xlim([-0.5 0.5]);
+    ylim([-0.1 0.35])
+
+    xline(0,'--k');
+end
+fill([tvec fliplr(tvec)], [ci_shift(:,1)' fliplr(ci_shift(:,2)')], ...
+    [0 0 0], 'EdgeColor','none','FaceAlpha',0.15);
+plot(tvec, m_shift, 'k', 'LineWidth', 1.2);
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','temporal KDE bias difference'),[])
+
+
+
+
+
 
 
 
