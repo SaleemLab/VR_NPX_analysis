@@ -896,7 +896,7 @@ for nsession = 16
         fig.Position = [851 65 960 925];
         
         if length(nearby_events_merged)==1
-            active_cells = sum(sum((V1_SUA{1}(1:3,:,:)),3))>0;
+            active_cells = sum((V1_SUA{1}(1:51,:,:)),3)>0;
         else
             active_cells = sum(sum((V1_SUA{1}(nearby_events_merged,:,:)),3))>0;
         end
@@ -925,7 +925,7 @@ for nsession = 16
         end
         
         if length(nearby_events_merged)==1
-            active_cells = sum(sum((V1_SUA{2}(1:3,:,:)),3))>0;
+            active_cells = sum((V1_SUA{2}(50:51,:,:)),3)>0;
         else
             active_cells = sum(sum((V1_SUA{2}(nearby_events_merged,:,:)),3))>0;
         end
