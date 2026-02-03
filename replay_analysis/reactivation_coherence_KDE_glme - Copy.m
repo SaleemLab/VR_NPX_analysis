@@ -444,7 +444,7 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 %%%%%%%%%%%%
 %%%%%%%%%%%%%%% KDE reactivation bias 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
 
 timebin = 0.01;
 time_windows = [-1 1];
@@ -483,6 +483,9 @@ z_bias_V1 = z_bias_V1(:,event_ids_first);
 z_bias_V1_original = z_bias_V1_original(:,event_ids_first);
 % event_ids_first
 
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -497,916 +500,6 @@ session_count = session_count(event_ids_first);
 
 singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
-%% Save into tables
-
-%%%%%% mixed effect model (SO phase)
-bins_to_use = bin_centers>0 & bin_centers<0.1;
-% bins_to_select = bin_centers>-0.2 & bin_centers<0;
-bins_to_select = bin_centers>0 & bin_centers<0.2;
-
-% bins_to_select = bin_centers>-0.2 & bin_centers<0;
-% bins_to_select = bin_centers>-0.1 & bin_centers<0;
-% bins_to_select = bin_centers>0 & bin_centers<0.1;
-[~,LFP_bin] = min(abs(LFP_tvec - mean(bin_centers(bins_to_select))));
-% for npower = 1:nBins
-
-% bins_to_select = bin_centers>-0.2 & bin_centers<0;
-% bins_to_select = bin_centers>0 & bin_centers<0.2;
-
-mean_bias_V1 = mean(z_bias_V1(bin_centers>0 & bin_centers<0.2, :), 'omitnan');
-mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0,:), 'omitnan');
-
-% mean_bias_shifted = mean(z_bias(bins_to_use_shifted, event_index), 'omitnan');
-mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
-% selected_events = length(mean_bias);
-
-thresholds = prctile(abs(mean_bias_V1), 0:10:100);
-thresholds_PRE = prctile(abs(mean_bias_V1_PRE), 0:10:100);
-thresholds_HPC = prctile(abs(mean_bias), 0:10:100);
-
-thresholds = thresholds(1:end-1);
-thresholds_PRE = thresholds_PRE(1:end-1);
-thresholds_HPC = thresholds_HPC(1:end-1);
-
-% spindle_power_log_odds
-
-mean_beta = [];
-SO_phase_modulation_lme = struct();
-
-
-ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
-% ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
-ripple_info.ripple_power = max([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)]')';
-
-for i = 1:1
-
-
-    th = thresholds_HPC(i);
-    t1 = find(mean_bias >= th);
-    t2 = find(mean_bias <= -th);
-        selected_events = [t1 t2];
-%     selected_events1 = [t1 t2];
-%     t11 = t1;
-%     t22 = t2;
-
-    th = thresholds_PRE(i);
-    t1 = find(mean_bias_V1_PRE >= th);
-    t2 = find(mean_bias_V1_PRE <= -th);
-    selected_events = [t1 t2];
-
-    th = thresholds(i);
-    t1 = find(mean_bias_V1 >= th);
-    t2 = find(mean_bias_V1 <= -th);
-    selected_events = [t1 t2];
-
-
-%     [~, indices] = ismember(selected_events, selected_events1);
-
-    % %
-
-    tbl = table(normalize([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)],'zscore'),...
-        [ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
-        [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
-        normalize([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],'zscore'),...
-        normalize([ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],'zscore'),...
-        [ripple_info.spindle_presence(t1,2); ripple_info.spindle_presence(t2,1)],...
-        [ripple_info.spindle_presence(t1,1); ripple_info.spindle_presence(t2,2)],...
-        normalize(mean_bias_V1_PRE(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),normalize(mean_bias(selected_events)','zscore'),categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'RipplePower','SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch',...
-        'Spindle_Match','Spindle_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
-
-    tbl.Match_trough = tbl.SOPhase_Match < -pi/2 | tbl.SOPhase_Match > pi/2 ;
-    tbl.NonMatch_trough = tbl.SOPhase_NonMatch < -pi/2 | tbl.SOPhase_NonMatch > pi/2 ;
-    tbl.JointState = (2 * tbl.Match_trough + tbl.NonMatch_trough);
-    tbl.JointState = categorical(tbl.JointState);
-    %         writetable(tbl, 'V1_HPC_reactivation_coherence_lme_PRE1.csv');
-    %         writetable(tbl, 'V1_HPC_reactivation_coherence_lme_POST1.csv');
-
-   
-%     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.mat'),'tbl');
-%     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1.mat'),'tbl');
-    save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.mat'),'tbl');
-%     load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.mat'),'tbl');
-
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme1.csv');
-
-    tbl = table([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)], ...
-        [ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
-        [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
-        [ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],...
-        [ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],...
-        [ripple_info.spindle_presence(t1,2); ripple_info.spindle_presence(t2,1)],...
-        [ripple_info.spindle_presence(t1,1); ripple_info.spindle_presence(t2,2)],...
-        mean_bias_V1_PRE(selected_events)',mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'RipplePower','SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch',...
-        'Spindle_Match','Spindle_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
-
-    tbl.Match_trough = tbl.SOPhase_Match < -pi/2 | tbl.SOPhase_Match > pi/2 ;
-    tbl.NonMatch_trough = tbl.SOPhase_NonMatch < -pi/2 | tbl.SOPhase_NonMatch > pi/2 ;
-    tbl.JointState = (2 * tbl.Match_trough + tbl.NonMatch_trough);
-    tbl.JointState = categorical(tbl.JointState);
-%         writetable(tbl, 'V1_HPC_reactivation_coherence_lme_PRE1_raw.csv');
-%         writetable(tbl, 'V1_HPC_reactivation_coherence_lme_POST1_raw.csv');
-%         writetable(tbl, 'V1_HPC_reactivation_coherence_lme_HPC1_raw.csv');
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme1_raw.csv');
-%     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'),'tbl');
-%     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1_raw.mat'),'tbl');
-    save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1_raw.mat'),'tbl');
-end
-
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'));tbl1 = tbl;
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1_raw.mat'));
-% tbl1 = load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'));
-[~,indices]=ismember(tbl1.V1_logodds,tbl.V1_logodds);
-% [~,indices1]=ismember(tbl1.HPC_logodds,tbl.HPC_logodds);
-% tbl1.V1_logodds
-tbl.SpindlePower_Match(indices)= tbl1.SpindlePower_Match;
-tbl.SpindlePower_NonMatch(indices)= tbl1.SpindlePower_NonMatch;
-tbl.Spindle_Match(indices)= tbl1.Spindle_Match;
-tbl.Spindle_NonMatch(indices)= tbl1.Spindle_NonMatch;
-% writetable(tbl, 'V1_HPC_reactivation_coherence_lme1_raw.csv');
-% writetable(tbl, fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1_raw.csv'));
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1_raw.mat'),'tbl');
-tbl1 = tbl;
-
-
-% tbl1 = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.csv'));tbl1 = tbl;
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.mat'));
-% tbl1 = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.csv'));
-
-tbl.SpindlePower_Match= normalize(tbl1.SpindlePower_Match);
-tbl.SpindlePower_NonMatch= normalize(tbl1.SpindlePower_NonMatch);
-tbl.Spindle_Match= tbl1.Spindle_Match;
-tbl.Spindle_NonMatch= tbl1.Spindle_NonMatch;
-% writetable(tbl, fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.csv'));
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.mat'),'tbl');
-
-%% Ripple power
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.mat'),'tbl');
-
-tbl.Match_trough = categorical(tbl.Match_trough);
-% tbl.Match_peak = categorical(tbl.Match_peak);
-tbl.JointState = categorical(tbl.JointState);
-tbl.AnimalID = categorical(tbl.AnimalID);
-tbl.SessionID = categorical(tbl.SessionID);
-% tbl.HPC_trackID = categorical(tbl.HPC_trackID);
-% 
-% formula = 'HPC_logodds ~ V1_logodds * RipplePower    + (1| SessionID) +(1 | AnimalID) ';
-formula = 'V1_logodds ~ HPC_logodds * RipplePower    + (RipplePower| SessionID) +(RipplePower | AnimalID) ';
-% 
-% % formula = 'V1_logodds ~ HPC_trackID * RipplePower    + (HPC_trackID| SessionID) +(HPC_trackID | AnimalID) ';
-% % lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-lme = fitlme(tbl, formula,'DummyVarCoding','reference','CovariancePattern', {'Diagonal', 'Diagonal'});
-lme.Coefficients
-% 
-
-
-models = {'V1_logodds_PRE ~ HPC_logodds  * RipplePower + (RipplePower| SessionID) +(RipplePower | AnimalID)  ',
-    'V1_logodds ~ HPC_logodds * RipplePower + (RipplePower| SessionID)+(RipplePower | AnimalID) '};
-
-for i = 1:length(models)
-    formula = models{i};
-
-    % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-    %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
-
-%     lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-    lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-    lme.Coefficients
-
-    ripple_power_modulation_lme(i).model = lme;
-    ripple_power_modulation_lme(i).variable = [lme.Coefficients.Name];
-    ripple_power_modulation_lme(i).p = [lme.Coefficients.pValue(:)];
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    ripple_power_modulation_lme(i).b = [lme.Coefficients.Estimate(:)];
-    ripple_power_modulation_lme(i).t = [lme.Coefficients.tStat(:)];
-    ripple_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
-    ripple_power_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
-    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    ripple_power_modulation_lme(i).marginal_R2 = marginal_R2;
-end
-
-% for i = 1:2
-clear VariableIdx
-% Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
-% VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-% nBoot = 1000;
-colour_lines = [ ...
-%     241, 182, 218;   % original end (lightest)
-%     226, 132, 187;   % interpolated 2/3
-%     212,  78, 156;   % interpolated 1/3
-    231, 41, 138    % original start (darkest)
-    ] / 256;
-
-fig = figure('Name','Ripple power KDE reactivation coherence','Position',[482 111 665 851]);
-sgtitle('Ripple power KDE reactivation coherence')
-
-VariableName = {'RipplePower:HPC'}
-% VariableName = {'PRE','HPC'};
-titles = {'PRE V1','POST V1'};
-for i = 1:2
-    %     if sum(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'))>0
-    %         VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-    %     else
-    clear VariableIdx
-    for n = 1:length(VariableName)
-    VariableIdx(n) = find(contains(ripple_power_modulation_lme(i).variable, VariableName{n}));
-    end
-    %     end
-    clear b_CI b_mean
-    b_CI = [ripple_power_modulation_lme(i).b_CI];
-    b_mean = [ripple_power_modulation_lme(i).b];
-
-    % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
-
-    % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
-    % sgtitle('Spindle power KDE reactivation coherence PRE')
-    %
-
-    lci_boot = [b_mean - b_CI(:,1)];
-    uci_boot = [b_CI(:,2)-b_mean ];
-
-    subplot(3,4,i)
-    bar_width = 0.3;      % Width of the bars
-    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
-    % Plot Bar
-    hold on;
-    for n = 1:length(VariableIdx)
-        bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-
-        % Plot 95% CI Error Bar
-        errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(1+group_offset*(n-1),0+n*0.01,sprintf('%.3e',ripple_power_modulation_lme(i).p(VariableIdx(n))))
-    end
-
-    ylabel('Standardised b')
-    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
-    xlim([0.5 2.3])
-    ylim([-0.01 0.03])
-    title(titles{i})
-end
-
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_power_modulation_lme.mat'),'ripple_power_modulation_lme');
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
-
-
-%% SO phase state
-
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.csv'));
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.csv'));
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1.csv'));
-
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.csv'));
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.mat'));
-tbl.Match_trough = categorical(tbl.Match_trough);
-% tbl.Match_peak = categorical(tbl.Match_peak);
-tbl.JointState = categorical(tbl.JointState);
-tbl.AnimalID = categorical(tbl.AnimalID);
-tbl.SessionID = categorical(tbl.SessionID);
-
-% tbl = readtable('V1_HPC_reactivation_coherence_lme_HPC1.csv');
-% tbl.JointState = categorical(tbl.JointState);
-% tbl.AnimalID = categorical(tbl.AnimalID);
-% tbl.SessionID = categorical(tbl.SessionID);
-
-% formula = ['HPC_logodds ~ V1_logodds * JointState ' ...
-%     '+ (1 | AnimalID) + (V1_logodds - 1 | AnimalID) + (JointState - 1 | AnimalID) + (V1_logodds:JointState - 1 | AnimalID) ' ...
-%     '+ (1 | SessionID) + (V1_logodds - 1 | SessionID) + (JointState - 1 | SessionID) + (V1_logodds:JointState - 1 | SessionID)'];
-
-%%%%%%
-%%%%%%
-%%%%%% how does interaction of SO phase and POST and PRE V1 log odds predicting HPC log odds
-
-% models = {['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-%         '+ (1 | AnimalID) + (V1_logodds_PRE - 1 | AnimalID) + (JointState - 1 | AnimalID) ' ...
-%         '+ (1 | SessionID) + (V1_logodds_PRE - 1 | SessionID) + (JointState - 1 | SessionID)'],...
-%         ['HPC_logodds ~ V1_logodds * JointState ' ...
-%         '+ (1 | AnimalID) + (V1_logodds - 1 | AnimalID) + (JointState - 1 | AnimalID) ' ...
-%         '+ (1 | SessionID) + (V1_logodds - 1 | SessionID) + (JointState - 1 | SessionID)']};
-
-% models = {['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-%         '+ (V1_logodds_PRE | AnimalID)' ...
-%         '+ (V1_logodds_PRE| SessionID)'],...
-%         ['HPC_logodds ~ V1_logodds * JointState ' ...
-%         '+ (V1_logodds  | AnimalID) ' ...
-%         '+ (V1_logodds | SessionID)']};
-% models = {'HPC_logodds ~ V1_logodds_PRE * JointState + (V1_logodds_PRE| SessionID) + (V1_logodds_PRE - 1 | AnimalID) + (1 | AnimalID) ',
-%     'HPC_logodds ~ V1_logodds * JointState + (V1_logodds| SessionID) + (V1_logodds - 1 | AnimalID) + (1 | AnimalID) '}
-% 
-% formula = models{i};
-% 
-% 
-% formula = 'HPC_logodds ~ V1_logodds * JointState + (V1_logodds - 1 | SessionID) + (1 | AnimalID) '
-% 
-% formula = 'HPC_logodds ~ V1_logodds * JointState + (V1_logodds  | SessionID) + (V1_logodds | AnimalID) '
-% 
-% 
-% % formula = 'HPC_logodds ~ V1_logodds * JointState + (1 | SessionID) + (V1_logodds - 1 | SessionID) + (V1_logodds | AnimalID) '
-% formula = 'HPC_logodds ~ V1_logodds * Match_trough + ( V1_logodds + Match_trough| SessionID) + (V1_logodds-1 | AnimalID) +  (1 | AnimalID)  '
-% formula = 'HPC_logodds ~ V1_logodds * Match_trough + ( V1_logodds + Match_trough| SessionID) + (V1_logodds+ Match_trough| AnimalID)  '
-% % formula = 'HPC_logodds ~ V1_trackID * Match_trough + ( V1_trackID | SessionID) + (V1_trackID| AnimalID)  '
-% 
-% 
-% formula = 'HPC_logodds ~ V1_logodds_PRE * Match_trough + ( V1_logodds_PRE| SessionID) + (1 | AnimalID)  '
-% 
-% 
-% % formula = 'HPC_logodds ~ V1_logodds_PRE * Match_trough + (1+  V1_logodds_PRE * Match_trough| SessionID) + ( 1 +V1_logodds_PRE * Match_trough | AnimalID) '
-% formula = 'HPC_logodds ~ V1_logodds * JointState + (V1_logodds | SessionID) + (V1_logodds +JointState | AnimalID) '
-% 
-% formula = 'HPC_logodds ~ V1_logodds * Match_trough + ( V1_logodds + Match_trough| SessionID) + (V1_logodds+ Match_trough | AnimalID)'
-% % lme = fitlme(tbl, formula,'DummyVarCoding','effects');
-% lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-% %     lme = fitlme(tbl, formula)
-% lme.Coefficients
-% [Psi, ~, ~] = covarianceParameters(lme);
-% Psi_matrix = Psi{1}
-
-
-models = {'HPC_logodds ~ V1_logodds_PRE * JointState + (1| SessionID) + (1 | AnimalID)',
-    'HPC_logodds ~ V1_logodds * JointState + (1| SessionID)+ (1 | AnimalID) ',
-    'HPC_logodds ~ V1_logodds_PRE * Match_trough + ( 1| SessionID) + (1 | AnimalID)',
-    'HPC_logodds ~ V1_logodds * Match_trough + ( 1| SessionID) + (1 | AnimalID)'}
-
-models = {'HPC_logodds ~ V1_logodds_PRE * JointState + (V1_logodds_PRE | SessionID) + (V1_logodds_PRE +JointState | AnimalID)',
-    'HPC_logodds ~ V1_logodds * JointState + (V1_logodds | SessionID) + (V1_logodds +JointState | AnimalID)',
-    'HPC_logodds ~ V1_logodds_PRE * Match_trough + ( V1_logodds_PRE + Match_trough| SessionID) + (V1_logodds_PRE+ Match_trough | AnimalID)',
-    'HPC_logodds ~ V1_logodds * Match_trough + ( V1_logodds + Match_trough| SessionID) + (V1_logodds+ Match_trough | AnimalID)'}
-
-% CovariancePattern = {{'Diagonal', 'Diagonal'},{},{},{}};
-SO_phase_modulation_lme = struct();
-for i = 1:length(models)
-    formula = models{i};
-
-    % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-    %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
-
-    lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-%     lme = fitlme(tbl, formula,'DummyVarCoding','effects');
-%     lme = fitlme(tbl, formula);
-
-%     lme.Coefficients
-
-    % 1. Get the Fixed Effects and their Covariance Matrix
-    beta_vec = lme.fixedEffects;
-    vcov_mat = lme.CoefficientCovariance; % The Var-Cov matrix of fixed effects
-
-    % 2. Identify indices for States 0, 1, and 2 interactions
-    names = lme.CoefficientNames;
-    if sum(contains(names,'JointState'))>0
-        idx0 = find(contains(names, ':JointState_0'));
-        idx1 = find(contains(names, ':JointState_1'));
-        idx2 = find(contains(names, ':JointState_2'));
-        %         idx =find(contains(names, ':JointState'));
-
-        % 3. Calculate Beta 3 (The negative sum)
-        beta_3 = -(beta_vec(idx0) + beta_vec(idx1) + beta_vec(idx2));
-
-        % 4. Calculate the Variance for Beta 3 using the Covariance Matrix
-        % Formula: Var(H*beta) = H * Vcov * H'
-        H = zeros(1, length(names));
-        H([idx0, idx1, idx2]) = -1;
-        var_3 = H * vcov_mat * H';
-
-    else
-        idx0 = find(contains(names, ':Match_trough'));
-        % 3. Calculate Beta 3 (The negative sum)
-        beta_3 = -(beta_vec(idx0));
-
-        % 4. Calculate the Variance for Beta 3 using the Covariance Matrix
-        % Formula: Var(H*beta) = H * Vcov * H'
-        H = zeros(1, length(names));
-        H([idx0]) = -1;
-        var_3 = H * vcov_mat * H';
-    end
-
-    % 5. Get SE and CI
-    ci_3 = [beta_3 - 1.9599*sqrt(var_3), beta_3 + 1.9599*sqrt(var_3)];
-    t_stat = beta_3 / sqrt(var_3);
-    p_value = 2 * (1 - tcdf(abs(t_stat), lme.DFE));
-
-
-    SO_phase_modulation_lme(i).model = lme;
-    SO_phase_modulation_lme(i).variable = [lme.Coefficients.Name; {[lme.Coefficients.Name{end}(1:end-1) '3']}];
-    SO_phase_modulation_lme(i).p = [lme.Coefficients.pValue(:); p_value];
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    SO_phase_modulation_lme(i).b = [lme.Coefficients.Estimate(:); beta_3];
-    SO_phase_modulation_lme(i).t = [lme.Coefficients.tStat(:); t_stat];
-    SO_phase_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:); ci_3];
-    SO_phase_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
-    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    SO_phase_modulation_lme(i).marginal_R2 = marginal_R2;
-end
-
-% for i = 1:2
-clear VariableIdx
-% Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
-VariableIdx = find(contains(SO_phase_modulation_lme(i).variable, ':JointState'));
-% nBoot = 1000;
-colour_lines = [ ...
-    241, 182, 218;   % original end (lightest)
-    226, 132, 187;   % interpolated 2/3
-    212,  78, 156;   % interpolated 1/3
-    231, 41, 138    % original start (darkest)
-    ] / 256;
-
-fig = figure('Name','SO phase state KDE reactivation coherence','Position',[482 111 665 851]);
-sgtitle('SO phase state KDE reactivation coherence')
-% fig = figure('Name','SO phase state KDE reactivation coherence (complex random models)','Position',[482 111 665 851]);
-% sgtitle('SO phase state KDE reactivation coherence (complex random models)')
-
-titles = {'PRE V1 log odds','POST V1 log odds','PRE V1 log odds','POST V1 log odds'}
-for i = 1:4
-    if sum(contains(SO_phase_modulation_lme(i).variable, ':JointState'))>0
-        VariableIdx = find(contains(SO_phase_modulation_lme(i).variable, ':JointState'));
-    else
-        VariableIdx = find(contains(SO_phase_modulation_lme(i).variable, ':Match_trough'));
-    end
-    clear b_CI b_mean
-    b_CI = [SO_phase_modulation_lme(i).b_CI];
-    b_mean = [SO_phase_modulation_lme(i).b];
-
-    % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
-
-    % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
-    % sgtitle('Spindle power KDE reactivation coherence PRE')
-    %
-
-    lci_boot = [b_mean - b_CI(:,1)];
-    uci_boot = [b_CI(:,2)-b_mean ];
-
-    subplot(3,4,i)
-    bar_width = 0.3;      % Width of the bars
-    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
-    % Plot Bar
-    hold on;
-    for n = 1:length(VariableIdx)
-        bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-
-        % Plot 95% CI Error Bar
-        errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(1+group_offset*(n-1),0.02+n*0.02,sprintf('%.3e',SO_phase_modulation_lme(i).p(VariableIdx(n))))
-    end
-
-    ylabel('Standardised b')
-    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
-    xlim([0.5 2.3])
-%     ylim([-0.07 0.1])
-    ylim([-0.05 0.06])
-    title(titles{i})
-end
-
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme_complex_random.mat'),'SO_phase_modulation_lme');
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_phase_modulation_lme.mat'),'SO_phase_modulation_lme');
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
-
-
-
-%% Spindle power
-%%%%%%
-%%%%%%
-%%%%%% PRE and HPC -> POST
-spindle_power_modulation_lme = struct();
-tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.csv'));
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.csv'));
-
-tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.csv'));
-% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.mat'));
-% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.mat'));
-% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.mat'));
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1.csv'));
-% 
-% tbl.HPC_trackID = nan(size(tbl.AnimalID));
-% tbl.V1_trackID_PRE = nan(size(tbl.AnimalID));
-% for nsession = 1:max(tbl.SessionID)
-%     idx = find(tbl.SessionID == nsession);
-%     HPC_thresholds = prctile(tbl.HPC_logodds(idx),[25 75]);
-%     tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) > HPC_thresholds(2))) = 1;
-%     tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) < HPC_thresholds(1))) = 2;
-% 
-%     V1_thresholds = prctile(tbl.V1_logodds_PRE(idx),[25 75]);
-%     tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) > V1_thresholds(2))) = 1;
-%     tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) < V1_thresholds(1))) = 2;
-% end
-
-tbl.AnimalID = categorical(tbl.AnimalID);
-tbl.SessionID = categorical(tbl.SessionID);
-tbl.Spindle_Match = categorical(tbl.Spindle_Match);
-tbl.Spindle_NonMatch = categorical(tbl.Spindle_NonMatch);
-% tbl.HPC_trackID = categorical(tbl.HPC_trackID);
-% tbl.V1_trackID_PRE = categorical(tbl.V1_trackID_PRE);
-% 
-% formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + (1| SessionID) + (V1_logodds_PRE - 1| SessionID) + (SpindlePower_Match - 1| SessionID) + (1| AnimalID) + (V1_logodds_PRE - 1| AnimalID) + (SpindlePower_Match - 1| AnimalID)';
-% 
-% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + (1| SessionID) + (V1_logodds - 1| SessionID) + (SpindlePower_Match - 1| SessionID) + (1| AnimalID) + (V1_logodds - 1| AnimalID) + (SpindlePower_Match - 1| AnimalID)';
-% 
-% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + (1+V1_logodds+ SpindlePower_Match| SessionID) + (1+V1_logodds+ SpindlePower_Match| AnimalID)';
-% 
-% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds + SpindlePower_Match + SpindlePower_Match| AnimalID)';
-% 
-% 
-% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1| AnimalID) + (1| SessionID) +(V1_logodds + SpindlePower_Match + SpindlePower_Match - 1| SessionID) + (V1_logodds + SpindlePower_Match + SpindlePower_Match -1| AnimalID)';
-% 
-% 
-% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch  + (1| SessionID) +((V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch)) - 1| SessionID) + (V1_logodds | AnimalID)';
-% 
-% 
-% formula = ['HPC_logodds ~ V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) + ' ...
-%            '(1 + V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | SessionID) + ' ...
-%            '(1 + V1_logodds | AnimalID)'];
-% 
-% 
-% % formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (1+V1_logodds_PRE + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds_PRE| AnimalID)';
-% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1+V1_logodds + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds| AnimalID)';
-% % lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'FullCholesky', 'FullCholesky'});
-% 
-% % formula = 'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (1 | SessionID) + (1 | AnimalID)';
-% 
-% formula = 'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)';
-% 
-% 
-% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds*( SpindlePower_Match + SpindlePower_NonMatch) | AnimalID)';
-% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds| AnimalID)';
-% formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (1| AnimalID)';
-% 
-% lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-% % lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'FullCholesky'});
-% % lme = fitlme(tbl, formula,'DummyVarCoding','effects');
-% %     lme = fitlme(tbl, formula)
-% lme.Coefficients
-% [Psi, ~, ~] = covarianceParameters(lme);
-% Psi_matrix = Psi{1}
-% 
-% 
-% models = {'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)',
-%     'HPC_logodds ~ V1_logodds * Spindle_Match + V1_logodds * Spindle_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds *( SpindlePower_Match + SpindlePower_Match) | AnimalID)'};
-% 
-% models = {'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)',
-%     'HPC_logodds ~ V1_logodds * Spindle_Match + V1_logodds * Spindle_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds *( SpindlePower_Match + SpindlePower_Match) | AnimalID)'};
-% 
-% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE| SessionID) + (V1_logodds_PRE| AnimalID)',
-%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds | SessionID) + (V1_logodds | AnimalID)'};
-
-
-
-models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (1| SessionID) + (1| AnimalID)',
-    'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1 | SessionID) + (1 | AnimalID)'};
-
-% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE * (SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds_PRE * (SpindlePower_Match + SpindlePower_NonMatch)| AnimalID)',
-%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | SessionID) + (V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | AnimalID)'};
-
-models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE + SpindlePower_Match + SpindlePower_NonMatch| SessionID) + (V1_logodds_PRE + SpindlePower_Match + SpindlePower_NonMatch| AnimalID)',
-    'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds +SpindlePower_Match + SpindlePower_NonMatch | SessionID) + (V1_logodds +SpindlePower_Match + SpindlePower_NonMatch | AnimalID)'};
-
-for i = 1:length(models)
-    formula = models{i};
-
-    % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-    %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
-
-    lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-%     lme = fitlme(tbl, formula)
-    lme.Coefficients
-% [Psi, ~, ~] = covarianceParameters(lme);
-% Psi_matrix = Psi{1}
-    spindle_power_modulation_lme(i).model = lme;
-    spindle_power_modulation_lme(i).variable = [lme.Coefficients.Name];
-    spindle_power_modulation_lme(i).p = [lme.Coefficients.pValue(:)];
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    spindle_power_modulation_lme(i).b = [lme.Coefficients.Estimate(:)];
-    spindle_power_modulation_lme(i).t = [lme.Coefficients.tStat(:)];
-    spindle_power_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
-    spindle_power_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
-    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    spindle_power_modulation_lme(i).marginal_R2 = marginal_R2;
-end
-
-
-
-% for i = 1:2
-clear VariableIdx
-% Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
-% VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-% nBoot = 1000;
-colour_lines = [ ...
-    241, 182, 218;   % original end (lightest)
-%     226, 132, 187;   % interpolated 2/3
-%     212,  78, 156;   % interpolated 1/3
-    231, 41, 138    % original start (darkest)
-    ] / 256;
-
-fig = figure('Name','Spindle power KDE reactivation coherence','Position',[482 111 665 851]);
-sgtitle('Spindle power KDE reactivation coherence')
-
-VariableName = {'SpindlePower_NonMatch:V1','SpindlePower_Match:V1'}
-% VariableName = {'PRE','HPC'};
-titles = {'PRE V1','POST V1'};
-for i = 1:2
-    %     if sum(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'))>0
-    %         VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-    %     else
-    clear VariableIdx
-    for n = 1:length(VariableName)
-    VariableIdx(n) = find(contains(spindle_power_modulation_lme(i).variable, VariableName{n}));
-    end
-    %     end
-    clear b_CI b_mean
-    b_CI = [spindle_power_modulation_lme(i).b_CI];
-    b_mean = [spindle_power_modulation_lme(i).b];
-
-    % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
-
-    % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
-    % sgtitle('Spindle power KDE reactivation coherence PRE')
-    %
-
-    lci_boot = [b_mean - b_CI(:,1)];
-    uci_boot = [b_CI(:,2)-b_mean ];
-
-    subplot(3,4,i)
-    bar_width = 0.3;      % Width of the bars
-    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
-    % Plot Bar
-    hold on;
-    for n = 1:length(VariableIdx)
-        bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-
-        % Plot 95% CI Error Bar
-        errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(1+group_offset*(n-1),0+n*0.01,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(n))))
-    end
-
-    ylabel('Standardised b')
-    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
-    xlim([0.5 2.3])
-    ylim([-0.025 0.025])
-    title(titles{i})
-end
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_power_modulation_lme.mat'),'spindle_power_modulation_lme');
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
-
-
-%% SO and spindle interaction
-SO_spindle_modulation_lme = strcut();
-
-% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.csv'));
-
-tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.csv'));
-tbl.AnimalID = categorical(tbl.AnimalID);
-tbl.SessionID = categorical(tbl.SessionID);
-tbl.Spindle_Match = categorical(tbl.Spindle_Match);
-tbl.Spindle_NonMatch = categorical(tbl.Spindle_NonMatch);
-tbl.Match_trough = categorical(tbl.Match_trough);
-% tbl.Match_peak = categorical(tbl.Match_peak);
-tbl.JointState = categorical(tbl.JointState);
-
-% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + V1_logodds_PRE * JointState + (1| SessionID) + (1| AnimalID)',
-%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + V1_logodds * JointState + (1| SessionID) + (1| AnimalID)'};
-models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match * Match_trough + (1| SessionID) + (1| AnimalID)',
-    'HPC_logodds ~ V1_logodds * SpindlePower_Match * Match_trough + (1| SessionID) + (1| AnimalID)'};
-
-for i = 1:length(models)
-    formula = models{i};
-
-%     lme = fitlme(tbl, formula,'CovariancePattern', {'Diagonal', 'Diagonal'});
-    lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-%     lme = fitlme(tbl, formula)
-    lme.Coefficients
-
-    SO_spindle_modulation_lme(i).model = lme;
-    SO_spindle_modulation_lme(i).variable = [lme.Coefficients.Name];
-    SO_spindle_modulation_lme(i).p = [lme.Coefficients.pValue(:)];
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    SO_spindle_modulation_lme(i).b = [lme.Coefficients.Estimate(:)];
-    SO_spindle_modulation_lme(i).t = [lme.Coefficients.tStat(:)];
-    SO_spindle_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
-    SO_spindle_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
-    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    SO_spindle_modulation_lme(i).marginal_R2 = marginal_R2;
-end
-
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','SO_spindle_modulation_lme.mat'),'SO_spindle_modulation_lme');
-
-% % for i = 1:2
-% clear VariableIdx
-% % Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
-% % VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-% % nBoot = 1000;
-% colour_lines = [ ...
-%     241, 182, 218;   % original end (lightest)
-% %     226, 132, 187;   % interpolated 2/3
-% %     212,  78, 156;   % interpolated 1/3
-%     231, 41, 138    % original start (darkest)
-%     ] / 256;
-% 
-% fig = figure('Name','SO phase + Spindle power KDE reactivation coherence','Position',[482 111 665 851]);
-% sgtitle('SO phase + Spindle power KDE reactivation coherence')
-% 
-% VariableName = {'SpindlePower_NonMatch:V1','SpindlePower_Match:V1'}
-% % VariableName = {'PRE','HPC'};
-% titles = {'PRE V1','POST V1'};
-% for i = 1:2
-%     %     if sum(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'))>0
-%     %         VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-%     %     else
-%     clear VariableIdx
-%     for n = 1:length(VariableName)
-%     VariableIdx(n) = find(contains(spindle_power_modulation_lme(i).variable, VariableName{n}));
-%     end
-%     %     end
-%     clear b_CI b_mean
-%     b_CI = [spindle_power_modulation_lme(i).b_CI];
-%     b_mean = [spindle_power_modulation_lme(i).b];
-% 
-%     % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
-% 
-%     % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
-%     % sgtitle('Spindle power KDE reactivation coherence PRE')
-%     %
-% 
-%     lci_boot = [b_mean - b_CI(:,1)];
-%     uci_boot = [b_CI(:,2)-b_mean ];
-% 
-%     subplot(3,4,i)
-%     bar_width = 0.3;      % Width of the bars
-%     group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
-%     % Plot Bar
-%     hold on;
-%     for n = 1:length(VariableIdx)
-%         bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-% 
-%         % Plot 95% CI Error Bar
-%         errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-%         text(1+group_offset*(n-1),0+n*0.01,sprintf('%.3e',spindle_power_modulation_lme(i).p(VariableIdx(n))))
-%     end
-% 
-%     ylabel('Standardised b')
-%     set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
-%     xlim([0.5 2.3])
-%     ylim([-0.025 0.025])
-%     title(titles{i})
-% end
-%% PRE and HPC log odds -> POST
-%%%%%%
-%%%%%%
-%%%%%% PRE and HPC -> POST
-PRE_POST_V1_log_odds_lme = struct();
-% models = {['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-%         '+ (1 | AnimalID) + (V1_logodds_PRE - 1 | AnimalID) + (JointState - 1 | AnimalID) ' ...
-%         '+ (1 | SessionID) + (V1_logodds_PRE - 1 | SessionID) + (JointState - 1 | SessionID)'],...
-%         ['HPC_logodds ~ V1_logodds * JointState ' ...
-%         '+ (1 | AnimalID) + (V1_logodds - 1 | AnimalID) + (JointState - 1 | AnimalID) ' ...
-%         '+ (1 | SessionID) + (V1_logodds - 1 | SessionID) + (JointState - 1 | SessionID)']};
-
-% models = {['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-%         '+ (V1_logodds_PRE | AnimalID)' ...
-%         '+ (V1_logodds_PRE| SessionID)'],...
-%         ['HPC_logodds ~ V1_logodds * JointState ' ...
-%         '+ (V1_logodds  | AnimalID) ' ...
-%         '+ (V1_logodds | SessionID)']};
-tbl = readtable('V1_HPC_reactivation_coherence_lme_HPC1.csv');
-
-tbl.HPC_trackID = nan(size(tbl.AnimalID));
-tbl.V1_trackID_PRE = nan(size(tbl.AnimalID));
-for nsession = 1:max(tbl.SessionID)
-    idx = find(tbl.SessionID == nsession);
-    HPC_thresholds = prctile(tbl.HPC_logodds(idx),[25 75]);
-    tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) > HPC_thresholds(2))) = 1;
-    tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) < HPC_thresholds(1))) = 2;
-
-    V1_thresholds = prctile(tbl.V1_logodds_PRE(idx),[25 75]);
-    tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) > V1_thresholds(2))) = 1;
-    tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) < V1_thresholds(1))) = 2;
-end
-
-tbl.AnimalID = categorical(tbl.AnimalID);
-tbl.SessionID = categorical(tbl.SessionID);
-tbl.HPC_trackID = categorical(tbl.HPC_trackID);
-tbl.V1_trackID_PRE = categorical(tbl.V1_trackID_PRE);
-
-
-
-% 
-% formula = 'V1_logodds ~ V1_logodds_PRE + HPC_logodds + (1| SessionID) + (V1_logodds_PRE - 1| SessionID) + (HPC_logodds - 1| SessionID) + (1| AnimalID) + (V1_logodds_PRE - 1| AnimalID) + (HPC_logodds - 1| AnimalID)';
-% formula = 'V1_logodds ~ V1_logodds_PRE + HPC_logodds +  (V1_logodds_PRE + HPC_logodds| SessionID) +  (V1_logodds_PRE + HPC_logodds| AnimalID)';
-% 
-% formula = 'V1_logodds ~ V1_logodds_PRE + HPC_trackID + (1| SessionID) + (V1_logodds_PRE - 1| SessionID) + (HPC_trackID - 1| SessionID) + (1| AnimalID) + (V1_logodds_PRE - 1| AnimalID) + (HPC_trackID - 1| AnimalID)';
-% 
-% formula = 'V1_logodds ~ V1_logodds_PRE + HPC_trackID +  (V1_logodds_PRE + HPC_trackID| SessionID) +  (V1_logodds_PRE + HPC_trackID| AnimalID)';
-% 
-% formula = 'V1_logodds ~ V1_trackID_PRE + HPC_trackID +  (V1_trackID_PRE + HPC_trackID| SessionID) +  (V1_trackID_PRE + HPC_trackID| AnimalID)';
-formula = 'V1_logodds ~ V1_trackID_PRE + HPC_trackID + (1| SessionID) + (V1_trackID_PRE - 1| SessionID) + (HPC_trackID - 1| SessionID) + (1| AnimalID) + (V1_trackID_PRE - 1| AnimalID) + (HPC_trackID - 1| AnimalID)';
-
-lme = fitlme(tbl, formula,'DummyVarCoding','effects');
-%     lme = fitlme(tbl, formula)
-lme.Coefficients
-[Psi, ~, ~] = covarianceParameters(lme);
-Psi_matrix = Psi{1}
-
-
-models = {'V1_logodds ~ V1_logodds_PRE + HPC_logodds +  (V1_logodds_PRE + HPC_logodds| SessionID) +  (V1_logodds_PRE + HPC_logodds| AnimalID) ',
-    'V1_logodds ~ V1_trackID_PRE + HPC_trackID +  (V1_trackID_PRE + HPC_trackID| SessionID) +  (V1_trackID_PRE + HPC_trackID| AnimalID)'};
-
-for i = 1:length(models)
-    formula = models{i};
-
-    % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
-    %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
-
-    lme = fitlme(tbl, formula,'DummyVarCoding','effects');
-%     lme = fitlme(tbl, formula)
-    lme.Coefficients
-
-    PRE_POST_V1_log_odds_lme(i).model = lme;
-    PRE_POST_V1_log_odds_lme(i).variable = [lme.Coefficients.Name];
-    PRE_POST_V1_log_odds_lme(i).p = [lme.Coefficients.pValue(:)];
-    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
-    PRE_POST_V1_log_odds_lme(i).b = [lme.Coefficients.Estimate(:)];
-    PRE_POST_V1_log_odds_lme(i).t = [lme.Coefficients.tStat(:)];
-    PRE_POST_V1_log_odds_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
-    PRE_POST_V1_log_odds_lme(i).R2 = lme.Rsquared.Adjusted;
-    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
-    PRE_POST_V1_log_odds_lme(i).marginal_R2 = marginal_R2;
-end
-
-% for i = 1:2
-clear VariableIdx
-% Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
-% VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-% nBoot = 1000;
-colour_lines = [ ...
-    241, 182, 218;   % original end (lightest)
-%     226, 132, 187;   % interpolated 2/3
-%     212,  78, 156;   % interpolated 1/3
-    231, 41, 138    % original start (darkest)
-    ] / 256;
-
-fig = figure('Name','PRE and HPC log odds predicting V1 log odds KDE reactivation coherence','Position',[482 111 665 851]);
-sgtitle('SO phase state KDE reactivation coherence')
-
-VariableName = {'PRE','HPC'};
-titles = {'HPC log odds','HPC reactivation track'};
-for i = 1:2
-    %     if sum(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'))>0
-    %         VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
-    %     else
-    VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, VariableName));
-    %     end
-    clear b_CI b_mean
-    b_CI = [PRE_POST_V1_log_odds_lme(i).b_CI];
-    b_mean = [PRE_POST_V1_log_odds_lme(i).b];
-
-    % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
-
-    % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
-    % sgtitle('Spindle power KDE reactivation coherence PRE')
-    %
-
-    lci_boot = [b_mean - b_CI(:,1)];
-    uci_boot = [b_CI(:,2)-b_mean ];
-
-    subplot(3,4,i)
-    bar_width = 0.3;      % Width of the bars
-    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
-    % Plot Bar
-    hold on;
-    for n = 1:length(VariableIdx)
-        bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-
-        % Plot 95% CI Error Bar
-        errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(1+group_offset*(n-1),0.02+n*0.02,sprintf('%.3e',PRE_POST_V1_log_odds_lme(i).p(VariableIdx(n))))
-    end
-
-    ylabel('Standardised b')
-    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
-    xlim([0.5 2.3])
-    ylim([-0.01 0.35])
-    title(titles{i})
-end
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','PRE_POST_V1_log_odds_lme.mat'),'PRE_POST_V1_log_odds_lme');
-save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 %% Ripple power
 nBoot = 1000;
@@ -1417,9 +510,7 @@ colour_lines = [ ...
     231, 41, 138    % original start (darkest)
 ] / 256;
 
-ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
-ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
-ripple_info.ripple_power = max([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)]')';
+
 
 %%%%%% mixed effect model (ripple power)
 bins_to_use = bin_centers>0 & bin_centers<0.1;
@@ -1455,15 +546,15 @@ for i = 1:10
     %
     tbl = table([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)],...
         mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
         categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'RipplePower','V1_logodds','HPC_logodds','HPC_trackID','AnimalID','SessionID'});
 
 
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_ripple_power_lme_PRE1.csv');
-
-    lme = fitlme(tbl, 'V1_logodds ~ HPC_trackID * RipplePower + (1 | SessionID) + (1 | AnimalID)','DummyVarCoding', 'effects','CovariancePattern', {'Diagonal', 'Diagonal'});
-%     lme = fitlme(tbl, formula,'DummyVarCoding', 'effects');
-    lme.Coefficients
-
+    writetable(tbl, 'V1_HPC_reactivation_coherence_ripple_power_lme_PRE1.csv');
 
 
     lme = fitlme(tbl, 'V1_logodds ~ HPC_trackID + (HPC_trackID | SessionID)','DummyVarCoding', 'effects');
@@ -2022,19 +1113,16 @@ for probe_no = 1:2
         % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
         % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
 
-        temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>0&LFP_tvec<=0.1,session_count==nsession,probe_no));
+%         temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>0&LFP_tvec<=0.1,session_count==nsession,probe_no));
 %         temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.1&LFP_tvec<=0,session_count==nsession,probe_no));
-%         temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.1&LFP_tvec<=0.1,session_count==nsession,probe_no));
+        temp = mean(ripple_info.spindle_amplitude_temporal(LFP_tvec>-0.1&LFP_tvec<=0.1,session_count==nsession,probe_no));
 
-%         percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
-%         spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
 
-        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} temp];
+%         spindle_percentile{probe_no} = [spindle_percentile{probe_no} temp];
     end
 end
-ripple_info.spindle_amplitude = [spindle_amplitude{1}; spindle_amplitude{2}]';
-
-
 spindle_percentile = [spindle_percentile{1}; spindle_percentile{2}];
 ripple_info.spindle_percentile = spindle_percentile';
 ripple_info.spindle_amplitude = ripple_info.spindle_percentile;
@@ -2050,7 +1138,7 @@ spindle_amplitude=[];
 for probe_no = 1:2
     spindle_amplitude{probe_no}=[];
     for nsession = 1:length(sessions_to_process)
-        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
     end
 end
 
@@ -2776,12 +1864,9 @@ mean_bias = mean(z_bias(bins_to_use, :), 'omitnan');
 % selected_events = length(mean_bias);
 
 thresholds = prctile(abs(mean_bias_V1), 0:10:100);
-thresholds_PRE = prctile(abs(mean_bias_V1_PRE), 0:10:100);
-thresholds_HPC = prctile(abs(mean_bias), 0:10:100);
-
+thresholds_PRE = prctile(abs(mean_bias_V1), 0:10:100);
 thresholds = thresholds(1:end-1);
 thresholds_PRE = thresholds_PRE(1:end-1);
-thresholds_HPC = thresholds_HPC(1:end-1);
 
 % spindle_power_log_odds
 
@@ -2793,60 +1878,173 @@ for i = 1:10
     th = thresholds_PRE(i);
     t1 = find(mean_bias_V1_PRE >= th);
     t2 = find(mean_bias_V1_PRE <= -th);
-    selected_events = [t1 t2];
 
-    th = thresholds(i);
-    t1 = find(mean_bias_V1 >= th);
-    t2 = find(mean_bias_V1 <= -th);
-    selected_events = [t1 t2];
-
-    th = thresholds_HPC(i);
-    t1 = find(mean_bias >= th);
-    t2 = find(mean_bias <= -th);
-    selected_events = [t1 t2];
+%     th = thresholds(i);
+%     t1 = find(mean_bias_V1 >= th);
+%     t2 = find(mean_bias_V1 <= -th);
     % %
+    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0);
+    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0);
+    % t1 = t1(ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) >0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) >0);
+    % t2 = t2(ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1) > 0 & ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2) >0);
 
-    tbl = table(normalize([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)],'zscore'),...
-        [ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
+    % t1 = t1(ripple_info.spindle_amplitude(t1,2) >0 & ripple_info.spindle_amplitude(t1,1) >0);
+    % t2 = t2(ripple_info.spindle_amplitude(t2,1) > 0 & ripple_info.spindle_amplitude(t2,2) >0);
+    selected_events = [t1 t2];
+    %
+
+    % tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
+    %     [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
+    %     normalize([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],'zscore'),...
+    %     normalize([ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],'zscore'),...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+    % 
+
+    % tbl = table([ripple_info.SO_phase_temporal(LFP_bin,t1,2) ripple_info.SO_phase_temporal(LFP_bin,t2,1)]',...
+    %     [ripple_info.SO_phase_temporal(LFP_bin,t1,1) ripple_info.SO_phase_temporal(LFP_bin,t2,2)]',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+
+
+    tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
         [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
         normalize([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],'zscore'),...
         normalize([ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],'zscore'),...
-        [ripple_info.spindle_presence(t1,2); ripple_info.spindle_presence(t2,1)],...
-        [ripple_info.spindle_presence(t1,1); ripple_info.spindle_presence(t2,2)],...
         normalize(mean_bias_V1_PRE(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),normalize(mean_bias(selected_events)','zscore'),categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'RipplePower','SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch',...
-        'Spindle_Match','Spindle_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
+        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
 
-    tbl.Match_trough = tbl.SOPhase_Match < -pi/2 | tbl.SOPhase_Match > pi/2 ;
-    tbl.NonMatch_trough = tbl.SOPhase_NonMatch < -pi/2 | tbl.SOPhase_NonMatch > pi/2 ;
-    tbl.JointState = (2 * tbl.Match_trough + tbl.NonMatch_trough);
-    tbl.JointState = categorical(tbl.JointState);
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme_PRE1.csv');
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme_POST1.csv');
-    writetable(tbl, 'V1_HPC_reactivation_coherence_lme_HPC1.csv');
-
-    tbl = table([ripple_info.ripple_power(t1); ripple_info.ripple_power(t2)], ...
-        [ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
+    tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
         [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
-        [ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],...
-        [ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],...
-        [ripple_info.spindle_presence(t1,2); ripple_info.spindle_presence(t2,1)],...
-        [ripple_info.spindle_presence(t1,1); ripple_info.spindle_presence(t2,2)],...
-        mean_bias_V1_PRE(selected_events)',mean_bias_V1(selected_events)',mean_bias(selected_events)',categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
-        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'RipplePower','SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch',...
-        'Spindle_Match','Spindle_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
+        normalize([ripple_info.spindle_amplitude(t1,2); ripple_info.spindle_amplitude(t2,1)],'zscore'),...
+        normalize([ripple_info.spindle_amplitude(t1,1); ripple_info.spindle_amplitude(t2,2)],'zscore'),...
+        normalize(mean_bias_V1_PRE(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),normalize(mean_bias(selected_events)','zscore'),categorical([ones(length(t1),1); 2*ones(length(t2),1)]),...
+        categorical(subject_id(selected_events)),categorical(session_count(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match','SpindlePower_NonMatch','V1_logodds_PRE','V1_logodds','HPC_logodds','V1_trackID','AnimalID','SessionID'});
 
     tbl.Match_trough = tbl.SOPhase_Match < -pi/2 | tbl.SOPhase_Match > pi/2 ;
     tbl.NonMatch_trough = tbl.SOPhase_NonMatch < -pi/2 | tbl.SOPhase_NonMatch > pi/2 ;
     tbl.JointState = (2 * tbl.Match_trough + tbl.NonMatch_trough);
     tbl.JointState = categorical(tbl.JointState);
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme_PRE1_raw.csv');
-%     writetable(tbl, 'V1_HPC_reactivation_coherence_lme_POST1_raw.csv');
-    writetable(tbl, 'V1_HPC_reactivation_coherence_lme_HPC1_raw.csv');
+    writetable(tbl, 'V1_HPC_reactivation_coherence_lme_PRE1.csv');
 
 
+
+    % LFP_bin_PRE = 46;
+    % LFP_bin_POST = 56;
+    % 
+    % tbl = table([ripple_info.SO_phase(t1,2); ripple_info.SO_phase(t2,1)],...
+    %     [ripple_info.SO_phase(t1,1); ripple_info.SO_phase(t2,2)],...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_PRE,t2,2)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,2) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,1)],'zscore')',...
+    %     normalize([ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t1,1) ripple_info.spindle_amplitude_temporal(LFP_bin_POST,t2,2)],'zscore')',...
+    %     normalize(mean_bias(selected_events)','zscore'),normalize(mean_bias_V1(selected_events)','zscore'),categorical([2*ones(length(t1),1); ones(length(t2),1)]),...
+    %     categorical(subject_id(selected_events)),'VariableNames',{'SOPhase_Match','SOPhase_NonMatch','SpindlePower_Match_PRE','SpindlePower_NonMatch_PRE',...
+    %     'SpindlePower_Match','SpindlePower_NonMatch','V1_logodds','HPC_logodds','V1_trackID','AnimalID'});
+
+
+
+
+%     lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID + (V1_trackID| AnimalID) + (V1_trackID| SessionID)', 'DummyVarCoding', 'effects');
+%     lme.Coefficients
+% 
+% 
+%     lme = fitlme(tbl, 'HPC_logodds ~ V1_trackID* JointState + (V1_trackID| AnimalID) + (V1_trackID| SessionID)', 'DummyVarCoding', 'effects');
+%     lme.Coefficients
+%     
+
+    formula = ['HPC_logodds ~ V1_logodds * JointState ' ...
+        '+ (1 | AnimalID) + (V1_logodds - 1 | AnimalID) + (JointState - 1 | AnimalID) + (V1_logodds:JointState - 1 | AnimalID) ' ...
+        '+ (1 | SessionID) + (V1_logodds - 1 | SessionID) + (JointState - 1 | SessionID) + (V1_logodds:JointState - 1 | SessionID)'];
+
+    formula = ['HPC_logodds ~ V1_logodds * JointState ' ...
+        '+ (1 | AnimalID) ' ...
+        '+ (1| SessionID)'];
+
+%     formula = ['HPC_logodds ~ V1_trackID * JointState ' ...
+%         '+ (1 | AnimalID) ' ...
+%         '+ (1 | SessionID)'];
+    formula = ['HPC_logodds ~ V1_trackID * JointState ' ...
+        '+ (V1_trackID | AnimalID)'];
+    lme = fitlme(tbl, formula, 'DummyVarCoding', 'effects');
+    lme.Coefficients
+
+    % lme = fitlme(tbl, 'HPC_logodds ~SpindlePower_NonMatch *V1_trackID + SpindlePower_Match * V1_trackID  + (1 | AnimalID)');
+
+    formula = ['HPC_logodds ~ V1_logodds * SpindlePower_Match ' ...
+        '+ (1 | AnimalID) + (V1_logodds - 1 | AnimalID) + (SpindlePower_Match - 1 | AnimalID) + (V1_logodds:SpindlePower_Match - 1 | AnimalID) ' ...
+        '+ (1 | SessionID) + (V1_logodds - 1 | SessionID) + (SpindlePower_Match - 1 | SessionID) + (V1_logodds:SpindlePower_Match - 1 | SessionID)'];
+
+    formula = ['HPC_logodds ~ V1_logodds * SpindlePower_Match ' ...
+        '+ (V1_logodds| AnimalID) ' ...
+        '+ (V1_logodds | SessionID)'];
+
+    lme = fitlme(tbl, formula, 'DummyVarCoding', 'effects');
+    lme.Coefficients
+
+    % lme = fitlme(tbl, 'HPC_logodds ~ SpindlePower_Match_PRE * V1_trackID + SpindlePower_Match * V1_trackID + (1 | AnimalID)');
+
+    % 
+    % H = [0,0, 0, 0, 0, 0, 1 , -1];
+    % [pVal, FStat] = coefTest(lme, H);
+
+
+    %
+    SO_phase_modulation_lme(i).variable = lme.Coefficients.Name;
+    SO_phase_modulation_lme(i).p = lme.Coefficients.pValue(:);
+    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
+    SO_phase_modulation_lme(i).b = lme.Coefficients.Estimate(:);
+    SO_phase_modulation_lme(i).t = lme.Coefficients.tStat(:);
+    SO_phase_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+    % 
+    % VariableNames = tbl.Properties.VariableNames;
+    % beta_boot=[];
+    % beta_shuffled=[];
+    % t_boot=[];
+    % t_shuffled=[];
+    % parfor iBoot = 1:1000
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',true);
+    % 
+    %     tbl_temp = tbl;
+    %     for var = 1:length(VariableNames)
+    %         tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
+    %     end
+    % 
+    % 
+    %     lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * JointState + (1 | AnimalID)');
+    %     beta_boot(iBoot,:) = [lme.Coefficients.Estimate(:)];
+    %     t_boot(iBoot,:) = [lme.Coefficients.tStat(:)];
+    %     % t_boot(iBoot) = [lme.Coefficients.tStat(5)];
+    %     % non_match_t_boot(iBoot) = [lme.Coefficients.tStat(6)];
+    % 
+    % 
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     idx = datasample(s, 1:length(selected_events), length(selected_events), 'Replace',false);
+    % 
+    %     tbl_temp = tbl;
+    %     for var = 1:length(VariableNames)
+    %         tbl_temp.(VariableNames{var}) = tbl.(VariableNames{var})(idx);
+    %     end
+    %     tbl_temp.HPC_logodds = tbl.HPC_logodds;
+    % 
+    % 
+    %     lme = fitlme(tbl_temp, 'HPC_logodds ~ V1_trackID * JointState + (1 | AnimalID)');
+    % 
+    %     beta_shuffled(iBoot,:) = [lme.Coefficients.Estimate(:)];
+    %     t_shuffled(iBoot,:) = [lme.Coefficients.tStat(:)];
+    %     % t_shuffled(iBoot) = [lme.Coefficients.tStat(5)];
+    %     % non_match_t_shuffled(iBoot) = [lme.Coefficients.tStat(6)];
+    % end
+
+
+% b_CI(i,:,:) = prctile(beta_boot,[2.5 97.5]);
 end
 
+
+prctile(beta_boot(:,7)-beta_boot(:,8),[1.5 99.5])
 
 
 % prctile(beta_boot,[2.5 97.5])
@@ -2914,21 +2112,3 @@ for i = 1:10
     title(i)
 end
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

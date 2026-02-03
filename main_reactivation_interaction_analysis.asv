@@ -332,26 +332,30 @@ for nsession =1:length(experiment_info)
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
+        
         if isempty(DIR)
             continue
         end
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
-
+%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
+%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
         % 20ms ROC AUC decoding performance
-        KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{2}.FPR);
+        index = 1;
+        KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{index}.FPR);
 
-        KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{2}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{2}.AUC_shuffle);
-        KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{index}.AUC_real);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_real);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
         
-        KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_shuffle);
-        KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_real);
+        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_real);
+        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
         
         % 100ms ROC AUC decoding performance
         KDE_RUN_validations_all.HPC_AUC(2,nsession) = mean(KDE_RUN_validations{end}.AUC_real);
@@ -374,7 +378,9 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
+% save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
+save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all','-v7.3')
+% save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 
 
 %% Plotting ROC AUC of RUN 2 track discrimination 
@@ -385,9 +391,11 @@ elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
 load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
+load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination HPC RUN1';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter';
 title_text = 'PLS contextual discrimination HPC RUN1 scatter';
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
@@ -937,7 +945,6 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_psth_whole = probability;
 
 KDE_log_odds_UP = struct();
-
 for nprobe = 1:2
     for nsession =1:length(experiment_info)
         event_id = find(slow_waves_all(nprobe).UP_session_count == nsession);
@@ -947,19 +954,22 @@ for nprobe = 1:2
         temp_log_odds(temp_log_odds>=inf) = prctile(temp1,99.5);
         temp_log_odds(temp_log_odds<=-inf) = prctile(temp1,0.5);
 
+        temp_log_odds_V1 = KDE_reactivation_V1_UP_all(nprobe).zscored_log_odds{nsession};
+        temp1 = temp_log_odds_V1(isfinite(temp_log_odds_V1));
+        temp_log_odds_V1(temp_log_odds_V1>=inf) = prctile(temp1,99.5);
+        temp_log_odds_V1(temp_log_odds_V1<=-inf) = prctile(temp1,0.5);
+
         for nevent = 1:max(KDE_reactivation_UP_all(nprobe).event_id{nsession})
-            event_duration = diff(slow_waves_all(1).UP_ints(event_id(nevent),:))
-
-            temp = temp_log_odds(temp_event_id == nevent);
-            nbins = floor(event_duration/0.01); 
-            
-            KDE_log_odds_UP.V1_l
-
+%             event_duration = diff(slow_waves_all(1).UP_ints(event_id(nevent),:));
+%             temp = temp_log_odds(temp_event_id == nevent);
+%             nbins = floor(event_duration/0.01); 
+            KDE_log_odds_UP(nprobe).HPC{event_id(nevent)} = temp_log_odds(temp_event_id == nevent);
+            KDE_log_odds_UP(nprobe).V1{event_id(nevent)} = temp_log_odds_V1(temp_event_id == nevent);
         end
     end
 end
 
-
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_log_odds_UP.mat'),'KDE_log_odds_UP');
 
 %% Add on PLS KDE regression Ripples
 

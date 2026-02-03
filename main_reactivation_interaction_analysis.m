@@ -332,26 +332,30 @@ for nsession =1:length(experiment_info)
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'extracted_clusters*.mat'));
+%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
+        
         if isempty(DIR)
             continue
         end
 
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
-
+%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
+%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
         % 20ms ROC AUC decoding performance
-        KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{2}.FPR);
+        index = 1;
+        KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{index}.FPR);
 
-        KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{2}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{2}.AUC_shuffle);
-        KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{2}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{index}.AUC_real);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_real);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
         
-        KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{2}.AUC_shuffle);
-        KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{2}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_real);
+        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_real);
+        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
         
         % 100ms ROC AUC decoding performance
         KDE_RUN_validations_all.HPC_AUC(2,nsession) = mean(KDE_RUN_validations{end}.AUC_real);
@@ -374,7 +378,9 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
+% save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
+save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all','-v7.3')
+% save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 
 
 %% Plotting ROC AUC of RUN 2 track discrimination 
@@ -384,11 +390,13 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
-load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
+% load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
+load(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all')
 
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination HPC RUN1';
-title_text = 'PLS contextual discrimination HPC RUN1 scatter';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter';
+title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins)';
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';
@@ -413,6 +421,8 @@ fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 %     title(sprintf('ROC curve HPC %i ms bins',timebins(n))); legend(PLOT(1:2),{ 'Real', 'Shuffle'},'box', 'off');
 %     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 % end
+
+line_w = 0.2;
 
 for n = 1:2
     nexttile
@@ -470,7 +480,7 @@ for n = 1:2
     mean_shuf = mean(shuffled_data, 'omitnan');
     bar_colors = [231,41,138; 0, 0, 0]/255;
     x_pos = [1 2];
-    
+
     hold on
 
     % 1. Plot the Bars (Mean only, no error bars)
@@ -539,7 +549,8 @@ end
 %%%%%%%%% V1
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination V1 RUN1';
- title_text = 'PLS contextual discrimination V1 RUN1 scatter';
+%  title_text = 'PLS contextual discrimination V1 RUN1 scatter';
+ title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins)';
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';

@@ -1283,8 +1283,7 @@ for nsession =1:length(experiment_info)
         disp('PLS KDE validation for HPC data')
         options = session_info(n).probe(1);
 
-        %         bin_sizes = [0.01,0.02,0.05,0.1];  % 10ms, 20 ms and 50 ms and 100ms
-        bin_sizes = [0.02,0.1];  % 20 ms and 100ms
+        bin_sizes = [0.01,0.02,0.05,0.1];  % 10ms, 20 ms and 50 ms and 100ms
         KDE_RUN_validations = cell(1, length(bin_sizes));
 
         for nbin = 1:length(bin_sizes)
@@ -1297,31 +1296,23 @@ for nsession =1:length(experiment_info)
                 session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
                 [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
                 session_clusters_RUN.track_ID_all{1},spikes_template,...
-                PLS(1), KDE_RUN(1), options,'event_type','HPC','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',0,'shuffle_option', 0);
-% 
-%             KDE_RUN_validations{nbin} = PLS_KDE_Reactivation_decoding_validation(session_clusters_RUN.tvec{1},...
+                PLS(1), KDE_RUN(1), options,'event_type','HPC','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',0);
+            
+            KDE_RUN_validations{nbin} = PLS_KDE_Reactivation_decoding_validation(session_clusters_RUN.tvec{1},...
+                session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
+                [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
+                session_clusters_RUN.track_ID_all{1},spikes_template,...
+                PLS(1), KDE_RUN(1), options,'event_type','HPC','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',0);
+%             [PLS(ripple_probe_no) KDE_RUN(ripple_probe_no) KDE_reactivation(ripple_probe_no)] = PLS_KDE_Reactivation_decoding(session_clusters_RUN.tvec{1},...
 %                 session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
 %                 [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
 %                 session_clusters_RUN.track_ID_all{1},spikes_template,...
-%                 PLS(1), KDE_RUN(1), options,'event_type','HPC','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',1);
+%                 [ripples(nprobe).onset ripples(nprobe).offset],spikes_sleep,options,'event_type','HPC ripples','time_bin_size_RUN',0.02)
 
-
-%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation%s',stimulus_name{n})))
-%             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation%s',stimulus_name{n})),[],'ContentType','image')
-
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation_all_bins%s',stimulus_name{n})))
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation_all_bins%s',stimulus_name{n})),[],'ContentType','image')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation%s',stimulus_name{n})))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_validation%s',stimulus_name{n})),[],'ContentType','image')
         end
         toc
-
-%         if contains(stimulus_name{n},'Masa2tracks')
-%             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-%             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_RUN_validations%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN_validations','-v7.3')
-%         else
-%             save(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations','-v7.3');
-% 
-%             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-%         end
 
         if contains(stimulus_name{n},'Masa2tracks')
             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
@@ -1335,8 +1326,7 @@ for nsession =1:length(experiment_info)
 
 
         %%%%% V1
-        %         bin_sizes = [0.01,0.02,0.05,0.1];  % 10ms, 20 ms and 50 ms and 100ms
-        bin_sizes = [0.02,0.1];  % 10ms, 20 ms and 50 ms and 100ms
+        bin_sizes = [0.01,0.02,0.05,0.1];  % 10ms, 20 ms and 50 ms and 100ms
         KDE_RUN_validations_V1 = cell(1, length(bin_sizes));
 
         tic
@@ -1350,18 +1340,12 @@ for nsession =1:length(experiment_info)
                 session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
                 [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
                 session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-                PLS_V1(1), KDE_RUN_V1(1), options,'event_type','V1','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',0,'shuffle_option', 0);
+                PLS_V1(1), KDE_RUN_V1(1), options,'event_type','V1','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin));
 
-%             KDE_RUN_validations_V1{nbin} = PLS_KDE_Reactivation_decoding_validation(session_clusters_RUN.tvec{1},...
-%                 session_clusters_RUN.position{1},session_clusters_RUN.speed{1},...
-%                 [session_clusters_RUN.start_time_all{1} session_clusters_RUN.end_time_all{1}'],...
-%                 session_clusters_RUN.track_ID_all{1},V1_spikes_template,...
-%                 PLS_V1(1), KDE_RUN_V1(1), options,'event_type','V1','time_bin_size',bin_sizes(nbin),'time_bin_size_moving',bin_sizes(nbin),'good_bin_option',1);
 
-%             mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation%s',stimulus_name{n})))
-%             save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation%s',stimulus_name{n})),[],'ContentType','image')
-            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation_all_bins%s',stimulus_name{n})))
-            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation_all_bins%s',stimulus_name{n})),[],'ContentType','image')
+            mkdir(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation%s',stimulus_name{n})))
+            save_all_figures(fullfile(options.ANALYSIS_DATAPATH,'..','figures',sprintf('KDE_V1_validation%s',stimulus_name{n})),[],'ContentType','image')
+
         end
         toc
 
@@ -1374,6 +1358,7 @@ for nsession =1:length(experiment_info)
 % 
 %             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
 %         end
+
         if contains(stimulus_name{n},'Masa2tracks')
             % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
             save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_RUN_validations_V1_all_bins%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN_validations_V1','-v7.3')
