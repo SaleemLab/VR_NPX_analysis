@@ -122,6 +122,7 @@ hemispheres = {'L','R'};
 
 
 %%%% high ripple
+ripple_modulation_percentile=[];
 for hemi = 1:2
     for track_id = 1:2
         V1_SUA_reactivation_PSTH{hemi}{track_id}=[];
@@ -130,44 +131,49 @@ for hemi = 1:2
         V1_SUA_track_difference{hemi}=[];
         V1_SUA_z_track_difference{hemi}=[];
         cell_session_id{hemi} = [];
+        ripple_modulation_percentile{hemi} = [];
     end
 end
-
 % 
-for nsession = 1:length(sessions_to_process)
-
-    for hemi = 1:2
-        track_difference=[];
-        z_track_difference=[];
-        % cell_index
-
-        cell_index = find((contains(session_clusters_all.region{nsession},'V1') &...
-            contains(session_clusters_all.region{nsession},hemispheres{hemi})));
-
-        % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
-        %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1'));
-        % 
-        % cell_index = find((session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
-        %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') &...
-        %     contains(session_clusters_all.region{nsession},hemispheres{hemi})));
-
-        cell_session_id{hemi} = [cell_session_id{hemi} nsession*ones(1,length(cell_index))];
-
-        for ncell = 1:length(cell_index)
-            FR_distribution = reshape([session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),1}; ...
-                session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),2}], 1, []);
-
-            z_track_difference(ncell) = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),1})) - mean(FR_distribution)) ./ std(FR_distribution) ...
-                - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),2})) - mean(FR_distribution)) ./ std(FR_distribution);
-        end
-
-        V1_SUA_z_track_difference{hemi} = [V1_SUA_z_track_difference{hemi};  z_track_difference'];
-
-        track_difference{hemi} = session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
-        V1_SUA_track_difference{hemi} = [V1_SUA_track_difference{hemi};  track_difference];
-    end
-end
-
+% % 
+% for nsession = 1:length(sessions_to_process)
+% 
+%     for hemi = 1:2
+%         track_difference=[];
+%         z_track_difference=[];
+%         % cell_index
+% 
+%         cell_index = find((contains(session_clusters_all.region{nsession},'V1') &...
+%             contains(session_clusters_all.region{nsession},hemispheres{hemi})));
+% 
+%         % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
+%         %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1'));
+%         %
+%         % cell_index = find((session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
+%         %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') &...
+%         %     contains(session_clusters_all.region{nsession},hemispheres{hemi})));
+% 
+%         ripple_modulation_percentile{hemi} = [ ripple_modulation_percentile{hemi} ...
+%             max([ripple_modulation_PSTH_all{nsession}(1).ripple_modulation_percentile(cell_index); ripple_modulation_PSTH_all{nsession}(2).ripple_modulation_percentile(cell_index);...
+%             ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE(cell_index); ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE(cell_index)])];
+% 
+%         cell_session_id{hemi} = [cell_session_id{hemi} nsession*ones(1,length(cell_index))];
+% 
+%         for ncell = 1:length(cell_index)
+%             FR_distribution = reshape([session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),1}; ...
+%                 session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),2}], 1, []);
+% 
+%             z_track_difference(ncell) = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),1})) - mean(FR_distribution)) ./ std(FR_distribution) ...
+%                 - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),2})) - mean(FR_distribution)) ./ std(FR_distribution);
+%         end
+% 
+%         V1_SUA_z_track_difference{hemi} = [V1_SUA_z_track_difference{hemi};  z_track_difference'];
+% 
+%         track_difference = session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
+%         V1_SUA_track_difference{hemi} = [V1_SUA_track_difference{hemi};  track_difference];
+%     end
+% end
+% 
 
 for nsession = 1:length(sessions_to_process)
 
@@ -175,33 +181,35 @@ for nsession = 1:length(sessions_to_process)
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
 
-    threshold = prctile(ripple_powers,25);
+    threshold = prctile(ripple_powers,75);
     % threshold = 0;
     [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(event_id,event_times,0.05);
-    high_ripple_index = find( ripple_powers < threshold);
-    event_times = event_times(high_ripple_index);
-    event_id = event_id(high_ripple_index);
-
+    high_ripple_index = find( ripple_powers > threshold);
+    % event_times = event_times(high_ripple_index);
+    % event_id = event_id(high_ripple_index);
     % event_ids_first = intersect(high_ripple_index,event_ids_first);
-    % event_times = event_times(event_ids_first);
-    % event_id = event_id(event_ids_first);
+
+    event_times = event_times(event_ids_first);
+    event_id = event_id(event_ids_first);
+    ripple_powers = ripple_powers(event_ids_first);
+
 
     %%%%%%%%%% V1
     V1_zPSTH=cell(1,2);
     V1_PSTH=cell(1,2);
-    track_difference=cell(1,2);
+    track_difference=[];
     for hemi = 1:2
         % cell_index
 
-        cell_index = (contains(session_clusters_all.region{nsession},'V1') &...
-            contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+        cell_index = find((contains(session_clusters_all.region{nsession},'V1') &...
+            contains(session_clusters_all.region{nsession},hemispheres{hemi})));
 
         % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
         %     contains(session_clusters_all.region{nsession},'V1'));
 
-        cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
-            contains(session_clusters_all.region{nsession},'V1') &...
-            contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+        % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
+        %     contains(session_clusters_all.region{nsession},'V1') &...
+        %     contains(session_clusters_all.region{nsession},hemispheres{hemi}));
 
         % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi) &...
         %     session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1'));
@@ -212,7 +220,11 @@ for nsession = 1:length(sessions_to_process)
 
         cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
 
-        cell_session_id{hemi} = [cell_session_id{hemi} nsession*ones(1,length(cell_index))];
+        % cell_session_id{hemi} = [cell_session_id{hemi} nsession*ones(1,length(cell_index))];
+
+        ripple_modulation_percentile{hemi} = [ ripple_modulation_percentile{hemi} ...
+            max([ripple_modulation_PSTH_all{nsession}(1).ripple_modulation_percentile(cell_index); ripple_modulation_PSTH_all{nsession}(2).ripple_modulation_percentile(cell_index);...
+            ripple_modulation_PSTH_all{nsession}(1).modulation_percentile_PRE(cell_index); ripple_modulation_PSTH_all{nsession}(2).modulation_percentile_PRE(cell_index)])];
 
         for ncell = 1:length(cell_index)
             FR_distribution = reshape([session_clusters_all.spatial_response_raw{nsession}{cell_index(ncell),1}; ...
@@ -224,7 +236,7 @@ for nsession = 1:length(sessions_to_process)
 
         V1_SUA_z_track_difference{hemi} = [V1_SUA_z_track_difference{hemi};  z_track_difference'];
 
-        track_difference{hemi} = session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
+        track_difference= session_clusters_all.mean_FR{nsession}(cell_index,abs(hemi-3)) - session_clusters_all.mean_FR{nsession}(cell_index,hemi);
         V1_SUA_track_difference{hemi} = [V1_SUA_track_difference{hemi};  track_difference];
 
 
@@ -234,12 +246,12 @@ for nsession = 1:length(sessions_to_process)
         % spike_id(spike_id>0)=1;
 
         ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
+            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
 
         % V1_PSTH{hemi} = [zscore(squeeze(ripple_modulation(1).PSTH),0,2) zscore(squeeze(ripple_modulation(2).PSTH),0,2)];
         V1_PSTH{hemi} = [ripple_modulation(1).PSTH_zscored ripple_modulation(2).PSTH_zscored];
+        V1_PSTH_raw{hemi} = [ripple_modulation(1).PSTH ripple_modulation(2).PSTH];
         % V1_PSTH{hemi} = ;
-        
     end
 
     % Get mean bias for each ripple event in HPC and get within session
@@ -252,6 +264,8 @@ for nsession = 1:length(sessions_to_process)
     log_odds_threshold = prctile(mean_bias,[25 75]);
     T1_index = find(mean_bias > log_odds_threshold(2));
     T2_index = find(mean_bias < log_odds_threshold(1));
+    % T1_index = find(ripple_powers' >= prctile(ripple_powers,50) & mean_bias > log_odds_threshold(2));
+    % T2_index = find(ripple_powers' >= prctile(ripple_powers,50) & mean_bias < log_odds_threshold(1));
 
     for hemi = 1:2
         % for track_id = 1:2
@@ -265,27 +279,116 @@ for nsession = 1:length(sessions_to_process)
         V1_SUA_reactivation_PSTH_even{hemi}{2}=[V1_SUA_reactivation_PSTH_even{hemi}{2}; squeeze(mean(V1_PSTH{hemi}(:,T2_index(2:2:end),:),2))];
     end
 
-    
-    % mean_bias = mean(z_bias_V1_KDE(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
-    % log_odds_threshold = prctile(mean_bias,[25 75]);
-    % T1_index_V1 = find(mean_bias > log_odds_threshold(2));
-    % T2_index_V1 = find(mean_bias < log_odds_threshold(1));
-    % 
-    % T1_index = intersect(T1_index,T1_index_V1);
-    % T2_index = intersect(T2_index,T2_index_V1);
+    %%%% Plot example neurons PSTH (session 16)
+    xbins = ripple_modulation(1).bins  ;
+    for hemi = 1:2
+        cell_index_all = find(cell_session_id{hemi} == nsession);
 
-    % bin_centers>0 & bin_centers<0.1;
+        cell_index = find((contains(session_clusters_all.region{nsession},'V1') &...
+            contains(session_clusters_all.region{nsession},hemispheres{hemi})));
+        if hemi == 2
+            [ripple_difference,sorted_rank]=sort(mean(squeeze(mean(V1_PSTH{hemi}(:,T1_index,xbins>-0.2 & xbins<0.2),2)),2) ...
+                - mean(squeeze(mean(V1_PSTH{hemi}(:,T2_index,xbins>-0.2 & xbins<0.2),2)),2));
+        else
+            [ripple_difference,sorted_rank]=sort(mean(squeeze(mean(V1_PSTH{hemi}(:,T2_index,xbins>-0.2 & xbins<0.2),2)),2) ...
+                - mean(squeeze(mean(V1_PSTH{hemi}(:,T1_index,xbins>-0.2 & xbins<0.2),2)),2));
+            ripple_difference = -ripple_difference;
+        end
 
-    % z_bias_KDE
+        for n = length(cell_index)-10:length(cell_index)
+            fig = figure('Name',sprintf('Session %i %s V1 cell index %i',nsession,hemispheres{hemi},cell_index_all((sorted_rank(n)))))
 
-    % z_bias_V1_KDE
-    % for hemi = 1:2
-    % 
-    %     squeeze(mean(V1_PSTH{hemi}(:,T2_index,:),2));
-    % end
+            pos_bins = 1:1:140;
+            spatial_PSTH1 = session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),1};
+            spatial_PSTH2 = session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),2};
+            se1 = std(spatial_PSTH1)./sqrt(size(spatial_PSTH1,1));
+            se2 = std(spatial_PSTH2)./sqrt(size(spatial_PSTH2,1));
+            subplot(2,2,1)
+
+            fill([pos_bins fliplr(pos_bins)], [mean(spatial_PSTH1)-se1 fliplr(mean(spatial_PSTH1)+se1)], ...
+                'b', 'EdgeColor','none','FaceAlpha',0.15);
+            hold on
+            plot(pos_bins, mean(spatial_PSTH1), 'b', 'LineWidth', 1.2);
+
+            fill([pos_bins fliplr(pos_bins)], [mean(spatial_PSTH2)-se2 fliplr(mean(spatial_PSTH2)+se2)], ...
+                'r', 'EdgeColor','none','FaceAlpha',0.15);
+            plot(pos_bins, mean(spatial_PSTH2), 'r', 'LineWidth', 1.2);
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            title('Spatial PSTH')
+            subplot(2,2,2)
+            PSTH1 = squeeze(V1_PSTH_raw{hemi}(sorted_rank(n),T1_index,:));
+            PSTH2 = squeeze(V1_PSTH_raw{hemi}(sorted_rank(n),T2_index,:));
+            se1 = std(PSTH1)./sqrt(size(PSTH1,1));
+            se2 = std(PSTH2)./sqrt(size(PSTH2,1));
+
+            fill([xbins fliplr(xbins)], [mean(PSTH1)-se1 fliplr(mean(PSTH1)+se1)], ...
+                'b', 'EdgeColor','none','FaceAlpha',0.15);
+            hold on
+            plot(xbins,mean(PSTH1),'b', 'LineWidth', 1.2);hold on
+
+            fill([xbins fliplr(xbins)], [mean(PSTH2)-se2 fliplr(mean(PSTH2)+se2)], ...
+                'r', 'EdgeColor','none','FaceAlpha',0.15);
+            plot(xbins,mean(PSTH2),'r', 'LineWidth', 1.2)
+
+            xlim([-0.5 0.5])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            title('Ripple PSTH')
+
+
+
+
+            FR_distribution = reshape([session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),1}; ...
+                session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),2}], 1, []);
+                        pos_bins = 1:1:140;
+            spatial_PSTH1 = (session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),1}-mean(FR_distribution))./std(FR_distribution);
+            spatial_PSTH2 = (session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),2}-mean(FR_distribution))./std(FR_distribution);
+            se1 = std(spatial_PSTH1)./sqrt(size(spatial_PSTH1,1));
+            se2 = std(spatial_PSTH2)./sqrt(size(spatial_PSTH2,1));
+
+            z_track_difference = (mean(mean(session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),1})) - mean(FR_distribution)) ./ std(FR_distribution) ...
+                - (mean(mean(session_clusters_all.spatial_response{nsession}{cell_index(sorted_rank(n)),2})) - mean(FR_distribution)) ./ std(FR_distribution);
+
+            subplot(2,2,3)
+
+            fill([pos_bins fliplr(pos_bins)], [mean(spatial_PSTH1)-se1 fliplr(mean(spatial_PSTH1)+se1)], ...
+                'b', 'EdgeColor','none','FaceAlpha',0.15);
+            hold on
+            plot(pos_bins, mean(spatial_PSTH1), 'b', 'LineWidth', 1.2);
+
+            fill([pos_bins fliplr(pos_bins)], [mean(spatial_PSTH2)-se2 fliplr(mean(spatial_PSTH2)+se2)], ...
+                'r', 'EdgeColor','none','FaceAlpha',0.15);
+            plot(pos_bins, mean(spatial_PSTH2), 'r', 'LineWidth', 1.2);
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            title(sprintf('Spatial PSTH (z) Track Diff %.3f',z_track_difference) )
+
+            subplot(2,2,4)
+            PSTH1 = squeeze(V1_PSTH{hemi}(sorted_rank(n),T1_index,:));
+            PSTH2 = squeeze(V1_PSTH{hemi}(sorted_rank(n),T2_index,:));
+            se1 = std(PSTH1)./sqrt(size(PSTH1,1));
+            se2 = std(PSTH2)./sqrt(size(PSTH2,1));
+
+            fill([xbins fliplr(xbins)], [mean(PSTH1)-se1 fliplr(mean(PSTH1)+se1)], ...
+                'b', 'EdgeColor','none','FaceAlpha',0.15);
+            hold on
+            plot(xbins,mean(PSTH1),'b', 'LineWidth', 1.2);hold on
+
+            fill([xbins fliplr(xbins)], [mean(PSTH2)-se2 fliplr(mean(PSTH2)+se2)], ...
+                'r', 'EdgeColor','none','FaceAlpha',0.15);
+            plot(xbins,mean(PSTH2),'r', 'LineWidth', 1.2)
+
+            xlim([-0.5 0.5])
+            set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+            title(sprintf('Ripple PSTH (z) Track Diff %.3f',ripple_difference(n)) )
+        end
+    end
+    %%%%
 end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_all_low.mat'),'V1_SUA_reactivation_PSTH',...
     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','ripple PSTH examples'),[])
+
 
 % save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_SUA_reactivation_PSTH_all_high.mat'),'V1_SUA_reactivation_PSTH',...
 %     'V1_SUA_reactivation_PSTH_odd','V1_SUA_reactivation_PSTH_even');
@@ -345,8 +448,10 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence 
 %%% Colormap
 % track1_color = [0 0 1]; % blue
 % track2_color = [1 0 0]; % red
-track1_color = [145,191,219]/256; % blue
-track2_color = [252,141,89]/256; % red
+% track1_color = [145,191,219]/256; % blue
+% track2_color = [252,141,89]/256; % red
+track1_color = [175,141,195]/256; % purple
+track2_color = [127,191,123]/256; % green
 
 
 n_half = 80;     % Number of steps from red to white and white to blue
@@ -793,6 +898,9 @@ V1_SUA_reactivation_PSTH_high = V1_SUA_reactivation_PSTH;
 windows_all = {all_windows,PRE_windows,POST_windows};
 
 %%% All ripples
+ripple_modulation_percentile =  [ripple_modulation_percentile{1} ripple_modulation_percentile{2}];
+
+is_modulated = ripple_modulation_percentile>0.95;
 track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
 psth1 = [V1_SUA_reactivation_PSTH_all{1}{1}(:,:); V1_SUA_reactivation_PSTH_all{2}{1}(:,:)];
 psth2 = [V1_SUA_reactivation_PSTH_all{1}{2}(:,:); V1_SUA_reactivation_PSTH_all{2}{2}(:,:)];
@@ -802,54 +910,89 @@ session_count = [cell_session_id{1} cell_session_id{2}];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
+y1 = double(mean(psth_diff(:,windows_all{1}),2,'omitnan'));
+y2 = double(mean(psth_diff(:,windows_all{2}),2,'omitnan'));
+y3 = double(mean(psth_diff(:,windows_all{3}),2,'omitnan'));
+x = track_difference;
+tbl = table(x,y1,y2,y3,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference_ALL','ripple_difference_PRE','ripple_difference_POST','animal_ids','session_ids'});
+% writecsv(tbl,'')
+% writetable(tbl,fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
+
 ripple_modulation_lme = struct();
 for nwin = 1:3
+
+    % y = double(mean(psth_diff(is_modulated,windows_all{nwin}),2,'omitnan'));
+    % x = track_difference(is_modulated);
+    % tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id(is_modulated), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+
     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
     x = track_difference;
+    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    % tbl = table(x, y,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
 
-    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id, 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-    lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % lme_simple = fitlme(tbl, 'ripple_difference ~ track_difference+ (1|animal_ids)+(1|session_ids)'...
+    %     ,'CovariancePattern', {'Diagonal', 'Diagonal'});
+    % lme_simple = fitlme(tbl, 'ripple_difference ~ track_difference+ (track_difference|animal_ids)+(1|session_ids)'...
+    %     ,'CovariancePattern', {'Diagonal', 'Diagonal'});
+    lme = fitlme(tbl, 'ripple_difference ~ track_difference+ (1|animal_ids)+(1|session_ids)'...
+        ,'CovariancePattern', {'Diagonal', 'Diagonal'});
+    % FullCholesky
+    % lme.Coefficients
+    % [Psi, ~, ~] = covarianceParameters(lme);
+    % Psi_matrix = Psi{1}
+    % compare(lme_simple, lme)
+
     ripple_modulation_lme(nwin).window = windows_all{nwin};
     % ripple_modulation_lme(nwin).window = lme.Coefficients.Estimate(2);
     ripple_modulation_lme(nwin).b = lme.Coefficients.Estimate(2);
+    ripple_modulation_lme(nwin).b_CI = [lme.Coefficients.Lower(2) lme.Coefficients.Upper(2)];
     ripple_modulation_lme(nwin).t_stat = lme.Coefficients.tStat(2);
     ripple_modulation_lme(nwin).p = lme.Coefficients.pValue(2);
+    [marginal_R2,conditional_R2] = calculate_marginal_R2(tbl,lme);
+    ripple_modulation_lme(nwin).marginal_R2 = marginal_R2;
+    ripple_modulation_lme(nwin).R2 = lme.Rsquared.Adjusted;
+    ripple_modulation_lme(nwin).model = lme;
+    % end
     % ripple_modulation_lme(nwin).b_CI(1) = lme.Coefficients.Lower(2);
     % ripple_modulation_lme(nwin).b_CI(2) = lme.Coefficients.Upper(2);
     % ripple_modulation_lme(nwin).p(2) = lme.Coefficients.pValue(2);
-
-    % Mixed effect model with shuffling
-    beta_shuffled = nan(1,1000);
-    t_shuffled = nan(1,1000);
-    beta_boot = nan(1,1000);
-    t_boot = nan(1,1000);
-
-    parfor iBoot = 1:1000
-        tic
-        s = RandStream('philox4x32_10', 'Seed', iBoot);
-        % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-
-        %Run Linear Mixed-Effects Model (bootstrapped)
-        tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-        beta_boot(iBoot) = lme.Coefficients.Estimate(2);
-        t_boot(iBoot) = lme.Coefficients.tStat(2);
-
-        %Run Linear Mixed-Effects Model (shuffled)
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
-        tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-
-        beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
-        t_shuffled(iBoot) = lme.Coefficients.tStat(2);
-        toc
-    end
-    ripple_modulation_lme(nwin).b_shuffle = beta_shuffled;
-    ripple_modulation_lme(nwin).t_stat_shuffle = t_shuffled;
-
-    ripple_modulation_lme(nwin).b_boot = beta_boot;
-    ripple_modulation_lme(nwin).t_stat_boot = t_boot;
+    %
+    % % Mixed effect model with shuffling
+    % beta_shuffled = nan(1,1000);
+    % t_shuffled = nan(1,1000);
+    % beta_boot = nan(1,1000);
+    % t_boot = nan(1,1000);
+    %
+    % parfor iBoot = 1:1000
+    %     tic
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %
+    %     %Run Linear Mixed-Effects Model (bootstrapped)
+    %     % tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference+ (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %     beta_boot(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_boot(iBoot) = lme.Coefficients.tStat(2);
+    %
+    %     %Run Linear Mixed-Effects Model (shuffled)
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
+    %     tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %     % tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %
+    %     beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_shuffled(iBoot) = lme.Coefficients.tStat(2);
+    %     toc
+    % end
+    % ripple_modulation_lme(nwin).b_shuffle = beta_shuffled;
+    % ripple_modulation_lme(nwin).t_stat_shuffle = t_shuffled;
+    %
+    % ripple_modulation_lme(nwin).b_boot = beta_boot;
+    % ripple_modulation_lme(nwin).t_stat_boot = t_boot;
 end
 
 
@@ -864,54 +1007,81 @@ session_count = [cell_session_id{1} cell_session_id{2}];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
+y1 = double(mean(psth_diff(:,windows_all{1}),2,'omitnan'));
+y2 = double(mean(psth_diff(:,windows_all{2}),2,'omitnan'));
+y3 = double(mean(psth_diff(:,windows_all{3}),2,'omitnan'));
+x = track_difference;
+tbl = table(x,y1,y2,y3,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference_ALL','ripple_difference_PRE','ripple_difference_POST','animal_ids','session_ids'});
+% writecsv(tbl,'')
+% writetable(tbl,fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_LOW.csv'));
+
+
 ripple_modulation_lme_low = struct();
 for nwin = 1:3
     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
     x = track_difference;
+    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
 
-    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id, 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-    lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % y = double(mean(psth_diff(is_modulated,windows_all{nwin}),2,'omitnan'));
+    % x = track_difference(is_modulated);
+    % tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id(is_modulated), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % tbl = table(x, y,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    lme = fitlme(tbl, 'ripple_difference ~ track_difference+ (1|animal_ids)+(1|session_ids)'...
+        ,'CovariancePattern', {'Diagonal', 'Diagonal'});
     ripple_modulation_lme_low(nwin).window = windows_all{nwin};
     % ripple_modulation_lme_low(nwin).window = lme.Coefficients.Estimate(2);
     ripple_modulation_lme_low(nwin).b = lme.Coefficients.Estimate(2);
+    ripple_modulation_lme_low(nwin).b_CI = [lme.Coefficients.Lower(2) lme.Coefficients.Upper(2)];
     ripple_modulation_lme_low(nwin).t_stat = lme.Coefficients.tStat(2);
     ripple_modulation_lme_low(nwin).p = lme.Coefficients.pValue(2);
+    [marginal_R2,conditional_R2] = calculate_marginal_R2(tbl,lme);
+    ripple_modulation_lme_low(nwin).marginal_R2 = marginal_R2;
+    ripple_modulation_lme_low(nwin).R2 = lme.Rsquared.Adjusted;
+    ripple_modulation_lme_low(nwin).model = lme;
     % ripple_modulation_lme(nwin).b_CI(1) = lme.Coefficients.Lower(2);
     % ripple_modulation_lme(nwin).b_CI(2) = lme.Coefficients.Upper(2);
     % ripple_modulation_lme(nwin).p(2) = lme.Coefficients.pValue(2);
-% end
-    % Mixed effect model with shuffling
-    beta_shuffled = nan(1,1000);
-    t_shuffled = nan(1,1000);
-    beta_boot = nan(1,1000);
-    t_boot = nan(1,1000);
-
-    parfor iBoot = 1:1000
-        tic
-        s = RandStream('philox4x32_10', 'Seed', iBoot);
-        % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-
-        %Run Linear Mixed-Effects Model (bootstrapped)
-        tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-        beta_boot(iBoot) = lme.Coefficients.Estimate(2);
-        t_boot(iBoot) = lme.Coefficients.tStat(2);
-
-        %Run Linear Mixed-Effects Model (shuffled)
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
-        tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-
-        beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
-        t_shuffled(iBoot) = lme.Coefficients.tStat(2);
-        toc
-    end
-    ripple_modulation_lme_low(nwin).b_shuffle = beta_shuffled;
-    ripple_modulation_lme_low(nwin).t_stat_shuffle = t_shuffled;
-
-    ripple_modulation_lme_low(nwin).b_boot = beta_boot;
-    ripple_modulation_lme_low(nwin).t_stat_boot = t_boot;
+    % end
+    % % Mixed effect model with shuffling
+    % beta_shuffled = nan(1,1000);
+    % t_shuffled = nan(1,1000);
+    % beta_boot = nan(1,1000);
+    % t_boot = nan(1,1000);
+    %
+    % parfor iBoot = 1:1000
+    %     tic
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %
+    %     %Run Linear Mixed-Effects Model (bootstrapped)
+    %     % tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %     beta_boot(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_boot(iBoot) = lme.Coefficients.tStat(2);
+    %
+    %     %Run Linear Mixed-Effects Model (shuffled)
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
+    %     % tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %
+    %     beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_shuffled(iBoot) = lme.Coefficients.tStat(2);
+    %     toc
+    % end
+    % ripple_modulation_lme_low(nwin).b_shuffle = beta_shuffled;
+    % ripple_modulation_lme_low(nwin).t_stat_shuffle = t_shuffled;
+    %
+    % ripple_modulation_lme_low(nwin).b_boot = beta_boot;
+    % ripple_modulation_lme_low(nwin).t_stat_boot = t_boot;
 end
 
 
@@ -926,72 +1096,96 @@ session_count = [cell_session_id{1} cell_session_id{2}];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
+y1 = double(mean(psth_diff(:,windows_all{1}),2,'omitnan'));
+y2 = double(mean(psth_diff(:,windows_all{2}),2,'omitnan'));
+y3 = double(mean(psth_diff(:,windows_all{3}),2,'omitnan'));
+x = track_difference;
+tbl = table(x,y1,y2,y3,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference_ALL','ripple_difference_PRE','ripple_difference_POST','animal_ids','session_ids'});
+% writecsv(tbl,'')
+% writetable(tbl,fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_HIGH.csv'));
+
+
 ripple_modulation_lme_high = struct();
 for nwin = 1:3
     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
     x = track_difference;
+    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
 
-    tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id, 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-    lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % y = double(mean(psth_diff(is_modulated,windows_all{nwin}),2,'omitnan'));
+    % x = track_difference(is_modulated);
+    % tbl = table(zscore(x), zscore(y,[],'omitnan'),subject_id(is_modulated), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % tbl = table(x, y,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
+    % lme = fitlme(tbl, 'ripple_difference ~ track_difference+ (track_difference|animal_ids)+(track_difference|session_ids)'...
+    %     ,'CovariancePattern', {'Diagonal', 'Diagonal'});
+    lme = fitlme(tbl, 'ripple_difference ~ track_difference+ (1|animal_ids)+(1|session_ids)'...
+        ,'CovariancePattern', {'Diagonal', 'Diagonal'});
     ripple_modulation_lme_high(nwin).window = windows_all{nwin};
     % ripple_modulation_lme_high(nwin).window = lme.Coefficients.Estimate(2);
     ripple_modulation_lme_high(nwin).b = lme.Coefficients.Estimate(2);
+    ripple_modulation_lme_high(nwin).b_CI = [lme.Coefficients.Lower(2) lme.Coefficients.Upper(2)];
     ripple_modulation_lme_high(nwin).t_stat = lme.Coefficients.tStat(2);
     ripple_modulation_lme_high(nwin).p = lme.Coefficients.pValue(2);
-% end
+
+    [marginal_R2,conditional_R2] = calculate_marginal_R2(tbl,lme);
+    ripple_modulation_lme_high(nwin).marginal_R2 = marginal_R2;
+    ripple_modulation_lme_high(nwin).R2 = lme.Rsquared.Adjusted;
+    ripple_modulation_lme_high(nwin).model = lme;
     % ripple_modulation_lme(nwin).b_CI(1) = lme.Coefficients.Lower(2);
     % ripple_modulation_lme(nwin).b_CI(2) = lme.Coefficients.Upper(2);
     % ripple_modulation_lme(nwin).p(2) = lme.Coefficients.pValue(2);
 
-    % Mixed effect model with shuffling
-    beta_shuffled = nan(1,1000);
-    t_shuffled = nan(1,1000);
-    beta_boot = nan(1,1000);
-    t_boot = nan(1,1000);
-
-    parfor iBoot = 1:1000
-        tic
-        s = RandStream('philox4x32_10', 'Seed', iBoot);
-        % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-
-        %Run Linear Mixed-Effects Model (bootstrapped)
-        tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-        beta_boot(iBoot) = lme.Coefficients.Estimate(2);
-        t_boot(iBoot) = lme.Coefficients.tStat(2);
-
-        %Run Linear Mixed-Effects Model (shuffled)
-        idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
-        tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
-        lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids)');
-
-        beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
-        t_shuffled(iBoot) = lme.Coefficients.tStat(2);
-        toc
-    end
-    ripple_modulation_lme_high(nwin).b_shuffle = beta_shuffled;
-    ripple_modulation_lme_high(nwin).t_stat_shuffle = t_shuffled;
-
-    ripple_modulation_lme_high(nwin).b_boot = beta_boot;
-    ripple_modulation_lme_high(nwin).t_stat_boot = t_boot;
+    % % Mixed effect model with shuffling
+    % beta_shuffled = nan(1,1000);
+    % t_shuffled = nan(1,1000);
+    % beta_boot = nan(1,1000);
+    % t_boot = nan(1,1000);
+    %
+    % parfor iBoot = 1:1000
+    %     tic
+    %     s = RandStream('philox4x32_10', 'Seed', iBoot);
+    %     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
+    %
+    %     %Run Linear Mixed-Effects Model (bootstrapped)
+    %     % tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     tbl = table(zscore(x(idx)), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %     beta_boot(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_boot(iBoot) = lme.Coefficients.tStat(2);
+    %
+    %     %Run Linear Mixed-Effects Model (shuffled)
+    %     idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
+    %     % tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx), 'VariableName',{'track_difference','ripple_difference','animal_ids'});
+    %     tbl = table(zscore(x), zscore(y(idx),[],'omitnan'),subject_id(idx),session_count(idx)', 'VariableName',{'track_difference','ripple_difference','animal_ids','session_ids'});
+    %
+    %     lme = fitlme(tbl, 'ripple_difference ~ track_difference + (1|animal_ids) + (1|session_ids) +(1|animal_ids:session_ids)');
+    %
+    %     beta_shuffled(iBoot) = lme.Coefficients.Estimate(2);
+    %     t_shuffled(iBoot) = lme.Coefficients.tStat(2);
+    %     toc
+    % end
+    % ripple_modulation_lme_high(nwin).b_shuffle = beta_shuffled;
+    % ripple_modulation_lme_high(nwin).t_stat_shuffle = t_shuffled;
+    %
+    % ripple_modulation_lme_high(nwin).b_boot = beta_boot;
+    % ripple_modulation_lme_high(nwin).t_stat_boot = t_boot;
 end
 
 
-
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all.mat'),'ripple_modulation_lme',...
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all_complex_random.mat'),'ripple_modulation_lme',...
     'ripple_modulation_lme_low','ripple_modulation_lme_high');
-% 
-% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation.mat'),'ripple_modulation_lme',...
+
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all.mat'),'ripple_modulation_lme',...
 %     'ripple_modulation_lme_low','ripple_modulation_lme_high');
-
-% 
-% for nwin = 1:3
-%     ripple_modulation_lme(nwin).window = find(windows_all{nwin});
-%     ripple_modulation_lme_low(nwin).window =find(windows_all{nwin});
-%     ripple_modulation_lme_high(nwin).window = find(windows_all{nwin});
-% end
-
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all.mat'),'ripple_modulation_lme',...
+    'ripple_modulation_lme_low','ripple_modulation_lme_high');
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all_complex_random.mat'),'ripple_modulation_lme',...
+%     'ripple_modulation_lme_low','ripple_modulation_lme_high');
 %%%%  ripples
 colour_lines = [ ...
     241, 182, 218;   % original end (lightest)
@@ -1003,8 +1197,8 @@ colour_lines = [ ...
 
 % nwin = 1;
 Fig = figure;
-Fig.Name = 'context-selective ripple modulation glme summary';
-
+% Fig.Name = 'context-selective ripple modulation glme summary complex random models';
+Fig.Name = 'context-selective ripple modulation glme summary simple';
 Fig.Position = [60 60 530 930];
 counter = 0;
 twin_text = {'All','PRE','POST'};
@@ -1015,17 +1209,20 @@ for nwin = 1:3
 
     % 1. Calculate Means
     p  = [ripple_modulation_lme(nwin).p; ripple_modulation_lme_low(nwin).p; ripple_modulation_lme_high(nwin).p]';
-    beta_boot = [ripple_modulation_lme(nwin).b_boot; ripple_modulation_lme_low(nwin).b_boot; ripple_modulation_lme_high(nwin).b_boot]';
-    beta_shuffled = [ripple_modulation_lme(nwin).b_shuffle; ripple_modulation_lme_low(nwin).b_shuffle; ripple_modulation_lme_high(nwin).b_shuffle]';
+    % beta_boot = [ripple_modulation_lme(nwin).b_boot; ripple_modulation_lme_low(nwin).b_boot; ripple_modulation_lme_high(nwin).b_boot]';
+    % beta_shuffled = [ripple_modulation_lme(nwin).b_shuffle; ripple_modulation_lme_low(nwin).b_shuffle; ripple_modulation_lme_high(nwin).b_shuffle]';
 
-    mean_boot = [ripple_modulation_lme(nwin).b ripple_modulation_lme_low(nwin).b ripple_modulation_lme_high(nwin).b];
-    mean_shuf = mean(beta_shuffled, 'omitnan');
+    % mean_boot = [ripple_modulation_lme(nwin).b ripple_modulation_lme_low(nwin).b ripple_modulation_lme_high(nwin).b];
+    % mean_shuf = mean(beta_shuffled, 'omitnan');
 
     % 2. Calculate 95% Confidence Intervals (Percentile Method)
     % This calculates the distance from the mean to the 2.5th and 97.5th percentiles
-    ci_boot = [mean_boot - prctile(beta_boot, 2.5); prctile(beta_boot, 97.5) - mean_boot];
-    ci_shuf = [mean_shuf - prctile(beta_shuffled, 2.5); prctile(beta_shuffled, 97.5) - mean_shuf];
+    % ci_boot = [mean_boot - prctile(beta_boot, 2.5); prctile(beta_boot, 97.5) - mean_boot];
+    % ci_shuf = [mean_shuf - prctile(beta_shuffled, 2.5); prctile(beta_shuffled, 97.5) - mean_shuf];
 
+    mean_boot = [ripple_modulation_lme(nwin).b ripple_modulation_lme_low(nwin).b ripple_modulation_lme_high(nwin).b];
+    ci_boot = [mean_boot(1)-ripple_modulation_lme(nwin).b_CI(1) mean_boot(2)-ripple_modulation_lme_low(nwin).b_CI(1) mean_boot(3)-ripple_modulation_lme_high(nwin).b_CI(1);
+        ripple_modulation_lme(nwin).b_CI(2)-mean_boot(1) ripple_modulation_lme_low(nwin).b_CI(2)-mean_boot(2) ripple_modulation_lme_high(nwin).b_CI(2)-mean_boot(3)];
     % 3. Plotting
     hold on;
     x = [1, 2, 3];
@@ -1039,11 +1236,11 @@ for nwin = 1:3
         % Plot 95% CI Error Bar
         errorbar(x(i)+ group_offset, mean_boot(i), ci_boot(1,i), ci_boot(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
 
-        % Plot Bar
-        bar(x(i) - group_offset, mean_shuf(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-        % Plot 95% CI Error Bar
-        errorbar(x(i)- group_offset, mean_shuf(i), ci_shuf(1,i), ci_shuf(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(x(i),0.07,sprintf('p = %.3e',p(i)))
+        % % Plot Bar
+        % bar(x(i) - group_offset, mean_shuf(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+        % % Plot 95% CI Error Bar
+        % errorbar(x(i)- group_offset, mean_shuf(i), ci_shuf(1,i), ci_shuf(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+        text(x(i),0.07+i*0.01,sprintf('p = %.3e',p(i)))
     end
 
     % Formatting
@@ -1052,51 +1249,51 @@ for nwin = 1:3
     ylabel('Standardized Beta');
     title('Mean Beta with 95% CI');
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-
+    ylim([-0.06 0.15])
 
 
     counter = counter+1;
     subplot(3,2,counter)
-
-    % 1. Calculate Means
-    p  = [ripple_modulation_lme(nwin).p; ripple_modulation_lme_low(nwin).p; ripple_modulation_lme_high(nwin).p]';
-    beta_boot = [ripple_modulation_lme(nwin).t_stat_boot; ripple_modulation_lme_low(nwin).t_stat_boot; ripple_modulation_lme_high(nwin).t_stat_boot]';
-    beta_shuffled = [ripple_modulation_lme(nwin).t_stat_shuffle; ripple_modulation_lme_low(nwin).t_stat_shuffle; ripple_modulation_lme_high(nwin).t_stat_shuffle]';
-
-    mean_boot = [ripple_modulation_lme(nwin).t_stat ripple_modulation_lme_low(nwin).t_stat ripple_modulation_lme_high(nwin).t_stat];
-    mean_shuf = mean(beta_shuffled, 'omitnan');
-
-    % 2. Calculate 95% Confidence Intervals (Percentile Method)
-    % This calculates the distance from the mean to the 2.5th and 97.5th percentiles
-    ci_boot = [mean_boot - prctile(beta_boot, 2.5); prctile(beta_boot, 97.5) - mean_boot];
-    ci_shuf = [mean_shuf - prctile(beta_shuffled, 2.5); prctile(beta_shuffled, 97.5) - mean_shuf];
-
-    % 3. Plotting
-    hold on;
-    x = [1, 2, 3];
-    % colors = [231, 41, 138; 256/2 256/2 256/2]/256; % Blue for Boot, Gray for Shuffled
-    bar_width = 0.3;      % Width of the bars
-    group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
-
-    for i = 1:3
-        % Plot Bar
-        bar(x(i) + group_offset, mean_boot(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-        % Plot 95% CI Error Bar
-        errorbar(x(i)+ group_offset, mean_boot(i), ci_boot(1,i), ci_boot(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-
-        % Plot Bar
-        bar(x(i) - group_offset, mean_shuf(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-        % Plot 95% CI Error Bar
-        errorbar(x(i)- group_offset, mean_shuf(i), ci_shuf(1,i), ci_shuf(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-        text(x(i),0.07,sprintf('p = %.3e',p(i)))
-    end
-
-    % Formatting
-    xticks([1 2 3]);
-    xticklabels({'All', 'low','high'});
-    ylabel('t stat');
-    % title('Mean t stat with 95% CI');
-    set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+    %
+    % % 1. Calculate Means
+    % p  = [ripple_modulation_lme(nwin).p; ripple_modulation_lme_low(nwin).p; ripple_modulation_lme_high(nwin).p]';
+    % beta_boot = [ripple_modulation_lme(nwin).t_stat_boot; ripple_modulation_lme_low(nwin).t_stat_boot; ripple_modulation_lme_high(nwin).t_stat_boot]';
+    % % beta_shuffled = [ripple_modulation_lme(nwin).t_stat_shuffle; ripple_modulation_lme_low(nwin).t_stat_shuffle; ripple_modulation_lme_high(nwin).t_stat_shuffle]';
+    %
+    % mean_boot = [ripple_modulation_lme(nwin).t_stat ripple_modulation_lme_low(nwin).t_stat ripple_modulation_lme_high(nwin).t_stat];
+    % % mean_shuf = mean(beta_shuffled, 'omitnan');
+    %
+    % % 2. Calculate 95% Confidence Intervals (Percentile Method)
+    % % This calculates the distance from the mean to the 2.5th and 97.5th percentiles
+    % ci_boot = [mean_boot - prctile(beta_boot, 2.5); prctile(beta_boot, 97.5) - mean_boot];
+    % % ci_shuf = [mean_shuf - prctile(beta_shuffled, 2.5); prctile(beta_shuffled, 97.5) - mean_shuf];
+    %
+    % % 3. Plotting
+    % hold on;
+    % x = [1, 2, 3];
+    % % colors = [231, 41, 138; 256/2 256/2 256/2]/256; % Blue for Boot, Gray for Shuffled
+    % bar_width = 0.3;      % Width of the bars
+    % group_offset = 0.15;    % Distance from the center integer (half the gap between bars)
+    %
+    % for i = 1:3
+    %     % Plot Bar
+    %     bar(x(i) + group_offset, mean_boot(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    %     % Plot 95% CI Error Bar
+    %     errorbar(x(i)+ group_offset, mean_boot(i), ci_boot(1,i), ci_boot(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    %
+    %     % % Plot Bar
+    %     % bar(x(i) - group_offset, mean_shuf(i),bar_width, 'FaceColor', colour_lines(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    %     % % Plot 95% CI Error Bar
+    %     % errorbar(x(i)- group_offset, mean_shuf(i), ci_shuf(1,i), ci_shuf(2,i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    %     % text(x(i),0.07,sprintf('p = %.3e',p(i)))
+    % end
+    %
+    % % Formatting
+    % xticks([1 2 3]);
+    % xticklabels({'All', 'low','high'});
+    % ylabel('t stat');
+    % % title('Mean t stat with 95% CI');
+    % set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
@@ -1136,12 +1333,12 @@ for nwin = 1:3
 
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2)
+    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
     ylabel('Ripple difference (z)')
-    text(-2,0.1,sprintf('p = %.3e',p))
+    text(-2,0.01,sprintf('p = %.3e',p))
     title([twin_text{nwin},' all'])
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
@@ -1172,7 +1369,7 @@ for nwin = 1:3
 
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2)
+    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
@@ -1208,7 +1405,7 @@ for nwin = 1:3
 
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2)
+    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
@@ -1225,8 +1422,8 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 %%%%%%%%%%%%%%%%%%%%%% PSTH visualisation ripple
 Fig = figure;
 % Fig.Name = 'All track preferring V1 response to track-selective reactivations';
-% Fig.Name = 'All track preferring V1 response to track-selective reactivations (high)';
-Fig.Name = 'All track preferring V1 response to track-selective reactivations (low)';
+Fig.Name = 'All track preferring V1 response to track-selective reactivations (high green purple)';
+% Fig.Name = 'All track preferring V1 response to track-selective reactivations (low)';
 
 % Fig.Name = 'All V1 response diff to track-selective reactivations (high)';
 % Fig.Name = 'V1 response to track-selective reactivations (0-0.2s)';
@@ -1469,8 +1666,8 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 Fig = figure;
 % Fig.Name = 'All track preferring V1 diff response to track-selective reactivations';
-Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (low)';
-% Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (high)';
+% Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (low)';
+Fig.Name = 'All track preferring V1 diff response to track-selective reactivations (high green purple)';
 Fig.Position = [60 60 1280 406];
 % Fig.Position = [60 60 1876 1023];
 Fig.Position = [60 60 1296 953];
@@ -1608,8 +1805,12 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 %%% Colormap
 % track1_color = [0 0 1]; % blue
 % track2_color = [1 0 0]; % red
-track1_color = [145,191,219]/256; % blue
-track2_color = [252,141,89]/256; % red
+% track1_color = [145,191,219]/256; % blue
+% track2_color = [252,141,89]/256; % red
+track1_color = [175,141,195]/256; % purple
+track2_color = [127,191,123]/256; % green
+
+
 white = ones(n_white, 3);
 
 n_half = 80;     % Number of steps from red to white and white to blue
@@ -1632,7 +1833,7 @@ red_white_blue = [r2w; white; w2b];
 red_white_blue = flip(red_white_blue);
 
 Fig = figure;
-Fig.Name = 'All track preferring V1 diff response to L-R track-selective reactivations (high smoothed)';
+Fig.Name = 'All track preferring V1 diff response to L-R track-selective reactivations (high green purple)';
 Fig.Position = [60 60 1280 406];
 % Fig.Position = [60 60 1876 1023];
 Fig.Position = [60 60 1296 953];
@@ -1661,7 +1862,8 @@ index = index(index1);
 
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
-h = imagesc(x_data,y_data,movmedian(psth1(index,:)-psth2(index,:),10,2,'omitnan'));
+% h = imagesc(x_data,y_data,movmedian(psth1(index,:)-psth2(index,:),10,2,'omitnan'));
+h = imagesc(x_data,y_data,psth1(index,:)-psth2(index,:));
 
 % xticks
 % xticklabels([])
@@ -1684,8 +1886,8 @@ index = index(index1);
 
 x_data = ripple_modulation(1).bins;
 y_data = 1:length(index);
-% h = imagesc(x_data,y_data,psth2(index,:)-psth1(index,:));
-h = imagesc(x_data,y_data,movmedian(psth1(index,:)-psth2(index,:),10,2,'omitnan'));
+h = imagesc(x_data,y_data,psth1(index,:)-psth2(index,:));
+% h = imagesc(x_data,y_data,movmedian(psth1(index,:)-psth2(index,:),10,2,'omitnan'));
 % xticks
 % xticklabels([])
 colorbar;colormap((red_white_blue));clim([-0.15 0.15])
@@ -2079,8 +2281,8 @@ save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence 
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_coherence_modulation.mat'),'V1_reactivation_coherence_modulation');
 % V1_reactivation_coherence_modulation1 = V1_reactivation_coherence_modulation;
 
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_coherence_modulation_low.mat'),'V1_reactivation_coherence_modulation_low');
-V1_reactivation_coherence_modulation = V1_reactivation_coherence_modulation_low;
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_reactivation_coherence_modulation_low.mat'),'V1_reactivation_coherence_modulation_low');
+% V1_reactivation_coherence_modulation = V1_reactivation_coherence_modulation_low;
 
 tvec = V1_reactivation_coherence_modulation(1).time_bins;
 hemispheres = {'L','R'};
@@ -2703,135 +2905,247 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 %%%%%%%%%%%%%% Mixed effect model
 %%%%%%%%%%%%%%
-ripple_track = [2*ones(1,length(V1_reactivation_coherence_modulation(1).V1_bias)) ones(1,length(V1_reactivation_coherence_modulation(2).V1_bias))]';
-v1_pre = [V1_reactivation_coherence_modulation(1).V1_bias V1_reactivation_coherence_modulation(2).V1_bias]';
-v1_post = [V1_reactivation_coherence_modulation(1).V1_bias_PRE V1_reactivation_coherence_modulation(2).V1_bias_PRE]';
-session_count = [V1_reactivation_coherence_modulation(1).session_id V1_reactivation_coherence_modulation(2).session_id]';
-% subject_id = session_count;
+bins_to_use = bin_centers > 0 & bin_centers < 0.1;
+bins_to_select = bin_centers > 0 & bin_centers < 0.2;
+
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+% bins_to_use
+
+session_id = [ripples_all(1).session_count(ripples_all(1).SWS_index); ripples_all(2).session_count(ripples_all(2).SWS_index)];
+%%% PLS KDE
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
+z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+clear z_bias1
+
+
+[event_ids_first,event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id,merged_event_info.ripples_peaktimes,0.05);
+z_bias_KDE = z_bias(:,event_ids_first);
+z_bias_V1_KDE = z_bias_V1(:,event_ids_first);
+
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
+session_count = session_count(event_ids_first);
+subject_id = subject_id(event_ids_first);
+
+
+mean_bias = mean(z_bias_KDE(bin_centers>0 & bin_centers<0.1,:),'omitnan');
+ripple_track = zeros(length(mean_bias),1);
+ripple_track(mean_bias > 0) = 1;
+ripple_track(mean_bias < 0) = 2;
+hpc_logOdds = [mean_bias]';
+v1_pre = mean(z_bias_V1_KDE(bin_centers>-0.2 & bin_centers<0,:),'omitnan')';
+v1_post = mean(z_bias_V1_KDE(bin_centers>0 & bin_centers<0.2,:),'omitnan')';
+
+
+
+
+% mean_bias = mean(z_bias_KDE(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+% mean_bias = mean(z_bias_KDE(bins_to_use,session_id == sessions_to_process(nsession)),1,'omitnan');
+
+% mean_bias = mean(z_bias_KDE(bin_centers>0 & bin_centers<0.1,:),'omitnan');
+% hpc_logOdds = [mean_bias(V1_reactivation_coherence_modulation(1).event_id) mean_bias(V1_reactivation_coherence_modulation(2).event_id)]';
+% ripple_track = [1*ones(1,length(V1_reactivation_coherence_modulation(1).V1_bias)) 2*ones(1,length(V1_reactivation_coherence_modulation(2).V1_bias))]';
+% v1_pre = [V1_reactivation_coherence_modulation(1).V1_bias V1_reactivation_coherence_modulation(2).V1_bias]';
+% v1_post = [V1_reactivation_coherence_modulation(1).V1_bias_PRE V1_reactivation_coherence_modulation(2).V1_bias_PRE]';
+% session_count = [V1_reactivation_coherence_modulation(1).session_id V1_reactivation_coherence_modulation(2).session_id]';
+% % subject_id = session_count;
+% subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+% [~, ~, subject_id] = unique(subject_id);
 
 
 
 % Mixed effect model with shuffling
-beta_shuffled = nan(1,1000);
-t_shuffled = nan(1,1000);
-beta_boot = nan(1,1000);
-t_boot = nan(1,1000);
+beta_shuffled = nan(4,1000);
+t_shuffled = nan(4,1000);
+beta_boot = nan(4,1000);
+t_boot = nan(4,1000);
 
-parfor iBoot = 1:1000
+R2_boot = nan(1,1000);
+R2_shuffled = nan(4,1000);
+
+
+for iBoot = 1:1000
     tic
     s = RandStream('philox4x32_10', 'Seed', iBoot);
     % idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
-    idx = datasample(1:length(subject_id), length(subject_id), 'Replace', false);
+    idx = datasample(s,1:length(subject_id), length(subject_id), 'Replace', false);
 
-    tbl = table(subject_id, zscore(v1_pre), ripple_track(idx), zscore(v1_post),'VariableNames',{'subject_id','v1_pre','ripple_track','v1_post'});
+
+    tbl = table(session_count(idx),subject_id(idx), zscore(v1_pre(idx)), ripple_track, zscore(v1_post),'VariableNames',{'session_id','subject_id','v1_pre','ripple_track','v1_post'});
     tbl.subject_id = categorical(tbl.subject_id);
     tbl.ripple_track = categorical(tbl.ripple_track); % Important for the model
 
     %Run Linear Mixed-Effects Model
-    % Formula: Post ~ Pre + Ripple + Interaction + (Random Intercept per Animal)
-    lme = fitlme(tbl, 'v1_post ~ v1_pre + ripple_track + (1|subject_id)');
-    beta_shuffled(iBoot) = lme.Coefficients.Estimate(3);
-    t_shuffled(iBoot) = lme.Coefficients.tStat(3);
+    lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (ripple_track|subject_id)+ (1|session_id)+ (1|session_id:subject_id)');
+    beta_shuffled(2,iBoot) = lme.Coefficients.Estimate(2);
+    t_shuffled(2,iBoot) = lme.Coefficients.tStat(2);
+    R2_shuffled(2,iBoot) = lme.Rsquared.Ordinary;
 
-    idx = datasample(1:length(subject_id), length(subject_id), 'Replace', true);
 
-    tbl = table(subject_id(idx), zscore(v1_pre(idx)), ripple_track(idx), zscore(v1_post(idx)),'VariableNames',{'subject_id','v1_pre','ripple_track','v1_post'});
+    tbl = table(session_count(idx),subject_id(idx), zscore(v1_pre), ripple_track(idx), zscore(v1_post),'VariableNames',{'session_id','subject_id','v1_pre','ripple_track','v1_post'});
     tbl.subject_id = categorical(tbl.subject_id);
     tbl.ripple_track = categorical(tbl.ripple_track); % Important for the model
 
     %Run Linear Mixed-Effects Model
-    % Formula: Post ~ Pre + Ripple + Interaction + (Random Intercept per Animal)
-    lme = fitlme(tbl, 'v1_post ~ v1_pre + ripple_track + (1|subject_id)');
-    beta_boot(iBoot) = lme.Coefficients.Estimate(3);
-    t_boot(iBoot) = lme.Coefficients.tStat(3);
+    lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (ripple_track|subject_id)+ (1|session_id)+ (1|session_id:subject_id)');
+    beta_shuffled(3,iBoot) = lme.Coefficients.Estimate(3);
+    t_shuffled(3,iBoot) = lme.Coefficients.tStat(3);
+    R2_shuffled(3,iBoot) = lme.Rsquared.Ordinary;
+
+
+    tbl = table(session_count(idx),subject_id(idx), zscore(v1_pre(idx)), ripple_track(idx), zscore(v1_post),'VariableNames',{'session_id','subject_id','v1_pre','ripple_track','v1_post'});
+    tbl.subject_id = categorical(tbl.subject_id);
+    tbl.ripple_track = categorical(tbl.ripple_track); % Important for the model
+
+    %Run Linear Mixed-Effects Model
+    lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (ripple_track|subject_id)+ (1|session_id)+ (1|session_id:subject_id)');
+    beta_shuffled(4,iBoot) = lme.Coefficients.Estimate(4);
+    t_shuffled(4,iBoot) = lme.Coefficients.tStat(4);
+    R2_shuffled(4,iBoot) = lme.Rsquared.Ordinary;
+
+    idx = datasample(s,1:length(subject_id), length(subject_id), 'Replace', true);
+
+    tbl = table(session_count(idx),subject_id(idx), zscore(v1_pre(idx)), ripple_track(idx), zscore(v1_post(idx)),'VariableNames',{'session_id','subject_id','v1_pre','ripple_track','v1_post'});
+    tbl.subject_id = categorical(tbl.subject_id);
+    tbl.ripple_track = categorical(tbl.ripple_track); % Important for the model
+
+    %Run Linear Mixed-Effects Model
+    lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (ripple_track|subject_id)+ (1|session_id)+ (1|session_id:subject_id)');
+    beta_boot(:,iBoot) = lme.Coefficients.Estimate(:);
+    t_boot(:,iBoot) = lme.Coefficients.tStat(:);
+    R2_boot(iBoot) = lme.Rsquared.Ordinary;
     toc
 end
 
 
+
 % Mixed effect model 
-tbl = table(subject_id(idx), v1_pre((idx)), ripple_track((idx)), v1_post((idx)),'VariableNames',{'subject_id','v1_pre','ripple_track','v1_post'});
+tbl = table(session_count,subject_id, zscore(v1_pre), ripple_track, zscore(v1_post),zscore(hpc_logOdds),'VariableNames',{'session_id','subject_id','v1_pre','ripple_track','v1_post','hpc_logOdds'});
+
+writetable(tbl,'PRE_POST_V1_log_odds.csv')
+% tbl = table(subject_id(idx), v1_pre((idx)), ripple_track((idx)), v1_post((idx)),'VariableNames',{'subject_id','v1_pre','ripple_track','v1_post'});
 tbl.subject_id = categorical(tbl.subject_id);
 tbl.ripple_track = categorical(tbl.ripple_track); % Important for the model
-lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (1|subject_id)');
-p = lme.Coefficients.pValue(3);
+% lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (1|subject_id)');
+% lme = fitlme(tbl, 'v1_post ~ v1_pre * ripple_track + (ripple_track|subject_id)+ (1|session_id)+ (1|session_id:subject_id)');
+lme = fitlme(tbl, 'v1_post ~ v1_pre + ripple_track + (1|subject_id)+ (ripple_track+v1_pre|session_id)','DummyVarCoding','effects');
+[Psi, ~, ~] = covarianceParameters(lme);
+Psi_matrix = Psi{1}
+
+% lme = fitlme(tbl, 'v1_post ~ v1_pre * hpc_logOdds + (1 + v1_pre + hpc_logOdds | session_id)','DummyVarCoding','effects');
+p = lme.Coefficients.pValue(:);
+PRE_POST_V1_log_odds_lme.b_shuffle = beta_shuffled;
+PRE_POST_V1_log_odds_lme.t_stat_shuffle = t_shuffled;
+PRE_POST_V1_log_odds_lme.b_boot = beta_boot;
+PRE_POST_V1_log_odds_lme.t_stat_boot = t_boot;
+PRE_POST_V1_log_odds_lme.p = lme.Coefficients.pValue;
+PRE_POST_V1_log_odds_lme.Coefficients = lme.Coefficients;
+PRE_POST_V1_log_odds_lme.R2 = lme.Rsquared.Adjusted;
+PRE_POST_V1_log_odds_lme.R2_boot = R2_boot;
+PRE_POST_V1_log_odds_lme.R2_shuffled = R2_shuffled;
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','PRE_POST_V1_log_odds_lme'),'PRE_POST_V1_log_odds_lme')
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','PRE_POST_V1_log_odds_lme'),'PRE_POST_V1_log_odds_lme')
 
 
 fig = figure('Name','Ripple modulation of POST V1 log odds Beta coefficient and t-stat');
-fig.Position = [500 400 330 600];
+fig.Position = [500 400 428 812];
 subplot(2,2,1)
 % 1. Calculate Means
-mean_boot = mean(beta_boot, 'omitnan');
-mean_shuf = mean(beta_shuffled, 'omitnan');
+mean_boot = mean(beta_boot', 'omitnan');
+mean_shuf = mean(beta_shuffled', 'omitnan');
 
-% 2. Calculate 95% Confidence Intervals (Percentile Method)
-% This calculates the distance from the mean to the 2.5th and 97.5th percentiles
-ci_boot = [mean_boot - prctile(beta_boot, 2.5), prctile(beta_boot, 97.5) - mean_boot];
-ci_shuf = [mean_shuf - prctile(beta_shuffled, 2.5), prctile(beta_shuffled, 97.5) - mean_shuf];
-
-% Prepare data for plotting
-means = [mean_boot, mean_shuf];
-lower_err = [ci_boot(1), ci_shuf(1)];
-upper_err = [ci_boot(2), ci_shuf(2)];
+means = [mean_boot mean_shuf];
+lower_err = [mean_boot - prctile(beta_boot', 2.5), mean_shuf - prctile(beta_shuffled', 2.5)];
+upper_err = [prctile(beta_boot', 97.5) - mean_boot, prctile(beta_shuffled', 97.5) - mean_shuf];
 
 % 3. Plotting
-hold on;
-x = [1, 2];
-colors = [231, 41, 138; 256/2 256/2 256/2]/256; % Blue for Boot, Gray for Shuffled
 
-for i = 1:2
+% x = [1, 2];
+% colors = [231, 41, 138; 256/2 256/2 256/2]/256; % Blue for Boot, Gray for Shuffled
+
+colors = [ ...
+    241, 182, 218;
+    226, 132, 187;
+    % 212,  78, 156;
+    231,  41, 138] / 256;
+
+for i = 2:3
+    hold on;
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
     % Plot Bar
-    bar(x(i), means(i), 'FaceColor', colors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    
+    bar(i, means(i),bar_width, 'FaceColor', colors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
     % Plot 95% CI Error Bar
-    errorbar(x(i), means(i), lower_err(i), upper_err(i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    errorbar(i, means(i), lower_err(i), upper_err(i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+    text(i+group_offset,0.1,sprintf('p = %.3e',lme.Coefficients.pValue(i)));
+
+    bar(i+group_offset, means(i+4),bar_width,'FaceColor', 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+    % Plot 95% CI Error Bar
+    errorbar(i+group_offset, means(i+4), lower_err(i+4), upper_err(i+4), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+
+    % text(i+group_offset,0.1,sprintf('p = %.3e',lme.Coefficients.pValue(i+3)));
 end
 
 % Formatting
-xticks([1 2]);
-xticklabels({'Beta Boot', 'Beta Shuffled'});
-ylabel('Beta Value');
-title('Mean Beta with 95% CI');
+xticks([2,2.4,3,3.4]);
+xticklabels({'PRE V1 log odds', 'Shuffled','HPC track label','Shuffled'});
+ylabel('Beta');
+% title('Mean Beta with 95% CI');
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-text(1,0.07,sprintf('p = %.3e',p))
+
 
 
 subplot(2,2,2)
-% 1. Calculate Means
-mean_boot = mean(t_boot, 'omitnan');
-mean_shuf = mean(t_shuffled, 'omitnan');
-
-% 2. Calculate 95% Confidence Intervals (Percentile Method)
-% This calculates the distance from the mean to the 2.5th and 97.5th percentiles
-ci_boot = [mean_boot - prctile(t_boot, 2.5), prctile(t_boot, 97.5) - mean_boot];
-ci_shuf = [mean_shuf - prctile(t_shuffled, 2.5), prctile(t_shuffled, 97.5) - mean_shuf];
-
-% Prepare data for plotting
-means = [mean_boot, mean_shuf];
-lower_err = [ci_boot(1), ci_shuf(1)];
-upper_err = [ci_boot(2), ci_shuf(2)];
-
-% 3. Plotting
-hold on;
-x = [1, 2];
-% colors = [0.2 0.4 0.8; 0.5 0.5 0.5]; % Blue for Boot, Gray for Shuffled
-
-for i = 1:2
-    % Plot Bar
-    bar(x(i), means(i), 'FaceColor', colors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
-    
-    % Plot 95% CI Error Bar
-    errorbar(x(i), means(i), lower_err(i), upper_err(i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
-end
-
-% Formatting
-xticks([1 2]);
-xticklabels({'t stat Boot', 't stat Shuffled'});
-ylabel('t-stat Value');
-title('Mean t-stat with 95% CI');
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-text(1,2,sprintf('p = %.3e',p))
+% % 1. Calculate Means
+% mean_boot = mean(t_boot, 'omitnan');
+% mean_shuf = mean(t_shuffled, 'omitnan');
+% 
+% % 2. Calculate 95% Confidence Intervals (Percentile Method)
+% % This calculates the distance from the mean to the 2.5th and 97.5th percentiles
+% ci_boot = [mean_boot - prctile(t_boot, 2.5), prctile(t_boot, 97.5) - mean_boot];
+% ci_shuf = [mean_shuf - prctile(t_shuffled, 2.5), prctile(t_shuffled, 97.5) - mean_shuf];
+% 
+% % Prepare data for plotting
+% means = [mean_boot, mean_shuf];
+% lower_err = [ci_boot(1), ci_shuf(1)];
+% upper_err = [ci_boot(2), ci_shuf(2)];
+% 
+% % 3. Plotting
+% hold on;
+% x = [1, 2];
+% % colors = [0.2 0.4 0.8; 0.5 0.5 0.5]; % Blue for Boot, Gray for Shuffled
+% 
+% for i = 1:2
+%     % Plot Bar
+%     bar(x(i), means(i), 'FaceColor', colors(i,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+% 
+%     % Plot 95% CI Error Bar
+%     errorbar(x(i), means(i), lower_err(i), upper_err(i), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+% end
+% 
+% % Formatting
+% xticks([1 2]);
+% xticklabels({'t stat Boot', 't stat Shuffled'});
+% ylabel('t-stat Value');
+% title('Mean t-stat with 95% CI');
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% text(1,2,sprintf('p = %.3e',p))
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA'),[])
 

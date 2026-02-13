@@ -1481,6 +1481,232 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivat
 
 
 
+%% Spindle presence
+%%%%%%
+%%%%%%
+%%%%%% PRE and HPC -> POST
+
+tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.csv'));
+% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.csv'));
+
+tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.csv'));
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1.mat'));
+% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1.csv'));
+% 
+% tbl.HPC_trackID = nan(size(tbl.AnimalID));
+% tbl.V1_trackID_PRE = nan(size(tbl.AnimalID));
+% for nsession = 1:max(tbl.SessionID)
+%     idx = find(tbl.SessionID == nsession);
+%     HPC_thresholds = prctile(tbl.HPC_logodds(idx),[25 75]);
+%     tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) > HPC_thresholds(2))) = 1;
+%     tbl.HPC_trackID(idx(tbl.HPC_logodds(idx) < HPC_thresholds(1))) = 2;
+% 
+%     V1_thresholds = prctile(tbl.V1_logodds_PRE(idx),[25 75]);
+%     tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) > V1_thresholds(2))) = 1;
+%     tbl.V1_trackID_PRE(idx(tbl.V1_logodds_PRE(idx) < V1_thresholds(1))) = 2;
+% end
+
+tbl.AnimalID = categorical(tbl.AnimalID);
+tbl.SessionID = categorical(tbl.SessionID);
+tbl.Spindle_Match = categorical(tbl.Spindle_Match);
+tbl.Spindle_NonMatch = categorical(tbl.Spindle_NonMatch);
+% tbl.HPC_trackID = categorical(tbl.HPC_trackID);
+% tbl.V1_trackID_PRE = categorical(tbl.V1_trackID_PRE);
+% 
+% formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + (1| SessionID) + (V1_logodds_PRE - 1| SessionID) + (SpindlePower_Match - 1| SessionID) + (1| AnimalID) + (V1_logodds_PRE - 1| AnimalID) + (SpindlePower_Match - 1| AnimalID)';
+% 
+% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + (1| SessionID) + (V1_logodds - 1| SessionID) + (SpindlePower_Match - 1| SessionID) + (1| AnimalID) + (V1_logodds - 1| AnimalID) + (SpindlePower_Match - 1| AnimalID)';
+% 
+% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + (1+V1_logodds+ SpindlePower_Match| SessionID) + (1+V1_logodds+ SpindlePower_Match| AnimalID)';
+% 
+% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds + SpindlePower_Match + SpindlePower_Match| AnimalID)';
+% 
+% 
+% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1| AnimalID) + (1| SessionID) +(V1_logodds + SpindlePower_Match + SpindlePower_Match - 1| SessionID) + (V1_logodds + SpindlePower_Match + SpindlePower_Match -1| AnimalID)';
+% 
+% 
+% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch  + (1| SessionID) +((V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch)) - 1| SessionID) + (V1_logodds | AnimalID)';
+% 
+% 
+% formula = ['HPC_logodds ~ V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) + ' ...
+%            '(1 + V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | SessionID) + ' ...
+%            '(1 + V1_logodds | AnimalID)'];
+% 
+% 
+% % formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (1+V1_logodds_PRE + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds_PRE| AnimalID)';
+% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (1+V1_logodds + SpindlePower_Match + SpindlePower_Match| SessionID) + (V1_logodds| AnimalID)';
+% % lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'FullCholesky', 'FullCholesky'});
+% 
+% % formula = 'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (1 | SessionID) + (1 | AnimalID)';
+% 
+% formula = 'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)';
+% 
+% 
+% % formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds*( SpindlePower_Match + SpindlePower_NonMatch) | AnimalID)';
+% formula = 'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds| AnimalID)';
+% formula = 'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (1| AnimalID)';
+% 
+% lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+% % lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'FullCholesky'});
+% % lme = fitlme(tbl, formula,'DummyVarCoding','effects');
+% %     lme = fitlme(tbl, formula)
+% lme.Coefficients
+% [Psi, ~, ~] = covarianceParameters(lme);
+% Psi_matrix = Psi{1}
+% 
+% 
+% models = {'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)',
+%     'HPC_logodds ~ V1_logodds * Spindle_Match + V1_logodds * Spindle_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds *( SpindlePower_Match + SpindlePower_Match) | AnimalID)'};
+% 
+% models = {'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds_PRE *( SpindlePower_Match + SpindlePower_Match) | AnimalID)',
+%     'HPC_logodds ~ V1_logodds * Spindle_Match + V1_logodds * Spindle_NonMatch + (V1_logodds *( SpindlePower_Match + SpindlePower_Match)| SessionID) + (V1_logodds *( SpindlePower_Match + SpindlePower_Match) | AnimalID)'};
+% 
+% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE| SessionID) + (V1_logodds_PRE| AnimalID)',
+%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds | SessionID) + (V1_logodds | AnimalID)'};
+
+
+spindle_modulation_lme = struct();
+models = {'HPC_logodds ~ V1_logodds_PRE * Spindle_Match + V1_logodds_PRE * Spindle_NonMatch + (1| SessionID) + (1| AnimalID)',
+    'HPC_logodds ~ V1_logodds * Spindle_Match + V1_logodds * Spindle_NonMatch + (1 | SessionID) + (1 | AnimalID)'};
+
+% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE * (SpindlePower_Match + SpindlePower_NonMatch)| SessionID) + (V1_logodds_PRE * (SpindlePower_Match + SpindlePower_NonMatch)| AnimalID)',
+%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | SessionID) + (V1_logodds * (SpindlePower_Match + SpindlePower_NonMatch) | AnimalID)'};
+
+% models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE + SpindlePower_Match + SpindlePower_NonMatch| SessionID) + (V1_logodds_PRE + SpindlePower_Match + SpindlePower_NonMatch| AnimalID)',
+%     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds +SpindlePower_Match + SpindlePower_NonMatch | SessionID) + (V1_logodds +SpindlePower_Match + SpindlePower_NonMatch | AnimalID)'};
+% VariableName = {'Spindle_Match.*:.*','Spindle_NonMatch.*:.*'};
+
+for i = 1:length(models)
+    formula = models{i};
+
+    % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
+    %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
+
+    lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+
+    VariableName = lme.Coefficients.Name(contains(lme.Coefficients.Name,':'));
+    VariableName1 = regexprep(VariableName, '_0:', '_1:');
+
+    spindle_modulation_lme(i).model = lme;
+    spindle_modulation_lme(i).variable = [lme.Coefficients.Name; VariableName1];
+    spindle_modulation_lme(i).p = [lme.Coefficients.pValue(:);];
+    % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
+    spindle_modulation_lme(i).b = [lme.Coefficients.Estimate(:);];
+    spindle_modulation_lme(i).t = [lme.Coefficients.tStat(:);];
+    spindle_modulation_lme(i).b_CI = [lme.Coefficients.Lower(:) lme.Coefficients.Upper(:)];
+    spindle_modulation_lme(i).R2 = lme.Rsquared.Adjusted;
+    % spindle_power_modulation_lme(i).marginal_R2 = [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    [marginal_R2,~] = calculate_marginal_R2(tbl,lme);
+    spindle_modulation_lme(i).marginal_R2 = marginal_R2;
+
+    %     lme = fitlme(tbl, formula)
+    % 1. Get the Fixed Effects and their Covariance Matrix
+    beta_vec = lme.fixedEffects;
+    vcov_mat = lme.CoefficientCovariance; % The Var-Cov matrix of fixed effects
+    names = lme.CoefficientNames;
+    for n = 1:2
+
+        idx0 = find(~cellfun(@isempty, regexp(names, VariableName{n})));
+        % 3. Calculate Beta 3 (The negative sum)
+        beta_3 = -(beta_vec(idx0));
+
+        % 4. Calculate the Variance for Beta 3 using the Covariance Matrix
+        % Formula: Var(H*beta) = H * Vcov * H'
+        H = zeros(1, length(names));
+        H([idx0]) = -1;
+        var_3 = H * vcov_mat * H';
+
+
+        % 5. Get SE and CI
+        ci_3 = [beta_3 - 1.9599*sqrt(var_3), beta_3 + 1.9599*sqrt(var_3)];
+        t_stat = beta_3 / sqrt(var_3);
+        p_value = 2 * (1 - tcdf(abs(t_stat), lme.DFE));
+
+        spindle_modulation_lme(i).p = [spindle_modulation_lme(i).p; p_value];
+        % spindle_power_modulation_lme(i).non_match_p = lme.Coefficients.pValue(:);
+        spindle_modulation_lme(i).b = [spindle_modulation_lme(i).b; beta_3];
+        spindle_modulation_lme(i).t = [spindle_modulation_lme(i).t; t_stat];
+        spindle_modulation_lme(i).b_CI = [spindle_modulation_lme(i).b_CI; ci_3];
+    end
+
+end
+
+
+
+
+% for i = 1:2
+clear VariableIdx
+% Variablenames = {'SpindlePower_NonMatch:V1_trackID_2','SpindlePower_Match:V1_trackID_2'}
+% VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
+% nBoot = 1000;
+colour_lines = [ ...
+    241, 182, 218;   % original end (lightest)
+%     226, 132, 187;   % interpolated 2/3
+%     212,  78, 156;   % interpolated 1/3
+    231, 41, 138    % original start (darkest)
+    ] / 256;
+
+fig = figure('Name','Spindle presence KDE reactivation coherence','Position',[482 111 665 851]);
+sgtitle('Spindle presence KDE reactivation coherence')
+
+% VariableName = lme.Coefficients.Name(contains(lme.Coefficients.Name,':'));
+
+% VariableName1 = Spindle_NonMatch_1
+VariableName = {'Spindle_NonMatch_1:V1','Spindle_Match_1:V1'};
+% VariableName = {'PRE','HPC'};
+titles = {'PRE V1','POST V1'};
+for i = 1:2
+    %     if sum(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'))>0
+    %         VariableIdx = find(contains(PRE_POST_V1_log_odds_lme(i).variable, ':JointState'));
+    %     else
+    clear VariableIdx
+    for n = 1:length(VariableName)
+        VariableIdx(n) = find(contains(spindle_modulation_lme(i).variable, VariableName{n}));
+    end
+    %     end
+    clear b_CI b_mean
+    b_CI = [spindle_modulation_lme(i).b_CI];
+    b_mean = [spindle_modulation_lme(i).b];
+
+    % figure;plot(squeeze(b_CI(:,6,:)),'r');hold on; plot(squeeze(b_CI(:,7,:)),'k');yline(0,'k')
+
+    % fig = figure('Name','Spindle power KDE reactivation coherence PRE','Position',[482 111 665 851]);
+    % sgtitle('Spindle power KDE reactivation coherence PRE')
+    %
+
+    lci_boot = [b_mean - b_CI(:,1)];
+    uci_boot = [b_CI(:,2)-b_mean ];
+
+    subplot(3,4,i)
+    bar_width = 0.3;      % Width of the bars
+    group_offset = 0.4;    % Distance from the center integer (half the gap between bars)
+    % Plot Bar
+    hold on;
+    for n = 1:length(VariableIdx)
+        bar(1+group_offset*(n-1),b_mean(VariableIdx(n)),bar_width, 'FaceColor', colour_lines(n,:), 'EdgeColor', 'none', 'FaceAlpha', 0.4);
+
+        % Plot 95% CI Error Bar
+        errorbar(1+group_offset*(n-1), b_mean(VariableIdx(n)), uci_boot(VariableIdx(n)), uci_boot(VariableIdx(n)), 'k', 'LineWidth', 1.5, 'CapSize', 10);
+        text(1+group_offset*(n-1),0+n*0.01,sprintf('%.3e',spindle_modulation_lme(i).p(VariableIdx(n))))
+    end
+
+    ylabel('Standardised b')
+    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+    xlim([0.5 2.3])
+    ylim([-0.04 0.05])
+    title(titles{i})
+end
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','spindle_modulation_lme.mat'),'spindle_modulation_lme');
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','reactivation_coherence_KDE_glme'),[])
+
+
+
+
+
+
 
 
 

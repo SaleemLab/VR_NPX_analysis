@@ -1113,6 +1113,8 @@ for iType = 1:numel(ripple_types)
     PSTH_data = vertcat(context_modulation_all.(PSTH_fields{iType}){:});
 
     % Compute FR diffs
+    ALL = mean(PSTH_data(:, context_modulation_all.timebin > -0.2 & context_modulation_all.timebin < 0.2), 2, 'omitnan');
+
     POST = mean(PSTH_data(:, context_modulation_all.timebin > 0 & context_modulation_all.timebin < 0.2), 2, 'omitnan');
     PRE = mean(PSTH_data(:, context_modulation_all.timebin > -0.2 & context_modulation_all.timebin < 0), 2, 'omitnan');
     SHIFT = mean(PSTH_data(:, context_modulation_all.timebin > -1 & context_modulation_all.timebin < -0.8), 2, 'omitnan');
@@ -1122,11 +1124,13 @@ for iType = 1:numel(ripple_types)
     isHPC = contains(regions_all,'HPC');
 
     % Store for V1
+    all_vars_V1.(['ALL_' tag]) = normalize(double(ALL(isV1)));
     all_vars_V1.(['POST_' tag]) = normalize(double(POST(isV1)));
     all_vars_V1.(['PRE_' tag]) = normalize(double(PRE(isV1)));
     all_vars_V1.(['SHIFT_' tag]) = normalize(double(SHIFT(isV1)));
 
     % Store for HPC
+    all_vars_HPC.(['ALL_' tag]) = normalize(double(ALL(isHPC)));
     all_vars_HPC.(['POST_' tag]) = normalize(double(POST(isHPC)));
     all_vars_HPC.(['PRE_' tag]) = normalize(double(PRE(isHPC)));
     all_vars_HPC.(['SHIFT_' tag]) = normalize(double(SHIFT(isHPC)));
@@ -1237,7 +1241,7 @@ end
  save(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
 % z_FR_track_diff(contains(regions_all,'V1'))
 
-
+ % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_ripple_modulation_glme.mat'),'output_V1','output_HPC');
 %%%%%%%%%%% ALL ripples
 
 all_PSTH_diff = vertcat(context_modulation_all.PSTH_diff{:});

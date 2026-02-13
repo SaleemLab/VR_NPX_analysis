@@ -78,8 +78,9 @@ session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripp
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 
-event_ids_first = (1:length(session_count))';
-event_ids_second = (1:length(session_count))';
+% event_ids_first = (1:length(session_count))';
+% event_ids_second = (1:length(session_count))';
+
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
 
 
@@ -127,6 +128,40 @@ spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle
 ripple_info.spindle_amplitude = spindle_amplitude';
 ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
 
+
+% spindle_amplitude=[];
+spindle_percentile = [];
+for probe_no = 1:2
+    % spindle_amplitude{probe_no}=[];
+    spindle_percentile{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+
+
+    end
+end
+spindle_percentile = [spindle_percentile{1}(:,ripples_all(1).SWS_index==1) spindle_percentile{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.spindle_percentile = spindle_percentile';
+ripple_info.spindle_percentile = ripple_info.spindle_percentile(event_ids_first,:);
+
+% 
+% %%% spindle power
+% spindle_amplitude=[];
+% for probe_no = 1:2
+%     spindle_amplitude{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
 %%% SO phase
 SO_phase=[];
 for probe_no = 1:2
@@ -314,11 +349,13 @@ subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end))
 session_count = session_count(event_ids_first);
 subject_id = subject_id(event_ids_first);
 
-
+ripple_info.subject_id = subject_id;
+ripple_info.session_count = session_count;
+save('ripple_info_SO.mat','ripple_info')
 % singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
 
-
+% save('ripple_info.mat','ripple_info')
 %%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%
@@ -1688,6 +1725,56 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'Conte
 
 
 
+
+%% Distribution of SO phases
+shifted_phase_L = mod(ripple_info.SO_phase(:,1) + pi/2, 2*pi) - pi/2;
+shifted_phase_R = mod(ripple_info.SO_phase(:,2) + pi/2, 2*pi) - pi/2;
+% [N, Xedges, Yedges] = histcounts2(shifted_phase_L, shifted_phase_R, -pi/2:pi/6:3*pi/2,-pi/2:pi/6:3*pi/2);
+[N, Xedges, Yedges] = histcounts2(shifted_phase_L, shifted_phase_R, -pi/2:pi/12:3*pi/2,-pi/2:pi/12:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2), -pi:pi/12:pi,-pi:pi/12:pi);
+Xedges = Xedges(1)+pi/12/2:pi/12:Xedges(end)-pi/12/2;
+% shift_amt = 
+% N_shifted = circshift(N, [0, shift_amt]);
+
+% N = N/total
+% 
+% figure('Name','Distribution of Bilateral V1 SO phases (shifted) (pi/6 bins)')
+figure('Name','Distribution of Bilateral V1 SO phases (shifted)')
+imagesc(Xedges,Xedges,N/sum(sum(N)));colorbar;colormap(flipud(gray))
+% clim([0 0.03])
+clim([0 0.01])
+% xticks(-pi:pi/2:pi)
+% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
+xticks(-pi/2:pi/2:3*pi/2)
+xticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xlabel('Left V1 SO phase (ripple)')
+
+% yticks(-pi:pi/2:pi)
+% yticklabels({'-pi','-pi/2','0','pi/2','pi'})
+yticks(-pi/2:pi/2:3*pi/2)
+yticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xline(-pi/2,'r-','LineWidth',2);xline(pi/2,'r-','LineWidth',2);
+yline(-pi/2,'r-','LineWidth',2);yline(pi/2,'r-','LineWidth',2);
+ylabel('Right V1 SO phase (ripple)')
+set(gca,'TickDir','out','Box','off','FontSize',12);
+
+dist = reshape(N/sum(sum(N)),1,[]);
+% clim([prctile(dist,1) prctile(dist,99)])
+
+no_events = [];
+no_events(1) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2 & (ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2)) + ...
+sum(ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2 & (ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2))
+
+% sum((ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2) & (ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2)) 
+no_events(2) = sum((ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2) & (ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2))
+
+no_events(3) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2 & ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2) 
+% sum(ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2 & ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2)
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
+% save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots (2Hz)'),[])
+
 %% Basic number of events
 event_number_tables = table();
 event_number_tables.session =spindles_all(1).session;
@@ -1868,6 +1955,30 @@ for n = 1:length(percentile_text)
     ripple_events_tables.(sprintf('sig_events_%s_spindle_power_PRE',percentile_text{n})) = length([temp1; temp2]);
 end
 
+
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = [0 25 50 75 100];
+power_thresholds2 = [0 25 50 75 100];
+
+for n = 1:length(percentile_text)
+    % spindle_index1 = find(ripple_info.spindle_amplitude(:,1) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,1) < power_thresholds1(n+1));
+    % spindle_index2 = find(ripple_info.spindle_amplitude(:,2) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,2) < power_thresholds1(n+1));
+    spindle_index1 = find(ripple_info.spindle_percentile(:,1) > power_thresholds1(n) & ripple_info.spindle_percentile(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.spindle_percentile(:,2) > power_thresholds1(n) & ripple_info.spindle_percentile(:,2) < power_thresholds1(n+1));
+
+    % temp1 = intersect(T1_events,spindle_index2);
+    % temp2 = intersect(T2_events,spindle_index1);
+
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_percentile_left',percentile_text{n})) = length([spindle_index1]);
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_percentile_right',percentile_text{n})) = length([spindle_index2]);
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power_percentile',percentile_text{n})) = length([temp1; temp2]);
+
+    % temp1 = intersect(T1_events_PRE,spindle_index2);
+    % temp2 = intersect(T2_events_PRE,spindle_index1);
+
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
 
 
 %%%%%%%%%%% Spindle phase
