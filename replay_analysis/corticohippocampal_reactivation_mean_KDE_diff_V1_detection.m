@@ -276,7 +276,27 @@ singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 
 %%%%%%%%%%%%%%%%%%%%%%%% Spindle power binning
 
-%%%%%%%%%%%%%%%%%%%%%%%% Spindle power binning
+%%% spindle power
+spindle_amplitude=[];
+spindle_percentile = [];
+for probe_no = 1:2
+    spindle_amplitude{probe_no}=[];
+    spindle_percentile{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
+        % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+        temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+        % temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+    end
+end
+spindle_percentile = [spindle_percentile{1}(:,ripples_all(1).SWS_index==1) spindle_percentile{2}(:,ripples_all(2).SWS_index==1)];
+ripple_info.spindle_percentile = spindle_percentile';
+ripple_info.spindle_percentile = ripple_info.spindle_percentile(event_ids_first,:);
+ripple_info.spindle_amplitude = ripple_info.spindle_percentile;
+
+
 % Spindle power binning across both probes
 % all_spindle_power = mean(ripple_info.spindle_amplitude, 1);  % avg of probe 1 and 2
 spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
@@ -484,6 +504,7 @@ clear Fill
 fig = figure;
 fig.Position = [640 100 2*1100/3 650/2];
 fig.Name = 'KDE bias difference in HPC low vs high spindle power percentile';
+% fig.Name = 'KDE bias difference in HPC low vs high spindle power percentile (100ms example)';
 
 % Select bins (1 = low, 4 = high)
 nexttile;

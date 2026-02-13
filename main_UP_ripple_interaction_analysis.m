@@ -69,6 +69,13 @@ plot_ipsi_contra_ripples_spindles_coupling(slow_waves_all,ripples_all,spindles_a
 predict_ipsi_contra_UP_DOWN_ripples_MUA(slow_waves_all,ripples_all,spindles_all)
 predict_UP_DOWN_transition_survival(event_info,ripples_all,spindles_all,slow_waves_all)
 
+%% NEW bilaterally merged versions
+
+plot_bilateral_UP_DOWN_ripples_coupling(slow_waves_all,ripples_all,spindles_all)
+plot_bilateral_ripples_spindles_coupling(slow_waves_all,ripples_all,spindles_all)
+
+
+
 %% Plotting and calculating MUA relative to UP DOWN and ripple
 all_sessions = max(slow_waves_all(1).DOWN_session_count);
 sessions_to_process = 1:all_sessions;

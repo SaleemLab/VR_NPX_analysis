@@ -818,7 +818,22 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'U
 
 %% Predict Ripples from DOWN-UP info
 
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
+PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_combined.mat'));
+probability_psth_whole = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_spindles_probability_whole.mat'));
+spindle_probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline_combined.mat'));
+probability_psth_whole_baseline = probability;
+
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+
 %%%%% UP info
 event_times = merged_event_info.UP_ints;
 hemisphere_id = merged_event_info.UP_hemisphere_id;
@@ -837,91 +852,85 @@ subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count,end-1
 ipsi_V1_MUA = [PSTH_MUA(1).L_V1_UP; PSTH_MUA(2).R_V1_UP];
 contra_V1_MUA = [PSTH_MUA(1).R_V1_UP; PSTH_MUA(2).L_V1_UP];
 
-ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_UP; PSTH_MUA_baseline(2).R_V1_UP];
-contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_UP; PSTH_MUA_baseline(2).L_V1_UP];
+% ipsi_V1_MUA_baseline = [PSTH_MUA_baseline(1).L_V1_UP; PSTH_MUA_baseline(2).R_V1_UP];
+% contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_UP; PSTH_MUA_baseline(2).L_V1_UP];
 
 %%%%% HPC MUA
 ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_UP; PSTH_MUA(2).R_HPC_UP];
 contra_HPC_MUA = [PSTH_MUA(1).R_HPC_UP; PSTH_MUA(2).L_HPC_UP];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
+ipsi_HPC_MUA = (ipsi_HPC_MUA+contra_HPC_MUA)/2;
+% ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
+% contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
 
 %%%%%%%%%%% ripples
-ipsi_probability = [probability_psth_whole(1).L_ripples_UP; probability_psth_whole(2).R_ripples_UP];
-contra_probability = [probability_psth_whole(1).R_ripples_UP; probability_psth_whole(2).L_ripples_UP];
+ipsi_probability = [probability_psth_whole(1).ripples_UP; probability_psth_whole(2).ripples_UP];
+% contra_probability = [probability_psth_whole(1).R_ripples_UP; probability_psth_whole(2).L_ripples_UP];
 
 %%%%%%%%%% Predict HPC MUA and ripples during DOWN-UP transition based on
 %%%%%%%%%% V1 DOWN UP bilateral synchrony and magnitude
 %%%%%%%%% 0 to 100ms ripples
 % 
-% index = all_overlap_idx(abs(lags)<=0.15);
-% lag_index = (abs(lags)<=0.15);
+index = all_overlap_idx(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index));
 % output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
-% 
-% 
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output.mat'),'output');
+
+
 % 
 % output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id);
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
-% 
+
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count);
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output.mat'),'output');
+
+
+%%%%%%%%% 0 to 200ms ripples
+index = all_overlap_idx(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index),'time_window', 0.2);
+% output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output_200ms.mat'),'output');
+
+
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count,'time_window', 0.2);
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output_200ms.mat'),'output');
+
 % 
 % %%%%%%%%%%%%%%%%%%% Plotting
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
-output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
-    ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
-
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output.mat'),'output');
 % 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
-output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+
+output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index),'output',output,'plot_option',1);
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
+
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output_200ms.mat'),'output');
+output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index),'output',output,'plot_option',1,'time_window', 0.2);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows 200ms)'),[],'SVG_option',1)
 
 
 
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output.mat'),'output');
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count,'output',output,'plot_option',1);
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
 
 
-
-%%%%%%%%%% 150 - 250ms ripples
-%%%%%%%%%% Predict HPC MUA and ripples during DOWN-UP transition based on
-%%%%%%%%%% V1 DOWN UP bilateral synchrony and magnitude
-
-index = all_overlap_idx(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
-    ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),...
-    'time_window', [0.15 0.25]);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_250ms_output.mat'),'output');
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output_200ms.mat'),'output');
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count,'output',output,'plot_option',1,'time_window', 0.2);
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows 200ms)'),[],'SVG_option',1)
 
 
-
-output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,...
-    'time_window', [0.15 0.25]);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_250ms_output.mat'),'output');
-
-
-%%%%%%%%%%%%%%%%%%% Plotting
-
-index = all_overlap_idx(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_output.mat'),'output');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_synchrony_Ripples_250ms_output.mat'),'output');
-output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
-    ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1,'time_window',[0.15 0.25]);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression 250ms ripples (150ms windows)'),[],'ContentType','image')
-
-% 
-% load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_output.mat'),'output');
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','DU_Ripples_250ms_output.mat'),'output');
-output = predict_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1,'time_window',[0.15 0.25]);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression 250ms ripples (full windows)'),[],'ContentType','image')
-
-
-%%
+%% UP DOWN
 
 
 %%%%% DOWN info
@@ -949,118 +958,130 @@ contra_V1_MUA_baseline = [PSTH_MUA_baseline(1).R_V1_DOWN; PSTH_MUA_baseline(2).L
 %%%%% HPC MUA
 ipsi_HPC_MUA = [PSTH_MUA(1).L_HPC_DOWN; PSTH_MUA(2).R_HPC_DOWN];
 contra_HPC_MUA = [PSTH_MUA(1).R_HPC_DOWN; PSTH_MUA(2).L_HPC_DOWN];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_DOWN; PSTH_MUA_baseline(2).R_HPC_DOWN];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_DOWN; PSTH_MUA_baseline(2).L_HPC_DOWN];
+ipsi_HPC_MUA = (ipsi_HPC_MUA+contra_HPC_MUA)/2;
+% ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_DOWN; PSTH_MUA_baseline(2).R_HPC_DOWN];
+% contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_DOWN; PSTH_MUA_baseline(2).L_HPC_DOWN];
 
 %%%%%%%%%%% ripples
-ipsi_probability = [probability_psth_whole(1).L_ripples_DOWN; probability_psth_whole(2).R_ripples_DOWN];
-contra_probability = [probability_psth_whole(1).R_ripples_DOWN; probability_psth_whole(2).L_ripples_DOWN];
+ipsi_probability = [probability_psth_whole(1).ripples_DOWN; probability_psth_whole(2).ripples_DOWN];
+% contra_probability = [probability_psth_whole(1).R_ripples_DOWN; probability_psth_whole(2).L_ripples_DOWN];
 
-ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_DOWN; probability_psth_whole_baseline(2).R_ripples_DOWN];
-contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_DOWN; probability_psth_whole_baseline(2).L_ripples_DOWN];
+% ipsi_probability_baseline = [probability_psth_whole_baseline(1).L_ripples_DOWN; probability_psth_whole_baseline(2).R_ripples_DOWN];
+% contra_probability_baseline = [probability_psth_whole_baseline(1).R_ripples_DOWN; probability_psth_whole_baseline(2).L_ripples_DOWN];
 
 % 
 % %%%%%%%%%%%%%%%% -0.1 to 0 ripples
-% index = 1:size(ipsi_V1_MUA,1);
-% % lag_index = (abs(lags)<=2);
-% output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'subject_id',subject_id(index));
+index = 1:size(ipsi_V1_MUA,1);
+% lag_index = (abs(lags)<=2);
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
 % save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
-% 
-% 
-% index = all_overlap_idx(abs(lags)<=0.15);
-% lag_index = (abs(lags)<=0.15);
-% output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output.mat'),'output');
+
+% predict_UP_DOWN_synchrony_by_bilateral_ripples
+index = all_overlap_idx(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
 % save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
-% 
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output.mat'),'output');
+
+
+% %%%%%%%%%%%%%%%% -0.2 to 0 ripples
+index = 1:size(ipsi_V1_MUA,1);
+% lag_index = (abs(lags)<=2);
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.2);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_200ms.mat'),'output');
+
+% predict_UP_DOWN_synchrony_by_bilateral_ripples
+index = all_overlap_idx(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.2);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_200ms.mat'),'output');
+
+
+
 % 
 % 
 % %%%%%%%%%%%% Plot
 index = 1:size(ipsi_V1_MUA,1);
 % lag_index = (abs(lags)<=2);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
-output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'output',output,'plot_option',1,'subject_id',subject_id(index));
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output.mat'),'output');
+
+% output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'subject_id',subject_id(index));
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'subject_id',subject_id(index),'session_id',DOWN_session_count(index));
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
 
 
-index = all_overlap_idx(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
-output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
-
-
-
-%%%%%%%%%%%%%%%% -0.2 to 0 ripples
 index = 1:size(ipsi_V1_MUA,1);
 % lag_index = (abs(lags)<=2);
-output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'subject_id',subject_id(index),'time_window', -0.2);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_200ms_output.mat'),'output');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_200ms.mat'),'output');
+
+% output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'subject_id',subject_id(index));
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window',-0.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows 200ms)'),[],'SVG_option',1)
 
 
-index = all_overlap_idx(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),...
-    UP_DOWN_info,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'time_window', -0.2);
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_200ms_output.mat'),'output');
 
-%%%%%%%%%%%% Plot
-index = 1:size(ipsi_V1_MUA,1);
-% lag_index = (abs(lags)<=2);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
-output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'output',output,'plot_option',1,'subject_id',subject_id(index),'time_window', -0.2);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression 200ms ripples (full windows)'),[],'ContentType','image')
 
 
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
-output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'time_window', -0.2);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression 200ms ripples (150ms windows)'),[],'ContentType','image')
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output.mat'),'output');
+% output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index));
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
 
 
-%%%%%%%%%%%% Control for lag and delta power by using perceding UP
-%%%%%%%%%%%% transition lag and delta power
-% UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
-% UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_200ms.mat'),'output');
+% output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window',-0.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows 200ms)'),[],'SVG_option',1)
+
+
+% %%%%%%%%%%%%%%%% -0.1 to 0 ripples (control)
+
+UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
+UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
 
 all_overlap_idx_UP = merged_event_info.UP_overlap_idx_all{end};
 lags =merged_event_info.UP_lags_all{end};
 index = all_overlap_idx_UP(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_previous_DU.mat'),'output');
 
-output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output_based_on_UP.mat'),'output');
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
+
 
 
 index = 1:size(ipsi_V1_MUA,1);
-output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'subject_id',subject_id(index),'time_window', -0.1);
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_200ms_output.mat'),'output');
-save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output_based_on_UP.mat'),'output');
-
-
-index = 1:size(ipsi_V1_MUA,1);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output_based_on_UP.mat'),'output');
-output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'subject_id',subject_id(index),'time_window', -0.1,'plot_option',1,'output',output);
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows UP lag control)'),[],'ContentType','image')
-
-
-
-lags =merged_event_info.UP_lags_all{end};
-index = all_overlap_idx_UP(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output_based_on_UP.mat'),'output');
-output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
-    'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output);
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows UP lag control)'),[],'ContentType','image')
-
-
+% lag_index = (abs(lags)<=2);
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_previous_DU.mat'),'output');
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
 
 %% Generate CSV files
 
