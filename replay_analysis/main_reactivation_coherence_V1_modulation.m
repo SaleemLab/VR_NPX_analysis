@@ -917,6 +917,7 @@ x = track_difference;
 tbl = table(x,y1,y2,y3,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference_ALL','ripple_difference_PRE','ripple_difference_POST','animal_ids','session_ids'});
 % writecsv(tbl,'')
 % writetable(tbl,fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
+% readcsv(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
 
 ripple_modulation_lme = struct();
 for nwin = 1:3
@@ -1186,6 +1187,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence 
     'ripple_modulation_lme_low','ripple_modulation_lme_high');
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation coherence SUA','V1_ripple_modulation_all_complex_random.mat'),'ripple_modulation_lme',...
 %     'ripple_modulation_lme_low','ripple_modulation_lme_high');
+
 %%%%  ripples
 colour_lines = [ ...
     241, 182, 218;   % original end (lightest)
@@ -1300,30 +1302,34 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 
 
 %%%%% Linear regression
-
+twin_text = {'All','PRE','POST'}
 % nwin = 1;
 Fig = figure;
-Fig.Name = 'context-selective ripple modulation glme scatter';
-
+Fig.Name = 'context-selective ripple modulation glme scatter (lme slope)';
+% Fig.Name = 'context-selective ripple modulation glme scatter';
 Fig.Position = [60 60 1270 930];
 counter = 0;
 twin_text = {'All','PRE','POST'};
 %%% All ripples
-track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
-psth1 = [V1_SUA_reactivation_PSTH_all{1}{1}(:,:); V1_SUA_reactivation_PSTH_all{2}{1}(:,:)];
-psth2 = [V1_SUA_reactivation_PSTH_all{1}{2}(:,:); V1_SUA_reactivation_PSTH_all{2}{2}(:,:)];
-psth_diff = psth1-psth2;
+% track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
+% psth1 = [V1_SUA_reactivation_PSTH_all{1}{1}(:,:); V1_SUA_reactivation_PSTH_all{2}{1}(:,:)];
+% psth2 = [V1_SUA_reactivation_PSTH_all{1}{2}(:,:); V1_SUA_reactivation_PSTH_all{2}{2}(:,:)];
+% psth_diff = psth1-psth2;
 
-session_count = [cell_session_id{1} cell_session_id{2}];
-subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
-[~, ~, subject_id] = unique(subject_id);
+% session_count = [cell_session_id{1} cell_session_id{2}];
+% subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+% [~, ~, subject_id] = unique(subject_id);
+tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
+x = tbl.track_difference;
 
 for nwin = 1:3
     p  = ripple_modulation_lme(nwin).p;
     nexttile
-    y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    %     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    y = table2array(tbl(:,1+nwin));
 
-    x = track_difference(~isnan(y));
+    %     x = track_difference(~isnan(y));
+    x = tbl.track_difference(~isnan(y));
     y(isnan(y))=[];
 
     fitted = polyfit(x, y, 1);
@@ -1331,9 +1337,12 @@ for nwin = 1:3
     % 3. Calculate fitted values
     y_fit = polyval(fitted, x);
 
+    beta = ripple_modulation_lme(nwin).model.fixedEffects;
+    y_fit = beta(1) + beta(2) * ([min(x) max(x)]);
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+%     hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+    hold on;plot([min(x) max(x)],y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
@@ -1345,72 +1354,90 @@ end
 
 
 %%% low ripples
-track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
-psth1 = [V1_SUA_reactivation_PSTH_low{1}{1}(:,:); V1_SUA_reactivation_PSTH_low{2}{1}(:,:)];
-psth2 = [V1_SUA_reactivation_PSTH_low{1}{2}(:,:); V1_SUA_reactivation_PSTH_low{2}{2}(:,:)];
-psth_diff = psth1-psth2;
+% track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
+% psth1 = [V1_SUA_reactivation_PSTH_low{1}{1}(:,:); V1_SUA_reactivation_PSTH_low{2}{1}(:,:)];
+% psth2 = [V1_SUA_reactivation_PSTH_low{1}{2}(:,:); V1_SUA_reactivation_PSTH_low{2}{2}(:,:)];
+% psth_diff = psth1-psth2;
 
-session_count = [cell_session_id{1} cell_session_id{2}];
-subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
-[~, ~, subject_id] = unique(subject_id);
-
+% session_count = [cell_session_id{1} cell_session_id{2}];
+% subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+% [~, ~, subject_id] = unique(subject_id);
+tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_LOW.csv'));
+x = tbl.track_difference;
 for nwin = 1:3
     p  = ripple_modulation_lme_low(nwin).p;
     nexttile
-    y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    %     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    y = table2array(tbl(:,1+nwin));
 
-    x = track_difference(~isnan(y));
+    %     x = track_difference(~isnan(y));
+    x = tbl.track_difference(~isnan(y));
     y(isnan(y))=[];
 
     fitted = polyfit(x, y, 1);
 
+    beta = ripple_modulation_lme_low(nwin).model.fixedEffects;
+
     % 3. Calculate fitted values
-    y_fit = polyval(fitted, x);
+    y_fit = polyval(fitted, [min(x) max(x)]);
+    if sign(beta(2)) ~= sign(diff(y_fit))
+        y_fit(2) = y_fit(1) - diff(y_fit);
+    end
+%     beta = ripple_modulation_lme_low(nwin).model.fixedEffects;
+%     y_fit = beta(1) + beta(2) * ([min(x) max(x)]);
 
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+%     hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+    hold on;plot([min(x) max(x)],y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
     ylabel('Ripple difference (z)')
-    text(-2,0.1,sprintf('p = %.3e',p))
+    text(-2,0.01,sprintf('p = %.3e',p))
     title([twin_text{nwin},' low'])
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
 
 
 %%% high ripples
-track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
-psth1 = [V1_SUA_reactivation_PSTH_high{1}{1}(:,:); V1_SUA_reactivation_PSTH_high{2}{1}(:,:)];
-psth2 = [V1_SUA_reactivation_PSTH_high{1}{2}(:,:); V1_SUA_reactivation_PSTH_high{2}{2}(:,:)];
-psth_diff = psth1-psth2;
+% track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
+% psth1 = [V1_SUA_reactivation_PSTH_high{1}{1}(:,:); V1_SUA_reactivation_PSTH_high{2}{1}(:,:)];
+% psth2 = [V1_SUA_reactivation_PSTH_high{1}{2}(:,:); V1_SUA_reactivation_PSTH_high{2}{2}(:,:)];
+% psth_diff = psth1-psth2;
 
-session_count = [cell_session_id{1} cell_session_id{2}];
-subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
-[~, ~, subject_id] = unique(subject_id);
-
+% session_count = [cell_session_id{1} cell_session_id{2}];
+% subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+% [~, ~, subject_id] = unique(subject_id);
+ [~, ~, subject_id] = unique(subject_id);
+tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_HIGH.csv'));
+x = tbl.track_difference;
 for nwin = 1:3
     p  = ripple_modulation_lme_high(nwin).p;
     nexttile
-    y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    %     y = double(mean(psth_diff(:,windows_all{nwin}),2,'omitnan'));
+    y = table2array(tbl(:,1+nwin));
 
-    x = track_difference(~isnan(y));
+    %     x = track_difference(~isnan(y));
+    x = tbl.track_difference(~isnan(y));
     y(isnan(y))=[];
 
     fitted = polyfit(x, y, 1);
 
     % 3. Calculate fitted values
     y_fit = polyval(fitted, x);
+    beta = ripple_modulation_lme_high(nwin).model.fixedEffects;
+    y_fit = beta(1) + beta(2) * ([min(x) max(x)]);
 
     scatter(x,y,20,'k',...
         'filled','MarkerFaceAlpha',0.1,'MarkerEdgeAlpha',0.1);
-    hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+%     hold on;plot(x,y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
+    hold on;plot([min(x) max(x)],y_fit,'r-','LineWidth',2);xline(0,'--');yline(0,'--');
     ylim([-0.2 0.2]);
     xlim([-2.5 2.5])
     xlabel('Track difference (z)')
     ylabel('Ripple difference (z)')
-    text(-2,0.1,sprintf('p = %.3e',p))
+    text(-2,0.01,sprintf('p = %.3e',p))
     title([twin_text{nwin},' high'])
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
