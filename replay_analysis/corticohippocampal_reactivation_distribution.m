@@ -549,6 +549,8 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
+bias = KDE_reactivation_ripples_PSTH.HPC_logodds_ripples';
+bias_V1 = KDE_reactivation_ripples_PSTH.V1_logodds_ripples';
 
 z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
 z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
@@ -568,6 +570,9 @@ z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
 z_bias_KDE = z_bias; % For visualisation without nan
 z_bias_V1_KDE = z_bias_V1;% For visualisation without nan
 
+bias_KDE = bias; % For visualisation without nan
+bias_V1_KDE = bias_V1;% For visualisation without nan
+
 z_bias = z_bias + KDE_reactivation_ripples_PSTH.nan_mask';
 z_bias_V1 = z_bias_V1 + KDE_reactivation_ripples_PSTH.nan_mask';
 clear z_bias1
@@ -575,68 +580,70 @@ clear z_bias1
 % z_bias_KDE = z_bias_KDE(:,event_ids_first);
 % z_bias_V1_KDE = z_bias_V1_KDE(:,event_ids_first);
 
-
-%%% spindle co-occurance
-[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==1,:));
-ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
-ripple_info.spindle_presence(spindle_index,1) = 1;
-
-[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==2,:));
+% 
+% %%% spindle co-occurance
+% [~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==1,:));
 % ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
-ripple_info.spindle_presence(spindle_index,2) = 1;
-% ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first,:);
-
-%%% spindle power
-spindle_amplitude=[];
-for probe_no = 1:2
-    spindle_amplitude{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
-
-ripple_info.spindle_amplitude = spindle_amplitude';
-% ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
-
-%%% SO phase
-SO_phase=[];
-for probe_no = 1:2
-    SO_phase{probe_no}=[];
-    for nsession = 1:length(sessions_to_process)
-        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
-    end
-end
-
-SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
-
-ripple_info.SO_phase = SO_phase';
-% ripple_info.SO_phase = ripple_info.SO_phase(event_ids_first,:);
-
-
-%%%%%%% periripple_LFP_info_V1
-spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
-spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
-spindle_amplitude = nan([size(spindle_amplitude1),2]);
-spindle_amplitude(:,:,1) = spindle_amplitude1;
-spindle_amplitude(:,:,2) = spindle_amplitude2;
-
-ripple_info.spindle_amplitude_temporal = spindle_amplitude;
-% ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
-clear spindle_amplitude spindle_amplitude1 spindle_amplitude2
-
-SO_phase1 = [periripple_LFP_info_V1(1).SO_phase{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{1}(:,ripples_all(2).SWS_index==1)];
-SO_phase2 = [periripple_LFP_info_V1(1).SO_phase{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{2}(:,ripples_all(2).SWS_index==1)];
-SO_phase = nan([size(SO_phase1),2]);
-SO_phase(:,:,1) = SO_phase1;
-SO_phase(:,:,2) = SO_phase2;
-
-ripple_info.SO_phase = SO_phase;
+% ripple_info.spindle_presence(spindle_index,1) = 1;
+% 
+% [~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==2,:));
+% % ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+% ripple_info.spindle_presence(spindle_index,2) = 1;
+% % ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first,:);
+% 
+% %%% spindle power
+% spindle_amplitude=[];
+% for probe_no = 1:2
+%     spindle_amplitude{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% % ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+% 
+% %%% SO phase
+% SO_phase=[];
+% for probe_no = 1:2
+%     SO_phase{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.SO_phase = SO_phase';
+% % ripple_info.SO_phase = ripple_info.SO_phase(event_ids_first,:);
+% 
+% 
+% %%%%%%% periripple_LFP_info_V1
+% spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
+% spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% spindle_amplitude = nan([size(spindle_amplitude1),2]);
+% spindle_amplitude(:,:,1) = spindle_amplitude1;
+% spindle_amplitude(:,:,2) = spindle_amplitude2;
+% 
+% ripple_info.spindle_amplitude_temporal = spindle_amplitude;
+% % ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
+% clear spindle_amplitude spindle_amplitude1 spindle_amplitude2
+% 
+% SO_phase1 = [periripple_LFP_info_V1(1).SO_phase{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{1}(:,ripples_all(2).SWS_index==1)];
+% SO_phase2 = [periripple_LFP_info_V1(1).SO_phase{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+% SO_phase = nan([size(SO_phase1),2]);
+% SO_phase(:,:,1) = SO_phase1;
+% SO_phase(:,:,2) = SO_phase2;
+% 
+% ripple_info.SO_phase = SO_phase;
 % ripple_info.SO_phase_temporal = ripple_info.SO_phase_temporal(:,event_ids_first,:);
-ripple_info.tvec_temporal = periripple_LFP_info_V1(1).tvec;
+% ripple_info.tvec_temporal = periripple_LFP_info_V1(1).tvec;
+% 
+% clear SO_phase SO_phase1 SO_phase2
 
-clear SO_phase SO_phase1 SO_phase2
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info_all.mat'))
 
 
 SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
@@ -790,9 +797,10 @@ for nsession = 16
 
     % event_ids_first = intersect(high_ripple_index,event_ids_first);
     event_times_all = event_times;
-    
+    event_offset_all = event_offset;
+
     event_times = event_times(event_ids_first);
-    % event_offset = event_offset(event_ids_first);
+    event_offset = event_offset(event_ids_first);
     event_id = event_id(event_ids_first);
     event_id(event_id==2) = 1;
 
@@ -827,7 +835,7 @@ for nsession = 16
     psthBinSize = 0.01;
     spike_id = ones(1,length(spike_id));
     ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-        'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+        'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
     HPC_MUA = [ripple_modulation(1).PSTH_zscored];
 
 
@@ -858,7 +866,7 @@ for nsession = 16
         psthBinSize = 0.01;
         spike_id = ones(1,length(spike_id));
         ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+            'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
          V1_MUA{hemi} = [ripple_modulation(1).PSTH_zscored];
     end
     x_bins_MUA = ripple_modulation(1).bins;
@@ -866,7 +874,7 @@ for nsession = 16
 
     event_id = find(session_id == sessions_to_process(nsession));
     event_id = event_id(event_ids_first);
-    
+
     bins_to_use = bin_centers>0 & bin_centers<0.1;
 
     mean_bias = mean(z_bias(bin_centers>0 & bin_centers<0.1,:),'omitnan');
@@ -923,7 +931,7 @@ for nsession = 16
 
 
         onsets = event_times_all(nearby_events)-event_times(this_event);
-        offsets = event_offset(nearby_events)-event_times(this_event);
+        offsets = event_offset_all(nearby_events)-event_times(this_event);
 
         % fig = figure('Name',sprintf('%s %i ripple LFP spiking log odds',experiment_info(nsession).experiment_ID,this_event));
         % fig = figure('Name',sprintf('%s %i ripple LFP spiking 10ms bins log odds',experiment_info(nsession).experiment_ID,this_event));
@@ -1086,16 +1094,27 @@ for nsession = 16
     % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example','selected'),[],'ContentType','vector')
     save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example'),[],'ContentType','vector')
 
-    %%%% Only LFP and Spiking (5S)
-    nthreshold = 2; % Track R biased
-    nthreshold = 5; % Track L biased
-    % search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 0 & SO_phase(selected_events{nthreshold}(:),2)==1);
-    % search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 1 & SO_phase(selected_events{nthreshold}(:),2)==0);
-    % search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 1 & spindle_presence(selected_events{nthreshold}(:),2)==0);
+
+    %%%% Only LFP and Spiking (15S)
+    nthreshold =1; % Track R biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 0 & SO_phase(selected_events{nthreshold}(:),2)==1);
+    search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 1 & spindle_presence(selected_events{nthreshold}(:),2)==0);
+    search_index = find(spindle_power(selected_events{nthreshold}(:),1) > prctile(ripple_info.spindle_amplitude(event_id,1),[80]) &...
+        spindle_power(selected_events{nthreshold}(:),2)==0 < prctile(ripple_info.spindle_amplitude(event_id,2),[40]));
+
+    nthreshold =6; % Track L biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 1 & SO_phase(selected_events{nthreshold}(:),2)==0);
+
     search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 0 & spindle_presence(selected_events{nthreshold}(:),2)==1);
-    
+    search_index = find(spindle_power(selected_events{nthreshold}(:),2) > prctile(ripple_info.spindle_amplitude(event_id,2),[75]) &...
+        spindle_power(selected_events{nthreshold}(:),1)==0 < prctile(ripple_info.spindle_amplitude(event_id,1),[40]));
+
+    search_index = selected_events{nthreshold};
+
+    tlim = [-6 6]
     for nevent = 1:length(search_index)
-        this_event = selected_events{nthreshold}(search_index(nevent));
+        % this_event = selected_events{nthreshold}(search_index(nevent));
+        this_event = selected_events{nthreshold}((nevent));
 
         V1_SUA_sleep = [];
         HPC_SUA_sleep = [];
@@ -1108,15 +1127,15 @@ for nsession = 16
 
         spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
         spike_id = session_clusters_all.spike_id{nsession}(spike_index);
-        psthBinSize = 0.005;
-        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,[-5 5],psthBinSize,...
+        psthBinSize = 0.01;
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
             'unit_id',cell_id,'event_times', event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
         HPC_SUA_sleep = permute([ripple_modulation(1).PSTH],[2 1 3]);
 
         psthBinSize = 0.01;
         spike_id = ones(1,length(spike_id));
-        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,[-5 5],psthBinSize,...
-            'unit_id',cell_id,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+            'unit_id',1,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
         HPC_MUA_sleep = [ripple_modulation(1).PSTH_zscored];
 
         for hemi = 1:2
@@ -1129,33 +1148,47 @@ for nsession = 16
 
             spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
             spike_id = session_clusters_all.spike_id{nsession}(spike_index);
-            psthBinSize = 0.005;
-            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,[-5 5],psthBinSize,...
+            psthBinSize = 0.01;
+            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
                 'unit_id',cell_id,'event_times', event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
             V1_SUA_sleep{hemi} = permute([ripple_modulation(1).PSTH],[2 1 3]);
 
             psthBinSize = 0.01;
             spike_id = ones(1,length(spike_id));
-            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,[-5 5],psthBinSize,...
-                'unit_id',cell_id,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+                'unit_id',1,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
             V1_MUA_sleep{hemi} = [ripple_modulation(1).PSTH_zscored];
         end
         sleep_x_bins = ripple_modulation(1).bins;
 
 
         % this_event = nevent
-        nearby_events = (find(event_times_all < event_times(this_event)+5 & event_times_all > event_times(this_event)-5));
-        nearby_events_merged = (find(event_times < event_times(this_event)+5 & event_times > event_times(this_event)-5));
+        nearby_events = (find(event_times_all < event_times(this_event)+tlim(2) & event_times_all > event_times(this_event)+tlim(1)));
+        nearby_events_merged = (find(event_times < event_times(this_event)+tlim(2) & event_times > event_times(this_event)+tlim(1)));
 
 
         onsets = event_times_all(nearby_events)-event_times(this_event);
-        offsets = event_offset(nearby_events)-event_times(this_event);
+        offsets = event_offset_all(nearby_events)-event_times(this_event);
 
-        fig = figure('Name',sprintf('%s %i Sleep LFP spiking',experiment_info(nsession).experiment_ID,this_event));
+        sigma_bins = 10;
+        x = (-round(3 * sigma_bins):0); % Only non-positive indices
+        kernel = exp(-(-round(3 * sigma_bins):0).^2 / (2 * 0.1^2));
+        kernel = kernel / sum(kernel); % Normalize
+
+        %%%%
+        %%%%
+        %%%% MUA version
+        fig = figure('Name',sprintf('%s %i Sleep LFP MUA',experiment_info(nsession).experiment_ID,this_event));
         fig.Position = [851 65 960 925];
 
-        ax1 = subplot(8,1,1);imagesc(sleep_x_bins,1:size(V1_SUA_sleep{1},2),squeeze(V1_SUA_sleep{1}(1,:,:)))
-        xlim([-5 5]);clim([0 1]);colormap(ax1,[1 1 1; 0.9668, 0.6152, 0.5859]);
+
+        ax1 = subplot(8,1,1);
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(V1_MUA_sleep{1})),[10]),'r');
+
+        xlim(tlim);ylim([-1.2 4])
+        % gca;colormap(gca,[1 1 1; 0 0 0])
         % colormap(flipud(gray));
         hold on;
 
@@ -1167,11 +1200,15 @@ for nsession = 16
         set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
 
 
-        ax2 = subplot(8,1,2); imagesc(sleep_x_bins,1:size(V1_SUA_sleep{2},2),squeeze(V1_SUA_sleep{2}(1,:,:)))
-        xlim([-5 5]);clim([0 1]);colormap(ax2,[1 1 1; 0.6289, 0.7852, 0.8867]);
+        ax2 = subplot(8,1,2);
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(V1_MUA_sleep{2})),[10]),'b');
+
+        xlim(tlim);  ylim([-1.2 4])
+        % gca;colormap(gca,[1 1 1; 0 0 0])
         % colormap(flipud(gray));
         hold on;
-
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
         X = [onsets'; offsets'; offsets'; onsets'];
@@ -1188,10 +1225,12 @@ for nsession = 16
         end
 
 
-        ax3 = subplot(8,1,3); imagesc(sleep_x_bins,1:size(HPC_SUA_sleep,2),squeeze(HPC_SUA_sleep(1,:,:)))
-        xlim([-5 5]);clim([0 1]);colormap(ax3,[1 1 1; 0.3 0.3 0.3]);
-        % colormap(flipud(gray));
-        hold on;
+        
+        ax3 = subplot(8,1,3); 
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(HPC_MUA_sleep)),[10]),'k');
+        ylim([-1 4])
 
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
@@ -1208,24 +1247,70 @@ for nsession = 16
         end
 
         %
-        % subplot(8,1,4);
-        % tempV1 = fillmissing(z_bias_V1_KDE(:,event_id(this_event)), 'linear');
-        % plot(bin_centers,tempV1,'m');
-        % tempHPC = fillmissing(z_bias_KDE(:,event_id(this_event)), 'linear');
-        %
-        % hold on;plot(bin_centers,tempHPC,'k');xlim([-1.5 1.5]);ylim([-4 4])
-        % % Shade the regions
-        % yl = ylim; % Get y-limits to fill the height
-        % X = [onsets'; offsets'; offsets'; onsets'];
-        % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
-        % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-        % set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
-        % yline(0,'--')
+        subplot(8,1,4);
+
+        fs = mean(1./diff(bin_centers)); % Calculate exact Hz from KDE bins
+        total_bins = round((tlim(2) - tlim(1)) * fs);
+        center_bin = abs(tlim(1)) * fs;
+
+        % Initialize the master vector for this reference event
+        tempV1 = nan(total_bins, 1);
+        tempHPC = nan(total_bins, 1);
+
+        % --- Find and Loop Neighbors ---
+        % Finding events within 5 seconds of the reference 'this_event'
+        nearby_events_merged = find(event_times < event_times(this_event) + tlim(2) & ...
+            event_times > event_times(this_event) + tlim(1));
+
+        for i = 1:length(nearby_events_merged)
+            neighbor_id = nearby_events_merged(i);
+
+            % 1. Calculate the relative onset of the neighbor ripple
+            rel_start_time = event_times(neighbor_id) - event_times(this_event)-1;
+
+            % 2. Convert time to bin indices
+            % We add 1 because MATLAB is 1-indexed; bin 1 is tlim(1)
+            idx_start = round((rel_start_time - tlim(1)) * fs) + 1;
+            idx_end   = idx_start + size(z_bias_V1_KDE, 1) - 1;
+
+            % 4. Logical check: Ensure we don't index outside the 1200-bin window
+            % This handles cases where a neighbor is at -5.5s (so its -1s tail is out of bounds)
+            target_indices = idx_start:idx_end;
+            source_indices = 1:size(z_bias_V1_KDE, 1);
+
+            out_of_bounds = target_indices < 1 | target_indices > total_bins;
+            target_indices(out_of_bounds) = [];
+            source_indices(out_of_bounds) = [];
+
+            % 5. Insert Data
+            if ~isempty(target_indices)
+                % Only fill NaNs to avoid double-counting or overwriting overlaps
+                mask = isnan(tempV1(target_indices));
+                tempV1(target_indices(mask)) = fillmissing(z_bias_V1_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                tempHPC(target_indices(mask)) = fillmissing(z_bias_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                % stitched_trace(target_indices(mask)) = z_bias_V1_KDE(source_indices(mask), neighbor_id);
+            end
+        end
+
+        tempV1 = movmedian(tempV1,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        plot(t_axis,tempV1,'m');
+        tempHPC = movmedian(tempHPC,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        hold on;
+        plot(t_axis,tempHPC,'k');
+        xlim([tlim]);ylim([-4 4])
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        yline(0,'--')
 
 
-        LFP_t = tvec >= event_times(this_event) - 5 & tvec <= event_times(this_event) + 5;
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
         subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
-        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-5 5])
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
         X = [onsets'; offsets'; offsets'; onsets'];
@@ -1243,9 +1328,9 @@ for nsession = 16
         % X = [onsets'; offsets'; offsets'; onsets'];
         % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
         % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
-        LFP_t = tvec >= event_times(this_event) - 5 & tvec <= event_times(this_event) + 5;
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
         subplot(8,1,6);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
-        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-5 5])
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
         yline([-pi/2 pi/2],'k--')
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
@@ -1255,11 +1340,11 @@ for nsession = 16
         set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
 
 
-        LFP_t = tvec >= event_times(this_event) - 5 & tvec <= event_times(this_event) + 5;
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
         % subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
         % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
         subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
-        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-5 5])
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
         X = [onsets'; offsets'; offsets'; onsets'];
@@ -1282,9 +1367,205 @@ for nsession = 16
 
         set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
 
-        LFP_t = tvec >= event_times(this_event) - 5 & tvec <= event_times(this_event) + 5;
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
         subplot(8,1,8);plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,1)) ,'r');
-        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim([-5 5])
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+
+
+        %%%%
+        %%%%
+        %%%% Raster version
+        fig = figure('Name',sprintf('%s %i Sleep LFP spiking',experiment_info(nsession).experiment_ID,this_event));
+        fig.Position = [851 65 960 925];
+
+        ax1 = subplot(8,1,1);imagesc(sleep_x_bins,1:size(V1_SUA_sleep{1},2),squeeze(V1_SUA_sleep{1}(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax1,[1 1 1; 0.9668, 0.6152, 0.5859]);
+        colormap(ax1,[1 1 1; 1 0 0])
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        ax2 = subplot(8,1,2); imagesc(sleep_x_bins,1:size(V1_SUA_sleep{2},2),squeeze(V1_SUA_sleep{2}(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax2,[1 1 1; 0.6289, 0.7852, 0.8867]);
+        colormap(ax2,[1 1 1; 0 0 1])
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        % yline(sum(hemi_id==1),'k','LineWidth',1)
+        for i = 1:length(nearby_events_merged)
+            if mean_V1_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+
+        ax3 = subplot(8,1,3); imagesc(sleep_x_bins,1:size(HPC_SUA_sleep,2),squeeze(HPC_SUA_sleep(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax3,[1 1 1; 0.3 0.3 0.3]);
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        for i = 1:length(nearby_events_merged)
+            if mean_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+
+        %
+        subplot(8,1,4);
+
+        fs = mean(1./diff(bin_centers)); % Calculate exact Hz from KDE bins
+        total_bins = round((tlim(2) - tlim(1)) * fs);
+        center_bin = abs(tlim(1)) * fs;
+
+        % Initialize the master vector for this reference event
+        tempV1 = nan(total_bins, 1);
+        tempHPC = nan(total_bins, 1);
+
+        % --- Find and Loop Neighbors ---
+        % Finding events within 5 seconds of the reference 'this_event'
+        nearby_events_merged = find(event_times < event_times(this_event) + tlim(2) & ...
+            event_times > event_times(this_event) + tlim(1));
+
+        for i = 1:length(nearby_events_merged)
+            neighbor_id = nearby_events_merged(i);
+
+            % 1. Calculate the relative onset of the neighbor ripple
+            rel_start_time = event_times(neighbor_id) - event_times(this_event)-1;
+
+            % 2. Convert time to bin indices
+            % We add 1 because MATLAB is 1-indexed; bin 1 is tlim(1)
+            idx_start = round((rel_start_time - tlim(1)) * fs) + 1;
+            idx_end   = idx_start + size(z_bias_V1_KDE, 1) - 1;
+
+            % 4. Logical check: Ensure we don't index outside the 1200-bin window
+            % This handles cases where a neighbor is at -5.5s (so its -1s tail is out of bounds)
+            target_indices = idx_start:idx_end;
+            source_indices = 1:size(z_bias_V1_KDE, 1);
+
+            out_of_bounds = target_indices < 1 | target_indices > total_bins;
+            target_indices(out_of_bounds) = [];
+            source_indices(out_of_bounds) = [];
+
+            % 5. Insert Data
+            if ~isempty(target_indices)
+                % Only fill NaNs to avoid double-counting or overwriting overlaps
+                mask = isnan(tempV1(target_indices));
+                tempV1(target_indices(mask)) = fillmissing(z_bias_V1_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                tempHPC(target_indices(mask)) = fillmissing(z_bias_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                % stitched_trace(target_indices(mask)) = z_bias_V1_KDE(source_indices(mask), neighbor_id);
+            end
+        end
+
+        tempV1 = movmedian(tempV1,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        plot(t_axis,tempV1,'m');
+        tempHPC = movmedian(tempHPC,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        hold on;
+        plot(t_axis,tempHPC,'k');
+        xlim([tlim]);ylim([-4 4])
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        yline(0,'--')
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        % LFP_t = ripple_info.tvec_temporal;
+        % subplot(8,1,6)
+        % % ripple_info.SO_phase_temporal(1,event_id(this_event),:)
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),1)),'r');hold on;
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),2)),'b');
+        % yl = ylim; % Get y-limits to fill the height
+
+        % X = [onsets'; offsets'; offsets'; onsets'];
+        % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,6);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        yline([-pi/2 pi/2],'k--')
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        % subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times2(:,1)-event_times(this_event)]'; [spindle_times2(:,2)-event_times(this_event)]';...
+            [spindle_times2(:,2)-event_times(this_event)]'; [spindle_times2(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times2(:,1),1));
+        patch(X, Y, 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times1(:,1)-event_times(this_event)]'; [spindle_times1(:,2)-event_times(this_event)]';...
+            [spindle_times1(:,2)-event_times(this_event)]'; [spindle_times1(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times1(:,1),1));
+        patch(X, Y, 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+        % spindle_times1(:,1)-event_times(this_event)
+
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,8);plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim(tlim)
         % Shade the regions
         yl = ylim; % Get y-limits to fill the height
         X = [onsets'; offsets'; offsets'; onsets'];
@@ -1296,7 +1577,9 @@ for nsession = 16
 
 end
 
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example\sleep'),[],'ContentType','vector')
 
+% save_all_figures('C:\Users\masahiro.takigawa\Downloads',[],'ContentType','vector')
 
 %%
 %%%%% Plot distribution

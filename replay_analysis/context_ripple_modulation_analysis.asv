@@ -323,7 +323,6 @@ xlim([-1.5 1.5])
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
 
-
 %% Ripple PSTH MUA in V1 and HPC (ripple features)
 sessions_to_process = 1:22;
 V1_PSTH_spindle_power = [];
@@ -334,9 +333,8 @@ HPC_PSTH_spindle_power = [];
 HPC_PSTH_ripple_power = [];
 HPC_PSTH_SO = [];
 
-clear ripple_PSTH
-ripple_PSTH.V1_MUA = [];
-ripple_PSTH.HPC_MUA = [];
+ripple_MUA.V1 = [];
+ripple_MUA.V1 = [];
 
 % ripple_PSTH_MUA_all = [];
 psthBinSize = 0.01;
@@ -347,67 +345,6 @@ hemispheres = {'L','R'};
 % ripples_all_SO = ripples_all;
 
 load(fullfile(analysis_folder,'ripples_all_POST.mat'))
-% 
-% % ripples_all
-% for nsession = 1:length(sessions_to_process)
-%     %     ripple_modulation_PSTH_all{nsession} = [];
-%     tic
-% 
-%     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
-%     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-% 
-%     % [~,index] = sort(event_times);
-%     % event_times = event_times(index);
-%     % event_id = event_id(index);
-%     % spindle_power = spindle_power(:,index);
-%     % ripple_power = ripple_power(index);
-%     % SO_phase = SO_phase(:,index);
-%     %
-%     % event_id(event_id>0) = 1;
-%     % remove_id = find(diff(event_times)<0.3)+1;
-%     % event_times(remove_id)=[];
-%     % event_id(remove_id)=[];
-%     % spindle_power(:,remove_id)=[];
-%     % ripple_power(remove_id)=[];
-%     % SO_phase(:,remove_id)=[];
-% 
-%     HPC_MUA = [];    V1_MUA = [];
-%     ripple_PSTH(1).ripple_hemi{nsession} = event_id;
-%     %%% HPC
-%     cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'HPC'));
-%     %         cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
-%     spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
-% 
-%     spike_id = session_clusters_all.spike_id{nsession}(spike_index);
-%     spike_id(spike_id>0)=1;
-% 
-%     ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-%         'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
-% 
-%     ripple_PSTH(1).HPC_MUA{nsession} = zscore(squeeze(ripple_modulation(1).PSTH),0,2);
-%     ripple_PSTH(2).HPC_MUA{nsession} = zscore(squeeze(ripple_modulation(2).PSTH),0,2);
-% 
-%     %%% V1
-%     for hemi = 1:2
-%         cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
-%         %         cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
-%         spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
-% 
-%         spike_id = session_clusters_all.spike_id{nsession}(spike_index);
-%         spike_id(spike_id>0)=1;
-% 
-%         ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
-%             'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
-% 
-%         ripple_PSTH(1).V1_MUA{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(1).PSTH),0,2);
-%         ripple_PSTH(2).V1_MUA{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(2).PSTH),0,2);
-%     end
-% end
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_PSTH_POST.mat'),'ripple_PSTH')
-
-
-
-
 % ripples_all
 for nsession = 1:length(sessions_to_process)
     %     ripple_modulation_PSTH_all{nsession} = [];
@@ -438,7 +375,7 @@ for nsession = 1:length(sessions_to_process)
 
     event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
     event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
-
+    %         merge_bilateral_ripple_events(event_id,event_times,0.3);
     [~,index] = sort(event_times);
     event_times = event_times(index);
     event_id = event_id(index);
@@ -447,6 +384,8 @@ for nsession = 1:length(sessions_to_process)
     SO_phase = SO_phase(:,index);
 
     event_id(event_id>0) = 1;
+
+    % remove_id = find(diff(event_times)<0.1)+1;
     remove_id = find(diff(event_times)<0.3)+1;
     event_times(remove_id)=[];
     event_id(remove_id)=[];
@@ -455,7 +394,6 @@ for nsession = 1:length(sessions_to_process)
     SO_phase(:,remove_id)=[];
 
     HPC_MUA = [];    V1_MUA = [];
-    ripple_PSTH.ripple_hemi{nsession} = event_id;
     %%% HPC
     cell_id = session_clusters_all.spatial_cell_id{nsession}(contains(session_clusters_all.region{nsession},'HPC'));
     %         cell_id = session_clusters_all.spatial_cell_id{nsession}(session_clusters_all.mean_FR{nsession}(:,abs(hemi-3))<=50 & contains(session_clusters_all.region{nsession},'V1') & contains(session_clusters_all.region{nsession},hemispheres{hemi}));
@@ -468,8 +406,9 @@ for nsession = 1:length(sessions_to_process)
         'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0);
 
 
-    HPC_MUA = [zscore(squeeze(ripple_modulation(1).PSTH),0,2) ];
+    HPC_MUA = zscore(squeeze(ripple_modulation(1).PSTH),0,2);
     % HPC_MUA = squeeze(ripple_modulation(1).PSTH);
+
 
     %%% V1
     for hemi = 1:2
