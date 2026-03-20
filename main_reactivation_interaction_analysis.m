@@ -332,43 +332,55 @@ for nsession =1:length(experiment_info)
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
+        % DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
         
         if isempty(DIR)
             continue
         end
 
-%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
-%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
+        % load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
+        % load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
         % 20ms ROC AUC decoding performance
-        index = 1;
+        index = 2;
+        % index = 1;
         KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{index}.FPR);
 
         KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{index}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = prctile(KDE_RUN_validations{index}.AUC_shuffle,97.5);
+        % KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+
         KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
+        % KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = prctile(KDE_RUN_validations{index}.TPR_shuffle,97.5);
         
         KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        % KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = prctile(KDE_RUN_validations_V1{index}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
+        % KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = prctile(KDE_RUN_validations_V1{index}.TPR_shuffle,97.5);
         
         % 100ms ROC AUC decoding performance
         KDE_RUN_validations_all.HPC_AUC(2,nsession) = mean(KDE_RUN_validations{end}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations{end}.AUC_shuffle);
+        % KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations{end}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = prctile(KDE_RUN_validations{end}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.HPC_TPR(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_shuffle);
+        % KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = prctile(KDE_RUN_validations{end}.TPR_shuffle,97.5);
 
 
         KDE_RUN_validations_all.V1_AUC(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_shuffle);
+        % KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = prctile(KDE_RUN_validations_V1{end}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.V1_TPR(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_shuffle);
-        
+        % KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = prctile(KDE_RUN_validations_V1{end}.TPR_shuffle,97.5);
     end
 end
 
@@ -378,6 +390,10 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
+% save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all_95percentile.mat'),'KDE_RUN_validations_all','-v7.3')
+save(fullfile(analysis_folder,'KDE_RUN_validations_all_95percentile.mat'),'KDE_RUN_validations_all','-v7.3')
+
+
 % save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
 save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all','-v7.3')
 % save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
@@ -393,10 +409,17 @@ end
 % load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 load(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all')
 
+load(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all_95percentile.mat'),'KDE_RUN_validations_all')
+% load(fullfile(analysis_folder,'KDE_RUN_validations_all_95percentile.mat'),'KDE_RUN_validations_all')
+
+
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination HPC RUN1';
 % title_text = 'PLS contextual discrimination HPC RUN1 scatter';
-title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins)';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins)';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter (95th percentile)';
+title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins 95th percentile)';
+
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';
@@ -515,6 +538,7 @@ for n = 1:2
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
     ylim([0 1.1]);
+    yticks([0:0.25:1])
     title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
@@ -550,7 +574,9 @@ end
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination V1 RUN1';
 %  title_text = 'PLS contextual discrimination V1 RUN1 scatter';
- title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins)';
+ % title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins)';
+ % title_text = 'PLS contextual discrimination V1 RUN1 scatter (95th percentile)';
+title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins 95th percentile)';
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';
@@ -668,6 +694,7 @@ for n = 1:2
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
     ylim([0 1.1]);
+    yticks([0:0.25:1])
     title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
