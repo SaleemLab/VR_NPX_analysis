@@ -661,8 +661,12 @@ lme.Coefficients
 % 
 
 
-models = {'V1_logodds_PRE ~ HPC_trackID  * RipplePower + (1| SessionID) +(1 | AnimalID)  ',
-    'V1_logodds ~ HPC_trackID * RipplePower + (1| SessionID)+(1 | AnimalID) '};
+% models = {'V1_logodds_PRE ~ HPC_trackID  * RipplePower + (1| SessionID) +(1 | AnimalID)  ',
+%     'V1_logodds ~ HPC_trackID * RipplePower + (1| SessionID)+(1 | AnimalID) '};
+models = {'V1_logodds_PRE ~ HPC_logodds  * RipplePower + (1| SessionID) +(1 | AnimalID)  ',
+    'V1_logodds ~ HPC_logodds * RipplePower + (1| SessionID)+(1 | AnimalID) '};
+
+tbl.Weights = abs(tbl.HPC_logodds);
 
 for i = 1:length(models)
     formula = models{i};
@@ -670,9 +674,12 @@ for i = 1:length(models)
     % formula = ['HPC_logodds ~ V1_logodds_PRE * JointState ' ...
     %            '+ (V1_logodds_PRE + JointState| SessionID) + (V1_logodds_PRE + JointState | AnimalID)'];
 
-%     lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+    %     lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
     lme = fitlme(tbl, formula,'DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+    % glme = fitglme(tbl, formula, 'Weights', tbl.Weights,  'Distribution', 'Normal','Link', 'Identity', 'FitMethod', 'Laplace','DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+
     lme.Coefficients
+    % glme.Coefficients
 
     ripple_power_modulation_lme(i).model = lme;
     ripple_power_modulation_lme(i).variable = [lme.Coefficients.Name];
@@ -1132,6 +1139,9 @@ tbl.Spindle_NonMatch = categorical(tbl.Spindle_NonMatch);
 % models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (V1_logodds_PRE| SessionID) + (V1_logodds_PRE| AnimalID)',
 %     'HPC_logodds ~ V1_logodds * SpindlePower_Match + V1_logodds * SpindlePower_NonMatch + (V1_logodds | SessionID) + (V1_logodds | AnimalID)'};
 
+tbl.Weights = abs(tbl.HPC_logodds);
+glme = fitglme(tbl, formula, 'Weights', tbl.Weights,  'Distribution', 'Normal','Link', 'Identity', 'FitMethod', 'Laplace','DummyVarCoding','effects','CovariancePattern', {'Diagonal', 'Diagonal'});
+glme.Coefficients
 
 
 models = {'HPC_logodds ~ V1_logodds_PRE * SpindlePower_Match + V1_logodds_PRE * SpindlePower_NonMatch + (1| SessionID) + (1| AnimalID)',

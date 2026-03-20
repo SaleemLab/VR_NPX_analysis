@@ -233,18 +233,27 @@ for i=1:size(secondPass,1)
     peakPosition(i) = minIndex + secondPass(i,1) - 1;
 end
 
+% Fit a parabola to the zscored_spindle segment
+for i=1:size(secondPass,1)
+    t_fit = linspace(-1, 1, length(zscored_spindle(secondPass(i,1):secondPass(i,2))))';
+    p_fit = polyfit(t_fit, zscored_spindle(secondPass(i,1):secondPass(i,2)), 2);
+
+    parabola_waveform(i) = p_fit(1);
+end
+
+
 % Discard spindles that are way too long
 spindles = [timevec(secondPass(:,1)) timevec(peakPosition) ...
     timevec(secondPass(:,2)) peakNormalizedPower];
 duration = spindles(:,3)-spindles(:,1);
 spindles(duration>maxSpindleDuration/1000,:) = NaN;
+spindles(parabola_waveform < 0) = nan;
 % disp(['Detecting: ' num2str(size(spindles,1)) ' spindle events after discarding short and long events.']);
 
 % Discard spindles that are too short
 spindles(duration<minSpindleDuration/1000,:) = NaN;
 spindles = spindles((all((~isnan(spindles)),2)),:);
 disp(['Detecting: ' num2str(size(spindles,1)) ' spindle events after discarding short and long events.']);
-
 
 
 

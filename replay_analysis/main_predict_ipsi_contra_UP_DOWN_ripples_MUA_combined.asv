@@ -425,6 +425,10 @@ hemi_labels = {'L', 'R'};
 region_labels = {'L_V1','R_V1','HPC'};
 varnames = {
     'time_from_last_ripples'
+    'time_from_first_ripples'
+    'time_to_last_ripples'
+    'time_to_first_ripples'
+
     'first_ripples_index'
     'last_ripples_index'
     'first_ripples_power'
@@ -559,6 +563,13 @@ for nprobe = 1:2
                 data_struct.ripple_counts{nprobe}(nevent) = length(ripples_index);
                 data_struct.time_from_last_ripples{nprobe}(nevent) = ...
                     UP_ints{nprobe}(up_idx,2) - ripples_peaktimes(ripples_index(end));
+                data_struct.time_from_first_ripples{nprobe}(nevent) = ...
+                    UP_ints{nprobe}(up_idx,2) - ripples_peaktimes(ripples_index(1));
+
+                data_struct.time_to_last_ripples{nprobe}(nevent) = ...
+                    ripples_peaktimes(ripples_index(end)) - UP_ints{nprobe}(up_idx,1);
+                data_struct.time_to_first_ripples{nprobe}(nevent) = ...
+                    ripples_peaktimes(ripples_index(1)) - UP_ints{nprobe}(up_idx,1);
 
                 data_struct.first_ripples_power{nprobe}(nevent) = ripple_data.ripple_power(ripples_index(1));
                 data_struct.last_ripples_power{nprobe}(nevent) = ripple_data.ripple_power(ripples_index(end));
@@ -752,12 +763,14 @@ UP_DOWN_info.next_DOWN_duration = [event_info(1).next_DOWN_duration;event_info(2
 
 %%%%%%%%%%%%%
 %%%%%%%%%%%%% Early UP and DOWN log odds
+time_window = 0.1;
+% time_window = 0.2;
 
 for nprobe = 1:2
     UP_indices = probability_psth_whole(nprobe).UP_all_index;
 
     %%%% Late UP Log odds (200ms)
-    tidx = KDE_reactivation_PSTH(1).tvec > -0.1 & KDE_reactivation_PSTH(1).tvec < 0; 
+    tidx = KDE_reactivation_PSTH(1).tvec > -time_window & KDE_reactivation_PSTH(1).tvec < 0; 
 
     UP_DOWN_info.late_UP_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
     UP_DOWN_info.late_UP_V1_log_odds{nprobe}=mean(DOWN_V1_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
@@ -765,23 +778,23 @@ for nprobe = 1:2
 %     prev_down_idx{nprobe}(UP_indices)
     
     %%%% Early UP Log odds (200ms)
-    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < 0.1;
+    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     UP_DOWN_info.early_UP_log_odds{nprobe}=mean(UP_HPC_log_odds{nprobe}(UP_indices,tidx),2,'omitnan');
     UP_DOWN_info.early_UP_V1_log_odds{nprobe}=mean(UP_V1_log_odds{nprobe}(UP_indices,tidx),2,'omitnan');
 
     %%%% DOWN Log odds (200ms) (following current UP)
-    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < 0.1;
+    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     UP_DOWN_info.DOWN_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
     UP_DOWN_info.DOWN_V1_log_odds{nprobe}=mean(DOWN_V1_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
 
     %%%% Previous late UP Log odds (200ms)
-    tidx = KDE_reactivation_PSTH(1).tvec > -0.1 & KDE_reactivation_PSTH(1).tvec < 0; 
+    tidx = KDE_reactivation_PSTH(1).tvec > -time_window & KDE_reactivation_PSTH(1).tvec < 0; 
     
     UP_DOWN_info.previous_late_UP_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(prev_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
     UP_DOWN_info.previous_late_UP_V1_log_odds{nprobe}=mean(DOWN_V1_log_odds{nprobe}(prev_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
 
     %%%% Next early UP Log odds (200ms)
-    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < 0.1;
+    tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     if UP_indices(end)==size(UP_HPC_log_odds{nprobe},1)        
         UP_DOWN_info.next_early_UP_log_odds{nprobe}=[mean(UP_HPC_log_odds{nprobe}(UP_indices(1:end-1)+1,tidx),2,'omitnan'); nan];
         UP_DOWN_info.next_early_UP_V1_log_odds{nprobe}=[mean(UP_V1_log_odds{nprobe}(UP_indices(1:end-1)+1,tidx),2,'omitnan'); nan];
@@ -812,8 +825,14 @@ UP_DOWN_info.contra_spindles_DOWN = [nansum(spindle_probability_psth_whole(1).R_
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_all.mat'),'UP_DOWN_info');
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_all.mat'),'UP_DOWN_info');
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_100ms.mat'),'UP_DOWN_info');
+
+
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_100ms.mat'),'UP_DOWN_info');
 % save(fullfile(analysis_folder,'V1-HPC bilateral interaction\survival analysis','UP_DOWN_info.mat'),'UP_DOWN_info');
 
 %% Predict Ripples from DOWN-UP info
@@ -833,6 +852,7 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_psth_whole_baseline = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+
 %%%%% UP info
 event_times = merged_event_info.UP_ints;
 hemisphere_id = merged_event_info.UP_hemisphere_id;
@@ -901,19 +921,32 @@ save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme'
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
 
-% load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output.mat'),'output');
-load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output_200ms.mat'),'output');
-% output = predict_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),...
-%     ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'output',output,'plot_option',1);
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output.mat'),'output');
+% 
+
 output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
     'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index),'output',output,'plot_option',1);
 % save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (150ms windows)'),[],'ContentType','image')
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
 
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_synchrony_Bilateral_Ripples_output_200ms.mat'),'output');
+output = predict_bilateral_ripples_by_DOWN_UP_synchrony(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'DOWN_UP_index',index,'DOWN_UP_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',UP_session_count(index),'output',output,'plot_option',1,'time_window', 0.2);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows 200ms)'),[],'SVG_option',1)
+
+
+
 load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output.mat'),'output');
-output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA, contra_HPC_MUA,ipsi_probability, contra_probability,UP_DOWN_info,'subject_id',subject_id,'output',output,'plot_option',1);
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count,'output',output,'plot_option',1);
 % save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
+
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','DU_Bilateral_Ripples_output_200ms.mat'),'output');
+output = predict_bilateral_ripples_by_DOWN_UP(ipsi_V1_MUA, contra_V1_MUA, ipsi_HPC_MUA,ipsi_probability,UP_DOWN_info,'subject_id',subject_id,'session_id',UP_session_count,'output',output,'plot_option',1,'time_window', 0.2);
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows 200ms)'),[],'SVG_option',1)
 
 
 %% UP DOWN
@@ -989,37 +1022,7 @@ output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), co
 % save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
 save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_200ms.mat'),'output');
 
-% %%%%%%%%%%%%%%%% -0.1 to 0 ripples (control)
 
-UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
-UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
-
-all_overlap_idx_UP = merged_event_info.UP_overlap_idx_all{end};
-lags =merged_event_info.UP_lags_all{end};
-index = all_overlap_idx_UP(abs(lags)<=0.15);
-lag_index = (abs(lags)<=0.15);
-
-
-index = 1:size(ipsi_V1_MUA,1);
-% lag_index = (abs(lags)<=2);
-output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
-    'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
-save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_previous_DU.mat'),'output');
-
-% predict_UP_DOWN_synchrony_by_bilateral_ripples
-
-
-output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
-    'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
-% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
-save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_previous_DU.mat'),'output');
-
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','mixed effect regression (full windows)'),[],'ContentType','image')
-
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
 
 % 
 % 
@@ -1034,7 +1037,23 @@ load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme'
 output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
     'output',output,'plot_option',1,'subject_id',subject_id(index),'session_id',DOWN_session_count(index));
 
-save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows control)'),[],'SVG_option',1)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows)'),[],'SVG_option',1)
+
+
+index = 1:size(ipsi_V1_MUA,1);
+% lag_index = (abs(lags)<=2);
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_200ms.mat'),'output');
+
+% output = predict_UP_DOWN_V1_MUA_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'subject_id',subject_id(index));
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window',-0.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows 200ms)'),[],'SVG_option',1)
+
+
+
 
 index = all_overlap_idx(abs(lags)<=0.15);
 lag_index = (abs(lags)<=0.15);
@@ -1043,9 +1062,52 @@ load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme'
 %     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
 output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index));
+
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows)'),[],'SVG_option',1)
 
 
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_200ms.mat'),'output');
+% output = predict_UP_DOWN_synchrony_by_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:), contra_HPC_MUA(index,:),ipsi_probability(index,:), contra_probability(index,:),UP_DOWN_info,...
+%     'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index));
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window',-0.2);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows 200ms)'),[],'SVG_option',1)
+
+
+% %%%%%%%%%%%%%%%% -0.1 to 0 ripples (control)
+
+UP_DOWN_info.SWpeakmag_UD1 = UP_DOWN_info.SWpeakmag_UD ;
+UP_DOWN_info.SWpeakmag_UD = UP_DOWN_info.SWpeakmag_DU;
+
+all_overlap_idx_UP = merged_event_info.UP_overlap_idx_all{end};
+lags =merged_event_info.UP_lags_all{end};
+index = all_overlap_idx_UP(abs(lags)<=0.15);
+lag_index = (abs(lags)<=0.15);
+
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_previous_DU.mat'),'output');
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1synchrony_output_previous_DU.mat'),'output');
+output = predict_UP_DOWN_synchrony_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'UP_DOWN_index',index,'UP_DOWN_lag',abs(lags(lag_index)'),'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (150ms lag windows control)'),[],'SVG_option',1)
+
+
+
+index = 1:size(ipsi_V1_MUA,1);
+% lag_index = (abs(lags)<=2);
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+% save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1depression_output.mat'),'output');
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_previous_DU.mat'),'output');
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','Ripples_V1depression_output_previous_DU.mat'),'output');
+output = predict_UP_DOWN_V1_MUA_by_bilateral_ripples(ipsi_V1_MUA(index,:), contra_V1_MUA(index,:), ipsi_HPC_MUA(index,:),ipsi_probability(index,:),UP_DOWN_info,...
+    'output',output,'plot_option',1,'subject_id',subject_id(index),'session_id',DOWN_session_count(index),'time_window', -0.1);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction\UP_DOWN_ripples_lme','mixed effect regression (full windows control)'),[],'SVG_option',1)
 
 %% Generate CSV files
 
@@ -1552,7 +1614,7 @@ save(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis 
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined'),[])
 
 
-%%%%%%%%%%%%%%%% 2nd half Normalised cumulative V1 MUA predicts UP probability
+%%%%%%%%%%%%%%%% 2nd half - 1st half Normalised cumulative V1 MUA predicts UP probability
 output = plot_UP_survival_probability( ...
     {UP_DOWN_info.ipsi_second_half_V1_MUA_cumulative_UP - UP_DOWN_info.ipsi_first_half_V1_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_V1_MUA_cumulative_UP - UP_DOWN_info.contra_first_half_V1_MUA_cumulative_UP}, ...
     {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
@@ -1579,6 +1641,75 @@ save(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis 
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined'),[])
 
 
+
+
+%%%%%%%%%%%%%%%% Normalised cumulative ipsi-contra V1 MUA predicts UP probability
+output = plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_normalised_V1_MUA_cumulative_UP,UP_DOWN_info.contra_normalised_V1_MUA_cumulative_UP}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP},...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name','Normalised cumulative V1 MUA and last ripple to UP-DOWN transition','timebin', 0.015...
+);
+
+output_shuffled = plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_second_half_V1_MUA_cumulative_UP - UP_DOWN_info.ipsi_first_half_V1_MUA_cumulative_UP, UP_DOWN_info.contra_second_half_V1_MUA_cumulative_UP - UP_DOWN_info.contra_first_half_V1_MUA_cumulative_UP}, ....
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'subject_id',subject_id, ...
+    'event_option',[],'title_name', 'Normalised cumulative ipsi-contra V1 MUA 2nd - 1st half and last ripple to UP-DOWN transition (Shuffled)','shuffle_option',1,'timebin', 0.015...
+);
+
+
+for i = 1:length(output)
+output(i).p_shuffled = output_shuffled(i).p;
+output(i).b_shuffled = output_shuffled(i).b;
+end
+
+
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined','2nd_1st_half_normalised_cumulative_UP_V1_MUA_diff_survival.mat'),'output');
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined'),[],'SVG_option',1)
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined'),[])
+
+
+%%%%%% high Spindle power at the end of UP predicts faster UP termination
+%%%%%% (but maybe a bit circular reasoning)
+
+output = plot_UP_survival_probability( ...
+    {double(UP_DOWN_info.ipsi_spindles_UP),double(UP_DOWN_info.contra_spindles_UP)}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
+    'title_name', 'UP with spindles and last ripple to UP-DOWN transition','event_option','binary','subject_id',subject_id...
+    );
+
+output = plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_last_ripple_spindle_power_UP,UP_DOWN_info.contra_last_ripple_spindle_power_UP}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
+    'title_name', 'last ripple UP spindle powers and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    );
+
+output = plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_last_ripple_next_spindle_power_UP,UP_DOWN_info.contra_last_ripple_next_spindle_power_UP}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
+    'title_name', 'last ripple next UP spindle power and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    );
+
+output = plot_UP_survival_probability( ...
+    {UP_DOWN_info.ipsi_last_ripple_next_spindle_power_UP-UP_DOWN_info.ipsi_last_ripple_next_spindle_diff_UP,...
+    UP_DOWN_info.contra_last_ripple_next_spindle_power_UP-UP_DOWN_info.contra_last_ripple_next_spindle_diff_UP}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
+    'title_name', 'last ripple next UP - end UP  spindle power diff and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    );
+
+
+% output = plot_UP_survival_probability( ...
+%     {UP_DOWN_info.ipsi_last_ripple_next_spindle_diff_UP,UP_DOWN_info.contra_last_ripple_next_spindle_diff_UP}, ...
+%     {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
+%     {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
+%     'title_name', 'last ripple next UP spindle power diff and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+%     );
+
 %%%%%%%%%%%%%%%%%%%%%%
 %%%%%
 % 
@@ -1592,10 +1723,6 @@ UP_DOWN_info.subject_id = subject_id;
 
 
 V1_direction = [-1*ones(1,length(probability_psth_whole(1).UP_all_index)) 1*ones(1,length(probability_psth_whole(2).UP_all_index))];
-log_odds_threshold = prctile(UP_DOWN_info.last_ripples_log_odds_UP,0:10:100);
-log_odds_prod = UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP;
-log_odds_prod = UP_DOWN_info.first_ripples_log_odds_UP .* UP_DOWN_info.first_ripples_V1_log_odds_UP;
-
 
 matching_index = zeros(1,length(UP_session_count));
 non_matching_index = zeros(1,length(UP_session_count));
@@ -1649,50 +1776,59 @@ for n = 1:max(UP_session_count)
 %     non_matching_index(session_index(incoherent_index))=1;
 end
 
+
+log_odds_prod = UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP;
+
+
 index = find((non_matching_index + matching_index)>0);
 output = plot_UP_survival_probability( ...
     {matching_index(index)}, ...
     {UP_DOWN_info.time_from_last_ripples_UP(index)}, ...
     {UP_DOWN_info.ripple_counts_UP(index)},'count_option',[],'bilateral_merging',1, ...
-    'event_option',[],'title_name', 'Last ripple coherence and last ripple to UP-DOWN transition','event_option','binary','subject_id',subject_id(index)...
+    'title_name', 'Last ripple coherence and last ripple to UP-DOWN transition','event_option','binary','subject_id',subject_id(index)...
     );
 
 
+log_odds_prod = UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP;
+% log_odds_prod = UP_DOWN_info.late_UP_V1_log_odds .* UP_DOWN_info.last_ripples_log_odds_UP;
+
+% output = plot_UP_survival_probability( ...
+%     {log_odds_prod(HPC_reactivation_index)}, ...
+%     {UP_DOWN_info.time_from_last_ripples_UP(HPC_reactivation_index)}, ...
+%     {UP_DOWN_info.ripple_counts_UP(HPC_reactivation_index)},'count_option',[],'bilateral_merging',1, ...
+%     'event_option',[],'title_name', 'Last ripple coherence (high bias events) and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id(HPC_reactivation_index)...
+%     );
 
 output = plot_UP_survival_probability( ...
-    {abs(UP_DOWN_info.last_ripples_log_odds_UP(HPC_reactivation_index))}, ...
-    {UP_DOWN_info.time_from_last_ripples_UP(HPC_reactivation_index)}, ...
-    {UP_DOWN_info.ripple_counts_UP(HPC_reactivation_index)},'count_option',[],'bilateral_merging',1, ...
-    'event_option',[],'title_name', 'Last ripple coherence (reactivation) and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id(HPC_reactivation_index)...
-    );
-
-output = plot_UP_survival_probability( ...
-    {UP_DOWN_info.last_ripples_log_odds_UP(HPC_non_reactivation_index).*V1_direction(HPC_non_reactivation_index)}, ...
-    {UP_DOWN_info.time_from_last_ripples_UP(HPC_non_reactivation_index)}, ...
-    {UP_DOWN_info.ripple_counts_UP(HPC_non_reactivation_index)},'count_option',[],'bilateral_merging',1, ...
-    'event_option',[],'title_name', 'Last ripple coherence (non reactivation) and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id(HPC_non_reactivation_index)...
-    );
-
-
-output = plot_UP_survival_probability( ...
-    {UP_DOWN_info.late_UP_V1_log_odds.*V1_direction}, ...
+    {log_odds_prod}, ...
     {UP_DOWN_info.time_from_last_ripples_UP}, ...
     {UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',1, ...
     'event_option',[],'title_name', 'Last ripple coherence and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
     );
 
+log_odds_prod = sign(UP_DOWN_info.late_UP_V1_log_odds .* UP_DOWN_info.last_ripples_log_odds_UP);log_odds_prod(log_odds_prod<0)=0;
+% log_odds_prod = sign(UP_DOWN_info.last_ripples_V1_log_odds_UP .* UP_DOWN_info.last_ripples_log_odds_UP);log_odds_prod(log_odds_prod<0)=0;
+
+% output = plot_UP_survival_probability( ...
+%     {log_odds_prod(HPC_reactivation_index)}, ...
+%     {UP_DOWN_info.time_from_last_ripples_UP(HPC_reactivation_index)}, ...
+%     {UP_DOWN_info.ripple_counts_UP(HPC_reactivation_index)},'count_option',[],'bilateral_merging',1, ...
+%     'event_option',[],'title_name', 'Last ripple sign coherence (high bias events) and last ripple to UP-DOWN transition','subject_id',subject_id(HPC_reactivation_index)...
+%     );
+
 output = plot_UP_survival_probability( ...
-    {UP_DOWN_info.last_ripples_log_odds_UP.*V1_direction}, ...
+    {log_odds_prod}, ...
     {UP_DOWN_info.time_from_last_ripples_UP}, ...
     {UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',1, ...
-    'event_option',[],'title_name', 'Last ripple V1 log odds and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    'event_option','binary','title_name', 'Last ripple sign coherence and last ripple to UP-DOWN transition','subject_id',subject_id...
     );
+
 
 output = plot_UP_survival_probability( ...
     {UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP.*V1_direction}, ...
     {UP_DOWN_info.time_from_last_ripples_UP}, ...
     {UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',1, ...
-    'event_option',[],'title_name', 'Last ripple V1 log odds PRE and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    'event_option',[],'title_name', 'Last ripple V1 log odds PRE and last ripple to UP-DOWN transition','subject_id',subject_id...
     );
 
 save(fullfile(analysis_folder,'V1-HPC bilateral interaction','survival analysis combined','last_ripple_duration_survival.mat'),'output');
@@ -1700,27 +1836,20 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','surviv
 
 
 
+event_index = UP_DOWN_info.ripple_counts_UP>1;
+
+histogram(sign(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP(event_index)).*(UP_DOWN_info.last_ripples_V1_log_odds_UP(event_index) - UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP(event_index)))
+hold on;
+histogram(sign(UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP(event_index)).*(UP_DOWN_info.first_ripples_V1_log_odds_UP(event_index) - UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP(event_index)))
 
 
-for nprobe = 1:2
-    UP_indices = probability_psth_whole(nprobe).UP_all_index;
-    for nevent = 1:length(UP_indices)
-
-        KDE_log_odds_UP(nprobe).HPC{UP_indices(nevent)}
-
-        sum(KDE_log_odds_UP(nprobe).V1{UP_indices(nevent)})
-
-        KDE_log_odds_UP(nprobe).V1{UP_indices(nevent)+1}
-
-        KDE_log_odds_UP(nprobe).V1{UP_indices(nevent)-1}
-
-    end
-end
-
-
-
-
-
+output = plot_UP_survival_probability( ...
+    {sign(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP).*(UP_DOWN_info.last_ripples_V1_log_odds_UP - UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)}, ...
+    {UP_DOWN_info.time_from_last_ripples_UP}, ...
+    {UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',1, ...
+    'event_option',[],'title_name', 'Last ripple V1 log odds change and last ripple to UP-DOWN transition','subject_id',subject_id...
+    );
+% UP_DOWN_info.last_ripples_V1_log_odds_UP
 
 
 %% Relationship between neighbouring UP states
@@ -1728,6 +1857,7 @@ UP_session_count = [slow_waves_all(1).UP_session_count(probability(1).UP_all_ind
 subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 UP_DOWN_info.subject_id = subject_id;
+UP_DOWN_info.session_id = UP_session_count;
 % UP_DOWN_info.previous_late_UP_V1_log_odds
 % UP_DOWN_info.early_UP_V1_log_odds
 
@@ -1738,47 +1868,461 @@ scatter(UP_DOWN_info.late_UP_V1_log_odds,UP_DOWN_info.early_UP_V1_log_odds)
 
 % V1_direction = [zeros(1,length(probability_psth_whole(1).UP_all_index)) 1*ones(1,length(probability_psth_whole(2).UP_all_index))];
 V1_direction = [1*ones(1,length(probability_psth_whole(1).UP_all_index)) 2*ones(1,length(probability_psth_whole(2).UP_all_index))];
-
-low_index = UP_DOWN_info.last_ripples_power_UP < prctile(UP_DOWN_info.last_ripples_power_UP,[25]);
-high_index = UP_DOWN_info.last_ripples_power_UP > prctile(UP_DOWN_info.last_ripples_power_UP,[75]);
-tbl = table(V1_direction',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',...
-    normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',...
-    normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
-    subject_id,'VariableNames',{'V1Track','ripplePower','nextUP','lateUP','lastRippleV1','lateUPHPC','lastRippleHPC','earlyUP','previousUP','previousUPHPC','subject_id'});
-tbl = tbl(UP_DOWN_info.ripple_counts_UP>0,:);
-
-subplot(2,2,1)
-scatter(UP_DOWN_info.early_UP_V1_log_odds(low_index),UP_DOWN_info.next_early_UP_log_odds(low_index));
-% glme = fitglme(tbl, 'nextUP ~ lateUP*lateUPHPC*ripplePower + (1|subject_id)');
-% glme.Coefficients
-
-glme = fitglme(tbl, 'nextUP ~ lastRippleV1*lastRippleHPC*ripplePower + (1|subject_id)');
-glme.Coefficients
-glme.Rsquared.Adjusted
-
-% glme = fitglme(tbl, 'nextUP ~ lastRippleV1*lastRippleHPC + ripplePower*lastRippleHPC + ripplePower*lastRippleV1 + (1|subject_id)');
-% glme.Rsquared.Adjusted
-
-glme = fitglme(tbl, 'nextUP ~ lateUP + earlyUP+ (1|subject_id)');
-glme.Coefficients
-
-glme = fitglme(tbl, 'nextUP ~ earlyUP*lastRippleHPC*ripplePower+ (1|subject_id)');
-glme.Coefficients
-
-
-glme = fitglme(tbl, 'nextUP ~ lateUP*lastRippleHPC*ripplePower+ (1|subject_id)');
-glme.Coefficients
 % 
-% glme = fitglme(tbl, 'nextUP ~ V1Track*lastRippleHPC*ripplePower+ (1|subject_id)');
-% glme.Coefficients
+% low_index = UP_DOWN_info.last_ripples_power_UP < prctile(UP_DOWN_info.last_ripples_power_UP,[25]);
+% high_index = UP_DOWN_info.last_ripples_power_UP > prctile(UP_DOWN_info.last_ripples_power_UP,[75]);
+tbl = table(normalize(UP_DOWN_info.time_to_first_ripples_UP)',normalize(UP_DOWN_info.time_from_first_ripples_UP)',normalize(UP_DOWN_info.time_to_last_ripples_UP)',normalize(UP_DOWN_info.time_from_last_ripples_UP)',...
+    V1_direction',normalize(UP_DOWN_info.first_ripples_power_UP)',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.first_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.first_ripples_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
+    subject_id,UP_session_count,'VariableNames',{'TimeToFirstRipple','TimefromFirstRipple','TimeToLastRipple','TimefromLastRipple',...
+    'V1Track','firstRipplePower','lastRipplePower','nextUP','lateUP',...
+    'lastRippleV1','lastRippleV1PRE',...
+    'firstRippleV1','firstRippleV1PRE',...
+    'earlyUP','previousUP'...
+    'lateUPHPC','firstRippleHPC','lastRippleHPC','previousUPHPC',...
+    'subject_id','session_id'});
 
 
-glme = fitglme(tbl, 'earlyUP ~ previousUP*previousUPHPC + (1|subject_id)');
-glme.Coefficients
-% tbl.V1Track
 
-subplot(2,2,2)
-scatter(UP_DOWN_info.late_UP_V1_log_odds(high_index),UP_DOWN_info.next_early_UP_log_odds(high_index));
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+tbl_temp = tbl(UP_DOWN_info.ripple_counts_UP>0,:);
+lme2 = fitlme(tbl_temp, 'earlyUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+lme2 = fitlme(tbl_temp, 'nextUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+lme2 = fitlme(tbl_temp, 'lateUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+lme2 = fitlme(tbl_temp, ' lateUPHPC~ earlyUP + lateUP + nextUP + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+
+tbl_temp = tbl(isnan(UP_DOWN_info.ripple_counts_UP),:);
+lme2 = fitlme(tbl_temp, 'earlyUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+lme2 = fitlme(tbl_temp, 'nextUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+lme2 = fitlme(tbl_temp, 'lateUP ~  lateUPHPC + (1|subject_id) + (1|session_id)');
+lme2.Coefficients
+
+
+% t_step = 0:0.02:0.2;
+% t_win = 0:0.02:0.50;
+% t_win = prctile(UP_DOWN_info.time_from_last_ripples_UP,0:10:100);
+t_win = prctile(UP_DOWN_info.time_to_last_ripples_UP,0:10:100);
+t_win(1)=0;
+beta_V1_CI=nan(2,length(t_win));
+beta_HC_CI=nan(2,length(t_win));
+beta_V1=nan(1,length(t_win));
+beta_HC=nan(1,length(t_win));
+clear pval_HC pval_V1
+ripple_nextUP_lme = struct(); ripple_lateUP_lme = struct();ripple_last_lme = struct();ripple_earlyUP_lme = struct();
+lateUP_lme_with_ripple = struct(); lateUP_lme_without_ripple = struct();ripple_lastPRE_lme = struct();
+
+for tidx = 1:length(t_win)-1
+    % tbl_temp = tbl(UP_DOWN_info.time_from_last_ripples_UP<=t_win(tidx)+1& ...
+    %     UP_DOWN_info.time_from_last_ripples_UP>t_win(tidx),:);
+    tbl_temp = tbl(UP_DOWN_info.time_to_last_ripples_UP<=t_win(tidx)+1& ...
+        UP_DOWN_info.time_to_last_ripples_UP>t_win(tidx),:);
+
+    % lme2 = fitlme(tbl_temp, 'nextUP ~ lastRippleV1 * lastRippleHPC + (1|subject_id) + (1|session_id)');
+    lme2 = fitlme(tbl_temp, 'nextUP ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    % lme2 = fitlme(tbl_temp, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    ripple_nextUP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end);
+    ripple_nextUP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+    ripple_nextUP_lme.pval(tidx,:) = [lme2.Coefficients.pValue(2:end)];
+    ripple_nextUP_lme.variable = [lme2.Coefficients.Name(2:end)];
+
+    lme2 = fitlme(tbl_temp, 'lateUP ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    ripple_lateUP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end);
+    ripple_lateUP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+    ripple_lateUP_lme.pval(tidx,:) = [lme2.Coefficients.pValue(2:end)];
+    ripple_lateUP_lme.variable = [lme2.Coefficients.Name(2:end)];
+
+    lme2 = fitlme(tbl_temp, 'earlyUP ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    % lme2 = fitlme(tbl_temp, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    ripple_earlyUP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end);
+    ripple_earlyUP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+    ripple_nextUP_ripple_earlyUP_lmelme.pval(tidx,:) = [lme2.Coefficients.pValue(2:end)];
+    ripple_earlyUP_lme.variable = [lme2.Coefficients.Name(2:end)];
+
+    lme2 = fitlme(tbl_temp, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+    ripple_last_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end);
+    ripple_last_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+    ripple_last_lme.pval(tidx,:) = [lme2.Coefficients.pValue(2:end)];
+    ripple_last_lme.variable = [lme2.Coefficients.Name(2:end)];
+
+
+    lme2 = fitlme(tbl_temp, 'lastRippleHPC ~ lastRippleV1PRE + (1|subject_id) + (1|session_id)');
+    ripple_lastPRE_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end);
+    ripple_lastPRE_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+    ripple_lastPRE_lme.pval(tidx,:) = [lme2.Coefficients.pValue(2:end)];
+    ripple_lastPRE_lme.variable = [lme2.Coefficients.Name(2:end)];
+end
+% 
+% save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_to_end_lme.mat'),...
+%     'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
+% save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_from_start_lme.mat'),...
+%     'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
+
+
+% load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_from_start_lme.mat'),...
+%     'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
+
+% LateUP predicting nextUP with and without ripple (HC prediction of nextUP depends on ripple)
+tbl_temp = tbl(UP_DOWN_info.time_from_last_ripples_UP<0.1,:);
+lme2 = fitlme(tbl_temp, 'nextUP ~ lateUP + lateUPHPC + (1|subject_id) + (1|session_id)');
+% lme2 = fitlme(tbl_temp, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+lateUP_lme_with_ripple.b = lme2.Coefficients.Estimate(2:end);
+lateUP_lme_with_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+lateUP_lme_with_ripple.pval = [lme2.Coefficients.pValue(2:end)];
+lateUP_lme_with_ripple.variable = [lme2.Coefficients.Name(2:end)];
+
+tbl_temp = tbl(UP_DOWN_info.time_from_last_ripples_UP>0.1,:);
+lme2 = fitlme(tbl_temp, 'nextUP ~ lateUP + lateUPHPC + (1|subject_id) + (1|session_id)');
+% lme2 = fitlme(tbl_temp, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+lateUP_lme_without_ripple.b = lme2.Coefficients.Estimate(2:end);
+lateUP_lme_without_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+lateUP_lme_without_ripple.pval= [lme2.Coefficients.pValue(2:end)];
+lateUP_lme_without_ripple.variable = [lme2.Coefficients.Name(2:end)];
+
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','lateUP_lme_without_ripple.mat'),'lateUP_lme_without_ripple')
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','lateUP_lme_with_ripple.mat'),'lateUP_lme_with_ripple')
+
+
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_to_end_lme.mat'),...
+    'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
+
+
+fig = figure('Name','last ripple from UP and to DOWN';
+histogram2(UP_DOWN_info.time_to_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP)
+
+
+
+fig = figure('Name','Last ripple effect on current and next UP (time to end)','Position',[850 150 1300 820]);
+% fig = figure('Name','Last ripple effect on current and next UP (time from start)','Position',[850 150 1300 820]);
+x = t_win(1:end-1)';
+
+nexttile
+HC_idx = contains(ripple_nextUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_nextUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_nextUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> Next UP')
+xlabel('Time from last ripple to DOWN transition')
+ylim([-0.05 0.1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+nexttile
+HC_idx = contains(ripple_last_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_last_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_last_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> last ripple V1')
+xlabel('Time from last ripple to DOWN transition')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+nexttile
+HC_idx = contains(ripple_lastPRE_lme.variable,'lastRippleV1PRE');
+y_CI = squeeze(ripple_lastPRE_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_lastPRE_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple PRE V1 -> last ripple')
+xlabel('Time from last ripple to DOWN transition')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+
+nexttile
+HC_idx = contains(ripple_earlyUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_earlyUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_earlyUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('early UP -> last ripple')
+xlabel('Time from last ripple to DOWN transition')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+
+nexttile
+HC_idx = contains(ripple_lateUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_lateUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_lateUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> late UP')
+xlabel('Time from last ripple to DOWN transition')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = lateUP_lme_with_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias with ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = lateUP_lme_without_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none'); 
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias without ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%% From start of UP
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_from_start_lme.mat'),...
+    'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
+
+% fig = figure('Name','Last ripple effect on current and next UP (time to end)','Position',[850 150 1300 820]);
+fig = figure('Name','Last ripple effect on current and next UP (time from start)','Position',[850 150 1300 820]);
+x = t_win(1:end-1)';
+
+nexttile
+HC_idx = contains(ripple_nextUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_nextUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_nextUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> Next UP')
+xlabel('Time from UP transition to last ripple')
+ylim([-0.05 0.1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+
+nexttile
+HC_idx = contains(ripple_last_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_last_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_last_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> last ripple V1')
+xlabel('Time from UP transition to last ripple')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+nexttile
+HC_idx = contains(ripple_lastPRE_lme.variable,'lastRippleV1PRE');
+y_CI = squeeze(ripple_lastPRE_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_lastPRE_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple PRE V1 -> last ripple')
+xlabel('Time from UP transition to last ripple')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+
+nexttile
+HC_idx = contains(ripple_earlyUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_earlyUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_earlyUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('early UP -> last ripple')
+xlabel('Time from UP transition to last ripple')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+
+nexttile
+HC_idx = contains(ripple_lateUP_lme.variable,'lastRippleHPC');
+y_CI = squeeze(ripple_lateUP_lme.b_CI(HC_idx,:,:))';
+y_mean = ripple_lateUP_lme.b(:,HC_idx);
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], ...
+    'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+yline(0,'k')
+title('last ripple -> late UP')
+xlabel('Time from UP transition to last ripple')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+ylim([-0.05 0.1])
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = lateUP_lme_with_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias with ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = lateUP_lme_without_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none'); 
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias without ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+
+
+
+
+
+
+
+
+tbl = table(normalize(UP_DOWN_info.time_from_last_ripples_UP)',V1_direction',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.first_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
+    subject_id,UP_session_count,'VariableNames',{'TimefromLastRipple','V1Track','ripplePower','nextUP','lateUP','lastRippleV1', ...
+    'lastRippleV1PRE','earlyUP','previousUP'...
+    'lateUPHPC','lastRippleHPC','firstRippleHPC','previousUPHPC',...
+    'subject_id','session_id'});
+% 
+% lme2 = fitlme(tbl, 'lastRippleV1 ~  ripplePower*firstRippleHPC+ (1|subject_id) + (1|session_id)');
+% lme2.Coefficients
+
+% UP_DOWN_info
+%%%%%%%%%%
+% HC ripple contribution to ripple V1
+%%%%%%%%%%%
+V1_HC_ripple_lme = predict_V1_from_pre_V1_and_HC(tbl,[]);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+
+
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+
+
+
+tbl = table(normalize(UP_DOWN_info.time_from_last_ripples_UP)',V1_direction',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
+    subject_id,UP_session_count,'VariableNames',{'TimefromLastRipple','V1Track','ripplePower','nextUP','lateUP','lastRippleV1', ...
+    'lastRippleV1PRE','earlyUP','previousUP'...
+    'lateUPHPC','lastRippleHPC','previousUPHPC',...
+    'subject_id','session_id'});
+
+lme1 = fitlme(tbl, 'lastRippleV1 ~ lastRippleV1PRE * lastRippleHPC + (1|subject_id) + (1|session_id)');
+lme1.Coefficients
+lme1.Rsquared.Adjusted
+
+lme1 = fitlme(tbl, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+lme1.Coefficients
+lme1.Rsquared.Adjusted
+
+
+lme1 = fitlme(tbl, 'lastRippleV1PRE ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+lme1.Coefficients
+lme1.Rsquared.Adjusted
+
+%%%%%%%%%%
+% HC ripple contribution to next UP
+%%%%%%%%%%%
+V1_HC_ripple_lme = predict_V1_from_pre_V1_and_HC(tbl,[]);
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+
+
+
+
 
 %% UP DOWN ripple log odds distribution
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
@@ -1993,6 +2537,11 @@ set(gca,'TickDir','out','Box','off','FontSize',12);
     save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
 
 % D:\corticohippocampal_replay\V1-HPC bilateral interaction\UP-DOWN log odds
+
+
+
+
+
 
 %% Ripple predicted by spindle and SO phase and amplitude
 

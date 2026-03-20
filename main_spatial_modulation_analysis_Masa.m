@@ -28,6 +28,9 @@ experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53]);
 % experiment_info=experiment_info([64 65 66 77 78 79]);
 % experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
 
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76 12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+
 Stimulus_type = 'RUN'; % has to be RUN1 or RUN2 
 % Stimulus_type = 'RUN1'; % has to be RUN1 or RUN2 
 base_folder='Z:\ibn-vision\DATA\SUBJECTS';

@@ -332,43 +332,55 @@ for nsession =1:length(experiment_info)
 
     for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
         options = session_info(n).probe(1);
-%         DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
-        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
+        DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations*.mat'));
+        % DIR = dir(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins*.mat'));
         
         if isempty(DIR)
             continue
         end
 
-%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
-%         load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
-        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1.mat'),'KDE_RUN_validations_V1');
+        load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations.mat'),'KDE_RUN_validations');
+        % load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_V1_all_bins.mat'),'KDE_RUN_validations_V1');
+        % load(fullfile(options.ANALYSIS_DATAPATH,'KDE_RUN_validations_all_bins.mat'),'KDE_RUN_validations');
         % 20ms ROC AUC decoding performance
-        index = 1;
+        index = 2;
+        % index = 1;
         KDE_RUN_validations_all.FPR(nsession,:) = (KDE_RUN_validations{index}.FPR);
 
         KDE_RUN_validations_all.HPC_AUC(1,nsession) = mean(KDE_RUN_validations{index}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = prctile(KDE_RUN_validations{index}.AUC_shuffle,97.5);
+        % KDE_RUN_validations_all.HPC_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations{index}.AUC_shuffle);
+
         KDE_RUN_validations_all.HPC_TPR(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
+        % KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations{index}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(1,nsession,:) = prctile(KDE_RUN_validations{index}.TPR_shuffle,97.5);
         
         KDE_RUN_validations_all.V1_AUC(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        % KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = mean(KDE_RUN_validations_V1{index}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_AUC_shuffled(1,nsession) = prctile(KDE_RUN_validations_V1{index}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.V1_TPR(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
+        % KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = mean(KDE_RUN_validations_V1{index}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_TPR_shuffled(1,nsession,:) = prctile(KDE_RUN_validations_V1{index}.TPR_shuffle,97.5);
         
         % 100ms ROC AUC decoding performance
         KDE_RUN_validations_all.HPC_AUC(2,nsession) = mean(KDE_RUN_validations{end}.AUC_real);
-        KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations{end}.AUC_shuffle);
+        % KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations{end}.AUC_shuffle);
+        KDE_RUN_validations_all.HPC_AUC_shuffled(2,nsession) = prctile(KDE_RUN_validations{end}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.HPC_TPR(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_real);
-        KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_shuffle);
+        % KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations{end}.TPR_shuffle);
+        KDE_RUN_validations_all.HPC_TPR_shuffled(2,nsession,:) = prctile(KDE_RUN_validations{end}.TPR_shuffle,97.5);
 
 
         KDE_RUN_validations_all.V1_AUC(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_real);
-        KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_shuffle);
+        % KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = mean(KDE_RUN_validations_V1{end}.AUC_shuffle);
+        KDE_RUN_validations_all.V1_AUC_shuffled(2,nsession) = prctile(KDE_RUN_validations_V1{end}.AUC_shuffle,97.5);
+
         KDE_RUN_validations_all.V1_TPR(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_real);
-        KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_shuffle);
-        
+        % KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = mean(KDE_RUN_validations_V1{end}.TPR_shuffle);
+        KDE_RUN_validations_all.V1_TPR_shuffled(2,nsession,:) = prctile(KDE_RUN_validations_V1{end}.TPR_shuffle,97.5);
     end
 end
 
@@ -378,6 +390,10 @@ if exist('D:\corticohippocampal_replay')>0
 elseif exist('P:\corticohippocampal_replay')>0
     analysis_folder = 'P:\corticohippocampal_replay';
 end
+% save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all_95percentile.mat'),'KDE_RUN_validations_all','-v7.3')
+save(fullfile(analysis_folder,'KDE_RUN_validations_all_95percentile.mat'),'KDE_RUN_validations_all','-v7.3')
+
+
 % save(fullfile(analysis_folder,'KDE_RUN_validations_cell_id_all.mat'),'KDE_RUN_validations_all','-v7.3')
 save(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all','-v7.3')
 % save(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
@@ -393,10 +409,17 @@ end
 % load(fullfile(analysis_folder,'KDE_RUN_validations_all.mat'),'KDE_RUN_validations_all')
 load(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all.mat'),'KDE_RUN_validations_all')
 
+load(fullfile(analysis_folder,'KDE_RUN_validations_all_bins_all_95percentile.mat'),'KDE_RUN_validations_all')
+% load(fullfile(analysis_folder,'KDE_RUN_validations_all_95percentile.mat'),'KDE_RUN_validations_all')
+
+
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination HPC RUN1';
 % title_text = 'PLS contextual discrimination HPC RUN1 scatter';
-title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins)';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins)';
+% title_text = 'PLS contextual discrimination HPC RUN1 scatter (95th percentile)';
+title_text = 'PLS contextual discrimination HPC RUN1 scatter (all bins 95th percentile)';
+
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';
@@ -515,6 +538,7 @@ for n = 1:2
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
     ylim([0 1.1]);
+    yticks([0:0.25:1])
     title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
@@ -550,7 +574,9 @@ end
 timebins = [20,100];
 % title_text = 'PLS contextual discrimination V1 RUN1';
 %  title_text = 'PLS contextual discrimination V1 RUN1 scatter';
- title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins)';
+ % title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins)';
+ % title_text = 'PLS contextual discrimination V1 RUN1 scatter (95th percentile)';
+title_text = 'PLS contextual discrimination V1 RUN1 scatter (all bins 95th percentile)';
 fig = figure('Name', title_text, 'Position', [200 100 640 580]); hold on;
 
 % % title_text = 'PLS contextual discrimination RUN1';
@@ -668,6 +694,7 @@ for n = 1:2
     xticklabels({'Real', 'Shuffled'});
     ylabel('AUC');
     ylim([0 1.1]);
+    yticks([0:0.25:1])
     title(['Condition ' num2str(n) ' (p=' num2str(p, '%.4e') ')']);
     set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 end
@@ -1155,18 +1182,11 @@ psth_step = 0.01;
 KDE_reactivation_PSTH = struct();
 
 for region = ["V1", "HPC"]
+    tic
     for nprobe = 1:2
-        up_bias_all = [];
-        down_bias_all = [];
-        up_bias_all_z = [];
-        down_bias_all_z = [];
         % up_bias_all_zshuff = [];
         % down_bias_all_zshuff = [];
 
-        up_logodds_all = [];
-        down_logodds_all = [];
-        up_logodds_all_z = [];
-        down_logodds_all_z = [];
         % up_logodds_all_zshuff = [];
         % down_logodds_all_zshuff = [];
 
@@ -1177,6 +1197,32 @@ for region = ["V1", "HPC"]
             up_struct = KDE_reactivation_UP_all;
             down_struct = KDE_reactivation_DOWN_all;
         end
+
+        % --- Pre-calculate total sizes for pre-allocation ---
+        % This prevents the massive slowdown of [all; new]
+        total_up_events = 0;
+        total_down_events = 0;
+        for ns = 1:length(up_struct(nprobe).bias)
+             % This logic should match your event selection criteria below
+             total_up_events = total_up_events + length(find(slow_waves_all(nprobe).UP_session_count == ns));
+             total_down_events = total_down_events + length(find(slow_waves_all(nprobe).DOWN_session_count == ns));
+        end
+
+
+        % Pre-allocate matrices with NaNs
+        up_bias_all = nan(total_up_events, nbins);
+        up_bias_all_z = nan(total_up_events, nbins);
+        up_logodds_all = nan(total_up_events, nbins);
+        up_logodds_all_z = nan(total_up_events, nbins);
+
+        down_bias_all = nan(total_down_events, nbins);
+        down_bias_all_z = nan(total_down_events, nbins);
+        down_logodds_all = nan(total_down_events, nbins);
+        down_logodds_all_z = nan(total_down_events, nbins);
+
+        up_count = 1; % Row pointers for insertion
+        down_count = 1;
+
 
         for nsession = 1:length(up_struct(nprobe).bias)
             bias_up = up_struct(nprobe).bias{nsession};
@@ -1205,16 +1251,24 @@ for region = ["V1", "HPC"]
             temp_index = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
             [~, ia, ib] = intersect(slow_waves_all(nprobe).DOWN_ints(temp_index, 2), ...
                 slow_waves_all(nprobe).UP_ints(UP_event_index, 1));
-
             up_ints = slow_waves_all(nprobe).UP_ints(up_all, :);
             previous_DOWN_event_index = ia;
+
             UP_event_index = find(ismember(up_all, UP_event_index));
 
 
             down_all = find(slow_waves_all(nprobe).DOWN_session_count == nsession);
+            DOWN_event_index = down_all;
             %             DOWN_event_index = intersect(down_all, probability(nprobe).DOWN_all_index);
             %             DOWN_event_index = find(ismember(down_all, DOWN_event_index));
-            DOWN_event_index = down_all;
+            temp_index = find(slow_waves_all(nprobe).UP_session_count == nsession);
+            [~, ia, ib] = intersect(slow_waves_all(nprobe).UP_ints(temp_index, 2), ...
+                slow_waves_all(nprobe).DOWN_ints(DOWN_event_index, 1));
+            previous_UP_event_index = ia;
+            DOWN_with_previous_UP = ib;
+            % previous_UP_event_index = ia;
+
+
             DOWN_event_index = find(ismember(down_all, DOWN_event_index));
             down_ints = slow_waves_all(nprobe).DOWN_ints(down_all, :);
 
@@ -1227,23 +1281,23 @@ for region = ["V1", "HPC"]
                 up_log_z = nan(1, nbins);
                 % up_log_zshuff = nan(1, nbins);
 
-                if i <= length(previous_DOWN_event_index)
-                    eid = previous_DOWN_event_index(i);
-                    event_end = down_ints(eid, 2);
-                    rel_time = time_down - event_end;
-                    idx = find(event_id_down == eid & rel_time >= -1 & rel_time < 0);
-                    rel_times = rel_time(idx);
-                    bin_idx = round((rel_times + 1) / psth_step) + 1;
-                    valid = bin_idx > 0 & bin_idx <= half_bins;
+                %%%% There is always DOWN before UP (due to detetcing DOWN)
+                eid = previous_DOWN_event_index(i);
+                event_end = down_ints(eid, 2);
+                rel_time = time_down - event_end;
+                idx = find(event_id_down == eid & rel_time >= -1 & rel_time < 0);
+                rel_times = rel_time(idx);
+                bin_idx = round((rel_times + 1) / psth_step) + 1;
+                valid = bin_idx > 0 & bin_idx <= half_bins;
 
-                    up_bias(bin_idx(valid)) = bias_down(idx(valid));
-                    up_z(bin_idx(valid)) = z_down(idx(valid));
-                    % up_zshuff(bin_idx(valid)) = zshuff_down(idx(valid));
+                up_bias(bin_idx(valid)) = bias_down(idx(valid));
+                up_z(bin_idx(valid)) = z_down(idx(valid));
+                % up_zshuff(bin_idx(valid)) = zshuff_down(idx(valid));
 
-                    up_log(bin_idx(valid)) = logodds_down(idx(valid));
-                    up_log_z(bin_idx(valid)) = zlog_down(idx(valid));
-                    % up_log_zshuff(bin_idx(valid)) = zshuff_log_down(idx(valid));
-                end
+                up_log(bin_idx(valid)) = logodds_down(idx(valid));
+                up_log_z(bin_idx(valid)) = zlog_down(idx(valid));
+                % up_log_zshuff(bin_idx(valid)) = zshuff_log_down(idx(valid));
+
 
                 eid = UP_event_index(i);
                 event_start = up_ints(eid, 1);
@@ -1261,13 +1315,15 @@ for region = ["V1", "HPC"]
                 up_log_z(bin_idx(valid)) = zlog_up(idx(valid));
                 % up_log_zshuff(bin_idx(valid)) = zshuff_log_up(idx(valid));
 
-                up_bias_all = [up_bias_all; up_bias];
-                up_bias_all_z = [up_bias_all_z; up_z];
+                
+                up_bias_all(up_count,:) = up_bias;
+                up_bias_all_z(up_count,:) = up_z;
                 % up_bias_all_zshuff = [up_bias_all_zshuff; up_zshuff];
 
-                up_logodds_all = [up_logodds_all; up_log];
-                up_logodds_all_z = [up_logodds_all_z; up_log_z];
+                up_logodds_all(up_count,:) = up_log;
+                up_logodds_all_z(up_count,:) = up_log_z;
                 % up_logodds_all_zshuff = [up_logodds_all_zshuff; up_log_zshuff];
+                up_count = up_count +1;
             end
 
             for i = 1:length(DOWN_event_index)
@@ -1279,8 +1335,9 @@ for region = ["V1", "HPC"]
                 down_log_z = nan(1, nbins);
                 % down_log_zshuff = nan(1, nbins);
 
-                if i <= length(UP_event_index)
-                    eid = UP_event_index(i);
+                %%%% Only DOWN with UP before it
+                if find(i ==DOWN_with_previous_UP)>0
+                    eid = previous_UP_event_index((i ==DOWN_with_previous_UP));
                     event_end = up_ints(eid, 2);
                     rel_time = time_up - event_end;
                     idx = find(event_id_up == eid & rel_time >= -1 & rel_time < 0);
@@ -1313,13 +1370,14 @@ for region = ["V1", "HPC"]
                 down_log_z(bin_idx(valid)) = zlog_down(idx(valid));
                 % down_log_zshuff(bin_idx(valid)) = zshuff_log_down(idx(valid));
 
-                down_bias_all = [down_bias_all; down_bias];
-                down_bias_all_z = [down_bias_all_z; down_z];
+                down_bias_all(down_count,:) = down_bias;
+                down_bias_all_z(down_count,:) = down_z;
                 % down_bias_all_zshuff = [down_bias_all_zshuff; down_zshuff];
 
-                down_logodds_all = [down_logodds_all; down_log];
-                down_logodds_all_z = [down_logodds_all_z; down_log_z];
+                down_logodds_all(down_count,:) = down_log;
+                down_logodds_all_z(down_count,:) = down_log_z;
                 % down_logodds_all_zshuff = [down_logodds_all_zshuff; down_log_zshuff];
+                down_count = down_count+1;
             end
         end
 
@@ -1338,11 +1396,13 @@ for region = ["V1", "HPC"]
         % KDE_reactivation_PSTH(nprobe).([prefix 'UP_log_odds_zshuff']) = up_logodds_all_zshuff;
         % KDE_reactivation_PSTH(nprobe).([prefix 'DOWN_log_odds_zshuff']) = down_logodds_all_zshuff;
     end
+    toc
 end
 for nprobe = 1:2
     KDE_reactivation_PSTH(nprobe).tvec = psth_window(1)+psth_step/2 : psth_step: psth_window(end)-psth_step/2;
 end
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_PSTH.mat'),'KDE_reactivation_PSTH','-v7.3');
+
 
 % 
 % %%%%% HPC ripples
