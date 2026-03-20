@@ -4,6 +4,53 @@ addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\adam.tong\Documents\GitHub\VR_NPX_analysis'))
 
+
+%% Theta modulation and phase percession (chronic)
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+
+
+
+
+
+
+
+%% Theta cycle extraction (chronic)
+
+clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+
+% Famililar 
+experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+
+% Novel one side
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76]);
+
+% Novel Both sides
+experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76 12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% Theta modulation and phase percession
 
 clear all

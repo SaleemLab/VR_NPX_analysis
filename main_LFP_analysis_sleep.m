@@ -18,8 +18,17 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar
 % experiment_info=experiment_info([4 5 6 ]);
 
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% Famililar 
+experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+
+% Novel one side
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76]);
+
+% Novel Both sides
+experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76 12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -226,6 +235,8 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info=experiment_info([33 9 10 14]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76 12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -246,10 +257,10 @@ for nstimuli = 1:length(all_stimulus_type)
         for n = 1:length(session_info) % How many recording sessions for spatial tasks (PRE, RUN and POST)
             options = session_info(n).probe(1);
             % LFP_extraction_and_event_detection_pipeline(session_info(n),stimulus_name{n},best_channels)
-            % extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
-            % detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
+            extract_LFP_NPX(session_info(n),stimulus_name{n},best_channels)
+            detect_behavioural_and_brain_states(session_info(n),stimulus_name{n},best_channels)
 %             detect_behavioural_and_brain_states_add_on(session_info(n),stimulus_name{n},best_channels)
-            extract_LFP_NPX_add_on(session_info(n),stimulus_name{n},best_channels)
+%             extract_LFP_NPX_add_on(session_info(n),stimulus_name{n},best_channels)
 
         end
     end

@@ -18,8 +18,17 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % Famililar
 % experiment_info=experiment_info([4 5 6 ]);
 
-experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
-% experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+% Famililar 
+experiment_info=experiment_info([4 5 6 17 18 19 20 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+
+% Novel one side
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76]);
+
+% Novel Both sides
+experiment_info=experiment_info([12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
+experiment_info=experiment_info([9 10 22 23 24 36 38 48 49 50 61 62 63 74 75 76 12 14 25 26 27 28 39 40 51 52 53 64 65 66 77 78 79]);
+
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -226,6 +235,7 @@ experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
 % experiment_info=experiment_info([33 9 10 14]);
 % experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
 experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+0.8 mm
 % experiment_info = experiment_info(4);
 % Stimulus_type = 'RUN';
 % Stimulus_type = 'SleepChronic';
@@ -3899,7 +3909,7 @@ mean_phases_ipsi = mean([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:
 mean_phases_contra = mean([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))]);
 
 SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
-SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_DOWN_MUA_spike_rate{nsession}));
+SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
 
 
 % 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
@@ -3960,9 +3970,9 @@ hold off;
 %%%%%% paired t test
 for nsession = 1:22
     for hemi = 1:2
-        temp = squeeze(SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,1,:));
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,1,:));
         V1_SO_FR(nsession,hemi,1,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
-        temp = squeeze(SO_phase_DOWN_MUA_spike_rate{nsession}(hemi,2,:));
+        temp = squeeze(SO_phase_MUA_spike_rate{nsession}(hemi,2,:));
         V1_SO_FR(nsession,hemi,2,:) = [mean(temp(phase_bins>-pi/2 & phase_bins<pi/2)) mean(temp(phase_bins<-pi/2 | phase_bins>pi/2))];
 
         temp = squeeze(SO_phase_DOWN_HPC_MUA_spike_rate{nsession}(hemi,1,:));
@@ -4014,8 +4024,10 @@ for iplot = 1:4
 
     % Get the number of pairs (rows)
     num_pairs = size(peak_vs_trough{iplot}, 1);
-
+    
+    rng(1);
     jitter_col1 = (rand(num_pairs, 1) - 0.5) * 0.2;
+    rng(2);
     jitter_col2 = (rand(num_pairs, 1) - 0.5) * 0.2;
 
     % 2. Draw the linking lines (One line per pair)

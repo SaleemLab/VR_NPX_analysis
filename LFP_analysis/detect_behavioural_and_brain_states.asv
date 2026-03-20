@@ -282,11 +282,10 @@ for nprobe = 1:length(session_info.probe)
         best_channel = V1_best_channel(nprobe);
         
         % if ~isfield(LFP(probe_no),'best_V1')|isempty(LFP(nprobe).best_V1) % if best v1 does not exist
-        P(probe_no).best_SO_V1(best_channel,:)
 
         temp = DetectSlowWaves_masa('time',tvec,'lfp',LFP(probe_no).best_SO_V1(best_channel,:),'spikes',V1_clusters(probe_no),'NREMInts',behavioural_state_merged.SWS);
-        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_V1_high_freq(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
-            'noise',[],'passband',[9 17],'thresholds',[1 2.5],'show','on');
+        [spindles(probe_no)] = FindSpindles_masa(LFP(probe_no).best_SO_V1(best_channel,:),LFP(probe_no).tvec','behaviour',Behaviour,'durations',[400 3000],'frequency',mean(1./diff(LFP(nprobe).tvec)),...
+            'noise',[],'passband',[9 17],'thresholds',[1 2.5],'thresholds',[1 2.5],'show','on');
         % else
         %     [~,best_channel] = max(LFP(nprobe).best_V1_power(:,7));
         %     if probe_no == 1 % Left hemisphere (shank 1 most anterior)
