@@ -498,6 +498,251 @@ xlabel('Time (s)')
 ylabel('Ripple event')
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+%% Plotting spindle power relative to ripple onset
+
+% ripple_info_SO = ripple_info;
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info_all.mat'));
+sessions_to_process=1:22;
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+low_spindle_temporal=[];high_spindle_temporal=[];
+ripple_info.peaktime = [ripples_all(1).peaktimes(ripples_all(1).SWS_index==1); ripples_all(2).peaktimes(ripples_all(2).SWS_index==1)];
+
+for nsession = 1:22
+    this_session_id = find(session_count == nsession);
+    this_session_id = this_session_id(diff(ripple_info.peaktime(this_session_id))<0.3);
+    thresholds = prctile(ripple_info.spindle_amplitude(this_session_id,:),[25 75]);
+    low_temp_ipsi = [];low_temp_contra = [];
+    high_temp_ipsi = [];high_temp_contra = [];
+
+    for hemi = 1:2
+        low_id = ripple_info.spindle_amplitude(this_session_id,hemi) < thresholds(1,hemi);
+        high_id = ripple_info.spindle_amplitude(this_session_id,hemi) > thresholds(2,hemi);
+
+        low_temp_ipsi(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(low_id),hemi),2);
+        high_temp_ipsi(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(high_id),hemi),2);
+
+        low_temp_contra(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(low_id),abs(hemi-3)),2);
+        high_temp_contra(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(high_id),abs(hemi-3)),2);
+    end
+
+    low_spindle_temporal(1,nsession,:) = mean(low_temp_ipsi);low_spindle_temporal(2,nsession,:) = mean(low_temp_contra);
+    high_spindle_temporal(1,nsession,:) = mean(high_temp_ipsi);high_spindle_temporal(2,nsession,:) = mean(high_temp_contra);
+end
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','spindle_power_ripple_PSTH.mat'),'high_spindle_temporal','low_spindle_temporal')
+
+x = ripple_info.tvec_temporal;
+% temp_PSTH = low_spindle_temporal;
+% temp_HPC_PSTH = high_spindle_temporal;
+c_ipsi = [35,139,69]/256; 
+c_contra = [106,81,163]/256;
+
+fig = figure;
+fig.Name = 'ipsi vs contra temporal spindle power relative to ripple onset';
+fig.Position = [600 200 820 800];
+
+ipsi_lower = mean(squeeze(low_spindle_temporal(1,:,:))) - std(squeeze(low_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(low_spindle_temporal(1,:,:))) + std(squeeze(low_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(low_spindle_temporal(1,:,:)));
+
+contra_lower = mean(squeeze(low_spindle_temporal(2,:,:))) - std(squeeze(low_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(low_spindle_temporal(2,:,:))) + std(squeeze(low_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(low_spindle_temporal(2,:,:)));
+
+subplot(3,2,1)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1 1])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('low spindle power');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi spindle', 'contra spindle'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+ylim([-0.8 2.5])
+
+ipsi_lower = mean(squeeze(high_spindle_temporal(1,:,:))) - std(squeeze(high_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(high_spindle_temporal(1,:,:))) + std(squeeze(high_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(high_spindle_temporal(1,:,:)));
+
+contra_lower = mean(squeeze(high_spindle_temporal(2,:,:))) - std(squeeze(high_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(high_spindle_temporal(2,:,:))) + std(squeeze(high_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(high_spindle_temporal(2,:,:)));
+
+subplot(3,2,2)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('high spindle power');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi spindle', 'contra spindle'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+ylim([-0.8 2.5])
+
+
+subplot(3,2,3)
+temp1 = squeeze(low_spindle_temporal(1,:,:)-low_spindle_temporal(2,:,:));
+ipsi_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(temp1);
+
+temp1 = squeeze(high_spindle_temporal(1,:,:)-high_spindle_temporal(2,:,:));
+contra_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_mean = mean(temp1);
+
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('ipsi-contra spindle power diff');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'low spindle ipsi-contra diff', 'high spindle ipsi-contra diff'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+
+
+subplot(3,2,4)
+temp1 = squeeze(high_spindle_temporal(1,:,:)-low_spindle_temporal(1,:,:));
+ipsi_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(temp1);
+
+temp1 = squeeze(high_spindle_temporal(2,:,:)-low_spindle_temporal(2,:,:));
+contra_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_mean = mean(temp1);
+
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('high-low spindle power diff');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi high-low diff', 'contra high-low diff'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+
+
+subplot(3,2,5)
+data1 = squeeze(mean(high_spindle_temporal(1,:,x>0 & x<0.2)-low_spindle_temporal(1,:,x>0 & x<0.2),3))';
+data2 = squeeze(mean(high_spindle_temporal(2,:,x>0 & x<0.2)-low_spindle_temporal(2,:,x>0 & x<0.2),3))';
+[p_val, h_stats] = signrank(data1, data2);
+fprintf('Wilcoxon signed-rank test p-value: %.4f\n', p_val);
+
+rng(1); % Seed for consistent look
+jitter_strength = 0.1; 
+x1 = 1 + (rand(size(data1)) - 0.5) * jitter_strength;
+x2 = 1.5 + (rand(size(data2)) - 0.5) * jitter_strength;
+
+% Define X-axis positions for the two groups
+x_pos = [x1, x2]';
+
+% Plot the connecting lines first (so they are in the background)
+% We concatenate data into a 2-column matrix and plot its transpose
+plot(x_pos, [data1, data2]', 'Color', [0.5 0.5 0.5 0.5], 'LineWidth', 1);
+
+% Plot individual data points with transparency (Alpha)
+hold on
+s1 = scatter(x1, data1, 100, c_ipsi, 'filled', 'MarkerFaceAlpha', 0.5); % Green
+s2 = scatter(x2, data2, 100, c_contra, 'filled', 'MarkerFaceAlpha', 0.5); % Pink
+
+% 4. Formatting the Plot
+set(gca, 'XTick', [1 1.5], 'XTickLabel', {'post ipsi diff', 'post contra diff'});
+ylabel('high-low spindle power diff');
+xlim([0.5 2]);
+grid off;
+box off;
+p_string = sprintf('p = %.4e', p_val);
+text(1.5, 0.2, p_string, 'FontSize', 12, ...
+    'HorizontalAlignment', 'center', 'FontWeight', 'bold', 'Color', 'k');
+
+hold off;
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+subplot(3,2,6)
+data1 = squeeze(mean(high_spindle_temporal(1,:,x>-0.2 & x<0)-low_spindle_temporal(1,:,x>-0.2 & x<0),3))';
+data2 = squeeze(mean(high_spindle_temporal(2,:,x>-0.2 & x<0)-low_spindle_temporal(2,:,x>-0.2 & x<0),3))';
+[p_val, h_stats] = signrank(data1, data2);
+fprintf('Wilcoxon signed-rank test p-value: %.4f\n', p_val);
+
+rng(1); % Seed for consistent look
+jitter_strength = 0.1; 
+x1 = 1 + (rand(size(data1)) - 0.5) * jitter_strength;
+x2 = 1.5 + (rand(size(data2)) - 0.5) * jitter_strength;
+
+% Define X-axis positions for the two groups
+x_pos = [x1, x2]';
+
+% Plot the connecting lines first (so they are in the background)
+% We concatenate data into a 2-column matrix and plot its transpose
+plot(x_pos, [data1, data2]', 'Color', [0.5 0.5 0.5 0.5], 'LineWidth', 1);
+
+% Plot individual data points with transparency (Alpha)
+hold on
+s1 = scatter(x1, data1, 100, c_ipsi, 'filled', 'MarkerFaceAlpha', 0.5); % Green
+s2 = scatter(x2, data2, 100, c_contra, 'filled', 'MarkerFaceAlpha', 0.5); % Pink
+
+% 4. Formatting the Plot
+set(gca, 'XTick', [1 1.5], 'XTickLabel', {'pre ipsi diff', 'pre contra diff'});
+ylabel('high-low spindle power diff');
+xlim([0.5 2]);
+grid off;
+box off;
+p_string = sprintf('p = %.4e', p_val);
+text(1.5, 0.2, p_string, 'FontSize', 12, ...
+    'HorizontalAlignment', 'center', 'FontWeight', 'bold', 'Color', 'k');
+
+hold off;
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
 
 %% Plot example event with spiking, log odds and LFP
 load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
