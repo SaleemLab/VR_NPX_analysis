@@ -1,4 +1,4 @@
-function [S,f,Serr]=mtspectrumc(data,params)
+function [phi,S,f,Serr]=mtspectrumc(data,params)
 % Multi-taper spectrum - continuous process
 %
 % Usage:
@@ -49,7 +49,7 @@ function [S,f,Serr]=mtspectrumc(data,params)
 if nargin < 1; error('Need data'); end;
 if nargin < 2; params=[]; end;
 [tapers,pad,Fs,fpass,err,trialave,params]=getparams(params);
-if nargout > 2 && err(1)==0; 
+if nargout > 3 && err(1)==0; 
 %   Cannot compute error bars with err(1)=0. Change params and run again. 
     error('When Serr is desired, err(1) has to be non-zero.');
 end;
@@ -61,7 +61,9 @@ tapers=dpsschk(tapers,N,Fs); % check tapers
 J=mtfftc(data,tapers,nfft,Fs);
 J=J(findx,:,:);
 S=permute(mean(conj(J).*J,2),[1 3 2]);
+phi = angle(mean(exp(1i * angle(J)), 2));
+
 if trialave; S=squeeze(mean(S,2));else S=squeeze(S);end;
-if nargout==3; 
+if nargout==4; 
    Serr=specerr(S,J,err,trialave);
 end;

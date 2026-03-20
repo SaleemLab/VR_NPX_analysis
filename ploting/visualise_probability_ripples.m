@@ -1,0 +1,208 @@
+
+   nprobe = 1
+   [~,x,~] = calculate_event_probability(min(ripples(2).sharp_wave_peaktimes)',slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+   [~,x,~] = calculate_event_probability(min(ripples(2).sharp_wave_peaktimes)',temp.ints.UP(temp.ints.UP(:,2)-temp.ints.UP(:,1)<2),-0.5:0.02:0.5,0);
+plot(mean(x))
+% % 
+   nprobe = 2
+   [~,x,~] = calculate_event_probability(min(ripples(2).sharp_wave_peaktimes)',slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+
+
+   nprobe = 1
+   [~,x,~] = calculate_event_probability(min(ripples(1).sharp_wave_peaktimes)',slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+%    [~,x,~] = calculate_event_probability(min(ripples(1).sharp_wave_peaktimes)',temp.ints.UP(temp.ints.UP(:,2)-temp.ints.UP(:,1)<2),-0.5:0.02:0.5,0);
+% plot(mean(x))
+% % % 
+   nprobe = 2
+   [~,x,~] = calculate_event_probability(min(ripples(1).sharp_wave_peaktimes)',slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+nprobe = 1
+
+
+
+
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,slow_waves(nprobe).ints.UP(slow_waves(nprobe).ints.UP(:,2)-slow_waves(nprobe).ints.UP(:,1)<2),-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+[~,x,~] = calculate_event_probability(ripples(1).SWS_peaktimes,temp.ints.UP(temp.ints.UP(:,2)-temp.ints.UP(:,1)<2),-0.5:0.02:0.5,0);
+plot(mean(x))
+%
+nprobe = 2
+[~,x,~] = calculate_event_probability(ripples(1).SWS_peaktimes,slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+
+
+
+
+nprobe = 1
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,temp.ints.UP(temp.ints.UP(:,2)-temp.ints.UP(:,1)<2),-0.5:0.02:0.5,0);
+plot(mean(x))
+%
+nprobe = 2
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+
+
+
+
+
+nprobe = 1
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,slow_waves(nprobe).DOWN_ints,-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,temp.ints.DOWN,-0.5:0.02:0.5,0);
+plot(mean(x))
+%
+nprobe = 2
+[~,x,~] = calculate_event_probability(ripples(2).SWS_peaktimes,slow_waves(nprobe).DOWN_ints,-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+
+
+
+
+
+nprobe = 1;
+[~,x,~] = calculate_event_probability(ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) < threshold1),slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+figure;hold on;plot(mean(x))
+
+nprobe = 1;
+[~,x,~] = calculate_event_probability(ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index)  > threshold2),slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2),-0.5:0.02:0.5,0);
+hold on;plot(mean(x))
+
+
+
+nprobe = 1;
+[probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) < threshold1),20,0);
+figure;hold on;plot(sum(binnedArray))
+
+nprobe = 1;
+[probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) > threshold2),20,0);
+hold on;plot(sum(binnedArray))
+
+
+
+% clear all
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+% Famililar
+% experiment_info=experiment_info([4 5 6 ]);
+% experiment_info=experiment_info([4 5 6 18 19 21 34 35 44 45 58 59 60 71]);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+Stimulus_type = 'Sleep';
+for nprobe = 1:2
+    binnedArray1{nprobe} = [];
+    binnedArray2{nprobe} =[];
+    binnedArray3{nprobe} =[];
+    binnedArray4{nprobe} =[];
+end
+all_ripples_event=[];
+close all
+for nsession = 1:22
+
+    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+
+    if length(session_info)>1
+    options = session_info(2).probe(1);
+    else
+options = session_info(1).probe(1);
+    end
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_ripple_events.mat'));
+    load(fullfile(options.ANALYSIS_DATAPATH,'extracted_slow_wave_events.mat'));
+    %
+    % nprobe = 1;
+    % [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) < threshold1),20,0);
+    % subplot(5,5,nsession)
+    % plot(sum(binnedArray))
+    %
+    % nprobe = 1;
+    % [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) > threshold2),20,0);
+    % hold on;plot(sum(binnedArray))
+
+
+    figure(1)
+    threshold2 = prctile(ripples(1).peak_zscore,75);
+    threshold1 = prctile(ripples(1).peak_zscore,25);
+    nprobe = 1;
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) < threshold1),20,0);
+    subplot(5,5,nsession)
+    plot(sum(binnedArray))
+    binnedArray1{1} = [binnedArray1{1}; binnedArray];
+    all_ripples_event = [all_ripples_event; ripples(1).SWS_index];
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) > threshold2),20,0);
+    hold on;plot(sum(binnedArray))
+    title([options.SUBJECT,' ',options.SESSION])
+    sgtitle('left ripple left v1')
+    binnedArray1{2} = [binnedArray1{2}; binnedArray];
+
+    figure(2)
+    threshold2 = prctile(ripples(2).peak_zscore,75);
+    threshold1 = prctile(ripples(2).peak_zscore,25);
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(2).SWS_peaktimes(ripples(2).peak_zscore(ripples(2).SWS_index) < threshold1),20,0);
+    subplot(5,5,nsession)
+    plot(sum(binnedArray))
+    binnedArray2{1} = [binnedArray2{1}; binnedArray];
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(2).SWS_peaktimes(ripples(2).peak_zscore(ripples(2).SWS_index) > threshold2),20,0);
+    hold on;plot(sum(binnedArray))
+    sgtitle('right ripple left v1')
+    title([options.SUBJECT,' ',options.SESSION])
+    binnedArray2{2} = [binnedArray2{2}; binnedArray];
+
+    figure(3)
+    threshold2 = prctile(ripples(1).peak_zscore,75);
+    threshold1 = prctile(ripples(1).peak_zscore,25);
+    nprobe = 2;
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) < threshold1),20,0);
+    subplot(5,5,nsession)
+    plot(sum(binnedArray))
+    binnedArray3{1} = [binnedArray3{1}; binnedArray];
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(1).SWS_peaktimes(ripples(1).peak_zscore(ripples(1).SWS_index) > threshold2),20,0);
+    hold on;plot(sum(binnedArray))
+    sgtitle('left ripple right v1')
+    binnedArray3{2} = [binnedArray3{2}; binnedArray];
+    title([options.SUBJECT,' ',options.SESSION])
+
+    figure(4)
+    threshold2 = prctile(ripples(2).peak_zscore,75);
+    threshold1 = prctile(ripples(2).peak_zscore,25);
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(2).SWS_peaktimes(ripples(2).peak_zscore(ripples(2).SWS_index) < threshold1),20,0);
+    subplot(5,5,nsession)
+    plot(sum(binnedArray))
+    binnedArray4{1} = [binnedArray4{1}; binnedArray];
+
+    [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(slow_waves(nprobe).UP_ints(slow_waves(nprobe).UP_ints(:,2)-slow_waves(nprobe).UP_ints(:,1)<2,:),ripples(2).SWS_peaktimes(ripples(2).peak_zscore(ripples(2).SWS_index) > threshold2),20,0);
+    hold on;plot(sum(binnedArray))
+    sgtitle('right ripple right v1')
+    title([options.SUBJECT,' ',options.SESSION])
+    binnedArray4{2} = [binnedArray4{2}; binnedArray];
+
+
+end
+
+figure;
+subplot(2,2,1)
+plot(sum(binnedArray1{1}));hold on;plot(sum(binnedArray1{2}))
+
+subplot(2,2,2)
+plot(sum(binnedArray2{1}));hold on;plot(sum(binnedArray2{2}))
+
+subplot(2,2,3)
+plot(sum(binnedArray3{1}));hold on;plot(sum(binnedArray3{2}))
+
+subplot(2,2,4)
+plot(sum(binnedArray4{1}));hold on;plot(sum(binnedArray4{2}))
+
+

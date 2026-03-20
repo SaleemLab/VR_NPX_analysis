@@ -1,0 +1,256 @@
+function probability = calculate_spindle_spindle_probability(slow_waves_all,spindles_all,sessions_to_process,varargin)
+% ripples_all = [];
+p = inputParser;
+addParameter(p,'option','absolute',@ischar);
+addParameter(p,'shuffle_option','time_circular_shift',@ischar);
+
+addParameter(p,'time_option','peaktimes',@ischar);
+addParameter(p,'time_windows',[-0.5 0.5],@isnumeric);
+addParameter(p,'time_bin',0.02,@isnumeric);
+addParameter(p,'num_bins',20,@isnumeric);
+addParameter(p,'duration_threshold',2,@isnumeric);
+
+parse(p,varargin{:})
+option = p.Results.option;
+time_option = p.Results.time_option;
+time_windows = p.Results.time_windows;
+time_bin = p.Results.time_bin;
+num_bins = p.Results.num_bins;
+duration_threshold = p.Results.duration_threshold;
+shuffle_option = p.Results.shuffle_option;
+
+timebin_edge = time_windows(1):time_bin:time_windows(end);
+bins_centre = timebin_edge(1)+time_bin/2:time_bin:timebin_edge(end)-time_bin/2;
+
+
+for nprobe = 1:length(slow_waves_all)
+
+    spindle_index_all=[];
+
+    binnedArray = [];
+    binnedArrayShuffled = [];
+
+    for nsession = 1:length(sessions_to_process)
+        spindles_index = find(spindles_all(1).session_count == sessions_to_process(nsession)& spindles_all(1).SWS_index == 1);
+
+        spindle_times = spindles_all(1).onset(spindles_index);
+
+        spindles_index1 = find(spindles_all(nprobe).session_count == sessions_to_process(nsession)& spindles_all(nprobe).SWS_index == 1);
+        % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        % if contains(time_option,'peaktimes')
+        % else
+        % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+        % end
+        if contains(time_option,'onset')
+            spindle_times1= spindles_all(nprobe).onset(spindles_index1);
+        else
+            spindle_times1 = [spindles_all(nprobe).onset(spindles_index1) spindles_all(nprobe).offset(spindles_index1)];
+        end
+
+        if contains(shuffle_option,'baseline')
+            % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(spindles_index))' 3*ones(1,length(spindles_index))'];
+
+            % if contains(time_option,'peaktimes')
+            time_jitter = 3*ones(1,length(spindles_index))';
+            % else
+            %     time_jitter = [3*ones(1,length(ripples_index))' 3*ones(1,length(ripples_index))'];
+            % end
+
+            spindle_times = spindle_times-time_jitter;
+        end
+
+
+        % Probability of L spindle
+        [probability(nprobe).L_spindles_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times1,spindle_times,time_windows(1):time_bin:time_windows(end),0);
+        % end
+
+
+        if ~contains(shuffle_option,'baseline')
+            timebin_edges_all = spindle_times + bins_centre;  % Absolute times of peri-event window
+            spindle_times = [spindles_all(1).onset(spindles_index) spindles_all(1).offset(spindles_index)];
+
+            for i = 1:size(spindle_times,1)
+                % Previous DOWN (skip if this is the first DOWN)
+                if i > 1
+                    prev_offset = spindle_times(i-1,2);
+                    % Find peri-time indices within the previous DOWN state
+                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                    temp(i, mask_prev) = NaN;
+                end
+
+                % Next DOWN (skip if this is the last DOWN)
+                if i < size(spindle_times,1)
+                    next_onset = spindle_times(i+1,1);
+                    % Find peri-time indices within the next DOWN state
+                    mask_next = timebin_edges_all(i,:) >= next_onset;
+                    temp(i, mask_next) = NaN;
+                end
+            end
+        end
+
+        binnedArray=[binnedArray; temp];
+        spindle_index_all = [spindle_index_all;event_index];
+    end
+
+    probability(nprobe).L_spindles = binnedArray;
+    probability(nprobe).L_spindles_index = spindle_index_all;% probability of ripples relative to Left ripple onset
+    
+    all_spindle_no = sum(spindles_all(1).SWS_index == 1);
+    probability(nprobe).L_spindle_no = all_spindle_no;
+
+
+    % bootstrap distribution
+    tempUP = [];
+    for iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+        tempUP(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    probability(nprobe).L_spindles_bootstrap = tempUP;
+
+    if contains(shuffle_option,'time_circular_shift')
+
+        % timebin circularly shifted
+        tempUP = [];
+        tic
+        for iBoot = 1:1000
+            temp1 = [];
+            temp2 = [];
+            parfor event_id = 1:size(binnedArray,1)
+                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+                bins_to_shift = datasample(s,1:1:size(binnedArray,2),1);
+                bins= circshift(1:1:size(binnedArray,2),bins_to_shift);
+                temp1(event_id,:) = binnedArray(event_id,bins);
+            end
+
+            tempUP(iBoot,:) = sum(temp1,1,'omitnan')./sum(~isnan(temp1));
+
+        end
+        toc
+
+        probability(nprobe).L_spindles_shuffled = tempUP;
+    end
+
+
+
+    
+    %%%%%%% R Spindle 
+    spindle_index_all=[];
+    binnedArray = [];
+
+    for nsession = 1:length(sessions_to_process)
+
+        spindles_index = find(spindles_all(2).session_count == sessions_to_process(nsession)& spindles_all(2).SWS_index == 1);
+
+        spindle_times = spindles_all(2).onset(spindles_index);
+
+        spindles_index1 = find(spindles_all(nprobe).session_count == sessions_to_process(nsession)& spindles_all(nprobe).SWS_index == 1);
+        % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == nprobe,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        % ripple_peaktimes1 = min(ripples_all(nprobe).SWR_peaktimes{sessions_to_process(nsession)}(ripples_all(nprobe).probe_hemisphere{sessions_to_process(nsession)} == 2,ripples_all(nprobe).SWS_index(ripples_all(nprobe).session_count == sessions_to_process(nsession))==1))';
+        % if contains(time_option,'peaktimes')
+        % else
+        % ripple_times = [ripples_all(1).onset(ripples_index) ripples_all(1).offset(ripples_index)];
+        % end
+        if contains(time_option,'onset')
+            spindle_times1= spindles_all(nprobe).onset(spindles_index1);
+        else
+            spindle_times1 = [spindles_all(nprobe).onset(spindles_index1) spindles_all(nprobe).offset(spindles_index1)];
+        end
+
+        if contains(shuffle_option,'baseline')
+            % s = RandStream('mrg32k3a','Seed',1); % Set random seed for resampling
+            % time_jitter = 2 + (2.5 - 2) * rand(s,1, length(UP_index));
+            % time_jitter = [time_jitter' time_jitter'];
+            time_jitter = [3*ones(1,length(spindles_index))' 3*ones(1,length(spindles_index))'];
+
+            % if contains(time_option,'peaktimes')
+            time_jitter = 3*ones(1,length(spindles_index))';
+            % else
+            %     time_jitter = [3*ones(1,length(ripples_index))' 3*ones(1,length(ripples_index))'];
+            % end
+
+            spindle_times = spindle_times-time_jitter;
+        end
+
+
+        % Probability of R spindle
+        [probability(nprobe).R_spindles_session(nsession,:),temp,event_index] = calculate_event_probability(spindle_times1,spindle_times,time_windows(1):time_bin:time_windows(end),0);
+        % end
+
+
+        if ~contains(shuffle_option,'baseline')
+            timebin_edges_all = spindle_times + bins_centre;  % Absolute times of peri-event window
+            spindle_times = [spindles_all(2).onset(spindles_index) spindles_all(2).offset(spindles_index)];
+
+            for i = 1:size(spindle_times,1)
+                % Previous DOWN (skip if this is the first DOWN)
+                if i > 1
+                    prev_offset = spindle_times(i-1,2);
+                    % Find peri-time indices within the previous DOWN state
+                    mask_prev =  timebin_edges_all(i,:) <= prev_offset;
+                    temp(i, mask_prev) = NaN;
+                end
+
+                % Next DOWN (skip if this is the last DOWN)
+                if i < size(spindle_times,1)
+                    next_onset = spindle_times(i+1,1);
+                    % Find peri-time indices within the next DOWN state
+                    mask_next = timebin_edges_all(i,:) >= next_onset;
+                    temp(i, mask_next) = NaN;
+                end
+            end
+        end
+
+        binnedArray=[binnedArray; temp];
+        spindle_index_all = [spindle_index_all;event_index];
+    end
+
+    probability(nprobe).R_spindles = binnedArray;
+    probability(nprobe).R_spindles_index = spindle_index_all;% probability of ripples relative to Left ripple onset
+
+    all_spindle_no = sum(spindles_all(2).SWS_index == 1);
+    probability(nprobe).R_spindle_no = all_spindle_no;
+
+
+    % bootstrap distribution
+    tempUP = [];
+    for iBoot = 1:1000
+        s = RandStream('mrg32k3a','Seed',iBoot); % Set random seed for resampling
+        event_id = datasample(s,1:size(binnedArray,1),size(binnedArray,1));
+        tempUP(iBoot,:) =  sum(binnedArray(event_id,:),'omitnan')./sum(~isnan(binnedArray(event_id,:)));
+    end
+
+    probability(nprobe).R_spindles_bootstrap = tempUP;
+
+    if contains(shuffle_option,'time_circular_shift')
+
+        % timebin circularly shifted
+        tempUP = [];
+        tic
+        for iBoot = 1:1000
+            temp1 = [];
+            temp2 = [];
+            parfor event_id = 1:size(binnedArray,1)
+                s = RandStream('mrg32k3a','Seed',100000*iBoot+event_id); % Set random seed for resampling
+                %             s = RandStream('mrg32k3a','Seed',i+10000*shuffle_options); % Set random seed for resampling
+                bins_to_shift = datasample(s,1:1:size(binnedArray,2),1);
+                bins= circshift(1:1:size(binnedArray,2),bins_to_shift);
+                temp1(event_id,:) = binnedArray(event_id,bins);
+            end
+
+            tempUP(iBoot,:) = sum(temp1,1,'omitnan')./sum(~isnan(temp1));
+
+        end
+        toc
+
+        probability(nprobe).R_spindles_shuffled = tempUP;
+    end
+
+
+end

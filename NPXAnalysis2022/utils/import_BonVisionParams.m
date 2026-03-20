@@ -92,8 +92,13 @@ switch(StimulusName)
         end
     case 'SparseNoise' 
         if ~exist('grid_size','var')
-            grid_size = [8,8];
-            warning('Using default grid_size of 8x8 for SparseNoise')
+            dateNames = regexp(filepath,'(?<year>\d+)-(?<month>\d+)-(?<day>\d+)','match');
+            if etime(datevec(dateNames{1}),[2024 04 01 00 00 00]) < 0 % Happened before April 1st
+                grid_size = [8,8];
+                warning('Using default grid_size of 8x8 for SparseNoise')
+            else
+                grid_size = [8 16];
+            end
         end
         datatable = import_BonVisionParamsSparseNoise_bin(filepath,grid_size);
         

@@ -1,0 +1,51 @@
+% function [gDSI,DirAngle,gOSI,OriAngle] = calcCV(TH,R)
+% Program to calculate (1 - circular variance) for stimuli of varying
+% orientation and direction. The dataset needs to have been obtained with a
+% set of equally spaced gratings spanning the full 360 degrees.
+% Inputs: THeta, Response (spontaneous already subtracted)
+% If the input th is a matrix, it must be the same size as r.
+% If it is a row vector, th will replicated to fit the dimensions of r.
+% Outputs: (1 - CV) (0 is untuned, 1 highly tuned) for direction, preferred direction, (1 - CV) for orientation,
+% preferred orientation
+% SGS 14th March 2004.
+% ERB 26th June 2025 - edited to take th in radians, and annotated. Note that the output OriAngle and DirAngle 
+% will be in the range -180 degrees to + 180 degrees; can shift this to 0-180 and 0-360 degrees using Matlab's mod function
+
+function [gDSI,DirAngle,gOSI,OriAngle] = calcCV(th,r) % th is angles of stimuli, r is responses (spike counts)
+
+[mr,nr] = size(r); % r is the matrix of responses, m columns, n rows
+[mt,nt] = size(th); % th is the row vector of angles 
+
+% If theta is same size, continue
+if nr == nt % same number of columns
+    if mt == 1
+        % We have appropriate size vector
+        th = repmat(th,mr,1); % th is a row vector; replicate it for each row of r
+    else
+        if mt ~= mr
+            error('calcCV: input th must be row vector or matrix')
+        end
+    end
+else
+    error('calcCV: inputs th & r must have same number of columns')
+end
+
+if max(th) > 7 % i.e. if th is greater than 2 pi, th is likely in degrees
+    th = th.*(pi/180); % Convert from degrees to radians
+end    
+
+% Direction
+dirx = sum(r.*cos(th),2); % x-component of vector sum
+diry = sum(r.*sin(th),2); % y-component of vector sum
+DirOri = atan2(diry,dirx); % angle of resultant vector (in radians)
+gDSI = sqrt(dirx.^2+diry.^2)./sum(abs(r),2); % magnitude of directional tuning (0-1) normalized by total response
+DirAngle = DirOri*180/pi; % preferred direction in degrees
+ 
+% Orientation
+dirx = sum(r.*cos(th*2),2); % x-component with doubled angle - doubling collapses opposite directions into the same orientation
+diry = sum(r.*sin(th*2),2); % y-component with doubled angle - doubling collapses opposite directions into the same orientation
+OriOri = atan2(diry,dirx)./2;   % Divide angle by 2 
+gOSI = sqrt(dirx.^2+diry.^2)./sum(abs(r),2); % magnitude of orientation tuning
+OriAngle = OriOri*(180/pi); % preferred orientation
+
+end

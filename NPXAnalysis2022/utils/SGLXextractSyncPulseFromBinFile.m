@@ -2,10 +2,13 @@
 %   This function supercedes extractSyncPulseFromAPFile, which used the
 %   Neuropixels memmap style, and instead uses Jennifer Collonel's toolbox
 % Input - path to binary file
-% Output - times of onset and offset of the sync pulse in a structure
+% Output - times of onset and offset of the sync pulse as well as the full pulse waveform data in a structure
 %
 % History: SGS 14th April 2022 Wrote it
-%
+% MT Oct 2023 modified to save raw sync pulse data for later alignment
+% (across two probes) 
+% MT Dec 2024 extract error signal from Sync channel
+
 function syncTimes_ephys = SGLXextractSyncPulseFromBinFile(binpath)
 
 % Extract path and filename
@@ -23,19 +26,21 @@ dw = 1;
 % Read these lines in dw (0-based).
 % For 3B2 imec data: the sync pulse is stored in line 6.
 % May be 1 or more line indices.
-dLineList = [0,1,6];
+dLineList = 0:15; % other bits (espeically 3 bit or 4th) is for error and 6 bit (7th) is for Sync pulse
 
 nIter = ceil(nFileSamp/nSamp);
 % Get first one second of data
 tsync = zeros(1,nFileSamp);
+error_signal = zeros(1,nFileSamp);
 for thisFilePart = 0:nIter-1
     thisSampleStart = thisFilePart*nSamp;
     dataArray = ReadBin(thisSampleStart, nSamp, meta, binName, fpath);
     digArray = ExtractDigital(dataArray, meta, dw, dLineList);
-    tsync(thisSampleStart+1:thisSampleStart+size(digArray,2)) = digArray(3,:);
+    tsync(thisSampleStart+1:thisSampleStart+size(digArray,2)) = digArray(7,:);
+    error_signal(thisSampleStart+1:thisSampleStart+size(digArray,2)) =  single(sum(digArray))-single(digArray(7,:));
 end
 
-
+  
 %%%
 % Store the pulse changes as time stamps
 % Find upswings in sync pulse
@@ -46,4 +51,15 @@ syncTimes_ephys.on = (vec_idx+1)./SampRate(meta);
 vec_idx = find(diff(tsync)<=-0.5); 
 % add 1 to vec_idx to compensate for diff and convert from samples to s 
 syncTimes_ephys.off = (vec_idx+1)./SampRate(meta); 
+
+% Async Pulse data saved for later alignment purposes
 syncTimes_ephys.Sync = tsync;
+
+% Timestamp when error happens
+if sum(error_signal>0)>0
+    syncTimes_ephys.Error_on_timestamp =  find(error_signal>0,1,'first')./SampRate(meta);
+    syncTimes_ephys.Error_on_idx = find(error_signal>0,1,'first');
+else
+    syncTimes_ephys.Error_on_timestamp = [];
+    syncTimes_ephys.Error_on_idx = [];
+end

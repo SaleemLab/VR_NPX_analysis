@@ -1,0 +1,683 @@
+function extract_merged_event_info(slow_waves_all,ripples_all,spindles_all,behavioural_state_merged_all,UP_DOWN_ripple_PSTH_MUA,sessions_to_process)
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
+if exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+% load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+% load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+% load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov_normalised.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_markov.mat'));
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole_baseline.mat'));
+probability_normalised_whole_baseline = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline.mat'));
+probability_psth_whole_baseline = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_baseline.mat'));
+probability_normalised_baseline = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_baseline.mat'));
+probability_psth_baseline = probability;
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+probability_normalised_whole = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised.mat'));
+probability_normalised = probability_normalised;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability.mat'));
+probability_psth = probability;
+
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_probability.mat'));
+probability_SO_SO = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_probability.mat'));
+probability_SO_SO_contralateral = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_SO_contralateral_whole_probability.mat'));
+probability_SO_SO_contralateral_whole = probability;
+
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability.mat'));
+probability_ripples_SO = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_SO_probability_whole.mat'));
+probability_ripples_SO_whole = probability;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_ripples_probability.mat'));
+probability_ripples_ripples = probability;
+
+
+colour_lines = [];
+colour_lines{1} = [252,146,114;251,106,74;239,59,44;203,24,29;153,0,13]/256;% 5 red for R
+colour_lines{2} = [158,202,225;107,174,214;66,146,198;33,113,181;8,69,148]/256;% 5 blue for L
+colour_lines{3} = [255,185,205;254,145,198;228,42,168;182,0,140;122,1,119]/256;% 5 megenta for bilateral
+
+colour_lines{4} = [161,217,155;116,196,118;65,171,93;35,139,69;0,90,50]/256;% 5 green for 
+colour_lines{5} = [188,189,220;158,154,200;128,125,186;106,81,163;74,20,134]/256;% 5 purple for 
+
+colour_lines = [44,123,182;215,25,28]/256;
+
+
+% Find reference channel/shank
+cortex_ref_shank = [];
+HPC_ref_shank = [];
+
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+        shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
+
+    end
+end
+
+
+%%%%%
+%%%%%
+%%%%%
+
+%% Clustering analysis of bilaterally synchronised and unilaterally biased events
+%% Grabbing ipsi and contra values for UP DOWN
+
+
+probability = probability_psth_whole;
+nprobe = 1;
+event_averaging_scale = 10;
+% extract plv, amp corr and lag (latency)
+for nprobe=1:2
+    mprobe = abs(nprobe-3);
+
+    % UP and DOWN
+
+    ipsi_amp_UD{nprobe} = [];
+    contra_amp_UD{nprobe} = [];
+
+    ipsi_lag_DU{nprobe} = [];
+    contra_lag_DU{nprobe} = [];
+    ipsi_lag_UD{nprobe} = [];
+    contra_lag_UD{nprobe} = [];
+
+    ipsi_corr_DU{nprobe} = [];
+    contra_corr_DU{nprobe} = [];
+    ipsi_corr_UD{nprobe} = [];
+    contra_corr_UD{nprobe} = [];
+
+    ipsi_plv_DU{nprobe} = [];
+    contra_plv_DU{nprobe} = [];
+    ipsi_plv_UD{nprobe} = [];
+    contra_plv_UD{nprobe} = [];
+
+    % ripples
+    ipsi_lag_ripples{nprobe} = [];
+    contra_lag_ripples{nprobe} = [];
+
+    ipsi_corr_ripples{nprobe} = [];
+    contra_corr_ripples{nprobe} = [];
+
+    ipsi_plv_ripples{nprobe} = [];
+    contra_plv_ripples{nprobe} = [];
+
+    % spindles
+    ipsi_lag_spindles{nprobe} = [];
+    contra_lag_spindles{nprobe} = [];
+
+    ipsi_corr_spindles{nprobe} = [];
+    contra_corr_spindles{nprobe} = [];
+
+    ipsi_plv_spindles{nprobe} = [];
+    contra_plv_spindles{nprobe} = [];
+
+    for nsession = 1:max(ripples_all(1).session_count)
+
+        %%%%%% DOWN -> UP
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
+
+        ipsi_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        ipsi_shank(ipsi_shank==cortex_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(slow_waves_all(nprobe).probe_hemisphere{nsession} == mprobe);
+
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
+
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
+
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+
+        ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_plv_DU{nprobe} = [ipsi_plv_DU{nprobe} squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_plv_DU{nprobe} = [contra_plv_DU{nprobe} squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_corr_DU{nprobe} = [ipsi_corr_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_corr_DU{nprobe} = [contra_corr_DU{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        % ipsi_lag_DU{nprobe} = [ipsi_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        % contra_lag_DU{nprobe} = [contra_lag_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        % 
+        % ipsi_plv_DU{nprobe} = [ipsi_plv_DU{nprobe} min(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        % contra_plv_DU{nprobe} = [contra_plv_DU{nprobe} min(squeeze(slow_waves_all(nprobe).plv_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        % 
+        % ipsi_corr_DU{nprobe} = [ipsi_corr_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        % contra_corr_DU{nprobe} = [contra_corr_DU{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_DU{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        %%%%%% UP -> DOWN
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
+
+        ipsi_amp_UD{nprobe} = [ipsi_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(ipsi_shank,ia))];
+        contra_amp_UD{nprobe} = [contra_amp_UD{nprobe} squeeze(slow_waves_all(nprobe).DOWN_peaks_zscore{nsession}(contra_shank,ia))];
+
+        ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_plv_UD{nprobe} = [ipsi_plv_UD{nprobe} squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_plv_UD{nprobe} = [contra_plv_UD{nprobe} squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_corr_UD{nprobe} = [ipsi_corr_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_corr_UD{nprobe} = [contra_corr_UD{nprobe} squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        % ipsi_lag_UD{nprobe} = [ipsi_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        % contra_lag_UD{nprobe} = [contra_lag_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_lag_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        % 
+        % ipsi_plv_UD{nprobe} = [ipsi_plv_UD{nprobe} min(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        % contra_plv_UD{nprobe} = [contra_plv_UD{nprobe} min(squeeze(slow_waves_all(nprobe).plv_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        % 
+        % ipsi_corr_UD{nprobe} = [ipsi_corr_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia)))];
+        % contra_corr_UD{nprobe} = [contra_corr_UD{nprobe} min(squeeze(slow_waves_all(nprobe).xcorr_r_UD{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia)))];
+        %%%%% Spindles
+        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).session_count == sessions_to_process(nsession) & spindles_all(nprobe).SWS_index == 1));
+
+        if ~isempty(ia)
+            ipsi_lag_spindles{nprobe} = [ipsi_lag_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            contra_lag_spindles{nprobe} = [contra_lag_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_lag{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+            ipsi_plv_spindles{nprobe} = [ipsi_plv_spindles{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            contra_plv_spindles{nprobe} = [contra_plv_spindles{nprobe} squeeze(spindles_all(nprobe).plv{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+            ipsi_corr_spindles{nprobe} = [ipsi_corr_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+            contra_corr_spindles{nprobe} = [contra_corr_spindles{nprobe} squeeze(spindles_all(nprobe).xcorr_r{nsession}(cortex_ref_shank(nsession,nprobe),contra_shank,ia))'];
+        end
+
+        %%%%% Ripples
+        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).session_count == sessions_to_process(nsession) & ripples_all(nprobe).SWS_index == 1));
+        ipsi_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == nprobe);
+        ipsi_shank(ipsi_shank==HPC_ref_shank(nsession,nprobe))=[];
+        contra_shank = find(ripples_all(nprobe).probe_hemisphere{nsession} == mprobe);
+
+        mean_corr_ipsi = [];mean_corr_contra=[];
+        for nshank = 1:length(ipsi_shank)
+            mean_corr_ipsi(nshank) = mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank(nshank),ia)));
+        end
+
+        for nshank = 1:length(contra_shank)
+            mean_corr_contra(nshank)= mean(squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank(nshank),ia)));
+        end
+
+        [~,id] = max(mean_corr_ipsi);
+        ipsi_shank = ipsi_shank(id);
+        [~,id] = max(mean_corr_contra);
+        contra_shank = contra_shank(id);
+
+
+        ipsi_lag_ripples{nprobe} = [ipsi_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_lag_ripples{nprobe} = [contra_lag_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_lag{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_plv_ripples{nprobe} = [ipsi_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_plv_ripples{nprobe} = [contra_plv_ripples{nprobe} squeeze(ripples_all(nprobe).plv{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+
+        ipsi_corr_ripples{nprobe} = [ipsi_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),ipsi_shank,ia))'];
+        contra_corr_ripples{nprobe} = [contra_corr_ripples{nprobe} squeeze(ripples_all(nprobe).xcorr_r{nsession}(HPC_ref_shank(nsession,nprobe),contra_shank,ia))'];
+    end
+end
+
+
+%% ipsi-contra events (merging)
+
+% add time for each sessions for later sorting
+for nprobe = 1:2
+    UP_ints{nprobe}=slow_waves_all(nprobe).UP_ints(probability(nprobe).UP_all_index,:);
+    DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,:);
+    ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
+    ripple_ints{nprobe}=[ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1) ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
+    spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
+    spindle_ints{nprobe}=[spindles_all(nprobe).onset(spindles_all(nprobe).SWS_index == 1) spindles_all(nprobe).offset(spindles_all(nprobe).SWS_index == 1)];
+
+    for nsession = 1:max(slow_waves_all(1).UP_session_count)
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)),probability(nprobe).UP_all_index);
+        UP_ints{nprobe}(ib,:) = UP_ints{nprobe}(ib,:) + nsession * 1000000;
+
+        [C,ia,ib] = intersect(find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)),probability(nprobe).DOWN_all_index);
+        DOWN_ints{nprobe}(ib,:) = DOWN_ints{nprobe}(ib,:) + nsession * 1000000;
+
+        [C,ia,ib] = intersect(find(ripples_all(nprobe).session_count == sessions_to_process(nsession)),find(ripples_all(nprobe).SWS_index == 1));
+        ripple_ints{nprobe}(ib,:) = ripple_ints{nprobe}(ib,:) + nsession * 1000000;
+        ripple_peaktimes{nprobe}(ib,:) = ripple_peaktimes{nprobe}(ib,:) + nsession * 1000000;
+
+        [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).SWS_index == 1));
+        spindle_ints{nprobe}(ib,:) = spindle_ints{nprobe}(ib,:) + nsession * 1000000;
+    end
+end
+
+k_cluster = [];
+%%%%%% UP 
+merged_event_info = [];
+
+lag_index =[];
+for nprobe = 1:2
+    lags = ipsi_lag_DU{nprobe} - contra_lag_DU{nprobe};
+    corrs = ipsi_corr_DU{nprobe} - contra_corr_DU{nprobe};
+    plvs = ipsi_plv_DU{nprobe} - contra_plv_DU{nprobe};
+
+    event_info(nprobe).UP_lag_diff = lags;
+    event_info(nprobe).UP_corr_diff = corrs ;
+    event_info(nprobe).UP_plv_diff = plvs;
+end
+
+
+
+
+% Merged events from both hemispheres and remove events that are less than
+% 0.05s apart
+hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
+lags = [event_info(1).UP_lag_diff event_info(2).UP_lag_diff];
+corrs= [event_info(1).UP_corr_diff event_info(2).UP_corr_diff];
+plvs= [event_info(1).UP_plv_diff event_info(2).UP_plv_diff];
+
+lag_index = [lag_index{1} lag_index{2}];
+
+[event_times idx] = sort([UP_ints{1}(:,1); UP_ints{2}(:,1)]);
+merged_event_info.UP_index_sorted = idx; % all idx based on event times
+
+keep = true(height(event_times), 1);
+merge_threshold = mean([abs(event_info(1).UP_lag_threshold_low) abs(event_info(2).UP_lag_threshold_low)...
+    abs(event_info(1).UP_lag_threshold_high) abs(event_info(2).UP_lag_threshold_high)]);
+% merge_threshold = 0.05;
+for i = 2:height(event_times)
+    if (event_times(i) -event_times(i-1)) < merge_threshold
+        % Keep earlier one, discard later one
+        keep(i) = false;
+    end
+end
+idx = idx(keep, :);
+
+merged_event_info.UP_index = idx;
+merged_event_info.UP_hemisphere_id = hemisphere_id;
+merged_event_info.UP_group_id = [k_cluster(1).DU_idx;k_cluster(2).DU_idx];
+merged_event_info.UP_event_times = [UP_ints{1}(:,1); UP_ints{2}(:,1)];
+merged_event_info.UP_ints = [UP_ints{1}; UP_ints{2}];
+merged_event_info.UP_lag_diff = lags';
+merged_event_info.UP_corr_diff = corrs';
+merged_event_info.UP_plv_diff = plvs';
+
+merged_event_info.UP_lag_index = lag_index';
+
+% [~,sorted_index] = sort(k_cluster(nprobe).DU_idx);
+
+%%%%%% DOWN 
+lag_index=[];
+for nprobe = 1:2
+    idx = k_cluster(nprobe).UD_idx;
+
+    lags = ipsi_lag_UD{nprobe} - contra_lag_UD{nprobe};
+    corrs = ipsi_corr_UD{nprobe} - contra_corr_UD{nprobe};
+    plvs = ipsi_plv_UD{nprobe} - contra_plv_UD{nprobe};
+
+    mu1 = lags(idx == 1&lags'<0);
+    mu3 = lags(idx == 3&lags'<0);
+    mu2 = lags(idx == 2);
+
+    threshold_low  = mean([(mean(mu3)+mean(mu2))/2 (mean(mu1)+mean(mu2))/2]);
+
+    mu1 = lags(idx == 1&lags'>0);
+    mu3 = lags(idx == 3&lags'>0);
+
+    threshold_high = mean([(mean(mu3)+mean(mu2))/2 (mean(mu1)+mean(mu2))/2]);
+
+    % event_info(nprobe).DOWN_group_id = group_id;
+    event_info(nprobe).DOWN_lag_threshold_low = threshold_low;
+    event_info(nprobe).DOWN_lag_threshold_high = threshold_high;
+
+    event_info(nprobe).DOWN_lag_diff = lags;
+    event_info(nprobe).DOWN_corr_diff = corrs ;
+    event_info(nprobe).DOWN_plv_diff = plvs;
+
+    lag_index{nprobe} = zeros(1,length(event_info(nprobe).DOWN_lag_diff));
+    lag_index{nprobe}(event_info(nprobe).DOWN_lag_diff< event_info(nprobe).DOWN_lag_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).DOWN_lag_diff> event_info(nprobe).DOWN_lag_threshold_high) = 1;
+
+end
+
+
+
+% Merged events from both hemispheres and remove events that are less than
+% 0.05s apart
+hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
+lags = [event_info(1).DOWN_lag_diff event_info(2).DOWN_lag_diff];
+lag_index = [lag_index{1} lag_index{2}];
+corrs =  [event_info(1).DOWN_corr_diff event_info(2).DOWN_corr_diff];
+plvs =   [event_info(1).DOWN_plv_diff event_info(2).DOWN_plv_diff];
+
+
+[event_times idx] = sort([DOWN_ints{1}(:,1); DOWN_ints{2}(:,1)]);
+merged_event_info.DOWN_index_sorted = idx; % all idx based on event times
+
+keep = true(height(event_times), 1);
+merge_threshold = mean([abs(event_info(1).DOWN_lag_threshold_low) abs(event_info(2).DOWN_lag_threshold_low)...
+    abs(event_info(1).DOWN_lag_threshold_high) abs(event_info(2).DOWN_lag_threshold_high)]);
+for i = 2:height(event_times)
+    if (event_times(i) -event_times(i-1)) < merge_threshold
+        % Keep earlier one, discard later one
+        keep(i) = false;
+    end
+end
+idx = idx(keep, :);
+
+merged_event_info.DOWN_index = idx;
+merged_event_info.DOWN_hemisphere_id = hemisphere_id;
+merged_event_info.DOWN_group_id = [k_cluster(1).UD_idx;k_cluster(2).UD_idx];
+merged_event_info.DOWN_event_times = [DOWN_ints{1}(:,1); DOWN_ints{2}(:,1)];
+merged_event_info.DOWN_ints = [DOWN_ints{1}; DOWN_ints{2}];
+merged_event_info.DOWN_lag_diff = lags';
+merged_event_info.DOWN_corr_diff = corrs';
+merged_event_info.DOWN_plv_diff = plvs';
+merged_event_info.DOWN_lag_index = lag_index';
+
+
+%%%%%% Ripples 
+lag_index=[];
+for nprobe = 1:2
+    idx = k_cluster(nprobe).ripples_idx;
+
+    lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
+    corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
+    plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
+    % 
+    % mu1 = lags(idx == 1&lags'<0);
+    % mu3 = lags(idx == 4&lags'<0);
+    mu3 = lags(idx==3);
+    mu4 = lags(idx==4&lags'<0);
+    threshold_low = (mean(mu4)+mean(mu3))/2;
+    mu4 = lags(idx==4&lags'>0);
+    threshold_high = (mean(mu4)+mean(mu3))/2;
+
+    % threshold_low  = prctile(mu3,2.5);
+    % threshold_high = prctile(mu3,97.5);
+
+    % event_info(nprobe).ripples_group_id = group_id;
+    event_info(nprobe).ripples_lag_threshold_low = threshold_low;
+    event_info(nprobe).ripples_lag_threshold_high = threshold_high;
+
+    event_info(nprobe).ripples_lag_diff = lags;
+    event_info(nprobe).ripples_corr_diff = corrs ;
+    event_info(nprobe).ripples_plv_diff = plvs;
+
+    lag_index{nprobe} = zeros(1,length(event_info(nprobe).ripples_lag_diff));
+    lag_index{nprobe}(event_info(nprobe).ripples_lag_diff< event_info(nprobe).ripples_lag_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).ripples_lag_diff> event_info(nprobe).ripples_lag_threshold_high) = 1;
+
+end
+
+
+
+% Merged events from both hemispheres and remove events that are less than
+% 0.02s apart (based on 95% of the lag distribution of cluster 2 and 3)
+hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
+lags = [event_info(1).ripples_lag_diff event_info(2).ripples_lag_diff];
+lag_index = [lag_index{1} lag_index{2}];
+corrs =  [event_info(1).ripples_corr_diff event_info(2).ripples_corr_diff];
+plvs =   [event_info(1).ripples_plv_diff event_info(2).ripples_plv_diff];
+
+
+[event_times idx] = sort([ripple_peaktimes{1}; ripple_peaktimes{2}]);
+merged_event_info.ripples_index_sorted = idx; % all idx based on event times
+
+keep = true(height(event_times), 1);
+merge_threshold = mean([abs(event_info(1).ripples_lag_threshold_low) abs(event_info(2).ripples_lag_threshold_low)...
+    abs(event_info(1).ripples_lag_threshold_high) abs(event_info(2).ripples_lag_threshold_high)]);
+
+% merge_threshold = 0.01;
+for i = 2:height(event_times)
+    if (event_times(i) -event_times(i-1)) < merge_threshold
+        % Keep earlier one, discard later one
+        keep(i) = false;
+    end
+end
+idx = idx(keep, :);
+
+
+
+merged_event_info.ripples_index = idx; % based on cluster lag diff distribution
+merged_event_info.ripples_hemisphere_id = hemisphere_id;
+merged_event_info.ripples_group_id = [k_cluster(1).ripples_idx;k_cluster(2).ripples_idx];
+merged_event_info.ripples_peaktimes = [ripple_peaktimes{1}; ripple_peaktimes{2}];
+merged_event_info.ripples_ints = [ripple_ints{1}; ripple_ints{2}];
+merged_event_info.ripples_lag_diff = lags';
+merged_event_info.ripples_corr_diff = corrs';
+merged_event_info.ripples_plv_diff = plvs';
+
+
+merged_event_info.ripples_lag_index = lag_index';
+
+
+%%%%%% Spindles 
+lag_index=[];
+for nprobe = 1:2
+    idx = k_cluster(nprobe).spindles_idx;
+
+    lags = ipsi_lag_spindles{nprobe} - contra_lag_spindles{nprobe};
+    corrs = ipsi_corr_spindles{nprobe} - contra_corr_spindles{nprobe};
+    plvs = ipsi_plv_spindles{nprobe} - contra_plv_spindles{nprobe};
+    % 
+    % mu1 = lags(idx == 1&lags'<0);
+    % mu3 = lags(idx == 4&lags'<0);
+
+    mu2 = lags(idx==2);
+    mu3 = lags(idx==3&lags'<0);
+    threshold_low = (mean(mu3)-mean(mu2))/2;
+    mu3 = lags(idx==3&lags'>0);
+    threshold_high = (mean(mu3)-mean(mu2))/2;
+    % mu2 = lags(idx ==2);
+    % threshold_low  = prctile(mu2,2.5);
+    % threshold_high = prctile(mu2,97.5);
+
+    % event_info(nprobe).ripples_group_id = group_id;
+    event_info(nprobe).spindles_threshold_low = threshold_low;
+    event_info(nprobe).spindles_threshold_high = threshold_high;
+
+    event_info(nprobe).spindles_lag_diff = lags;
+    event_info(nprobe).spindles_corr_diff = corrs ;
+    event_info(nprobe).spindles_plv_diff = plvs;
+
+    lag_index{nprobe} = zeros(1,length(event_info(nprobe).spindles_lag_diff));
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff< event_info(nprobe).spindles_threshold_low) = -1;
+    lag_index{nprobe}(event_info(nprobe).spindles_lag_diff> event_info(nprobe).spindles_threshold_high) = 1;
+
+end
+
+
+
+% Merged events from both hemispheres and remove events that are less than
+% 0.1s apart (based on midpoint between two clusters )
+hemisphere_id = [ones(length(lag_index{1}),1); 2*ones(length(lag_index{2}),1)];
+lags = [event_info(1).spindles_lag_diff event_info(2).spindles_lag_diff];
+lag_index = [lag_index{1} lag_index{2}];
+corrs =  [event_info(1).spindles_corr_diff event_info(2).spindles_corr_diff];
+plvs =   [event_info(1).spindles_plv_diff event_info(2).spindles_plv_diff];
+
+
+[event_times idx] = sort([spindle_ints{1}(:,1); spindle_ints{2}(:,1)]);
+merged_event_info.spindles_index_sorted = idx; % all idx based on event times
+
+keep = true(height(event_times), 1);
+merge_threshold = mean([abs(event_info(1).spindles_threshold_low) abs(event_info(2).spindles_threshold_low)...
+    abs(event_info(1).spindles_threshold_high) abs(event_info(2).spindles_threshold_high)]);
+% merge_threshold = 0.3
+% merge_threshold = 0.01;
+for i = 2:height(event_times)
+    if (event_times(i) -event_times(i-1)) < merge_threshold
+        % Keep earlier one, discard later one
+        keep(i) = false;
+    end
+end
+idx = idx(keep, :);
+
+merged_event_info.spindles_index = idx;
+merged_event_info.spindles_hemisphere_id = hemisphere_id;
+merged_event_info.spindles_group_id = [k_cluster(1).spindles_idx;k_cluster(2).spindles_idx];
+merged_event_info.spindles_event_times = [spindle_ints{1}(:,1); spindle_ints{2}(:,1)];
+merged_event_info.spindles_peaktimes = [spindle_peaktimes{1}; spindle_peaktimes{2}];
+merged_event_info.spindles_ints = [spindle_ints{1}; spindle_ints{2}];
+merged_event_info.spindles_lag_diff = lags';
+merged_event_info.spindles_corr_diff = corrs';
+merged_event_info.spindles_plv_diff = plvs';
+
+merged_event_info.spindles_lag_index = lag_index';
+
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+save(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+
+
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+nfig = figure('Color','w','Name','V1 UP-DOWN transition lag diff and corr diff distribution')
+nfig.Position = [103 111 1100 840];
+orient(nfig,'landscape')
+colour_lines = [0,90,50;74,20,134]/256; % Green Purple
+% subplot(2,3,1)
+% scatter([ipsi_corr_UD{1} ipsi_corr_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+% % subplot(2,2,2)
+% scatter([contra_corr_UD{1} contra_corr_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);
+% set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+% xlabel('corr')
+% ylabel('Ipsi-contra corr diff')
+% legend('ipsi','contra','box','off')
+% % set(gca,'FontSize',14)
+% title('UP-DOWN transition corr vs corr diff');
+
+
+subplot(2,2,1)
+scatter([ipsi_amp_UD{1} ipsi_amp_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+scatter([contra_amp_UD{1} contra_amp_UD{2}],merged_event_info.DOWN_corr_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Delta peak amplitude')
+ylabel('Ipsi-contra corr diff')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs corr diff');
+
+subplot(2,2,2)
+ipsi_data = [ipsi_amp_UD{1} ipsi_amp_UD{2}]';
+contra_data = [contra_amp_UD{1} contra_amp_UD{2}]';
+corr_diff_edges = -2:0.1:2;
+x = corr_diff_edges(1)+mean(diff(corr_diff_edges))/2:mean(diff(corr_diff_edges)):corr_diff_edges(end)-mean(diff(corr_diff_edges))/2;
+temp1=[];
+temp2=[];
+temp1_SD=[];
+temp2_SD=[];
+
+for n = 1:length(corr_diff_edges)-1
+    temp1(n)= mean(ipsi_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+    temp2(n)= mean(contra_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+
+    temp1_SD(n)= std(ipsi_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+    temp2_SD(n)= std(contra_data(merged_event_info.DOWN_corr_diff >=corr_diff_edges(n) & merged_event_info.DOWN_corr_diff <=corr_diff_edges(n+1)),'omitnan');
+end
+plot(x,temp1,'Color',colour_lines(1,:));hold on;
+plot(x,temp2,'Color',colour_lines(2,:))
+
+
+UCI = temp1 + temp1_SD;LCI = temp1 - temp1_SD;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+UCI = temp2 + temp2_SD;LCI = temp2 - temp2_SD;
+ERROR_SHADE(2) = patch([x  fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Ipsi-contra corr diff')
+ylabel('Mean amplitude')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs corr diff');
+
+
+
+
+subplot(2,2,3)
+scatter([ipsi_amp_UD{1} ipsi_amp_UD{2}],merged_event_info.DOWN_lag_diff,10,colour_lines(1,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+scatter([contra_amp_UD{1} contra_amp_UD{2}],merged_event_info.DOWN_lag_diff,10,colour_lines(2,:),'filled','o','MarkerFaceAlpha',0.05);hold on
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Delta peak amplitude')
+ylabel('Ipsi-contra lag diff')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs lag diff');
+
+subplot(2,2,4)
+ipsi_data = [ipsi_amp_UD{1} ipsi_amp_UD{2}]';
+contra_data = [contra_amp_UD{1} contra_amp_UD{2}]';
+lag_diff_edges = -0.2:0.01:0.2;
+x = lag_diff_edges(1)+mean(diff(lag_diff_edges))/2:mean(diff(lag_diff_edges)):lag_diff_edges(end);
+temp1=[];
+temp2=[];
+temp1_SD=[];
+temp2_SD=[];
+
+for n = 1:length(lag_diff_edges)-1
+    temp1(n)= mean(ipsi_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+    temp2(n)= mean(contra_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+
+    temp1_SD(n)= std(ipsi_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+    temp2_SD(n)= std(contra_data(merged_event_info.DOWN_lag_diff >=lag_diff_edges(n) & merged_event_info.DOWN_lag_diff <=lag_diff_edges(n+1)),'omitnan');
+end
+plot(x,temp1,'Color',colour_lines(1,:));hold on;
+plot(x,temp2,'Color',colour_lines(2,:))
+
+
+UCI = temp1 + temp1_SD;LCI = temp1 - temp1_SD;
+ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
+UCI = temp2 + temp2_SD;LCI = temp2 - temp2_SD;
+ERROR_SHADE(2) = patch([x  fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
+
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+xlabel('Ipsi-contra lag diff')
+ylabel('Mean amplitude')
+legend('ipsi','contra','box','off')
+% set(gca,'FontSize',14)
+title('UP-DOWN transition delta amplitude vs lag diff');
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','image')
+
+%% Visualise and compare clusters in terms of ipsi-contra PLV diff, corr diff and lag diff
+
+
+
+end
+
+
+
+
+
+
+

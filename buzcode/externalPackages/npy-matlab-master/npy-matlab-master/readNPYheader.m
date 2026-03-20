@@ -47,7 +47,20 @@ try
     % assumptions about its format...
     
     r = regexp(arrayFormat, '''descr''\s*:\s*''(.*?)''', 'tokens');
-    dtNPY = r{1}{1};    
+    
+    r = regexp(arrayFormat, '''descr''\s*:\s*''(.*?)''', 'tokens');
+    if ~isempty(r)
+    dtNPY = r{1}{1};
+    else
+            % Extract data types from arrayFormat
+    pattern = "'<(\w+)'"; % Regular expression to match '<' followed by data type
+    matches = regexp(arrayFormat, pattern, 'tokens');
+    
+    % Flatten the cell array of matches
+    r = [matches{:}];
+    
+    dtNPY = ['<',r{1}];
+    end
     
     littleEndian = ~strcmp(dtNPY(1), '>');
     

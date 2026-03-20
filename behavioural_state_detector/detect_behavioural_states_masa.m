@@ -46,7 +46,7 @@ immobilityTolerance = 0.2;
 sleepMoveTolerance = 1.5;
 SWStoREMmaxTransition = 120;
 restPriorSWS = 120;
-minSleepLenght = 30;
+minSleepLenght = 10; % Based on Rothschild et al 2017
 freezingMoveTolerance = 0.2;
 minFreezingLenght = 2;
 QuietMoveTolerance = 0.5;
@@ -115,9 +115,9 @@ t = speed(:,1);
 t0 = [0; speed(:,1); rangeTime(2)];
 % Find intervals where speed data is missing
 noData = [];
-if any(diff(t0)>1)  
-    noData = t0(bsxfun(@plus,FindInterval(diff(t0)>1),[0 1])); % more than 1s without data
-end
+% if any(diff(t0)>1)  
+%     noData = t0(bsxfun(@plus,FindInterval(diff(t0)>1),[0 1])); % more than 1s without data
+% end
 immobility = t(FindInterval(speed(:,2)<speedTreshold));
 immobility(diff(immobility,[],2)<immobilityTolerance,:) = []; % pauses < immobilityTolerance don't count
 if size(immobility,2)==1, immobility = immobility'; end
@@ -136,7 +136,8 @@ disp('Detecting Slow Wave Sleep...')
 SR = 1/mean(diff(corticalLFP(:,1)));
 parameters = list_of_parameters;
 filter_type  = 'bandpass';
-filter_width = [9 17];                 % range of frequencies in Hz you want to filter between
+%filter_width = [9 17];                 % Spindle range. Range of frequencies in Hz you want to filter between
+filter_width = [0.5 4];                 % Delta range. Range of frequencies in Hz you want to filter between
 filter_order = round(6*SR/(max(filter_width)-min(filter_width)));  % creates filter for ripple
 norm_freq_range = filter_width/(SR/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
 b_spindle = fir1(filter_order, norm_freq_range,filter_type);
@@ -161,6 +162,9 @@ k = kmeans(smoothedPower,2); % two clear groups, the distribution should be obvi
 
 if mean(smoothedPower(k==1))>mean(smoothedPower(k==2)), k=3-k; end % Make sure k=2 corresponds to the high spindlepower group
 highSpindles = tSpindles(FindInterval(k==2));
+if size(highSpindles,1)==2 & size(highSpindles,2)==1
+    highSpindles = highSpindles';
+end
 SWS = SubtractIntervals(highSpindles, movement); % Take only the overlap of high spindle power and no movement epoch
 SWS = ConsolidateIntervals(SWS,'epsilon',sleepMoveTolerance); %animals can move briefly during sleep
 SWS(diff(SWS,[],2)<minSleepLenght,:) = []; % sleep needs to be at least minSleepLenght long
@@ -193,6 +197,11 @@ else
 end
 % First, make the REM period terminate if the animal moved
 yes = 0;
+
+if sum(size(REM) == [2,1]) == 2 % rare case where only one REM
+    REM = REM';
+end
+
 for j=1:size(REM)
     idx = find(movement(:,1)>REM(j,1),1);
     if movement(idx,1)<REM(j,2)

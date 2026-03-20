@@ -31,11 +31,14 @@ switch(loadflag)
         EyeData.Properties.VariableNames = varNames;
         % Convert computer time to
         EyeData.FrameComputerDateVec = datevec(EyeData{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
-        EyeData.CentroidX = EyeData.X;
-        EyeData.CentroidY = EyeData.Y;
-        EyeData = table2struct(EyeData,'ToScalar',true);
-        EyeData = rmfield(EyeData,'X');
-        EyeData = rmfield(EyeData,'Y');
+
+        % Masa - Currenrtly eye centroid is not accurately captured by
+        % bonsai.
+%         EyeData.CentroidX = EyeData.X;
+%         EyeData.CentroidY = EyeData.Y;
+%         EyeData = table2struct(EyeData,'ToScalar',true);
+%         EyeData = rmfield(EyeData,'X');
+%         EyeData = rmfield(EyeData,'Y');
         
     case 'old'
         % Before 7th April 2022

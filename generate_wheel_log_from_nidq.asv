@@ -1,0 +1,55 @@
+% function to recover NIDQ wheel data
+
+% Assume Wdata1 and Wdata2 are already defined from your sampled data:
+% Wdata1 = wheel(1,:);
+% Wdata2 = wheel(2,:);
+% Convert the two channels into a single state value (0,1,2,3)
+WheelData1 = Nidq.wheel_forward;
+Wdata1 = double(WheelData1 > nanmean(WheelData1));
+WheelData2 = Nidq.wheel_backward;
+Wdata2 = double(WheelData2 > nanmean(WheelData2));
+states = 2 * Wdata1 + Wdata2;  % Each element is now 0, 1, 2, or 3
+% Preallocate an array to store the incremental count at each sample.
+N = length(states);
+encoderCount = zeros(1, N);
+currentCount = 0;  % Start with a zero count
+
+for i = 2:N
+   prevState = states(i-1);
+   currState = states(i);
+   % Compute the difference using modulo arithmetic.
+   % The value delta will be in the range 0 to 3.
+   delta = mod(currState - prevState, 4);
+   if delta == 1
+       % Valid forward transition: e.g. 0->1, 1->3, 3->2, 2->0
+       currentCount = currentCount + 1;
+   elseif delta == 3
+       % Valid reverse transition (equivalent to -1): e.g. 1->0, 3->1, 2->3, 0->2
+       currentCount = currentCount - 1;
+   elseif delta == 2
+       % This might happen if the encoder moves very fast, causing a skipped state.
+       % You can decide to treat this as 2 counts in the appropriate direction.
+       % Here we flag it as an ambiguous case; adjust as needed.
+       warning('Ambiguous transition (delta=2) detected at sample %d.', i);
+       % Option: assume 2 forward steps (or -2, depending on context)
+       currentCount = currentCount + 2;
+   end
+   encoderCount(i) = currentCount;
+end
+% At this point, encoderCount contains the cumulative counts for each sample.
+% For a 1024 ppr encoder with quadrature decoding, we have:
+ppr = 1024;
+quadFactor = 4;
+countsPerRev = ppr * quadFactor;  % 4096 counts per revolution
+% Now, convert counts to distance traveled.
+% Define the wheel circumference (in meters, for example). Adjust accordingly.
+wheelCircumference = 0.62;  % Example: 1 meter per revolution
+distancePerCount = wheelCircumference / countsPerRev;  % meters per count   0.0613
+% Compute the cumulative distance traveled at each sample.
+distanceTraveled = encoderCount * distancePerCount;
+% Plot the result
+figure;
+plot(distanceTraveled);
+xlabel('Sample Number');
+ylabel('Distance Traveled (m)');
+title('Cumulative Distance Traveled from Encoder Data');

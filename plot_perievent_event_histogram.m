@@ -68,6 +68,7 @@ addParameter(p,'plot_option',1,@isnumeric) % Powers Selected frequency for plott
 % assign parameters (either defaults or given)
 parse(p,varargin{:});
 twin = p.Results.twin;
+event_name= p.Results.event_name;
 
 MUA_filter_length = 50;
 SD_alpha = 5; %2 std width
@@ -87,7 +88,9 @@ hold on
 patch([bins fliplr(bins)],[psth+psth_se fliplr(psth-psth_se)],'b','FaceAlpha','0.3','LineStyle','none');
 hold on
 plot([0 0],get(gca,'ylim'),'r-')
-
+hold off
+ylabel('Frequency (events/sec)')
+xlabel(['Time relative to ',event_name])
 
 end
 

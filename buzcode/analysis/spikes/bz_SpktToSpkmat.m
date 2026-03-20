@@ -73,7 +73,11 @@ end
 
 %If spiketimes is in a buzcode structure
 if isstruct(spikes)
-    spiketimes = spikes.times;
+    if isfield(spikes,'times')
+        spiketimes = spikes.times;
+    elseif isfield(spikes,'spike_times')
+        spiketimes = [spikes.spike_times spikes.spike_id];
+    end
 else
     spiketimes = spikes;
 end
@@ -82,8 +86,8 @@ end
 %cell array
 if isa(spiketimes,'numeric') && size(spiketimes,2)==2
     cellnums = unique(spiketimes(~isnan(spiketimes(:,2)),2));
-    for cc = cellnums'
-        spiketimestemp{cc} = spiketimes(spiketimes(:,2)==cc,1);
+    for cc = 1:length(cellnums)
+        spiketimestemp{cc} = spiketimes(spiketimes(:,2)==cellnums(cc),1);
     end
     if isempty(cellnums) %silly
         spiketimes = {[]};
@@ -129,7 +133,11 @@ for cell_ind = 1:numcells
     cells(cell_ind).index4spikes = cell_ind*ones(size(cells(cell_ind).spiketimes));
     
     if isstruct(spikes)
-       spikemat.UID(cell_ind) = spikes.UID(cell_ind); 
+        if isfield(spikes,'UID')
+            spikemat.UID(cell_ind) = spikes.UID(cell_ind);
+%         else
+%             spikemat.UID(cell_ind) = spikes.cluster_id(cell_ind);
+        end
     end
 end
 
