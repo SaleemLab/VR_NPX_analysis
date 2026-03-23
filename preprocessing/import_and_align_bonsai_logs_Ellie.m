@@ -40,7 +40,8 @@ else % If based on photodiode timestamp in case trial info not saved properly
         'TRAIN_1', 'TRAIN_2', 'D___', 'A___', 'D_CD',...
         'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', 'Direction_Tuning'...
         'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
-        'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD'};
+        'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD', 'GAVNIK250_ABCD_1', 'GAVNIK250_ABCD_2',...
+        'GAVNIK250_A_CD', 'GAVNIK250_E_CD', 'GAVNIK250 DCBA', 'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'};
 
     % See if there is a match within the file name that indicates that this is
     % from the special list
@@ -144,7 +145,8 @@ eyeData.sglxTime = interp1(photodiode.ArduinoTime(ia),photodiode.sglxTime(ia),ey
 disp(['StimulusName: ', StimulusName]);
 switch(StimulusName)
     case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA', 'GAVNIK_A___', 'GAVNIK_D___', 'GAVNIK_ABCD_1',...
-            'GAVNIK_ABCD_2', 'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD',} % for GAVNIK stimuli, the PD quad begins grey, goes white for first stim A, black for second B,
+            'GAVNIK_ABCD_2', 'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD',...
+            'GAVNIK250_ABCD_1', 'GAVNIK250_ABCD_2', 'GAVNIK250_A_CD', 'GAVNIK250_E_CD', 'GAVNIK250 DCBA'} % for GAVNIK stimuli, the PD quad begins grey, goes white for first stim A, black for second B,
             % white for third C, black for fourth D and then grey for the greyscreen period between the sequences of four stimuli
         
         % Compute the trailing moving median (of the current value and the four values prior)
@@ -191,7 +193,7 @@ switch(StimulusName)
                 pd_ON_OFF(i) = 1;
                 state = 1;          % Set state to ON
                 last_transition = 1;  % Mark last transition as UP
-                disp(['UP Transition at ', num2str(i)]);  % Debugging output
+                %disp(['UP Transition at ', num2str(i)]);  % Debugging output
             end
 
             % Keep the state as 1 until a downswing is detected
@@ -204,7 +206,7 @@ switch(StimulusName)
                 pd_ON_OFF(i) = 0;
                 state = 0;          % Set state to OFF
                 last_transition = 0;  % Mark last transition as DOWN
-                disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
+                %disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
             end
     
         end
@@ -262,6 +264,7 @@ end
 if length(pd_ON) == length(pd_OFF)
     block_length = abs(pd_ON-pd_OFF);
 elseif length(pd_ON)>length(pd_OFF)
+    pd_OFF(end+1) = min(pd_ON(end) + 1000, length(photodiode.Photodiode)); % creates a synthetic OFF transition 1000 samples (~1s) after the final ON transition, so the final ON block gets a duration (this is necessary for Gratings but not GAVNIK stims)
     for i = 1:length(pd_OFF)
         block_length(i) = abs(pd_ON(i) - pd_OFF(i));
     end
@@ -274,9 +277,9 @@ end
 blocks_ind = find(block_length>10); % sample rate of photodiode is 1000 per second so a block size should be quite large
 
 % Remove the last pd_ON transition if there is a mismatch (since pd_ON is one greater than pd_OFF)
-if length(pd_ON) > length(pd_OFF)
-    pd_ON = pd_ON(1:end-1); % Remove the last ON transition
-end
+%if length(pd_ON) > length(pd_OFF)
+%    pd_ON = pd_ON(1:end-1); % Remove the last ON transition
+%end
 
 % Ensure blocks_ind is valid within the length of pd_OFF (now pd_ON and pd_OFF are aligned)
 blocks_ind = blocks_ind(1:min(end, length(pd_OFF))); % Trim blocks_ind to match pd_OFF length
@@ -363,11 +366,13 @@ switch(StimulusName)
 
     case {'TRAIN', 'OP_Tuning', 'Direction_Tuning', 'DCBA', 'OMIT', 'E_CD', 'D___', 'A___', 'TRAIN_1', 'TRAIN_2', 'D_CD',...
             'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'staticgratings','staticgratings_short','staticgratings_long',...
-            'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250'}
+            'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
+            'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime),'ascend'); %cases where a stimulus is on the screen only when the quad is white
     
     case {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA', 'GAVNIK_D___', 'GAVNIK_A___', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
-            'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD'}
+            'GAVNIK_D_CD', 'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD', 'GAVNIK250_ABCD_1',...
+            'GAVNIK250_ABCD_2', 'GAVNIK250_A_CD', 'GAVNIK250_E_CD', 'GAVNIK250 DCBA'}
         stimTimes = sort(cat(1,photodiodeData.stim_on.sglxTime,photodiodeData.stim_off.sglxTime),'ascend'); % Sort the concatenated array in ascending (i.e. chronological) order
     
     case 'grey'

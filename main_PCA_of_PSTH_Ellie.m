@@ -1,6 +1,7 @@
 %%% For PCA of spiking in response to visual stimuli ERB 2025
 
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
+rmpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis\toolboxes\LMT\drtoolbox\techniques') % to remove the LMT version of pca
 
 %% setting metrics to screen good clusters
 clear all
@@ -12,7 +13,7 @@ option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/4
-Stimulus_type = 'TRAIN'; % OMIT, 'TRAIN' 'GAVNIK_ABCD'
+Stimulus_type = 'GAVNIK_ABCD_1'; % MUST specify which recording _# OMIT, 'TRAIN_1' 'GAVNIK_ABCD_2'
 temporal_structure = 'trial spikecounts'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
 % simple spikecounts gives better silhouette scores for my TRAIN protocol 20250203
 % timebinned spikes gives better silhouette scores for GAVNIK protocol 20250217
@@ -20,13 +21,13 @@ z_score_period = 'entire_session'; % z score either over 'entire_session' or 'fi
 % session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
 % to try for the aggregate TRAIN case across days)
 psthBinSize = 0.01; % for GAVNIK protocol 20250217, using 1ms worsens cluster separation a lot. 0.02 worsens separation somewhat.
-stim_window = [0.02 0.21];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
+stim_window = [0.03 0.16];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
                             % For my TRAIN protocol 20250203, [0.02 0.21] seems best. But across training days an uptick in spiking develops in the greyscreen period following stimulus offset
-gOSI_threshold = 0.2; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or or 0.15 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
+gOSI_threshold = 0.0; % for my TRAIN protocol 202050203, 0.2 is better than 0.1 or or 0.15 or 0.3. for GAVNIK 20250217, 0.1 is better than 0.2 (which is damaging)
 gDSI_threshold = 0.0;
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
-cd('V:\Ellie\DATA\SUBJECTS\M00069\analysis\20251006\TRAIN_1') % 3/4 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00069\analysis\20250929\GAVNIK_ABCD_1') % 3/4 files will be saved here in the cd
 
 %% SET THIS 3/4***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -46,9 +47,9 @@ elseif probe_type == 1
     shank_ids = shank_ids(:);
 end
 
-for nsession = 9 %4/4 row number of recording date in "experiment_info" 
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+for nsession = 4 %4/4 row number of recording date in "experiment_info" 
+    session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
     % SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
     % % find right date number based on all experiment dates of the subject
@@ -100,7 +101,8 @@ for nsession = 9 %4/4 row number of recording date in "experiment_info"
                 CA1_depth           = depths_from_PSD.(this_shank_name).CA1_depth_PSD;
             end 
 
-            L4_depth_range{iShank}   = [L4_channel_depth - 70, L4_channel_depth + 70];
+            L4_depth_range{iShank}   = [L4_channel_depth - 60, L4_channel_depth + 60]; % giving electrodes the full extent of 120um inclusive 
+            % (hence measuring spiking over depth range greater than 120um. As 60 is divisible by 15 and 10, this will give the same effective range for NPX1.0 (which has staggered electrodes every 10um down the shank) and NPX2.0 (which has electrode rows every 15um down each shank)
             V1_depth_range{iShank}   = [L5_depth - 330, L5_depth + 700];
             CA1_depth_range{iShank}  = [CA1_depth - 150, CA1_depth + 150];
             Sub_CA1_depth_range{iShank} = [min(CA1_depth_range{iShank}) - 1000, min(CA1_depth_range{iShank})];  
@@ -290,7 +292,7 @@ for nsession = 9 %4/4 row number of recording date in "experiment_info"
 
                     %%%% for PCA, RESHAPE the data to trials (rows) x features (columns, being spiking per timebin for each neuron sequentially) - consider info (features) for each trial as a whole to analyse how trials differ from each other
                     z_trial_reshaped = reshape(z_trial_responses, num_trials, num_bins * num_neurons);
-                    [coeff_z, score_z, latent_z] = pca(z_trial_reshaped);
+                    [coeff_z, score_z, latent_z] = pca(z_trial_reshaped);  
                 else
                     [coeff_z, score_z, latent_z] = pca(z_trial_responses);
                 end
@@ -430,10 +432,10 @@ for nsession = 9 %4/4 row number of recording date in "experiment_info"
                 hold on;
                 for i = 1:length(ordered_oris)
                     idx = trial_labels == ordered_oris(i);
-                    % use a jitter as many dots overlap
-                    jitter_x = 0.1;  
-                    jitter_y = 0.1;   
-                    jitter_z = 0.1;  
+                    % use a jitter if many dots overlap
+                    jitter_x = 0.0;  
+                    jitter_y = 0.0;   
+                    jitter_z = 0.0;  
 
                     scatter3(score_z(idx,1) + randn(sum(idx),1)*jitter_x, ...
                         score_z(idx,2) + randn(sum(idx),1)*jitter_y, ...

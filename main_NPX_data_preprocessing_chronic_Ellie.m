@@ -28,7 +28,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
-all_SUBJECTS = {'M00071'};
+all_SUBJECTS = {'M00069'};
 % all_SUBJECTS = {'M00014'};
 
 Error_session_stimuli = [];
@@ -55,7 +55,7 @@ for n = 1:length(all_SUBJECTS)
     
     % For each session, loop through all stimuli
     for nsession = 1:length(experiment_info)
-        
+    %for nsession = 8    
 
         for nstimuli = 1:length(experiment_info(nsession).session)
             clear session_info
@@ -142,7 +142,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %%%%%% Option 1 use subject_session_stimuli_mapping_Ellie for all animals you
 %%%%%% want to process. 
-SUBJECTS = {'M00071'};
+SUBJECTS = {'M00069'};
 options = 'V1-HPC';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
@@ -150,41 +150,29 @@ ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 % Stimulus_type = 'Checkerboard';
 
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
-%experiment_info=experiment_info([2]); %FOR DEBUGGING, CAN LIMIT TO A PARTICULAR LINE OF experiment_info
+%experiment_info=experiment_info([7]); %FOR DEBUGGING, CAN LIMIT TO A PARTICULAR LINE OF experiment_info
 
 
 %All_stimuli = {'Masa2tracks','SparseNoise','Checkerboard','SleepChronic'};
-
 % All_stimuli = {'SparseNoise', 'SparseNoise_1', 'SparseNoise_2'};
-
 % All_stimuli = {'OP_Tuning'};
-% All_stimuli = {'Direction_Tuning'};
-% All_stimuli = {'TRAIN'};
-% All_stimuli = {'DCBA'};
-% All_stimuli = {'OMIT'};
-% All_stimuli = {'E_CD'};
-% All_stimuli = {'ADCD'};
-% All_stimuli = {'lowcontB'};
-% All_stimuli = {'lowcontDsubbingB'};
-% All_stimuli = {'lowcontTRAIN'};
 
-% All_stimuli = {'GAVNIK_ABCD'};
-% All_stimuli = {'GAVNIK_A_CD'};
-% All_stimuli = {'GAVNIK_E_CD'};
-% All_stimuli = {'GAVNIK DCBA'};
 
-All_stimuli = {'GAVNIK_E_CD', 'GAVNIK_A_CD', 'GAVNIK_A___', 'GAVNIK DCBA', 'GAVNIK_ABCD', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
-    'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'DCBA', 'OMIT', 'E_CD'};
+All_stimuli = {'GAVNIK_A_CD', 'GAVNIK_E_CD'};
+% All_stimuli = 'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3';
 
+%All_stimuli = {'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'}
+% All_stimuli = 'GAVNIK_ABCD', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2', 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+% 'GAVNIK250_ABCD_1', 'GAVNIK250_ABCD', 'GAVNIK250_ABCD_2', 'GAVNIK250 DCBA', 'GAVNIK250_E_CD', 'GAVNIK250_A_CD'
+
+
+%All_stimuli = {'GAVNIK_E_CD', 'GAVNIK_A_CD', 'GAVNIK_A___', 'GAVNIK DCBA', 'GAVNIK_ABCD', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
+ %   'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'DCBA', 'OMIT', 'E_CD'};
 % 'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey', , 'D_CD', 'OP_Tuning', 'D___', 'GAVNIK_D_CD', 'GAVNIK_D___', ...
 % 'ADCD', 'Direction_Tuning', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', 'D___', 
-
-% All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'};
-
 %All_stimuli = {'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
  %   'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD',...
   %  'A___', 'TRAIN_1', 'TRAIN_2', 'TRAIN', 'OP_Tuning', 'DCBA', 'OMIT', 'E_CD', 'D_CD', 'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey'};
-
 
 for n = 1:length(All_stimuli)
     extract_and_preprocess_NPX_batch_Ellie(experiment_info,All_stimuli{n})

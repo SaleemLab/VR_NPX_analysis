@@ -43,7 +43,8 @@ specialFileTypes = {'StaticGratings','DriftingGratings','SparseNoise_fullscreen'
         'GAVNIK_ABCD_2', 'GAVNIK_D_CD', 'D___', 'A___', 'TRAIN_1', 'TRAIN_2', 'D_CD',...
         'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey',...
         'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
-        'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD'};
+        'GAVNIK200_ABCD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD', 'GAVNIK250_ABCD', 'GAVNIK250_ABCD_1', 'GAVNIK250_ABCD_2',...
+        'GAVNIK250_A_CD', 'GAVNIK250_E_CD', 'GAVNIK250 DCBA', 'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'};
 
 % See if there is a match within the file name that indicates that this is
 % from the special list
@@ -128,20 +129,22 @@ switch(StimulusName)
     case {'TRAIN', 'DCBA', 'OMIT', 'E_CD', 'ADCD', 'lowcontB', 'lowcontDsubbingB', 'lowcontTRAIN', ...
             'OP_Tuning', 'Direction_Tuning', 'D___', 'A___', 'TRAIN_1', 'TRAIN_2', 'D_CD', ...
             'A_50ms', 'A_500ms', 'A_200ms', 'A_300ms', 'OMIT50grey'...
-            'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250'}
+            'A_1000ms', 'A_1000ms_1', 'A_1000ms_2', 'A_1000ms_25pc', 'A_1000ms_50pc', 'A_1000ms_75pc', 'E_1000ms', 'TRAIN250',...
+            'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'}
         thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
         varCols = [4 14 20 22];    % % Extract the relevant columns (4 contains delay, 14 contains Contrast
         % 20 contains the grating Orientation/Direction, 22 contains the ArduinoTime of presentation)
         varNames = {'Delay','Contrast','Orientation','Time'};
         datatable = thisTable(:,varCols);
         datatable.Properties.VariableNames = varNames;
-        % Remove the last row (the last 'stimulus') because the PD doesn't go off
-        % after this stimulus
-        datatable(end, :) = [];
+        % Remove the last row (the last 'stimulus') because the PD doesn't go off after this stimulus 
+        % EB 25/2/2026 - I have amended the script so that a
+        % dummy pd_off is padded in to allow the final pd_on
+        %datatable(end, :) = [];
         %datatable.FrameComputerDateVec = datevec(datatable{:,'FrameComputerDateVec'},'yyyy-mm-ddTHH:MM:SS.FFF');
         
     case {'GAVNIK_ABCD', 'GAVNIK DCBA', 'GAVNIK_ABCD_1', 'GAVNIK_ABCD_2',...
-            'GAVNIK200_ABCD', 'GAVNIK250_ABCD',} % Orientation value is "grey" for interstimulus grey screen.
+            'GAVNIK200_ABCD', 'GAVNIK250_ABCD','GAVNIK250_ABCD_1', 'GAVNIK250_ABCD_2', 'GAVNIK250 DCBA'} % Orientation value is "grey" for interstimulus grey screen.
         thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
         varCols = [1 3];    % % Extract the relevant columns (1 contains Orienation, 3 contains the ArduinoTime of presentation)
         varNames = {'Orientation','Time'};
@@ -153,7 +156,8 @@ switch(StimulusName)
         datatable = datatable(~isnan(datatable.Orientation), :);
         
         
-    case {'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK_D_CD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD'} % Orientation value is "grey" for interstimulus grey screen.
+    case {'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK_D_CD', 'GAVNIK200_A_CD', 'GAVNIK200_E_CD',...
+            'GAVNIK250_A_CD', 'GAVNIK250_E_CD'} % Orientation value is "grey" for interstimulus grey screen.
         % Orientation is "omission" for omitted second element
         thisTable = readtable(filepath,'Delimiter',{',','{','=','}','(',')'});
         varCols = [1 3];    % % Extract the relevant columns (1 contains Orienation, 3 contains the ArduinoTime of presentation)

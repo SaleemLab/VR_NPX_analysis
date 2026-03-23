@@ -202,7 +202,7 @@ if sum(size(REM) == [2,1]) == 2 % rare case where only one REM
     REM = REM';
 end
 
-for j=1:size(REM)
+for j=1:size(REM, 1) % EB 30/1/26; previously was: for j=1:size(REM)
     idx = find(movement(:,1)>REM(j,1),1);
     if movement(idx,1)<REM(j,2)
         REM(j,2) = movement(idx,1);

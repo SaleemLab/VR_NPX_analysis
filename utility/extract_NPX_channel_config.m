@@ -46,7 +46,7 @@ if ~isempty(column)
 
     shank_id = []; % the corresponding shank_id
     shanks_available = unique(chan_config.Shank);
-    for n=1:size(shanks_available)
+    for n=1:size(shanks_available, 1) %changed for update to Matlab 2025b; specify which dimension of size to return
         cols_available = [cols_available; unique(chan_config.Ks_xcoord(chan_config.Shank==shanks_available(n)))];
         shank_id = [shank_id shanks_available(n)];
     end

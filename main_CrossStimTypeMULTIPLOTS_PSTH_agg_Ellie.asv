@@ -8,7 +8,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % 1/6 Choose your probe depth of interest and mouse
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-SUBJECTS = {'M00071'};
+SUBJECTS = {'M00087'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
@@ -21,13 +21,13 @@ z_method = 'per_neuron'; % NONE or per_neuron or population (i.e. aggregated SUA
 z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'none' = no z scoring, 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, for a while, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 
-cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis') % 3/6 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis\20260222') % 3/6 files will be saved here in the cd
 
 %% SET THIS 4/6***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%%% 5/6 row numbers of recording dates in "experiment_info" 15, 9
-sessions_to_plot = [8]; 
+sessions_to_plot = [15]; 
 
 if contains(Stimulus_types{2}, 'GAVNIK DCBA') || contains(Stimulus_types{2}, 'GAVNIK250 DCBA') 
     stimulus_colors = [
@@ -60,8 +60,8 @@ fig1 = figure; % for traces
 %fig2 = figure; % for bar charts
 all_peak_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 all_mean_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
-%all_peak_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
-%all_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
+all_peak_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
+all_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
 
 
 for nsession = sessions_to_plot 
@@ -437,16 +437,16 @@ for nsession = sessions_to_plot
                         xline(0.15, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         xline(0.30, 'k', (sprintf('C %d%s or B onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         xline(0.45, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
-                    elseif (contains(Stimulus_types{stim_idx}, 'GAVNIK250_ABCD')) % to label the plot only once
+                    elseif (contains(Stimulus_types{stim_idx}, 'GAVNIK_ABCD')) % to label the plot only once
                         xline(0, 'k', (sprintf('A %d%s or D onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
-                        xline(0.25, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
-                        xline(0.50, 'k', (sprintf('C %d%s or B onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
-                        xline(0.75, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);     
+                        xline(0.15, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.30, 'k', (sprintf('C %d%s or B onset', round(ordered_oris(3)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
+                        xline(0.45, 'k', (sprintf('D %d%s or A onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);     
                     end
                     sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}), 'Interpreter', 'none', 'FontSize', 24);
-                    % filename = sprintf('%s %s FRs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
-                    % save_path = fullfile(pwd, filename);
-                    % exportgraphics(fig1, save_path); 
+                    filename = sprintf('%s %s FRs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
+                    save_path = fullfile(pwd, filename);
+                    exportgraphics(fig1, save_path); 
     
                     % Also save as .fig
                     fig_filename = sprintf('%s %s FRs %s vs %s.fig', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2});
@@ -465,34 +465,13 @@ for nsession = sessions_to_plot
                         selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                         
                         depth_selected_clusters = selected_clusters; % initialize with same structure
-        
                         for np = 1:length(clusters)
                             sc = selected_clusters(np);
-                        
-                            cluster_channels = clusters(np).peak_channel(sc.cluster_id);
-                            cluster_depths = ycoords(cluster_channels); % get depths of selected clusters from ycoords (peak_depths from SI are 15 microns different..)
-            
-                            % Map each cluster to its shank
-                            cluster_shanks = kcoords(cluster_channels);
-            
-                            % Initialize container for depth-filtered cluster IDs
-                            depth_cluster_ids = [];
-                    
-                            % Loop over each shank
-                            for iShank = 1:numel(unique_shanks)
-                                this_shank = unique_shanks(iShank);
-                                this_range = depth_ranges{iShank};
-                    
-                                % Logical mask for clusters on this shank and within this shank's depth range
-                                shank_mask = cluster_shanks == this_shank;
-                                depth_mask = cluster_depths >= min(this_range) & cluster_depths <= max(this_range);
-                    
-                                % Keep only clusters satisfying both conditions
-                                keep_mask = shank_mask & depth_mask;
-                    
-                                % Append these cluster IDs
-                                depth_cluster_ids = [depth_cluster_ids; sc.cluster_id(keep_mask(:))];
-                            end
+                            peak_depths = clusters(np).peak_depth(sc.cluster_id); % get depths of selected clusters
+        
+                            % Find cluster_ids within selected depth range
+                            keep_mask = peak_depths >= min(depth_range) & peak_depths <= max(depth_range);
+                            depth_cluster_ids = sc.cluster_id(keep_mask);
         
                             % Keep only spike times and IDs for clusters at selected depth
                             depth_selected_clusters(np).cluster_id = depth_cluster_ids;
@@ -508,7 +487,7 @@ for nsession = sessions_to_plot
                         elseif contains(z_score_period, 'first30secs')
                             time_edges = baseline_window(1):psthBinSize:baseline_window(2);
                         end
-            
+        
                         % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
                         all_spike_times = [];
                         all_spike_ids = [];
@@ -517,26 +496,8 @@ for nsession = sessions_to_plot
                             all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
                         end
                         
-                        if strcmp(z_method, 'per_neuron') && (contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session'))
-                            % define each unit's baseline distribution; mean and sd of its firing across the entire session
-                            unique_units = unique(all_spike_ids);
-                            nUnits = numel(unique_units);              
-                            unit_baseline_mean = nan(nUnits,1);
-                            unit_baseline_std  = nan(nUnits,1);
-                        
-                            for u = 1:nUnits
-                                this_unit = unique_units(u);
-                                unit_spike_times = all_spike_times(all_spike_ids == this_unit);
-                        
-                                unit_counts = histcounts(unit_spike_times, time_edges); %number of spikes fired in each time bin across the recording session (g number, should be about 540s for Gavornik 150ms protocol)
-                        
-                                unit_baseline_mean(u) = mean(unit_counts);
-                                unit_baseline_std(u)  = std(unit_counts);
-                            end
-                        end
-
                         % Compute appropriate histogram counts for z-scoring
-                        if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
+                        if contains(z_score_period, 'entire_session')
                             zscore_counts = histcounts(all_spike_times, time_edges);
                         elseif contains(z_score_period, 'first30secs')
                             baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
@@ -551,11 +512,10 @@ for nsession = sessions_to_plot
                         if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
                             [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.35], psthBinSize);   
                         elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
-                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);
+                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.55], psthBinSize);
                         end    
                         mean_trace = mean(binnedArray, 1); % average over trials
-                        nTrials = size(binnedArray, 1);
-
+        
                         figure(fig1);
                         hold on;
                         
@@ -565,48 +525,13 @@ for nsession = sessions_to_plot
                             ylabel('Mean firing rate (Hz)', 'FontSize', 24);
                             ylim ([0 16]);
                         else 
-                            if strcmp(z_method, 'population')
-                                baseline_mean = mean(zscore_counts);
-                                baseline_std = std(zscore_counts);
-                                % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
-                                zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
-                                z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
-                                sem_trace = std(zscored_trials, 0, 1) / sqrt(size(zscored_trials, 1));  % SEM
-                            elseif strcmp(z_method, 'per_neuron')
-                                % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
-                                unique_units = unique(all_spike_ids);
-                                nUnits = numel(unique_units);                    
-                                unit_ztraces = nan(nUnits, size(binnedArray,2)); %binned Array is (200 rows) trials x (165 columns) timebins
+                            baseline_mean = mean(zscore_counts);
+                            baseline_std = std(zscore_counts);
+                            % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
+                            zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
+                            z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
+                            sem_trace = std(zscored_trials, 0, 1) / sqrt(size(zscored_trials, 1));  % SEM
                             
-                                for u = 1:nUnits
-                                    this_unit = unique_units(u);
-                            
-                                    unit_mask = all_spike_ids == this_unit;
-                                    unit_spike_times = all_spike_times(unit_mask);
-                                    
-                                    if(contains(Stimulus_type, 'GAVNIK250_'))
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
-                                    else
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
-                                    end  
-                                    % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
-    
-                                    mu = unit_baseline_mean(u);
-                                    sd = unit_baseline_std(u);
-                            
-                                    if sd == 0 || isnan(sd)
-                                        continue
-                                    end
-                            
-                                    z_u = (binnedArray_u - mu) / sd; % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
-                                    unit_ztraces(u,:) = mean(z_u, 1); % average the unit's z-scored response across trials; unit_ztraces is units (rows) x timebins (columns)
-                                end
-                                valid_units = all(isfinite(unit_ztraces),2);
-                                unit_ztraces = unit_ztraces(valid_units,:);                  
-                                z_trace  = mean(unit_ztraces, 1); % combine units equally; the z-scored trace for each unit averaged with the others
-                                sem_trace = std(unit_ztraces, 0, 1) / sqrt(size(unit_ztraces,1));
-                            end
-
                              % Plot SEM shading
                             fill([bins, fliplr(bins)], ...
                                  [z_trace + sem_trace, fliplr(z_trace - sem_trace)], ...
@@ -614,24 +539,13 @@ for nsession = sessions_to_plot
                                  'FaceAlpha', 0.3, 'EdgeColor', 'none', 'HandleVisibility', 'off');
                             
                             plot(bins, z_trace, 'Color', stimulus_colors(stim_idx,:), 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_types{stim_idx}));
-                            if contains(z_method, 'population')
-                                if contains(z_score_period, 'entire_session')
-                                    ylabel('FR (MUA z-scored in aggregate over entire session)', 'FontSize', 24);
-                                    ylim([-2 6]);
-                                elseif contains(z_score_period, 'stim_session')
-                                    ylabel('FR (MUA z-scored in aggregate over stim session)', 'FontSize', 24);     
-                                elseif contains(z_score_period, 'first30secs')
-                                    ylabel('FR (MUA z-scored in aggregate over first 30s baseline)', 'FontSize', 24);
-                                    ylim([-2 8]);
-                                end 
-                            elseif contains(z_method, 'per_neuron')   
-                                if contains(z_score_period, 'entire_session')
-                                    ylabel('FR (z-scored per unit over entire session)', 'FontSize', 24);
-                                    ylim([-2 6]);
-                                elseif contains(z_score_period, 'stim_session')
-                                    ylabel('FR (z-scored per unit over stim session)', 'FontSize', 24);
-                                end    
-                            end                    
+                            if contains(z_score_period, 'entire_session')
+                                ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
+                                ylim([-1 5]);
+                            elseif contains(z_score_period, 'first30secs')
+                                ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
+                                ylim([-1 8]);
+                            end                   
                         end    
                                            
                         peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
@@ -655,7 +569,7 @@ for nsession = sessions_to_plot
                             end
                         end
                         
-                        %for i = 1:length(grey_window_starts)
+                        for i = 1:length(grey_window_starts)
                             %if contains(z_score_period, 'none')
                                 % Find indices of bins within current window
                                 %idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
@@ -669,7 +583,7 @@ for nsession = sessions_to_plot
                                 %mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
                                 
                             %end
-                        %end
+                        end
                         
                         session_idx = find(sessions_to_plot == nsession); % Map actual session number to index in preallocated array
                         all_peak_FR_by_stimwindow(session_idx, :) = peak_FR_by_stimwindow;
@@ -693,7 +607,7 @@ for nsession = sessions_to_plot
                     if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
                         grey_intervals = [-0.5 0; 0.6 1.5];
                     elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
-                        grey_intervals = [-0.5 0; 1 1.9];
+                        grey_intervals = [-0.5 0; 1 1.6];
                     end               
                     % Get current y-axis limits for full vertical shading
                     yl = ylim;
@@ -716,9 +630,9 @@ for nsession = sessions_to_plot
                         xline(0.75, 'k', (sprintf('D %d%s onset', round(ordered_oris(4)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);                
                     end
                     sgtitle(sprintf('%s Aggregate %s single unit activity %s vs %s vs %s', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3}), 'Interpreter', 'none', 'FontSize', 24);
-                    % filename = sprintf('%s %s FRs %s vs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
-                    % save_path = fullfile(pwd, filename);
-                    % exportgraphics(fig1, save_path); 
+                    filename = sprintf('%s %s FRs %s vs %s vs %s.png', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});
+                    save_path = fullfile(pwd, filename);
+                    exportgraphics(fig1, save_path); 
     
                     % Also save as .fig
                     fig_filename = sprintf('%s %s FRs %s vs %s vs %s.fig', subject_number, depth_for_analysis, Stimulus_types{1}, Stimulus_types{2}, Stimulus_types{3});

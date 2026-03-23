@@ -8,25 +8,25 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % 1/5 Choose your probe depth of interest 
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 
-SUBJECTS = {'M00071'};
+SUBJECTS = {'M00087'};
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_type = 'TRAIN_2'; % OMIT 'GAVNIK_ABCD DCBA ADCD E_CD
+Stimulus_type = 'F_1000ms'; % OMIT 'GAVNIK_ABCD_1 DCBA ADCD E_CD
 % plot_choice 'struct' gives output of tuning metrics.
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
 sliced_plot_option = 'no'; % 'yes' if you want to plot traces by groups of 40 trials to look for changes during the session
-z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
-% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
-% to try for the aggregate TRAIN case across days)
+z_method = 'per_neuron'; % 'per_neuron' or 'in_aggregate'
+z_score_period = 'stim_session'; % z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
+% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus.
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 
 % 3/5 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis\20251127\TRAIN_2') 
+cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis\20260227\F_1000ms') 
 
 %% SET THIS 4/5***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -47,9 +47,9 @@ elseif probe_type == 1
 end
 
 % 5/5 
-for nsession = 12 % row number of recording date in "experiment_info" 
-    session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
-    stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
+for nsession = 20 % row number of recording date in "experiment_info" 
+    session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
+    stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
     % SUBJECT_experiment_info = subject_session_stimuli_mapping({session_info(1).probe(1).SUBJECT},option);
     % % find right date number based on all experiment dates of the subject
@@ -91,7 +91,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
             L5_depth            = depths_from_PSD.(this_shank_name).L5_depth_PSD;
             CA1_depth           = depths_from_PSD.(this_shank_name).CA1_depth_PSD;
         
-            L4_depth_range{iShank}   = [L4_channel_depth - 70, L4_channel_depth + 70];
+            L4_depth_range{iShank}   = [L4_channel_depth - 60, L4_channel_depth + 60]; % giving electrodes the full extent of 120um inclusive 
+            % (hence measuring spiking over depth range greater than 120um. As 60 is divisible by 15 and 10, this will give the same effective range for NPX1.0 (which has staggered electrodes every 10um down the shank) and NPX2.0 (which has electrode rows every 15um down each shank)
             V1_depth_range{iShank}   = [L5_depth - 330, L5_depth + 700];
             CA1_depth_range{iShank}  = [CA1_depth - 150, CA1_depth + 150];
             Sub_CA1_depth_range{iShank} = [min(CA1_depth_range{iShank}) - 1000, min(CA1_depth_range{iShank})];  
@@ -113,6 +114,10 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 depth_ranges = CA1_depth_range;
             case 'Sub_CA1'
                 depth_ranges = Sub_CA1_depth_range;
+        end
+
+        if contains(z_score_period, 'stim_session') % excludes variable grey screen period before and after the stimulus paradigm ran
+            time_edges = (min(Task_info.stim_onset) - 2):psthBinSize:(max(Task_info.stim_onset) + 2);
         end
 
         if contains(Stimulus_type, 'OP_Tuning') && contains(plot_choice, 'single_units') 
@@ -177,7 +182,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.150], psthBinSize/10); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
                     
                     % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -314,7 +319,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 baseline_window = [0 30]; % in seconds - first 30s of recording is grey screen - can use for z-scoring
 
                 % Define time_edges depending on z_score_period
-                if contains(z_score_period, 'entire_session')
+                if contains(z_score_period, 'entire_session') 
                     time_edges = 0:psthBinSize:max(depth_selected_clusters(nprobe).spike_times); %time bin edges from 0 to the max time in steps of ptshBinSize
                 elseif contains(z_score_period, 'first30secs')
                     time_edges = baseline_window(1):psthBinSize:baseline_window(2);
@@ -345,7 +350,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
                                         
                     % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -536,7 +541,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.30], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
                     
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges); % use all spike times
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -611,6 +616,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
                             if contains(z_score_period, 'entire_session')
                                 ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
                                 ylim([-1 5]);
+                            elseif contains(z_score_period, 'stim_session')    
+                                ylabel('FR Z-scored over stim session', 'FontSize', 24);
                             elseif contains(z_score_period, 'first30secs')
                                 ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                                 ylim([-1 8]);
@@ -664,7 +671,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
         
                
 
-        if contains(Stimulus_type, 'TRAIN') || contains(Stimulus_type, 'A___') || contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms')... 
+        if contains(Stimulus_type, 'TRAIN')|| contains(Stimulus_type, '_1000ms') || contains(Stimulus_type, 'F_150ms')...
+                || contains(Stimulus_type, 'A___') || contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms')... 
                 && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')
             for nprobe = 1:length(clusters)
                 selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
@@ -714,12 +722,50 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 
 
                 % Combine spike times for all clusters at selected depth (i.e., for curated MUA)
-                all_spike_times = [];
-                all_spike_ids = [];
+                % all_spike_times = [];
+                % all_spike_ids = [];
+                % for np = 1:length(depth_selected_clusters)
+                %     all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
+                %     all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
+                % end                  
+
+                % Combine spike times separately for each shank
+                for iShank = 1:numel(unique_shanks)
+                    all_spike_times{iShank} = [];
+                    all_spike_ids{iShank} = [];
+                end
+                
+                % Storage for per-neuron spike times (needed if z_method is 'per_neuron')
+                for iShank = 1:numel(unique_shanks)
+                    spike_times_by_cluster{iShank} = {};
+                end
+
+
                 for np = 1:length(depth_selected_clusters)
-                    all_spike_times = [all_spike_times; depth_selected_clusters(np).spike_times];
-                    all_spike_ids = [all_spike_ids; depth_selected_clusters(np).spike_id];
-                end                  
+                    sc = depth_selected_clusters(np);
+                    
+                    cluster_channels = clusters(np).peak_channel(sc.cluster_id);
+                    cluster_shanks = kcoords(cluster_channels);
+                
+                    for iShank = 1:numel(unique_shanks)
+                        this_shank = unique_shanks(iShank);
+                
+                        shank_mask = cluster_shanks == this_shank;
+                        shank_cluster_ids = sc.cluster_id(shank_mask);
+
+                        for cid = shank_cluster_ids'
+                            neuron_mask = sc.spike_id == cid;
+                            neuron_spikes = sc.spike_times(neuron_mask);                       
+                            spike_times_by_cluster{iShank}{end+1} = neuron_spikes;                        
+                        end
+                
+                        spike_mask = ismember(sc.spike_id, shank_cluster_ids);
+                
+                        all_spike_times{iShank} = [all_spike_times{iShank}; sc.spike_times(spike_mask)];
+                        all_spike_ids{iShank} = [all_spike_ids{iShank}; sc.spike_id(spike_mask)];
+                    end
+                end
+
 
                 ordered_oris = unique(Task_info.stim_orientation, 'stable');
                                               
@@ -734,138 +780,242 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
 
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.150 0.30], psthBinSize);
-                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.30 1.8], psthBinSize);    
-                    
-                mean_trace = mean(binnedArray, 1); % average binned firing over trials
+                %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.30 1.8], psthBinSize);                      
+                %mean_trace = mean(binnedArray, 1); % average binned firing over trials
 
-                if contains(z_score_period, 'none')
-                    % Plot raw mean firing rate trace
-                    plot(bins, mean_trace, 'b', 'LineWidth', 1.5);
-                    ylabel('Mean firing rate (Hz)');
-                    ylim ([0 16]);
-                else
-                    % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
-                        zscore_counts = histcounts(all_spike_times, time_edges);
-                        hold on;
-                        ylim([-1 6]);
-                        ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
-                    elseif contains(z_score_period, 'first30secs')
-                        baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
-                        zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
-                        hold on;
-                        ylim([-1 8]);
-                        ylabel('Z-scored FR (z-scored over first 30s baseline)');
-                    end
-
-                    z_trace = (mean_trace - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
-
-                    plot(bins, z_trace, 'b', 'LineWidth', 1.5);
-                    
+                for iShank = 1:numel(unique_shanks)
+                    if strcmp(z_method,'in_aggregate')
+                        [psth{iShank}, bins{iShank}, rasterX{iShank}, rasterY{iShank}, spikeCounts{iShank}, binnedArray{iShank}] = ...
+                            psthAndBA(all_spike_times{iShank}, stim_onsets, [-0.30 1.8], psthBinSize);                    
+                        mean_trace{iShank} = mean(binnedArray{iShank}, 1); % average binned firing over trials              
+                    elseif strcmp(z_method,'per_neuron')
+                        % ----- PSTH PER NEURON -----
+                        neuron_traces{iShank} = [];
+                
+                        for num = 1:length(spike_times_by_cluster{iShank})
+                
+                            neuron_spikes = spike_times_by_cluster{iShank}{num};
+                
+                            [~, bins{iShank}, ~, ~, ~, binnedArray] = ...
+                                psthAndBA(neuron_spikes, stim_onsets, [-0.30 1.8], psthBinSize);
+                
+                            neuron_trace = mean(binnedArray,1);                
+                            neuron_traces{iShank}(num,:) = neuron_trace;                
+                        end                
+                        % population mean (used later if no z-scoring)
+                        mean_trace{iShank} = mean(neuron_traces{iShank},1);
+                    end                                        
                 end
 
-                % Define windows after time zero and calc. the peak and mean FR 
-                if contains(Stimulus_type, 'A_50ms')
-                    stim_window_starts = 0;
-                    stim_window_ends = 0.05;
-                    grey_window_starts = [0.05]; % look from 50ms after stim offset except at 1.2s (when there would be a stimulus if there was a fifth stimulus)
-                    grey_window_ends = [1.8]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
-                    peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                elseif contains(Stimulus_type, 'A_500ms')
-                    stim_window_starts = 0;
-                    stim_window_ends = 0.5;
-                    grey_window_starts = [0.5]; % look from 50ms after stim offset except at 1.2s (when there would be a stimulus if there was a fifth stimulus)
-                    %window_ends = 0.15:0.15:1.5;
-                    grey_window_ends = [1.8]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
-                    peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                else
-                    stim_window_starts = 0:0.3:0.9;
-                    stim_window_ends = 0.15:0.3:1.05;
-                    grey_window_starts = [0.2 0.5 0.8 1.1 1.2 1.4]; % look from 50ms after stim offset except at 1.2s (when there would be a stimulus if there was a fifth stimulus)
-                    %window_ends = 0.15:0.15:1.5;
-                    grey_window_ends = [0.3 0.6 0.9 1.2 1.35 1.5]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
-                    peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
-                    peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                    mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
-                end    
-                                
-                yl = ylim; % Get y-axis limits for text placement
-                    
-                for i = 1:length(stim_window_starts)
+
+                for iShank = 1:numel(unique_shanks)
+                    subplot(numel(unique_shanks),1,iShank)
+                    title(sprintf('Shank %d', unique_shanks(iShank)))
+                    hold on;
+
                     if contains(z_score_period, 'none')
-                        % Find indices of bins within current window
-                        idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
-                        peak_FR_by_stimwindow(i) = max(mean_trace(idx_in_stimwindow));
-                        mean_FR_by_stimwindow(i) = mean(mean_trace(idx_in_stimwindow));
-                        
+                        % Plot raw mean firing rate trace
+                        plot(bins{iShank}, mean_trace{iShank}, 'b', 'LineWidth', 1.5);
+                        ylabel('Mean firing rate (Hz)');
+                    %    ylim ([0 16]);
+                   
                     else
-                        % Find indices of bins within current window
-                        idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
-                        peak_FR_by_stimwindow(i) = max(z_trace(idx_in_stimwindow));
-                        mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));
+                        if strcmp(z_method,'in_aggregate')
+                        % Compute appropriate histogram counts for z-scoring
+                            if contains(z_score_period, 'entire_session')
+                                zscore_counts = histcounts(all_spike_times{iShank}, time_edges);
+                                hold on;
+                                ylim([-1 6]);
+                                ylabel('FR Z-scored in aggregate over entire session)', 'FontSize', 24);
+                            elseif contains(z_score_period, 'stim_session')  
+                                zscore_counts = histcounts(all_spike_times{iShank}, time_edges);
+                                hold on;
+                                ylabel('FR Z-scored in aggregate over stim session)', 'FontSize', 24);
+                            elseif contains(z_score_period, 'first30secs')
+                                baseline_spikes = all_spike_times{iShank}(all_spike_times{iShank} >= baseline_window(1) & all_spike_times{iShank} <= baseline_window(2));
+                                zscore_counts = histcounts(baseline_spikes, time_edges); %histcounts counts the number of datapoints in specified time bins
+                                hold on;
+                                ylim([-1 8]);
+                                ylabel('FR Z-scored in aggregate over first 30s baseline)');
+                            end
+        
+                            z_trace = (mean_trace{iShank} - mean(zscore_counts)) / std(zscore_counts); %mean(zscore_counts) gives the mean spikes per timebin in the reference period; this is then deducted from the spikecount of each trial-averaged timebin
+                        
+                        elseif strcmp(z_method,'per_neuron')
+
+                            % ----- Z-SCORE EACH NEURON -----                  
+                            nNeurons = size(neuron_traces{iShank},1);
+                            z_neuron_traces = nan(size(neuron_traces{iShank})); % allow invalid neurons to remain NaN instead of corrupting the mean 
+                            if contains(z_score_period,'entire_session')
+                                ylabel('FR Z-scored per-neuron over entire session','FontSize',24);
+                            elseif contains(z_score_period,'stim_session')
+                                ylabel('FR Z-scored per-neuron over stim session','FontSize',24);     
+                            elseif contains(z_score_period,'first30secs')
+                                ylabel('FR Z-scored per-neuron over first 30s baseline','FontSize',24);
+                            end
+                            
+
+                            for nneur = 1:nNeurons                    
+                                neuron_spikes = spike_times_by_cluster{iShank}{nneur};                   
+                                if contains(z_score_period,'entire_session') || contains(z_score_period,'stim_session')                    
+                                    counts = histcounts(neuron_spikes,time_edges);
+                                elseif contains(z_score_period,'first30secs')                   
+                                    baseline_spikes = neuron_spikes( ...
+                                        neuron_spikes >= baseline_window(1) & ...
+                                        neuron_spikes <= baseline_window(2));                    
+                                    counts = histcounts(baseline_spikes,time_edges); 
+                                end
+                    
+                                mu = mean(counts);
+                                sigma = std(counts);  
+                                if sigma > 0 % Neurons with sigma = 0 will stay NaN and be ignored.
+                                    z_neuron_traces(nneur,:) = (neuron_traces{iShank}(nneur,:) - mu) / sigma; 
+                                end
+                            end                  
+                            % Average z-scored neurons
+                            z_trace = mean(z_neuron_traces,1,'omitnan');                    
+                            %ylim([-1 6]);                                             
+                        end
+
+                        plot(bins{iShank}, z_trace, 'b', 'LineWidth', 1.5);
                         
                     end
-                end
-                
-                for i = 1:length(grey_window_starts)
-                    if contains(z_score_period, 'none')
-                        % Find indices of bins within current window
-                        idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
-                        peak_FR_by_greywindow(i) = max(mean_trace(idx_in_greywindow));
-                        mean_FR_by_greywindow(i) = mean(mean_trace(idx_in_greywindow));
-                        
+    
+                    % Define windows after time zero and calc. the peak and mean FR [for exploration]
+                    if contains(Stimulus_type, 'A_50ms')
+                        stim_window_starts = 0;
+                        stim_window_ends = 0.05;
+                        grey_window_starts = 0.05; 
+                        grey_window_ends = [1.8]; 
+                        peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                    elseif contains(Stimulus_type, 'F_150ms')
+                        stim_window_starts = 0;
+                        stim_window_ends = 0.15;
+                        grey_window_starts = 0.15; 
+                        %window_ends = 0.15:0.15:1.5;
+                        grey_window_ends = [1.8]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
+                        peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate 
+                    elseif contains(Stimulus_type, '_1000ms')
+                        stim_window_starts = 0;
+                        stim_window_ends = 1.0;
+                        grey_window_starts = 1.0; 
+                        %window_ends = 0.15:0.15:1.5;
+                        grey_window_ends = [1.8]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
+                        peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate      
+                    elseif contains(Stimulus_type, 'A_500ms')
+                        stim_window_starts = 0;
+                        stim_window_ends = 0.5;
+                        grey_window_starts = 0.5; 
+                        %window_ends = 0.15:0.15:1.5;
+                        grey_window_ends = [1.8]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
+                        peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
                     else
-                        % Find indices of bins within current window
-                        idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);                    
-                        peak_FR_by_greywindow(i) = max(z_trace(idx_in_greywindow));
-                        mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
+                        stim_window_starts = 0:0.3:0.9;
+                        stim_window_ends = 0.15:0.3:1.05;
+                        grey_window_starts = [0.15 0.45 0.75 1.05 1.2 1.35]; % look from 0ms after stim offset 
+                        grey_window_ends = [0.3 0.6 0.9 1.2 1.35 1.5]; % window ending at 1.35s is where a stimulus would end if there was a fifth stimulus in the sequence)
+                        peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        peak_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                        mean_FR_by_greywindow = zeros(1, length(stim_window_starts)); % preallocate
+                    end    
+                                    
+                    yl = ylim; % Get y-axis limits for text placement
                         
+                    for i = 1:length(stim_window_starts)
+                        if contains(z_score_period, 'none')
+                            % Find indices of bins within current window
+                            idx_in_stimwindow = bins{iShank} >= stim_window_starts(i) & bins{iShank} < stim_window_ends(i);                    
+                            peak_FR_by_stimwindow(i) = max(mean_trace{iShank}(idx_in_stimwindow));
+                            mean_FR_by_stimwindow(i) = mean(mean_trace{iShank}(idx_in_stimwindow));
+                            
+                        else
+                            % Find indices of bins within current window
+                            idx_in_stimwindow = bins{iShank} >= stim_window_starts(i) & bins{iShank} < stim_window_ends(i);                    
+                            peak_FR_by_stimwindow(i) = max(z_trace(idx_in_stimwindow));
+                            mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));
+                            
+                        end
                     end
-                end
-                
-                if contains(Stimulus_type, 'A_50ms')
-                    % Define grey intervals
-                    grey_intervals = [-0.5 0; 0.05 1.8];
-                elseif contains(Stimulus_type, 'A_500ms') 
-                    grey_intervals = [-0.5 0; 0.5 1.8];
-                else
-                    grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
-                end    
-                
-                hold on; % Make sure current plot stays visible
-                
-                % Get current y-axis limits for full vertical shading
-                yl = ylim;
-                
-                % Shade each interval
-                for i = 1:size(grey_intervals, 1)
-                    x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                    y = [yl(1), yl(1), yl(2), yl(2)];
-                    fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % grey color with transparency
-                end
-                
-                if contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms')
-                    xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
-                else
-                    xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
-                    xline(0.30, 'k', (sprintf('B onset; %d%s', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
-                    xline(0.60, 'k', (sprintf('C onset; %d%s', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
-                    xline(0.90, 'k', (sprintf('D onset; %d%s', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
-                end
-
-                xlim([-0.3 1.8]);
-                xticks(-0.2:0.2:1.8);
-                xlabel('Time (s) since onset of A')
-                set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 24);
-
-                                
+                    
+                    for i = 1:length(grey_window_starts)
+                        if contains(z_score_period, 'none')
+                            % Find indices of bins within current window
+                            idx_in_greywindow = bins{iShank} >= grey_window_starts(i) & bins{iShank} < grey_window_ends(i);                    
+                            peak_FR_by_greywindow(i) = max(mean_trace{iShank}(idx_in_greywindow));
+                            mean_FR_by_greywindow(i) = mean(mean_trace{iShank}(idx_in_greywindow));
+                            
+                        else
+                            % Find indices of bins within current window
+                            idx_in_greywindow = bins{iShank} >= grey_window_starts(i) & bins{iShank} < grey_window_ends(i);                    
+                            peak_FR_by_greywindow(i) = max(z_trace(idx_in_greywindow));
+                            mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
+                            
+                        end
+                    end
+                    
+                    if contains(Stimulus_type, 'A_50ms')
+                        % Define grey intervals
+                        grey_intervals = [-0.5 0; 0.05 1.8];
+                    elseif contains(Stimulus_type, 'A_500ms') 
+                        grey_intervals = [-0.5 0; 0.5 1.8];
+                    elseif contains(Stimulus_type, '_150ms') 
+                        grey_intervals = [-0.5 0; 0.15 1.8];
+                    elseif contains(Stimulus_type, '_1000ms') 
+                        grey_intervals = [-0.5 0; 1.0 1.8];    
+                    else
+                        grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
+                    end    
+                    
+                    hold on; % Make sure current plot stays visible
+                    
+                    % Get current y-axis limits for full vertical shading
+                    yl = ylim;
+                    
+                    % Shade each interval
+                    for i = 1:size(grey_intervals, 1)
+                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                        y = [yl(1), yl(1), yl(2), yl(2)];
+                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % grey color with transparency
+                    end
+                    
+                    if contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms')
+                        xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                    elseif contains(Stimulus_type, 'F_150ms') || contains(Stimulus_type, 'F_1000ms')
+                        xline(0, 'k', (sprintf('F onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                    elseif contains(Stimulus_type, 'E_1000ms')
+                        xline(0, 'k', (sprintf('E onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);    
+                    else
+                        xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                        xline(0.30, 'k', (sprintf('B onset; %d%s', round(rad2deg(ordered_oris(2))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                        xline(0.60, 'k', (sprintf('C onset; %d%s', round(rad2deg(ordered_oris(3))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                        xline(0.90, 'k', (sprintf('D onset; %d%s', round(rad2deg(ordered_oris(4))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
+                    end
+    
+                    xlim([-0.3 1.8]);
+                    xticks(-0.2:0.2:1.8);
+                    if contains(Stimulus_type, 'F_150ms') || contains(Stimulus_type, 'F_1000ms')
+                        xlabel('Time (s) since onset of F')
+                    elseif contains(Stimulus_type, 'E_1000ms')
+                        xlabel('Time (s) since onset of E')    
+                    else
+                        xlabel('Time (s) since onset of A')
+                    end    
+                    set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 24);
+    
+                end                    
                 sgtitle(sprintf('%s day %d - %s - Aggregate single unit activity: %s', subject_number, experiment_info(nsession).date, Stimulus_type, depth_for_analysis), 'Interpreter', 'none', 'FontSize', 24);
                 %filename = sprintf('%s - Aggregate single unit %s FRs.png', Stimulus_type, depth_for_analysis);
                 %save_path = fullfile(pwd, filename);
@@ -875,6 +1025,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 fig_filename = sprintf('%s - Aggregate single unit %s FRs.fig', Stimulus_type, depth_for_analysis);
                 fig_save_path = fullfile(pwd, fig_filename);
                 savefig(fig, fig_save_path);
+                    
             end
         end
 
@@ -939,7 +1090,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 end
 
                 % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
+                if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session') 
                     zscore_counts = histcounts(all_spike_times, time_edges);
                 elseif contains(z_score_period, 'first30secs')
                     baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
@@ -1188,7 +1339,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster));
                     
                     % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -1389,6 +1540,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
                         
                             if contains(z_score_period, 'entire_session')
                                 ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
+                            elseif contains(z_score_period, 'stim_session')
+                                ylabel('FR Z-scored over stim session)', 'FontSize', 24);     
                             elseif contains(z_score_period, 'first30secs')
                                 ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                             end
@@ -1498,7 +1651,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 end
 
                 % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
+                if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                     zscore_counts = histcounts(all_spike_times, time_edges);
                 elseif contains(z_score_period, 'first30secs')
                     baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
@@ -1672,7 +1825,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 end
 
                 % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
+                if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                     zscore_counts = histcounts(all_spike_times, time_edges);
                 elseif contains(z_score_period, 'first30secs')
                     baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
@@ -1700,7 +1853,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
 
                 plot(bins, z_trace, 'b', 'LineWidth', 1.5);
 
-                 % Define windows after time zero and calc. the peak and mean FR              
+                % Define windows after time zero and calc. the peak and mean FR [for exploration]             
                 if (contains(Stimulus_type, 'GAVNIK250_ABCD'))
                     stim_window_starts = 0:0.25:0.75;
                     stim_window_ends = 0.25:0.25:1.0;
@@ -1854,7 +2007,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster
                     
                     % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -1936,6 +2089,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
                                 if contains(z_score_period, 'entire_session')
                                     ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
                                     ylim([-1 5]);
+                                elseif contains(z_score_period, 'stim_session')
+                                    ylabel('FR Z-scored over stim session', 'FontSize', 24);     
                                 elseif contains(z_score_period, 'first30secs')
                                     ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                                     ylim([-1 8]);
@@ -2071,7 +2226,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                 end
                 
                 % Compute appropriate histogram counts for z-scoring
-                if contains(z_score_period, 'entire_session')
+                if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                     zscore_counts = histcounts(all_spike_times, time_edges);
                 elseif contains(z_score_period, 'first30secs')
                     baseline_spikes = all_spike_times(all_spike_times >= baseline_window(1) & all_spike_times <= baseline_window(2));
@@ -2146,6 +2301,8 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     if contains(z_score_period, 'entire_session')
                         ylabel('Z-scored FR (z-scored over entire session)', 'FontSize', 24);
                         ylim([-1 5]);
+                    elseif contains(z_score_period, 'stim_session')
+                        ylabel('FR Z-scored over stim session)', 'FontSize', 24);     
                     elseif contains(z_score_period, 'first30secs')
                         ylabel('Z-scored FR (z-scored over first 30s baseline)', 'FontSize', 24);
                         ylim([-1 8]);
@@ -2256,7 +2413,7 @@ for nsession = 12 % row number of recording date in "experiment_info"
                     %[psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster,  Task_info.stim_onset, [-0.150 0.30], 0.001); % gets the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window of -150ms to +150ms around stimulus onset
              
                     % Compute appropriate histogram counts for z-scoring
-                    if contains(z_score_period, 'entire_session')
+                    if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                         zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                     elseif contains(z_score_period, 'first30secs')
                         baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));

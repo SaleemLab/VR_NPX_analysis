@@ -76,7 +76,8 @@ for nsession = sessions_to_plot
             L5_depth = depths_from_PSD.L5_depth_PSD; % strongest spiking depth in V1 region, from PSD analysis
             CA1_depth = depths_from_PSD.CA1_depth_PSD;
     
-            L4_depth_range = [L4_channel_depth - 70 , L4_channel_depth + 70]; % based on CSD +/- 70um - see Allen atlas layer thickness, and note Allen brains are fixed and hence shrunken by ~10+%
+            L4_depth_range = [L4_channel_depth - 60 , L4_channel_depth + 60]; % giving electrodes the full extent of 120um inclusive 
+            % (hence measuring spiking over depth range greater than 120um. As 60 is divisible by 15 and 10, this will give the same effective range for NPX1.0 (which has staggered electrodes every 10um down the shank) and NPX2.0 (which has electrode rows every 15um down each shank)
             CA1_depth_range = [CA1_depth - 150, CA1_depth + 150]; % um. Set for each SESSION based on PSD; ~300um around Ripple power "bump" which coincides with a dip in theta power
             Sub_CA1_depth_range = [min(CA1_depth_range) - 1000, min(CA1_depth_range)];
             Sub_HPC_depth_range = [min(ycoords), min(CA1_depth_range) - 1000];
