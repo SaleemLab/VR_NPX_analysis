@@ -16,7 +16,7 @@ library(tidyr)
 
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
-dat <- read.csv("D:/Code/MasaCoherenceDataAnalysis/v1_hc_data_geo2.csv")
+dat <- read.csv("D:/Code/MasaCoherenceDataAnalysis/v1_hc_data_geo3.csv")
 dat$SessionID <- as.factor(dat$SessionID)
 
 # --- 3. Clean Data (Fixed Pipe!) ---
