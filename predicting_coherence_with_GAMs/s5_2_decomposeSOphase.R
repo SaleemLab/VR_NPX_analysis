@@ -183,3 +183,44 @@ p_reconstructed <- ggplot(pred_grid_phase, aes(x = SOPhase_Match, y = SOPhase_No
        subtitle = "Mathematically derived from: s(Match) + s(NonMatch) + ti(Match, NonMatch)",
        x = "Match SO Phase (Rad)", y = "Non-Match SO Phase (Rad)")
 print(p_reconstructed)
+
+# ==============================================================================
+# --- 8. COLLAPSING THE 2D INTERACTION INTO 1D PHASE LAG ---
+# ==============================================================================
+message("\nExtracting actual sampled phase lags and their predicted synergy...")
+
+# 1. Calculate the true Phase Lag for every single real event in your dataset
+dat_clean <- dat_clean %>%
+  mutate(
+    Raw_Lag = SOPhase_Match - SOPhase_NonMatch,
+    Phase_Lag = (Raw_Lag + pi) %% (2 * pi) - pi # Wrap to [-pi, pi]
+  )
+
+# 2. Extract the model's exact partial effect for those specific real events
+# predict(type="terms") directly on the original dataset
+actual_preds <- predict(mdl_decomp, type = "terms")
+
+# Add the pure interaction effect back into your dataframe
+dat_clean$Pure_Synergy <- actual_preds[, "ti(SOPhase_Match,SOPhase_NonMatch)"]
+
+# 3. Plot the true biological distribution
+dev.new(noRStudioGD = TRUE)
+p_actual_lag <- ggplot(dat_clean, aes(x = Phase_Lag, y = Pure_Synergy)) +
+  
+  # Plot the actual data! (Using alpha to handle the high density of points)
+  geom_point(alpha = 0.2, color = "grey40", size = 1) +
+  
+  # Fit the circular GAM smooth to find the center of mass
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cc"), 
+              color = "purple", linewidth = 1.5) +
+  
+  scale_x_continuous(breaks = c(-pi, -pi/2, 0, pi/2, pi), 
+                     labels = c(expression(-pi), expression(-pi/2), "0", expression(pi/2), expression(pi)),
+                     limits = c(-pi, pi), expand = c(0,0)) +
+  theme_bw() +
+  labs(title = "Phase Synergy at Actual Sampled Phase Lags",
+       subtitle = "Dots represent true biological events, eliminating grid artifacts",
+       x = "Actual Phase Lag (Match - NonMatch) [Rad]",
+       y = "Delta coherence)")
+
+print(p_actual_lag)
