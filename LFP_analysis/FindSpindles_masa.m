@@ -120,18 +120,17 @@ savepath = p.Results.savepath;
 behaviour = p.Results.behaviour;
 best_channel = p.Results.best_channel;
 
-% filter_type  = 'bandpass';
-% filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
-% norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
-% b_spindle = fir1(filter_order, norm_freq_range,filter_type);
-% signal = filtfilt(b_spindle,1,lfp);
+filter_type  = 'bandpass';
+filter_order = round(6*frequency/(max(passband)-min(passband)));  % creates filter for ripple
+norm_freq_range = passband/(frequency/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+b_spindle = fir1(filter_order, norm_freq_range,filter_type);
+signal = filtfilt(b_spindle,1,lfp);
 
 % Butterworth Filter Design
-filter_order = 5; % 5th order is standard (effectively 10th with filtfilt)
-[b_spindle, a_spindle] = butter(filter_order, passband/(frequency/2), 'bandpass');
-
+% filter_order = 5; % 5th order is standard (effectively 10th with filtfilt)
+% [b_spindle, a_spindle] = butter(filter_order, passband/(frequency/2), 'bandpass');
 % Apply zero-phase filtering
-signal = filtfilt(b_spindle, a_spindle, lfp);
+% signal = filtfilt(b_spindle, a_spindle, lfp);
 
 %% Detect spindle and calculate noise
 % zscored_spindle = zscore(abs(hilbert(signal)));
