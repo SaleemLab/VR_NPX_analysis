@@ -9,14 +9,14 @@ clear all
 % Choose your probe depth of interest
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'supraL4' or 'subL4', 'CA1' or 'Sub_CA1' or 'Sub_HPC'
 
-SUBJECTS = {'M00087'};
+SUBJECTS = {'M00013'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/6
-Stimulus_type = 'GAVNIK_ABCD'; %%%% BUT IF THERE ARE MULTIPLE TYPES E.G. GAVNIK_ABCD_1, also NEED TO SPECIFY THIS IN 5/6
+Stimulus_type = 'TRAIN'; %%%% BUT IF THERE ARE MULTIPLE TYPES E.G. GAVNIK_ABCD_1, also NEED TO SPECIFY THIS IN 5/6
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 neuron_type = 'All'; % for GAVNIK stimuli (coded for so far) set this to 'PYR only' if you want to include only putative pyramidal neurons. distinguish between putative PYR (wide waveform, lower tau rise than SOM), PV (narrow waveform) and SOM (wide waveform, higher tau rise in the ACG i.e. probability of spiking again increases quite slowly)
@@ -25,16 +25,16 @@ z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (e
 % session from 20250205 onward, for a while, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 
 % 3/6 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis') % 3/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis') % 3/5 files will be saved here in the cd
 
 %% SET THIS 4/6***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
-probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
+probe_type = 0; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%% 5/6
-sessions_to_plot = [11, 15]; %5/6 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8    9, 10, 11, 12, 13   11, 12, 13, 14, 15
+sessions_to_plot = [4, 8]; %5/6 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8    9, 10, 11, 12, 13   11, 12, 13, 14, 15
 stimulus_choice = containers.Map( ...
-    [11 15], ... % 4 5 6 7 8   9 10 11 12 13 
-    {'GAVNIK_ABCD_1', 'GAVNIK_ABCD'}... %
+    {4 8}, ... % 4 5 6 7 8   [9 10 11 12 13] {22}
+    {'TRAIN', 'TRAIN'}... % 'GAVNIK_ABCD_1', 'GAVNIK_ABCD'
 );
 
 colors = [
@@ -935,79 +935,79 @@ for nsession = sessions_to_plot
                     plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s', experiment_info(nsession).date, depth_for_analysis));
                     ylabel('Mean firing rate (Hz)', 'FontSize', 24);
                     
-                    else 
-                        if strcmp(z_method, 'population')
-                            baseline_mean = mean(zscore_counts);
-                            baseline_std = std(zscore_counts);                        
-                            % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
-                            zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
-                            z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
-                            sem_trace = std(zscored_trials, 0, 1) / sqrt(nTrials);  % SEM
-                        elseif strcmp(z_method, 'per_neuron')
-                            % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
-                            unique_units = unique(all_spike_ids);
-                            nUnits = numel(unique_units);                    
-                            unit_ztraces = nan(nUnits, size(binnedArray,2)); %binned Array is (200 rows) trials x (165 columns) timebins
-                        
-                            for u = 1:nUnits
-                                this_unit = unique_units(u);
-                        
-                                unit_mask = all_spike_ids == this_unit;
-                                unit_spike_times = all_spike_times(unit_mask);
-                                
-                                if(contains(Stimulus_type, 'GAVNIK250_ABCD'))
-                                    [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
-                                else
-                                    [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
-                                end  
-                                % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
+                else 
+                    if strcmp(z_method, 'population')
+                        baseline_mean = mean(zscore_counts);
+                        baseline_std = std(zscore_counts);                        
+                        % Z-score each trial individually so that trial to variability remains visible and SEM can be calculated
+                        zscored_trials = (binnedArray - baseline_mean) / baseline_std;  % [trials x time]
+                        z_trace = mean(zscored_trials, 1);                             % mean z-scored trace
+                        sem_trace = std(zscored_trials, 0, 1) / sqrt(nTrials);  % SEM
+                    elseif strcmp(z_method, 'per_neuron')
+                        % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
+                        unique_units = unique(all_spike_ids);
+                        nUnits = numel(unique_units);                    
+                        unit_ztraces = nan(nUnits, size(binnedArray,2)); %binned Array is (200 rows) trials x (165 columns) timebins
+                    
+                        for u = 1:nUnits
+                            this_unit = unique_units(u);
+                    
+                            unit_mask = all_spike_ids == this_unit;
+                            unit_spike_times = all_spike_times(unit_mask);
+                            
+                            if(contains(Stimulus_type, 'GAVNIK250_ABCD'))
+                                [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
+                            else
+                                [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
+                            end  
+                            % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
 
-                                mu = unit_baseline_mean(u);
-                                sd = unit_baseline_std(u);
-                        
-                                if sd == 0 || isnan(sd)
-                                    continue
-                                end
-                        
-                                z_u = (binnedArray_u - mu) / sd; % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
-                                unit_ztraces(u,:) = mean(z_u, 1); % average the unit's z-scored response across trials; unit_ztraces is units (rows) x timebins (columns)
+                            mu = unit_baseline_mean(u);
+                            sd = unit_baseline_std(u);
+                    
+                            if sd == 0 || isnan(sd)
+                                continue
                             end
-                            valid_units = all(isfinite(unit_ztraces),2);
-                            unit_ztraces = unit_ztraces(valid_units,:);                  
-                            z_trace  = mean(unit_ztraces, 1); % combine units equally; the z-scored trace for each unit averaged with the others
-                            sem_trace = std(unit_ztraces, 0, 1) / sqrt(size(unit_ztraces,1));
-                            
-                            nUnits_valid = size(unit_ztraces, 1);
-    
-                            unit_peak_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
-                            unit_mean_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
-                            unit_peak_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
-                            unit_mean_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
-                            
-                            for i = 1:length(stim_window_starts)
-                            
-                                idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
-                                           bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
-                            
-                                idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
-                                           bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
-                            
-                                unit_peak_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peak), [], 2);
-                                unit_mean_FR_by_stimwindow(:, i) = mean(unit_ztraces(:, idx_mean), 2);
-                            end
-    
-                            for i = 1:length(grey_window_starts)
-                            
-                                idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
-                                           bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
-                            
-                                idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
-                                           bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
-                            
-                                unit_peak_FR_by_greywindow(:, i) = max(unit_ztraces(:, idx_grey_peak), [], 2);
-                                unit_mean_FR_by_greywindow(:, i) = mean(unit_ztraces(:, idx_grey_mean), 2);
-                            end
+                    
+                            z_u = (binnedArray_u - mu) / sd; % express each unit's stimulus-evoked response versus its own baseline mean and sd across the session
+                            unit_ztraces(u,:) = mean(z_u, 1); % average the unit's z-scored response across trials; unit_ztraces is units (rows) x timebins (columns)
                         end
+                        valid_units = all(isfinite(unit_ztraces),2);
+                        unit_ztraces = unit_ztraces(valid_units,:);                  
+                        z_trace  = mean(unit_ztraces, 1); % combine units equally; the z-scored trace for each unit averaged with the others
+                        sem_trace = std(unit_ztraces, 0, 1) / sqrt(size(unit_ztraces,1));
+                        
+                        nUnits_valid = size(unit_ztraces, 1);
+
+                        unit_peak_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
+                        unit_mean_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
+                        unit_peak_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
+                        unit_mean_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
+                        
+                        for i = 1:length(stim_window_starts)
+                        
+                            idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
+                                       bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
+                        
+                            idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
+                                       bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
+                        
+                            unit_peak_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peak), [], 2);
+                            unit_mean_FR_by_stimwindow(:, i) = mean(unit_ztraces(:, idx_mean), 2);
+                        end
+
+                        for i = 1:length(grey_window_starts)
+                        
+                            idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
+                        
+                            idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
+                        
+                            unit_peak_FR_by_greywindow(:, i) = max(unit_ztraces(:, idx_grey_peak), [], 2);
+                            unit_mean_FR_by_greywindow(:, i) = mean(unit_ztraces(:, idx_grey_mean), 2);
+                        end
+                    end
 
 
 

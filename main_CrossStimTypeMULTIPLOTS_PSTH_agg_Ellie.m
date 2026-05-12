@@ -7,27 +7,27 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %% setting metrics to screen good clusters
 clear all
 % 1/6 Choose your probe depth of interest and mouse
-depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-SUBJECTS = {'M00071'};
+depth_for_analysis = 'L4'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
+SUBJECTS = {'M00088'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/6
-Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK250_ABCD', 'GAVNIK250 DCBA'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_method = 'per_neuron'; % NONE or per_neuron or population (i.e. aggregated SUA)
 z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'none' = no z scoring, 'entire_session' or 'first30secs' (for every stimulus recording
 % session from 20250205 onward, for a while, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 
-cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis') % 3/6 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00088\analysis') % 3/6 files will be saved here in the cd
 
 %% SET THIS 4/6***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%%% 5/6 row numbers of recording dates in "experiment_info" 15, 9
-sessions_to_plot = [8]; 
+sessions_to_plot = [11]; 
 
 if contains(Stimulus_types{2}, 'GAVNIK DCBA') || contains(Stimulus_types{2}, 'GAVNIK250 DCBA') 
     stimulus_colors = [
@@ -188,8 +188,9 @@ for nsession = sessions_to_plot
             end
                     
     
-            if contains(Stimulus_types{2}, 'GAVNIK DCBA') % only make this plot if GAVNIK DCBA is present
-                if (contains(Stimulus_type, 'GAVNIK DCBA') || contains(Stimulus_type, 'GAVNIK_ABCD')) && contains(plot_type, 'FR')
+            if contains(Stimulus_types{2}, 'GAVNIK DCBA') || contains(Stimulus_types{2}, 'GAVNIK250 DCBA')  % only make this plot if GAVNIK DCBA is present
+                %if (contains(Stimulus_type, 'GAVNIK DCBA') || contains(Stimulus_type, 'GAVNIK_ABCD')) && contains(plot_type, 'FR')
+                if contains(plot_type, 'FR')
                     for nprobe = 1:length(clusters)
                         selected_clusters(nprobe) = select_clusters(clusters(nprobe),params); %only look at good clusters, which pass the set parameters
                         

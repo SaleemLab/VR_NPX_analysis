@@ -8,13 +8,13 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % 1/5 Choose your probe depth of interest 
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 
-SUBJECTS = {'M00087'};
+SUBJECTS = {'M00071'};
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/5
-Stimulus_type = 'F_1000ms'; % OMIT 'GAVNIK_ABCD_1 DCBA ADCD E_CD
+Stimulus_type = 'A_1000ms_1'; % OMIT 'GAVNIK_ABCD_1 DCBA ADCD E_CD
 % plot_choice 'struct' gives output of tuning metrics.
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
@@ -26,7 +26,7 @@ z_score_period = 'stim_session'; % z score either over 'stim_session' (excludes 
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 
 % 3/5 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis\20260227\F_1000ms') 
+cd('V:\Ellie\DATA\SUBJECTS\M00071\analysis\20251211\A_1000ms_1') 
 
 %% SET THIS 4/5***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -47,7 +47,7 @@ elseif probe_type == 1
 end
 
 % 5/5 
-for nsession = 20 % row number of recording date in "experiment_info" 
+for nsession = 22 % row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     % load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -991,7 +991,7 @@ for nsession = 20 % row number of recording date in "experiment_info"
                         fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % grey color with transparency
                     end
                     
-                    if contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms')
+                    if contains(Stimulus_type, 'A_50ms') || contains(Stimulus_type, 'A_500ms') || contains(Stimulus_type, 'A_1000ms')
                         xline(0, 'k', (sprintf('A onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);
                     elseif contains(Stimulus_type, 'F_150ms') || contains(Stimulus_type, 'F_1000ms')
                         xline(0, 'k', (sprintf('F onset; %d%s', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'FontSize', 24);

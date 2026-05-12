@@ -7,20 +7,20 @@
 clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
-SUBJECTS = {'M00013'};  %% set this - 1/4
+SUBJECTS = {'M00088'};  %% set this - 1/4
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 params = create_cluster_selection_params('sorting_option','ellie');
 psthBinSize = 0.01; % this script divides this by 10 (to 0.001s) for raster plots
 
 %% 2/4
-Stimulus_type = 'Sleep_Box'; % 'Sleep_Box' 'Sleep_Box_1' 'Sleep_Box_2' 'Sleep_Box_3'
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis\20250206\Sleep_Box')
-V1_sleepstaging_shank = 1; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
-HPC_sleepstaging_shank = 1;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
+Stimulus_type = 'Sleep_Box_2'; % 'Sleep_Box' 'Sleep_Box_1' 'Sleep_Box_2' 'Sleep_Box_3'
+cd('V:\Ellie\DATA\SUBJECTS\M00088\analysis\20260316\Sleep_Box_2')
+V1_sleepstaging_shank = 2; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
+HPC_sleepstaging_shank = 3;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
 
 %% 3/4***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
-probe_type = 0; % NPX1.0 is type 0, NPX2.0 is type 1.
+probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 csd_file_path = fullfile(pwd, '..', 'earliest_V1sink_CSD.mat');
 loaded_data = load(csd_file_path);
 if probe_type == 0
@@ -354,6 +354,52 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
         'noise',[],'passband',[125 300],'thresholds',[2 5],'show','on'); % ,'best_channel',best_HPC_channel
         
 
+        % Extract Ripple peak times to assign to a behavioural state
+        ripple_times = ripples(nprobe).peaktimes;
+        
+        % Preallocate state labels
+        ripple_state = strings(size(ripple_times));
+        
+        %% --- Classify SWS ripples ---
+        for iInt = 1:size(SWS,1)
+            in_state = ripple_times >= SWS(iInt,1) & ...
+                       ripple_times <= SWS(iInt,2);
+        
+            ripple_state(in_state) = "SWS";
+        end
+        
+        %% --- Classify REM ripples ---
+        for iInt = 1:size(REM,1)
+            in_state = ripple_times >= REM(iInt,1) & ...
+                       ripple_times <= REM(iInt,2);
+        
+            ripple_state(in_state) = "REM";
+        end
+        
+        %% --- Classify quiet wake ripples ---
+        for iInt = 1:size(quietWake,1)
+            in_state = ripple_times >= quietWake(iInt,1) & ...
+                       ripple_times <= quietWake(iInt,2);
+        
+            ripple_state(in_state) = "quietWake";
+        end
+        
+        %% --- Classify movement ripples ---
+        for iInt = 1:size(movement,1)
+            in_state = ripple_times >= movement(iInt,1) & ...
+                       ripple_times <= movement(iInt,2);
+        
+            ripple_state(in_state) = "movement";
+        end
+        
+        ripples(nprobe).state = ripple_state;
+
+        disp(['SWS ripples: ', num2str(sum(ripple_state=="SWS"))]);
+        disp(['REM ripples: ', num2str(sum(ripple_state=="REM"))]);
+        disp(['quietWake ripples: ', num2str(sum(ripple_state=="quietWake"))]);
+        disp(['movement ripples: ', num2str(sum(ripple_state=="movement"))]);
+        disp(['Unclassified ripples: ', num2str(sum(ripple_state==""))]);
+
         slowwave_file = fullfile(options.ANALYSIS_DATAPATH, 'slowwaves.mat');
         save(slowwave_file, 'temp');
         spindle_file = fullfile(options.ANALYSIS_DATAPATH, 'spindles.mat');
@@ -361,20 +407,57 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
         ripple_file  = fullfile(options.ANALYSIS_DATAPATH, 'ripples.mat');
         save(ripple_file, 'ripples');       
 
-        %%%% Look at V1 spiking around ripple peaks
+        %%%% Look at V1 spiking around SWS ripple peaks
+
+        % ----- Summary plot for all V1 clusters -----
+        % Combine all V1 cluster spike times
+        all_spike_times = [];
+        for nCluster = 1:length(V1_cluster_ids)
+            this_spike_times = V1_clusters.spike_times(V1_clusters.spike_id == V1_cluster_ids(nCluster));
+            all_spike_times = [all_spike_times; this_spike_times];
+        end
+        
+        % Call psthAndBA on all spike times
+        [psth, bins, ~, ~, ~, binnedArray] = psthAndBA(all_spike_times, ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"), [-1 1], psthBinSize);
+        mean_FR = mean(binnedArray, 1) / psthBinSize;
+        
+        % Plot
+        summaryFig = figure;
+        summaryFig.Name = 'Aggregate FR during SWS from all V1 clusters';
+
+        % plot(bins, mean_FR, 'k', 'LineWidth', 2);
+        % xline(0, 'r', 'LineWidth', 1);
+        % xlabel('Time from ripple peak (s)');
+        % ylabel('Aggregate firing rate (Hz)');
+        % title(sprintf('%s: Aggregate V1 peri-ripplepeak FR (%i clusters) %s Day %s', subject_number, length(V1_cluster_ids), Stimulus_type, session_info.probe.SESSION), 'Interpreter', 'none');
+        % 
+        %%% CHANGED: explicit axes handle
+        axSummary = axes('Parent', summaryFig);                        %%% CHANGED
+        plot(axSummary, bins, mean_FR, 'k', 'LineWidth', 2);           %%% CHANGED
+        xline(axSummary, 0, 'r', 'LineWidth', 1);                      %%% CHANGED
+        xlabel(axSummary, 'Time from ripple peak (s)');                %%% CHANGED
+        ylabel(axSummary, 'Aggregate firing rate (Hz)');               %%% CHANGED
+        title(axSummary, sprintf( ...
+            '%s: Aggregate V1 SWS peri-ripplepeak FR (%i clusters) %s Day %s', subject_number, length(V1_cluster_ids), Stimulus_type, session_info.probe.SESSION), ...
+            'Interpreter','none');                                     %%% CHANGED
+
+        % Save
+        savefig(summaryFig, fullfile(pwd, sprintf('%s Aggregate V1 SWS peri-ripplepeak FR %s Day %s.fig', subject_number, Stimulus_type, session_info.probe.SESSION)));
+        
+        
         allCluster_binnedArrays = {};
         for nCluster = 1:length(V1_cluster_ids) % loop through each V1 cluster
             spike_times_this_cluster = V1_clusters.spike_times(V1_clusters.spike_id == V1_cluster_ids(nCluster));
             
             fig(nCluster)=figure; % open a figure window
-            fig(nCluster).Name=sprintf('Peri-ripplepeak response V1 Cluster %i', V1_cluster_ids(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
+            fig(nCluster).Name=sprintf('SWS peri-ripplepeak response V1 Cluster %i', V1_cluster_ids(nCluster)); %overall figure title includes the cluster_id (one count higher than zero-based SI output)
             fig(nCluster).Position = [114 90 770 650]; % sets the size of the figure window
             
             %clear psthAndBA
             axRaster = subplot(2,1,1,'Parent',fig(nCluster));         %%% CHANGED
             axFR     = subplot(2,1,2,'Parent',fig(nCluster));        %%% CHANGED
             
-            [~, ~, rasterX, rasterY, ~, ~] = psthAndBA(spike_times_this_cluster,  ripples.peaktimes, [-1 1], psthBinSize/10); % get the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around ripple peak
+            [~, ~, rasterX, rasterY, ~, ~] = psthAndBA(spike_times_this_cluster,  ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"), [-1 1], psthBinSize/10); % get the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around ripple peak
             
             plot(axRaster, rasterX, rasterY, 'k', 'LineWidth', 2);    %%% CHANGED
             xline(axRaster, 0, 'r', LineWidth=1);                     %%% CHANGED
@@ -396,11 +479,11 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
             
             %%% CHANGED: sgtitle explicitly tied to figure
             sgtitle(fig(nCluster), sprintf( ...
-                '%s V1 cluster %i Peri-ripplepeak spiking (%ix CA1 Ripples) %s Day %s', subject_number, V1_cluster_ids(nCluster), ...
-                length(ripples.peaktimes), Stimulus_type, session_info.probe.SESSION), 'Interpreter','none','FontSize',16);                   %%% CHANGED
+                '%s V1 cluster %i SWS peri-ripplepeak spiking (%ix CA1 Ripples) %s Day %s', subject_number, V1_cluster_ids(nCluster), ...
+                length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS")), Stimulus_type, session_info.probe.SESSION), 'Interpreter','none','FontSize',16);                   %%% CHANGED
 
             % Plot FR
-            [psth, bins, ~, ~, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster, ripples.peaktimes, [-1 1], psthBinSize); % get the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around ripple peak
+            [psth, bins, ~, ~, spikeCounts, binnedArray] = psthAndBA(spike_times_this_cluster, ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"), [-1 1], psthBinSize); % get the rasterplot coordinates and binnedArray (matrix of spike counts per timebin), with a time window around ripple peak
             allCluster_binnedArrays{end+1} = binnedArray; % each is [numRipples x numBins]
             mean_trace = mean(binnedArray, 1) / psthBinSize; % average over ripple events
             
@@ -414,54 +497,20 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
             
             %%% CHANGED: target FR plot to explicit axes
             plot(axFR, bins, mean_trace, 'b', 'LineWidth', 1.5, ...   %%% CHANGED
-                'DisplayName', sprintf('Ripples (%ix)', length(ripples.peaktimes)));
+                'DisplayName', sprintf('Ripples (%ix)', length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"))));
             hold(axFR, 'on');                                         %%% CHANGED
             xline(axFR, 0, 'r', LineWidth=1);                          %%% CHANGED
             xlim(axFR, [-1 1]);                                        %%% CHANGED
             xlabel(axFR, 'Time from ripple peak (s)');                 %%% CHANGED
-            ylabel(axFR, 'Mean firing rate across ripples (Hz)');      %%% CHANGED
+            ylabel(axFR, 'Mean firing rate across SWS ripples (Hz)');      %%% CHANGED
 
 
-            fig_filename = sprintf('%s Cluster %i Peri-Ripplepeak spiking (%ix CA1 Ripples) %s Day %s.fig', subject_number, V1_cluster_ids(nCluster), length(ripples.peaktimes), Stimulus_type, session_info.probe.SESSION);
+            fig_filename = sprintf('%s Cluster %i SWS Peri-Ripplepeak spiking (%ix CA1 Ripples) %s Day %s.fig', subject_number, V1_cluster_ids(nCluster), length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS")), Stimulus_type, session_info.probe.SESSION);
             fig_save_path = fullfile(pwd, fig_filename);
             savefig(fig(nCluster), fig_save_path);
 
         end
 
-        % ----- Summary plot for all V1 clusters -----
-        % Combine all V1 cluster spike times
-        all_spike_times = [];
-        for nCluster = 1:length(V1_cluster_ids)
-            this_spike_times = V1_clusters.spike_times(V1_clusters.spike_id == V1_cluster_ids(nCluster));
-            all_spike_times = [all_spike_times; this_spike_times];
-        end
-        
-        % Call psthAndBA on all spike times
-        [psth, bins, ~, ~, ~, binnedArray] = psthAndBA(all_spike_times, ripples.peaktimes, [-1 1], psthBinSize);
-        mean_FR = mean(binnedArray, 1) / psthBinSize;
-        
-        % Plot
-        summaryFig = figure;
-        summaryFig.Name = 'Aggregate FR from all V1 clusters';
-
-        % plot(bins, mean_FR, 'k', 'LineWidth', 2);
-        % xline(0, 'r', 'LineWidth', 1);
-        % xlabel('Time from ripple peak (s)');
-        % ylabel('Aggregate firing rate (Hz)');
-        % title(sprintf('%s: Aggregate V1 peri-ripplepeak FR (%i clusters) %s Day %s', subject_number, length(V1_cluster_ids), Stimulus_type, session_info.probe.SESSION), 'Interpreter', 'none');
-        % 
-        %%% CHANGED: explicit axes handle
-        axSummary = axes('Parent', summaryFig);                        %%% CHANGED
-        plot(axSummary, bins, mean_FR, 'k', 'LineWidth', 2);           %%% CHANGED
-        xline(axSummary, 0, 'r', 'LineWidth', 1);                      %%% CHANGED
-        xlabel(axSummary, 'Time from ripple peak (s)');                %%% CHANGED
-        ylabel(axSummary, 'Aggregate firing rate (Hz)');               %%% CHANGED
-        title(axSummary, sprintf( ...
-            '%s: Aggregate V1 peri-ripplepeak FR (%i clusters) %s Day %s', subject_number, length(V1_cluster_ids), Stimulus_type, session_info.probe.SESSION), ...
-            'Interpreter','none');                                     %%% CHANGED
-
-        % Save
-        savefig(summaryFig, fullfile(pwd, sprintf('%s Aggregate V1 peri-ripplepeak FR %s Day %s.fig', subject_number, Stimulus_type, session_info.probe.SESSION)));
         
         
         %% Extract and save sleep data for projection into pls space
@@ -477,7 +526,7 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
 
             % Initialize
             nNeurons = length(V1_clusters(nprobe).cluster_id);
-            nRipples = length(ripples(nprobe).peaktimes);
+            nRipples = length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"));
             nTimeBins = size(allCluster_binnedArrays{1},2); % bins from psthAndBA
             
             X_sleep = nan(nRipples, nTimeBins, nNeurons);
@@ -503,7 +552,7 @@ for nsession = 7 %5/5 row number of recording date in "experiment_info"
             SleepData.V1(nprobe).binnedArrays = allCluster_binnedArrays; % {cluster}{event x timebin}
             SleepData.V1(nprobe).bins = bins;
             SleepData.V1(nprobe).psthBinSize = psthBinSize;
-            SleepData.V1(nprobe).ripple_peaktimes = ripples(nprobe).peaktimes;
+            SleepData.V1(nprobe).ripple_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS");
         end    
         
         SleepData.ripples = ripples;
