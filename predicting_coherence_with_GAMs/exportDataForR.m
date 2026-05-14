@@ -1,0 +1,155 @@
+%% export data table for R GAM analysis
+
+% load('V1_HPC_reactivation_coherence_lme1_raw.mat');
+cd('P:\corticohippocampal_replay\V1-HPC sleep reactivation')
+load('V1_HPC_reactivation_coherence_lme_POST1_raw.mat');
+load('V1_HPC_reactivation_coherence_lme_PRE1_raw.mat');
+
+% load('V1_HPC_reactivation_coherence_lme1_raw_100ms.mat');
+% load('V1_HPC_reactivation_coherence_lme1_raw_100_200ms.mat');
+% load('V1_HPC_reactivation_coherence_lme1_PRE_raw_100_200ms.mat');
+
+% 
+% load('V1_HPC_reactivation_coherence_lme2_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme2_PRE_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_POST2_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE2_raw.mat');
+
+
+% load('V1_HPC_reactivation_coherence_lme_-100_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_-200_200ms_raw.mat');
+
+% load('V1_HPC_reactivation_coherence_lme_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_100ms_PRE_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_100_200ms_PRE_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_200ms_PRE_raw.mat');
+
+% load('V1_HPC_reactivation_coherence_lme_POST_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_POST_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_POST_0_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_0_200ms_raw.mat');
+
+%% 1. Outlier Removal
+% Define the continuous variables that are vulnerable to extreme noise
+if ismember('SpindlePowerPRE_Match', tbl.Properties.VariableNames)
+    outlierVars = {'RipplePower', 'SpindlePower_Match', 'SpindlePower_NonMatch', ...
+        'SpindlePowerPRE_Match', 'SpindlePowerPRE_NonMatch', ...
+        'SpindlePowerPOST_Match', 'SpindlePowerPOST_NonMatch', ...
+        'HPC_logodds', 'V1_logodds_PRE', 'V1_logodds'};
+else
+    outlierVars = {'RipplePower', 'SpindlePower_Match', 'SpindlePower_NonMatch', ...
+        'HPC_logodds', 'V1_logodds_PRE', 'V1_logodds'};
+end
+
+% Find outliers (trimming the extreme 0.1% tails)
+outlierMask = isoutlier(tbl{:, outlierVars}, 'percentiles', [0.01, 99.99]);
+rowsWithOutliers = any(outlierMask, 2);
+
+% Create the clean table
+cleanTbl = tbl(~rowsWithOutliers, :);
+fprintf('Removed %d rows containing extreme outliers.\n', sum(rowsWithOutliers));
+
+%% 2. Z-Score Continuous Predictors 
+% Now that outliers are gone, we can safely compute means and standard deviations
+cleanTbl.RipplePower_Z = zscore(cleanTbl.RipplePower);
+cleanTbl.SpindlePower_Match_Z = zscore(cleanTbl.SpindlePower_Match);
+cleanTbl.SpindlePower_NonMatch_Z = zscore(cleanTbl.SpindlePower_NonMatch);
+
+if ismember('SpindlePowerPRE_Match', tbl.Properties.VariableNames)
+    cleanTbl.SpindlePowerPRE_Match_Z = normalize(cleanTbl.SpindlePowerPRE_Match);
+    cleanTbl.SpindlePowerPRE_NonMatch_Z = normalize(cleanTbl.SpindlePowerPRE_NonMatch);
+    cleanTbl.SpindlePowerPOST_Match_Z = normalize(cleanTbl.SpindlePowerPOST_Match);
+    cleanTbl.SpindlePowerPOST_NonMatch_Z = normalize(cleanTbl.SpindlePowerPOST_NonMatch);
+end
+
+cleanTbl.HPC_logodds_Z = cleanTbl.HPC_logodds; % already z-scored
+cleanTbl.V1_logodds_PRE_Z = cleanTbl.V1_logodds_PRE; % already z-scored
+cleanTbl.V1_logodds_Z = cleanTbl.V1_logodds; % Post-ripple, already z-scored
+% cleanTbl.HPC_logodds_Z = zscore(cleanTbl.HPC_logodds); 
+% cleanTbl.V1_logodds_PRE_Z = zscore(cleanTbl.V1_logodds_PRE); 
+% cleanTbl.V1_logodds_Z = zscore(cleanTbl.V1_logodds); 
+
+%% Calculate coherence
+
+cleanTbl.Event_Coherence_Post = cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_Z;
+cleanTbl.Event_Coherence_Pre  = cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_PRE_Z;
+
+% In MATLAB (when you create the CSV)
+cleanTbl.Event_Coherence_Post_GeoMean = sign(cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_Z) .* sqrt(abs(cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_Z));
+cleanTbl.Event_Coherence_Pre_GeoMean = sign(cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_PRE_Z) .* sqrt(abs(cleanTbl.HPC_logodds_Z .* cleanTbl.V1_logodds_PRE_Z));
+
+% Verify the distribution
+fprintf('Mean Event Coherence (Post): %.3f\n', mean(cleanTbl.Event_Coherence_Post));
+
+% cleanTbl.Event_Coherence_Post = cleanTbl.Event_Coherence_Post_GeoMean; % use geometric mean for now
+% cleanTbl.Event_Coherence_Pre = cleanTbl.Event_Coherence_Pre_GeoMean; % use geometric mean for now
+
+% writetable(cleanTbl, 'v1_hc_data_geo3.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_POST.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_100ms.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE_100_200ms.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_POST.csv'); % export table for R GAM analysis
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE.csv'); % export table for R GAM analysis
+% 
+% writetable(cleanTbl, 'v1_hc_data_geo_POST2.csv'); % POST POST
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE2.csv'); % PRE PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_POST_SO.csv'); % POST ime3
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE_SO.csv'); % PRE ime3
+% writetable(cleanTbl, 'v1_hc_data_geo_POST2_SO.csv'); % POST POST3
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE2_SO.csv'); % PRE PRE3
+
+% writetable(cleanTbl, 'v1_hc_data_geo_-100_100ms.csv'); % -100_100ms_raw
+% writetable(cleanTbl, 'v1_hc_data_geo_-200_200ms.csv'); % -200_200ms_raw
+
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_POST.csv'); % 0 100
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_PRE.csv'); % 0 100 PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_POST.csv'); % 100 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_PRE.csv'); % 100 200 pre
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_POST.csv'); % 0 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_PRE.csv'); % 0 200 pre
+
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_POST2.csv'); % 0 100
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_PRE2.csv'); % 0 100 PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_POST2.csv'); % 100 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_PRE2.csv'); % 100 200 pre
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_POST2.csv'); % 0 200 
+writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_PRE2.csv'); % 0 200 pre
+
+fig = figure('Name','Geometric Mean reactivation coherence distribution','Position',[482 111 665 515]);
+sgtitle('Reactivation coherence distribution')
+
+subplot(2,2,1)
+histogram(cleanTbl.Event_Coherence_Post_GeoMean,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('GeoMean Post coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+subplot(2,2,2)
+histogram(cleanTbl.Event_Coherence_Pre_GeoMean,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('GeoMean Pre coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+subplot(2,2,3)
+histogram(cleanTbl.Event_Coherence_Post,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('Post coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+subplot(2,2,4)
+histogram(cleanTbl.Event_Coherence_Pre,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('Pre coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);

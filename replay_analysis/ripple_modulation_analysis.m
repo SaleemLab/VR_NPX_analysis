@@ -90,6 +90,7 @@ for iCell = 1:no_cluster
         if saving_PSTH==1
             ripple_modulation(ncond).PSTH(iCell,:,:) = single(binnedArrays{ncond}) / psthBinSize;  % normalize by condition 1
             ripple_modulation(ncond).PSTH_zscored(iCell,:,:) = single((binnedArrays{ncond} - mean(y)) ./ std(y));
+            ripple_modulation(ncond).PSTH_zscored(iCell,:,:) = single((binnedArrays{ncond} - mean(y)) ./ std(y));
         end
 
         if shuffle_option == 1

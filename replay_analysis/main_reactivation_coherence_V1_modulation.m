@@ -863,6 +863,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivatio
 %% Track Preferring neuron ripple modulation
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','context_modulation_all.mat'),'context_modulation_all')
 
+timebin = 0.01;
 psthBinSize = 0.01;
 windows = [-1.5 1.5];
 x_bins = windows(1)+ timebin/2 : timebin:windows(end)-timebin/2;
@@ -898,9 +899,9 @@ V1_SUA_reactivation_PSTH_high = V1_SUA_reactivation_PSTH;
 windows_all = {all_windows,PRE_windows,POST_windows};
 
 %%% All ripples
-ripple_modulation_percentile =  [ripple_modulation_percentile{1} ripple_modulation_percentile{2}];
-
-is_modulated = ripple_modulation_percentile>0.95;
+% ripple_modulation_percentile =  [ripple_modulation_percentile{1} ripple_modulation_percentile{2}];
+% 
+% is_modulated = ripple_modulation_percentile>0.95;
 track_difference = [V1_SUA_z_track_difference{1}; V1_SUA_z_track_difference{2}];% Track L - Track R;
 psth1 = [V1_SUA_reactivation_PSTH_all{1}{1}(:,:); V1_SUA_reactivation_PSTH_all{2}{1}(:,:)];
 psth2 = [V1_SUA_reactivation_PSTH_all{1}{2}(:,:); V1_SUA_reactivation_PSTH_all{2}{2}(:,:)];
@@ -917,7 +918,7 @@ x = track_difference;
 tbl = table(x,y1,y2,y3,subject_id,session_count', 'VariableName',{'track_difference','ripple_difference_ALL','ripple_difference_PRE','ripple_difference_POST','animal_ids','session_ids'});
 % writecsv(tbl,'')
 % writetable(tbl,fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
-% readcsv(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
+% tbl = readtable(fullfile(analysis_folder,'V1-HPC sleep reactivation\reactivation_coherence_KDE_glme','ripple_track_difference_ALL.csv'));
 
 ripple_modulation_lme = struct();
 for nwin = 1:3

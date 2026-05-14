@@ -1,0 +1,2744 @@
+%% Plot and tabularise reactivation/ripple/SO/spindle distribution
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
+
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay')>0
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay')>0
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+
+% load(fullfile(analysis_folder,'ripples_all_best_V1_SO_POST.mat'))
+
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+
+% load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
+% load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
+
+sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+
+
+load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+
+
+%% Extract key information for DOWN UP, ripples and spindles
+ 
+% load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
+%%%%%%% Find reference channel/shank
+cortex_ref_shank = [];
+HPC_ref_shank = [];
+
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        % 
+        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
+        %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+
+        % cortex_ref_shank(nsession,probe_no) = ripples_all;
+        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+        shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
+
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%% Ripple info
+
+% if merge events to bilateral events as one event
+[event_ids_first,event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id,merged_event_info.ripples_peaktimes,0.05);
+
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+% event_ids_first = (1:length(session_count))';
+% event_ids_second = (1:length(session_count))';
+
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','ripples_spindles_probability_whole.mat'));
+
+
+ripple_info.event_id = event_ids_first;
+%%% ripple power
+ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
+% ripple_info.ripple_power = max([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)]')';
+
+ripple_info.peak_ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+ripple_info.peak_ripple_power = max([ripple_info.peak_ripple_power(event_ids_first) ripple_info.peak_ripple_power(event_ids_second)]')';
+
+
+%%% spindle co-occurance
+[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==1,:));
+ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+ripple_info.spindle_presence(spindle_index,1) = 1;
+
+[~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==2,:));
+% ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+ripple_info.spindle_presence(spindle_index,2) = 1;
+ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first,:);
+
+%%% spindle phase
+spindle_phase=[];
+for probe_no = 1:2
+    spindle_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_phase{probe_no} = [spindle_phase{probe_no} ripples_all(probe_no).spindle_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+    end
+end
+
+spindle_phase = [spindle_phase{1}(:,ripples_all(1).SWS_index==1) spindle_phase{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.spindle_phase = spindle_phase';
+ripple_info.spindle_phase = ripple_info.spindle_phase(event_ids_first,:);
+
+%%% spindle power
+spindle_amplitude=[];
+for probe_no = 1:2
+    spindle_amplitude{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+    end
+end
+
+spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.spindle_amplitude = spindle_amplitude';
+ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+
+
+% spindle_amplitude=[];
+spindle_percentile = [];
+for probe_no = 1:2
+    % spindle_amplitude{probe_no}=[];
+    spindle_percentile{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
+
+        percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
+        spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
+
+
+    end
+end
+spindle_percentile = [spindle_percentile{1}(:,ripples_all(1).SWS_index==1) spindle_percentile{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.spindle_percentile = spindle_percentile';
+ripple_info.spindle_percentile = ripple_info.spindle_percentile(event_ids_first,:);
+
+% 
+% %%% spindle power
+% spindle_amplitude=[];
+% for probe_no = 1:2
+%     spindle_amplitude{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+%%% SO phase
+SO_phase=[];
+for probe_no = 1:2
+    SO_phase{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+    end
+end
+
+SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.SO_phase = SO_phase';
+ripple_info.SO_phase = ripple_info.SO_phase(event_ids_first,:);
+
+%%% SO power
+SO_amplitude=[];
+for probe_no = 1:2
+    SO_amplitude{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        SO_amplitude{probe_no} = [SO_amplitude{probe_no} ripples_all(probe_no).SO_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+    end
+end
+
+SO_amplitude = [SO_amplitude{1}(:,ripples_all(1).SWS_index==1) SO_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.SO_amplitude = SO_amplitude';
+ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripple_normalised_duration.mat'));
+
+
+
+%%% early and late UP transition
+ripple_info.early_UP_index=[];
+ripple_info.late_UP_index = [];
+% ripple_info.early_UP_index=[];
+
+for nprobe = 1:2
+    temp =  merged_event_info.DOWN_hemisphere_id==nprobe;
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2) mean(merged_event_info.DOWN_ints(temp,:),2)+0.25]);
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(temp,1) merged_event_info.UP_ints(temp,1)+0.25]);
+
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[slow_waves_all(nprobe).UP_ints(temp,2) slow_waves_all(nprobe).UP_ints(temp,1)+0.25]);
+    ripple_info.early_UP_index(:,nprobe) = UP_index;
+
+    % temp =  find(slow_waves_all(nprobe).UP_ints(:,2)-slow_waves_all(nprobe).UP_ints(:,1) < 2);
+
+    % [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(temp,1) merged_event_info.UP_ints(temp,1)+0.25]);
+    [~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[mean(merged_event_info.DOWN_ints(temp,:),2)-0.25 mean(merged_event_info.DOWN_ints(temp,:),2)]);
+    ripple_info.late_UP_index(:,nprobe) = UP_index;
+end
+
+ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first,:);
+ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first,:);
+
+% 
+% figure;
+% histogram(ripple_info.SO_phase(ripple_info.early_UP_index(:,1)==1,1),'Normalization','probability')
+% hold on;histogram(ripple_info.SO_phase(ripple_info.late_UP_index(:,1)==1,1),'Normalization','probability')
+% 
+% 
+% figure;
+% histogram(ripple_info.SO_phase(ripple_info.early_UP_index(:,2)==1,2),'Normalization','probability')
+% hold on;histogram(ripple_info.SO_phase(ripple_info.late_UP_index(:,2)==1,2),'Normalization','probability')
+
+%%% First half and second half 
+for nprobe = 1:2
+
+    % event_info (based on UP DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_UP_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_UP_duration;
+        UP_info{1} = UP_normalised_duration(1).L_ripple;
+        UP_info{2} = UP_normalised_duration(2).L_ripple;
+        
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_UP_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_UP_duration;
+        UP_info{1} = UP_normalised_duration(1).R_ripple;
+        UP_info{2} = UP_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_UP_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_UP_duration = ripple_info.normalised_UP_duration(event_ids_first,:);
+
+
+%%% First half and second half DOWN
+for nprobe = 1:2
+
+    % event_info (based on DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_DOWN_duration;
+        UP_info{1} = DOWN_normalised_duration(1).L_ripple;
+        UP_info{2} = DOWN_normalised_duration(2).L_ripple;
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_DOWN_duration;
+        UP_info{1} = DOWN_normalised_duration(1).R_ripple;
+        UP_info{2} = DOWN_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_DOWN_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_DOWN_duration = ripple_info.normalised_DOWN_duration(event_ids_first,:);
+
+%%%% Normalised SO (from DOWN peak to DOWN peak)
+
+%%% First half and second half SO
+for nprobe = 1:2
+
+    % event_info (based on DOWN)
+    UP_info = [];
+    if nprobe == 1
+        % UP_info{1} = event_info(1).L_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).L_ripple_normalised_DOWN_duration;
+        UP_info{1} = SO_normalised_duration(1).L_ripple;
+        UP_info{2} = SO_normalised_duration(2).L_ripple;
+    else
+        % UP_info{1} = event_info(1).R_ripple_normalised_DOWN_duration;
+        % UP_info{2} = event_info(2).R_ripple_normalised_DOWN_duration;
+        UP_info{1} = SO_normalised_duration(1).R_ripple;
+        UP_info{2} = SO_normalised_duration(2).R_ripple;
+    end
+
+
+    ripple_index = find(ripples_all(nprobe).SWS_index==1);
+    normalised_duration{nprobe}=nan(length(ripple_index),2);
+
+    for nevent = 1:length(ripple_index)
+
+        for hemi = 1:2
+            this_index = find(UP_info{hemi}(:,1) == ripple_index(nevent));
+            if ~isempty(this_index)
+                normalised_duration{nprobe}(nevent,hemi) =UP_info{hemi}(this_index,3);
+            end
+        end
+    end
+end
+
+ripple_info.normalised_SO_duration = [normalised_duration{1}; normalised_duration{2}];
+ripple_info.normalised_SO_duration = ripple_info.normalised_SO_duration(event_ids_first,:);
+
+
+%%%%%%
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+session_count = session_count(event_ids_first);
+subject_id = subject_id(event_ids_first);
+
+ripple_info.subject_id = subject_id;
+ripple_info.session_id = session_count;
+% save('ripple_info_SO.mat','ripple_info')
+% singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
+% singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
+ % load('ripple_info_SO.mat','ripple_info')
+% save('ripple_info.mat','ripple_info')
+%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+%%%%% Plot bias distribution
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+
+
+% z_bias1 = KDE_reactivation_content.HPC_z_ripples';
+% T1_events = find(nanmean(z_bias1(1:10,:))>0.5);
+% T2_events = find(nanmean(z_bias1(1:10,:))<-0.5);
+
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
+
+
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
+z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+
+z_bias_KDE = z_bias; % For visualisation without nan
+z_bias_V1_KDE = z_bias_V1;% For visualisation without nan
+
+z_bias = z_bias + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = z_bias_V1 + KDE_reactivation_ripples_PSTH.nan_mask';
+
+%%%%% For visualisation (without nan)
+z_bias_KDE = z_bias_KDE(:,event_ids_first);
+z_bias_V1_KDE = z_bias_V1_KDE(:,event_ids_first);
+
+%%%%% For actual calculation (with bins for perceding and succeeding ripples nan)
+z_bias = z_bias(:,event_ids_first);
+z_bias_V1 = z_bias_V1(:,event_ids_first);
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+%% Plot KDE reactivation distribution
+% % event_index = [T1_events T2_events];
+% % z_event = nanmean(z_bias(bins_to_use,[T1_events T2_events]));
+% 
+track1_color = [0 0 1]; % blue
+track2_color = [1 0 0]; % red
+
+n_half = 80;     % Number of steps from red to white and white to blue
+n_white = 60;     % Number of extra white steps to make the white region broader
+
+% Red to white
+r2w = [linspace(1,1,n_half)', linspace(0,1,n_half)', linspace(0,1,n_half)'];
+
+% White to blue
+w2b = [linspace(1,0,n_half)', linspace(1,0,n_half)', linspace(1,1,n_half)'];
+
+% Extra white section
+white = ones(n_white, 3);
+
+
+% Combine
+red_white_blue = [r2w; white; w2b];
+% 
+
+
+
+
+nfig = figure;
+% nfig.Name = 'KDE Bias PSTH all events (no thresholding blue red white)'; 
+nfig.Name = 'KDE Bias PSTH all events (no nan blue red white)'; 
+nfig.Position = [500 75 700/2 850];
+
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+event_index = 1:length(z_bias_KDE);
+z_event = nanmean(z_bias_KDE(bins_to_use,event_index));
+[~,sorted_index] = sort(z_event,'descend');
+
+nexttile
+h = imagesc(bin_centers,[],z_bias_KDE(:,event_index(sorted_index))');clim([-3 3])
+yline([0.2*length(z_bias_KDE) 0.8*length(z_bias_KDE)],'r','LineWidth',1)
+set(h, 'AlphaData', ~isnan(z_bias_KDE(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+xlim([-0.5 0.5])
+colorbar;
+colormap((red_white_blue))
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% imagesc(z_bias_V1);colorbar;
+xlabel('Time (s)')
+ylabel('Ripple event')
+
+nexttile
+bins_to_use = bin_centers>0 & bin_centers<0.2;
+
+event_index = 1:length(z_bias_V1_KDE);
+z_event = nanmean(z_bias_V1_KDE(bins_to_use,event_index));
+[~,sorted_index] = sort(z_event,'descend');
+
+
+h= imagesc(bin_centers,[],z_bias_V1_KDE(:,event_index(sorted_index))');clim([-1 1])
+yline([0.2*length(z_bias_KDE) 0.8*length(z_bias_KDE)],'r','LineWidth',1)
+set(h, 'AlphaData', ~isnan(z_bias_KDE(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+xlim([-0.5 0.5])
+colorbar;
+colormap((red_white_blue))
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlabel('Time (s)')
+ylabel('Ripple event')
+
+
+
+nexttile
+
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+
+event_index = 1:length(z_bias_V1_KDE);
+z_event = nanmean(z_bias_V1_KDE(bins_to_use,event_index));
+[~,sorted_index] = sort(z_event,'descend');
+
+h= imagesc(bin_centers,[],z_bias_V1_KDE(:,event_index(sorted_index))');clim([-1 1])
+yline([0.2*length(z_bias) 0.8*length(z_bias)],'r','LineWidth',1)
+set(h, 'AlphaData', ~isnan(z_bias(:, event_index(sorted_index))'));  % Hide NaNs (make them transparent)
+xlim([-0.5 0.5])
+colorbar;
+colormap((red_white_blue))
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlabel('Time (s)')
+ylabel('Ripple event')
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+%% Plotting spindle power relative to ripple onset
+
+% ripple_info_SO = ripple_info;
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info_all.mat'));
+sessions_to_process=1:22;
+session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+low_spindle_temporal=[];high_spindle_temporal=[];
+ripple_info.peaktime = [ripples_all(1).peaktimes(ripples_all(1).SWS_index==1); ripples_all(2).peaktimes(ripples_all(2).SWS_index==1)];
+
+for nsession = 1:22
+    this_session_id = find(session_count == nsession);
+    this_session_id = this_session_id(diff(ripple_info.peaktime(this_session_id))<0.3);
+    thresholds = prctile(ripple_info.spindle_amplitude(this_session_id,:),[25 75]);
+    low_temp_ipsi = [];low_temp_contra = [];
+    high_temp_ipsi = [];high_temp_contra = [];
+
+    for hemi = 1:2
+        low_id = ripple_info.spindle_amplitude(this_session_id,hemi) < thresholds(1,hemi);
+        high_id = ripple_info.spindle_amplitude(this_session_id,hemi) > thresholds(2,hemi);
+
+        low_temp_ipsi(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(low_id),hemi),2);
+        high_temp_ipsi(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(high_id),hemi),2);
+
+        low_temp_contra(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(low_id),abs(hemi-3)),2);
+        high_temp_contra(hemi,:) = mean(ripple_info.spindle_amplitude_temporal(:,this_session_id(high_id),abs(hemi-3)),2);
+    end
+
+    low_spindle_temporal(1,nsession,:) = mean(low_temp_ipsi);low_spindle_temporal(2,nsession,:) = mean(low_temp_contra);
+    high_spindle_temporal(1,nsession,:) = mean(high_temp_ipsi);high_spindle_temporal(2,nsession,:) = mean(high_temp_contra);
+end
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','spindle_power_ripple_PSTH.mat'),'high_spindle_temporal','low_spindle_temporal')
+
+x = ripple_info.tvec_temporal;
+% temp_PSTH = low_spindle_temporal;
+% temp_HPC_PSTH = high_spindle_temporal;
+c_ipsi = [35,139,69]/256; 
+c_contra = [106,81,163]/256;
+
+fig = figure;
+fig.Name = 'ipsi vs contra temporal spindle power relative to ripple onset';
+fig.Position = [600 200 820 800];
+
+ipsi_lower = mean(squeeze(low_spindle_temporal(1,:,:))) - std(squeeze(low_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(low_spindle_temporal(1,:,:))) + std(squeeze(low_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(low_spindle_temporal(1,:,:)));
+
+contra_lower = mean(squeeze(low_spindle_temporal(2,:,:))) - std(squeeze(low_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(low_spindle_temporal(2,:,:))) + std(squeeze(low_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(low_spindle_temporal(2,:,:)));
+
+subplot(3,2,1)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1 1])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('low spindle power');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi spindle', 'contra spindle'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+ylim([-0.8 2.5])
+
+ipsi_lower = mean(squeeze(high_spindle_temporal(1,:,:))) - std(squeeze(high_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_upper = mean(squeeze(high_spindle_temporal(1,:,:))) + std(squeeze(high_spindle_temporal(1,:,:)))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(squeeze(high_spindle_temporal(1,:,:)));
+
+contra_lower = mean(squeeze(high_spindle_temporal(2,:,:))) - std(squeeze(high_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_upper = mean(squeeze(high_spindle_temporal(2,:,:))) + std(squeeze(high_spindle_temporal(2,:,:)))/sqrt(length(sessions_to_process));
+contra_mean = mean(squeeze(high_spindle_temporal(2,:,:)));
+
+subplot(3,2,2)
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('high spindle power');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi spindle', 'contra spindle'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+ylim([-0.8 2.5])
+
+
+subplot(3,2,3)
+temp1 = squeeze(low_spindle_temporal(1,:,:)-low_spindle_temporal(2,:,:));
+ipsi_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(temp1);
+
+temp1 = squeeze(high_spindle_temporal(1,:,:)-high_spindle_temporal(2,:,:));
+contra_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_mean = mean(temp1);
+
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('ipsi-contra spindle power diff');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'low spindle ipsi-contra diff', 'high spindle ipsi-contra diff'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+
+
+subplot(3,2,4)
+temp1 = squeeze(high_spindle_temporal(1,:,:)-low_spindle_temporal(1,:,:));
+ipsi_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+ipsi_mean = mean(temp1);
+
+temp1 = squeeze(high_spindle_temporal(2,:,:)-low_spindle_temporal(2,:,:));
+contra_lower = mean(temp1) - std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_upper =mean(temp1) + std(squeeze(temp1))/sqrt(length(sessions_to_process));
+contra_mean = mean(temp1);
+
+hold on;
+% --- Plot Ipsi (Shading first, then Line) ---
+fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h1 = plot(x, ipsi_mean, 'Color', c_ipsi, 'LineWidth', 2);
+
+% --- Plot Contra (Shading first, then Line) ---
+fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+h2 = plot(x, contra_mean, 'Color', c_contra, 'LineWidth', 2);
+xlim([-1.5 1.5])
+xline([0],'--')
+xlabel('Time relative to ripple onset (s)');
+ylabel('Spindle power (z)');
+title('high-low spindle power diff');
+% Add a legend (using the plot handles h1 and h2)
+legend([h1 h2], {'ipsi high-low diff', 'contra high-low diff'}, 'Location', 'best', 'Box', 'off');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+xlim([-1 1])
+
+
+subplot(3,2,5)
+data1 = squeeze(mean(high_spindle_temporal(1,:,x>0 & x<0.2)-low_spindle_temporal(1,:,x>0 & x<0.2),3))';
+data2 = squeeze(mean(high_spindle_temporal(2,:,x>0 & x<0.2)-low_spindle_temporal(2,:,x>0 & x<0.2),3))';
+[p_val, h_stats] = signrank(data1, data2);
+fprintf('Wilcoxon signed-rank test p-value: %.4f\n', p_val);
+
+rng(1); % Seed for consistent look
+jitter_strength = 0.1; 
+x1 = 1 + (rand(size(data1)) - 0.5) * jitter_strength;
+x2 = 1.5 + (rand(size(data2)) - 0.5) * jitter_strength;
+
+% Define X-axis positions for the two groups
+x_pos = [x1, x2]';
+
+% Plot the connecting lines first (so they are in the background)
+% We concatenate data into a 2-column matrix and plot its transpose
+plot(x_pos, [data1, data2]', 'Color', [0.5 0.5 0.5 0.5], 'LineWidth', 1);
+
+% Plot individual data points with transparency (Alpha)
+hold on
+s1 = scatter(x1, data1, 100, c_ipsi, 'filled', 'MarkerFaceAlpha', 0.5); % Green
+s2 = scatter(x2, data2, 100, c_contra, 'filled', 'MarkerFaceAlpha', 0.5); % Pink
+
+% 4. Formatting the Plot
+set(gca, 'XTick', [1 1.5], 'XTickLabel', {'post ipsi diff', 'post contra diff'});
+ylabel('high-low spindle power diff');
+xlim([0.5 2]);
+grid off;
+box off;
+p_string = sprintf('p = %.4e', p_val);
+text(1.5, 0.2, p_string, 'FontSize', 12, ...
+    'HorizontalAlignment', 'center', 'FontWeight', 'bold', 'Color', 'k');
+
+hold off;
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+subplot(3,2,6)
+data1 = squeeze(mean(high_spindle_temporal(1,:,x>-0.2 & x<0)-low_spindle_temporal(1,:,x>-0.2 & x<0),3))';
+data2 = squeeze(mean(high_spindle_temporal(2,:,x>-0.2 & x<0)-low_spindle_temporal(2,:,x>-0.2 & x<0),3))';
+[p_val, h_stats] = signrank(data1, data2);
+fprintf('Wilcoxon signed-rank test p-value: %.4f\n', p_val);
+
+rng(1); % Seed for consistent look
+jitter_strength = 0.1; 
+x1 = 1 + (rand(size(data1)) - 0.5) * jitter_strength;
+x2 = 1.5 + (rand(size(data2)) - 0.5) * jitter_strength;
+
+% Define X-axis positions for the two groups
+x_pos = [x1, x2]';
+
+% Plot the connecting lines first (so they are in the background)
+% We concatenate data into a 2-column matrix and plot its transpose
+plot(x_pos, [data1, data2]', 'Color', [0.5 0.5 0.5 0.5], 'LineWidth', 1);
+
+% Plot individual data points with transparency (Alpha)
+hold on
+s1 = scatter(x1, data1, 100, c_ipsi, 'filled', 'MarkerFaceAlpha', 0.5); % Green
+s2 = scatter(x2, data2, 100, c_contra, 'filled', 'MarkerFaceAlpha', 0.5); % Pink
+
+% 4. Formatting the Plot
+set(gca, 'XTick', [1 1.5], 'XTickLabel', {'pre ipsi diff', 'pre contra diff'});
+ylabel('high-low spindle power diff');
+xlim([0.5 2]);
+grid off;
+box off;
+p_string = sprintf('p = %.4e', p_val);
+text(1.5, 0.2, p_string, 'FontSize', 12, ...
+    'HorizontalAlignment', 'center', 'FontWeight', 'bold', 'Color', 'k');
+
+hold off;
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
+
+%% Plot example event with spiking, log odds and LFP
+load(fullfile(analysis_folder,'session_clusters_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+% clear slow_waves_all
+
+cortex_ref_shank = [];
+HPC_ref_shank = [];
+for nsession = 1:max(ripples_all(1).session_count)
+    for probe_no = 1:2
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        % 
+        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
+        %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+
+        % cortex_ref_shank(nsession,probe_no) = ripples_all;
+        % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
+        % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
+        % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
+
+        shank_id = find(ripples_all(probe_no).probe_hemisphere{nsession} == probe_no);
+        HPC_ref_shank(nsession,probe_no) = shank_id(ripples_all(probe_no).best_channel(nsession));
+
+    end
+end
+clear slow_waves_all
+
+sessions_to_process = 1:22;
+%%% KDE
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+bin_centers = bin_edges(1:end-1) + timebin/2;
+
+
+% z_bias1 = KDE_reactivation_content.HPC_z_ripples';
+% T1_events = find(nanmean(z_bias1(1:10,:))>0.5);
+% T2_events = find(nanmean(z_bias1(1:10,:))<-0.5);
+
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
+
+bias = KDE_reactivation_ripples_PSTH.HPC_logodds_ripples';
+bias_V1 = KDE_reactivation_ripples_PSTH.V1_logodds_ripples';
+
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
+z_bias(z_bias<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+
+%%%%% For visualisation (without nan)
+z_bias_KDE = z_bias; % For visualisation without nan
+z_bias_V1_KDE = z_bias_V1;% For visualisation without nan
+
+bias_KDE = bias; % For visualisation without nan
+bias_V1_KDE = bias_V1;% For visualisation without nan
+
+z_bias = z_bias + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = z_bias_V1 + KDE_reactivation_ripples_PSTH.nan_mask';
+clear z_bias1
+
+% z_bias_KDE = z_bias_KDE(:,event_ids_first);
+% z_bias_V1_KDE = z_bias_V1_KDE(:,event_ids_first);
+
+% 
+% %%% spindle co-occurance
+% [~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==1,:));
+% ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+% ripple_info.spindle_presence(spindle_index,1) = 1;
+% 
+% [~,spindle_index,~,index] =RestrictInts([merged_event_info.ripples_ints(:,1) merged_event_info.ripples_ints(:,2)],merged_event_info.spindles_ints(merged_event_info.spindles_hemisphere_id==2,:));
+% % ripple_info.spindle_presence = zeros(size(spindle_index,1),2);
+% ripple_info.spindle_presence(spindle_index,2) = 1;
+% % ripple_info.spindle_presence = ripple_info.spindle_presence(event_ids_first,:);
+% 
+% %%% spindle power
+% spindle_amplitude=[];
+% for probe_no = 1:2
+%     spindle_amplitude{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.spindle_amplitude = spindle_amplitude';
+% % ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+% 
+% %%% SO phase
+% SO_phase=[];
+% for probe_no = 1:2
+%     SO_phase{probe_no}=[];
+%     for nsession = 1:length(sessions_to_process)
+%         SO_phase{probe_no} = [SO_phase{probe_no} ripples_all(probe_no).SO_phase_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%     end
+% end
+% 
+% SO_phase = [SO_phase{1}(:,ripples_all(1).SWS_index==1) SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+% 
+% ripple_info.SO_phase = SO_phase';
+% % ripple_info.SO_phase = ripple_info.SO_phase(event_ids_first,:);
+% 
+% 
+% %%%%%%% periripple_LFP_info_V1
+% spindle_amplitude1 = [periripple_LFP_info_V1(1).spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{1}(:,ripples_all(2).SWS_index==1)];
+% spindle_amplitude2 = [periripple_LFP_info_V1(1).spindle_amplitude{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+% spindle_amplitude = nan([size(spindle_amplitude1),2]);
+% spindle_amplitude(:,:,1) = spindle_amplitude1;
+% spindle_amplitude(:,:,2) = spindle_amplitude2;
+% 
+% ripple_info.spindle_amplitude_temporal = spindle_amplitude;
+% % ripple_info.spindle_amplitude_temporal = ripple_info.spindle_amplitude_temporal(:,event_ids_first,:);
+% clear spindle_amplitude spindle_amplitude1 spindle_amplitude2
+% 
+% SO_phase1 = [periripple_LFP_info_V1(1).SO_phase{1}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{1}(:,ripples_all(2).SWS_index==1)];
+% SO_phase2 = [periripple_LFP_info_V1(1).SO_phase{2}(:,ripples_all(1).SWS_index==1) periripple_LFP_info_V1(2).SO_phase{2}(:,ripples_all(2).SWS_index==1)];
+% SO_phase = nan([size(SO_phase1),2]);
+% SO_phase(:,:,1) = SO_phase1;
+% SO_phase(:,:,2) = SO_phase2;
+% 
+% ripple_info.SO_phase = SO_phase;
+% ripple_info.SO_phase_temporal = ripple_info.SO_phase_temporal(:,event_ids_first,:);
+% ripple_info.tvec_temporal = periripple_LFP_info_V1(1).tvec;
+% 
+% clear SO_phase SO_phase1 SO_phase2
+
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info_all.mat'))
+
+
+SUBJECTS={'M24016','M24017','M24018','M24062','M24064','M24065'};
+option = 'bilateral';
+experiment_info = subject_session_stimuli_mapping(SUBJECTS,option);
+experiment_info=experiment_info([4 5 6 17 18 19 21 33 34 35 44 45 46 47 56 58 59 60 70 71 72 73]);
+all_stimulus_type={'SleepChronic'};
+
+psthBinSize = 0.01;
+windows = [-1.5 1.5];
+
+for nsession = 16
+    load(fullfile(experiment_info(nsession).ANALYSIS_DATAPATH,'SleepChronic','extracted_LFP_V1_SO.mat'))
+    LFP_V1 = LFP;
+    load(fullfile(experiment_info(nsession).ANALYSIS_DATAPATH,'SleepChronic','extracted_LFP.mat'))
+
+
+    probe_no = 1;
+    lfp.samplingRate = single(round(1/mean(diff(LFP(probe_no).tvec))));
+    lfp.timestamps = single(LFP(probe_no).tvec(:));
+    tvec = single(LFP(probe_no).tvec(:));
+
+    lfp_V1 = lfp;
+    lfp_V11 = lfp;
+  
+    lfp_HPC = lfp;
+    lfp_V1.data=[];
+    lfp_HPC.data=[];
+
+    lfp_V1.data= single([LFP_V1(1).best_SO_V1(:,:)' LFP_V1(2).best_SO_V1(:,:)']);
+    lfp_V11.data= single([LFP(1).best_V1(:,:)' LFP(2).best_V1(:,:)']);
+    lfp_HPC.data= single([LFP(1).best_HPC(:,:)' LFP(2).best_HPC(:,:)']);
+    %         end
+    clear LFP LFP_V1
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % cortex_ref_shank(nsession,probe_no)
+    % HPC_ref_shank(nsession,probe_no)
+
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%% Bandpass filtter %%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    filterparms.deltafilter = [0.5 4];%heuristically defined.  room for improvement here.
+    filterparms.thetafilter = [4 12];%heuristically defined.  room for improvement here.
+    filterparms.spindlesfilter = [9 17];%heuristically defined.  room for improvement here.
+    filterparms.lowgammafilter = [30 60];%heuristically defined.  room for improvement here.
+    filterparms.highgammafilter = [60 100];%heuristically defined.  room for improvement here.
+    filterparms.ripplesfilter = [125 300];%heuristically defined.  room for improvement here.
+    lfp = [];
+    for nregion = 1:2
+        if nregion == 1
+            lfp = lfp_V1;
+            % lfp = lfp_V11;
+            lfp.data = zscore(double(lfp.data(:,:)));
+        else
+            lfp = lfp_HPC;
+            lfp.data = zscore(double(lfp.data(:,:)));
+        end
+
+        % grab delta LFP
+        deltaLFP = bz_Filter(lfp,'passband',filterparms.deltafilter,'filter','fir1','order',1);
+        zscored_LFP = zscore(deltaLFP.data);
+        lfp.SO_phase_LFP = deltaLFP.phase;
+        lfp.SO_amplitude_LFP = zscore(deltaLFP.amp);
+        deltaLFP = [];
+
+        % grab spindles LFP
+        filter_type  = 'bandpass';
+        passband = [9 17];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_spindle = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_spindle,1, lfp.data(:,nShank));
+        end
+        %                     spindle_amplitude_LFP = zscore(envelope(signal,round(lfp.samplingRate/5),'rms'));
+        %                     spindle_amplitude_LFP = smoothdata(spindle_amplitude_LFP,'gaussian',round(lfp.samplingRate/5)); % envelop amplitude of spindles
+        lfp.spindle_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.spindle_phase_LFP = angle(hilbert(signal)); % phase
+        lfp.spindle_LFP = zscore(signal); % z signal
+        signal = [];
+
+
+        % grab ripples LFP
+        filter_type  = 'bandpass';
+        passband = [125 300];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for ripple
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_ripple = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_ripple,1, lfp.data(:,nShank));
+        end
+        lfp.ripple_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.ripple_phase_LFP = angle(hilbert(signal)); % phase
+        signal = [];
+
+
+
+        % grab gamma LFP
+        filter_type  = 'bandpass';
+        passband = [30 60];
+        filter_order = round(6*lfp.samplingRate/(max(passband)-min(passband)));  % creates filter for theta
+        norm_freq_range = passband/(lfp.samplingRate/2); % SR/2 = nyquist freq i.e. highest freq that can be resolved
+        b_theta = fir1(filter_order, norm_freq_range,filter_type);
+
+        signal = [];
+        for nShank = 1:size(lfp.data,2)
+            signal(:,nShank) = filtfilt(b_theta,1, lfp.data(:,nShank));
+        end
+
+        lfp.gamma_amplitude_LFP = zscore(abs(hilbert(signal))); % z scored amplitude
+        lfp.gamma_phase_LFP = angle(hilbert(signal)); % phase
+
+
+        if nregion == 1
+            lfp_V1  = lfp;
+
+        else
+            lfp_HPC = lfp;
+        end
+
+    end
+
+
+    tic
+
+    session_id = [ripples_all(1).session_count(ripples_all(1).SWS_index); ripples_all(2).session_count(ripples_all(2).SWS_index)];
+
+    % ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
+    event_offset = [ripples_all(1).offset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).offset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
+
+    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1); ripples_all(2).onset(ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)];
+    event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
+
+    % threshold = prctile(ripple_powers,75);
+    % threshold = 0;
+    [event_ids_first,event_ids_second] = merge_bilateral_ripple_events(event_id,event_times,0.05);
+    % high_ripple_index = find( ripple_powers > threshold);
+    % event_times = event_times(high_ripple_index);
+    % event_id = event_id(high_ripple_index);
+
+    % event_ids_first = intersect(high_ripple_index,event_ids_first);
+    event_times_all = event_times;
+    event_offset_all = event_offset;
+
+    event_times = event_times(event_ids_first);
+    event_offset = event_offset(event_ids_first);
+    event_id = event_id(event_ids_first);
+    event_id(event_id==2) = 1;
+
+    spindle_times1 = [spindles_all(1).onset(spindles_all(1).session_count == nsession&spindles_all(1).SWS_index==1) spindles_all(1).offset(spindles_all(1).session_count == nsession&spindles_all(1).SWS_index==1)];
+    spindle_times2 = [spindles_all(2).onset(spindles_all(2).session_count == nsession&spindles_all(2).SWS_index==1) spindles_all(2).offset(spindles_all(2).session_count == nsession&spindles_all(2).SWS_index==1)];
+
+    % event_id = [ones(sum(ripples_all(1).session_count == nsession&ripples_all(1).SWS_index==1),1); 2*ones(sum((ripples_all(2).session_count == nsession&ripples_all(2).SWS_index==1)),1)];
+
+
+    %%%%%%%%%% V1
+    % V1_zPSTH=cell(1,2);
+    hemispheres = {'L','R'};
+    V1_SUA=cell(1,2);
+    V1_MUA=[];
+
+    HPC_SUA=cell(1,2);
+    HPC_MUA=[];
+
+
+    cell_index = (contains(session_clusters_all.region{nsession},'HPC'));
+    % cell_index = (contains(session_clusters_all.region{nsession},'HPC') & contains(session_clusters_all.region{nsession},'R'));
+    cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+    
+    spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+    spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+    psthBinSize = 0.01;
+    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+        'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
+    HPC_SUA = permute([ripple_modulation(1).PSTH],[2 1 3]);
+    x_bins = ripple_modulation(1).bins;
+
+    psthBinSize = 0.01;
+    spike_id = ones(1,length(spike_id));
+    ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+        'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+    HPC_MUA = [ripple_modulation(1).PSTH_zscored];
+
+
+    for hemi = 1:2
+        % cell_index
+
+        cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi)&...
+            contains(session_clusters_all.region{nsession},'V1') &...
+            contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+
+        % cell_index = (contains(session_clusters_all.region{nsession},'V1') &...
+        %     contains(session_clusters_all.region{nsession},hemispheres{1}));
+
+        % cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi)&...
+        %     contains(session_clusters_all.region{nsession},'V1'));
+
+        % cell_index = (contains(session_clusters_all.region{nsession},'V1'));
+
+        cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+
+        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+        psthBinSize = 0.01;
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+            'unit_id',cell_id,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
+        V1_SUA{hemi} = permute([ripple_modulation(1).PSTH],[2 1 3]);
+
+        psthBinSize = 0.01;
+        spike_id = ones(1,length(spike_id));
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,windows,psthBinSize,...
+            'unit_id',1,'event_times',event_times,'event_id',event_id,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+         V1_MUA{hemi} = [ripple_modulation(1).PSTH_zscored];
+    end
+    x_bins_MUA = ripple_modulation(1).bins;
+
+
+    event_id = find(session_id == sessions_to_process(nsession));
+    event_id = event_id(event_ids_first);
+
+    bins_to_use = bin_centers>0 & bin_centers<0.1;
+
+    mean_bias = mean(z_bias(bin_centers>0 & bin_centers<0.1,:),'omitnan');
+    log_odds_thresholds = prctile(mean_bias,[5 10 25 50 75 90 95]);
+
+    mean_V1_bias = mean(z_bias_V1_KDE(bin_centers>-0.1 & bin_centers<0.1,:));
+    V1_thresholds = prctile(mean_V1_bias,[20 80]);
+
+    selected_events = [];
+    for nthreshold = 1:length(log_odds_thresholds)-1
+        if log_odds_thresholds(nthreshold)<prctile(mean_bias,[ 50])
+            selected_events{nthreshold} = find(mean_bias(event_id) >log_odds_thresholds(nthreshold) & mean_bias(event_id) <log_odds_thresholds(nthreshold+1)...
+                & mean_V1_bias(event_id) <V1_thresholds(1));
+        else
+            selected_events{nthreshold} = find(mean_bias(event_id) >log_odds_thresholds(nthreshold) & mean_bias(event_id) <log_odds_thresholds(nthreshold+1)...
+                & mean_V1_bias(event_id) >V1_thresholds(2));
+        end
+    end
+    
+    SO_phase = ripple_info.SO_phase(event_id,:) > -pi/2 & ripple_info.SO_phase(event_id,:) < pi/2; % 1 - peak and 0 - trough
+    spindle_power = ripple_info.spindle_amplitude(event_id,:) ;
+    spindle_presence = ripple_info.spindle_presence(event_id,:);
+
+    % selected_events = [];
+    %%%% [Events x Neurons x Time]
+    track_id= 1;
+  
+
+    nthreshold =1; % Track R biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 0 & SO_phase(selected_events{nthreshold}(:),2)==1);
+    search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 1 & spindle_presence(selected_events{nthreshold}(:),2)==0);
+    search_index = find(spindle_power(selected_events{nthreshold}(:),1) > prctile(ripple_info.spindle_amplitude(event_id,1),[80]) &...
+        spindle_power(selected_events{nthreshold}(:),2)==0 < prctile(ripple_info.spindle_amplitude(event_id,2),[40]));
+
+    nthreshold =5; % Track L biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 1 & SO_phase(selected_events{nthreshold}(:),2)==0);
+
+    search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 0 & spindle_presence(selected_events{nthreshold}(:),2)==1);
+    search_index = find(spindle_power(selected_events{nthreshold}(:),2) > prctile(ripple_info.spindle_amplitude(event_id,2),[75]) &...
+        spindle_power(selected_events{nthreshold}(:),1)==0 < prctile(ripple_info.spindle_amplitude(event_id,1),[40]));
+
+    search_index = selected_events{nthreshold};
+% [28 29 32 34 36 39 40]
+% selected_events{nthreshold} = [209 388 641 687];
+
+    for nevent = 1:length(search_index)
+
+        this_event = selected_events{nthreshold}(search_index(nevent));
+        % this_event = selected_events{nthreshold}(nevent);
+
+        % this_event = nevent
+        nearby_events = (find(event_times_all < event_times(this_event)+1 & event_times_all > event_times(this_event)-1));
+        nearby_events_merged = (find(event_times < event_times(this_event)+1 & event_times > event_times(this_event)-1));
+
+
+        onsets = event_times_all(nearby_events)-event_times(this_event);
+        offsets = event_offset_all(nearby_events)-event_times(this_event);
+
+        % fig = figure('Name',sprintf('%s %i ripple LFP spiking log odds',experiment_info(nsession).experiment_ID,this_event));
+        % fig = figure('Name',sprintf('%s %i ripple LFP spiking 10ms bins log odds',experiment_info(nsession).experiment_ID,this_event));
+        fig = figure('Name',sprintf('%s %i ripple LFP spiking 10ms bins log odds smooth',experiment_info(nsession).experiment_ID,this_event));
+        % fig = figure('Name',sprintf('%s %i ripple and spindle LFP spiking 10ms bins log odds',experiment_info(nsession).experiment_ID,this_event));
+
+        fig.Position = [851 65 960 925];
+        
+        if length(nearby_events_merged)==1
+            active_cells = sum(sum((V1_SUA{1}(1:3,:,:)),3))>0;
+        else
+            active_cells = sum(sum((V1_SUA{1}(nearby_events_merged,:,:)),3))>0;
+        end
+        % active_cells = find(ismember(find(contains(session_clusters_all.region{nsession},'V1')),...
+        %     find(session_clusters_all.mean_FR{nsession}(:,abs(1-3)) > session_clusters_all.mean_FR{nsession}(:,1))));
+        % active_cells = active_cells(1:2:end-2);
+        % active_cells1 = active_cells;
+        ax1 = subplot(8,1,1); imagesc(x_bins,1:size(V1_SUA{1}(:,active_cells,:),2),squeeze(V1_SUA{1}(this_event,active_cells,:)))
+        % ax1 = subplot(8,1,1);imagesc(x_bins,1:size(V1_SUA{1},2),squeeze(V1_SUA{1}(this_event,:,:)))
+        xlim([-1.5 1.5]);clim([0 1]);colormap(ax1,[1 1 1; 0.9668, 0.6152, 0.5859]);
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        for i = 1:length(nearby_events_merged)
+            if mean_V1_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+        
+        if length(nearby_events_merged)==1
+            active_cells = sum(sum((V1_SUA{2}(1:3,:,:)),3))>0;
+        else
+            active_cells = sum(sum((V1_SUA{2}(nearby_events_merged,:,:)),3))>0;
+        end
+        % active_cells = setdiff(1:size(V1_SUA{2},2),active_cells1);
+        ax2 = subplot(8,1,2);imagesc(x_bins,1:size(V1_SUA{2},2),squeeze(V1_SUA{2}(this_event,:,:)))
+        % ax2 = subplot(8,1,2); imagesc(x_bins,1:size(V1_SUA{2}(:,active_cells,:),2),squeeze(V1_SUA{2}(this_event,active_cells,:)))
+        xlim([-1.5 1.5]);clim([0 1]);colormap(ax2,[1 1 1; 0.6289, 0.7852, 0.8867]);
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        % yline(sum(hemi_id==1),'k','LineWidth',1)
+
+        ax3 = subplot(8,1,3); imagesc(x_bins,1:size(HPC_SUA,2),squeeze(HPC_SUA(this_event,:,:)))
+        xlim([-1.5 1.5]);clim([0 1]);colormap(ax3,[1 1 1; 0.3 0.3 0.3]);
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        subplot(8,1,4);
+        tempV1 = movmedian(fillmissing(z_bias_V1_KDE(:,event_id(this_event)), 'linear'),3);
+        plot(bin_centers,tempV1,'m');
+        tempHPC = movmedian(fillmissing(z_bias_KDE(:,event_id(this_event)), 'linear'),3);
+        
+        hold on;plot(bin_centers,tempHPC,'k');xlim([-1.5 1.5]);ylim([-4.5 4.5])
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        yline(0,'--')
+        for i = 1:length(nearby_events_merged)
+            text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+        end
+
+        LFP_t = tvec >= event_times(this_event) - 1.5 & tvec <= event_times(this_event) + 1.5;
+        % subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,1) ,'r');
+        % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,5) ,'b');xlim([-1.5 1.5])
+        subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        % LFP_t = ripple_info.tvec_temporal;
+        % subplot(8,1,6)
+        % % ripple_info.SO_phase_temporal(1,event_id(this_event),:)
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),1)),'r');hold on;
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),2)),'b');
+        % yl = ylim; % Get y-limits to fill the height
+
+        % X = [onsets'; offsets'; offsets'; onsets'];
+        % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        LFP_t = tvec >= event_times(this_event) - 1.5 & tvec <= event_times(this_event) + 1.5;
+        subplot(8,1,6);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        yline([-pi/2 pi/2],'k--')
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        LFP_t = tvec >= event_times(this_event) - 1.5 & tvec <= event_times(this_event) + 1.5;
+        % subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times2(:,1)-event_times(this_event)]'; [spindle_times2(:,2)-event_times(this_event)]';...
+            [spindle_times2(:,2)-event_times(this_event)]'; [spindle_times2(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times2(:,1),1));
+        patch(X, Y, 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times1(:,1)-event_times(this_event)]'; [spindle_times1(:,2)-event_times(this_event)]';...
+            [spindle_times1(:,2)-event_times(this_event)]'; [spindle_times1(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times1(:,1),1));
+        patch(X, Y, 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+        % spindle_times1(:,1)-event_times(this_event)
+
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        LFP_t = tvec >= event_times(this_event) - 1.5 & tvec <= event_times(this_event) + 1.5;
+        subplot(8,1,8);plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+    end
+
+    % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example','selected'),[],'ContentType','vector')
+    save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example'),[],'ContentType','vector')
+
+
+    %%%% Only LFP and Spiking (15S)
+    nthreshold =1; % Track R biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 0 & SO_phase(selected_events{nthreshold}(:),2)==1);
+    search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 1 & spindle_presence(selected_events{nthreshold}(:),2)==0);
+    search_index = find(spindle_power(selected_events{nthreshold}(:),1) > prctile(ripple_info.spindle_amplitude(event_id,1),[80]) &...
+        spindle_power(selected_events{nthreshold}(:),2)==0 < prctile(ripple_info.spindle_amplitude(event_id,2),[40]));
+
+    nthreshold =6; % Track L biased
+    search_index = find(SO_phase(selected_events{nthreshold}(:),1) == 1 & SO_phase(selected_events{nthreshold}(:),2)==0);
+
+    search_index = find(spindle_presence(selected_events{nthreshold}(:),1) == 0 & spindle_presence(selected_events{nthreshold}(:),2)==1);
+    search_index = find(spindle_power(selected_events{nthreshold}(:),2) > prctile(ripple_info.spindle_amplitude(event_id,2),[75]) &...
+        spindle_power(selected_events{nthreshold}(:),1)==0 < prctile(ripple_info.spindle_amplitude(event_id,1),[40]));
+
+    search_index = selected_events{nthreshold};
+
+    tlim = [-6 6]
+    for nevent = 1:length(search_index)
+        % this_event = selected_events{nthreshold}(search_index(nevent));
+        this_event = selected_events{nthreshold}((nevent));
+
+        V1_SUA_sleep = [];
+        HPC_SUA_sleep = [];
+        V1_MUA_sleep = [];
+        HPC_MUA_sleep = [];
+
+        % cell_index
+        cell_index = (contains(session_clusters_all.region{nsession},'HPC'));
+        cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+
+        spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+        spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+        psthBinSize = 0.01;
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+            'unit_id',cell_id,'event_times', event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
+        HPC_SUA_sleep = permute([ripple_modulation(1).PSTH],[2 1 3]);
+
+        psthBinSize = 0.01;
+        spike_id = ones(1,length(spike_id));
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+            'unit_id',1,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+        HPC_MUA_sleep = [ripple_modulation(1).PSTH_zscored];
+
+        for hemi = 1:2
+            V1_SUA_sleep{hemi}=[];
+            % cell_index
+            cell_index = (session_clusters_all.mean_FR{nsession}(:,abs(hemi-3)) > session_clusters_all.mean_FR{nsession}(:,hemi)&...
+                contains(session_clusters_all.region{nsession},'V1') &...
+                contains(session_clusters_all.region{nsession},hemispheres{hemi}));
+            cell_id = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+
+            spike_index = ismember(session_clusters_all.spike_id{nsession},cell_id);
+            spike_id = session_clusters_all.spike_id{nsession}(spike_index);
+            psthBinSize = 0.01;
+            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+                'unit_id',cell_id,'event_times', event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',0);
+            V1_SUA_sleep{hemi} = permute([ripple_modulation(1).PSTH],[2 1 3]);
+
+            psthBinSize = 0.01;
+            spike_id = ones(1,length(spike_id));
+            ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index),spike_id,tlim,psthBinSize,...
+                'unit_id',1,'event_times',event_times(this_event),'event_id',1,'saving_PSTH',1,'shuffle_option',0,'smooth_option',1);
+            V1_MUA_sleep{hemi} = [ripple_modulation(1).PSTH_zscored];
+        end
+        sleep_x_bins = ripple_modulation(1).bins;
+
+
+        % this_event = nevent
+        nearby_events = (find(event_times_all < event_times(this_event)+tlim(2) & event_times_all > event_times(this_event)+tlim(1)));
+        nearby_events_merged = (find(event_times < event_times(this_event)+tlim(2) & event_times > event_times(this_event)+tlim(1)));
+
+
+        onsets = event_times_all(nearby_events)-event_times(this_event);
+        offsets = event_offset_all(nearby_events)-event_times(this_event);
+
+        sigma_bins = 10;
+        x = (-round(3 * sigma_bins):0); % Only non-positive indices
+        kernel = exp(-(-round(3 * sigma_bins):0).^2 / (2 * 0.1^2));
+        kernel = kernel / sum(kernel); % Normalize
+
+        %%%%
+        %%%%
+        %%%% MUA version
+        fig = figure('Name',sprintf('%s %i Sleep LFP MUA',experiment_info(nsession).experiment_ID,this_event));
+        fig.Position = [851 65 960 925];
+
+
+        ax1 = subplot(8,1,1);
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(V1_MUA_sleep{1})),[10]),'r');
+
+        xlim(tlim);ylim([-1.2 4])
+        % gca;colormap(gca,[1 1 1; 0 0 0])
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        ax2 = subplot(8,1,2);
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(V1_MUA_sleep{2})),[10]),'b');
+
+        xlim(tlim);  ylim([-1.2 4])
+        % gca;colormap(gca,[1 1 1; 0 0 0])
+        % colormap(flipud(gray));
+        hold on;
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        % yline(sum(hemi_id==1),'k','LineWidth',1)
+        for i = 1:length(nearby_events_merged)
+            if mean_V1_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+
+        
+        ax3 = subplot(8,1,3); 
+        % plot(sleep_x_bins,double(squeeze(V1_MUA_sleep{1})));
+        % hold on; plot(sleep_x_bins,conv(double(squeeze(V1_MUA_sleep{1})), kernel, 'same'))
+        hold on;plot(sleep_x_bins,movmedian(double(squeeze(HPC_MUA_sleep)),[10]),'k');
+        ylim([-1 4])
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        for i = 1:length(nearby_events_merged)
+            if mean_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+        %
+        subplot(8,1,4);
+
+        fs = mean(1./diff(bin_centers)); % Calculate exact Hz from KDE bins
+        total_bins = round((tlim(2) - tlim(1)) * fs);
+        center_bin = abs(tlim(1)) * fs;
+
+        % Initialize the master vector for this reference event
+        tempV1 = nan(total_bins, 1);
+        tempHPC = nan(total_bins, 1);
+
+        % --- Find and Loop Neighbors ---
+        % Finding events within 5 seconds of the reference 'this_event'
+        nearby_events_merged = find(event_times < event_times(this_event) + tlim(2) & ...
+            event_times > event_times(this_event) + tlim(1));
+
+        for i = 1:length(nearby_events_merged)
+            neighbor_id = nearby_events_merged(i);
+
+            % 1. Calculate the relative onset of the neighbor ripple
+            rel_start_time = event_times(neighbor_id) - event_times(this_event)-1;
+
+            % 2. Convert time to bin indices
+            % We add 1 because MATLAB is 1-indexed; bin 1 is tlim(1)
+            idx_start = round((rel_start_time - tlim(1)) * fs) + 1;
+            idx_end   = idx_start + size(z_bias_V1_KDE, 1) - 1;
+
+            % 4. Logical check: Ensure we don't index outside the 1200-bin window
+            % This handles cases where a neighbor is at -5.5s (so its -1s tail is out of bounds)
+            target_indices = idx_start:idx_end;
+            source_indices = 1:size(z_bias_V1_KDE, 1);
+
+            out_of_bounds = target_indices < 1 | target_indices > total_bins;
+            target_indices(out_of_bounds) = [];
+            source_indices(out_of_bounds) = [];
+
+            % 5. Insert Data
+            if ~isempty(target_indices)
+                % Only fill NaNs to avoid double-counting or overwriting overlaps
+                mask = isnan(tempV1(target_indices));
+                tempV1(target_indices(mask)) = fillmissing(z_bias_V1_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                tempHPC(target_indices(mask)) = fillmissing(z_bias_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                % stitched_trace(target_indices(mask)) = z_bias_V1_KDE(source_indices(mask), neighbor_id);
+            end
+        end
+
+        tempV1 = movmedian(tempV1,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        plot(t_axis,tempV1,'m');
+        tempHPC = movmedian(tempHPC,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        hold on;
+        plot(t_axis,tempHPC,'k');
+        xlim([tlim]);ylim([-4 4])
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        yline(0,'--')
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        % LFP_t = ripple_info.tvec_temporal;
+        % subplot(8,1,6)
+        % % ripple_info.SO_phase_temporal(1,event_id(this_event),:)
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),1)),'r');hold on;
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),2)),'b');
+        % yl = ylim; % Get y-limits to fill the height
+
+        % X = [onsets'; offsets'; offsets'; onsets'];
+        % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,6);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        yline([-pi/2 pi/2],'k--')
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        % subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times2(:,1)-event_times(this_event)]'; [spindle_times2(:,2)-event_times(this_event)]';...
+            [spindle_times2(:,2)-event_times(this_event)]'; [spindle_times2(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times2(:,1),1));
+        patch(X, Y, 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times1(:,1)-event_times(this_event)]'; [spindle_times1(:,2)-event_times(this_event)]';...
+            [spindle_times1(:,2)-event_times(this_event)]'; [spindle_times1(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times1(:,1),1));
+        patch(X, Y, 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+        % spindle_times1(:,1)-event_times(this_event)
+
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,8);plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+
+
+        %%%%
+        %%%%
+        %%%% Raster version
+        fig = figure('Name',sprintf('%s %i Sleep LFP spiking',experiment_info(nsession).experiment_ID,this_event));
+        fig.Position = [851 65 960 925];
+
+        ax1 = subplot(8,1,1);imagesc(sleep_x_bins,1:size(V1_SUA_sleep{1},2),squeeze(V1_SUA_sleep{1}(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax1,[1 1 1; 0.9668, 0.6152, 0.5859]);
+        colormap(ax1,[1 1 1; 1 0 0])
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        ax2 = subplot(8,1,2); imagesc(sleep_x_bins,1:size(V1_SUA_sleep{2},2),squeeze(V1_SUA_sleep{2}(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax2,[1 1 1; 0.6289, 0.7852, 0.8867]);
+        colormap(ax2,[1 1 1; 0 0 1])
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        % yline(sum(hemi_id==1),'k','LineWidth',1)
+        for i = 1:length(nearby_events_merged)
+            if mean_V1_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_V1_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+
+        ax3 = subplot(8,1,3); imagesc(sleep_x_bins,1:size(HPC_SUA_sleep,2),squeeze(HPC_SUA_sleep(1,:,:)))
+        xlim(tlim);clim([0 1]);colormap(ax3,[1 1 1; 0.3 0.3 0.3]);
+        % colormap(flipud(gray));
+        hold on;
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        for i = 1:length(nearby_events_merged)
+            if mean_bias(event_id(nearby_events_merged((i)))) >0
+                text(event_times(nearby_events_merged(i))-event_times(this_event),1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            else
+                text(event_times(nearby_events_merged(i))-event_times(this_event),-1,num2str(mean_bias(event_id(nearby_events_merged((i)))), '%.2f'))
+            end
+        end
+
+
+        %
+        subplot(8,1,4);
+
+        fs = mean(1./diff(bin_centers)); % Calculate exact Hz from KDE bins
+        total_bins = round((tlim(2) - tlim(1)) * fs);
+        center_bin = abs(tlim(1)) * fs;
+
+        % Initialize the master vector for this reference event
+        tempV1 = nan(total_bins, 1);
+        tempHPC = nan(total_bins, 1);
+
+        % --- Find and Loop Neighbors ---
+        % Finding events within 5 seconds of the reference 'this_event'
+        nearby_events_merged = find(event_times < event_times(this_event) + tlim(2) & ...
+            event_times > event_times(this_event) + tlim(1));
+
+        for i = 1:length(nearby_events_merged)
+            neighbor_id = nearby_events_merged(i);
+
+            % 1. Calculate the relative onset of the neighbor ripple
+            rel_start_time = event_times(neighbor_id) - event_times(this_event)-1;
+
+            % 2. Convert time to bin indices
+            % We add 1 because MATLAB is 1-indexed; bin 1 is tlim(1)
+            idx_start = round((rel_start_time - tlim(1)) * fs) + 1;
+            idx_end   = idx_start + size(z_bias_V1_KDE, 1) - 1;
+
+            % 4. Logical check: Ensure we don't index outside the 1200-bin window
+            % This handles cases where a neighbor is at -5.5s (so its -1s tail is out of bounds)
+            target_indices = idx_start:idx_end;
+            source_indices = 1:size(z_bias_V1_KDE, 1);
+
+            out_of_bounds = target_indices < 1 | target_indices > total_bins;
+            target_indices(out_of_bounds) = [];
+            source_indices(out_of_bounds) = [];
+
+            % 5. Insert Data
+            if ~isempty(target_indices)
+                % Only fill NaNs to avoid double-counting or overwriting overlaps
+                mask = isnan(tempV1(target_indices));
+                tempV1(target_indices(mask)) = fillmissing(z_bias_V1_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                tempHPC(target_indices(mask)) = fillmissing(z_bias_KDE(source_indices(mask),event_id(neighbor_id)), 'linear');
+                % stitched_trace(target_indices(mask)) = z_bias_V1_KDE(source_indices(mask), neighbor_id);
+            end
+        end
+
+        tempV1 = movmedian(tempV1,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        plot(t_axis,tempV1,'m');
+        tempHPC = movmedian(tempHPC,3);t_axis = linspace(tlim(1), tlim(2), total_bins);
+        hold on;
+        plot(t_axis,tempHPC,'k');
+        xlim([tlim]);ylim([-4 4])
+
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+        yline(0,'--')
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,5);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.data(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        % LFP_t = ripple_info.tvec_temporal;
+        % subplot(8,1,6)
+        % % ripple_info.SO_phase_temporal(1,event_id(this_event),:)
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),1)),'r');hold on;
+        % plot(LFP_t,squeeze(ripple_info.SO_phase_temporal(:,event_id(this_event),2)),'b');
+        % yl = ylim; % Get y-limits to fill the height
+
+        % X = [onsets'; offsets'; offsets'; onsets'];
+        % Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        % patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,6);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.SO_phase_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        yline([-pi/2 pi/2],'k--')
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        % subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        % hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_amplitude_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim([-1.5 1.5])
+        subplot(8,1,7);plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_V1.spindle_LFP(LFP_t,cortex_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times2(:,1)-event_times(this_event)]'; [spindle_times2(:,2)-event_times(this_event)]';...
+            [spindle_times2(:,2)-event_times(this_event)]'; [spindle_times2(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times2(:,1),1));
+        patch(X, Y, 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+
+        X = [[spindle_times1(:,1)-event_times(this_event)]'; [spindle_times1(:,2)-event_times(this_event)]';...
+            [spindle_times1(:,2)-event_times(this_event)]'; [spindle_times1(:,1)-event_times(this_event)]'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, size(spindle_times1(:,1),1));
+        patch(X, Y, 'r', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+        % spindle_times1(:,1)-event_times(this_event)
+
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+        LFP_t = tvec >= event_times(this_event) +tlim(1) & tvec <= event_times(this_event) +tlim(2);
+        subplot(8,1,8);plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,1)) ,'r');
+        hold on;plot(tvec(LFP_t)-event_times(this_event),lfp_HPC.data(LFP_t,HPC_ref_shank(nsession,2)) ,'b');xlim(tlim)
+        % Shade the regions
+        yl = ylim; % Get y-limits to fill the height
+        X = [onsets'; offsets'; offsets'; onsets'];
+        Y = repmat([yl(1); yl(1); yl(2); yl(2)], 1, length(onsets));
+        patch(X, Y, 'k', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+        set(gca,"TickDir","out",'box','off','Color','none','FontSize',12)
+
+    end
+
+end
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple LFP spiking log odds example\sleep'),[],'ContentType','vector')
+
+% save_all_figures('C:\Users\masahiro.takigawa\Downloads',[],'ContentType','vector')
+
+%%
+%%%%% Plot distribution
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%% Ripple power distribution
+% ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+
+fig = figure('Color','w');
+fig.Position=[158 358 702/2*3 546];
+fig.Name = 'Ripple peaktime ripple spindle SO power distribution (merged)';
+
+
+% histogram([ripple_info.ripple_power],4:0.5:25,'Normalization','probability')
+temp = ripple_info.ripple_power;
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Ipsi amplitude
+nexttile
+
+histogram(temp,4:0.5:20,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Ripple power (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Ripple power');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+
+temp = ripple_info.spindle_amplitude(:,1);
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Left V1 amplitude
+nexttile
+
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Left V1 spindle amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+temp = ripple_info.spindle_amplitude(:,2);
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Right V1 amplitude
+nexttile
+
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Right V1 spindle amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+temp = ripple_info.SO_amplitude(:,1);
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Left V1 amplitude
+nexttile
+
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Left V1 SO amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+temp = ripple_info.SO_amplitude(:,2);
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Right V1 amplitude
+nexttile
+
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Right V1 SO amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%%%%%%%%%%%
+
+%%
+%%%%% Plot distribution
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%% Ripple power distribution
+% ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+
+fig = figure('Color','w');
+fig.Position=[158 358 702/2*3 546];
+fig.Name = 'Ripple peaktime ripple spindle SO power distribution (combined)';
+
+
+% histogram([ripple_info.ripple_power],4:0.5:25,'Normalization','probability')
+temp = ripple_info.ripple_power;
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Ipsi amplitude
+nexttile
+
+histogram(temp,4:0.5:20,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Ripple power (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('Ripple power');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+temp = [ripple_info.spindle_amplitude(:,1); ripple_info.spindle_amplitude(:,2)];
+temp_thresholds = prctile(temp,[25 50 75]);
+
+% Left V1 amplitude
+nexttile
+
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('V1 spindle amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+
+% Right V1 amplitude
+nexttile
+
+% Left V1 amplitude
+temp = [ripple_info.SO_amplitude(:,1); ripple_info.SO_amplitude(:,2)];
+temp_thresholds = prctile(temp,[25 50 75]);
+nexttile
+histogram(temp,-2:0.05:5,'EdgeColor','none','Normalization','probability'); % You can change 50 to control bin numbers
+xlabel('Amplitude (z)');  % or whatever unit your times are
+ylabel('probability');
+hold on
+xline(temp_thresholds,'r')
+title('V1 SO amplitude');
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+% Right V1 amplitude
+nexttile
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+
+
+
+
+
+%%% Bilateral spindle power
+spindle_amplitude=[];
+for probe_no = 1:2
+    spindle_amplitude{probe_no}=[];
+    for nsession = 1:length(sessions_to_process)
+        spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+    end
+end
+
+spindle_amplitude = [spindle_amplitude{1}(:,ripples_all(1).SWS_index==1) spindle_amplitude{2}(:,ripples_all(2).SWS_index==1)];
+
+ripple_info.spindle_amplitude = spindle_amplitude';
+ripple_info.spindle_amplitude = ripple_info.spindle_amplitude(event_ids_first,:);
+
+tbl = table(session_count, subject_id,ripple_info.spindle_amplitude(:,1),ripple_info.spindle_amplitude(:,2),'VariableNames',{'SessionID','AnimalID','SpindleL','SpindleR'});
+lme = fitlme(tbl, 'SpindleL ~ SpindleR + (1|SessionID)+ (1|AnimalID)+ (1|AnimalID:SessionID)');
+
+[N, xEdges, yEdges] = histcounts2(ripple_info.spindle_amplitude(:,1),ripple_info.spindle_amplitude(:,2),-1.8:0.2:4.5,-1.8:0.2:4.5,'Normalization','probability');
+% [N, xEdges, yEdges] = histcounts2(ripple_info.spindle_amplitude(:,1),ripple_info.spindle_amplitude(:,2),0:2:100,0:2:100);
+xCenters = xEdges(1:end-1) + diff(xEdges)/2;
+yCenters = yEdges(1:end-1) + diff(yEdges)/2;
+figure('Name','Left vs Right spindle power distribution');
+imagesc(xCenters, yCenters, N'); % Transpose N because imagesc reads (row, col)
+axis tight; 
+set(gca, 'YDir', 'normal'); % Flip Y-axis so it doesn't look like a matrix
+colorbar;
+colormap(flipud(gray)); % 'parula' or 'turbo' are also great options
+xlabel('L Spindle Power (z)');ylabel('R Spindle Power (z)')
+hold on;
+xline(prctile(ripple_info.spindle_amplitude(:,1),[0:25:75]),'r')
+yline(prctile(ripple_info.spindle_amplitude(:,2),[0:25:75]),'r')
+set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 12)
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[])
+
+
+
+[rho, pval] = circ_corrcc(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2));
+
+fprintf('Circular Correlation: %.4f\n', rho);
+fprintf('p-value: %.4e\n', pval);
+
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%%
+% %%%%%%%%%%% SO phase coupling
+
+
+fig = figure
+fig.Name = 'Ripple-SO phase-locking (merged)'
+% fig.Name = 'Ripple-SO phase-locking (combined)'
+fig.Position=[158 358 702 546];
+
+temp = ripple_info.SO_phase(:,1);
+% temp = [ripple_info.SO_phase(:,1); ripple_info.SO_phase(:,2)];
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(temp);
+mean_angle = circ_mean(temp);
+pvals(end+1) = circ_rtest(temp);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = temp(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(i) = circ_mean(phases);
+    vector_lengths(i) = circ_r(phases);  % mean resultant length
+    pvals(i) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Left V1 SO phase')
+
+temp = ripple_info.SO_phase(:,2);
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(temp, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(temp);
+mean_angle = circ_mean(temp);
+pvals(end+1) = circ_rtest(temp);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = temp(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(i) = circ_mean(phases);
+    vector_lengths(i) = circ_r(phases);  % mean resultant length
+    pvals(i) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 'BinWidth', pi/10);  % 12 bins (adjust as needed)
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Right V1 SO phase')
+
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+
+
+%%%%%%%%%%%%%
+% %%%%%%%%%%%
+% %%%%%%%%%%% Spindle phase coupling
+
+fig = figure
+% fig.Name = 'Ripple-spindle phase-locking (merged)'
+fig.Name = 'Ripple-spindle phase-locking (combined)'
+fig.Position=[158 358 702 546];
+
+% temp = ripple_info.spindle_phase(:,1);
+temp = [ripple_info.spindle_phase(:,1); ripple_info.spindle_phase(:,2)];
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(temp);
+mean_angle = circ_mean(temp);
+pvals(end+1) = circ_rtest(temp);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = temp(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(i) = circ_mean(phases);
+    vector_lengths(i) = circ_r(phases);  % mean resultant length
+    pvals(i) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Left V1 spindle phase')
+
+
+temp = ripple_info.spindle_phase(:,2);
+
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+% angles_wrapped = mod(spindle_phase, 2*pi);
+
+nexttile
+h = polarhistogram(temp, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+rmax = max(h.Values);  % get max count from histogram
+
+mean_length = circ_r(temp);
+mean_angle = circ_mean(temp);
+pvals(end+1) = circ_rtest(temp);
+
+% Scale mean length to match histogram scale
+scaled_length = mean_length * rmax;
+
+% Plot mean vector
+hold on
+polarplot([mean_angle mean_angle], [0 scaled_length], 'r-', 'LineWidth', 2);
+txt = sprintf('angle = %.2f,r = %.2f, p = %.4f', mean_angle,mean_length, pvals);
+title(txt);
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
+
+nexttile
+% figure
+mean_angles = [];
+vector_lengths = [];
+pvals = [];
+for i = 1:max(session_count)
+    % nexttile
+    phases = temp(session_count == i);
+    angles_wrapped = mod(phases, 2*pi);
+    % polarhistogram(angles_wrapped, 24);  % 12 bins (adjust as needed)
+    % title('Polar Histogram of Mean Angles');
+
+    mean_angles(i) = circ_mean(phases);
+    vector_lengths(i) = circ_r(phases);  % mean resultant length
+    pvals(i) = circ_rtest(phases);
+end
+angles_wrapped = mod(mean_angles, 2*pi);
+polarhistogram(angles_wrapped, 'BinWidth', pi/8);  % 12 bins (adjust as needed)
+set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+title('Right V1 spindle phase')
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
+
+
+
+
+%% Distribution of SO phases
+shifted_phase_L = mod(ripple_info.SO_phase(:,1) + pi/2, 2*pi) - pi/2;
+shifted_phase_R = mod(ripple_info.SO_phase(:,2) + pi/2, 2*pi) - pi/2;
+% [N, Xedges, Yedges] = histcounts2(shifted_phase_L, shifted_phase_R, -pi/2:pi/6:3*pi/2,-pi/2:pi/6:3*pi/2);
+[N, Xedges, Yedges] = histcounts2(shifted_phase_L, shifted_phase_R, -pi/2:pi/12:3*pi/2,-pi/2:pi/12:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2), -pi:pi/12:pi,-pi:pi/12:pi);
+Xedges = Xedges(1)+pi/12/2:pi/12:Xedges(end)-pi/12/2;
+% shift_amt = 
+% N_shifted = circshift(N, [0, shift_amt]);
+
+% N = N/total
+% 
+% figure('Name','Distribution of Bilateral V1 SO phases (shifted) (pi/6 bins)')
+figure('Name','Distribution of Bilateral V1 SO phases (shifted)')
+imagesc(Xedges,Xedges,N/sum(sum(N)));colorbar;colormap(flipud(gray))
+% clim([0 0.03])
+clim([0 0.01])
+% xticks(-pi:pi/2:pi)
+% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
+xticks(-pi/2:pi/2:3*pi/2)
+xticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xlabel('Left V1 SO phase (ripple)')
+
+% yticks(-pi:pi/2:pi)
+% yticklabels({'-pi','-pi/2','0','pi/2','pi'})
+yticks(-pi/2:pi/2:3*pi/2)
+yticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xline(-pi/2,'r-','LineWidth',2);xline(pi/2,'r-','LineWidth',2);
+yline(-pi/2,'r-','LineWidth',2);yline(pi/2,'r-','LineWidth',2);
+ylabel('Right V1 SO phase (ripple)')
+set(gca,'TickDir','out','Box','off','FontSize',12);
+
+dist = reshape(N/sum(sum(N)),1,[]);
+% clim([prctile(dist,1) prctile(dist,99)])
+
+no_events = [];
+no_events(1) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2 & (ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2)) + ...
+sum(ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2 & (ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2))
+
+% sum((ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2) & (ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2)) 
+no_events(2) = sum((ripple_info.SO_phase(:,2)<-pi/2|ripple_info.SO_phase(:,2)>pi/2) & (ripple_info.SO_phase(:,1)<-pi/2|ripple_info.SO_phase(:,1)>pi/2))
+
+no_events(3) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2 & ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2) 
+% sum(ripple_info.SO_phase(:,2)>-pi/2&ripple_info.SO_phase(:,2)<pi/2 & ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/2)
+
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
+% save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots (2Hz)'),[])
+
+%% Distribution of SO phases (matched vs non-matched)
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+V1_bias = mean(z_bias_V1(bin_centers>0 & bin_centers<0.2,:),'omitnan');
+
+matched_trough = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2)), ...
+    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2))};
+% non_matched_trough = [V1_bias>0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2); ...
+%     V1_bias<0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2)];
+
+matched_peak = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2)), ...
+    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2))};
+% matched_peak = [V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2); ...
+%     V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2)];
+
+matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
+
+matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
+% ripple_info.SO_phase
+
+index1 = [matched_trough{1} matched_trough{2}];
+non_matched_phases = [ripple_info.SO_phase(matched_trough{1},2); ripple_info.SO_phase(matched_trough{2},1)];
+non_matched_phases <-pi/2 |non_matched_phases <-pi/2 
+
+
+shifted_phase_matched = [mod(ripple_info.SO_phase(matched{1},1) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},2) + pi/2, 2*pi) - pi/2];
+shifted_phase_non_matched = [mod(ripple_info.SO_phase(matched{1},2) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},1) + pi/2, 2*pi) - pi/2];
+[N, Xedges, Yedges] = histcounts2(shifted_phase_matched,shifted_phase_non_matched, -pi/2:pi/6:3*pi/2,-pi/2:pi/6:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(shifted_phase_matched, shifted_phase_non_matched, -pi/2:pi/12:3*pi/2,-pi/2:pi/12:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2), -pi:pi/12:pi,-pi:pi/12:pi);
+% Xedges = Xedges(1)+pi/12/2:pi/12:Xedges(end)-pi/12/2;
+Xedges = Xedges(1)+pi/6/2:pi/6:Xedges(end)-pi/6/2;
+
+% shift_amt = 
+% N_shifted = circshift(N, [0, shift_amt]);
+
+% N = N/total
+% 
+% figure('Name','Distribution of Bilateral V1 SO phases (shifted) (pi/6 bins)')
+figure('Name','Distribution of Bilateral V1 SO phases matched vs non-matched (shifted)')
+imagesc(Xedges,Xedges,N/sum(sum(N)));colorbar;colormap(flipud(gray))
+clim([0 0.03])
+% clim([0 0.01])
+% xticks(-pi:pi/2:pi)
+% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
+xticks(-pi/2:pi/2:3*pi/2)
+xticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xlabel('Matched V1 SO phase (ripple)')
+
+% yticks(-pi:pi/2:pi)
+% yticklabels({'-pi','-pi/2','0','pi/2','pi'})
+yticks(-pi/2:pi/2:3*pi/2)
+yticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xline(-pi/2,'r-','LineWidth',2);xline(pi/2,'r-','LineWidth',2);
+yline(-pi/2,'r-','LineWidth',2);yline(pi/2,'r-','LineWidth',2);
+ylabel('Non-matched V1 SO phase (ripple)')
+% axis xy; % Sets the origin to the lower-left corner
+set(gca,'TickDir','out','Box','off','FontSize',12);
+set(gca, 'XDir', 'reverse'); % Changes from left-to-right to right-to-left
+set(gca, 'YDir', 'reverse'); % Changes from left-to-right to right-to-left
+dist = reshape(N/sum(sum(N)),1,[]);
+% clim([prctile(dist,1) prctile(dist,99)])
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
+%% Basic number of events
+event_number_tables = table();
+event_number_tables.session =spindles_all(1).session;
+event_number_tables.animal = spindles_all(1).subject;
+temp=[];
+
+for nprobe = 1:2
+    for nsession = 1:length(sessions_to_process)
+        temp(nsession,nprobe) = sum(spindles_all(nprobe).session_count == nsession& spindles_all(nprobe).SWS_index==1);
+    end
+end
+event_number_tables.spindle_no = temp;
+
+temp=[];
+
+for nprobe = 1:2
+    for nsession = 1:length(sessions_to_process)
+        temp(nsession,nprobe) = sum(ripples_all(nprobe).session_count == nsession& ripples_all(nprobe).SWS_index==1);
+    end
+end
+event_number_tables.ripples_no = temp;
+
+temp = [];
+for nsession = 1:length(sessions_to_process)
+    temp1 = [];temp2 = [];
+    temp1=ripples_all(1).peaktimes(ripples_all(1).session_count == nsession& ripples_all(1).SWS_index==1);
+    temp2=ripples_all(2).peaktimes(ripples_all(2).session_count == nsession& ripples_all(2).SWS_index==1);
+    [event_ids_first,event_ids_second] = merge_bilateral_ripple_events([ones(length(temp1),1); 2*ones(length(temp2),1)],[temp1; temp2],0.05);
+    temp(nsession)=length(event_ids_first);
+end
+event_number_tables.merged_ripples_no = temp';
+
+temp1=[];
+temp2=[];
+duration_threshold = 100;
+for nprobe = 1:2
+    for nsession = 1:length(sessions_to_process)
+        % Find UP followed by a DOWN
+        %         UP_DOWN_index = find(slow_waves_all(nprobe).UP_session_count == nsession); % Find UP -> DOWN
+        UP_index = find(slow_waves_all(nprobe).UP_session_count == sessions_to_process(nsession)); % Find UP this session
+        %         UP_index = UP_index(slow_waves_all(nprobe).UP_DOWN_index(UP_DOWN_index,1)); % Find UP followed by a DOWN
+        UP_duration = slow_waves_all(nprobe).UP_ints(UP_index,2)-slow_waves_all(nprobe).UP_ints(UP_index,1);
+        UP_index = UP_index(UP_duration<=duration_threshold);
+        UP_ints = slow_waves_all(nprobe).UP_ints(UP_index,:);
+
+        % Find DOWN index
+        DOWN_index = find(slow_waves_all(nprobe).DOWN_session_count == sessions_to_process(nsession)); % Find DOWN this session
+        DOWN_ints = slow_waves_all(nprobe).DOWN_ints(DOWN_index,:);
+        [C,ia,ib] = intersect(UP_ints(:,2),DOWN_ints(:,1));
+        UP_index = UP_index(ia);
+        DOWN_index = DOWN_index(ib);
+
+        temp1(nsession,nprobe) = length(UP_index);
+        temp2(nsession,nprobe) = length(DOWN_index);
+    end
+end
+
+event_number_tables.UP_no = temp1;
+event_number_tables.DOWN_no = temp2;
+
+temp1=[];temp2=[];temp3=[];temp4=[];
+%%%%%%% Behavioural states
+for nsession = 1:length(sessions_to_process)
+    temp1(nsession) = sum(behavioural_state_merged_all.SWS{nsession}(:,2) - behavioural_state_merged_all.SWS{nsession}(:,1))/60;
+    temp2(nsession) = sum(behavioural_state_merged_all.REM{nsession}(:,2) - behavioural_state_merged_all.REM{nsession}(:,1))/60;
+    temp3(nsession) = sum(behavioural_state_merged_all.quietWake{nsession}(:,2) - behavioural_state_merged_all.quietWake{nsession}(:,1))/60;
+    temp4(nsession) = sum(behavioural_state_merged_all.movement{nsession}(:,2) - behavioural_state_merged_all.movement{nsession}(:,1))/60;
+end
+event_number_tables.SWS_time = temp1';
+event_number_tables.REM_time = temp2';
+event_number_tables.quiet_awake_time = temp3';
+event_number_tables.movement_awake_time = temp4';
+
+
+%%%%% V1 Neurons and HPC
+temp1 = [];temp2 = [];
+for nsession = 1:length(sessions_to_process)
+    temp1(nsession,1) = sum(contains(session_clusters_all.region{nsession},'V1_L'));
+    temp1(nsession,2) = sum(contains(session_clusters_all.region{nsession},'V1_R'));
+
+    temp2(nsession,1) = sum(contains(session_clusters_all.region{nsession},'HPC_L'));
+    temp2(nsession,2) = sum(contains(session_clusters_all.region{nsession},'HPC_R'));
+end
+event_number_tables.V1_neurons_no = temp1;
+event_number_tables.HPC_neurons_no = temp2;
+
+
+writetable(event_number_tables, fullfile(analysis_folder,'V1-HPC sleep interaction','event_number_tables.csv'));
+
+%% Sleep NREM and REM time
+event_number_tables = readtable(fullfile(analysis_folder,'V1-HPC sleep interaction','event_number_tables.csv'));
+
+event_number_tables.SWS_time
+
+event_number_tables.REM_time
+
+event_number_tables.quiet_awake_time
+
+event_number_tables.movement_awake_time
+
+
+%% Event number based on V1 bias
+%%%%%%%%%%%%%%%
+
+ripple_events_tables = table();
+% ripple_events_tables.session =spindles_all(1).session;
+% ripple_events_tables.animal = spindles_all(1).subject;
+
+bins_to_use = bin_centers>0 & bin_centers<0.2;
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
+
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+log_odds_threshold = prctile(nanmean(z_bias(bins_to_use,:)),[20 80]);
+T1_events_PRE = find(nanmean(z_bias(bins_to_use,:))>log_odds_threshold(2));
+T2_events_PRE = find(nanmean(z_bias(bins_to_use,:))<log_odds_threshold(1));
+
+ripple_events_tables.all_events = length(z_bias);
+ripple_events_tables.sig_events = length([T1_events T2_events]);
+
+%%%%%%%%%%% Ripple power
+percentile_text = {'25','50','75','100'};
+power_thresholds = prctile(ripple_info.ripple_power,[0 25 50 75 100]);
+
+
+for n = 1:length(percentile_text)
+    power_index = ripple_info.ripple_power > power_thresholds(n) & ripple_info.ripple_power < power_thresholds(n+1);
+    event_index = find(power_index ==1);
+    % event_index = find((singlet_index+power_index)>1);
+    temp1 = intersect(T1_events,event_index);
+    temp2 = intersect(T2_events,event_index);
+
+    ripple_events_tables.(sprintf('all_events_%s_ripple_power',percentile_text{n})) = length(event_index);
+    ripple_events_tables.(sprintf('sig_events_%s_ripple_power',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,event_index);
+    temp2 = intersect(T2_events_PRE,event_index);
+
+    ripple_events_tables.(sprintf('sig_events_%s_ripple_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+%%%%%%%%%%% Spindle power
+bins_to_use = bin_centers>0 & bin_centers<0.2;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = prctile(ripple_info.spindle_amplitude(:,1),[0 25 50 75 100]);
+power_thresholds2 = prctile(ripple_info.spindle_amplitude(:,2),[0 25 50 75 100]);
+
+
+for n = 1:length(percentile_text)
+    spindle_index1 = find(ripple_info.spindle_amplitude(:,1) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.spindle_amplitude(:,2) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,2) < power_thresholds1(n+1));
+
+    temp1 = intersect(T1_events,spindle_index2);
+    temp2 = intersect(T2_events,spindle_index1);
+
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_left',percentile_text{n})) = length([spindle_index1]);
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_right',percentile_text{n})) = length([spindle_index2]);
+    ripple_events_tables.(sprintf('sig_events_%s_spindle_power',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,spindle_index2);
+    temp2 = intersect(T2_events_PRE,spindle_index1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_spindle_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = [0 25 50 75 100];
+power_thresholds2 = [0 25 50 75 100];
+
+for n = 1:length(percentile_text)
+    % spindle_index1 = find(ripple_info.spindle_amplitude(:,1) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,1) < power_thresholds1(n+1));
+    % spindle_index2 = find(ripple_info.spindle_amplitude(:,2) > power_thresholds1(n) & ripple_info.spindle_amplitude(:,2) < power_thresholds1(n+1));
+    spindle_index1 = find(ripple_info.spindle_percentile(:,1) > power_thresholds1(n) & ripple_info.spindle_percentile(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.spindle_percentile(:,2) > power_thresholds1(n) & ripple_info.spindle_percentile(:,2) < power_thresholds1(n+1));
+
+    % temp1 = intersect(T1_events,spindle_index2);
+    % temp2 = intersect(T2_events,spindle_index1);
+
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_percentile_left',percentile_text{n})) = length([spindle_index1]);
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('all_events_%s_spindle_power_percentile_right',percentile_text{n})) = length([spindle_index2]);
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power_percentile',percentile_text{n})) = length([temp1; temp2]);
+
+    % temp1 = intersect(T1_events_PRE,spindle_index2);
+    % temp2 = intersect(T2_events_PRE,spindle_index1);
+
+    % ripple_events_tables.(sprintf('sig_events_%s_spindle_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+%%%%%%%%%%% Spindle phase
+percentile_text = {'spindle_peak','spindle_trough'};
+index1 = {find(ripple_info.spindle_phase(:,1) < pi/2 & ripple_info.spindle_phase(:,1) > -pi/2),...
+    find((ripple_info.spindle_phase(:,1) >pi/2 & ripple_info.spindle_phase(:,1) <= pi) | (ripple_info.spindle_phase(:,1) <-pi/2 & ripple_info.spindle_phase(:,1) >= - pi))};
+index2 = {find(ripple_info.spindle_phase(:,2) < pi/2 & ripple_info.spindle_phase(:,2) > -pi/2),...
+    find((ripple_info.spindle_phase(:,2) >pi/2 & ripple_info.spindle_phase(:,2) <= pi) | (ripple_info.spindle_phase(:,2) <-pi/2 & ripple_info.spindle_phase(:,2) >= - pi))};
+
+
+for n = 1:length(percentile_text)
+    temp1 = intersect(T1_events,index2{n});
+    temp2 = intersect(T2_events,index1{n});
+
+    ripple_events_tables.(sprintf('all_events_%s_left',percentile_text{n})) = length(index1{n});
+    ripple_events_tables.(sprintf('all_events_%s_right',percentile_text{n})) = length(index2{n});
+
+    % ripple_events_tables.(sprintf('all_events_%s',percentile_text{n})) = length(event_index);
+    % ripple_events_tables.(sprintf('sig_events_%s_left',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('sig_events_%s',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,index2{n});
+    temp2 = intersect(T2_events_PRE,index1{n});
+
+    ripple_events_tables.(sprintf('sig_events_%s_PRE',percentile_text{n})) = length([temp1; temp2]);
+    % ripple_events_tables.(sprintf('sig_events_%s_PRE_right',percentile_text{n})) = length([temp2]);
+end
+
+
+
+
+%%%%%%%%%%% SO power
+bins_to_use = bin_centers>0 & bin_centers<0.2;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+bins_to_use = bin_centers>-0.2 & bin_centers<0;
+log_odds_threshold = prctile(nanmean(z_bias_V1(bins_to_use,:)),[20 80]);
+T1_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events_PRE = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+
+percentile_text = {'25','50','75','100'};
+power_thresholds1 = prctile(ripple_info.SO_amplitude(:,1),[0 25 50 75 100]);
+power_thresholds2 = prctile(ripple_info.SO_amplitude(:,2),[0 25 50 75 100]);
+
+
+for n = 1:length(percentile_text)
+    spindle_index1 = find(ripple_info.SO_amplitude(:,1) > power_thresholds1(n) & ripple_info.SO_amplitude(:,1) < power_thresholds1(n+1));
+    spindle_index2 = find(ripple_info.SO_amplitude(:,2) > power_thresholds1(n) & ripple_info.SO_amplitude(:,2) < power_thresholds1(n+1));
+
+    temp1 = intersect(T1_events,spindle_index2);
+    temp2 = intersect(T2_events,spindle_index1);
+
+    ripple_events_tables.(sprintf('all_events_%s_SO_power_left',percentile_text{n})) = length([spindle_index1]);
+    ripple_events_tables.(sprintf('all_events_%s_SO_power_right',percentile_text{n})) = length([spindle_index2]);
+
+    ripple_events_tables.(sprintf('sig_events_%s_SO_power',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,spindle_index2);
+    temp2 = intersect(T2_events_PRE,spindle_index1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_SO_power_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+end
+
+
+
+
+
+%%%%%%%%%%% SO phase
+percentile_text = {'SO_peak','SO_trough'};
+index1 = {find(ripple_info.SO_phase(:,1) < pi/2 & ripple_info.SO_phase(:,1) > -pi/2),...
+    find((ripple_info.SO_phase(:,1) >pi/2 & ripple_info.SO_phase(:,1) <= pi) | (ripple_info.SO_phase(:,1) <-pi/2 & ripple_info.SO_phase(:,1) >= - pi))};
+index2 = {find(ripple_info.SO_phase(:,2) < pi/2 & ripple_info.SO_phase(:,2) > -pi/2),...
+    find((ripple_info.SO_phase(:,2) >pi/2 & ripple_info.SO_phase(:,2) <= pi) | (ripple_info.SO_phase(:,2) <-pi/2 & ripple_info.SO_phase(:,2) >= - pi))};
+
+
+for n = 1:length(percentile_text)
+    temp1 = intersect(T1_events,index2{n});
+    temp2 = intersect(T2_events,index1{n});
+
+    ripple_events_tables.(sprintf('all_events_%s_left',percentile_text{n})) = length(index1{n});
+    ripple_events_tables.(sprintf('all_events_%s_right',percentile_text{n})) = length(index2{n});
+
+    % ripple_events_tables.(sprintf('all_events_%s',percentile_text{n})) = length(event_index);
+    ripple_events_tables.(sprintf('sig_events_%s',percentile_text{n})) = length([temp1; temp2]);
+
+    temp1 = intersect(T1_events_PRE,index2{n});
+    temp2 = intersect(T2_events_PRE,index1{n});
+
+    ripple_events_tables.(sprintf('sig_events_%s_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+
+
+%%%%%%%%%%% SO phase (uni vs bi)
+percentile_text = {'SO_peak','SO_trough'};
+index1 = {(ripple_info.SO_phase(:,1) < pi/2 & ripple_info.SO_phase(:,1) > -pi/2),...
+    ((ripple_info.SO_phase(:,1) >pi/2 & ripple_info.SO_phase(:,1) <= pi) | (ripple_info.SO_phase(:,1) <-pi/2 & ripple_info.SO_phase(:,1) >= - pi))};
+index2 = {(ripple_info.SO_phase(:,2) < pi/2 & ripple_info.SO_phase(:,2) > -pi/2),...
+    ((ripple_info.SO_phase(:,2) >pi/2 & ripple_info.SO_phase(:,2) <= pi) | (ripple_info.SO_phase(:,2) <-pi/2 & ripple_info.SO_phase(:,2) >= - pi))};
+
+T1_events = find(nanmean(z_bias_V1(bins_to_use,:))>log_odds_threshold(2));
+T2_events = find(nanmean(z_bias_V1(bins_to_use,:))<log_odds_threshold(1));
+
+
+for n = 1:length(percentile_text)
+    bins_to_use = bin_centers>0 & bin_centers<0.2;
+
+    temp1 = find(index2{n}==1 & index1{n} == 1);
+    temp2 = find(index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('all_events_%s_bilateral',percentile_text{n})) = length([temp1]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 1);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_bilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp2 = find(index2{n}==1 & index1{n} == 0);
+    temp1 = find(index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('all_events_%s_unilateral_left',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('all_events_%s_unilateral_right',percentile_text{n})) = length([temp2]);
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 0);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('sig_events_%s_unilateral',percentile_text{n})) = length([temp1; temp2]);
+
+
+    %%%%%%%%%% PRE
+
+    bins_to_use = bin_centers>-0.2 & bin_centers<0;
+
+    temp1 = find(index2{n}==1 & index1{n} == 1);
+    temp2 = find(index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('all_events_%s_bilateral_PRE',percentile_text{n})) = length([temp1]);
+
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 1);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 1);
+
+    ripple_events_tables.(sprintf('sig_events_%s_bilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+
+
+    temp2 = find(index2{n}==1 & index1{n} == 0);
+    temp1 = find(index1{n}==1 & index2{n} == 0);
+
+    % ripple_events_tables.(sprintf('all_events_%s_unilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+    ripple_events_tables.(sprintf('all_events_%s_unilateral_PRE_left',percentile_text{n})) = length([temp1]);
+    ripple_events_tables.(sprintf('all_events_%s_unilateral_PRE_right',percentile_text{n})) = length([temp2]);
+
+    temp1 = find(nanmean(z_bias_V1(bins_to_use,:))'>log_odds_threshold(2) & index2{n}==1 & index1{n} == 0);
+    temp2 = find(nanmean(z_bias_V1(bins_to_use,:))'<log_odds_threshold(1) & index1{n}==1 & index2{n} == 0);
+
+    ripple_events_tables.(sprintf('sig_events_%s_unilateral_PRE',percentile_text{n})) = length([temp1; temp2]);
+end
+
+
+writetable(ripple_events_tables, fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_events_tables.csv'));

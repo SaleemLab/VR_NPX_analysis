@@ -1,0 +1,862 @@
+function predict_post_V1_from_HC_and_pre_V1(KDE_reactivation_ripples_PSTH,ripple_info)
+% predict_post_V1_from_HC_and_pre_V1
+% Analyzes how pre-ripple V1 bias and HC ripple bias influence post-ripple V1 bias.
+
+% --- Configuration ---
+% Define time windows (in seconds relative to ripple onset)
+% These are fully customizable
+% window_V1_pre  = [-0.12, -0.02];
+% window_HC      = [0.02,   0.12];
+% window_V1_post = [0.02,   0.12];
+
+window_V1_pre  = [-0.1, 0];
+window_HC      = [0,   0.1];
+window_V1_post = [0,   0.1];
+
+disp('--- Track Bias Incongruent Analysis ---');
+fprintf('V1 Pre-Ripple Window:   [%.2f, %.2f] s\n', window_V1_pre);
+fprintf('HC Ripple Window:       [%.2f, %.2f] s\n', window_HC);
+fprintf('V1 Post-Ripple Window:  [%.2f, %.2f] s\n', window_V1_post);
+
+% --- 1. Load Data ---
+% Default to the root corticohippocampal_replay folder
+analysis_folder = 'P:\corticohippocampal_replay';
+
+if isempty(KDE_reactivation_ripples_PSTH)
+    try
+        disp('Loading KDE PSTH data...');
+        load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'),'KDE_reactivation_ripples_PSTH');
+
+        disp('Loading ripple_info data...');
+        load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info.mat'),'ripple_info');
+        
+    catch
+        warning('Could not load KDE_reactivation_ripples_PSTH.mat or ripple_info.mat. Please verify analysis_folder.');
+    end
+end
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+% Extract PSTH matrices (Events x Time)
+timebin = 0.01;
+time_windows = [-1 1];
+% Generate bin edges
+bin_edges = time_windows(1):timebin:time_windows(2);
+% Generate bin centers
+t_psth = bin_edges(1:end-1) + timebin/2;
+
+z_bias_HC = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples + KDE_reactivation_ripples_PSTH.nan_mask;
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples  + KDE_reactivation_ripples_PSTH.nan_mask;
+z_bias_HC = z_bias_HC(ripple_info.event_id,:);
+z_bias_V1 = z_bias_V1(ripple_info.event_id,:);
+
+z_bias1 = z_bias_HC(isfinite(z_bias_HC));
+z_bias_HC(z_bias_HC>=inf) = prctile(z_bias1,99.5);
+z_bias_HC(z_bias_HC<=-inf) = prctile(z_bias1,0.5);
+
+z_bias1 = z_bias_V1(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1>=inf) = prctile(z_bias1,99.5);
+z_bias_V1(z_bias_V1<=-inf) = prctile(z_bias1,0.5);
+
+
+% Ensure row vector
+if iscolumn(t_psth); t_psth = t_psth'; end
+
+num_events = size(z_bias_V1,1);
+
+% Extract subjects and sessions for mixed models
+if exist('ripple_info', 'var') && isfield(ripple_info, 'subject_id')
+    subj_id = ripple_info.subject_id;
+    sess_id = ripple_info.session_id; 
+else
+    % Placeholder if field doesn't strictly match
+    subj_id = ones(num_events, 1);
+    sess_id = ones(num_events, 1);
+end
+if isrow(subj_id); subj_id = subj_id'; end
+if isrow(sess_id); sess_id = sess_id'; end
+
+
+% --- 2. Calculate Scalar Biases ---
+% Get indices for each time window
+idx_V1_pre  = t_psth > window_V1_pre(1)  & t_psth < window_V1_pre(2);
+idx_HC      = t_psth > window_HC(1)      & t_psth < window_HC(2);
+idx_HC_pre      = t_psth > window_V1_pre(1)      & t_psth < window_V1_pre(2);
+idx_V1_post = t_psth > window_V1_post(1) & t_psth < window_V1_post(2);
+
+% Averages across the specified windows (ignoring NaNs)
+% We extract the time columns (dimension 2) and average across them 
+% to get 1 scalar value per Event.
+UP_ripples = 1:length(z_bias_V1);
+V1_pre  = mean(z_bias_V1(:, idx_V1_pre),  2, 'omitnan');
+HC_bias = mean(z_bias_HC(:, idx_HC),      2, 'omitnan');
+HC_pre = mean(z_bias_HC(:, idx_V1_pre),      2, 'omitnan');
+V1_post = mean(z_bias_V1(:, idx_V1_post), 2, 'omitnan');
+
+% histogram2(ripple_info.UP_duration(UP_ripples,1) .* ripple_info.normalised_UP_duration(UP_ripples, 1),...
+%     ripple_info.UP_duration(UP_ripples,1) - ripple_info.UP_duration(UP_ripples,1) .* ripple_info.normalised_UP_duration(UP_ripples, 1),...
+%     0:0.01:2,0:0.01:2)
+
+
+% --- 1. Calculate Relative Timing ---
+% Initialize arrays
+ripple_info.TimeFromUP = nan(num_events, 2);
+ripple_info.TimeToDOWN = nan(num_events, 2);
+ripple_info.UPDuration = nan(num_events, 2);
+ripple_info.NormalisedUP = nan(num_events, 2);
+
+ripple_info.TimeFromDOWN = nan(num_events, 2);
+ripple_info.TimeToUP = nan(num_events, 2);
+ripple_info.DOWNDuration = nan(num_events, 2);
+ripple_info.NormalisedDOWN = nan(num_events, 2);
+
+% Use the shifted peaktimes from merged_event_info
+% (Assuming these peaks align with the session-shifted UP_ints)
+ripple_peaks = merged_event_info.ripples_peaktimes(ripple_info.event_id);
+
+for nprobe = 1:2
+    % --- UP States ---
+    current_UPs = merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id == nprobe, :);
+    up_starts = current_UPs(:,1);
+    up_ends   = current_UPs(:,2);
+
+    % --- DOWN States ---
+    current_DOWNs = merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id == nprobe, :);
+    down_starts = current_DOWNs(:,1);
+    down_ends   = current_DOWNs(:,2);
+
+    % Pre-allocate indices for this probe
+    % We want to find which row 'k' in current_UPs contains each ripple
+    for i = 1:numel(ripple_peaks)
+        cp = ripple_peaks(i);
+
+        % Check UP Intervals
+        idx_up = find(cp >= up_starts & cp <= up_ends, 1);
+        if ~isempty(idx_up)
+            dur = up_ends(idx_up) - up_starts(idx_up);
+            ripple_info.TimeFromUP(i, nprobe) = cp - up_starts(idx_up);
+            ripple_info.TimeToDOWN(i, nprobe)     = up_ends(idx_up) - cp;
+            ripple_info.UPDuration(i, nprobe)       = dur;
+            ripple_info.NormalisedUP(i, nprobe)  = (cp - up_starts(idx_up)) / dur;
+        end
+
+        % Check DOWN Intervals
+        idx_down = find(cp >= down_starts & cp <= down_ends, 1);
+        if ~isempty(idx_down)
+            dur_d = down_ends(idx_down) - down_starts(idx_down);
+            ripple_info.TimeFromDOWN(i, nprobe) = cp - down_starts(idx_down);
+            ripple_info.TimeToUP(i, nprobe)     = down_ends(idx_down) - cp;
+            ripple_info.DOWNDuration(i, nprobe)       = dur_d;
+            ripple_info.NormalisedDOWN(i, nprobe)  = (cp - down_starts(idx_down)) / dur_d;
+        end
+    end
+end
+
+% For UP States
+ripple_info.NormalisedUP(ripple_info.NormalisedUP < 0) = 0;
+ripple_info.NormalisedUP(ripple_info.NormalisedUP > 1) = 1;
+
+% For DOWN States
+ripple_info.NormalisedDOWN(ripple_info.NormalisedDOWN < 0) = 0;
+ripple_info.NormalisedDOWN(ripple_info.NormalisedDOWN > 1) = 1;
+
+% --- Create the Table ---
+% Including the requested fields: HC_pre and UP durations
+% --- Create the Table ---
+% --- 1. Create the Table ---
+% We filter all variables by [UP_ripples] to ensure rows match
+tbl = table(ripple_info.ripple_power(UP_ripples), ...
+            V1_pre(UP_ripples), HC_pre(UP_ripples), HC_bias(UP_ripples), V1_post(UP_ripples), ...
+            ... % Left Hemisphere (Column 1)
+            ripple_info.TimeFromUP(UP_ripples, 1), ...
+            ripple_info.TimeToDOWN(UP_ripples, 1), ...
+            ripple_info.UPDuration(UP_ripples, 1), ...
+            ripple_info.NormalisedUP(UP_ripples, 1), ...
+            ripple_info.TimeFromDOWN(UP_ripples, 1), ...
+            ripple_info.TimeToUP(UP_ripples, 1), ...
+            ripple_info.DOWNDuration(UP_ripples, 1), ...
+            ripple_info.NormalisedDOWN(UP_ripples, 1), ...
+            ... % Right Hemisphere (Column 2)
+            ripple_info.TimeFromUP(UP_ripples, 2), ...
+            ripple_info.TimeToDOWN(UP_ripples, 2), ...
+            ripple_info.UPDuration(UP_ripples, 2), ...
+            ripple_info.NormalisedUP(UP_ripples, 2), ...
+            ripple_info.TimeFromDOWN(UP_ripples, 2), ...
+            ripple_info.TimeToUP(UP_ripples, 2), ...
+            ripple_info.DOWNDuration(UP_ripples, 2), ...
+            ripple_info.NormalisedDOWN(UP_ripples, 2), ...
+            ... % Spindles and IDs
+            ripple_info.spindle_amplitude(UP_ripples, 1), ripple_info.spindle_amplitude(UP_ripples, 2), ...
+            ripple_info.spindle_presence(UP_ripples, 1), ripple_info.spindle_presence(UP_ripples, 2), ...
+            subj_id(UP_ripples), sess_id(UP_ripples), ...
+    'VariableNames', { ...
+            'ripple_power', 'V1_pre', 'HC_pre', 'HC_post', 'V1_post', ...
+            'TimeFromUP_L', 'TimeToDOWN_L', 'UPDuration_L', 'NormalisedUP_L', ...
+            'TimeFromDOWN_L', 'TimeToUP_L', 'DOWNDuration_L', 'NormalisedDOWN_L', ...
+            'TimeFromUP_R', 'TimeToDOWN_R', 'UPDuration_R', 'NormalisedUP_R', ...
+            'TimeFromDOWN_R', 'TimeToUP_R', 'DOWNDuration_R', 'NormalisedDOWN_R', ...
+            'SpindlePower_L', 'SpindlePower_R', ...
+            'Spindle_L', 'Spindle_R', ...
+            'AnimalID', 'SessionID'});
+
+% 
+% --- Save as CSV ---
+output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple.csv');
+% output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple_20_120ms.csv');
+% output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple_-150_-50ms.csv');
+writetable(tbl, output_path);
+
+fprintf('Exported %d events to: %s\n', size(tbl,1), output_path);
+
+UP_ripples = (~isnan(ripple_info.normalised_UP_duration(:,1)) | ~isnan(ripple_info.normalised_UP_duration(:,2)));
+%% 
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+% Model 3: Time-Resolved Prediction (8 Bins) Pre ripple V1 predicts last ripple HC
+
+% ripple_info.normalised_UP_duration(:,1)|ripple_info.normalised_UP_duration(:,1)
+
+% quantiles = 0.1:0.1:1;
+
+quantiles = quantile([ripple_info.normalised_UP_duration(:,1); ripple_info.normalised_UP_duration(:,2)],10);
+quant_edges = [-inf, quantiles(1:end-1), inf];
+[bin_idx1, ~] = discretize( ripple_info.normalised_UP_duration(:,1), quant_edges);
+[bin_idx2, ~] = discretize(ripple_info.normalised_UP_duration(:,2), quant_edges);
+x_plot = quantiles;
+pre_ripple_normalised_UP_lme = struct();
+
+for tidx = 1:length(quantiles)
+
+    index = find(bin_idx1 == tidx |bin_idx2 == tidx);
+    tbl_temp = table(ripple_info.peak_ripple_power(index),V1_pre(index), HC_bias(index), V1_post(index), subj_id(index), sess_id(index), ...
+        'VariableNames', {'ripple_power','V1_pre', 'HC_bias', 'V1_post', 'subject_id', 'session_id'});
+
+    if height(tbl_temp) > 10
+        lme2 = fitlme(tbl_temp, 'HC_bias ~ V1_pre + (1|subject_id) + (1|session_id)');
+        pre_ripple_normalised_UP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        pre_ripple_normalised_UP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        pre_ripple_normalised_UP_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        pre_ripple_normalised_UP_lme.variable = lme2.Coefficients.Name(2:end)';
+        pre_ripple_normalised_UP_lme.model{tidx}=lme2;
+        
+    else
+        pre_ripple_normalised_UP_lme.b(tidx,:) = nan;
+        pre_ripple_normalised_UP_lme.b_CI(:,:,tidx) = [nan nan];
+        pre_ripple_normalised_UP_lme.pval(tidx,:) = nan;
+        pre_ripple_normalised_UP_lme.model{tidx}=nan;
+    end
+end
+
+
+figure('Name', 'Ripple HC predicted by pre ripple V1 UP normalised duration');
+nexttile
+HC_idx = 1;
+y_mean = pre_ripple_normalised_UP_lme.b(:,HC_idx);
+y_CI = squeeze(pre_ripple_normalised_UP_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(pre_ripple_normalised_UP_lme.pval(:,HC_idx) < 0.05), y_mean(pre_ripple_normalised_UP_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Pre-ripple UP V1 -> ripple HPC');
+xlabel('Normalised UP duration');
+ylim([-0.05 0.13]);
+xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+%%%
+ripple_normalised_UP_lme = struct();
+
+for tidx = 1:length(quantiles)
+
+    index = find(bin_idx1 == tidx |bin_idx2 == tidx);
+    tbl_temp = table(ripple_info.peak_ripple_power(index),V1_pre(index), HC_bias(index), V1_post(index), subj_id(index), sess_id(index), ...
+        'VariableNames', {'ripple_power','V1_pre', 'HC_bias', 'V1_post', 'subject_id', 'session_id'});
+
+    if height(tbl_temp) > 10
+        lme2 = fitlme(tbl_temp, 'V1_post ~ HC_bias + (1|subject_id) + (1|session_id)');
+        ripple_normalised_UP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        ripple_normalised_UP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        ripple_normalised_UP_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        ripple_normalised_UP_lme.variable = lme2.Coefficients.Name(2:end)';
+        ripple_normalised_UP_lme.model{tidx} = lme2;
+    else
+        ripple_normalised_UP_lme.b(tidx,:) = nan;
+        ripple_normalised_UP_lme.b_CI(:,:,tidx) = [nan nan];
+        ripple_normalised_UP_lme.pval(tidx,:) = nan;
+        ripple_normalised_UP_lme.model{tidx} = [];
+    end
+end
+
+nexttile
+HC_idx = 1;
+y_mean = ripple_normalised_UP_lme.b(:,HC_idx);
+y_CI = squeeze(ripple_normalised_UP_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(ripple_normalised_UP_lme.pval(:,HC_idx) < 0.05), y_mean(ripple_normalised_UP_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('ripple HPC -> Ppst-ripple UP V1');
+xlabel('Normalised UP duration');
+ylim([-0.05 0.13]);
+xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+nexttile
+%% mixed effect pre v1 + HC -> post v1
+% Create regression table
+tbl = table(ripple_info.peak_ripple_power(UP_ripples),V1_pre(UP_ripples), HC_bias(UP_ripples), V1_post(UP_ripples), subj_id(UP_ripples), sess_id(UP_ripples), ...
+    'VariableNames', {'ripple_power','V1_pre', 'HC_bias', 'V1_post', 'subject_id', 'session_id'});
+
+valid_idx = ~isnan(V1_pre(UP_ripples)) & ~isnan(HC_bias(UP_ripples)) & ~isnan(V1_post(UP_ripples));
+
+tbl_sub = tbl(:,:);
+tbl_sub.V1_pre  = normalize(tbl_sub.V1_pre);
+tbl_sub.HC_bias = normalize(tbl_sub.HC_bias);
+tbl_sub.V1_post = normalize(tbl_sub.V1_post);
+% tbl_sub.ripple_power = normalize(tbl_sub.ripple_power);
+
+% lme = fitlme(tbl_sub, 'V1_post ~  HC_bias*ripple_power + (HC_bias|subject_id) + (HC_bias|session_id)');
+lme = fitlme(tbl_sub, 'V1_post ~ HC_bias*V1_pre  + (1|subject_id) + (1|session_id)','CovariancePattern', {'Diagonal', 'Diagonal'});
+% disp('LME showing effect of HC ripple condition (isIncongruent: 0=Congruent, 1=Incongruent) on Post-V1, controlling for Pre-V1:');
+disp(lme.Coefficients);
+
+%% --- VARIANCE PARTITIONING & MEDIATION ANALYSIS (1000 Bootstraps) ---
+fprintf('\n=== VARIANCE & MEDIATION ANALYSIS (Mixed Effects) ===\n');
+
+nBoot = 1000;
+unique_sessions = unique(tbl_sub.session_id(~isnan(tbl_sub.session_id)));
+n_sess = length(unique_sessions);
+
+% Pre-group data by session for speed
+session_data = cell(n_sess, 1);
+for s = 1:n_sess
+    session_data{s} = tbl_sub(tbl_sub.session_id == unique_sessions(s), :);
+end
+
+% Result Containers
+beta_boot          = zeros(nBoot, 4); % c_p, b, indirect, a
+prop_boot          = zeros(nBoot, 4); % Unique V1, Unique HC, Shared, mA
+prop_mediated_boot = zeros(nBoot, 1);
+
+fprintf('Running %d Bootstrap iterations over sessions. This may take ~2-5 minutes...\n', nBoot);
+
+% Note: We use a parfor-compatible loop if possible, though it requires parallel pool.
+% To ensure correctness with mixed effects, we MUST re-index sessions inside the resample.
+parfor i = 1:nBoot
+    % Sample sessions with replacement
+    seed = RandStream('philox4x32_10', 'Seed', i);
+    resamp_idx = randsample(seed, n_sess, n_sess, true);
+    
+    % Build bootstrapped table with unique pseudo-session IDs
+    b_tbl_cells = cell(n_sess, 1);
+    for s = 1:n_sess
+        temp = session_data{resamp_idx(s)};
+        temp.session_id = repmat(s, height(temp), 1); 
+        b_tbl_cells{s} = temp;
+    end
+    b_tbl = vertcat(b_tbl_cells{:});
+    
+    try
+        [betas, props, ~, prop_mediated] = calculate_metrics_local(b_tbl);
+        beta_boot(i,:) = betas;
+        prop_boot(i,:) = props;
+        prop_mediated_boot(i) = prop_mediated;
+    catch
+        beta_boot(i,:) = [NaN NaN NaN NaN]; 
+        prop_boot(i,:) = [NaN NaN NaN NaN]; 
+        prop_mediated_boot(i) = NaN;
+    end
+end
+
+% Drop failed boots
+valid_boots = ~isnan(prop_mediated_boot);
+beta_boot = beta_boot(valid_boots, :);
+prop_boot = prop_boot(valid_boots, :);
+prop_mediated_boot = prop_mediated_boot(valid_boots);
+
+% Observed limits
+[obs_b, obs_p, obs_pval, obs_prop_mediated] = calculate_metrics_local(tbl_sub);
+
+beta_mean = prctile(beta_boot, [50], 1);
+beta_CI = prctile(beta_boot, [2.5, 97.5], 1);
+prop_CI = prctile(prop_boot, [2.5, 97.5], 1);
+prop_med_CI = prctile(prop_mediated_boot, [2.5, 97.5]);
+
+% 2-tailed bootstrapped p-value for indirect effect
+p_val_indirect = sum(beta_boot(:,3) <= 0) / size(beta_boot,1);
+if obs_b(3) < 0; p_val_indirect = sum(beta_boot(:,3) >= 0) / size(beta_boot,1); end
+p_val_indirect = p_val_indirect * 2; 
+
+fprintf('\n--- OBSERVED MEDIATION METRICS ---\n');
+fprintf('Path A (Pre-V1 -> HC):             %.4f (p = %.3e)\n', obs_b(4), obs_pval(4));
+fprintf('Path B (HC -> Post-V1):            %.4f (p = %.3e)\n', obs_b(2), obs_pval(2));
+fprintf('Path C'' (Direct Effect V1->V1):    %.4f (p = %.3e)\n', obs_b(1), obs_pval(1));
+fprintf('Indirect Effect (a*b):             %.4f [95%% CI: %.4f, %.4f] (boot_p = %.4f)\n', obs_b(3), beta_CI(1,3), beta_CI(2,3), p_val_indirect);
+fprintf('Proportion Mediated:               %.2f%% [95%% CI: %.2f%%, %.2f%%]\n', obs_prop_mediated, prop_med_CI(1), prop_med_CI(2));
+
+fprintf('\n--- PROPORTION OF TOTAL EXPLAINED VARIANCE (R^2) ---\n');
+fprintf('Unique to Pre-V1 Bias:             %.2f%% [95%% CI: %.2f%%, %.2f%%]\n', obs_p(1), prop_CI(1,1), prop_CI(2,1));
+fprintf('Unique to HC Bias:                 %.2f%% [95%% CI: %.2f%%, %.2f%%]\n', obs_p(2), prop_CI(1,2), prop_CI(2,2));
+fprintf('Shared (Overlapping) Variance:     %.2f%% [95%% CI: %.2f%%, %.2f%%]\n', obs_p(3), prop_CI(1,3), prop_CI(2,3));
+
+
+% --- Visualization: Mediation & Variance Partitioning ---
+figure('Name', 'HC vs pre V1 Mediation & Variance Partitioning', 'Color', 'w', 'Position', [100 100 800 400]);
+
+% Subplot 1: Beta Coefficients
+subplot(1, 2, 1); hold on;
+labels_beta = {'Pre-V1 (Direct)', 'HC Ripple Bias'};
+colors_beta = [0.2 0.6 0.8; 0.8 0.4 0.4];
+
+for i = 1:2
+    bar(i, obs_b(i), 0.5, 'FaceColor', colors_beta(i,:), 'EdgeColor', 'none');
+    
+    ci_low = obs_b(i) - beta_CI(1,i);
+    ci_high = beta_CI(2,i) - obs_b(i);
+    errorbar(i, obs_b(i), ci_low, ci_high, 'k', 'LineStyle', 'none', 'LineWidth', 1.5, 'CapSize', 8);
+    
+    % Add Exact P-Value
+    p_val = obs_pval(i);
+    txt = sprintf('p=%.3e', p_val);
+    text(i, beta_CI(2,i) + 0.05, txt, 'HorizontalAlignment', 'center', 'FontSize', 12);
+end
+ylabel('Standardized \beta on Post-V1');
+set(gca, 'XTick', 1:2, 'XTickLabel', labels_beta, 'XTickLabelRotation', 20);
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+yline(0, 'k-');
+title('Effect Sizes on Post-V1');
+
+% Subplot 2: Variance Proportions
+subplot(1, 2, 2); hold on;
+labels_prop = {'Unique Pre-V1', 'Unique HC', 'Shared'};
+colors_prop = [0.2 0.6 0.8; 0.8 0.4 0.4; 0.6 0.4 0.8];
+
+for i = 1:3
+    bar(i, obs_p(i), 0.5, 'FaceColor', colors_prop(i,:), 'EdgeColor', 'none');
+    
+    ci_low = obs_p(i) - prop_CI(1,i);
+    ci_high = prop_CI(2,i) - obs_p(i);
+    errorbar(i, obs_p(i), ci_low, ci_high, 'k', 'LineStyle', 'none', 'LineWidth', 1.5, 'CapSize', 8);
+end
+ylabel('Prop. Total Explained Variance (%)');
+set(gca, 'XTick', 1:3, 'XTickLabel', labels_prop, 'XTickLabelRotation', 20);
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+title('Variance Partitioning');
+
+%%
+% --- 3. 2D Bias Heatmap (State-Space Map) ---
+
+V1_pre  = mean(z_bias_V1(UP_ripples, idx_V1_pre),  2, 'omitnan');
+HC_bias = mean(z_bias_HC(UP_ripples, idx_HC),      2, 'omitnan');
+V1_post = mean(z_bias_V1(UP_ripples, idx_V1_post), 2, 'omitnan');
+
+x_data = V1_pre(valid_idx);
+y_data = HC_bias(valid_idx);
+z_data = V1_post(valid_idx);
+
+% Bin sizes
+num_bins = 4;
+edges_x = linspace(prctile(x_data,1), prctile(x_data,99), num_bins+1);
+edges_y = linspace(prctile(y_data,1), prctile(y_data,99), num_bins+1);
+
+[~,~,locX] = histcounts(x_data, edges_x);
+[~,~,locY] = histcounts(y_data, edges_y);
+
+% Accumulate averages into 2D matrix
+heatmap_mat = nan(num_bins, num_bins);
+for i = 1:num_bins
+    for j = 1:num_bins
+        mask = (locX == i) & (locY == j);
+        if sum(mask) >= 5 % Require minimum events per bin for stability
+            heatmap_mat(j,i) = mean(z_data(mask));
+        end
+    end
+end
+
+figure_heatmap = figure('Name', '2D Bias Heatmap (congruent vs incongruent)', 'Color', 'w', 'Position', [100 100 650 550]);
+imagesc(edges_x(1:end-1), edges_y(1:end-1), heatmap_mat);
+set(gca, 'YDir', 'normal', 'TickDir', 'out', 'Box', 'off', 'FontSize', 12); 
+colormap(flipud(jet)); 
+cb = colorbar; 
+ylabel(cb, 'V1 Post-Ripple Bias', 'FontSize', 14);
+xlabel('V1 Pre-Ripple Bias (X)', 'FontSize', 14);
+ylabel('HC Ripple Bias (Y)', 'FontSize', 14);
+title('How Pre-V1 and HC dictate Post-V1 (Average)', 'FontSize', 16);
+hold on;
+xline(0,'k--','LineWidth',1.5); yline(0,'k--','LineWidth',1.5);
+text(min(edges_x)*0.9, max(edges_y)*0.9, 'Incongruent (HC rules)', 'Color', 'w', 'FontWeight', 'bold', 'FontSize', 10);
+text(max(edges_x)*0.6, min(edges_y)*0.9, 'Incongruent (HC rules)', 'Color', 'w', 'FontWeight', 'bold', 'FontSize', 10);
+clim([-0.45 0.45])
+
+% --- 4. Incongruent PSTH Visualization ---
+% Define thresholds to identify strong 'starting' track biases
+% Adjust this based on your standard deviation/Z-score spread
+threshold_pre = prctile(abs(V1_pre(valid_idx)), 50); % Median split of absolute V1 bias 
+threshold_hc  = prctile(abs(HC_bias(valid_idx)), 50);
+
+% Find strongly biased pre-V1 events
+strong_V1 = abs(V1_pre) > threshold_pre;
+strong_HC = abs(HC_bias) > threshold_hc;
+% strong_V1 = abs(V1_pre) > 0;
+% strong_HC = abs(HC_bias) > 0;
+
+% Convert everything relative to the direction of V1_pre
+% "Congruent" means HC has the same sign as V1_pre.
+% "Incongruent" means HC has the opposite sign as V1_pre.
+sign_V1_pre = sign(V1_pre);
+sign_V1_post = sign(V1_post);
+
+congruentMask  = valid_idx & strong_V1 & strong_HC & (sign_V1_pre .* HC_bias > 0);
+incongruentMask = valid_idx & strong_V1 & strong_HC & (sign_V1_pre .* HC_bias < 0);
+
+% Flip the continuous PSTHs so Pre-V1 always looks positive (Track 1)
+% This allows averaging across all robustly signed events
+% psth_congruent  = z_bias_V1(congruentMask, :)  .* sign_V1_pre(congruentMask);
+% psth_incongruent = z_bias_V1(incongruentMask, :) .* sign_V1_pre(incongruentMask);
+
+% figure_incongruent = figure('Name', 'Incongruent PSTH', 'Color', 'w', 'Position', [780 100 700 550]);
+% hold on;
+% 
+% % --- Plot Congruent Mean + SEM (by session) ---
+% congruent_sess = sess_id(congruentMask);
+% u_sess_a = unique(congruent_sess(~isnan(congruent_sess)));
+% sess_psth_a = nan(length(u_sess_a), size(psth_congruent, 2));
+% for i = 1:length(u_sess_a)
+%     sess_psth_a(i, :) = mean(psth_congruent(congruent_sess == u_sess_a(i), :), 1, 'omitnan');
+% end
+% m_a = mean(sess_psth_a, 1, 'omitnan');
+% sem_a = std(sess_psth_a, 0, 1, 'omitnan') ./ sqrt(sum(~isnan(sess_psth_a), 1));
+% fill([t_psth, fliplr(t_psth)], [m_a-sem_a, fliplr(m_a+sem_a)], [0 0.5 0.8], 'FaceAlpha', 0.2, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+% plot(t_psth, m_a, 'Color', [0 0.5 0.8], 'LineWidth', 2, 'DisplayName', sprintf('Congruent (N=%d ev, %d sess)', sum(congruentMask), length(u_sess_a)));
+% 
+% % --- Plot Incongruent Mean + SEM (by session) ---
+% incongruent_sess = sess_id(incongruentMask);
+% u_sess_c = unique(incongruent_sess(~isnan(incongruent_sess)));
+% sess_psth_c = nan(length(u_sess_c), size(psth_incongruent, 2));
+% for i = 1:length(u_sess_c)
+%     sess_psth_c(i, :) = mean(psth_incongruent(incongruent_sess == u_sess_c(i), :), 1, 'omitnan');
+% end
+% m_c = mean(sess_psth_c, 1, 'omitnan');
+% sem_c = std(sess_psth_c, 0, 1, 'omitnan') ./ sqrt(sum(~isnan(sess_psth_c), 1));
+% fill([t_psth, fliplr(t_psth)], [m_c-sem_c, fliplr(m_c+sem_c)], [0.8 0.2 0.2], 'FaceAlpha', 0.2, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+% plot(t_psth, m_c, 'Color', [0.8 0.2 0.2], 'LineWidth', 2, 'DisplayName', sprintf('Incongruent (N=%d ev, %d sess)', sum(incongruentMask), length(u_sess_c)));
+% 
+% xline(0, 'k--', 'LineWidth', 1.5, 'HandleVisibility', 'off');
+% % Highlight windows
+% patch([window_V1_pre(1) window_V1_pre(2) window_V1_pre(2) window_V1_pre(1)], [-0.5 -0.5 0.5 0.5], 'k', 'FaceAlpha', 0.05, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+% patch([window_HC(1) window_HC(2) window_HC(2) window_HC(1)], [-0.5 -0.5 0.5 0.5], 'm', 'FaceAlpha', 0.05, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+% patch([window_V1_post(1) window_V1_post(2) window_V1_post(2) window_V1_post(1)], [-0.5 -0.5 0.5 0.5], 'k', 'FaceAlpha', 0.05, 'EdgeColor', 'none', 'HandleVisibility', 'off');
+% 
+% xlabel('Time from Ripple onset (s)', 'FontSize', 14);
+% ylabel('V1 Track Bias (Pre-congruent -> Track 1)', 'FontSize', 14);
+% title('Continuous V1 Track Bias: Congruent vs Incongruent', 'FontSize', 16);
+% legend('Location', 'best', 'FontSize', 12, 'Box', 'off');
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% ylim([-0.5 1]);  
+
+
+% --- 5. Statistics: Run Mixed Models & Tests ---
+disp(' ');
+disp('======================================================');
+disp('   STATISTICS: INTERACTION BETWEEN PRE-V1 AND HC ');
+disp('======================================================');
+% Standardize variables for interpretable coefficients
+tbl_sub = tbl(valid_idx,:);
+tbl_sub.V1_pre  = normalize(tbl_sub.V1_pre);
+tbl_sub.HC_bias = normalize(tbl_sub.HC_bias);
+tbl_sub.V1_post = normalize(tbl_sub.V1_post);
+
+% Model 1: Interaction
+lme_interact = fitlme(tbl_sub, 'V1_post ~ V1_pre * HC_bias + (1|subject_id) + (1|session_id)');
+disp(lme_interact);
+
+disp(' ');
+disp('======================================================');
+disp('   STATISTICS: ALIGNED VS CONFLICT DISCRETE COMPARISON');
+disp('======================================================');
+
+% Event-level Non-parametric Test
+post_congruent  = V1_post(congruentMask)  .* sign_V1_pre(congruentMask);
+post_incongruent = V1_post(incongruentMask) .* sign_V1_pre(incongruentMask);
+
+fprintf('\n--- EVENT LEVEL ---\n');
+fprintf('Mean Signed V1 Post-Ripple (Congruent):  %.4f\n', mean(post_congruent));
+fprintf('Mean Signed V1 Post-Ripple (Incongruent): %.4f\n', mean(post_incongruent));
+
+[p, h, stats] = ranksum(post_congruent, post_incongruent);
+if isfield(stats, 'zval')
+    fprintf('Wilcoxon Rank Sum (Events): p-value = %.3e (z = %.2f)\n', p, stats.zval);
+else
+    fprintf('Wilcoxon Rank Sum (Events): p-value = %.3e (ranksum = %.2f)\n', p, stats.ranksum);
+end
+fig = figure('Name', 'Histogram of Post-V1 Track Bias (congruent vs incongruent)','Position',[1020 300 400 520]);
+nexttile
+histogram(V1_post.*sign_V1_pre,-2:0.05:2,'Normalization','probability');
+legend('all events','box','off'); title('Event Post-V1 Distributions');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+nexttile
+histogram(post_congruent,-2:0.05:2,'Normalization','probability'); hold on; histogram(post_incongruent,-2:0.05:2,'Normalization','probability');
+legend('Congruent', 'Incongruent','box','off'); title('Event Post-V1 Distributions');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+p_text = sprintf('p = %.3e', p);
+text(1, 0.02, p_text,'FontSize', 12, 'FontWeight', 'bold');
+
+%% congruent vs incongruented sign rank test (session level) 
+% Session-level Paired Sign-Rank Test
+congruent_sess = sess_id(congruentMask);
+incongruent_sess = sess_id(incongruentMask);
+u_sess_shared = intersect(unique(congruent_sess(~isnan(congruent_sess))), unique(incongruent_sess(~isnan(incongruent_sess))));
+
+sess_mean_congruent = nan(length(u_sess_shared), 1);
+sess_mean_incongruent = nan(length(u_sess_shared), 1);
+
+for i = 1:length(u_sess_shared)
+    sess_mean_congruent(i) = mean(post_congruent(congruent_sess == u_sess_shared(i)), 'omitnan');
+    sess_mean_incongruent(i) = mean(post_incongruent(incongruent_sess == u_sess_shared(i)), 'omitnan');
+end
+
+fprintf('\n--- SESSION LEVEL (Paired N=%d) ---\n', length(u_sess_shared));
+fprintf('Mean of Session Means (Congruent):  %.4f\n', mean(sess_mean_congruent));
+fprintf('Mean of Session Means (Incongruent): %.4f\n', mean(sess_mean_incongruent));
+
+[p_sess, h_sess, stats_sess] = signrank(sess_mean_congruent, sess_mean_incongruent,'tail','right');
+if isfield(stats_sess, 'zval')
+    fprintf('Wilcoxon Signed Rank (Sessions): p-value = %.3e (z = %.2f)\n', p_sess, stats_sess.zval);
+elseif isfield(stats_sess, 'signrank')
+    fprintf('Wilcoxon Signed Rank (Sessions): p-value = %.3e (signrank = %.2f)\n', p_sess, stats_sess.signrank);
+else
+    fprintf('Wilcoxon Signed Rank (Sessions): p-value = %.3e\n', p_sess);
+end
+
+% --- Paired Scatter Plot for Sessions ---
+figure_paired = figure('Name', 'signed rank session congruent vs incongruent', 'Color', 'w', 'Position', [1000 100 230 370]);
+hold on;
+
+% Define colors matching the PSTH
+col_congruent  = [0 0.5 0.8]; % Blue
+col_incongruent = [0.8 0.2 0.2]; % Red
+
+% Add reproducible jitter so points do not stack perfectly vertically
+rng(2); % Fixed Seed
+jitter = (rand(size(sess_mean_congruent)) - 0.5) * 0.15;
+x_cong = 1 + jitter;
+x_incong = 2 + jitter;
+
+% Plot connecting lines first so they are behind points
+for i = 1:length(sess_mean_congruent)
+    plot([x_cong(i), x_incong(i)], [sess_mean_congruent(i), sess_mean_incongruent(i)], 'Color', [0.5 0.5 0.5 0.6], 'LineWidth', 1);
+end
+
+% Plot scatter points with transparency
+scatter(x_cong, sess_mean_congruent, 100, col_congruent, 'filled', 'MarkerFaceAlpha', 0.6);
+scatter(x_incong, sess_mean_incongruent, 100, col_incongruent, 'filled', 'MarkerFaceAlpha', 0.6);
+
+% Formatting
+xlim([0.5, 2.5]);
+xticks([1, 2]);
+xticklabels({'Congruent', 'Incongruent'});
+xtickangle(30);
+ylabel('Mean V1 Post-Ripple Bias (Session)', 'FontSize', 12);
+
+% Add significance markers
+y_max = max([sess_mean_congruent; sess_mean_incongruent]);
+y_min = min([sess_mean_congruent; sess_mean_incongruent]);
+y_range = y_max - y_min;
+y_star = y_max + y_range * 0.1;
+
+if p_sess < 0.001
+    star_txt = '***';
+elseif p_sess < 0.01
+    star_txt = '**';
+elseif p_sess < 0.05
+    star_txt = '*';
+else
+    star_txt = 'n.s.';
+end
+
+p_text = sprintf('p = %.3e', p_sess);
+text(1, y_star, p_text, 'FontSize', 14);
+ylim([y_min - y_range*0.1, y_star + y_range*0.1]);
+
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+%% Mixed effect model for congruent and incongruent 
+% Mixed model accounting for subject/session on just this Congruent/Incongruent subset
+tbl_discrete = tbl(congruentMask | incongruentMask, :);
+% HC ripple condition (1 for incongruent, -1 for congruent)
+tbl_discrete.isIncongruent = categorical(incongruentMask(congruentMask | incongruentMask)); 
+% Make everything relative to pre-V1 direction
+tbl_discrete.V1_post_signed = tbl_discrete.V1_post .* sign_V1_pre(congruentMask | incongruentMask);
+tbl_discrete.V1_pre_signed  = tbl_discrete.V1_pre  .* sign_V1_pre(congruentMask | incongruentMask);
+% tbl_discrete.HC_signed  = tbl_discrete.HC_bias  .* sign_V1_pre(congruentMask | incongruentMask);
+% tbl_discrete.V1_pre_sign  = categorical(sign_V1_pre(congruentMask | incongruentMask));
+
+lme_discrete = fitlme(tbl_discrete, 'V1_post_signed ~ isIncongruent + V1_pre_signed + (1|subject_id) + (1|session_id)'...
+    ,'DummyVarCoding', 'reference');
+disp('LME showing effect of HC ripple condition (isIncongruent: 0=Congruent, 1=Incongruent) on Post-V1, controlling for Pre-V1:');
+disp(lme_discrete);
+
+% --- Visualization: Discrete LME Beta Coefficients ---
+figure('Name', 'LME effect of incongruent HC ripple on post V1', 'Color', 'w', 'Position', [200 200 400 450]);
+hold on;
+
+coefs = lme_discrete.Coefficients.Estimate(2:3);
+ci_low = lme_discrete.Coefficients.Lower(2:3);
+ci_high = lme_discrete.Coefficients.Upper(2:3);
+pvals = lme_discrete.Coefficients.pValue(2:3);
+
+labels_discrete = {'HC Incongruent', 'Pre-V1 Bias'};
+colors_discrete = [0.8 0.2 0.2; 0.2 0.6 0.8]; % Red for incongruent, Blue for Pre-V1
+
+for i = 1:2
+    bar(i, coefs(i), 0.5, 'FaceColor', colors_discrete(i,:), 'EdgeColor', 'none');
+    
+    % Error bounds from center relative to estimate
+    err_low = coefs(i) - ci_low(i);
+    err_high = ci_high(i) - coefs(i);
+    errorbar(i, coefs(i), err_low, err_high, 'k', 'LineStyle', 'none', 'LineWidth', 1.5, 'CapSize', 8);
+    
+    % Add Exact P-Values
+    p_val = pvals(i);
+    txt = sprintf('p=%.3e', p_val);
+    
+    % Handle text placement depending on if the effect is positive or negative
+    if ci_high(i) > 0
+        text(i, ci_high(i) + max(abs(coefs))*0.05, txt, 'HorizontalAlignment', 'center', 'FontSize', 12);
+    else
+        text(i, coefs(i) + max(abs(coefs))*0.05, txt, 'HorizontalAlignment', 'center', 'FontSize', 12);
+    end
+end
+
+ylabel('Standardized \beta on Post-V1 (Signed)');
+set(gca, 'XTick', 1:2, 'XTickLabel', labels_discrete, 'XTickLabelRotation', 20);
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+yline(0, 'k-', 'LineWidth', 1);
+title('LME Predictors (Discrete)');
+
+
+% % --- Pack All Output Data into `results` Struct ---
+% if nargout > 0
+%     results = struct();
+% 
+%     % Mediation / LME Outputs
+%     results.mediation_labels_beta        = {'V1_pre_Direct', 'HC_bias', 'Indirect', 'V1_pre_to_HC_PathA'};
+%     results.mediation_beta_observed      = obs_b;
+%     results.mediation_beta_CI            = beta_CI;
+%     results.mediation_labels_prop        = {'Unique_V1', 'Unique_HC', 'Shared', 'PathA_R2'};
+%     results.mediation_prop_observed      = obs_p;
+%     results.mediation_prop_CI            = prop_CI;
+%     results.mediation_prop_mediated      = obs_prop_mediated;
+%     results.mediation_prop_mediated_CI   = prop_med_CI;
+%     results.mediation_indirect_p_value   = p_val_indirect;
+% 
+%     % Sign-Rank Session Testing (Incongruent vs Congruent)
+%     results.paired_test_u_sess_shared      = u_sess_shared;
+%     results.paired_test_sess_mean_congruent  = sess_mean_congruent;
+%     results.paired_test_sess_mean_incongruent = sess_mean_incongruent;
+%     results.paired_test_signrank_p_value   = p_sess;
+%     results.paired_test_signrank_stats     = stats_sess;
+%     results.paired_test_ranksum_p_value    = p;
+%     results.paired_test_ranksum_stats      = stats;
+% 
+%     % LME Models
+%     results.lme_congruent_vs_incongruent   = lme_discrete;
+%     results.lme_pre_V1_HC = lme;
+% end
+
+%% Save output statistics structs and LME prints
+output_file = fullfile(analysis_folder, 'V1-HPC bilateral interaction\UP-DOWN log odds', 'post_V1_from_pre_V1_and_HPC');
+
+mediation_statistics = struct('obs_b', obs_b, 'obs_pval', obs_pval, 'beta_CI', beta_CI, ...
+    'obs_p', obs_p, 'prop_CI', prop_CI, 'obs_prop_mediated', obs_prop_mediated, ...
+    'prop_med_CI', prop_med_CI, 'p_val_indirect', p_val_indirect);
+
+stats_event_conflict = struct('post_congruent', post_congruent, 'post_incongruent', post_incongruent, 'p', p, 'h', h, 'stats', stats);
+stats_session_conflict = struct('session_congruent', sess_mean_congruent, 'session_incongruent', sess_mean_incongruent, 'p', p_sess, 'h', h_sess, 'stats', stats_sess);
+
+vars_to_save = {'pre_ripple_normalised_UP_lme', 'ripple_normalised_UP_lme', ...
+    'lme', 'lme_interact', 'lme_discrete', 'mediation_statistics', ...
+    'stats_event_conflict', 'stats_session_conflict'};
+
+save([output_file, '.mat'], vars_to_save{:});
+
+diary(fullfile(analysis_folder, 'V1-HPC bilateral interaction\UP-DOWN log odds', 'predict_post_V1_lme_model_outputs.txt'));
+disp('--- Structured LME Model Outputs ---');
+for m = 1:length(vars_to_save)
+    m_name = vars_to_save{m};
+    fprintf('\n=== %s ===\n', m_name);
+    
+    val = eval(m_name);
+    if isstruct(val) && isfield(val, 'b')
+        % Print out the coefficient values across bins
+        for bin = 1:size(val.b, 1)
+            fprintf('Bin %d: ', bin);
+            for v = 1:size(val.b, 2)
+                fprintf('Est=%.4f (p=%.4f) | ', val.b(bin,v), val.pval(bin,v));
+            end
+            fprintf('\n');
+        end
+    else
+        % For standard LME objects or simple structs
+        disp(val);
+    end
+end
+diary off;
+
+disp('Analysis Complete.');
+
+end % Main function end
+
+% --- Helper Functions ---
+function [betas, props, pval, prop_mediated] = calculate_metrics_local(data)
+    warning('off','all'); % Suppress rank-deficient warnings during boot
+    mFull = fitlme(data, 'V1_post ~ V1_pre + HC_bias + (1|subject_id) + (1|session_id)', 'FitMethod', 'ML');
+    mA    = fitlme(data, 'HC_bias ~ V1_pre + (1|subject_id) + (1|session_id)', 'FitMethod', 'ML');
+    mV1   = fitlme(data, 'V1_post ~ V1_pre + (1|subject_id) + (1|session_id)', 'FitMethod', 'ML');
+    mHPC  = fitlme(data, 'V1_post ~ HC_bias + (1|subject_id) + (1|session_id)', 'FitMethod', 'ML');
+    warning('on','all');
+    
+    a   = mA.Coefficients.Estimate(2);     % V1_pre -> HC_bias
+    b   = mFull.Coefficients.Estimate(3);  % HC_bias -> V1_post
+    c_p = mFull.Coefficients.Estimate(2);  % V1_pre -> V1_post (Direct)
+    
+    indirect_effect = a * b;
+    total_effect = c_p + indirect_effect;
+    
+    if total_effect ~= 0
+        prop_mediated = (indirect_effect / total_effect) * 100;
+    else
+        prop_mediated = 0;
+    end
+    
+    betas = [c_p, b, indirect_effect, a];
+    pval  = [mFull.Coefficients.pValue(2), mFull.Coefficients.pValue(3), NaN, mA.Coefficients.pValue(2)];
+    
+    rf = mFull.Rsquared.Adjusted; 
+    rv = mV1.Rsquared.Adjusted; 
+    rh = mHPC.Rsquared.Adjusted;
+    
+    uv = rf - rh; % Unique V1
+    uh = rf - rv; % Unique HC
+    sh = (rv + rh) - rf; % Shared
+    
+    total = uv + uh + sh;
+    
+    % Safe division
+    if total == 0; total = 1; end
+    
+    props = [uv, uh, sh, mA.Rsquared.Adjusted] ./ [total, total, total, 1] * 100;
+end

@@ -343,7 +343,7 @@ load(fullfile(analysis_folder,'ripples_all_POST.mat'))
 load(fullfile(analysis_folder,'ripples_all_best_POST.mat'))
 
 
-
+% 
 % 
 % % ripples_all
 % for nsession = 1:length(sessions_to_process)
@@ -400,7 +400,7 @@ load(fullfile(analysis_folder,'ripples_all_best_POST.mat'))
 %         ripple_PSTH(2).V1_MUA{nsession}(hemi,:,:) = zscore(squeeze(ripple_modulation(2).PSTH),0,2);
 %     end
 % end
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_PSTH_POST.mat'),'ripple_PSTH')
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_PSTH_POST.mat'),'ripple_PSTH')
 
 
 

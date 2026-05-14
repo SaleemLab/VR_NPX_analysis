@@ -32,13 +32,13 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_psth_whole = probability;
 
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
-PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'));
+% PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+% PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
-load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
+% load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
 
 
 
@@ -177,7 +177,10 @@ spindle_probability_psth_whole = probability;
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_baseline_combined.mat'));
 probability_psth_whole_baseline = probability;
 
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info.mat'),'ripple_info')
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+% % load(fullfile(analysis_folder,'slow_waves_all_markov_POST.mat'))
+load(fullfile(analysis_folder,'ripples_all_POST.mat'))
+load(fullfile(analysis_folder,'spindles_all_POST.mat'))
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_normalised_whole.mat'));
 % probability_normalised_whole = probability;
 % contra_lag_ripples
@@ -444,6 +447,8 @@ varnames = {
 
     'first_ripples_log_odds'
     'last_ripples_log_odds'
+    'first_ripples_PRE_log_odds'
+    'last_ripples_PRE_log_odds'
     'first_ripples_V1_log_odds'
     'last_ripples_V1_log_odds'
     'first_ripples_PRE_V1_log_odds'
@@ -576,6 +581,9 @@ for nprobe = 1:2
 
                 data_struct.first_ripples_log_odds{nprobe}(nevent) = mean_z_bias(ripples_index(1));
                 data_struct.last_ripples_log_odds{nprobe}(nevent) = mean_z_bias(ripples_index(end));
+
+                data_struct.first_ripples_PRE_log_odds{nprobe}(nevent) = mean_z_bias_PRE(ripples_index(1));
+                data_struct.last_ripples_PRE_log_odds{nprobe}(nevent) = mean_z_bias_PRE(ripples_index(end));
 
                 data_struct.first_ripples_V1_log_odds{nprobe}(nevent) = mean_z_bias_V1(ripples_index(1));
                 data_struct.last_ripples_V1_log_odds{nprobe}(nevent) = mean_z_bias_V1(ripples_index(end));
@@ -769,7 +777,7 @@ time_window = 0.1;
 for nprobe = 1:2
     UP_indices = probability_psth_whole(nprobe).UP_all_index;
 
-    %%%% Late UP Log odds (200ms)
+    %%%% Late UP Log odds (100ms)
     tidx = KDE_reactivation_PSTH(1).tvec > -time_window & KDE_reactivation_PSTH(1).tvec < 0; 
 
     UP_DOWN_info.late_UP_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
@@ -777,23 +785,23 @@ for nprobe = 1:2
 
 %     prev_down_idx{nprobe}(UP_indices)
     
-    %%%% Early UP Log odds (200ms)
+    %%%% Early UP Log odds (100ms)
     tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     UP_DOWN_info.early_UP_log_odds{nprobe}=mean(UP_HPC_log_odds{nprobe}(UP_indices,tidx),2,'omitnan');
     UP_DOWN_info.early_UP_V1_log_odds{nprobe}=mean(UP_V1_log_odds{nprobe}(UP_indices,tidx),2,'omitnan');
 
-    %%%% DOWN Log odds (200ms) (following current UP)
+    %%%% DOWN Log odds (100ms) (following current UP)
     tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     UP_DOWN_info.DOWN_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
     UP_DOWN_info.DOWN_V1_log_odds{nprobe}=mean(DOWN_V1_log_odds{nprobe}(next_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
 
-    %%%% Previous late UP Log odds (200ms)
+    %%%% Previous late UP Log odds (100ms)
     tidx = KDE_reactivation_PSTH(1).tvec > -time_window & KDE_reactivation_PSTH(1).tvec < 0; 
     
     UP_DOWN_info.previous_late_UP_log_odds{nprobe}=mean(DOWN_HPC_log_odds{nprobe}(prev_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
     UP_DOWN_info.previous_late_UP_V1_log_odds{nprobe}=mean(DOWN_V1_log_odds{nprobe}(prev_down_idx{nprobe}(UP_indices),tidx),2,'omitnan');
 
-    %%%% Next early UP Log odds (200ms)
+    %%%% Next early UP Log odds (100ms)
     tidx = KDE_reactivation_PSTH(1).tvec > 0 & KDE_reactivation_PSTH(1).tvec < time_window;
     if UP_indices(end)==size(UP_HPC_log_odds{nprobe},1)        
         UP_DOWN_info.next_early_UP_log_odds{nprobe}=[mean(UP_HPC_log_odds{nprobe}(UP_indices(1:end-1)+1,tidx),2,'omitnan'); nan];
@@ -822,6 +830,7 @@ UP_DOWN_info.contra_spindles_UP = [nansum(spindle_probability_psth_whole(1).R_sp
 
 UP_DOWN_info.ipsi_spindles_DOWN = [nansum(spindle_probability_psth_whole(1).L_spindles_DOWN(:,50:60)')'>0; nansum(spindle_probability_psth_whole(2).R_spindles_DOWN(:,50:60)')'>0];
 UP_DOWN_info.contra_spindles_DOWN = [nansum(spindle_probability_psth_whole(1).R_spindles_DOWN(:,50:60)')'>0; nansum(spindle_probability_psth_whole(2).L_spindles_DOWN(:,50:60)')'>0];
+
 
 save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
 
@@ -1173,13 +1182,15 @@ summary_table = UP_DOWN_ripples_glme_summary_table(output, model_indices, 'SO_sp
 % save(fullfile(analysis_folder,'V1-HPC sleep interaction','Ripples_V1synchrony_output_based_on_UP.mat'),'output');
 
 %% Effect of ripples and cumulative HPC activities  on UP survival probability
-
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+% save(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_100ms.mat'),'UP_DOWN_info');
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_100ms.mat'),'UP_DOWN_info');
 
 UP_session_count = [slow_waves_all(1).UP_session_count(probability(1).UP_all_index); slow_waves_all(2).UP_session_count(probability(2).UP_all_index)];
 subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count,end-1:end)));
 [~, ~, subject_id] = unique(subject_id);
 UP_DOWN_info.subject_id = subject_id;
+UP_DOWN_info.session_id = UP_session_count;
 
 %%%%%%%%%%%%% Ripple power predicts UP probability
 output = plot_UP_survival_probability( ...
@@ -1699,7 +1710,7 @@ output = plot_UP_survival_probability( ...
     UP_DOWN_info.contra_last_ripple_next_spindle_power_UP-UP_DOWN_info.contra_last_ripple_next_spindle_diff_UP}, ...
     {UP_DOWN_info.time_from_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP}, ...
     {UP_DOWN_info.ripple_counts_UP,UP_DOWN_info.ripple_counts_UP},'count_option',[],'bilateral_merging',[],'timebin', 0.015, ...
-    'title_name', 'last ripple next UP - end UP  spindle power diff and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
+    'title_name', 'last ripple end of UP spindle power and last ripple to UP-DOWN transition','event_option',[],'subject_id',subject_id...
     );
 
 
@@ -1790,6 +1801,11 @@ output = plot_UP_survival_probability( ...
 
 
 log_odds_prod = UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP;
+
+%%% GeoMean of track bias products
+log_odds_prod = sign(UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP)...
+    .* sqrt(abs(UP_DOWN_info.last_ripples_log_odds_UP .* UP_DOWN_info.last_ripples_V1_log_odds_UP));
+
 % log_odds_prod = UP_DOWN_info.late_UP_V1_log_odds .* UP_DOWN_info.last_ripples_log_odds_UP;
 
 % output = plot_UP_survival_probability( ...
@@ -1850,6 +1866,86 @@ output = plot_UP_survival_probability( ...
     'event_option',[],'title_name', 'Last ripple V1 log odds change and last ripple to UP-DOWN transition','subject_id',subject_id...
     );
 % UP_DOWN_info.last_ripples_V1_log_odds_UP
+%% Save CSV table of UP DOWN ripple info for R analysis
+
+UP_session_count = [slow_waves_all(1).UP_session_count(probability(1).UP_all_index); slow_waves_all(2).UP_session_count(probability(2).UP_all_index)];
+subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count,end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+UP_DOWN_info.subject_id = subject_id;
+UP_DOWN_info.session_id = UP_session_count;
+V1_direction = [-1*ones(1,length(probability_psth_whole(1).UP_all_index)) 1*ones(1,length(probability_psth_whole(2).UP_all_index))];
+
+% 1. Calculate the new normalized position fields
+lastRippleNormalisedUP = UP_DOWN_info.time_to_last_ripples_UP ./ UP_DOWN_info.UP_duration';
+firstRippleNormalisedUP = UP_DOWN_info.time_to_first_ripples_UP ./ UP_DOWN_info.UP_duration';
+
+lastRippleNormalisedUP(lastRippleNormalisedUP>1) = 1;
+firstRippleNormalisedUP(firstRippleNormalisedUP>1) = 1;
+lastRippleNormalisedUP(lastRippleNormalisedUP<0) = 0;
+firstRippleNormalisedUP(firstRippleNormalisedUP<0) = 0;
+
+% 2. Construct the table (transposing 1xN fields to be column vectors)
+% Force everything into column vectors using (:)
+% 2. Construct the table (transposing 1xN fields to be column vectors)
+tbl = table(...
+    UP_DOWN_info.time_to_first_ripples_UP(:), ...
+    UP_DOWN_info.time_from_first_ripples_UP(:), ...
+    UP_DOWN_info.time_to_last_ripples_UP(:), ...
+    UP_DOWN_info.time_from_last_ripples_UP(:), ...
+    V1_direction(:), ... 
+    UP_DOWN_info.first_ripples_power_UP(:), ...
+    UP_DOWN_info.last_ripples_power_UP(:), ...
+    ... % V1 Log Odds
+    UP_DOWN_info.next_early_UP_V1_log_odds(:), ...
+    UP_DOWN_info.early_UP_V1_log_odds(:), ...
+    UP_DOWN_info.late_UP_V1_log_odds(:), ...
+    UP_DOWN_info.previous_late_UP_V1_log_odds(:), ...
+    UP_DOWN_info.first_ripples_V1_log_odds_UP(:), ...
+    UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP(:), ...
+    UP_DOWN_info.last_ripples_V1_log_odds_UP(:), ...
+    UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP(:), ...
+    ... % HPC Log Odds
+    UP_DOWN_info.next_early_UP_log_odds(:), ...
+    UP_DOWN_info.early_UP_log_odds(:), ...
+    UP_DOWN_info.late_UP_log_odds(:), ...
+    UP_DOWN_info.previous_late_UP_log_odds(:), ...
+    UP_DOWN_info.first_ripples_log_odds_UP(:), ...
+    UP_DOWN_info.first_ripples_PRE_log_odds_UP(:), ...  % Added PRE HPC
+    UP_DOWN_info.last_ripples_log_odds_UP(:), ...
+    UP_DOWN_info.last_ripples_PRE_log_odds_UP(:), ...   % Added PRE HPC
+    ... % Metadata & Durations
+    UP_DOWN_info.UP_duration(:), ...             
+    lastRippleNormalisedUP(:), ...               
+    firstRippleNormalisedUP(:), ...              
+    UP_DOWN_info.subject_id(:), ...               
+    UP_DOWN_info.session_id(:), ...               
+    'VariableNames', { ...
+    'TimeToFirstRipple', 'TimefromFirstRipple', 'TimeToLastRipple', 'TimefromLastRipple', ...
+    'V1Track', 'firstRipplePower', 'lastRipplePower', ...
+    'nextUPV1', 'earlyUPV1', 'lateUPV1', 'previousUPV1', ...
+    'firstRippleV1', 'firstRippleV1PRE', 'lastRippleV1', 'lastRippleV1PRE', ...
+    'nextUPHPC', 'earlyUPHPC', 'lateUPHPC', 'previousUPHPC', ...
+    'firstRippleHPC', 'firstRippleHPCPRE', 'lastRippleHPC', 'lastRippleHPCPRE', ...
+    'UPDuration', 'lastRippleNormalisedUP', 'firstRippleNormalisedUP', ...
+    'AnimalID', 'SessionID'});
+% 3. Write to CSV for R
+writetable(tbl, 'UP_DOWN_info_GAM.csv');
+
+%% HC contribution to post-ripple V1
+
+predict_post_V1_from_HC_and_pre_V1(KDE_reactivation_ripples_PSTH,ripple_info);
+% save(fullfile('P:\corticohippocampal_replay\V1-HPC bilateral interaction\UP-DOWN log odds','predict_postV1_from_HC_and_preV1'),'results');
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+
+% 
+% V1_HC_ripple_lme = predict_V1_from_pre_V1_and_HC(tbl,[]);
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+% save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+% load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','V1_HC_ripple_lme'),'V1_HC_ripple_lme')
+%% V1-HC reactivation during early, late UP and next UP
+predict_V1_UP_bias_from_HC(analysis_folder)
+% save(fullfile('P:\corticohippocampal_replay\V1-HPC bilateral interaction\UP-DOWN log odds','predict_postV1_from_HC_and_preV1'),'results');
+save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
 
 
 %% Relationship between neighbouring UP states
@@ -1871,20 +1967,33 @@ V1_direction = [1*ones(1,length(probability_psth_whole(1).UP_all_index)) 2*ones(
 % 
 % low_index = UP_DOWN_info.last_ripples_power_UP < prctile(UP_DOWN_info.last_ripples_power_UP,[25]);
 % high_index = UP_DOWN_info.last_ripples_power_UP > prctile(UP_DOWN_info.last_ripples_power_UP,[75]);
+% tbl = table(normalize(UP_DOWN_info.time_to_first_ripples_UP)',normalize(UP_DOWN_info.time_from_first_ripples_UP)',normalize(UP_DOWN_info.time_to_last_ripples_UP)',normalize(UP_DOWN_info.time_from_last_ripples_UP)',...
+%     V1_direction',normalize(UP_DOWN_info.first_ripples_power_UP)',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',...
+%     normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',...
+%     normalize(UP_DOWN_info.first_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP)',...
+%     normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
+%     normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.first_ripples_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
+%     subject_id,UP_session_count,'VariableNames',{'TimeToFirstRipple','TimefromFirstRipple','TimeToLastRipple','TimefromLastRipple',...
+%     'V1Track','firstRipplePower','lastRipplePower','nextUP','lateUP',...
+%     'lastRippleV1','lastRippleV1PRE',...
+%     'firstRippleV1','firstRippleV1PRE',...
+%     'earlyUP','previousUP'...
+%     'lateUPHPC','firstRippleHPC','lastRippleHPC','previousUPHPC',...
+%     'subject_id','session_id'});
+
 tbl = table(normalize(UP_DOWN_info.time_to_first_ripples_UP)',normalize(UP_DOWN_info.time_from_first_ripples_UP)',normalize(UP_DOWN_info.time_to_last_ripples_UP)',normalize(UP_DOWN_info.time_from_last_ripples_UP)',...
-    V1_direction',normalize(UP_DOWN_info.first_ripples_power_UP)',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',...
+    V1_direction(:),normalize(UP_DOWN_info.first_ripples_power_UP)',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',...
     normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',...
     normalize(UP_DOWN_info.first_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP)',...
     normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
     normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.first_ripples_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
-    subject_id,UP_session_count,'VariableNames',{'TimeToFirstRipple','TimefromFirstRipple','TimeToLastRipple','TimefromLastRipple',...
+    UP_DOWN_info.subject_id,UP_DOWN_info.session_id,'VariableNames',{'TimeToFirstRipple','TimefromFirstRipple','TimeToLastRipple','TimefromLastRipple',...
     'V1Track','firstRipplePower','lastRipplePower','nextUP','lateUP',...
     'lastRippleV1','lastRippleV1PRE',...
     'firstRippleV1','firstRippleV1PRE',...
-    'earlyUP','previousUP'...
+    'earlyUP','previousUP',...
     'lateUPHPC','firstRippleHPC','lastRippleHPC','previousUPHPC',...
     'subject_id','session_id'});
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -1916,8 +2025,8 @@ lme2.Coefficients
 
 % t_step = 0:0.02:0.2;
 % t_win = 0:0.02:0.50;
-% t_win = prctile(UP_DOWN_info.time_from_last_ripples_UP,0:10:100);
-t_win = prctile(UP_DOWN_info.time_to_last_ripples_UP,0:10:100);
+t_win = prctile(UP_DOWN_info.time_from_last_ripples_UP,0:10:100);
+% t_win = prctile(UP_DOWN_info.time_to_last_ripples_UP,0:10:100);
 t_win(1)=0;
 beta_V1_CI=nan(2,length(t_win));
 beta_HC_CI=nan(2,length(t_win));
@@ -1928,10 +2037,10 @@ ripple_nextUP_lme = struct(); ripple_lateUP_lme = struct();ripple_last_lme = str
 lateUP_lme_with_ripple = struct(); lateUP_lme_without_ripple = struct();ripple_lastPRE_lme = struct();
 
 for tidx = 1:length(t_win)-1
-    % tbl_temp = tbl(UP_DOWN_info.time_from_last_ripples_UP<=t_win(tidx)+1& ...
-    %     UP_DOWN_info.time_from_last_ripples_UP>t_win(tidx),:);
-    tbl_temp = tbl(UP_DOWN_info.time_to_last_ripples_UP<=t_win(tidx)+1& ...
-        UP_DOWN_info.time_to_last_ripples_UP>t_win(tidx)&UP_DOWN_info.ripple,:);
+    tbl_temp = tbl(UP_DOWN_info.time_from_last_ripples_UP<=t_win(tidx+1)& ...
+        UP_DOWN_info.time_from_last_ripples_UP>t_win(tidx),:);
+    % tbl_temp = tbl(UP_DOWN_info.time_to_last_ripples_UP<=t_win(tidx+1)& ...
+    %     UP_DOWN_info.time_to_last_ripples_UP>t_win(tidx),:);
 
     % lme2 = fitlme(tbl_temp, 'nextUP ~ lastRippleV1 * lastRippleHPC + (1|subject_id) + (1|session_id)');
     lme2 = fitlme(tbl_temp, 'nextUP ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
@@ -1973,8 +2082,8 @@ end
 % save(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_from_start_lme.mat'),...
 %     'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
 
-
-% load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_from_start_lme.mat'),...
+% 
+% load(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds','last_ripple_time_to_end_lme.mat'),...
 %     'ripple_lastPRE_lme','ripple_last_lme','ripple_earlyUP_lme','ripple_nextUP_lme','ripple_lateUP_lme')
 
 % LateUP predicting nextUP with and without ripple (HC prediction of nextUP depends on ripple)

@@ -1,0 +1,960 @@
+function predict_V1_UP_bias_from_HC(analysis_folder)
+    
+if nargin < 1
+    if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay', 'dir')
+        analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+    elseif exist('D:\corticohippocampal_replay', 'dir')
+        analysis_folder = 'D:\corticohippocampal_replay';
+    elseif exist('P:\corticohippocampal_replay', 'dir')
+        analysis_folder = 'P:\corticohippocampal_replay';
+    else
+        error('Data folder not found.');
+    end
+end
+
+% Set up paths
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+
+% Load necessary data
+fprintf('Loading UP_DOWN_info...\n');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info_100ms.mat'),'UP_DOWN_info');
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_combined.mat'));
+probability_psth_whole = probability;
+
+% fprintf('Loading extra info for subject and session ID...\n');
+% load(fullfile(analysis_folder,'slow_waves_all_POST.mat'), 'slow_waves_all');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole_combined.mat'), 'probability');
+
+V1_direction = [1*ones(1,length(probability_psth_whole(1).UP_all_index)) 2*ones(1,length(probability_psth_whole(2).UP_all_index))];
+
+%% Create Table
+fprintf('Constructing LME Table...\n');
+
+% Fixed missing comma in VariableNames
+tbl = table(normalize(UP_DOWN_info.time_to_first_ripples_UP)',normalize(UP_DOWN_info.time_from_first_ripples_UP)',normalize(UP_DOWN_info.time_to_last_ripples_UP)',normalize(UP_DOWN_info.time_from_last_ripples_UP)',...
+    V1_direction(:),normalize(UP_DOWN_info.first_ripples_power_UP)',normalize(UP_DOWN_info.last_ripples_power_UP)',normalize(UP_DOWN_info.next_early_UP_V1_log_odds)',normalize(UP_DOWN_info.late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.last_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_PRE_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.first_ripples_V1_log_odds_UP)',normalize(UP_DOWN_info.first_ripples_PRE_V1_log_odds_UP)',...
+    normalize(UP_DOWN_info.early_UP_V1_log_odds)',normalize(UP_DOWN_info.previous_late_UP_V1_log_odds)',...
+    normalize(UP_DOWN_info.late_UP_log_odds)',normalize(UP_DOWN_info.first_ripples_log_odds_UP)',normalize(UP_DOWN_info.last_ripples_log_odds_UP)',normalize(UP_DOWN_info.previous_late_UP_log_odds)',...
+    UP_DOWN_info.subject_id,UP_DOWN_info.session_id,'VariableNames',{'TimeToFirstRipple','TimefromFirstRipple','TimeToLastRipple','TimefromLastRipple',...
+    'V1Track','firstRipplePower','lastRipplePower','nextUP','lateUP',...
+    'lastRippleV1','lastRippleV1PRE',...
+    'firstRippleV1','firstRippleV1PRE',...
+    'earlyUP','previousUP',... % NOTE: COMMA ADDED HERE
+    'lateUPHPC','firstRippleHPC','lastRippleHPC','previousUPHPC',...
+    'subject_id','session_id'});
+
+% We also need raw time measures for thresholding and physical binning
+tbl.TimefromLastRipple_raw = UP_DOWN_info.time_from_last_ripples_UP';
+tbl.has_late_ripple = tbl.TimefromLastRipple_raw < 0.1 & tbl.TimefromLastRipple_raw >= 0;
+
+
+fig = figure('Name', 'Distribution of ripple to DOWN and UP to ripple','Position',[330 310 920 450]);
+nexttile
+histogram(UP_DOWN_info.time_to_first_ripples_UP,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from UP transition to first ripple')
+
+nexttile
+histogram(UP_DOWN_info.time_from_first_ripples_UP,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from first ripple to DOWN transition')
+
+nexttile
+histogram2(UP_DOWN_info.time_to_first_ripples_UP,UP_DOWN_info.time_from_first_ripples_UP,0:0.02:1,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from UP transition to first ripple')
+ylabel('Time from first ripple to DOWN transition')
+
+
+nexttile
+histogram(UP_DOWN_info.time_to_last_ripples_UP,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from UP transition to last ripple')
+
+nexttile
+histogram(UP_DOWN_info.time_from_last_ripples_UP,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from last ripple to DOWN transition')
+
+nexttile
+histogram2(UP_DOWN_info.time_to_last_ripples_UP,UP_DOWN_info.time_from_last_ripples_UP,0:0.02:1,0:0.02:1,'Normalization','probability')
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+xlabel('Time from UP transition to last ripple')
+ylabel('Time from last ripple to DOWN transition')
+
+
+%% 1. Late UP V1 Bias Predicted by HC Ripple (within 200ms)
+fprintf('\n--- 1. Late UP V1 Bias Predicted by HC Ripple ---\n');
+
+idx1 = ~isnan(tbl.lateUP) & ~isnan(tbl.lastRippleHPC) & ~isnan(tbl.TimefromLastRipple);
+T1 = tbl(idx1, :);
+% T1 = T1(T1.TimefromLastRipple_raw<=1,:);
+% % Model 1A: Continuous Time Interaction
+% lme_1A = fitlme(T1, 'lateUP ~ lastRippleHPC * TimefromLastRipple + (1|subject_id) + (1|session_id)');
+% disp('Model 1A (Continuous Time Interaction):');
+% disp(lme_1A);
+
+% Model 1B: Time-Resolved Prediction (8 Bins based on raw time)
+quantiles_1 = quantile(T1.TimefromLastRipple_raw, 10);
+% quantiles_1 = 0.1:0.1:1;
+quant_edges_1 = [-inf, quantiles_1(1:end-1), inf];
+[bin_idx_1, ~] = discretize(T1.TimefromLastRipple_raw, quant_edges_1);
+
+% Prepare axes points for plotting
+% Usually we plot at the decile boundaries or centers. We will use upper bounds except for the 10th which we cap at something reasonable.
+x_plot_1 = quantiles_1; 
+ripple_last_lme = struct();
+for tidx = 1:length(quantiles_1)
+    subset_T = T1(bin_idx_1 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'lateUP ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+        ripple_last_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        ripple_last_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        ripple_last_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        ripple_last_lme.variable{tidx} = lme2.Coefficients.Name(2:end)';
+        ripple_last_lme.model{tidx} = lme2;
+    else
+        ripple_last_lme.b(tidx,:) = nan;
+        ripple_last_lme.b_CI(:,:,tidx) = [nan nan];
+        ripple_last_lme.pval(tidx,:) = nan;
+        ripple_last_lme.model{tidx} = [];
+    end
+end
+
+% Plotting Q1
+figure('Name', 'LateUP V1 predicted by last ripple HC');
+nexttile
+HC_idx = 1; % Index of the predictor we want to plot
+y_mean = ripple_last_lme.b(:,HC_idx);
+y_CI = squeeze(ripple_last_lme.b_CI(HC_idx,:,:))'; % yields 10x2
+x = x_plot_1(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(ripple_last_lme.pval(:,HC_idx) < 0.05), y_mean(ripple_last_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('last ripple HPC -> late UP V1');
+xlabel('Time from last ripple to DOWN transition (s)');
+ylim([-0.05 0.12])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+
+% saveas(gcf, fullfile(output_dir, 'Q1_Model_1B_Coefficients.png'));
+% close(gcf);
+
+
+% Prepare axes points for plotting
+% Usually we plot at the decile boundaries or centers. We will use upper bounds except for the 10th which we cap at something reasonable.
+x_plot_1 = quantiles_1; 
+ripple_last_V1_lme = struct();
+for tidx = 1:length(quantiles_1)
+    subset_T = T1(bin_idx_1 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'lastRippleV1 ~ lastRippleHPC + (1|subject_id) + (1|session_id)');
+        ripple_last_V1_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        ripple_last_V1_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        ripple_last_V1_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        ripple_last_V1_lme.variable{tidx} = lme2.Coefficients.Name(2:end)';
+        ripple_last_V1_lme.model{tidx} = lme2;
+    else
+        ripple_last_V1_lme.b(tidx,:) = nan;
+        ripple_last_V1_lme.b_CI(:,:,tidx) = [nan nan];
+        ripple_last_V1_lme.pval(tidx,:) = nan;
+        ripple_last_V1_lme.model{tidx} = [];
+    end
+end
+
+% Plotting Q1
+% figure('Name', 'Late UP predicted by last HC ripple');
+nexttile
+HC_idx = 1; % Index of the predictor we want to plot
+y_mean = ripple_last_V1_lme.b(:,HC_idx);
+y_CI = squeeze(ripple_last_V1_lme.b_CI(HC_idx,:,:))'; % yields 10x2
+x = x_plot_1(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(ripple_last_V1_lme.pval(:,HC_idx) < 0.05), y_mean(ripple_last_V1_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('last ripple HPC -> last ripple V1');
+xlabel('Time from last ripple to DOWN transition (s)');
+ylim([-0.05 0.12])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+
+%%%% lateUP with ripple -> lateUPV1
+
+ripple_lateUP_lme_with_ripple = struct;
+
+tbl_temp = tbl(tbl.TimefromLastRipple_raw < 0.2, :);
+lme2 = fitlme(tbl_temp, 'lateUP ~ lateUPHPC + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_lateUP_lme_with_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_lateUP_lme_with_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_lateUP_lme_with_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_lateUP_lme_with_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_lateUP_lme_with_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_lateUP_lme_with_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:1
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias with ripple (200ms) -> lateUP')
+ylim([-0.02 0.15])
+
+%%%% lateUP without ripple
+ripple_lateUP_lme_without_ripple = struct;
+
+tbl_temp = tbl(tbl.TimefromLastRipple_raw > 0.2, :);
+lme2 = fitlme(tbl_temp, 'lateUP ~ lateUPHPC + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_lateUP_lme_without_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_lateUP_lme_without_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_lateUP_lme_without_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_lateUP_lme_without_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_lateUP_lme_without_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_lateUP_lme_without_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:1
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:1, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias without ripple (200ms) -> lateUP')
+ylim([-0.02 0.15])
+
+
+
+
+%% 2. HC Ripple Predicted by Early UP V1 (if within 100ms)
+% fprintf('\n--- 2. HC Ripple Predicted by Early UP V1 ---\n');
+idx2 = ~isnan(tbl.lastRippleHPC) & ~isnan(tbl.earlyUP) & ~isnan(tbl.TimeToLastRipple);
+T2 = tbl(idx2, :);
+T2.TimeToLastRipple_raw = UP_DOWN_info.time_to_last_ripples_UP(idx2)';
+T2.TimeToFirstRipple_raw = UP_DOWN_info.time_to_first_ripples_UP(idx2)';
+
+
+% Model 2B: Time-Resolved Prediction (8 Bins)
+quantiles_2 = quantile(T2.TimeToLastRipple_raw, 8);
+
+% quantiles_2 = 0.1:0.1:1;
+quant_edges_2 = [-inf, quantiles_2(1:end-1), inf];
+[bin_idx_2, ~] = discretize(T2.TimeToLastRipple_raw, quant_edges_2);
+x_plot_2 = quantiles_2;
+ripple_early_lme = struct();
+
+for tidx = 1:length(quantiles_2)
+    subset_T = T2(bin_idx_2 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'lastRippleHPC ~ earlyUP + (1|subject_id) + (1|session_id)');
+        ripple_early_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        ripple_early_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        ripple_early_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        ripple_early_lme.variable = lme2.Coefficients.Name(2:end)';
+        ripple_early_lme.model{tidx} = lme2;
+    else
+        ripple_early_lme.b(tidx,:) = nan;
+        ripple_early_lme.b_CI(:,:,tidx) = [nan nan];
+        ripple_early_lme.pval(tidx,:) = nan;
+        ripple_early_lme.model{tidx} = [];
+    end
+end
+
+figure('Name', 'Ripple HC predicted by early UP');
+nexttile
+HC_idx = 1;
+y_mean = ripple_early_lme.b(:,HC_idx);
+y_CI = squeeze(ripple_early_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_2(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(ripple_early_lme.pval(:,HC_idx) < 0.05), y_mean(ripple_early_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Model 2B: early UP V1 -> last ripple HPC');
+xlabel('Time to last ripple from UP onset (s)');
+% ylim([-0.05 0.1]);
+ylim([-0.081 0.1]);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+% First ripple predicted by early UP 
+% quantiles_2 = quantile(T2.TimeToLastRipple_raw, 8);
+quantiles_2 = quantile(T2.TimeToFirstRipple_raw, 8);
+
+% quantiles_2 = 0.05:0.05:1;
+% quantiles_2 = 0.1:0.1:1;
+quant_edges_2 = [-inf, quantiles_2(1:end-1), inf];
+[bin_idx_2, ~] = discretize(T2.TimeToFirstRipple_raw, quant_edges_2);
+x_plot_2 = quantiles_2;
+first_ripple_early_lme = struct();
+
+for tidx = 1:length(quantiles_2)
+    subset_T = T2(bin_idx_2 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'firstRippleHPC ~ earlyUP + (1|subject_id) + (1|session_id)');
+        first_ripple_early_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        first_ripple_early_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        first_ripple_early_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        first_ripple_early_lme.variable = lme2.Coefficients.Name(2:end)';
+        first_ripple_early_lme.model{tidx} = lme2;
+    else
+        first_ripple_early_lme.b(tidx,:) = nan;
+        first_ripple_early_lme.b_CI(:,:,tidx) = [nan nan];
+        first_ripple_early_lme.pval(tidx,:) = nan;
+        first_ripple_early_lme.model{tidx} = [];
+    end
+end
+
+% figure('Name', 'first ripple HC not predicted by early UP');
+nexttile
+HC_idx = 1;
+y_mean = first_ripple_early_lme.b(:,HC_idx);
+y_CI = squeeze(first_ripple_early_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_2(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(first_ripple_early_lme.pval(:,HC_idx) < 0.05), y_mean(first_ripple_early_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Early UP V1 -> first ripple HPC');
+xlabel('Time to first ripple from UP onset (s)');
+% ylim([-0.05 0.1]);
+ylim([-0.081 0.1]);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+
+
+%%%% earlyUP with ripple -> last ripple HC
+tbl.TimeToLastRipple_raw = UP_DOWN_info.time_to_last_ripples_UP';
+ripple_earlyUP_lme_with_ripple = struct;
+
+tbl_temp = tbl(tbl.TimeToLastRipple_raw < 0.1, :);
+lme2 = fitlme(tbl_temp, 'lastRippleHPC ~ earlyUP + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_earlyUP_lme_with_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_earlyUP_lme_with_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_earlyUP_lme_with_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_earlyUP_lme_with_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_earlyUP_lme_with_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_earlyUP_lme_with_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:1
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:1, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Early UP bias with ripple (100ms) -> HC ripple')
+ylim([-0.02 0.15])
+
+%%%% earlyUP without ripple
+ripple_earlyUP_lme_without_ripple = struct;
+
+tbl_temp = tbl(tbl.TimeToLastRipple_raw > 0.1, :);
+lme2 = fitlme(tbl_temp, 'lastRippleHPC ~ earlyUP  + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_earlyUP_lme_without_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_earlyUP_lme_without_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_earlyUP_lme_without_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_earlyUP_lme_without_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_earlyUP_lme_without_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_earlyUP_lme_without_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:1
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:1, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Early UP bias without ripple (100ms) -> HC ripple')
+ylim([-0.02 0.15])
+
+
+% 
+% %% 
+% tbl_temp = tbl(isnan(UP_DOWN_info.ripple_counts_UP),:);
+% lme = fitlme(tbl_temp, 'lateUPHPC ~ lateUP+earlyUP + (1|subject_id) + (1|session_id)');
+% % lme = fitlme(tbl_temp, 'earlyUPHPC ~ lateUP+earlyUP + (1|subject_id) + (1|session_id)');
+% 
+% tbl_temp = tbl(UP_DOWN_info.ripple_counts_UP ==1,:);
+% lme = fitlme(tbl_temp, 'lastRippleHPC ~ lateUP+earlyUP + (1|subject_id) + (1|session_id)');
+% 
+% 
+% tbl_temp = tbl(UP_DOWN_info.ripple_counts_UP >1,:);
+% lme = fitlme(tbl_temp, 'lastRippleHPC ~ earlyUP + (1|subject_id) + (1|session_id)');
+% lme = fitlme(tbl_temp, 'firstRippleHPC ~ earlyUP + (1|subject_id) + (1|session_id)');
+% 
+% % T2_temp = tbl(UP_DOWN_info.ripple_counts_UP >1,:);
+% lme_2A = fitlme(tbl_temp, 'lastRippleHPC ~ lateUP + (1|subject_id) + (1|session_id)');
+% lme_2A = fitlme(tbl_temp, 'firstRippleHPC ~ lateUP + (1|subject_id) + (1|session_id)');
+% % disp('Model 2A (Continuous Time Interaction):');
+% % disp(lme_2A);
+
+%% 3. Last ripple and first ripple HC content predicted by pre-ripple V1 at different time from UP transition and time to DOWN transition
+
+% fprintf('\n--- 2. HC Ripple Predicted by Early UP V1 ---\n');
+idx3 = UP_DOWN_info.ripple_counts_UP'>0 & ~isnan(tbl.lastRippleHPC) & ~isnan(tbl.TimefromLastRipple) & ~isnan(tbl.TimeToLastRipple);
+T3 = tbl(idx3, :);
+T3.TimeToLastRipple_raw = UP_DOWN_info.time_to_last_ripples_UP(idx3)';
+T3.TimefromLastRipple_raw = UP_DOWN_info.time_from_last_ripples_UP(idx3)';
+T3.TimeToFirstRipple_raw = UP_DOWN_info.time_to_first_ripples_UP(idx3)';
+T3.TimefromFirstRipple_raw = UP_DOWN_info.time_from_first_ripples_UP(idx3)';
+
+
+% Model 3: Time-Resolved Prediction (8 Bins) Pre ripple V1 predicts last ripple HC
+quantiles_3 = quantile(T3.TimeToLastRipple_raw, 8);
+% quantiles_3 = quantile(T3.TimefromLastRipple_raw, 8);
+% quantiles_3 = 0.1:0.1:1;
+quant_edges_3 = [-inf, quantiles_3(1:end-1), inf];
+% quant_edges_3 = [-0.5, quantiles_3(1:end-1), 1];
+[bin_idx_3, ~] = discretize(T3.TimeToLastRipple_raw, quant_edges_3);
+% [bin_idx_3, ~] = discretize(T3.TimefromLastRipple_raw, quant_edges_3);
+x_plot_3 = quantiles_3;
+pre_last_ripple_from_UP_lme = struct();
+
+for tidx = 1:length(quantiles_3)
+    subset_T = T3(bin_idx_3 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'lastRippleHPC ~ lastRippleV1PRE + (1|subject_id) + (1|session_id)');
+        pre_last_ripple_from_UP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        pre_last_ripple_from_UP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        pre_last_ripple_from_UP_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        pre_last_ripple_from_UP_lme.variable = lme2.Coefficients.Name(2:end)';
+        pre_last_ripple_from_UP_lme.model{tidx} = lme2;
+    else
+        pre_last_ripple_from_UP_lme.b(tidx,:) = nan;
+        pre_last_ripple_from_UP_lme.b_CI(:,:,tidx) = [nan nan];
+        pre_last_ripple_from_UP_lme.pval(tidx,:) = nan;
+        pre_last_ripple_from_UP_lme.model{tidx} = [];
+    end
+end
+
+
+figure('Name', 'Ripple HC predicted by pre ripple V1 UP');
+nexttile
+HC_idx = 1;
+y_mean = pre_last_ripple_from_UP_lme.b(:,HC_idx);
+y_CI = squeeze(pre_last_ripple_from_UP_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_3(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(pre_last_ripple_from_UP_lme.pval(:,HC_idx) < 0.05), y_mean(pre_last_ripple_from_UP_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Pre-ripple UP V1 -> last ripple HPC');
+xlabel('Time to last ripple from UP onset (s)');
+ylim([-0.05 0.13]);
+% xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+
+%%%%% pre V1 predicting First ripple
+quantiles_3 = quantile(T3.TimeToFirstRipple_raw, 8);
+% quantiles_3 = 0.1:0.1:1;
+quant_edges_3 = [-inf, quantiles_3(1:end-1), inf];
+[bin_idx_3, ~] = discretize(T3.TimeToFirstRipple_raw, quant_edges_3);
+x_plot_3 = quantiles_3;
+pre_first_ripple_from_UP_lme = struct();
+
+for tidx = 1:length(quantiles_3)
+    subset_T = T3(bin_idx_3 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'firstRippleHPC ~ firstRippleV1PRE + (1|subject_id) + (1|session_id)');
+        pre_first_ripple_from_UP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        pre_first_ripple_from_UP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        pre_first_ripple_from_UP_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        pre_first_ripple_from_UP_lme.variable = lme2.Coefficients.Name(2:end)';
+        pre_first_ripple_from_UP_lme.model{tidx} = lme2;
+    else
+        pre_first_ripple_from_UP_lme.b(tidx,:) = nan;
+        pre_first_ripple_from_UP_lme.b_CI(:,:,tidx) = [nan nan];
+        pre_first_ripple_from_UP_lme.pval(tidx,:) = nan;
+        pre_first_ripple_from_UP_lme.model{tidx} = [];
+    end
+end
+
+nexttile
+HC_idx = 1;
+y_mean = pre_first_ripple_from_UP_lme.b(:,HC_idx);
+y_CI = squeeze(pre_first_ripple_from_UP_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_3(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(pre_first_ripple_from_UP_lme.pval(:,HC_idx) < 0.05), y_mean(pre_first_ripple_from_UP_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Pre-ripple UP V1 -> first ripple HPC');
+xlabel('Time to first ripple from UP onset (s)');
+ylim([-0.05 0.13]);
+% xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+% pre ripple V1 predicts ripple HC (Time from ripple to DOWN transition)
+% fprintf('\n--- 2. HC Ripple Predicted by Early UP V1 ---\n');
+% idx3 = UP_DOWN_info.ripple_counts_UP'>0 & ~isnan(tbl.lastRippleHPC) & ~isnan(tbl.TimefromLastRipple) & ~isnan(tbl.TimeToLastRipple);
+% T3 = tbl(idx3, :);
+% T3.TimeToLastRipple_raw = UP_DOWN_info.time_to_last_ripples_UP(idx3)';
+% T3.TimefromLastRipple_raw = UP_DOWN_info.time_from_last_ripples_UP(idx3)';
+% T3.TimeToFirstRipple_raw = UP_DOWN_info.time_to_first_ripples_UP(idx3)';
+% T3.TimefromFirstRipple_raw = UP_DOWN_info.time_from_first_ripples_UP(idx3)';
+
+
+% Model 3: Time-Resolved Prediction (8 Bins) Pre ripple V1 predicts last ripple HC
+% quantiles_3 = quantile(T3.TimeToLastRipple_raw, 8);
+quantiles_3 = quantile(T3.TimefromLastRipple_raw, 8);
+% quantiles_3 = 0.1:0.1:1;
+quant_edges_3 = [-inf, quantiles_3(1:end-1), inf];
+% [bin_idx_3, ~] = discretize(T3.TimeToLastRipple_raw, quant_edges_3);
+[bin_idx_3, ~] = discretize(T3.TimefromLastRipple_raw, quant_edges_3);
+x_plot_3 = quantiles_3;
+pre_last_ripple_to_DOWN_lme = struct();
+
+for tidx = 1:length(quantiles_3)
+    subset_T = T3(bin_idx_3 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'lastRippleHPC ~ lastRippleV1PRE + (1|subject_id) + (1|session_id)');
+        pre_last_ripple_to_DOWN_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        pre_last_ripple_to_DOWN_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        pre_last_ripple_to_DOWN_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        pre_last_ripple_to_DOWN_lme.variable = lme2.Coefficients.Name(2:end)';
+        pre_last_ripple_to_DOWN_lme.model{tidx} = lme2;
+    else
+        pre_last_ripple_to_DOWN_lme.b(tidx,:) = nan;
+        pre_last_ripple_to_DOWN_lme.b_CI(:,:,tidx) = [nan nan];
+        pre_last_ripple_to_DOWN_lme.pval(tidx,:) = nan;
+        pre_last_ripple_to_DOWN_lme.model{tidx} = [];
+    end
+end
+
+
+% figure('Name', 'Ripple HC predicted by pre ripple V1 UP (relative to ripple to DOWN transition time)');
+nexttile
+HC_idx = 1;
+y_mean = pre_last_ripple_to_DOWN_lme.b(:,HC_idx);
+y_CI = squeeze(pre_last_ripple_to_DOWN_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_3(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(pre_last_ripple_to_DOWN_lme.pval(:,HC_idx) < 0.05), y_mean(pre_last_ripple_to_DOWN_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Pre-ripple UP V1 -> last ripple HPC');
+xlabel('Time from last ripple to DOWN transition (s)');
+ylim([-0.05 0.13]);
+% xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+
+%%%%% pre V1 predicting First ripple
+quantiles_3 = quantile(T3.TimefromFirstRipple_raw, 8);
+% quantiles_3 = 0.1:0.1:1;
+quant_edges_3 = [-inf, quantiles_3(1:end-1), inf];
+[bin_idx_3, ~] = discretize(T3.TimefromFirstRipple_raw, quant_edges_3);
+x_plot_3 = quantiles_3;
+pre_first_ripple_to_DOWN_lme = struct();
+
+for tidx = 1:length(quantiles_3)
+    subset_T = T3(bin_idx_3 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'firstRippleHPC ~ firstRippleV1PRE + (1|subject_id) + (1|session_id)');
+        pre_first_ripple_to_DOWN_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        pre_first_ripple_to_DOWN_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        pre_first_ripple_to_DOWN_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        pre_first_ripple_to_DOWN_lme.variable = lme2.Coefficients.Name(2:end)';
+        pre_first_ripple_to_DOWN_lme.model{tidx} = lme2;
+    else
+        pre_first_ripple_to_DOWN_lme.b(tidx,:) = nan;
+        pre_first_ripple_to_DOWN_lme.b_CI(:,:,tidx) = [nan nan];
+        pre_first_ripple_to_DOWN_lme.pval(tidx,:) = nan;
+        pre_first_ripple_to_DOWN_lme.model{tidx} = [];
+    end
+end
+
+nexttile
+HC_idx = 1;
+y_mean = pre_first_ripple_to_DOWN_lme.b(:,HC_idx);
+y_CI = squeeze(pre_first_ripple_to_DOWN_lme.b_CI(HC_idx,:,:))'; 
+x = x_plot_3(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(pre_first_ripple_to_DOWN_lme.pval(:,HC_idx) < 0.05), y_mean(pre_first_ripple_to_DOWN_lme.pval(:,HC_idx) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Pre-ripple UP V1 -> first ripple HPC');
+xlabel('Time from first ripple to DOWN transition (s)');
+ylim([-0.05 0.13]);
+% xlim([0 1])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+% saveas(gcf, fullfile(output_dir, 'Q2_Model_2B_Coefficients.png'));
+% close(gcf);
+
+%% 4. Next UP V1 Bias Predicted by Late UP HC
+fprintf('\n--- 3. Next UP V1 Bias Predicted by Late UP HC ---\n');
+% idx3 = ~isnan(tbl.nextUP) & ~isnan(tbl.lateUPHPC) & ~isnan(tbl.lateUP) & ~isnan(tbl.TimefromLastRipple);
+T3 = tbl;
+
+% Model 3A: Time-Resolved Prediction (8 quantiles based on time_from_last_ripples)
+quantiles_3 = quantile(T3.TimefromLastRipple_raw, 8);
+quant_edges_3 = [-inf, quantiles_3(1:end-1), inf];
+[bin_idx_3, ~] = discretize(T3.TimefromLastRipple_raw, quant_edges_3);
+x_plot_3 = quantiles_3;
+ripple_nextUP_lme = struct;
+% ripple_nextUP_lme_3B
+
+for tidx = 1:length(quantiles_3)
+    subset_T = T3(bin_idx_3 == tidx, :);
+    if height(subset_T) > 10
+        lme2 = fitlme(subset_T, 'nextUP ~  lastRippleHPC  + (1|subject_id) + (1|session_id)');
+        ripple_nextUP_lme.b(tidx,:) = lme2.Coefficients.Estimate(2:end)';
+        ripple_nextUP_lme.b_CI(:,:,tidx) = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+        ripple_nextUP_lme.pval(tidx,:) = lme2.Coefficients.pValue(2:end)';
+        ripple_nextUP_lme.variable = lme2.Coefficients.Name(2:end)';
+        ripple_nextUP_lme.model{tidx} = lme2;
+    else
+        ripple_nextUP_lme.b(tidx,:) = nan(1,2);
+        ripple_nextUP_lme.b_CI(:,:,tidx) = [nan nan; nan nan];
+        ripple_nextUP_lme.pval(tidx,:) = nan(1,2);
+        ripple_nextUP_lme.model{tidx} = [];
+    end
+end
+
+
+figure('Name', 'lateUP HC and V1 prediction of nextUP');
+nexttile
+% We want to plot the coefficient for lateUPHPC. 
+% lme2 has variables: Intercept, lateUPHPC, lateUP. So lateUPHPC is idx 1, lateUP is idx 2.
+HC_idx_3 =contains(ripple_nextUP_lme.variable,'HPC');
+y_mean = ripple_nextUP_lme.b(:,HC_idx_3);
+y_CI = squeeze(ripple_nextUP_lme.b_CI(HC_idx_3,:,:))'; 
+x = x_plot_3(:);
+hold on;
+fill([x; flipud(x)], [y_CI(:,1); flipud(y_CI(:,2))], 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.15);
+h1 = plot(x, y_mean, 'Color', 'b', 'LineWidth', 2);
+plot(x(ripple_nextUP_lme.pval(:,HC_idx_3) < 0.05), y_mean(ripple_nextUP_lme.pval(:,HC_idx_3) < 0.05) + 0.02, '*k');
+yline(0,'k');
+title('Model 3A: last ripple UP HPC -> Next UP V1');
+xlabel('Time from last ripple to DOWN transition (s)');
+ylim([-0.05 0.12])
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off;
+
+% saveas(gcf, fullfile(output_dir, 'Q3_Model_3A_Coefficients.png'));
+% close(gcf);
+
+
+%%%% lateUP with ripple
+ripple_nextUP_lme_with_ripple = struct;
+
+tbl_temp = tbl(tbl.TimefromLastRipple_raw < 0.1, :);
+lme2 = fitlme(tbl_temp, 'nextUP ~ lateUPHPC + lateUP   + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_nextUP_lme_with_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_nextUP_lme_with_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_nextUP_lme_with_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_nextUP_lme_with_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_nextUP_lme_with_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_nextUP_lme_with_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias with ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+%%%% lateUP without ripple
+ripple_nextUP_lme_without_ripple = struct;
+
+tbl_temp = tbl(tbl.TimefromLastRipple_raw > 0.1, :);
+lme2 = fitlme(tbl_temp, 'nextUP ~ lateUPHPC + lateUP   + (1|subject_id) + (1|session_id)');
+% ripple_nextUP_lme_3B
+ripple_nextUP_lme_without_ripple.b = lme2.Coefficients.Estimate(2:end)';
+ripple_nextUP_lme_without_ripple.b_CI = [lme2.Coefficients.Lower(2:end) lme2.Coefficients.Upper(2:end)];
+ripple_nextUP_lme_without_ripple.pval = lme2.Coefficients.pValue(2:end)';
+ripple_nextUP_lme_without_ripple.variable = lme2.Coefficients.Name(2:end)';
+ripple_nextUP_lme_without_ripple.model = lme2;
+
+nexttile
+colormaps = {'k','b'};
+clear s
+s = ripple_nextUP_lme_without_ripple;
+colors = [0 0 0; 0 0 1]; % Black and Blue RGB matrix
+for i = 1:2
+    % 1. Plot each bar individually
+    b_plot = bar(i, s.b(i), 'FaceColor', colors(i,:),'FaceAlpha',0.15,'EdgeColor','none');
+    hold on;
+    
+    % 2. Add the corresponding error bar
+    errorbar(i, s.b(i), s.b(i) - s.b_CI(i,1), s.b_CI(i,2) - s.b(i), 'k.', 'LineWidth', 1.5);
+end
+% 3. Formatting
+set(gca, 'XTick', 1:2, 'XTickLabel', s.variable);
+set(gca,'TickDir','out','Box','off','Color','none','FontSize',12); grid off
+title('Late UP bias without ripple (100ms) -> nextUP')
+ylim([-0.02 0.15])
+
+
+
+
+% Model 3B: Conflict Analysis (Ripples < 100ms)
+T3_all = tbl(idx3, :);
+% T3B = T3_all(T3_all.TimefromLastRipple_raw , :);
+T3B = T3_all;
+T3B = T3B(abs(T3B.lateUPHPC) > prctile(abs(T3B.lateUPHPC),50),:);
+is_conflict = (T3B.lateUPHPC .* T3B.lateUP) < 0;
+T3B_conflict = T3B(is_conflict, :);
+
+if height(T3B_conflict) > 10
+    lme_3B = fitlme(T3B_conflict, 'nextUP ~ lateUPHPC + lateUP + (1|subject_id)');
+    disp('Model 3B (Conflict Analysis):');
+    disp(lme_3B);
+else
+    disp('Not enough subset trials for Model 3B Conflict Analysis.');
+end
+
+disp(' ');
+disp('======================================================');
+disp('   STATISTICS: ALIGNED VS CONFLICT DISCRETE COMPARISON');
+disp('======================================================');
+
+% Define masks within the < 0.15 subset (T3B)
+sign_lateUP = sign(T3B.lateUP);
+sign_lateUP(sign_lateUP==0) = 1;
+sign_lateUPHPC = sign(T3B.lateUPHPC);
+sign_lateUPHPC(sign_lateUPHPC==0) = 1;
+
+congruentMask = (sign_lateUP == sign_lateUPHPC);
+incongruentMask = (sign_lateUP ~= sign_lateUPHPC);
+
+% Event-level Non-parametric Test (aligning nextUP to Late UP V1)
+nextUP_congruent  = T3B.nextUP(congruentMask)  .* sign_lateUP(congruentMask);
+nextUP_incongruent = T3B.nextUP(incongruentMask) .* sign_lateUP(incongruentMask);
+
+fprintf('\n--- EVENT LEVEL ---\n');
+fprintf('Mean Signed nextUP (Congruent):  %.4f\n', mean(nextUP_congruent, 'omitnan'));
+fprintf('Mean Signed nextUP (Incongruent): %.4f\n', mean(nextUP_incongruent, 'omitnan'));
+
+[p, h, stats] = ranksum(nextUP_congruent, nextUP_incongruent);
+if isfield(stats, 'zval')
+    fprintf('Wilcoxon Rank Sum (Events): p-value = %.3e (z = %.2f)\n', p, stats.zval);
+else
+    fprintf('Wilcoxon Rank Sum (Events): p-value = %.3e (ranksum = %.2f)\n', p, stats.ranksum);
+end
+
+fig = figure('Name', 'Histogram of Next UP V1 Bias (congruent vs incongruent)','Position',[1020 300 400 520]);
+nexttile
+histogram(T3B.nextUP .* sign_lateUP, -2.5:0.05:2.5, 'Normalization', 'probability');
+legend('all events','box','off'); title('Event Next UP Distributions');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+nexttile
+histogram(nextUP_congruent, -2.5:0.05:2.5, 'Normalization', 'probability'); hold on;
+histogram(nextUP_incongruent, -2.5:0.05:2.5, 'Normalization', 'probability');
+legend('Congruent', 'Incongruent','box','off'); title('Event Next UP Distributions');
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+p_text = sprintf('p = %.3e', p);
+text(1, 0.02, p_text,'FontSize', 12, 'FontWeight', 'bold');
+
+%% Session-level Non-parametric Test (Paired Signed Rank)
+unique_sessions = unique(T3B.session_id);
+session_congruent = nan(length(unique_sessions), 1);
+session_incongruent = nan(length(unique_sessions), 1);
+
+for s = 1:length(unique_sessions)
+    curr_sess = unique_sessions(s);
+    idx_sess = (T3B.session_id == curr_sess);
+    
+    sess_cong_vals   = T3B.nextUP(idx_sess & congruentMask)   .* sign_lateUP(idx_sess & congruentMask);
+    sess_incong_vals = T3B.nextUP(idx_sess & incongruentMask) .* sign_lateUP(idx_sess & incongruentMask);
+    
+    if any(idx_sess & congruentMask)
+        session_congruent(s) = mean(sess_cong_vals, 'omitnan');
+    end
+    if any(idx_sess & incongruentMask)
+        session_incongruent(s) = mean(sess_incong_vals, 'omitnan');
+    end
+end
+
+% Only keep sessions that have both congruent and incongruent events to do paired test
+valid_sessions = ~isnan(session_congruent) & ~isnan(session_incongruent);
+session_congruent = session_congruent(valid_sessions);
+session_incongruent = session_incongruent(valid_sessions);
+
+fprintf('\n--- SESSION LEVEL (Paired, n = %d) ---\n', sum(valid_sessions));
+fprintf('Mean Signed nextUP (Congruent):  %.4f\n', mean(session_congruent));
+fprintf('Mean Signed nextUP (Incongruent): %.4f\n', mean(session_incongruent));
+
+[p_sess, h_sess, stats_sess] = signrank(session_congruent, session_incongruent,'tail','right');
+if isfield(stats_sess, 'zval')
+    fprintf('Wilcoxon Signed Rank (Sessions): p-value = %.3e (z = %.2f)\n', p_sess, stats_sess.zval);
+else
+    fprintf('Wilcoxon Signed Rank (Sessions): p-value = %.3e (signedrank = %.2f)\n', p_sess, stats_sess.signedrank);
+end
+
+% --- Paired Scatter Plot for Sessions ---
+figure_paired = figure('Name', 'signed rank session nextUP congruent vs incongruent', 'Color', 'w', 'Position', [1000 100 230 370]);
+hold on;
+
+% Define colors matching the PSTH
+col_congruent  = [0 0.5 0.8]; % Blue
+col_incongruent = [0.8 0.2 0.2]; % Red
+
+% Add reproducible jitter so points do not stack perfectly vertically
+rng(2); % Fixed Seed
+jitter = (rand(size(session_congruent)) - 0.5) * 0.15;
+x_cong = 1 + jitter;
+x_incong = 2 + jitter;
+
+% Plot connecting lines first so they are behind points
+for i = 1:length(session_congruent)
+    plot([x_cong(i), x_incong(i)], [session_congruent(i), session_incongruent(i)], 'Color', [0.5 0.5 0.5 0.6], 'LineWidth', 1);
+end
+
+% Plot scatter points with transparency
+scatter(x_cong, session_congruent, 100, col_congruent, 'filled', 'MarkerFaceAlpha', 0.6);
+scatter(x_incong, session_incongruent, 100, col_incongruent, 'filled', 'MarkerFaceAlpha', 0.6);
+
+% Formatting
+xlim([0.5, 2.5]);
+xticks([1, 2]);
+xticklabels({'Congruent', 'Incongruent'});
+xtickangle(30);
+ylabel('Mean Signed nextUP', 'FontSize', 12);
+title('Session Level');
+
+% Add significance markers
+y_max = max([session_congruent; session_incongruent]);
+y_min = min([session_congruent; session_incongruent]);
+y_range = y_max - y_min;
+y_star = y_max + y_range * 0.1;
+
+if p_sess < 0.001
+    star_txt = '***';
+elseif p_sess < 0.01
+    star_txt = '**';
+elseif p_sess < 0.05
+    star_txt = '*';
+else
+    star_txt = 'n.s.';
+end
+
+p_text = sprintf('p = %.3e', p_sess);
+text(1.5, y_star, p_text, 'FontSize', 14, 'HorizontalAlignment', 'center');
+ylim([y_min - y_range*0.1, y_star + y_range*0.15]);
+
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 14);
+
+
+%% Save output statistics structs and LME prints
+% Bundle the event and session non-parametric stats into structs for easy access
+stats_event_conflict = struct('session_congruent',session_congruent,'session_incongruent',session_incongruent,'p', p, 'h', h, 'stats', stats);
+stats_session_conflict = struct('nextUP_congruent',nextUP_congruent,'nextUP_incongruent',nextUP_incongruent,...
+    'p', p_sess, 'h', h_sess, 'stats', stats_sess);
+
+vars_to_save = {'ripple_last_lme', 'ripple_last_V1_lme', 'ripple_lateUP_lme_with_ripple', ...
+    'ripple_lateUP_lme_without_ripple', 'ripple_early_lme', 'first_ripple_early_lme', ...
+    'ripple_earlyUP_lme_with_ripple', 'ripple_earlyUP_lme_without_ripple', ...
+    'pre_last_ripple_from_UP_lme', 'pre_first_ripple_from_UP_lme', ...
+    'pre_last_ripple_to_DOWN_lme', 'pre_first_ripple_to_DOWN_lme', ...
+    'ripple_nextUP_lme', 'ripple_nextUP_lme_with_ripple', 'ripple_nextUP_lme_without_ripple', ...
+    'stats_event_conflict', 'stats_session_conflict'};
+
+% % Allow for conditionally executed LMEs to be safely saved
+if exist('lme_1A', 'var'), vars_to_save{end+1} = 'lme_1A'; end
+if exist('lme_2C', 'var'), vars_to_save{end+1} = 'lme_2C'; end
+if exist('lme_3B', 'var'), vars_to_save{end+1} = 'lme_3B'; end
+
+
+output_dir = fullfile(analysis_folder, 'V1-HPC bilateral interaction\UP-DOWN log odds', 'ripple_and_next_UP');
+save([output_dir, '.mat'], vars_to_save{:});
+
+diary(fullfile(analysis_folder, 'V1-HPC bilateral interaction\UP-DOWN log odds','ripple_UP_bias_lme_model_outputs.txt'));
+disp('--- Structured LME Model Outputs ---');
+for m = 1:length(vars_to_save)
+    m_name = vars_to_save{m};
+    fprintf('\n=== %s ===\n', m_name);
+    
+    val = eval(m_name);
+    if isstruct(val) && isfield(val, 'b')
+        % Print out the coefficient values across bins
+        for bin = 1:size(val.b, 1)
+            fprintf('Bin %d: ', bin);
+            for v = 1:size(val.b, 2)
+                fprintf('Est=%.4f (p=%.4f) | ', val.b(bin,v), val.pval(bin,v));
+            end
+            fprintf('\n');
+        end
+    else
+        % For standard LME objects or simple structs
+        disp(val);
+    end
+end
+diary off;
+
+disp('--- Script Complete ---');
+end

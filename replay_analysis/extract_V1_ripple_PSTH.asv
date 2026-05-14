@@ -1,0 +1,367 @@
+%% extract_V1_ripple_PSTH.m
+% Lightweight script to extract spatial and ripple PSTH for V1 neurons
+% during ALL, LOW, and HIGH ripple power events, sorted by Track 1/Track 2 bias.
+
+clear all
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay', 'dir')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay', 'dir')
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay', 'dir')
+    analysis_folder = 'P:\corticohippocampal_replay';
+end
+
+fprintf('Loading data...\n');
+load(fullfile(analysis_folder,'ripples_all_POST.mat'), 'ripples_all');
+load(fullfile(analysis_folder,'session_clusters_all_POST.mat'), 'session_clusters_all');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'));
+
+%% Configuration
+psthBinSize = 0.01;
+windows = [-1.5 1.5];
+x_bins = windows(1)+psthBinSize/2 : psthBinSize : windows(2)-psthBinSize/2;
+
+sessions_to_process = 1:max(ripples_all(1).session_count(ripples_all(1).SWS_index==1));
+
+%% KDE Bias Processing
+session_id_all = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+% Clean inf values
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias >= inf) = prctile(z_bias1, 99.5);
+z_bias(z_bias <= -inf) = prctile(z_bias1, 0.5);
+% for bias, t win is different
+tvec = -1+psthBinSize/2 : psthBinSize : 1-psthBinSize/2;
+bins_to_use = tvec > 0 & tvec < 0.1; % For mean bias thresholding
+
+V1_cells_data = [];
+
+%% Loop over sessions
+fprintf('Extracting Session Data...\n');
+V1_cells_paired = struct();
+V1_cells_paired.low = [];
+V1_cells_paired.high = [];
+V1_cells_paired.all = [];
+% V1_cells_paired.ripple_power = [];
+
+for nsession = 1:length(sessions_to_process)
+    tic
+    % Ripple details for SWS
+    ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1); ...
+                     ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1)];
+    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1); ...
+                   ripples_all(2).onset(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1)];
+    event_id = [ones(sum(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1),1); ...
+                2*ones(sum(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1),1)];
+    
+    [event_ids_first, event_ids_second] = merge_bilateral_ripple_events(event_id, event_times, 0.05);
+    
+    event_times = event_times(event_ids_first);
+    event_id = event_id(event_ids_first);
+    ripple_powers = ripple_powers(event_ids_first);
+
+    % Thresholds for ripple power
+    p75 = prctile(ripple_powers, 75);
+    p25 = prctile(ripple_powers, 25);
+    high_ripple_idx = find(ripple_powers >= p75);
+    low_ripple_idx = find(ripple_powers <= p25);
+
+    % Mean bias thresholding
+    mean_bias_all = mean(z_bias(bins_to_use, session_id_all == nsession), 1, 'omitnan');
+    mean_bias = mean_bias_all(event_ids_first);
+    log_odds_threshold = prctile(mean_bias, [25 75]);
+    
+    T1_idx_all = find(mean_bias > log_odds_threshold(2));
+    T2_idx_all = find(mean_bias < log_odds_threshold(1));
+
+    T1_idx_high = intersect(T1_idx_all, high_ripple_idx);
+    T2_idx_high = intersect(T2_idx_all, high_ripple_idx);
+
+    T1_idx_low = intersect(T1_idx_all, low_ripple_idx);
+    T2_idx_low = intersect(T2_idx_all, low_ripple_idx);
+    
+    hemispheres = {'L','R'};
+    for hemi = 1:2
+        % Find V1 cells
+        cell_index = find(contains(session_clusters_all.region{nsession}, 'V1') & ...
+                          contains(session_clusters_all.region{nsession}, hemispheres{hemi}));
+        if isempty(cell_index), continue; end
+        
+        cell_ids = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+        spike_index = ismember(session_clusters_all.spike_id{nsession}, cell_ids);
+        
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index), ...
+            session_clusters_all.spike_id{nsession}(spike_index), windows, psthBinSize, ...
+            'unit_id', cell_ids, 'event_times', event_times, 'event_id', event_id, ...
+            'saving_PSTH', 1, 'shuffle_option', 0, 'smooth_option', 1);
+        
+        V1_PSTH_z = [ripple_modulation(1).PSTH_zscored ripple_modulation(2).PSTH_zscored];
+        % V1_PSTH_z = zscore(V1_PSTH_z,[],2);
+        V1_PSTH_raw = [ripple_modulation(1).PSTH ripple_modulation(2).PSTH];
+        
+        % Z-score each ripple PSTH within each neuron within each event (across time dimension 3)
+        % mu = mean(V1_PSTH_raw, 3, 'omitnan');
+        % sigma = std(V1_PSTH_raw, 0, 3, 'omitnan');
+        % sigma(sigma == 0) = 1; % prevent division by zero
+        % V1_PSTH_z = (V1_PSTH_raw - mu) ./ sigma;
+
+        %%%% Paired t test per cell for three time windows (all -0.2 to 0.2, pre - -0.2 to 0s and post 0 to 0.2s)
+        x_bins = ripple_modulation(1).bins;
+        t_win = {x_bins>-0.2&x_bins<0.2,x_bins>-0.2&x_bins<0,x_bins>0&x_bins<0.2};
+
+        for nwin = 1:3
+            for ncell = 1:length(cell_index)
+                c_idx = cell_index(ncell);
+                FR_dist = reshape([session_clusters_all.spatial_response_raw{nsession}{c_idx,1}; ...
+                    session_clusters_all.spatial_response_raw{nsession}{c_idx,2}], 1, []);
+                z_tr_diff = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,1})) - mean(FR_dist)) ./ std(FR_dist) ...
+                    - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,2})) - mean(FR_dist)) ./ std(FR_dist);
+
+                T1 = double(mean(squeeze(V1_PSTH_z(ncell,T1_idx_all,t_win{nwin})),2,'omitnan'));
+                T2 = double(mean(squeeze(V1_PSTH_z(ncell,T2_idx_all,t_win{nwin})),2,'omitnan'));
+
+                if sum(~isnan(T1)) + sum(~isnan(T2)) >1
+                    % if z_tr_diff>0
+                    %     p = ranksum(T1,T2,'tail','right');
+                    % elseif z_tr_diff<0
+                    %     p = ranksum(T1,T2,'tail','left');
+                    % end
+                    p = ranksum(T1,T2);
+                else
+                    p = nan;
+                end
+
+
+                V1_cells_paired(hemi).all{nsession}(nwin,ncell) = p;
+            end
+
+            for ncell = 1:length(cell_index)
+                c_idx = cell_index(ncell);
+                FR_dist = reshape([session_clusters_all.spatial_response_raw{nsession}{c_idx,1}; ...
+                    session_clusters_all.spatial_response_raw{nsession}{c_idx,2}], 1, []);
+                z_tr_diff = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,1})) - mean(FR_dist)) ./ std(FR_dist) ...
+                    - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,2})) - mean(FR_dist)) ./ std(FR_dist);
+
+                T1 = double(mean(squeeze(V1_PSTH_z(ncell,T1_idx_low,t_win{nwin})),2,'omitnan'));
+                T2 = double(mean(squeeze(V1_PSTH_z(ncell,T2_idx_low,t_win{nwin})),2,'omitnan'));
+
+                if sum(~isnan(T1)) + sum(~isnan(T2)) >1
+                    % if z_tr_diff>0
+                    %     p = ranksum(T1,T2,'tail','right');
+                    % elseif z_tr_diff<0
+                    %     p = ranksum(T1,T2,'tail','left');
+                    % end
+                    p = ranksum(T1,T2);
+                else
+                    p = nan;
+                end
+                V1_cells_paired(hemi).low{nsession}(nwin,ncell) = p;
+            end
+
+
+            for ncell = 1:length(cell_index)
+                c_idx = cell_index(ncell);
+                FR_dist = reshape([session_clusters_all.spatial_response_raw{nsession}{c_idx,1}; ...
+                    session_clusters_all.spatial_response_raw{nsession}{c_idx,2}], 1, []);
+                z_tr_diff = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,1})) - mean(FR_dist)) ./ std(FR_dist) ...
+                    - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,2})) - mean(FR_dist)) ./ std(FR_dist);
+
+                T1 = double(mean(squeeze(V1_PSTH_z(ncell,T1_idx_high,t_win{nwin})),2,'omitnan'));
+                T2 = double(mean(squeeze(V1_PSTH_z(ncell,T2_idx_high,t_win{nwin})),2,'omitnan'));
+
+                if sum(~isnan(T1)) + sum(~isnan(T2)) >1
+                    % if z_tr_diff>0
+                    %     p = ranksum(T1,T2,'tail','right');
+                    % elseif z_tr_diff<0
+                    %     p = ranksum(T1,T2,'tail','left');
+                    % end
+                    p = ranksum(T1,T2);
+                else
+                    p = nan;
+                end
+                V1_cells_paired(hemi).high{nsession}(nwin,ncell) = p;
+            end
+        end
+    end
+    toc
+end
+
+%%%%
+load(fullfile(save_folder, 'V1_cells_paired.mat'), 'V1_cells_paired');
+
+temp1 = [];
+temp2 = [];
+sig_prop_q = [];
+for nsession = 1:22
+    temp1 = V1_cells_paired(1).all{nsession}(1,:);
+    temp2 = V1_cells_paired(2).all{nsession}(1,:);
+    temp = [temp1 temp2]';temp(temp >1) = 1;
+
+    q = 0.05;
+    m = length(temp);
+    [sorted_p, idx] = sort(temp);
+    sorted_p(isnan(sorted_p))=1;
+    % Calculate threshold
+    thresholds = (1:m)' / m * q;
+    find_max = find(sorted_p <= thresholds, 1, 'last');
+    if isempty(find_max)==1; find_max=0;end
+    sig_prop_q(nsession) = find_max/length(sorted_p);
+end
+
+
+for nsession = 1:22
+    temp1= [V1_cells_paired(1).all{nsession}(1,:) temp1];
+    temp2= [V1_cells_paired(2).all{nsession}(1,:) temp2];
+end
+temp = [temp1 temp2]';temp(temp >1) = 1;
+
+% histogram(temp,0:0.001:1);
+histogram(log10(temp),-4:0.05:1)
+hold on;xline(log10(0.05))
+q = 0.05;
+m = length(temp);
+[sorted_p, idx] = sort(temp);
+sorted_p(isnan(sorted_p))=1;
+% Calculate threshold
+thresholds = (1:m)' / m * q;
+find_max = find(sorted_p <= thresholds, 1, 'last');
+% The threshold p-value
+p_threshold = sorted_p(find_max);
+% Get the original indices of the significant cells
+sig_cell_indices = idx(1:find_max);
+sig_prop_original = sum(sorted_p<q)/length(sorted_p);
+
+%%
+%%% per cell 
+for nsession = 1:length(sessions_to_process)
+    tic
+    % Ripple details for SWS
+    ripple_powers = [ripples_all(1).peak_zscore(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1); ...
+                     ripples_all(2).peak_zscore(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1)];
+    event_times = [ripples_all(1).onset(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1); ...
+                   ripples_all(2).onset(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1)];
+    event_id = [ones(sum(ripples_all(1).session_count == nsession & ripples_all(1).SWS_index==1),1); ...
+                2*ones(sum(ripples_all(2).session_count == nsession & ripples_all(2).SWS_index==1),1)];
+    
+    [event_ids_first, event_ids_second] = merge_bilateral_ripple_events(event_id, event_times, 0.05);
+    
+    event_times = event_times(event_ids_first);
+    event_id = event_id(event_ids_first);
+    ripple_powers = ripple_powers(event_ids_first);
+
+    % Thresholds for ripple power
+    p75 = prctile(ripple_powers, 75);
+    p25 = prctile(ripple_powers, 25);
+    high_ripple_idx = find(ripple_powers >= p75);
+    low_ripple_idx = find(ripple_powers <= p25);
+
+    % Mean bias thresholding
+    mean_bias_all = mean(z_bias(bins_to_use, session_id_all == nsession), 1, 'omitnan');
+    mean_bias = mean_bias_all(event_ids_first);
+    log_odds_threshold = prctile(mean_bias, [25 75]);
+    
+    T1_idx_all = find(mean_bias > log_odds_threshold(2));
+    T2_idx_all = find(mean_bias < log_odds_threshold(1));
+
+    T1_idx_high = intersect(T1_idx_all, high_ripple_idx);
+    T2_idx_high = intersect(T2_idx_all, high_ripple_idx);
+
+    T1_idx_low = intersect(T1_idx_all, low_ripple_idx);
+    T2_idx_low = intersect(T2_idx_all, low_ripple_idx);
+    
+    hemispheres = {'L','R'};
+    for hemi = 1:2
+        % Find V1 cells
+        cell_index = find(contains(session_clusters_all.region{nsession}, 'V1') & ...
+                          contains(session_clusters_all.region{nsession}, hemispheres{hemi}));
+        if isempty(cell_index), continue; end
+        
+        cell_ids = session_clusters_all.spatial_cell_id{nsession}(cell_index);
+        spike_index = ismember(session_clusters_all.spike_id{nsession}, cell_ids);
+        
+        ripple_modulation = ripple_modulation_analysis(session_clusters_all.spike_times{nsession}(spike_index), ...
+            session_clusters_all.spike_id{nsession}(spike_index), windows, psthBinSize, ...
+            'unit_id', cell_ids, 'event_times', event_times, 'event_id', event_id, ...
+            'saving_PSTH', 1, 'shuffle_option', 0, 'smooth_option', 1);
+        
+        V1_PSTH_z = [ripple_modulation(1).PSTH_zscored ripple_modulation(2).PSTH_zscored];
+        % V1_PSTH_z = zscore(V1_PSTH_z,[],2);
+        V1_PSTH_raw = [ripple_modulation(1).PSTH ripple_modulation(2).PSTH];
+        
+        % Z-score each ripple PSTH within each neuron within each event (across time dimension 3)
+        % mu = mean(V1_PSTH_raw, 3, 'omitnan');
+        % sigma = std(V1_PSTH_raw, 0, 3, 'omitnan');
+        % sigma(sigma == 0) = 1; % prevent division by zero
+        % V1_PSTH_z = (V1_PSTH_raw - mu) ./ sigma;
+
+        for ncell = 1:length(cell_index)
+            clear new_cell
+            c_idx = cell_index(ncell);
+            
+            spatial_1 = session_clusters_all.spatial_response{nsession}{c_idx, 1};
+            spatial_2 = session_clusters_all.spatial_response{nsession}{c_idx, 2};
+            
+            FR_dist = reshape([session_clusters_all.spatial_response_raw{nsession}{c_idx,1}; ...
+                               session_clusters_all.spatial_response_raw{nsession}{c_idx,2}], 1, []);
+            
+            z_tr_diff = (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,1})) - mean(FR_dist)) ./ std(FR_dist) ...
+                      - (mean(mean(session_clusters_all.spatial_response_raw{nsession}{c_idx,2})) - mean(FR_dist)) ./ std(FR_dist);
+            
+            new_cell.session_id = nsession;
+            str_subject = ripples_all(1).subject(nsession,:);
+            if length(str_subject) >= 2
+                new_cell.animal_id = str2double(str_subject(end-1:end));
+                % else
+                % new_cell.animal_id = 1;
+            end
+            
+            new_cell.cell_id = cell_ids(ncell);
+            new_cell.hemi = hemispheres{hemi};
+            new_cell.z_track_diff = z_tr_diff;
+            new_cell.spatial_1_m = mean(spatial_1, 1, 'omitnan');
+            new_cell.spatial_1_se = std(spatial_1, 0, 1, 'omitnan') ./ sqrt(size(spatial_1,1));
+            new_cell.spatial_2_m = mean(spatial_2, 1, 'omitnan');
+            new_cell.spatial_2_se = std(spatial_2, 0, 1, 'omitnan') ./ sqrt(size(spatial_2,1));
+            
+            % Helper inline for calculating mean and SE
+            calc = @(x, idx) struct('m', squeeze(mean(x(ncell, idx, :), 2, 'omitnan')), ...
+                                    'se', squeeze(std(x(ncell, idx, :), 0, 2, 'omitnan')) ./ sqrt(length(idx)));
+            
+            rz = calc(V1_PSTH_z, T1_idx_all); new_cell.z_all_T1_m = rz.m; new_cell.z_all_T1_se = rz.se;
+            rz = calc(V1_PSTH_z, T2_idx_all); new_cell.z_all_T2_m = rz.m; new_cell.z_all_T2_se = rz.se;
+            rz = calc(V1_PSTH_z, T1_idx_high); new_cell.z_high_T1_m = rz.m; new_cell.z_high_T1_se = rz.se;
+            rz = calc(V1_PSTH_z, T2_idx_high); new_cell.z_high_T2_m = rz.m; new_cell.z_high_T2_se = rz.se;
+            rz = calc(V1_PSTH_z, T1_idx_low); new_cell.z_low_T1_m = rz.m; new_cell.z_low_T1_se = rz.se;
+            rz = calc(V1_PSTH_z, T2_idx_low); new_cell.z_low_T2_m = rz.m; new_cell.z_low_T2_se = rz.se;
+            
+            rw = calc(V1_PSTH_raw, T1_idx_all); new_cell.raw_all_T1_m = rw.m; new_cell.raw_all_T1_se = rw.se;
+            rw = calc(V1_PSTH_raw, T2_idx_all); new_cell.raw_all_T2_m = rw.m; new_cell.raw_all_T2_se = rw.se;
+            rw = calc(V1_PSTH_raw, T1_idx_high); new_cell.raw_high_T1_m = rw.m; new_cell.raw_high_T1_se = rw.se;
+            rw = calc(V1_PSTH_raw, T2_idx_high); new_cell.raw_high_T2_m = rw.m; new_cell.raw_high_T2_se = rw.se;
+            rw = calc(V1_PSTH_raw, T1_idx_low); new_cell.raw_low_T1_m = rw.m; new_cell.raw_low_T1_se = rw.se;
+            rw = calc(V1_PSTH_raw, T2_idx_low); new_cell.raw_low_T2_m = rw.m; new_cell.raw_low_T2_se = rw.se;
+
+            V1_cells_data = [V1_cells_data; new_cell];
+        end
+    end
+    toc
+end
+
+if exist('ripple_modulation','var')
+    x_bins = ripple_modulation(1).bins;
+    V1_cells_data(1).x_bins = x_bins;
+end
+
+%% Save the data
+save_folder = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'reactivation coherence SUA');
+% if ~exist(save_folder, 'dir'), mkdir(save_folder); end
+save(fullfile(save_folder, 'V1_ripple_spatial_PSTH.mat'), 'V1_cells_data', 'x_bins', '-v7.3');
+% save(fullfile(save_folder, 'V1_ripple_spatial_PSTH_z.mat'), 'V1_cells_data', 'x_bins', '-v7.3');
+
+save(fullfile(save_folder, 'V1_cells_paired.mat'), 'V1_cells_paired');
+save(fullfile(save_folder, 'V1_cells_paired_tailed.mat'), 'V1_cells_paired');
+
+fprintf('Data successfully saved to %s\\V1_ripple_spatial_PSTH.mat\n', save_folder);

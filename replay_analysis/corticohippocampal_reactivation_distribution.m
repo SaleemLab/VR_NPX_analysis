@@ -88,6 +88,10 @@ ripple_info.event_id = event_ids_first;
 %%% ripple power
 ripple_info.ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
 ripple_info.ripple_power = mean([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)],2);
+% ripple_info.ripple_power = max([ripple_info.ripple_power(event_ids_first) ripple_info.ripple_power(event_ids_second)]')';
+
+ripple_info.peak_ripple_power = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index==1); ripples_all(2).peak_zscore(ripples_all(2).SWS_index==1)];
+ripple_info.peak_ripple_power = max([ripple_info.peak_ripple_power(event_ids_first) ripple_info.peak_ripple_power(event_ids_second)]')';
 
 
 %%% spindle co-occurance
@@ -350,11 +354,11 @@ session_count = session_count(event_ids_first);
 subject_id = subject_id(event_ids_first);
 
 ripple_info.subject_id = subject_id;
-ripple_info.session_count = session_count;
-save('ripple_info_SO.mat','ripple_info')
+ripple_info.session_id = session_count;
+% save('ripple_info_SO.mat','ripple_info')
 % singlet_index = logical(([1; diff(merged_event_info.ripples_peaktimes)>0.1]));
 % singlet_index = logical(ones(length(merged_event_info.ripples_peaktimes),1));
-
+ % load('ripple_info_SO.mat','ripple_info')
 % save('ripple_info.mat','ripple_info')
 %%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%
@@ -2303,6 +2307,69 @@ no_events(3) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
 % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots (2Hz)'),[])
 
+%% Distribution of SO phases (matched vs non-matched)
+bins_to_use = bin_centers>0 & bin_centers<0.1;
+V1_bias = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.0,:),'omitnan');
+
+matched_trough = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2)), ...
+    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2))};
+% non_matched_trough = [V1_bias>0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2); ...
+%     V1_bias<0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2)];
+
+matched_peak = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2)), ...
+    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2))};
+% matched_peak = [V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2); ...
+%     V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2)];
+
+matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
+
+% matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
+% 
+% index1 = [matched_trough{1} matched_trough{2}];
+% non_matched_phases = [ripple_info.SO_phase(matched_trough{1},2); ripple_info.SO_phase(matched_trough{2},1)];
+% sum(non_matched_phases <-pi/2 |non_matched_phases >pi/2 )
+% sum(non_matched_phases >-pi/2 &non_matched_phases <pi/2 )
+
+
+shifted_phase_matched = [mod(ripple_info.SO_phase(matched{1},1) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},2) + pi/2, 2*pi) - pi/2];
+shifted_phase_non_matched = [mod(ripple_info.SO_phase(matched{1},2) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},1) + pi/2, 2*pi) - pi/2];
+[N, Xedges, Yedges] = histcounts2(shifted_phase_matched,shifted_phase_non_matched, -pi/2:pi/6:3*pi/2,-pi/2:pi/6:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(shifted_phase_matched, shifted_phase_non_matched, -pi/2:pi/12:3*pi/2,-pi/2:pi/12:3*pi/2);
+% [N, Xedges, Yedges] = histcounts2(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2), -pi:pi/12:pi,-pi:pi/12:pi);
+% Xedges = Xedges(1)+pi/12/2:pi/12:Xedges(end)-pi/12/2;
+Xedges = Xedges(1)+pi/6/2:pi/6:Xedges(end)-pi/6/2;
+
+% shift_amt = 
+% N_shifted = circshift(N, [0, shift_amt]);
+
+% N = N/total
+% 
+% figure('Name','Distribution of Bilateral V1 SO phases (shifted) (pi/6 bins)')
+figure('Name','Distribution of Bilateral V1 SO phases matched vs non-matched (shifted)')
+imagesc(Xedges,Xedges,N/sum(sum(N)));colorbar;colormap(flipud(gray))
+clim([0 0.03])
+% clim([0 0.01])
+% xticks(-pi:pi/2:pi)
+% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
+xticks(-pi/2:pi/2:3*pi/2)
+xticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xlabel('Matched V1 SO phase (ripple)')
+
+% yticks(-pi:pi/2:pi)
+% yticklabels({'-pi','-pi/2','0','pi/2','pi'})
+yticks(-pi/2:pi/2:3*pi/2)
+yticklabels({'-pi/2','0','pi/2','pi','3*pi'})
+xline(-pi/2,'r-','LineWidth',2);xline(pi/2,'r-','LineWidth',2);
+yline(-pi/2,'r-','LineWidth',2);yline(pi/2,'r-','LineWidth',2);
+ylabel('Non-matched V1 SO phase (ripple)')
+% axis xy; % Sets the origin to the lower-left corner
+set(gca,'TickDir','out','Box','off','FontSize',12);
+set(gca, 'XDir', 'reverse'); % Changes from left-to-right to right-to-left
+set(gca, 'YDir', 'reverse'); % Changes from left-to-right to right-to-left
+dist = reshape(N/sum(sum(N)),1,[]);
+% clim([prctile(dist,1) prctile(dist,99)])
+
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
 %% Basic number of events
 event_number_tables = table();
 event_number_tables.session =spindles_all(1).session;
