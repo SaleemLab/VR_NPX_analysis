@@ -7,7 +7,7 @@
 clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
-SUBJECTS = {'M00088'};  %% set this - 1/4
+SUBJECTS = {'M00087'};  %% set this - 1/4
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 params = create_cluster_selection_params('sorting_option','ellie');
@@ -15,9 +15,9 @@ psthBinSize = 0.01; % this script divides this by 10 (to 0.001s) for raster plot
 
 %% 2/4
 Stimulus_type = 'Sleep_Box_2'; % 'Sleep_Box' 'Sleep_Box_1' 'Sleep_Box_2' 'Sleep_Box_3'
-cd('V:\Ellie\DATA\SUBJECTS\M00088\analysis\20260316\Sleep_Box_2')
-V1_sleepstaging_shank = 2; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
-HPC_sleepstaging_shank = 3;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
+cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis\20260211\Sleep_Box_2')
+V1_sleepstaging_shank = 1; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
+HPC_sleepstaging_shank = 4;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
 
 %% 3/4***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -38,7 +38,7 @@ elseif probe_type == 1
 end
 
 %% 4/4
-for nsession = 7 %5/5 row number of recording date in "experiment_info" 
+for nsession = 6 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
 
