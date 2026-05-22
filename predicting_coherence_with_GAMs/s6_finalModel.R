@@ -130,12 +130,12 @@ message("\n--- RUNNING DIAGNOSTICS (gam.check) ---")
 message("\nGenerating Final Publication Figures...")
 
 # 1. Define the folder path you want to go to
-#my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model"
-my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model_200ms"
+# my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model"
+# my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model_200ms"
 # my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/simple_model"
-# my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model"
+#my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model"
 
-# my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model2"
+my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model_200ms"
 
 
 # 2. Check if it exists; if not, create it
@@ -650,11 +650,9 @@ formula_terms <- c(
   "s(RipplePower_Z, k = 5)",
   "s(SpindlePower_Match_Z, k = 5)",
   "s(SpindlePower_NonMatch_Z, k = 5)",
-  "ti(SpindlePower_Match_Z,SpindlePower_NonMatch_Z, k = 5)",
   "s(SOPhase_Match, bs = 'cc', k = 8)",
   "s(SOPhase_NonMatch, bs = 'cc', k = 8)",
-  "ti(SOPhase_Match,SOPhase_NonMatch, bs = 'cc', k = 8)",
-  "ti(RipplePower_Z,SOPhase_Match, bs = c('tp', 'cc'), k = c(5, 8))"
+  "ti(SOPhase_Match,SOPhase_NonMatch, bs = 'cc', k = 8)"
 )
 
 
@@ -663,11 +661,9 @@ smooth_labels <- c(
   "s(RipplePower_Z)",
   "s(SpindlePower_Match_Z)",
   "s(SpindlePower_NonMatch_Z)",
-  "ti(SpindlePower_Match_Z,SpindlePower_NonMatch_Z)",
   "s(SOPhase_Match)",
   "s(SOPhase_NonMatch)",
-  "ti(SOPhase_Match,SOPhase_NonMatch)",
-  "ti(RipplePower_Z,SOPhase_Match)"
+  "ti(SOPhase_Match,SOPhase_NonMatch)"
 )
 
 library(parallel)
