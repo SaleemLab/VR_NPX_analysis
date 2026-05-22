@@ -603,24 +603,24 @@ mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0,:), 'omitnan'
 %%% 0 to 100ms windows
 mean_bias_V1 = mean(z_bias_V1(bin_centers>0 & bin_centers<0.1, :), 'omitnan');
 mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0,:), 'omitnan');
-
-%%% 100ms-200ms windows
-mean_bias_V1 = mean(z_bias_V1(bin_centers>0.1 & bin_centers<0.2, :), 'omitnan');
-mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<-0.1,:), 'omitnan');
-
-%%% 100ms-200ms windows
-mean_bias_V1 = mean(z_bias_V1(bin_centers>0.1 & bin_centers<0.2, :), 'omitnan');
-mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<-0.1,:), 'omitnan');
-
-% %%% -100 to 100 windows
-mean_bias_V1 = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0.1, :), 'omitnan');
-mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0.1,:), 'omitnan');
-
-% %%% -200 to 200 windows
-mean_bias_V1 = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.2, :), 'omitnan');
-mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.2,:), 'omitnan');
-
-% mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0,:), 'omitnan');
+mean_bias_V1_100 = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0.1,:), 'omitnan');
+% 
+% %%% 100ms-200ms windows
+% mean_bias_V1 = mean(z_bias_V1(bin_centers>0.1 & bin_centers<0.2, :), 'omitnan');
+% mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<-0.1,:), 'omitnan');
+% 
+% %%% 100ms-200ms windows
+% mean_bias_V1 = mean(z_bias_V1(bin_centers>0.1 & bin_centers<0.2, :), 'omitnan');
+% mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<-0.1,:), 'omitnan');
+% 
+% % %%% -100 to 100 windows
+% mean_bias_V1 = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0.1, :), 'omitnan');
+% mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.1 & bin_centers<0.1,:), 'omitnan');
+% 
+% % %%% -200 to 200 windows
+% mean_bias_V1 = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.2, :), 'omitnan');
+% mean_bias_V1_PRE = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.2,:), 'omitnan');
+% 
 
 
 % mean_bias_V1 = mean(bias_V1(bin_centers>0 & bin_centers<0.2, :), 'omitnan');
@@ -661,6 +661,11 @@ for i = 1:1
     t2 = find(mean_bias_V1 <= -th);
     selected_events = [t1 t2];
 
+    % 
+    th = thresholds(i);
+    t1 = find(mean_bias_V1_100 >= th);
+    t2 = find(mean_bias_V1_100 <= -th);
+    selected_events = [t1 t2];
 
 %     [~, indices] = ismember(selected_events, selected_events1);
 
@@ -720,6 +725,7 @@ for i = 1:1
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC_100_200ms.mat'),'tbl');
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_100_200ms.mat'),'tbl');
     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST_100_200ms.mat'),'tbl');
+ 
 
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC_0_100ms.mat'),'tbl');
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_0_100ms.mat'),'tbl');
@@ -788,7 +794,7 @@ for i = 1:1
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC_100_200ms_raw.mat'),'tbl');
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_100_200ms_raw.mat'),'tbl');
     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST_100_200ms_raw.mat'),'tbl');
-
+    
 %     save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'),'tbl');
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE1_raw.mat'),'tbl');
     % save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_POST1_raw.mat'),'tbl');
@@ -808,7 +814,7 @@ end
 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC_100_200ms_raw.mat'));tbl1 = tbl;
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_100_200ms_raw.mat'));
-
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_POST_100ms.mat'),'tbl');
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','raw_log_odds_table','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'));tbl1 = tbl;
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','raw_log_odds_table','V1_HPC_reactivation_coherence_lme_POST1_raw.mat'));
 % tbl1 = load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_HPC1_raw.mat'));
@@ -1296,7 +1302,9 @@ load(fullfile(analysis_folder,'V1-HPC sleep reactivation','raw_log_odds_table','
 
 
 % load(fullfile(analysis_folder,'V1-HPC sleep reactivation','raw_log_odds_table','V1_HPC_reactivation_coherence_lme1.mat'));
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1_raw.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme1_raw.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_POST_100ms_raw.mat'),'tbl');
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','V1_HPC_reactivation_coherence_lme_PRE_POST_100ms_raw.mat'),'tbl');
 
 
 tbl.SpindlePower_Match = zscore(tbl.SpindlePower_Match);

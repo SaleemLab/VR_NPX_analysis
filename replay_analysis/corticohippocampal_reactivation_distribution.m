@@ -2256,6 +2256,43 @@ title('Right V1 spindle phase')
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation'),[],'ContentType','vector')
 
 
+%% Distribution of SO phases (Shifted by pi to center the trough)
+% Original data is likely -pi to pi. Adding pi and modding by 2pi 
+% shifts the range to 0 to 2pi, placing the original +/-pi at the center.
+shifted_phase_L = mod(ripple_info.SO_phase(:,1), 2*pi);
+shifted_phase_R = mod(ripple_info.SO_phase(:,2), 2*pi);
+
+% Define binning from 0 to 2*pi
+bin_width = pi/12;
+edges = 0:bin_width:2*pi;
+[N, Xedges, Yedges] = histcounts2(shifted_phase_L, shifted_phase_R, edges, edges);
+
+% Calculate centers for imagesc
+Xcenters = edges(1:end-1) + bin_width/2;
+
+figure('Name','Distribution of Bilateral V1 SO phases (Trough Centered)')
+imagesc(Xcenters, Xcenters, N/sum(N(:))); 
+colorbar; 
+colormap(flipud(gray));
+clim([0 0.01]);
+
+% Set ticks to span 0 to 2*pi
+% This centers pi (the trough) in the middle of the axes
+xticks(0:pi/2:2*pi);
+xticklabels({'0', 'pi/2', 'pi (Trough)', '3pi/2', '2pi'});
+yticks(0:pi/2:2*pi);
+yticklabels({'0', 'pi/2', 'pi (Trough)', '3pi/2', '2pi'});
+
+xlabel('Left V1 SO phase (ripple)');
+ylabel('Right V1 SO phase (ripple)');
+
+% Visual Guides (Red lines marking the boundaries of the trough region)
+% Centering the trough at pi means the "active" zone is between pi/2 and 3pi/2
+xline(pi/2, 'r-', 'LineWidth', 2); xline(3*pi/2, 'r-', 'LineWidth', 2);
+yline(pi/2, 'r-', 'LineWidth', 2); yline(3*pi/2, 'r-', 'LineWidth', 2);
+
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12, 'YDir', 'normal');
+
 
 
 %% Distribution of SO phases
@@ -2307,69 +2344,128 @@ no_events(3) = sum(ripple_info.SO_phase(:,1)>-pi/2&ripple_info.SO_phase(:,1)<pi/
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
 % save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots (2Hz)'),[])
 
-%% Distribution of SO phases (matched vs non-matched)
-bins_to_use = bin_centers>0 & bin_centers<0.1;
-V1_bias = mean(z_bias_V1(bin_centers>-0.2 & bin_centers<0.0,:),'omitnan');
+%% Distribution of SO phases (matched vs non-matched) (Trough then Peak)
 
-matched_trough = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2)), ...
-    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2))};
-% non_matched_trough = [V1_bias>0 & (ripple_info.SO_phase(:,1)'<-pi/2 | ripple_info.SO_phase(:,1)'>pi/2); ...
-%     V1_bias<0 & (ripple_info.SO_phase(:,2)'<-pi/2 | ripple_info.SO_phase(:,2)'>pi/2)];
+% Distribution of SO phases (matched vs non-matched)
+bins_to_use = bin_centers > 0 & bin_centers < 0.1;
+V1_bias = mean(z_bias_V1(bin_centers > -0.2 & bin_centers < 0.0, :), 'omitnan');
 
-matched_peak = {find(V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2)), ...
-    find(V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2))};
-% matched_peak = [V1_bias<0 & (ripple_info.SO_phase(:,1)'<pi/2 & ripple_info.SO_phase(:,1)'>-pi/2); ...
-%     V1_bias>0 & (ripple_info.SO_phase(:,2)'<pi/2 & ripple_info.SO_phase(:,2)'>-pi/2)];
+% Indices for Matched and Non-matched
+matched_trough = {find(V1_bias < 0 & (ripple_info.SO_phase(:,1)' < -pi/2 | ripple_info.SO_phase(:,1)' > pi/2)), ...
+                  find(V1_bias > 0 & (ripple_info.SO_phase(:,2)' < -pi/2 | ripple_info.SO_phase(:,2)' > pi/2))};
 
-matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
+matched_peak = {find(V1_bias < 0 & (ripple_info.SO_phase(:,1)' < pi/2 & ripple_info.SO_phase(:,1)' > -pi/2)), ...
+                find(V1_bias > 0 & (ripple_info.SO_phase(:,2)' < pi/2 & ripple_info.SO_phase(:,2)' > -pi/2))};
 
-% matched = {[matched_trough{1} matched_peak{1}],[matched_trough{2} matched_peak{2}]};
-% 
-% index1 = [matched_trough{1} matched_trough{2}];
-% non_matched_phases = [ripple_info.SO_phase(matched_trough{1},2); ripple_info.SO_phase(matched_trough{2},1)];
-% sum(non_matched_phases <-pi/2 |non_matched_phases >pi/2 )
-% sum(non_matched_phases >-pi/2 &non_matched_phases <pi/2 )
+matched = {[matched_trough{1} matched_peak{1}], [matched_trough{2} matched_peak{2}]};
 
+% Shift such that the plot starts at pi/2
+% Formula: mod(phase - start_val, 2*pi) + start_val
+shifted_phase_matched = [mod(ripple_info.SO_phase(matched{1},1) - pi/2, 2*pi) + pi/2; ...
+                         mod(ripple_info.SO_phase(matched{2},2) - pi/2, 2*pi) + pi/2];
+                     
+shifted_phase_non_matched = [mod(ripple_info.SO_phase(matched{1},2) - pi/2, 2*pi) + pi/2; ...
+                             mod(ripple_info.SO_phase(matched{2},1) - pi/2, 2*pi) + pi/2];
 
-shifted_phase_matched = [mod(ripple_info.SO_phase(matched{1},1) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},2) + pi/2, 2*pi) - pi/2];
-shifted_phase_non_matched = [mod(ripple_info.SO_phase(matched{1},2) + pi/2, 2*pi) - pi/2; mod(ripple_info.SO_phase(matched{2},1) + pi/2, 2*pi) - pi/2];
-[N, Xedges, Yedges] = histcounts2(shifted_phase_matched,shifted_phase_non_matched, -pi/2:pi/6:3*pi/2,-pi/2:pi/6:3*pi/2);
-% [N, Xedges, Yedges] = histcounts2(shifted_phase_matched, shifted_phase_non_matched, -pi/2:pi/12:3*pi/2,-pi/2:pi/12:3*pi/2);
-% [N, Xedges, Yedges] = histcounts2(ripple_info.SO_phase(:,1), ripple_info.SO_phase(:,2), -pi:pi/12:pi,-pi:pi/12:pi);
-% Xedges = Xedges(1)+pi/12/2:pi/12:Xedges(end)-pi/12/2;
-Xedges = Xedges(1)+pi/6/2:pi/6:Xedges(end)-pi/6/2;
+% Binning logic
+bin_width = pi/6;
+edges = pi/2 : bin_width : 2.5*pi; % 2.5*pi is 5pi/2
 
-% shift_amt = 
-% N_shifted = circshift(N, [0, shift_amt]);
+[N, Xedges, Yedges] = histcounts2(shifted_phase_matched, shifted_phase_non_matched, edges, edges);
 
-% N = N/total
-% 
-% figure('Name','Distribution of Bilateral V1 SO phases (shifted) (pi/6 bins)')
+% Center the bin labels for imagesc
+centers = edges(1:end-1) + bin_width/2;
+
+% Plotting
 figure('Name','Distribution of Bilateral V1 SO phases matched vs non-matched (shifted)')
-imagesc(Xedges,Xedges,N/sum(sum(N)));colorbar;colormap(flipud(gray))
-clim([0 0.03])
-% clim([0 0.01])
-% xticks(-pi:pi/2:pi)
-% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
-xticks(-pi/2:pi/2:3*pi/2)
-xticklabels({'-pi/2','0','pi/2','pi','3*pi'})
-xlabel('Matched V1 SO phase (ripple)')
+imagesc(centers, centers, N/sum(N(:))); 
+colorbar; 
+colormap(flipud(gray));
+clim([0 0.03]);
 
-% yticks(-pi:pi/2:pi)
-% yticklabels({'-pi','-pi/2','0','pi/2','pi'})
-yticks(-pi/2:pi/2:3*pi/2)
-yticklabels({'-pi/2','0','pi/2','pi','3*pi'})
-xline(-pi/2,'r-','LineWidth',2);xline(pi/2,'r-','LineWidth',2);
-yline(-pi/2,'r-','LineWidth',2);yline(pi/2,'r-','LineWidth',2);
-ylabel('Non-matched V1 SO phase (ripple)')
-% axis xy; % Sets the origin to the lower-left corner
-set(gca,'TickDir','out','Box','off','FontSize',12);
-set(gca, 'XDir', 'reverse'); % Changes from left-to-right to right-to-left
-set(gca, 'YDir', 'reverse'); % Changes from left-to-right to right-to-left
-dist = reshape(N/sum(sum(N)),1,[]);
-% clim([prctile(dist,1) prctile(dist,99)])
+% Set ticks to span pi/2 to 5pi/2
+xticks(pi/2 : pi/2 : 2.5*pi);
+xticklabels({'\pi/2', '\pi (Trough)', '3\pi/2', '2\pi', '5\pi/2'});
+yticks(pi/2 : pi/2 : 2.5*pi);
+yticklabels({'\pi/2', '\pi (Trough)', '3\pi/2', '2\pi', '5\pi/2'});
+
+xlabel('Matched V1 SO phase (ripple)');
+ylabel('Non-matched V1 SO phase (ripple)');
+
+% Visual Guides - Red lines matching the requested style
+xline(3*pi/2, 'r-', 'LineWidth', 2); 
+yline(3*pi/2, 'r-', 'LineWidth', 2);
+
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12, 'YDir', 'normal');
+save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
+
+
+
+
+%% Distribution of SO phases (matched vs non-matched)
+bins_to_use = bin_centers > 0 & bin_centers < 0.1;
+V1_bias = mean(z_bias_V1(bin_centers > -0.2 & bin_centers < 0.0, :), 'omitnan');
+
+% We define "Trough" as being near pi (the center of our new scale)
+% and "Peak" as being near 0/2pi (the edges of our new scale)
+
+% Indices for Matched and Non-matched
+matched_trough = {find(V1_bias < 0 & (ripple_info.SO_phase(:,1)' < -pi/2 | ripple_info.SO_phase(:,1)' > pi/2)), ...
+                  find(V1_bias > 0 & (ripple_info.SO_phase(:,2)' < -pi/2 | ripple_info.SO_phase(:,2)' > pi/2))};
+
+matched_peak = {find(V1_bias < 0 & (ripple_info.SO_phase(:,1)' < pi/2 & ripple_info.SO_phase(:,1)' > -pi/2)), ...
+                find(V1_bias > 0 & (ripple_info.SO_phase(:,2)' < pi/2 & ripple_info.SO_phase(:,2)' > -pi/2))};
+
+matched = {[matched_trough{1} matched_peak{1}], [matched_trough{2} matched_peak{2}]};
+
+% Shifting by PI to center the Trough
+% Map original -pi:pi to 0:2pi. Original +/-pi becomes 0/2pi, original 0 becomes pi.
+% To put the TROUGH (pi) in the center, we shift the raw data so that 
+% the region of interest is centered on the plot limits.
+shifted_phase_matched = [mod(ripple_info.SO_phase(matched{1},1), 2*pi); ...
+                         mod(ripple_info.SO_phase(matched{2},2), 2*pi)];
+                     
+shifted_phase_non_matched = [mod(ripple_info.SO_phase(matched{1},2), 2*pi); ...
+                             mod(ripple_info.SO_phase(matched{2},1), 2*pi)];
+
+
+
+% Binning and Histograms
+bin_width = pi/6;
+edges = 0:bin_width:2*pi;
+[N, Xedges, Yedges] = histcounts2(shifted_phase_matched, shifted_phase_non_matched, edges, edges);
+
+% Center the bin labels for imagesc
+centers = edges(1:end-1) + bin_width/2;
+
+% Plotting
+figure('Name','Distribution of Bilateral V1 SO phases matched vs non-matched (Trough Centered)')
+imagesc(centers, centers, N/sum(N(:))); 
+colorbar; 
+colormap(flipud(gray));
+clim([0 0.03]);
+
+% Set ticks to show the shift (Centering PI)
+xticks(0:pi/2:2*pi);
+xticklabels({'0', 'pi/2', 'pi (Trough)', '3pi/2', '2pi'});
+yticks(0:pi/2:2*pi);
+yticklabels({'0', 'pi/2', 'pi (Trough)', '3pi/2', '2pi'});
+
+xlabel('Matched V1 SO phase (ripple)');
+ylabel('Non-matched V1 SO phase (ripple)');
+
+% Draw lines to highlight the central trough quadrant (pi/2 to 3pi/2)
+xline(pi/2, 'r-', 'LineWidth', 2); xline(3*pi/2, 'r-', 'LineWidth', 2);
+yline(pi/2, 'r-', 'LineWidth', 2); yline(3*pi/2, 'r-', 'LineWidth', 2);
+
+% Formatting
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+set(gca, 'YDir', 'normal'); % Standard Cartesian orientation
+% set(gca, 'XDir', 'reverse'); % Uncomment if you still need the horizontal flip
+% set(gca, 'YDir', 'reverse'); % Uncomment if you still need the vertical flip
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','SO phase plots best'),[])
+
 %% Basic number of events
 event_number_tables = table();
 event_number_tables.session =spindles_all(1).session;

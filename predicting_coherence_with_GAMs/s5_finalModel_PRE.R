@@ -22,11 +22,12 @@ dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_cohe
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100_200ms.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_PRE_100_200ms.csv")
 
-
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_200ms_POST.csv")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_200ms_PRE2.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_100ms_PRE2.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100_200ms_PRE2.csv")
 
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_200ms_PRE.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 
@@ -50,35 +51,35 @@ dat_clean <- dat %>%
 # ==============================================================================
 message("\nFitting the Final Minimal Adequate Model...")
 
-
-mdl_final <- bam(HPC_logodds_Z ~
-                   s(V1_logodds_PRE_Z,k = 5) +
-                   ti(SpindlePowerPRE_Match_Z, V1_logodds_PRE_Z, k = 5) +
-                   
-                   s(SOPhasePRE_Match,k = 5) +
-                   ti(SOPhase_Match, SOPhase_NonMatch, bs = "cc", k = 8) + 
-                   
-                   s(SOPhasePRE_NonMatch, bs = "cc", k = 8) + 
-                   
-                   ti(V1_logodds_PRE_Z,SOPhasePRE_Match,bs = c("tp", "cc"), k = c(5, 8)) +
-                   #s(HPC_logodds_Z,k = 5) +
-
-                   # 4. Control Term
-                   s(AnimalID, bs = "re") +
-                   s(SessionID, bs = "re"),
-
-                 data = dat_clean,
-                 method = "fREML",
-                 discrete = TRUE,
-                 nthreads = 4)
-
-message("\n--- FINAL MODEL SUMMARY ---")
-print(summary(mdl_final))
+# 
+# mdl_final <- bam(HPC_logodds_Z ~
+#                    s(V1_logodds_PRE_Z,k = 5) +
+#                    ti(SpindlePowerPRE_Match_Z, V1_logodds_PRE_Z, k = 5) +
+#                    
+#                    s(SOPhasePRE_Match,k = 5) +
+#                    ti(SOPhase_Match, SOPhase_NonMatch, bs = "cc", k = 8) + 
+#                    
+#                    s(SOPhasePRE_NonMatch, bs = "cc", k = 8) + 
+#                    
+#                    ti(V1_logodds_PRE_Z,SOPhasePRE_Match,bs = c("tp", "cc"), k = c(5, 8)) +
+#                    #s(HPC_logodds_Z,k = 5) +
+# 
+#                    # 4. Control Term
+#                    s(AnimalID, bs = "re") +
+#                    s(SessionID, bs = "re"),
+# 
+#                  data = dat_clean,
+#                  method = "fREML",
+#                  discrete = TRUE,
+#                  nthreads = 4)
+# 
+# message("\n--- FINAL MODEL SUMMARY ---")
+# print(summary(mdl_final))
 
 
 mdl_final <- bam(Event_Coherence_Pre_GeoMean ~ 
                    # 1. Surviving Main Power Effects
-                   #s(RipplePower_Z, k = 5) + 
+                   s(RipplePower_Z, k = 5) +
                    s(SpindlePower_Match_Z, k = 5) + 
                    s(SpindlePower_NonMatch_Z, k = 5) + 
                    #ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
@@ -92,7 +93,7 @@ mdl_final <- bam(Event_Coherence_Pre_GeoMean ~
                    
                    # 3. The Winning Interaction (Local Ripple Gate)
                    #ti(RipplePower_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
+                   #ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
                    
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
@@ -362,7 +363,7 @@ p_match <- ggplot(sm_match, aes(x = SOPhase_Match, y = .estimate)) +
   theme_bw() + 
   scale_x_continuous(breaks = c(0, pi, 2*pi), labels = c("0", expression(pi), expression(2*pi)),
                      limits = c(0, 2*pi), expand = c(0, 0)) +
-  labs(title = "Isolated Main Effect: Match SO Phase", 
+  labs(title = "Isolated Main Effect: Match SO Phase and PRE coherence", 
        x = "Match SO Phase (Rad)", y = "Partial Effect")
 print(p_match)
 
@@ -384,7 +385,7 @@ p_nonmatch <- ggplot(sm_nonmatch, aes(x = SOPhase_NonMatch, y = .estimate)) +
   theme_bw() + 
   scale_x_continuous(breaks = c(0, pi, 2*pi), labels = c("0", expression(pi), expression(2*pi)),
                      limits = c(0, 2*pi), expand = c(0, 0)) +
-  labs(title = "Isolated Main Effect: Non-Match SO Phase", 
+  labs(title = "Isolated Main Effect: Non-Match SO Phase and PRE coherence", 
        x = "Non-Match SO Phase (Rad)", y = "Partial Effect")
 print(p_nonmatch)
 # ---------------------------------------------------------
@@ -412,7 +413,7 @@ p_synergy <- sm_2d %>%
   scale_y_continuous(breaks = c(0, pi, 2*pi), labels = c("0", expression(pi), expression(2*pi))) +
   theme_minimal(base_family = "Arial") +
   theme(aspect.ratio = 1) +
-  labs(title = "Inter-hemispheric Phase interaction effect on coherence",
+  labs(title = "Inter-hemispheric Phase interaction effect (ripple time) on PRE coherence",
        x = "Match SO Phase (Rad)", y = "Non-Match SO Phase (Rad)")
 
 dev.new(noRStudioGD = TRUE)
@@ -467,7 +468,7 @@ p_reconstructed <- pred_grid_phase %>%
   theme_minimal(base_family = "Arial") +
   theme(aspect.ratio = 1) +
   labs(
-    title = "Inter-hemispheric Phase effect on coherence", 
+    title = "Inter-hemispheric Phase effect (ripple time) on PRE coherence", 
     subtitle = "Reconstructed: s(Match) + s(NonMatch) + ti(Match, NonMatch)",
     x = "Match SO Phase (Rad)", 
     y = "Non-Match SO Phase (Rad)"

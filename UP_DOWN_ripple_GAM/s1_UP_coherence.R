@@ -1,6 +1,3 @@
-# ==============================================================================
-# V1-HC COHERENCE: STAGE 5 - FINAL MODEL & DIAGNOSTICS
-# ==============================================================================
 
 # --- 1. Load Required Libraries ---
 packages <- c("mgcv", "gratia", "ggplot2", "dplyr", "tidyr")
@@ -68,6 +65,35 @@ dat_clean <- dat_clean %>%
   filter(
     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
   )
+
+
+
+
+########
+######## Early UP and ripple
+########
+
+
+mdl_final <- bam(earlyUPV1_z ~ 
+                   # 1. Surviving Main Power Effects
+                   s(earlyUPHPC_z, k = 5) +
+                   s(firstRippleHPC_z, k = 5) +
+                   
+                   # 4. Control Term
+                   s(AnimalID, bs = "re") +
+                   s(SessionID, bs = "re"), 
+                 
+                 data = dat_clean, 
+                 method = "fREML", 
+                 discrete = TRUE, 
+                 nthreads = 4)
+
+message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_final))
+
+
+
+
 
 
 ########

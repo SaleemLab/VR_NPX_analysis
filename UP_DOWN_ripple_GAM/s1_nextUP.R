@@ -73,16 +73,15 @@ dat_clean <- dat_clean %>%
 ########
 ########
 ########
-dat_clean
-mdl_final <- bam(nextUP_z ~ 
+# dat1 <- dat_clean %>%
+
+mdl_final <- bam(nextUPV1_z ~ 
                    # 1. Surviving Main Power Effects
-                   s(lastRippleHPC_z, k = 5) +
-                   # s(lastRippleV1_z, k = 5) +
-                   s(firstRippleHPC_z, k = 5) +
-                   # s(firstRippleV1_z, k = 5) +
-                   # s(lateUPHPC_z, k = 5) +
-                   # s(lateUP_z, k = 5) +
-                   #s(lateUP_z, k = 5) +
+                   s(lateUPHPC_z, k = 5) +
+                   s(lateUPV1_z, k = 5) +
+                   
+                   #s(UD_delta, k = 5) +
+                   #sti(lateUPHPC_z, UD_delta, k = 5) +
                    
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
@@ -98,25 +97,11 @@ print(summary(mdl_final))
 
 
 
-mdl_final <- bam(nextUP_z ~ 
+mdl_final <- bam(earlyUPV1_z ~ 
                    # 1. Surviving Main Power Effects
                    s(lastRippleHPC_z, k = 5) +
-                   # s(lastRippleV1_z, k = 5) +
                    s(firstRippleHPC_z, k = 5) +
-                   # s(firstRippleV1_z, k = 5) +
-                   # s(lateUPHPC_z, k = 5) +
-                   # s(lateUP_z, k = 5) +
-                   #s(lateUP_z, k = 5) +
-                   
-                   #s(lastRipplePower, k = 5) +
-                   #s(TimetoLastRipple_z, k = 5) +
-                   #s(lastRippleNormalisedUP_z, k = 5) + 
-                   #t(lastRipple_z, TimetoLastRipple_z, k = 5) +
-                   
-                   #ti(lastRipple_z, lastRippleNormalisedUP_z, k = 5) +
-                   #ti(lastRippleV1PRE_z, lastRippleNormalisedUP_z, k = 5) +
-                   #te(TimetoLastRipple_z, lastRippleNormalisedUP_z, k = c(5, 5))+
-                
+
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 

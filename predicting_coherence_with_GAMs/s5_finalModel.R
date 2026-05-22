@@ -16,13 +16,13 @@ library(tidyr)
 
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo3.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo3.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100ms.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_PRE.csv")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100_200ms.csv")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_100ms_POST.csv")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100_200ms_POST.csv")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_200ms_POST.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_100ms_POST.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_100_200ms_POST.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_0_200ms_POST.csv")
 
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_-200_200ms.csv")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/v1_hc_data_geo_-100_100ms.csv")
@@ -58,7 +58,7 @@ mdl_final <- bam(Event_Coherence_Post_GeoMean ~
                    s(RipplePower_Z, k = 5) + 
                    s(SpindlePower_Match_Z, k = 5) + 
                    s(SpindlePower_NonMatch_Z, k = 5) + 
-                   #ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
+                   ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
                    #te(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = c(5, 5))+
                  
                    # 2. The Baseline Phase Landscape (Synergy)
@@ -69,8 +69,8 @@ mdl_final <- bam(Event_Coherence_Post_GeoMean ~
                    
                    # 3. The Winning Interaction (Local Ripple Gate)
                    ti(RipplePower_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   #ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   #ti(SpindlePower_Match_Z, RipplePower_Z, bs = c("tp", "tp"), k = c(5, 5)) + 
+                   ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
+                   ti(SpindlePower_Match_Z, RipplePower_Z, bs = c("tp", "tp"), k = c(5, 5)) + 
                    
                   
                    # 4. Control Term

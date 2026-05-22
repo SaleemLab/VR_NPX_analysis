@@ -5,16 +5,33 @@ cd('P:\corticohippocampal_replay\V1-HPC sleep reactivation')
 load('V1_HPC_reactivation_coherence_lme_POST1_raw.mat');
 load('V1_HPC_reactivation_coherence_lme_PRE1_raw.mat');
 
-load('V1_HPC_reactivation_coherence_lme1_raw_100ms.mat');
-load('V1_HPC_reactivation_coherence_lme1_raw_100_200ms.mat');
-load('V1_HPC_reactivation_coherence_lme1_PRE_raw_100_200ms.mat');
+% load('V1_HPC_reactivation_coherence_lme1_raw_100ms.mat');
+% load('V1_HPC_reactivation_coherence_lme1_raw_100_200ms.mat');
+% load('V1_HPC_reactivation_coherence_lme1_PRE_raw_100_200ms.mat');
 
 % 
-load('V1_HPC_reactivation_coherence_lme2_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme2_raw.mat');
 % load('V1_HPC_reactivation_coherence_lme2_PRE_raw.mat');
 % load('V1_HPC_reactivation_coherence_lme_POST2_raw.mat');
 % load('V1_HPC_reactivation_coherence_lme_PRE2_raw.mat');
 
+
+% load('V1_HPC_reactivation_coherence_lme_-100_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_-200_200ms_raw.mat');
+
+% load('V1_HPC_reactivation_coherence_lme_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_100ms_PRE_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_100_200ms_PRE_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_0_200ms_PRE_raw.mat');
+
+% load('V1_HPC_reactivation_coherence_lme_POST_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_0_100ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_POST_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_100_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_POST_0_200ms_raw.mat');
+% load('V1_HPC_reactivation_coherence_lme_PRE_0_200ms_raw.mat');
 
 %% 1. Outlier Removal
 % Define the continuous variables that are vulnerable to extreme noise
@@ -43,10 +60,10 @@ cleanTbl.SpindlePower_Match_Z = zscore(cleanTbl.SpindlePower_Match);
 cleanTbl.SpindlePower_NonMatch_Z = zscore(cleanTbl.SpindlePower_NonMatch);
 
 if ismember('SpindlePowerPRE_Match', tbl.Properties.VariableNames)
-    cleanTbl.SpindlePowerPRE_Match_Z = zscore(cleanTbl.SpindlePowerPRE_Match);
-    cleanTbl.SpindlePowerPRE_NonMatch_Z = zscore(cleanTbl.SpindlePowerPRE_NonMatch);
-    cleanTbl.SpindlePowerPOST_Match_Z = zscore(cleanTbl.SpindlePowerPOST_Match);
-    cleanTbl.SpindlePowerPOST_NonMatch_Z = zscore(cleanTbl.SpindlePowerPOST_NonMatch);
+    cleanTbl.SpindlePowerPRE_Match_Z = normalize(cleanTbl.SpindlePowerPRE_Match);
+    cleanTbl.SpindlePowerPRE_NonMatch_Z = normalize(cleanTbl.SpindlePowerPRE_NonMatch);
+    cleanTbl.SpindlePowerPOST_Match_Z = normalize(cleanTbl.SpindlePowerPOST_Match);
+    cleanTbl.SpindlePowerPOST_NonMatch_Z = normalize(cleanTbl.SpindlePowerPOST_NonMatch);
 end
 
 cleanTbl.HPC_logodds_Z = cleanTbl.HPC_logodds; % already z-scored
@@ -79,12 +96,33 @@ fprintf('Mean Event Coherence (Post): %.3f\n', mean(cleanTbl.Event_Coherence_Pos
 % writetable(cleanTbl, 'v1_hc_data_geo_PRE_100_200ms.csv'); % export table for R GAM analysis
 % writetable(cleanTbl, 'v1_hc_data_geo_POST.csv'); % export table for R GAM analysis
 % writetable(cleanTbl, 'v1_hc_data_geo_PRE.csv'); % export table for R GAM analysis
-
+% 
 % writetable(cleanTbl, 'v1_hc_data_geo_POST2.csv'); % POST POST
-writetable(cleanTbl, 'v1_hc_data_geo_PRE2.csv'); % PRE PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE2.csv'); % PRE PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_POST_SO.csv'); % POST ime3
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE_SO.csv'); % PRE ime3
+% writetable(cleanTbl, 'v1_hc_data_geo_POST2_SO.csv'); % POST POST3
+% writetable(cleanTbl, 'v1_hc_data_geo_PRE2_SO.csv'); % PRE PRE3
 
+% writetable(cleanTbl, 'v1_hc_data_geo_-100_100ms.csv'); % -100_100ms_raw
+% writetable(cleanTbl, 'v1_hc_data_geo_-200_200ms.csv'); % -200_200ms_raw
 
-fig = figure('Name','Geometric Mean reactivation coherence distribution','Position',[482 111 665 515]);
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_POST.csv'); % 0 100
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_PRE.csv'); % 0 100 PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_POST.csv'); % 100 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_PRE.csv'); % 100 200 pre
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_POST.csv'); % 0 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_PRE.csv'); % 0 200 pre
+
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_POST2.csv'); % 0 100
+% writetable(cleanTbl, 'v1_hc_data_geo_0_100ms_PRE2.csv'); % 0 100 PRE
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_POST2.csv'); % 100 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_100_200ms_PRE2.csv'); % 100 200 pre
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_POST2.csv'); % 0 200 
+% writetable(cleanTbl, 'v1_hc_data_geo_0_200ms_PRE2.csv'); % 0 200 pre
+
+% fig = figure('Name','Geometric Mean reactivation coherence distribution (-100 to 100ms)','Position',[482 111 665 515]);
+fig = figure('Name','Geometric Mean reactivation coherence distribution (-200 to 200ms)','Position',[482 111 665 515]);
 sgtitle('Reactivation coherence distribution')
 
 subplot(2,2,1)
@@ -96,11 +134,11 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 
 subplot(2,2,2)
-histogram(cleanTbl.Event_Coherence_Pre_GeoMean,'Normalization','probability','EdgeColor','none')
-xlim([-2 2])
-xlabel('GeoMean Pre coherence')
-ylabel('Proportion')
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% histogram(cleanTbl.Event_Coherence_Pre_GeoMean,'Normalization','probability','EdgeColor','none')
+% xlim([-2 2])
+% xlabel('GeoMean Pre coherence')
+% ylabel('Proportion')
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 subplot(2,2,3)
 histogram(cleanTbl.Event_Coherence_Post,'Normalization','probability','EdgeColor','none')
@@ -111,8 +149,145 @@ set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
 
 
 subplot(2,2,4)
-histogram(cleanTbl.Event_Coherence_Pre,'Normalization','probability','EdgeColor','none')
+% histogram(cleanTbl.Event_Coherence_Pre,'Normalization','probability','EdgeColor','none')
+% xlim([-2 2])
+% xlabel('Pre coherence')
+% ylabel('Proportion')
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+% save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction','UP-DOWN log odds'),[])
+
+save_all_figures('C:\Users\masah\Documents\GitHub\VR_NPX_analysis\predicting_coherence_with_GAMs\full_model_200ms',[])
+
+
+% 
+% fig = figure('Name','Geometric Mean reactivation coherence low vs high events (-100 to 100ms)','Position',[482 111 665 515]);
+% sgtitle('Reactivation coherence distribution')
+% 
+% nexttile
+% % high_id = cleanTbl.RipplePower > prctile(cleanTbl.RipplePower,75);
+% % low_id = cleanTbl.RipplePower < prctile(cleanTbl.RipplePower,25);
+% 
+% % Both of these return a single logical vector of the exact same length as cleanTbl
+% high_id = groupfilter(cleanTbl, "SessionID", @(x) x > prctile(x, 75), "RipplePower");
+% low_id  = groupfilter(cleanTbl, "SessionID", @(x) x < prctile(x, 25), "RipplePower");
+% 
+% [h, p] = kstest2(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'Tail','larger')
+% 
+% histogram(high_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% hold on;
+% histogram(low_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% xlim([-2 2])
+% xlabel('GeoMean Post coherence')
+% ylabel('Proportion')
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% 
+% 
+% 
+% nexttile
+% % high_id = cleanTbl.SpindlePower_Match > prctile(cleanTbl.SpindlePower_Match,75);
+% % low_id = cleanTbl.SpindlePower_Match < prctile(cleanTbl.SpindlePower_Match,25);
+% 
+% high_id = groupfilter(cleanTbl, "SessionID", @(x) x > prctile(x, 75), "SpindlePower_Match");
+% low_id  = groupfilter(cleanTbl, "SessionID", @(x) x < prctile(x, 25), "SpindlePower_Match");
+% 
+% [p,h,stats] = ranksum(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'tail','right')
+% 
+% histogram(high_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% hold on;
+% histogram(low_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% xlim([-2 2])
+% xlabel('GeoMean Post coherence')
+% ylabel('Proportion')
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% 
+% 
+% 
+% nexttile
+% % high_id = cleanTbl.SOPhase_Match < -pi/2 | cleanTbl.SOPhase_Match > pi/2;
+% % low_id = cleanTbl.SOPhase_Match > -pi/2 & cleanTbl.SOPhase_Match < pi/2;
+% 
+% high_id = groupfilter(cleanTbl, "SessionID", @(x) x< -pi/2 | x > pi/2, "SOPhase_Match");
+% low_id  = groupfilter(cleanTbl, "SessionID", @(x) x> -pi/2 & x < pi/2, "SOPhase_Match");
+% 
+% [p,h,stats] = ranksum(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'tail','right')
+% 
+% histogram(high_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% hold on;
+% histogram(low_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+% xlim([-2 2])
+% xlabel('GeoMean Post coherence')
+% ylabel('Proportion')
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% 
+
+
+cleanTbl1 = cleanTbl;
+
+
+% cleanTbl = groupfilter(cleanTbl, "SessionID", @(x) x > prctile(x, 75) | x < prctile(x, 25), "HPC_logodds_Z");
+
+fig = figure('Name','Geometric Mean reactivation coherence low vs high events (-100 to 100ms)','Position',[482 111 665 515]);
+sgtitle('Reactivation coherence distribution')
+
+nexttile
+% high_id = cleanTbl.RipplePower > prctile(cleanTbl.RipplePower,75);
+% low_id = cleanTbl.RipplePower < prctile(cleanTbl.RipplePower,25);
+
+% Both of these return a single logical vector of the exact same length as cleanTbl
+% low_id  = groupfilter(cleanTbl, "SessionID", @(x) x < prctile(x, 25), "RipplePower");
+low_id  = groupfilter(cleanTbl, "SessionID", @(x) x < prctile(x, 25), "RipplePower");
+high_id = groupfilter(cleanTbl, "SessionID", @(x) x > prctile(x, 75), "RipplePower");
+
+
+[p,h,stats] = ranksum(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'tail','right')
+
+histogram(high_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+hold on;
+histogram(low_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
 xlim([-2 2])
-xlabel('Pre coherence')
+xlabel('GeoMean Post coherence')
 ylabel('Proportion')
 set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+nexttile
+% high_id = cleanTbl.SpindlePower_Match > prctile(cleanTbl.SpindlePower_Match,75);
+% low_id = cleanTbl.SpindlePower_Match < prctile(cleanTbl.SpindlePower_Match,25);
+% 
+% low_id  = groupfilter(cleanTbl, "SessionID", @(x) x < prctile(x, 25), "SpindlePower_Match");
+
+low_id  = cleanTbl;
+high_id = groupfilter(cleanTbl, "SessionID", @(x) x > prctile(x, 75), "SpindlePower_Match");
+
+
+[p,h,stats] = ranksum(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'tail','right')
+
+histogram(high_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+hold on;
+histogram(low_id.Event_Coherence_Post_GeoMean,-2:0.05:2,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('GeoMean Post coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+
+
+
+nexttile
+% high_id = cleanTbl.SOPhase_Match < -pi/2 | cleanTbl.SOPhase_Match > pi/2;
+% low_id = cleanTbl.SOPhase_Match > -pi/2 & cleanTbl.SOPhase_Match < pi/2;
+
+low_id  = cleanTbl;
+high_id = groupfilter(cleanTbl, "SessionID", @(x) x< -pi/2 | x > pi/2, "SOPhase_Match");
+
+[p,h,stats] = ranksum(high_id.Event_Coherence_Post_GeoMean,low_id.Event_Coherence_Post_GeoMean,'tail','right')
+
+histogram(high_id.Event_Coherence_Post_GeoMean,-1.5:0.05:1.5,'Normalization','probability','EdgeColor','none')
+hold on;
+histogram(low_id.Event_Coherence_Post_GeoMean,-1.5:0.05:1.5,'Normalization','probability','EdgeColor','none')
+xlim([-2 2])
+xlabel('GeoMean Post coherence')
+ylabel('Proportion')
+set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+

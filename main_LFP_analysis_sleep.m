@@ -3911,58 +3911,131 @@ mean_phases_contra = mean([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1
 
 SE_phases_ipsi = std([squeeze((V1_phase{1}(1,:,:))); squeeze((V1_phase{2}(2,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
 SE_phases_contra = std([squeeze((V1_phase{1}(2,:,:))); squeeze((V1_phase{2}(1,:,:)))])/sqrt(length(SO_phase_MUA_spike_rate{nsession}));
+% 
+% 
+% % 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
+% c_ipsi = [35,139,69]/256; 
+% c_contra = [106,81,163]/256;
+% 
+% % 2. Ensure inputs are row vectors for the fill command
+% x = phase_bins(:)'; 
+% 
+% % 3. Pre-calculate Upper and Lower bounds for shading
+% % Ipsi Bounds
+% ipsi_upper = (mean_phases_ipsi(:)' + SE_phases_ipsi(:)');
+% ipsi_lower = (mean_phases_ipsi(:)' - SE_phases_ipsi(:)');
+% % Contra Bounds
+% contra_upper = (mean_phases_contra(:)' + SE_phases_contra(:)');
+% contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
+% 
+% %%%% Plot SO V1 phase
+% fig = figure;
+% fig.Name = 'V1 SO phase Peak vs Trough (sleep)';
+% % fig.Name = 'V1 SO phase Peak vs Trough (DOWN 2Hz)';
+% sgtitle(fig.Name)
+% fig.Position= [844 66 560 906];
+% 
+% subplot(3,2,1)
+% hold on;
+% % --- Plot Ipsi (Shading first, then Line) ---
+% fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
+%     c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+% h1 = plot(x, mean_phases_ipsi, 'Color', c_ipsi, 'LineWidth', 2);
+% 
+% % --- Plot Contra (Shading first, then Line) ---
+% fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
+%     c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+% h2 = plot(x, mean_phases_contra, 'Color', c_contra, 'LineWidth', 2);
+% 
+% % --- Formatting ---
+% yline(0, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+% xline(-pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+% xline(pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+% 
+% xlabel('Phases');
+% ylabel('Mean firing rate (Hz)');
+% title('Ipsi vs Contra Phase Preference');
+% 
+% % Add a legend (using the plot handles h1 and h2)
+% legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
+% xticks([-pi -pi/2 0 pi/2 pi])
+% xticklabels({'-pi','-pi/2','0','pi/2','pi'})
+% set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
+% xlim([-pi pi]);
+% ylim([1 6])
+% hold off;
 
 
-% 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
-c_ipsi = [35,139,69]/256; 
-c_contra = [106,81,163]/256;
+%%% Plot SO V1 phase
 
-% 2. Ensure inputs are row vectors for the fill command
-x = phase_bins(:)'; 
-
-% 3. Pre-calculate Upper and Lower bounds for shading
-% Ipsi Bounds
-ipsi_upper = (mean_phases_ipsi(:)' + SE_phases_ipsi(:)');
-ipsi_lower = (mean_phases_ipsi(:)' - SE_phases_ipsi(:)');
-% Contra Bounds
-contra_upper = (mean_phases_contra(:)' + SE_phases_contra(:)');
-contra_lower = (mean_phases_contra(:)' - SE_phases_contra(:)');
-
-%%%% Plot SO V1 phase
 fig = figure;
-fig.Name = 'V1 SO phase Peak vs Trough (sleep)';
+fig.Name = 'V1 SO phase Peak vs Trough (sleep) (1.5 cycles)';
 % fig.Name = 'V1 SO phase Peak vs Trough (DOWN 2Hz)';
 sgtitle(fig.Name)
 fig.Position= [844 66 560 906];
 
+
+% 1. Setup Colors (Example: Teal for Ipsi, Orange for Contra)
+c_ipsi = [35,139,69]/256;
+c_contra = [106,81,163]/256;
+
+% 1. Align Data and Phase Bins
+% Find the index for -pi/2 to center the trough at 0
+[~, shift_idx] = min(abs(phase_bins - (-pi/2)));
+
+% Shift the Firing Rate data
+m_i_s = circshift(mean_phases_ipsi, [0, -(shift_idx-1)]);
+m_c_s = circshift(mean_phases_contra, [0, -(shift_idx-1)]);
+s_i_s = circshift(SE_phases_ipsi, [0, -(shift_idx-1)]);
+s_c_s = circshift(SE_phases_contra, [0, -(shift_idx-1)]);
+
+% 2. Construct the Continuous X-Axis
+% Calculate actual bin width to prevent "drift" over multiple cycles
+dx = mean(diff(phase_bins));
+
+% Create a single cycle starting at 0
+x_single = (0:length(m_i_s)-1) * dx;
+
+% Concatenate for 2 full cycles (ensuring the second cycle starts exactly one bin after the first ends)
+x_2cyc = [x_single, x_single + (x_single(end) + dx)];
+
+% Concatenate the Data
+mean_ipsi_2cyc = [m_i_s, m_i_s];
+mean_contra_2cyc = [m_c_s, m_c_s];
+SE_ipsi_2cyc = [s_i_s, s_i_s];
+SE_contra_2cyc = [s_c_s, s_c_s];
+
+% 3. Plotting with Precise Bounds
+ipsi_upper = mean_ipsi_2cyc + SE_ipsi_2cyc;
+ipsi_lower = mean_ipsi_2cyc - SE_ipsi_2cyc;
+contra_upper = mean_contra_2cyc + SE_contra_2cyc;
+contra_lower = mean_contra_2cyc - SE_contra_2cyc;
+
 subplot(3,2,1)
 hold on;
-% --- Plot Ipsi (Shading first, then Line) ---
-fill([x fliplr(x)], [ipsi_lower fliplr(ipsi_upper)], ...
-    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
-h1 = plot(x, mean_phases_ipsi, 'Color', c_ipsi, 'LineWidth', 2);
+% Shading
+fill([x_2cyc, fliplr(x_2cyc)], [ipsi_lower, fliplr(ipsi_upper)], ...
+    c_ipsi, 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+fill([x_2cyc, fliplr(x_2cyc)], [contra_lower, fliplr(contra_upper)], ...
+    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.2);
 
-% --- Plot Contra (Shading first, then Line) ---
-fill([x fliplr(x)], [contra_lower fliplr(contra_upper)], ...
-    c_contra, 'EdgeColor', 'none', 'FaceAlpha', 0.3);
-h2 = plot(x, mean_phases_contra, 'Color', c_contra, 'LineWidth', 2);
+% Mean Lines
+h1 = plot(x_2cyc, mean_ipsi_2cyc, 'Color', c_ipsi, 'LineWidth', 2.5);
+h2 = plot(x_2cyc, mean_contra_2cyc, 'Color', c_contra, 'LineWidth', 2.5);
 
-% --- Formatting ---
-yline(0, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
-xline(-pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
-xline(pi/2, '--k', 'HandleVisibility', 'off'); % 'HandleVisibility' hides it from legend
+% Vertical Grid lines at intervals of pi
+for v = 0:pi:3*pi
+    line([v v], [1 6], 'Color', [0.7 0.7 0.7], 'LineStyle', '--', 'HandleVisibility', 'off');
+end
 
-xlabel('Phases');
-ylabel('Mean firing rate (Hz)');
-title('Ipsi vs Contra Phase Preference');
-
-% Add a legend (using the plot handles h1 and h2)
-legend([h1 h2], {'Ipsi', 'Contra'}, 'Location', 'best', 'Box', 'off');
-xticks([-pi -pi/2 0 pi/2 pi])
-xticklabels({'-pi','-pi/2','0','pi/2','pi'})
-set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 12);
-xlim([-pi pi]);
-ylim([1 6])
+% Formatting
+xticks(0:pi/2:3*pi);
+xticklabels({'0','\pi/2','\pi','3\pi/2','2\pi','5\pi/2','3\pi'});
+xlim([0 3*pi]);
+ylim([1 6]);
+ylabel('Firing Rate (Hz)');
+xlabel('Phase (rad)');
+set(gca, 'TickDir', 'out', 'Box', 'off');
 hold off;
 
 
@@ -4025,7 +4098,7 @@ for iplot = 1:4
 
     % Get the number of pairs (rows)
     num_pairs = size(peak_vs_trough{iplot}, 1);
-    
+
     rng(1);
     jitter_col1 = (rand(num_pairs, 1) - 0.5) * 0.2;
     rng(2);

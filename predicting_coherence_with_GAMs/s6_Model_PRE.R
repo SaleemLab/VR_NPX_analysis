@@ -91,7 +91,7 @@ mdl_final <- bam(Event_Coherence_Pre_GeoMean ~
                    s(SOPhasePRE_NonMatch, bs = "cc", k = 8) + 
                    # 3. The Winning Interaction (Local Ripple Gate)
                    #ti(RipplePower_Z, SOPhasePRE_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   ti(SpindlePowerPRE_Match_Z, SOPhasePRE_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
+                   #ti(SpindlePowerPRE_Match_Z, SOPhasePRE_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
                    
                    # 4. Control Term
                    s(AnimalID, bs = "re") +

@@ -23,23 +23,23 @@ load(fullfile(analysis_folder,'behavioural_state_merged_all_POST.mat'))
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
-PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
-PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA.mat'),'UP_DOWN_ripple_PSTH_MUA');
+% PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
+% PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
-probability_psth_whole = probability;
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+% probability_psth_whole = probability;
 
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability_whole.mat'));
 
-load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
-load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
+% load(fullfile(analysis_folder,'bayesian_reactivation_V1_all_POST.mat'))
+% load(fullfile(analysis_folder,'bayesian_reactivation_all_POST.mat'))
 
 sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
 %% Extract key information for DOWN UP, ripples and spindles
  
-load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
+% load((fullfile(analysis_folder,'cortex_SO_ref_shank_all.mat')),'cortex_SO_ref_shank_all');
 %%%%%%% Find reference channel/shank
 cortex_ref_shank = [];
 HPC_ref_shank = [];
@@ -159,48 +159,6 @@ ripple_info.SO_amplitude = SO_amplitude';
 ripple_info.SO_amplitude = ripple_info.SO_amplitude(event_ids_first,:);
 
 
-%%% early UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(:,1) merged_event_info.UP_ints(:,1)+0.2]);
-ripple_info.early_UP_index = UP_index;
-ripple_info.early_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.early_UP_index_hemi(find(UP_index)) = merged_event_info.UP_hemisphere_id(index);
-
-ripple_info.early_UP_index = ripple_info.early_UP_index(event_ids_first);
-ripple_info.early_UP_index_hemi = ripple_info.early_UP_index_hemi(event_ids_first);
-
-%%% late UP transition co-occurance
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(:,1)-0.2 merged_event_info.DOWN_ints(:,1)]);
-ripple_info.late_UP_index = UP_index;
-ripple_info.late_UP_index_hemi = zeros(size(UP_index));
-% ripple_info.spindle_presence_hemi = zeros(size(spindle_index));
-ripple_info.late_UP_index_hemi(find(UP_index)) = merged_event_info.DOWN_hemisphere_id(index);
-
-ripple_info.late_UP_index = ripple_info.late_UP_index(event_ids_first);
-ripple_info.late_UP_index_hemi = ripple_info.late_UP_index_hemi(event_ids_first);
-
-
-
-
-%%% UP and DOWN transition co-occurance
-ripple_info.UP_index=[];
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==1,2)]);
-ripple_info.UP_index(:,1) = UP_index;
-
-[~,UP_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,1) merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id==2,2)]);
-ripple_info.UP_index(:,2) = UP_index;
-ripple_info.UP_index = ripple_info.UP_index(event_ids_first,:);
-
-%%% DOWN transition co-occurance
-ripple_info.DOWN_index=[];
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==1,2)]);
-ripple_info.DOWN_index(:,1) = DOWN_index;
-
-[~,DOWN_index,~,index] = RestrictInts(merged_event_info.ripples_ints,[merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,1) merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id==2,2)]);
-ripple_info.DOWN_index(:,2) = DOWN_index;
-ripple_info.DOWN_index = ripple_info.DOWN_index(event_ids_first,:);
-
-
 %%%%%%
 session_count = [ripples_all(1).session_count(ripples_all(1).SWS_index==1); ripples_all(2).session_count(ripples_all(2).SWS_index==1)];
 subject_id = str2double(cellstr(ripples_all(1).subject(session_count,end-1:end)));
@@ -229,7 +187,7 @@ cd(fullfile(analysis_folder,'V1-HPC sleep reactivation'))
 %%%%%%%%%%%%
 %%%%%%%%%%%%%%% KDE reactivation bias 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_ripples_PSTH.mat'))
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_reactivation_content.mat'))
 
 timebin = 0.01;
 time_windows = [-1 1];
@@ -303,7 +261,11 @@ spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-bins_to_select = bin_centers>0 & bin_centers<0.2;
+% bins_to_select = bin_centers>0 & bin_centers<0.2;
+
+bins_to_select = bin_centers>-0.1 & bin_centers<0.1;
+% bins_to_select = bin_centers>-0.1 & bin_centers<0.1;
+
 bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
 nBoot = 1000;
 colour_lines = [ ...
@@ -317,7 +279,8 @@ spindle_power_KDE_bias_difference = struct;
 
 fig = figure;
 fig.Position = [640 100 1100 650*2];
-fig.Name = 'KDE bias difference in HPC with different spindle powers percentile';
+fig.Name = 'KDE bias difference in HPC with different spindle powers percentile (-0.2 to 0.2s)';
+% fig.Name = 'KDE bias difference in HPC with different spindle powers percentile';
 tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 
 for npower = 1:nBins
@@ -585,7 +548,8 @@ legend(Fill([1 4 5]), {'Low spindle power', 'High spindle power','Shuffled'}, 'b
 % Plot layout
 fig = figure;
 fig.Position = [640 100 281 325]
-fig.Name = 'KDE bias V1 AUC spindle power percentile low vs high';
+fig.Name = 'KDE bias V1 AUC spindle power percentile low vs high (-0.2 to 0.2s)';
+% fig.Name = 'KDE bias V1 AUC spindle power percentile low vs high';
 data = spindle_power_KDE_bias_difference;
 n_bins = length(data);
 bar_width = 0.3;      % Width of the bars
@@ -666,7 +630,8 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 
 % Save results
-save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
+% save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
+save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference_200ms');
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
 
 
