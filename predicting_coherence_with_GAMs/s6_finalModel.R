@@ -673,6 +673,7 @@ library(stringr)
 library(tidyr)
 
 B <- 1000  # Set to 1000 for your final analysis run
+RE_TERMS <- c("s(SessionID, bs = 're')", "s(AnimalID, bs = 're')")
 
 message(sprintf("\nLaunching %d Case Bootstrap Replicates...", B))
 
@@ -682,7 +683,11 @@ run_one_bootstrap <- function(rep_id, original_data, formula_terms, smooth_label
   boot_data <- original_data[sample(nrow(original_data), replace = TRUE), ]
   
   # 2. Fit Full Model
-  full_form <- as.formula(paste("Event_Coherence_Post_GeoMean ~", paste(c(formula_terms, "s(SessionID, bs = 're')"), collapse = " + ")))
+  full_form <- as.formula(paste(
+    "Event_Coherence_Post_GeoMean ~",
+    paste(c(formula_terms, RE_TERMS), collapse = " + ")
+  ))
+  
   mdl_f <- mgcv::bam(full_form, data = boot_data, method = "fREML", discrete = TRUE)
   
   f_sum <- summary(mdl_f)
