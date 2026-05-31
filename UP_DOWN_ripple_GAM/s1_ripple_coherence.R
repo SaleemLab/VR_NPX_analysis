@@ -17,8 +17,8 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 #dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/pre_post_normalised_UP_ripple_20_120ms.csv")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/pre_post_normalised_UP_ripple_-150_-50ms.csv")
-# dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/pre_post_normalised_UP_ripple.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/pre_post_normalised_UP_ripple_-150_-50ms.csv")
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/pre_post_normalised_UP_ripple.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -88,6 +88,22 @@ dat$geo_coherencePRE <- sign(dat$V1_pre * dat$HC_post) *
 # Keep rows where NOT (both are NA)
 #dat <- dat[!(is.na(dat$NormalisedUP_L) & is.na(dat$NormalisedUP_R)), ]
 
+
+dat_Time <- dat %>%
+  filter(
+    # Keep if the value is <= 1s OR if the value is NaN/NA
+    (UPDuration_Match <= 2    | is.na(UPDuration_Match)) &
+      (UPDuration_NonMatch <= 2 | is.na(UPDuration_NonMatch)) &
+    (UPDuration_Match >= 0.1    | is.na(UPDuration_Match)) &
+      (UPDuration_NonMatch >= 0.1 | is.na(UPDuration_NonMatch)) 
+  )
+dat_Time <- dat_Time %>%
+  mutate(across(where(is.numeric), 
+                ~ as.numeric(scale(.)), 
+                .names = "{.col}_z"))
+
+
+
 dat_clean <- dat %>%
   mutate(across(where(is.numeric), 
                 ~ as.numeric(scale(.)), 
@@ -116,25 +132,68 @@ dat_clean <- dat_clean %>%
     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
   )
 
-dat_Time <- dat_clean %>%
+dat_Time <- dat_Time %>%
   filter(
-    # Keep if the value is <= 1s OR if the value is NaN/NA
-    (TimeToDOWN_Match <= 1    | is.na(TimeToDOWN_Match)) &
-      (TimeToDOWN_NonMatch <= 1 | is.na(TimeToDOWN_NonMatch)) &
-      (TimeToUP_Match <= 1      | is.na(TimeToUP_Match)) &
-      (TimeToUP_NonMatch <= 1   | is.na(TimeToUP_NonMatch))
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
   )
 
-# Quick check to see how many NaNs were preserved
+
+
+
+
+
 ########
 ########
 ########
 
 # Coherence depends on Normalised UP duration and Time To DOWN
 mdl_1 <- bam(geo_coherence_z ~ 
+               s(UPDuration_Match_z, k = 5) +
+               s(UPDuration_NonMatch_z, k = 5) +
+               ti(UPDuration_Match_z, UPDuration_NonMatch_z, k = 5) +
+               
+               # 4. Control Term
+               s(AnimalID, bs = "re") +
+               s(SessionID, bs = "re"), 
+             
+             data = dat_clean, 
+             method = "fREML", 
+             discrete = TRUE, 
+             nthreads = 4)
+
+message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_1))
+
+
+########
+########
+########
+
+# Coherence depends on Normalised UP duration and Time To DOWN
+mdl_1 <- bam(geo_coherence_z ~ 
+               s(NormalisedDOWN_Match_z, k = 5) +
+               s(NormalisedDOWN_NonMatch_z, k = 5) +
+               ti(NormalisedDOWN_Match_z, NormalisedDOWN_NonMatch_z, k = 5) +
+               
+               # 4. Control Term
+               s(AnimalID, bs = "re") +
+               s(SessionID, bs = "re"), 
+             
+             data = dat_clean, 
+             method = "fREML", 
+             discrete = TRUE, 
+             nthreads = 4)
+
+message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_1))
+
+
+
+# Coherence depends on Normalised UP duration and Time To DOWN
+mdl_1 <- bam(geo_coherence_z ~ 
                    s(NormalisedUP_Match_z, k = 5) +
-                   s(NormalisedUP_NonMatch_z, k = 5) +
-                   ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
+               s(NormalisedUP_NonMatch_z, k = 5) +
+               ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
     
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
@@ -172,7 +231,7 @@ print(p_norm_raw)
 
 
 
-### Normalised duration
+### Normalised duration Non matched
 
 # Calculate scaling factors
 raw_breaks <- c(0, 0.25, 0.5,0.75,1)
@@ -181,7 +240,7 @@ z_breaks <- sapply(raw_breaks, function(val) {
 })
 
 # cairo_pdf("ripple_power_post_z_raw.pdf", width = 4.3, height = 4.3)
-p_norm_raw <- draw(mdl_1, select = "s(NormalisedUP_NonMatch_z)", residuals = FALSE, rug = FALSE) +
+p_norm_nonmatch <- draw(mdl_1, select = "s(NormalisedUP_NonMatch_z)", residuals = FALSE, rug = FALSE) +
   theme_bw(base_family = "Arial") +
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
@@ -195,7 +254,7 @@ print(p_norm_nonmatch)
 
 
 
-# Coherence does not depend on Time To DOWN
+# Coherence does not depend on exact Timing relative To DOWN transition
 mdl_2 <- bam(geo_coherence_z ~ 
 
                    s(TimeToDOWN_Match_z, k = 5) +
@@ -216,6 +275,54 @@ print(summary(mdl_2))
 
 
 
+# Coherence does not depend on Time To DOWN
+mdl_FromUP <- bam(geo_coherence_z ~ 
+               
+               s(TimeFromUP_Match_z, k = 5) +
+               #s(TimeToDOWN_NonMatch_z, k = 5) + 
+               #ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
+               
+               # 4. Control Term
+               s(AnimalID, bs = "re") +
+               s(SessionID, bs = "re"), 
+             
+             data = dat_Time, 
+             method = "fREML", 
+             discrete = TRUE, 
+             nthreads = 4)
+
+message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_FromUP))
+
+
+
+
+### Time from UP Match
+
+# 1. Define raw time breaks (e.g., 0 to 500ms in 125ms steps)
+raw_breaks_time <- c(0, 0.25, 0.5, 1)
+
+# 2. Map raw seconds to the nearest Z-score in the cleaned dataset
+z_breaks_match <- sapply(raw_breaks_time, function(val) {
+  dat_Time$TimeFromUP_Match_z[which.min(abs(dat_Time$TimeFromUP_Match - val))]
+})
+
+# 3. Plot
+p_time_match <- draw(mdl_FromUP, select = "s(TimeFromUP_Match_z)", residuals = FALSE, rug = FALSE) + 
+  theme_bw(base_family = "Arial") + 
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks_match, labels = raw_breaks_time) +
+  labs(
+    title = "TimeFromUP_Match (Match) and Coherence", 
+    x = "Time from UP transition (s)", 
+    y = "Partial Effect"
+  )
+
+print(p_time_match)
+
+
+
+
 
 # Coherence depends on Normalised UP duration and Time To DOWN
 
@@ -225,14 +332,14 @@ mdl_3 <- bam(geo_coherence_z ~
                    # s(lastRipple_z, k = 5) +
                    
                    s(NormalisedUP_Match_z, k = 5) +
-                   s(NormalisedUP_NonMatch_z, k = 5) +
+               #s(NormalisedUP_NonMatch_z, k = 5) +
                    # ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
                    s(TimeToDOWN_Match_z, k = 5) +
-                   s(TimeToDOWN_NonMatch_z, k = 5) +
+               #s(TimeToDOWN_NonMatch_z, k = 5) +
                    # ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
                    
                    ti(NormalisedUP_Match_z, TimeToDOWN_Match_z, k = 5) +
-                   ti(NormalisedUP_NonMatch_z, TimeToDOWN_NonMatch_z, k = 5) +
+               #ti(NormalisedUP_NonMatch_z, TimeToDOWN_NonMatch_z, k = 5) +
                    #t(lastRipple_z, TimetoLastRipple_z, k = 5) +
                    
                    
@@ -277,6 +384,15 @@ p_time_match <- draw(mdl_3, select = "s(TimeToDOWN_Match_z)", residuals = FALSE,
 print(p_time_match)
 
 
+
+
+
+######
+###### 
+######
+time_threshold <- 1
+
+
 mdl_final <- bam(geo_coherence_z ~ 
                    # 1. Surviving Main Power Effects
                    # s(lastRippleV1PRE_z, k = 5) +
@@ -296,7 +412,7 @@ mdl_final <- bam(geo_coherence_z ~
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 
                  
-                 data = dat_clean, 
+                 data = dat_Time, 
                  method = "fREML", 
                  discrete = TRUE, 
                  nthreads = 4)
@@ -309,18 +425,19 @@ print(summary(mdl_final))
 ########
 ######## Normalised Match VS TimeToDOWN Match (Interaction)
 ########
+time_threshold = 1
 
 # 1. Define Parameters for Scaling
-mean_up_m   <- mean(dat_clean$NormalisedUP_Match, na.rm = TRUE)
-sd_up_m     <- sd(dat_clean$NormalisedUP_Match, na.rm = TRUE)
+mean_up_m   <- mean(dat_Time$NormalisedUP_Match, na.rm = TRUE)
+sd_up_m     <- sd(dat_Time$NormalisedUP_Match, na.rm = TRUE)
 
-mean_down_m <- mean(dat_clean$TimeToDOWN_Match, na.rm = TRUE)
-sd_down_m   <- sd(dat_clean$TimeToDOWN_Match, na.rm = TRUE)
+mean_down_m <- mean(dat_Time$TimeToDOWN_Match, na.rm = TRUE)
+sd_down_m   <- sd(dat_Time$TimeToDOWN_Match, na.rm = TRUE)
 
 # 2. Define Raw Ranges and Convert to Z
 # Note: TimeToDOWN is capped at 1s per your filter
 raw_up_seq   <- seq(0, 1, length.out = 100)
-raw_down_seq <- seq(0, 1, length.out = 100) 
+raw_down_seq <- seq(0, time_threshold, length.out = 100) 
 
 z_up_seq   <- (raw_up_seq - mean_up_m) / sd_up_m
 z_down_seq <- (raw_down_seq - mean_down_m) / sd_down_m
@@ -330,8 +447,8 @@ z_down_seq <- (raw_down_seq - mean_down_m) / sd_down_m
 pred_grid_inter <- expand.grid(
   NormalisedUP_Match_z = z_up_seq,
   TimeToDOWN_Match_z   = z_down_seq,
-  AnimalID  = dat_clean$AnimalID[1],
-  SessionID = dat_clean$SessionID[1]
+  AnimalID  = dat_Time$AnimalID[1],
+  SessionID = dat_Time$SessionID[1]
 )
 
 # 4. Extract Interaction Term
@@ -356,13 +473,16 @@ p_inter_up_down <- pred_grid_inter %>%
   scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", 
                        midpoint = 0, name = "Effect") +
   scale_x_continuous(limits = c(0, 1), expand = c(0,0)) +
-  scale_y_continuous(limits = c(0, 1), expand = c(0,0)) +
+  scale_y_continuous(limits = c(0, time_threshold), expand = c(0,0)) +
   theme_minimal(base_family = "Arial") +
   theme(aspect.ratio = 1) +
   labs(title = "Interaction: Normalised Position vs Time to DOWN", 
        subtitle = paste("Term:", term_name),
        x = "Normalised UP Match (Raw)", 
        y = "Time to DOWN Match (s)")
+
+
+print(p_inter_up_down)
 
 dev.new(noRStudioGD = TRUE); print(p_inter_up_down)
 

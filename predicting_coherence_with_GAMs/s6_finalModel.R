@@ -133,9 +133,9 @@ message("\nGenerating Final Publication Figures...")
 # my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model"
 # my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/full_model_200ms"
 # my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/simple_model"
-#my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model"
+my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model"
 
-my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model_200ms"
+#my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/predicting_coherence_with_GAMs/final_model_200ms"
 
 
 # 2. Check if it exists; if not, create it
