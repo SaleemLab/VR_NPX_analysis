@@ -559,38 +559,30 @@ event_averaging_scale = 15;
 % ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650 465];
-fig.Name = 'Left-Right combined ripple distribution around DOWN-UP transition (15 movemean without pre nan)'
-% fig.Name = 'Left-Right combined ripple distribution around DOWN-UP transition (by previous DOWN) (15 movemean)'
+fig.Name = 'Left-Right combined ripple distribution around DOWN-UP transition'
+fig.Name = 'Left-Right combined ripple distribution around DOWN-UP transition (by next DOWN) (15 movemean)'
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 
 nexttile
+event_times_DOWN = [DOWN_ints{1}; DOWN_ints{2}];
+% duration = event_times(:,2) - event_times(:,1);
+[~, event_index] = ismembertol(merged_event_info.UP_ints(:,1), event_times_DOWN(:,2), 1e-10);
 
-% %%%% By DOWN duration
-% event_times_DOWN = [DOWN_ints{1}; DOWN_ints{2}];
-% % duration = event_times(:,2) - event_times(:,1);
-% [~, event_index] = ismembertol(merged_event_info.UP_ints(:,1), event_times_DOWN(:,2), 1e-10);
-% duration = event_times_DOWN(event_index,2) - event_times_DOWN(event_index,1);
-% [~,sorted_index] = sort(duration);
-% temp_matrix = event_averaging_scale*movmean(ripple_probability(sorted_index,:),event_averaging_scale,1,'omitnan');
-% % Convert duration (in seconds) to number of bins
-% duration_in_bins = duration(sorted_index) / 0.02;
-% % Add to center point (DOWN-UP at bin 101)
-% duration_bin_position = 51 - duration_in_bins;
-
-%%%% By UP duration
-duration = event_times(:,2) - event_times(:,1);
+duration = event_times_DOWN(event_index,2) - event_times_DOWN(event_index,1);
 [~,sorted_index] = sort(duration);
 temp_matrix = event_averaging_scale*movmean(ripple_probability(sorted_index,:),event_averaging_scale,1,'omitnan');
+
 % Convert duration (in seconds) to number of bins
 duration_in_bins = duration(sorted_index) / 0.02;
+
 % Add to center point (DOWN-UP at bin 101)
-duration_bin_position = 51 + duration_in_bins;
+duration_bin_position = 51 - duration_in_bins;
 
 
-% for nevent = 1:length(temp_matrix)
-%     temp_matrix(nevent,1:round(duration_bin_position(nevent))) = nan;
-% end
+for nevent = 1:length(temp_matrix)
+    temp_matrix(nevent,1:round(duration_bin_position(nevent))) = nan;
+end
 
 h= imagesc(temp_matrix)
 set(h, 'AlphaData', ~isnan(temp_matrix));
@@ -998,7 +990,7 @@ fig = figure('Color','w');
 fig.Position = [350 59 1650 465];
 fig.Name = 'Left-Right combined ripple distribution around UP-DOWN transition'
 fig.Name = 'Left-Right combined ripple distribution around UP-DOWN transition (15 movemean)'
-fig.Name = 'Left-Right combined ripple distribution around UP-DOWN transition (15 movemean without post nan)'
+fig.Name = 'Left-Right combined ripple distribution around UP-DOWN transition (15 movemean withou)'
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 

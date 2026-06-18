@@ -36,7 +36,7 @@ probability_psth_whole = probability;
 % PSTH_MUA = UP_DOWN_ripple_PSTH_MUA;
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripple_PSTH_MUA_baseline.mat'));
 % PSTH_MUA_baseline = UP_DOWN_ripple_PSTH_MUA;
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+% load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
 % load(fullfile(analysis_folder,'periripple_LFP_info_V1.mat'));
 
@@ -70,102 +70,6 @@ end
 
 
 % load(fullfile(analysis_folder,'V1-HPC sleep interaction','MUA_PSTH_merged_thresholded.mat'),'MUA_PSTH_merged_thresholded');
-
-
-%%%%%%%%%%%%% Overlaps
-% Initialize output
-L_overlap_idx = [];
-R_overlap_idx = [];
-overlap_idx = [];
-non_overlap_idx = [];
-merged_idx = [];
-all_lags = [];
-all_overlap_idx=[];
-% for nsession = 1:max(slow_waves_all.UP_session_count)
-
-%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
-%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
-event_types = {'UP','DOWN','ripples','spindles'};
-for n = 1:4
- 
-    L_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 1);
-    R_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 2);
-    L_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(L_idx,:);
-    R_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(R_idx,:);
-
-    windows_threshold = [0.05,0.1,0.2];
-
-    for ngroup = 1:4
-
-        % Track indices into merged_event_info.UP_ints
-        ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
-        contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
-        unique_lags{ngroup} = [];
-        all_lags{ngroup} = [];
-
-        L_overlap_idx{ngroup} = [];
-        R_overlap_idx{ngroup} =[];
-        L_lags{ngroup} = [];
-        R_lags{ngroup} =[];
-        lags = [];
-
-        all_overlap_idx{ngroup} = [];
-        overlap_idx{ngroup} = [];
-        non_overlap_idx{ngroup} = [];
-
-        for iL = 1:size(L_ints,1)
-            % Get current L interval
-
-            L_start = L_ints(iL,1);
-            if ngroup == 4
-                L_end   = L_ints(iL,2);
-            else
-                L_end   = L_ints(iL,1)+windows_threshold(ngroup);
-            end
-            % Check overlap with all R intervals
-            if ngroup == 4
-                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
-            else
-                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
-            end
-
-            if any(is_overlap)
-                overlapping_R = find(is_overlap);
-
-                for j = 1:length(overlapping_R)
-                    iR = overlapping_R(j);
-
-                    % Store overlapping pair indices
-                    L_overlap_idx{ngroup}(end+1) = L_idx(iL);
-                    R_overlap_idx{ngroup}(end+1) = R_idx(iR);
-                    L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
-                    R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
-
-                end
-            end
-        end
-
-        % Unique overlap winners
-        lags = [L_lags{ngroup} R_lags{ngroup}];
-        all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
-        [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
-        % unique_overlap_idx{ngroup} = lags(index);
-        all_lags{ngroup} = lags;
-
-        % Non-overlapping L and R
-        nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
-        nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
-
-        non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
-    end
-
-
-    merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})) = all_overlap_idx;
-    % (sprintf('%s_lags_all',event_types{n}))
-    merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})) = non_overlap_idx;
-    merged_event_info. (sprintf('%s_overlap_idx',event_types{n})) = overlap_idx;
-    merged_event_info.(sprintf('%s_lags_all',event_types{n})) = all_lags;
-end
 
 
 %% Ripples and spindles features and UP DOWN features during UP/DOWN
@@ -246,6 +150,7 @@ for nprobe = 1:2
     end
 end
 
+
 %%%%% Ripple info (combined)
 
 UP_ints=[];
@@ -260,7 +165,7 @@ for nprobe = 1:2
     UP_ints{nprobe}=slow_waves_all(nprobe).UP_ints;
     DOWN_ints{nprobe}=slow_waves_all(nprobe).DOWN_ints;
     SO_ints{nprobe} = slow_waves_all(nprobe).DOWN_intervals;
-    ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes;
+    ripple_peaktimes{nprobe}=ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
     ripple_ints{nprobe}=[ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1) ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
     % spindle_peaktimes{nprobe}=spindles_all(nprobe).peaktimes(spindles_all(nprobe).SWS_index == 1);
     % spindle_ints{nprobe}=[spindles_all(nprobe).onset(spindles_all(nprobe).SWS_index == 1) spindles_all(nprobe).offset(spindles_all(nprobe).SWS_index == 1)];
@@ -281,6 +186,7 @@ for nprobe = 1:2
 
         % [C,ia,ib] = intersect(find(spindles_all(nprobe).session_count == sessions_to_process(nsession)),find(spindles_all(nprobe).SWS_index == 1));
         % spindle_ints{nprobe}(ib,:) = spindle_ints{nprobe}(ib,:) + nsession * 1000000;
+
     end
 
     nUP = length(UP_ints{nprobe});
@@ -299,6 +205,113 @@ for nprobe = 1:2
     [is_next, next_down_idx{nprobe}] = ismembertol(UP_ints{nprobe}(:,2), DOWN_ints{nprobe}(:,1), 1e-10);
     next_down_idx{nprobe}(~is_next) = nan; % Set zeros to NaN
 end
+
+
+merged_event_info.UP_ints = [UP_ints{1}(probability_psth_whole(1).UP_all_index,:); UP_ints{2}(probability_psth_whole(2).UP_all_index,:)];
+merged_event_info.DOWN_ints = [DOWN_ints{1}(probability_psth_whole(1).DOWN_all_index,:); DOWN_ints{2}(probability_psth_whole(2).DOWN_all_index,:)];
+
+merged_event_info.UP_hemisphere_id = [ones(length(probability_psth_whole(1).UP_all_index),1); 2*ones(length(probability_psth_whole(2).UP_all_index),1)];
+merged_event_info.DOWN_hemisphere_id = [ones(length(probability_psth_whole(1).DOWN_all_index),1); 2*ones(length(probability_psth_whole(2).DOWN_all_index),1)];
+
+merged_event_info.ripples_peaktimes = [ripple_peaktimes{1}; ripple_peaktimes{2}];
+merged_event_info.ripples_ints = [ripple_ints{1}; ripple_ints{2}];
+merged_event_info.ripples_hemisphere_id = [ones(length(ripple_peaktimes{1}),1); 2*ones(length(ripple_peaktimes{2}),1)];
+
+%%%%%%%%%%%%% Overlaps
+% Initialize output
+L_overlap_idx = [];
+R_overlap_idx = [];
+overlap_idx = [];
+non_overlap_idx = [];
+merged_idx = [];
+all_lags = [];
+all_overlap_idx=[];
+% for nsession = 1:max(slow_waves_all.UP_session_count)
+
+%     L_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 1 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+%     R_ints = merged_event_info.UP_ints((merged_event_info.UP_ints(:,1) - nsession * 1000000) > 0 &merged_event_info.UP_hemisphere_id == 2 & (merged_event_info.UP_ints(:,1) - nsession * 1000000) < 1000000,:);
+event_types = {'UP','DOWN'};
+for n = 1:2
+ 
+    L_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 1);
+    R_idx = find(merged_event_info.(sprintf('%s_hemisphere_id',event_types{n})) == 2);
+    L_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(L_idx,:);
+    R_ints = merged_event_info.(sprintf('%s_ints',event_types{n}))(R_idx,:);
+
+    windows_threshold = [0.05,0.1,0.2];
+
+    for ngroup = 1:4
+
+        % Track indices into merged_event_info.UP_ints
+        ipsi_overlap_idx{ngroup} = [];     % leading events involved in overlaps
+        contra_overlap_idx{ngroup} = [];     % lagging events involved in overlaps
+        unique_lags{ngroup} = [];
+        all_lags{ngroup} = [];
+
+        L_overlap_idx{ngroup} = [];
+        R_overlap_idx{ngroup} =[];
+        L_lags{ngroup} = [];
+        R_lags{ngroup} =[];
+        lags = [];
+
+        all_overlap_idx{ngroup} = [];
+        overlap_idx{ngroup} = [];
+        non_overlap_idx{ngroup} = [];
+
+        for iL = 1:size(L_ints,1)
+            % Get current L interval
+
+            L_start = L_ints(iL,1);
+            if ngroup == 4
+                L_end   = L_ints(iL,2);
+            else
+                L_end   = L_ints(iL,1)+windows_threshold(ngroup);
+            end
+            % Check overlap with all R intervals
+            if ngroup == 4
+                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,2) >= L_start);
+            else
+                is_overlap = (R_ints(:,1) <= L_end) & (R_ints(:,1)+windows_threshold(ngroup) >= L_start);
+            end
+
+            if any(is_overlap)
+                overlapping_R = find(is_overlap);
+
+                for j = 1:length(overlapping_R)
+                    iR = overlapping_R(j);
+
+                    % Store overlapping pair indices
+                    L_overlap_idx{ngroup}(end+1) = L_idx(iL);
+                    R_overlap_idx{ngroup}(end+1) = R_idx(iR);
+                    L_lags{ngroup}(end+1) = L_ints(iL,1) - R_ints(iR,1);
+                    R_lags{ngroup}(end+1) = R_ints(iR,1) - L_ints(iL,1) ;
+
+                end
+            end
+        end
+
+        % Unique overlap winners
+        lags = [L_lags{ngroup} R_lags{ngroup}];
+        all_overlap_idx{ngroup} = [L_overlap_idx{ngroup} R_overlap_idx{ngroup}];
+        [overlap_idx{ngroup},~] = unique(all_overlap_idx{ngroup});
+        % unique_overlap_idx{ngroup} = lags(index);
+        all_lags{ngroup} = lags;
+
+        % Non-overlapping L and R
+        nonoverlap_L_idx = setdiff(L_idx, unique(L_overlap_idx{ngroup}));
+        nonoverlap_R_idx = setdiff(R_idx, unique(R_overlap_idx{ngroup}));
+
+        non_overlap_idx{ngroup} = unique([nonoverlap_L_idx; nonoverlap_R_idx]);
+    end
+
+
+    merged_event_info.(sprintf('%s_overlap_idx_all',event_types{n})) = all_overlap_idx;
+    % (sprintf('%s_lags_all',event_types{n}))
+    merged_event_info.(sprintf('%s_non_overlap_idx',event_types{n})) = non_overlap_idx;
+    merged_event_info. (sprintf('%s_overlap_idx',event_types{n})) = overlap_idx;
+    merged_event_info.(sprintf('%s_lags_all',event_types{n})) = all_lags;
+end
+
 
 ripples_peaktimes =  merged_event_info.ripples_peaktimes;
 ripples_times =  merged_event_info.ripples_ints;
@@ -861,6 +874,9 @@ load(fullfile(analysis_folder,'V1-HPC sleep interaction','SO_ripples_probability
 probability_psth_whole_baseline = probability;
 
 load(fullfile(analysis_folder,'V1-HPC sleep reactivation','UP_DOWN_info.mat'),'UP_DOWN_info');
+
+load(fullfile(analysis_folder,'slow_waves_all_POST.mat'))
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 
 %%%%% UP info
 event_times = merged_event_info.UP_ints;
@@ -1884,6 +1900,8 @@ firstRippleNormalisedUP(firstRippleNormalisedUP>1) = 1;
 lastRippleNormalisedUP(lastRippleNormalisedUP<0) = 0;
 firstRippleNormalisedUP(firstRippleNormalisedUP<0) = 0;
 
+UP_DOWN_info.time_from_last_ripple_to_next_UP = UP_DOWN_info.next_DOWN_duration + UP_DOWN_info.time_from_last_ripples_UP'; % Time from last ripple to next UP start
+
 % 2. Construct the table (transposing 1xN fields to be column vectors)
 % Force everything into column vectors using (:)
 % 2. Construct the table (transposing 1xN fields to be column vectors)
@@ -1892,6 +1910,7 @@ tbl = table(...
     UP_DOWN_info.time_from_first_ripples_UP(:), ...
     UP_DOWN_info.time_to_last_ripples_UP(:), ...
     UP_DOWN_info.time_from_last_ripples_UP(:), ...
+    UP_DOWN_info.time_from_last_ripple_to_next_UP(:), ...
     V1_direction(:), ... 
     UP_DOWN_info.first_ripples_power_UP(:), ...
     UP_DOWN_info.last_ripples_power_UP(:), ...
@@ -1923,7 +1942,7 @@ tbl = table(...
     UP_DOWN_info.subject_id(:), ...               
     UP_DOWN_info.session_id(:), ...               
     'VariableNames', { ...
-    'TimeToFirstRipple', 'TimefromFirstRipple', 'TimeToLastRipple', 'TimefromLastRipple', ...
+    'TimeToFirstRipple', 'TimefromFirstRipple', 'TimeToLastRipple', 'TimefromLastRipple','TimetoNextUP', ...
     'V1Track', 'firstRipplePower', 'lastRipplePower', ...
     'nextUPV1', 'earlyUPV1', 'lateUPV1', 'previousUPV1', ...
     'firstRippleV1', 'firstRippleV1PRE', 'lastRippleV1', 'lastRippleV1PRE', ...

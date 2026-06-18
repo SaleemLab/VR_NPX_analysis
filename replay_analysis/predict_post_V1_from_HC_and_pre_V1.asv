@@ -8,6 +8,7 @@ function predict_post_V1_from_HC_and_pre_V1(KDE_reactivation_ripples_PSTH,ripple
 % window_V1_pre  = [-0.12, -0.02];
 % window_HC      = [0.02,   0.12];
 % window_V1_post = [0.02,   0.12];
+
 window_V1_pre  = [-0.1, 0];
 window_HC      = [0,   0.1];
 window_V1_post = [0,   0.1];
@@ -28,11 +29,13 @@ if isempty(KDE_reactivation_ripples_PSTH)
 
         disp('Loading ripple_info data...');
         load(fullfile(analysis_folder,'V1-HPC sleep reactivation','ripple_info.mat'),'ripple_info');
-        load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
+        
     catch
         warning('Could not load KDE_reactivation_ripples_PSTH.mat or ripple_info.mat. Please verify analysis_folder.');
     end
 end
+
+load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 % Extract PSTH matrices (Events x Time)
 timebin = 0.01;
 time_windows = [-1 1];
@@ -94,20 +97,32 @@ V1_post = mean(z_bias_V1(:, idx_V1_post), 2, 'omitnan');
 %     0:0.01:2,0:0.01:2)
 
 
-% --- 1. Calculate Relative Timing ---
-% Initialize arrays
-ripple_info.TimeFromUP = nan(num_events, 2);
-ripple_info.TimeToDOWN = nan(num_events, 2);
-ripple_info.UPDuration = nan(num_events, 2);
-ripple_info.NormalisedUP = nan(num_events, 2);
+% --- 1. Calculate Relative Timing & Event Mapping ---
+num_events = numel(ripple_info.event_id);
 
-ripple_info.TimeFromDOWN = nan(num_events, 2);
-ripple_info.TimeToUP = nan(num_events, 2);
-ripple_info.DOWNDuration = nan(num_events, 2);
+% Initialize existing arrays
+ripple_info.TimeFromUP     = nan(num_events, 2);
+ripple_info.TimeToDOWN     = nan(num_events, 2);
+ripple_info.UPDuration     = nan(num_events, 2);
+ripple_info.NormalisedUP   = nan(num_events, 2);
+ripple_info.TimeFromDOWN   = nan(num_events, 2);
+ripple_info.TimeToUP       = nan(num_events, 2);
+ripple_info.DOWNDuration   = nan(num_events, 2);
 ripple_info.NormalisedDOWN = nan(num_events, 2);
 
-% Use the shifted peaktimes from merged_event_info
-% (Assuming these peaks align with the session-shifted UP_ints)
+% NEW Arrays: Track Next UP, Event IDs, Sequence Counts, and Positions
+ripple_info.TimeToNextUP   = nan(num_events, 2);
+ripple_info.UP_Event_GlobalID  = nan(num_events, 2); % Unique Group ID for matching L/R
+ripple_info.DOWN_Event_GlobalID = nan(num_events, 2);
+
+ripple_info.RippleCountInUP    = zeros(num_events, 2);
+ripple_info.IsFirstInUP        = false(num_events, 2);
+ripple_info.IsLastInUP         = false(num_events, 2);
+
+ripple_info.RippleCountInDOWN  = zeros(num_events, 2);
+ripple_info.IsFirstInDOWN      = false(num_events, 2);
+ripple_info.IsLastInDOWN       = false(num_events, 2);
+
 ripple_peaks = merged_event_info.ripples_peaktimes(ripple_info.event_id);
 
 for nprobe = 1:2
@@ -115,60 +130,164 @@ for nprobe = 1:2
     current_UPs = merged_event_info.UP_ints(merged_event_info.UP_hemisphere_id == nprobe, :);
     up_starts = current_UPs(:,1);
     up_ends   = current_UPs(:,2);
-
+    
     % --- DOWN States ---
     current_DOWNs = merged_event_info.DOWN_ints(merged_event_info.DOWN_hemisphere_id == nprobe, :);
     down_starts = current_DOWNs(:,1);
     down_ends   = current_DOWNs(:,2);
-
-    % Pre-allocate indices for this probe
-    % We want to find which row 'k' in current_UPs contains each ripple
+    
+    % Temporary trackers to match ripple index to its UP/DOWN block index
+    assigned_up_idx   = nan(num_events, 1);
+    assigned_down_idx = nan(num_events, 1);
+    
     for i = 1:numel(ripple_peaks)
         cp = ripple_peaks(i);
-
-        % Check UP Intervals
+        
+        % --- Check UP Intervals ---
         idx_up = find(cp >= up_starts & cp <= up_ends, 1);
         if ~isempty(idx_up)
             dur = up_ends(idx_up) - up_starts(idx_up);
-            ripple_info.TimeFromUP(i, nprobe) = cp - up_starts(idx_up);
-            ripple_info.TimeToUP(i, nprobe)     = up_ends(idx_up) - cp;
-            ripple_info.UPDuration(i, nprobe)       = dur;
-            ripple_info.NormalisedUP(i, nprobe)  = (cp - up_starts(idx_up)) / dur;
+            ripple_info.TimeFromUP(i, nprobe)   = cp - up_starts(idx_up);
+            ripple_info.TimeToDOWN(i, nprobe)   = up_ends(idx_up) - cp;
+            ripple_info.UPDuration(i, nprobe)   = dur;
+            ripple_info.NormalisedUP(i, nprobe) = (cp - up_starts(idx_up)) / dur;
+            
+            assigned_up_idx(i) = idx_up; 
+            % Create a globally unique ID combining probe side and row index
+            ripple_info.UP_Event_GlobalID(i, nprobe) = nprobe * 1000000 + idx_up;
+            
+            % NEW: Time to Next UP from current UP
+            % Find the very next UP state that starts after this one ends
+            next_up_idx = find(up_starts > up_ends(idx_up), 1);
+            if ~isempty(next_up_idx)
+                ripple_info.TimeToNextUP(i, nprobe) = up_starts(next_up_idx) - cp;
+            end
         end
-
-        % Check DOWN Intervals
+        
+        % --- Check DOWN Intervals ---
         idx_down = find(cp >= down_starts & cp <= down_ends, 1);
         if ~isempty(idx_down)
             dur_d = down_ends(idx_down) - down_starts(idx_down);
-            ripple_info.timeFromDOWN(i, nprobe) = cp - down_starts(idx_down);
-            ripple_info.TimeToUP(i, nprobe)     = down_ends(idx_down) - cp;
-            ripple_info.DOWNDuration(i, nprobe)       = dur_d;
-            ripple_info.NormalisedDOWN(i, nprobe)  = (cp - down_starts(idx_down)) / dur_d;
+            ripple_info.TimeFromDOWN(i, nprobe)   = cp - down_starts(idx_down);
+            ripple_info.TimeToUP(i, nprobe)       = down_ends(idx_down) - cp;
+            ripple_info.DOWNDuration(i, nprobe)   = dur_d;
+            ripple_info.NormalisedDOWN(i, nprobe) = (cp - down_starts(idx_down)) / dur_d;
+            
+            assigned_down_idx(i) = idx_down;
+            ripple_info.DOWN_Event_GlobalID(i, nprobe) = nprobe * 1000000 + idx_down;
+            
+            % NEW: Time to Next UP from current DOWN (simply the end of this DOWN)
+            ripple_info.TimeToNextUP(i, nprobe) = down_ends(idx_down) - cp;
+        end
+    end
+    
+    % --- Determine Sequence Stats (Counts, First, Last) per Event Window ---
+    % Process UP sequences
+    unique_ups = unique(assigned_up_idx(~isnan(assigned_up_idx)));
+    for u = 1:numel(unique_ups)
+        ev_idx = unique_ups(u);
+        rip_indices = find(assigned_up_idx == ev_idx);
+        
+        % Sort by peak times to ensure correct sequence processing
+        [~, sort_order] = sort(ripple_peaks(rip_indices));
+        sorted_rip_indices = rip_indices(sort_order);
+        
+        total_rips = numel(sorted_rip_indices);
+        ripple_info.RippleCountInUP(sorted_rip_indices, nprobe) = total_rips;
+        
+        if total_rips > 0
+            ripple_info.IsFirstInUP(sorted_rip_indices(1), nprobe) = true;
+            ripple_info.IsLastInUP(sorted_rip_indices(end), nprobe) = true;
+        end
+    end
+    
+    % Process DOWN sequences
+    unique_downs = unique(assigned_down_idx(~isnan(assigned_down_idx)));
+    for d = 1:numel(unique_downs)
+        ev_idx = unique_downs(d);
+        rip_indices = find(assigned_down_idx == ev_idx);
+        
+        [~, sort_order] = sort(ripple_peaks(rip_indices));
+        sorted_rip_indices = rip_indices(sort_order);
+        
+        total_rips = numel(sorted_rip_indices);
+        ripple_info.RippleCountInDOWN(sorted_rip_indices, nprobe) = total_rips;
+        
+        if total_rips > 0
+            ripple_info.IsFirstInDOWN(sorted_rip_indices(1), nprobe) = true;
+            ripple_info.IsLastInDOWN(sorted_rip_indices(end), nprobe) = true;
         end
     end
 end
 
-% --- Create the Table ---
-% Including the requested fields: HC_pre and UP durations
-% --- Create the Table ---
+% Bounding Normalized Values
+ripple_info.NormalisedUP(ripple_info.NormalisedUP < 0) = 0;
+ripple_info.NormalisedUP(ripple_info.NormalisedUP > 1) = 1;
+ripple_info.NormalisedDOWN(ripple_info.NormalisedDOWN < 0) = 0;
+ripple_info.NormalisedDOWN(ripple_info.NormalisedDOWN > 1) = 1;
+
+
+% --- 2. Create the Table ---
 tbl = table(ripple_info.ripple_power(UP_ripples), ...
-            V1_pre(UP_ripples), ...
-            HC_pre(UP_ripples), ...
-            HC_bias(UP_ripples), ...
-            V1_post(UP_ripples), ...
-            ripple_info.normalised_UP_duration(UP_ripples, 1), ...
-            ripple_info.normalised_UP_duration(UP_ripples, 2), ...
-            ripple_info.spindle_amplitude(UP_ripples, 1), ...
-            ripple_info.spindle_amplitude(UP_ripples, 2), ...
-            ripple_info.spindle_presence(UP_ripples, 1), ... 
-            ripple_info.spindle_presence(UP_ripples, 2), ... 
-            subj_id(UP_ripples), ...
-            sess_id(UP_ripples), ...
-    'VariableNames', {'ripple_power', 'V1_pre', 'HC_pre', 'HC_post', 'V1_post', ...
-                      'NormalisedUP_L', 'NormalisedUP_R', ...
-                      'SpindlePower_L', 'SpindlePower_R', ...
-                      'Spindle_L', 'Spindle_R', ...
-                      'AnimalID', 'SessionID'});
+            V1_pre(UP_ripples), HC_pre(UP_ripples), HC_bias(UP_ripples), V1_post(UP_ripples), ...
+            ... % Left Hemisphere Timing & Context Data
+            ripple_info.TimeFromUP(UP_ripples, 1), ...
+            ripple_info.TimeToDOWN(UP_ripples, 1), ...
+            ripple_info.UPDuration(UP_ripples, 1), ...
+            ripple_info.NormalisedUP(UP_ripples, 1), ...
+            ripple_info.TimeFromDOWN(UP_ripples, 1), ...
+            ripple_info.TimeToUP(UP_ripples, 1), ...
+            ripple_info.DOWNDuration(UP_ripples, 1), ...
+            ripple_info.NormalisedDOWN(UP_ripples, 1), ...
+            ripple_info.TimeToNextUP(UP_ripples, 1), ...
+            ripple_info.UP_Event_GlobalID(UP_ripples, 1), ...
+            ripple_info.DOWN_Event_GlobalID(UP_ripples, 1), ...
+            ripple_info.RippleCountInUP(UP_ripples, 1), ...
+            ripple_info.IsFirstInUP(UP_ripples, 1), ...
+            ripple_info.IsLastInUP(UP_ripples, 1), ...
+            ripple_info.RippleCountInDOWN(UP_ripples, 1), ...
+            ripple_info.IsFirstInDOWN(UP_ripples, 1), ...
+            ripple_info.IsLastInDOWN(UP_ripples, 1), ...
+            ... % Right Hemisphere Timing & Context Data
+            ripple_info.TimeFromUP(UP_ripples, 2), ...
+            ripple_info.TimeToDOWN(UP_ripples, 2), ...
+            ripple_info.UPDuration(UP_ripples, 2), ...
+            ripple_info.NormalisedUP(UP_ripples, 2), ...
+            ripple_info.TimeFromDOWN(UP_ripples, 2), ...
+            ripple_info.TimeToUP(UP_ripples, 2), ...
+            ripple_info.DOWNDuration(UP_ripples, 2), ...
+            ripple_info.NormalisedDOWN(UP_ripples, 2), ...
+            ripple_info.TimeToNextUP(UP_ripples, 2), ...
+            ripple_info.UP_Event_GlobalID(UP_ripples, 2), ...
+            ripple_info.DOWN_Event_GlobalID(UP_ripples, 2), ...
+            ripple_info.RippleCountInUP(UP_ripples, 2), ...
+            ripple_info.IsFirstInUP(UP_ripples, 2), ...
+            ripple_info.IsLastInUP(UP_ripples, 2), ...
+            ripple_info.RippleCountInDOWN(UP_ripples, 2), ...
+            ripple_info.IsFirstInDOWN(UP_ripples, 2), ...
+            ripple_info.IsLastInDOWN(UP_ripples, 2), ...
+            ... % Spindles and IDs
+            ripple_info.spindle_amplitude(UP_ripples, 1), ripple_info.spindle_amplitude(UP_ripples, 2), ...
+            ripple_info.spindle_presence(UP_ripples, 1), ripple_info.spindle_presence(UP_ripples, 2), ...
+            subj_id(UP_ripples), sess_id(UP_ripples), ...
+    'VariableNames', { ...
+            'ripple_power', 'V1_pre', 'HC_pre', 'HC_post', 'V1_post', ...
+            ... % Left Side Column Headers
+            'TimeFromUP_L', 'TimeToDOWN_L', 'UPDuration_L', 'NormalisedUP_L', ...
+            'TimeFromDOWN_L', 'TimeToUP_L', 'DOWNDuration_L', 'NormalisedDOWN_L', ...
+            'TimeToNextUP_L', 'UP_Event_GlobalID_L', 'DOWN_Event_GlobalID_L', ...
+            'RippleCountInUP_L', 'IsFirstInUP_L', 'IsLastInUP_L', ...
+            'RippleCountInDOWN_L', 'IsFirstInDOWN_L', 'IsLastInDOWN_L', ...
+            ... % Right Side Column Headers
+            'TimeFromUP_R', 'TimeToDOWN_R', 'UPDuration_R', 'NormalisedUP_R', ...
+            'TimeFromDOWN_R', 'TimeToUP_R', 'DOWNDuration_R', 'NormalisedDOWN_R', ...
+            'TimeToNextUP_R', 'UP_Event_GlobalID_R', 'DOWN_Event_GlobalID_R', ...
+            'RippleCountInUP_R', 'IsFirstInUP_R', 'IsLastInUP_R', ...
+            'RippleCountInDOWN_R', 'IsFirstInDOWN_R', 'IsLastInDOWN_R', ...
+            ... % Identifiers
+            'SpindlePower_L', 'SpindlePower_R', ...
+            'Spindle_L', 'Spindle_R', ...
+            'AnimalID', 'SessionID'});
 % 
 % --- Save as CSV ---
 output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple.csv');

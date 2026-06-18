@@ -621,7 +621,7 @@ if plot_option == 1
     % SCATTER: contra
     nexttile
   
-    % BAR PLOT: t-stats
+    % BAR PLOT: b
     nexttile
     barColors = [0,90,50; 74,20,134]/256;
     x_pos = [1 2];
