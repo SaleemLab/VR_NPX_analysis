@@ -57,8 +57,8 @@ mdl_final <- bam(Event_Coherence_Post_GeoMean ~
                    # 1. Surviving Main Power Effects
                    s(RipplePower_Z, k = 5) + 
                    s(SpindlePower_Match_Z, k = 5) + 
-                   s(SpindlePower_NonMatch_Z, k = 5) + 
-                   ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
+                   # s(SpindlePower_NonMatch_Z, k = 5) + 
+                   #ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
                    #te(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = c(5, 5))+
                  
                    # 2. The Baseline Phase Landscape (Synergy)
@@ -68,9 +68,9 @@ mdl_final <- bam(Event_Coherence_Post_GeoMean ~
                    s(SOPhase_NonMatch, bs = "cc", k = 8) + 
                    
                    # 3. The Winning Interaction (Local Ripple Gate)
-                   ti(RipplePower_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
-                   ti(SpindlePower_Match_Z, RipplePower_Z, bs = c("tp", "tp"), k = c(5, 5)) + 
+                   #ti(RipplePower_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
+                   #ti(SpindlePower_Match_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) + 
+                   #ti(SpindlePower_Match_Z, RipplePower_Z, bs = c("tp", "tp"), k = c(5, 5)) + 
                    
                   
                    # 4. Control Term
@@ -447,9 +447,11 @@ formula_terms <- c(
   "s(RipplePower_Z, k = 5)", 
   "s(SpindlePower_Match_Z, k = 5)", 
   "s(SpindlePower_NonMatch_Z, k = 5)", 
-  "ti(RipplePower_Z, SOPhase_Match, bs = c('tp', 'cc'), k = c(5, 8))", 
-  "ti(SpindlePower_Match_Z, SOPhase_Match, bs = c('tp', 'cc'), k = c(5, 8))", 
-  "te(SOPhase_Match, SOPhase_NonMatch, bs = 'cc', k = 8)"
+  # "ti(RipplePower_Z, SOPhase_Match, bs = c('tp', 'cc'), k = c(5, 8))", 
+  # "ti(SpindlePower_Match_Z, SOPhase_Match, bs = c('tp', 'cc'), k = c(5, 8))", 
+  "s(SOPhase_Match, bs = 'cc', k = 8)",
+  "s(SOPhase_NonMatch, bs = 'cc', k = 8)",
+  "ti(SOPhase_Match, SOPhase_NonMatch, bs = 'cc', k = 8)"
 )
 
 # EXACT labels output by summary() and smooth_estimates()
@@ -457,9 +459,12 @@ smooth_labels <- c(
   "s(RipplePower_Z)", 
   "s(SpindlePower_Match_Z)", 
   "s(SpindlePower_NonMatch_Z)", 
-  "ti(RipplePower_Z, SOPhase_Match", 
-  "ti(SpindlePower_Match_Z, SOPhase_Match", 
-  "te(SOPhase_Match,SOPhase_NonMatch)"
+  # "ti(RipplePower_Z, SOPhase_Match", 
+  # "ti(SpindlePower_Match_Z, SOPhase_Match", 
+  # "te(SOPhase_Match,SOPhase_NonMatch)"
+  "s(SOPhase_Match)",
+  "s(SOPhase_NonMatch)",
+  "ti(SOPhase_Match,SOPhase_NonMatch)"
 )
 
 # Initialize results dataframe

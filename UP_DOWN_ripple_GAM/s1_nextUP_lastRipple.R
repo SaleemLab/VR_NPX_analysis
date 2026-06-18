@@ -136,11 +136,12 @@ z_thresh <- 3.5  # include <99.9th centiles of data
 
 # List of the new Z-score columns to filter (Updated to include all relevant ripple predictors)
 z_cols <- c(
-  "lastRippleV1_z", "lastRippleV1PRE_z",
-  "lastRippleHPC_z", "lastRippleHPCPRE_z",
-  "nextUPV1_z"
-  # "firstRippleV1_z", "firstRippleV1PRE_z",
-  # "firstRippleHPC_z", "firstRippleHPCPRE_z"
+  #"lastRippleV1_z", "lastRippleV1PRE_z", 
+  #"lastRippleHPC_z", "lastRippleHPCPRE_z",
+  "nextUPV1_z", "earlyUPV1_z", "lateUPV1_z", "previousUPV1_z",
+  #"firstRippleV1_z", "firstRippleV1PRE_z",
+  "nextUPHPC_z", "earlyUPHPC_z", "lateUPHPC_z", "previousUPHPC_z",
+  #"firstRippleHPC_z", "firstRippleHPCPRE_z"
 )
 
 message(sprintf("Trimming extreme outliers beyond +/- %s Z-scores for %d variables...", z_thresh, length(z_cols)))
@@ -216,6 +217,34 @@ print(summary(mdl_final))
 
 
 ######
+######
+
+library(mgcv)
+library(mgcViz)
+# Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
+mdl_next <- bam(nextUPV1_z ~ 
+                      # s(HC_post_z,k = 5) +
+                      # s(V1_pre_z, k = 5) +
+                      te(lateUPV1_z, lateUPHPC_z, k = c(5,5)) +
+                      s(AnimalID, bs = "re")+
+                      s(SessionID, bs = "re"), 
+                    data = dat_clean, method = "fREML", discrete = TRUE)
+print(summary(mdl_next))
+
+
+
+# Convert to an mgcViz object and plot
+viz <- getViz(mdl_next)
+plot(sm(viz, 1)) + 
+  l_fitRaster() + 
+  l_fitContour() + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+  labs(title = "Post V1 Bias as a function of Pre-V1 Bias and HC",
+       x = "Pre-V1 Track Bias", y = "HC Track bias")
+
+
+
+######
 ###### lateUP HC predicts nextUP V1
 ######
 
@@ -225,12 +254,10 @@ z_thresh <- 3.5  # include <99.9th centiles of data
 z_cols <- c(
   # "lastRippleV1_z", "lastRippleV1PRE_z", 
   # "lastRippleHPC_z", "lastRippleHPCPRE_z",
-  # "nextUPV1_z", "earlyUPV1_z", "lateUPV1_z", "previousUPV1_z",
+  "nextUPV1_z", "earlyUPV1_z", "lateUPV1_z", "previousUPV1_z",
   # "firstRippleV1_z", "firstRippleV1PRE_z",
-  # "lateUPHPC_z", "previousUPHPC_z"
+  "nextUPHPC_z", "earlyUPHPC_z", "lateUPHPC_z", "previousUPHPC_z"
   # "firstRippleHPC_z", "firstRippleHPCPRE_z"
-  
-  "lateUPHPC_z","lateUPV1_z"
 )
 dat_clean1 <- dat_clean %>%
   filter(
@@ -267,7 +294,6 @@ dat_lateUP_NoRipple1 <- dat_lateUP_NoRipple %>%
   )
 
 
-
 mdl_final <- bam(nextUPV1_z ~ 
                    # 1. Surviving Main Power Effects
                    s(lateUPHPC_z, k = 5) +
@@ -277,14 +303,13 @@ mdl_final <- bam(nextUPV1_z ~
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 
                  
-                 data = dat_lateUP_NoRipple1 , 
+                 data = dat_lateUP_NoRipple1  , 
                  method = "fREML", 
                  discrete = TRUE, 
                  nthreads = 4)
 
 #message("\n--- FINAL MODEL SUMMARY ---")
 print(summary(mdl_final))
-
 
 
 
@@ -334,6 +359,8 @@ mdl_final <- bam(nextUPV1_z ~
 print(summary(mdl_final))
 
 
+
+
 ### HC bias
 # Calculate scaling factors
 raw_breaks <- c(-2,-1,0,1,2)
@@ -354,28 +381,49 @@ p_HC_raw <- draw(mdl_final, select = "s(lateUPHPC_z)", residuals = FALSE, rug = 
 dev.new(noRStudioGD = TRUE)
 print(p_HC_raw)
 
-# 
-# library(mgcv)
-# library(mgcViz)
-# # Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
-# mdl_next <- bam(nextUPV1_z ~ 
-#                       # s(HC_post_z,k = 5) +
-#                       # s(V1_pre_z, k = 5) +
-#                       te(lateUPV1_z, lateUPHPC_z, k = c(5,5)) +
-#                       s(AnimalID, bs = "re")+
-#                       s(SessionID, bs = "re"), 
-#                     data = dat_Ripple1, method = "fREML", discrete = TRUE)
-# 
-# print(summary(mdl_next))
-# 
-# 
-# 
-# # Convert to an mgcViz object and plot
-# viz <- getViz(mdl_next)
-# plot(sm(viz, 1)) + 
-#   l_fitRaster() + 
-#   l_fitContour() + 
-#   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-#   labs(title = "Next V1 Bias as a function of late V1 Bias and late HC Bias",
-#        x = "Late V1 Track Bias", y = "Late HC Track bias")
 
+
+######
+###### lateUP nextUP coherence
+######
+
+mdl_final <- bam(geo_coherenceNext_z ~ 
+                   # 1. Surviving Main Power Effects
+                   # s(UPDuration_z, k = 5) +
+                   #s(lastRippleNormalisedUP_z, k = 5) +
+                   s(TimefromLastRipple_z, k = 5) +
+                   
+                   # 4. Control Term
+                   s(AnimalID, bs = "re") +
+                   s(SessionID, bs = "re"), 
+                 
+                 data = dat_clean  , 
+                 method = "fREML", 
+                 discrete = TRUE, 
+                 nthreads = 4)
+
+#message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_final))
+
+
+
+### Normalised duration UP
+
+# Calculate scaling factors
+raw_breaks <- c(0, 0.25, 0.5,0.75,1)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean$NormalisedUP_NonMatch_z[which.min(abs(dat_clean$NormalisedUP_NonMatch - val))]
+})
+
+# cairo_pdf("ripple_power_post_z_raw.pdf", width = 4.3, height = 4.3)
+p_norm_nonmatch <- draw(mdl_1, select = "s(NormalisedUP_NonMatch_z)", residuals = FALSE, rug = FALSE) +
+  theme_bw(base_family = "Arial") +
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  labs(
+    title = "NormalisedUP_NonMatch and Coherence",
+    x = "lastRippleNormalisedUP",
+    y = "Partial Effect"
+  )
+
+print(p_norm_nonmatch)

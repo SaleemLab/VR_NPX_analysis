@@ -89,7 +89,7 @@ mdl_final <- bam(Event_Coherence_Post_GeoMean ~
                    # 1. Surviving Main Power Effects
                    s(RipplePower_Z, k = 5) + 
                    s(SpindlePower_Match_Z, k = 5) + 
-                   s(SpindlePower_NonMatch_Z, k = 5) +
+                   # s(SpindlePower_NonMatch_Z, k = 5) +
                    #ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
                    #te(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = c(5, 5))+
                  

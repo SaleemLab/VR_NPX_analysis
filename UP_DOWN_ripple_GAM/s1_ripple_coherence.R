@@ -25,6 +25,8 @@ dat$AnimalID <- as.factor(dat$AnimalID)
 
 
 # 2. Create the Match/NonMatch variables
+dat$V1_mean <- rowMeans(dat[, c("V1_pre", "V1_post")], na.rm = TRUE)
+
 dat <- dat %>%
   mutate(
     # Determine the side V1 is biased toward
@@ -70,6 +72,34 @@ dat <- dat %>%
   select(-TargetSide)
 
 
+# Get UP DOWN normalised duration combined 
+library(dplyr)
+
+# Double check what your match/non-match column is actually called!
+# colnames(dat_clean) 
+
+dat <- dat %>%
+  mutate(
+    # 1. Create the separate MATCH lifecycle column (0 to 2)
+    NormalisedUPDOWN_Match = case_when(
+      !is.na(NormalisedUP_Match)   ~ NormalisedUP_Match,      # 0 to 1 if UP exists
+      !is.na(NormalisedDOWN_Match) ~ 1 + NormalisedDOWN_Match, # 1 to 2 if DOWN exists
+      TRUE                         ~ NA_real_
+    ),
+    
+    # 2. Create the separate NON-MATCH lifecycle column (0 to 2)
+    NormalisedUPDOWN_NonMatch = case_when(
+      !is.na(NormalisedUP_NonMatch)   ~ NormalisedUP_NonMatch, 
+      !is.na(NormalisedDOWN_NonMatch) ~ 1 + NormalisedDOWN_NonMatch,
+      TRUE                            ~ NA_real_
+    )
+  )
+
+# Verify the transformations worked cleanly
+message("Match lifecycle range: ", paste(range(dat$NormalisedUPDOWN_Match, na.rm = TRUE), collapse = " to "))
+message("Non-Match lifecycle range: ", paste(range(dat$NormalisedUPDOWN_NonMatch, na.rm = TRUE), collapse = " to "))
+
+
 # 3. Scale all numeric columns and add "_z" suffix
 # This will now include the new Match/NonMatch variables you just created
 dat$Spindle_Match <- as.factor(dat$Spindle_Match)
@@ -92,10 +122,10 @@ dat$geo_coherencePRE <- sign(dat$V1_pre * dat$HC_post) *
 dat_Time <- dat %>%
   filter(
     # Keep if the value is <= 1s OR if the value is NaN/NA
-    (UPDuration_Match <= 2    | is.na(UPDuration_Match)) &
-      (UPDuration_NonMatch <= 2 | is.na(UPDuration_NonMatch)) &
-    (UPDuration_Match >= 0.1    | is.na(UPDuration_Match)) &
-      (UPDuration_NonMatch >= 0.1 | is.na(UPDuration_NonMatch)) 
+    (UPDuration_Match <= 2  ) |
+      (UPDuration_NonMatch <= 2 ) 
+      #(UPDuration_Match >= 0.1    | is.na(UPDuration_Match)) &
+      #(UPDuration_NonMatch >= 0.1 | is.na(UPDuration_NonMatch)) 
   )
 dat_Time <- dat_Time %>%
   mutate(across(where(is.numeric), 
@@ -122,7 +152,8 @@ z_thresh <- 3.5  # include <99th centiles of data
 
 # List of the new Z-score columns to filter
 z_cols <- c(
-  "V1_pre_z", "V1_post_z", "HC_post_z" , "HC_pre_z" 
+  "V1_pre_z", "V1_post_z", "HC_post_z" , "HC_pre_z" ,
+  "geo_coherencePRE_z","geo_coherence_z" 
 )
 
 message(sprintf("Trimming extreme outliers beyond +/- %s Z-scores for %d variables...", z_thresh, length(z_cols)))
@@ -141,16 +172,148 @@ dat_Time <- dat_Time %>%
 
 
 
+########
+########
+########
+
+
+library(mgcv)
+library(mgcViz)
+# Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
+mdl_pre_post <- bam(V1_post_z ~ 
+                    # s(HC_post_z,k = 5) +
+                    # s(V1_pre_z, k = 5) +
+                    te(V1_pre_z, HC_post_z, k = c(5,5)) +
+                    s(AnimalID, bs = "re")+
+                    s(SessionID, bs = "re"), 
+                  data = dat_clean, method = "fREML", discrete = TRUE)
+
+print(summary(mdl_pre_post))
+
+
+
+# Convert to an mgcViz object and plot
+viz <- getViz(mdl_pre_post)
+plot(sm(viz, 1)) + 
+  l_fitRaster() + 
+  l_fitContour() + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+  labs(title = "Post V1 Bias as a function of Pre-V1 Bias and HC",
+       x = "Pre-V1 Track Bias", y = "HC Track bias")
+
+
+
+
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+
+# ---------------------------------------------------------
+# Plot 1: Main Effect of HC_post_z
+# ---------------------------------------------------------
+sm_hc <- smooth_estimates(mdl_visual, smooth = "s(HC_post_z)", n = 100) %>%
+  mutate(
+    .lower_ci = .estimate - (1.96 * .se),
+    .upper_ci = .estimate + (1.96 * .se)
+  )
+
+p_hc <- ggplot(sm_hc, aes(x = HC_post_z, y = .estimate)) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2, fill = "dodgerblue") +
+  geom_line(linewidth = 1, color = "dodgerblue") +
+  theme_bw() + 
+  labs(title = "Isolated Main Effect: HC Post (Z)", 
+       x = "HC_post_z", y = "Partial Effect")
+dev.new(noRStudioGD = TRUE)
+# cairo_pdf("SO_NonMatch_effect.pdf", width = 4.3, height = 4.3)
+print(p_hc)
+# ---------------------------------------------------------
+# Plot 2: Main Effect of V1_pre_z
+# ---------------------------------------------------------
+sm_v1 <- smooth_estimates(mdl_visual, smooth = "s(V1_pre_z)", n = 200) %>%
+  mutate(
+    .lower_ci = .estimate - (1.96 * .se),
+    .upper_ci = .estimate + (1.96 * .se)
+  )
+
+p_v1 <- ggplot(sm_v1, aes(x = V1_pre_z, y = .estimate)) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2, fill = "firebrick") +
+  geom_line(linewidth = 1, color = "firebrick") +
+  theme_bw() + 
+  labs(title = "Isolated Main Effect: V1 Pre (Z)", 
+       x = "V1_pre_z", y = "Partial Effect")
+
+print(p_v1)
+
+
+# ---------------------------------------------------------
+# Plot 3: Pure Interaction Tensor (ti) 
+# ---------------------------------------------------------
+sm_2d <- smooth_estimates(mdl_pre_post, smooth = "ti(V1_pre_z,HC_post_z)", n = 100)
+
+p_interaction <- ggplot(sm_2d, aes(x = V1_pre_z, y = HC_post_z, fill = .estimate)) +
+  geom_tile() + 
+  geom_contour(aes(z = .estimate), color = "black", alpha = 0.2) + 
+  scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Effect") +
+  theme_minimal() +
+  theme(aspect.ratio = 1) +
+  labs(title = "Pure Tensor Interaction (ti Term)",
+       subtitle = "Variance unique to the combination",
+       x = "V1_pre_z", y = "HC_post_z")
+
+print(p_interaction)
+
+
+# ==============================================================================
+# --- RECREATING THE TOTAL LANDSCAPE ---
+# ==============================================================================
+
+# 1. Create a clean grid across the observed range of your data
+# grid_range_v1 <- seq(min(dat_clean$V1_pre_z, na.rm=TRUE), max(dat_clean$V1_pre_z, na.rm=TRUE), length.out = 100)
+# grid_range_hc <- seq(min(dat_clean$HC_post_z, na.rm=TRUE), max(dat_clean$HC_post_z, na.rm=TRUE), length.out = 100)
+grid_range_v1 <- seq(-3,3, length.out = 100)
+grid_range_hc <- seq(-3,3, length.out = 100)
+
+pred_grid_total <- expand.grid(
+  V1_pre_z  = grid_range_v1,
+  HC_post_z = grid_range_hc,
+  AnimalID  = dat_clean$AnimalID[1], # Held constant (ignored by type="terms" if excluded, but safe)
+  SessionID  = dat_clean$SessionID[1]
+)
+
+# 2. Extract specific term components matrix
+term_preds <- predict(mdl_pre_post, newdata = pred_grid_total, type = "terms")
+
+# 3. Sum only your targets of interest
+pred_grid_total$Reconstructed_Effect <- 
+  term_preds[, "s(HC_post_z)"] + 
+  term_preds[, "s(V1_pre_z)"] 
+  # term_preds[, "ti(V1_pre_z,HC_post_z)"]
+
+# 4. Plot Combined Surface
+p_combined <- ggplot(pred_grid_total, aes(x = V1_pre_z, y = HC_post_z, fill = Reconstructed_Effect)) +
+  geom_tile() + 
+  geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) + 
+  scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Total\nEffect") +
+  theme_minimal() +
+  theme(aspect.ratio = 1) +
+  labs(
+    title = "Total Combined Effect Surface", 
+    subtitle = "Reconstructed: s(HC) + s(V1) + ti(V1, HC)",
+    x = "V1_pre_z", 
+    y = "HC_post_z"
+  )
+print(p_combined)
+
 
 ########
 ########
 ########
 
-# Coherence depends on Normalised UP duration and Time To DOWN
+# Coherence does not depend on UP duration
 mdl_1 <- bam(geo_coherence_z ~ 
                s(UPDuration_Match_z, k = 5) +
                s(UPDuration_NonMatch_z, k = 5) +
-               ti(UPDuration_Match_z, UPDuration_NonMatch_z, k = 5) +
+               #ti(UPDuration_Match_z, UPDuration_NonMatch_z, k = 5) +
                
                # 4. Control Term
                s(AnimalID, bs = "re") +
@@ -164,6 +327,9 @@ mdl_1 <- bam(geo_coherence_z ~
 message("\n--- FINAL MODEL SUMMARY ---")
 print(summary(mdl_1))
 
+########
+########
+
 
 ########
 ########
@@ -171,29 +337,9 @@ print(summary(mdl_1))
 
 # Coherence depends on Normalised UP duration and Time To DOWN
 mdl_1 <- bam(geo_coherence_z ~ 
-               s(NormalisedDOWN_Match_z, k = 5) +
-               s(NormalisedDOWN_NonMatch_z, k = 5) +
-               ti(NormalisedDOWN_Match_z, NormalisedDOWN_NonMatch_z, k = 5) +
-               
-               # 4. Control Term
-               s(AnimalID, bs = "re") +
-               s(SessionID, bs = "re"), 
-             
-             data = dat_clean, 
-             method = "fREML", 
-             discrete = TRUE, 
-             nthreads = 4)
-
-message("\n--- FINAL MODEL SUMMARY ---")
-print(summary(mdl_1))
-
-
-
-# Coherence depends on Normalised UP duration and Time To DOWN
-mdl_1 <- bam(geo_coherence_z ~ 
-                   s(NormalisedUP_Match_z, k = 5) +
+               s(NormalisedUP_Match_z, k = 5) +
                s(NormalisedUP_NonMatch_z, k = 5) +
-               ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
+               #ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
     
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
@@ -223,7 +369,7 @@ p_norm_raw <- draw(mdl_1, select = "s(NormalisedUP_Match_z)", residuals = FALSE,
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
   labs(
     title = "NormalisedUP_Match and Coherence", 
-    x = "lastRippleNormalisedUP", 
+    x = "All Ripples Normalised UP", 
     y = "Partial Effect"
   )
 
@@ -259,13 +405,13 @@ mdl_2 <- bam(geo_coherence_z ~
 
                    s(TimeToDOWN_Match_z, k = 5) +
                    s(TimeToDOWN_NonMatch_z, k = 5) + 
-                   ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
+               #ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
                    
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 
                  
-                 data = dat_Time, 
+                 data = dat_clean, 
                  method = "fREML", 
                  discrete = TRUE, 
                  nthreads = 4)
@@ -275,18 +421,18 @@ print(summary(mdl_2))
 
 
 
-# Coherence does not depend on Time To DOWN
+# Coherence does not depend on Time from UP
 mdl_FromUP <- bam(geo_coherence_z ~ 
                
                s(TimeFromUP_Match_z, k = 5) +
-               #s(TimeToDOWN_NonMatch_z, k = 5) + 
-               #ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
+               s(TimeFromUP_NonMatch_z, k = 5) + 
+                 #ti(TimeFromUP_Match_z, TimeFromUP_NonMatch_z, k = 5) +
                
                # 4. Control Term
                s(AnimalID, bs = "re") +
                s(SessionID, bs = "re"), 
              
-             data = dat_Time, 
+             data = dat_clean, 
              method = "fREML", 
              discrete = TRUE, 
              nthreads = 4)
@@ -300,7 +446,7 @@ print(summary(mdl_FromUP))
 ### Time from UP Match
 
 # 1. Define raw time breaks (e.g., 0 to 500ms in 125ms steps)
-raw_breaks_time <- c(0, 0.25, 0.5, 1)
+raw_breaks_time <- c(0, 0.25, 0.5, 1,2)
 
 # 2. Map raw seconds to the nearest Z-score in the cleaned dataset
 z_breaks_match <- sapply(raw_breaks_time, function(val) {
@@ -335,55 +481,24 @@ mdl_3 <- bam(geo_coherence_z ~
                #s(NormalisedUP_NonMatch_z, k = 5) +
                    # ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
                    s(TimeToDOWN_Match_z, k = 5) +
+               ti(NormalisedUP_Match_z, TimeToDOWN_Match_z, k = 5) +
                #s(TimeToDOWN_NonMatch_z, k = 5) +
                    # ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
                    
-                   ti(NormalisedUP_Match_z, TimeToDOWN_Match_z, k = 5) +
-               #ti(NormalisedUP_NonMatch_z, TimeToDOWN_NonMatch_z, k = 5) +
-                   #t(lastRipple_z, TimetoLastRipple_z, k = 5) +
-                   
-                   
-                   #ti(lastRipple_z, lastRippleNormalisedUP_z, k = 5) +
-                   # ti(lastRippleV1PRE_z, lastRippleNormalisedUP_z, k = 5) +
-                   #te(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = c(5, 5))+
-                   
+               #s(TimeFromUP_Match_z, k = 5) +
+               #   ti(NormalisedUP_Match_z, TimeFromUP_Match_z, k = 5) +
+ 
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 
                  
-                 data = dat_Time, 
+                 data = dat_clean, 
                  method = "fREML", 
                  discrete = TRUE, 
                  nthreads = 4)
 
 message("\n--- FINAL MODEL SUMMARY ---")
 print(summary(mdl_3))
-
-
-### TimeToDOWN Match
-
-# 1. Define raw time breaks (e.g., 0 to 500ms in 125ms steps)
-raw_breaks_time <- c(0, 0.25, 0.5, 1)
-
-# 2. Map raw seconds to the nearest Z-score in the cleaned dataset
-z_breaks_match <- sapply(raw_breaks_time, function(val) {
-  dat_clean$TimeToDOWN_Match_z[which.min(abs(dat_clean$TimeToDOWN_Match - val))]
-})
-
-# 3. Plot
-p_time_match <- draw(mdl_3, select = "s(TimeToDOWN_Match_z)", residuals = FALSE, rug = FALSE) + 
-  theme_bw(base_family = "Arial") + 
-  theme(aspect.ratio = 1) +
-  scale_x_continuous(breaks = z_breaks_match, labels = raw_breaks_time) +
-  labs(
-    title = "TimeToDOWN (Match) and Coherence", 
-    x = "Time to Down State (s)", 
-    y = "Partial Effect"
-  )
-
-print(p_time_match)
-
-
 
 
 
@@ -399,20 +514,14 @@ mdl_final <- bam(geo_coherence_z ~
                    # s(lastRipple_z, k = 5) +
                    
                    s(NormalisedUP_Match_z, k = 5) +
-                   # s(NormalisedUP_NonMatch_z, k = 5) + 
-                   # ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
                    s(TimeToDOWN_Match_z, k = 5) +
-                   # s(TimeToDOWN_NonMatch_z, k = 5) + 
-                   # ti(TimeToDOWN_Match_z, TimeToDOWN_NonMatch_z, k = 5) +
-                   
-                   ti(NormalisedUP_Match_z, TimeToDOWN_Match_z, k = 5) +
-                   #t(lastRipple_z, TimetoLastRipple_z, k = 5) +
-                   
+                   te(NormalisedUP_Match_z, TimeToDOWN_Match_z, k = 5) +
+  
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
                    s(SessionID, bs = "re"), 
                  
-                 data = dat_Time, 
+                 data = dat_clean, 
                  method = "fREML", 
                  discrete = TRUE, 
                  nthreads = 4)
@@ -425,7 +534,7 @@ print(summary(mdl_final))
 ########
 ######## Normalised Match VS TimeToDOWN Match (Interaction)
 ########
-time_threshold = 1
+time_threshold = 2
 
 # 1. Define Parameters for Scaling
 mean_up_m   <- mean(dat_Time$NormalisedUP_Match, na.rm = TRUE)
@@ -486,6 +595,120 @@ print(p_inter_up_down)
 
 dev.new(noRStudioGD = TRUE); print(p_inter_up_down)
 
+
+
+
+
+
+ggplot(dat_clean, aes(x = NormalisedDOWN_Match, y = NormalisedDOWN_NonMatch)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_viridis_c() +
+  theme_minimal()
+
+
+
+ggplot(dat_clean, aes(x = NormalisedUP_Match, y = TimeToDOWN_Match)) +
+  geom_bin2d(bins = 20) +
+  scale_fill_viridis_c() +
+  theme_minimal()
+
+
+
+
+library(ggplot2)
+library(viridis)
+
+p_density <- dat_clean %>%
+  ggplot(aes(x = NormalisedUP_Match, y = TimeToDOWN_Match)) +
+  geom_bin2d(bins = 20) + # Adjust bins for higher/lower resolution
+  scale_fill_viridis_c(option = "plasma", name = "Event Count") +
+  scale_x_continuous(limits = c(0, 1), expand = c(0,0)) +
+  scale_y_continuous(limits = c(0, 2), expand = c(0,0)) +
+  theme_minimal(base_family = "Arial") +
+  theme(aspect.ratio = 1) +
+  labs(
+    title = "Data Density: Normalised Position vs Time to DOWN",
+    subtitle = "Where do the actual ripple events sit?",
+    x = "Normalised UP Match (Raw)",
+    y = "Time to DOWN Match (s)"
+  )
+print(p_density)
+
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales)
+
+# 1. Define configuration parameters
+time_threshold <- 2.0
+x_bins         <- 25    
+time_step_s    <- 0.05  # 50ms intervals
+
+# 2. Break the continuous data into discrete, raw grid bins
+dat_binned <- dat_clean %>%
+  filter(NormalisedUP_Match >= 0 & NormalisedUP_Match <= 1,
+         TimeToDOWN_Match  >= 0 & TimeToDOWN_Match  <= time_threshold) %>%
+  mutate(
+    X_bin = round(NormalisedUP_Match * x_bins) / x_bins,
+    Y_bin = round(TimeToDOWN_Match / time_step_s) * time_step_s
+  ) %>%
+  count(X_bin, Y_bin, name = "Event_Count")
+
+# 3. Create a complete rectangular grid skeleton
+full_grid <- expand.grid(
+  X_bin = seq(0, 1, by = 1 / x_bins),
+  Y_bin = seq(0, time_threshold, by = time_step_s)
+)
+
+# 4. Merge data into the full grid and replace missing slots with a true 0
+dat_plot <- full_grid %>%
+  left_join(dat_binned, by = c("X_bin", "Y_bin")) %>%
+  mutate(Event_Count = replace_na(Event_Count, 0))
+
+# 5. Dynamically calculate the 20% and 80% limits for the color bar
+max_nonzero_count <- max(dat_plot$Event_Count, na.rm = TRUE)
+lower_limit       <- 0
+upper_limit       <- max_nonzero_count
+
+# 6. Plot the raw binned histogram with REVERSED colors (White background, Black bins)
+p_raw_bw <- dat_plot %>%
+  ggplot(aes(x = X_bin, y = Y_bin, fill = Event_Count)) +
+  geom_tile() +
+  
+  # REVERSED Gradient: Low counts are White, High counts are Black
+  scale_fill_gradient(
+    low = "white", 
+    high = "black", 
+    name = "Event\nCount",
+    limits = c(lower_limit, upper_limit),
+    oob = scales::squish # Low counts squish to white, high counts squish to black
+  ) +
+  
+  # Format axes to perfectly match your data boundaries
+  scale_x_continuous(limits = c(0, 1), expand = c(0,0), breaks = seq(0, 1, 0.25)) +
+  scale_y_continuous(limits = c(0, time_threshold), expand = c(0,0), breaks = seq(0, time_threshold, 0.25)) +
+  
+  # Clean, classic white background theme
+  theme_classic(base_family = "Arial") +
+  theme(
+    aspect.ratio = 1,
+    panel.grid.major = element_line(color = "gray90", size = 0.2), # Subtle light gridlines
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(size = 12),
+    axis.line = element_line(color = "black")
+  ) +
+  
+  labs(
+    title = "Raw Data Density: Normalised Position vs Time to DOWN",
+    subtitle = paste0("White background (0 counts) | High density cued by dark/black bins"),
+    x = "Normalised UP Match (Raw)",
+    y = "Time to DOWN Match (s)"
+  )
+
+print(p_raw_bw)
 
 
 

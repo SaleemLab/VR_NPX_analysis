@@ -411,56 +411,6 @@ end
 [XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(X,Y,3,'CV',10,'Options',statset('UseParallel',true)); % 3 components
 [W, ~] = qr(XL, 0); % Orthonormalize XL using QR decomposition
 
-%%%%%%%%%%%%%% Reactivation strength
-% % calculate projection matrix
-% P_template = zeros(size(W,1),size(W,1),size(W,2));
-% for i = 1:size(W,2)
-%     P_template(:,:,i) = W(:,i)*W(:,i)';
-%     P_template(:,:,i) = P_template(:,:,i) - diag(diag(P_template(:,:,i))); % remove the diagonal
-% end
-% % figure
-% % for i = 1:size(W,2)
-% %     subplot(2,2,i)
-% %     imagesc(squeeze(P_template(:,:,i)))
-% %     colorbar
-% % end
-% %
-% % Compute reactivation strengths
-% nTemplates = size(P_template,3);
-% strength = zeros(size(n_ripples,1),nTemplates);
-% for i = 1:nTemplates
-%     template = P_template(:,:,i);
-%     % Set the diagonal to zero to not count coactivation of i and j when i=j
-%     template = template - diag(diag(template));
-%     strength(:,i) = nansum(n_ripples*(template).*n_ripples,2);
-% end
-%
-% % Compute reactivation strengths
-% nTemplates = size(P_template,3);
-% strength_shuffled = zeros(size(n_ripples,1),nTemplates,1000);
-% for nshuffle = 1:1000
-%     for i = 1:nTemplates
-%         template = P_template(:,:,i);
-%         % Set the diagonal to zero to not count coactivation of i and j when i=j
-%         template = template - diag(diag(template));
-%         s = RandStream('mrg32k3a','Seed',nshuffle); % Set random seed for resampling
-%         random_cell_index = randperm(s,size(n_ripples_residuals,2));
-%
-%         n_ripples_shuffled = n_ripples(:,random_cell_index);
-%         strength_shuffled(:,i,nshuffle) = nansum(n_ripples_shuffled*(template).*n_ripples_shuffled,2);
-%     end
-% end
-%
-%
-% for i = 1:nTemplates
-% %     prctile(strength(:,i),0.5)
-% %     prctile(strength(:,i),99.5)
-%     subplot(2,2,i)
-%     histogram(strength(:,i), prctile(strength(:,i),2.5):0.01:prctile(strength(:,i),97.5),'Normalization','probability','EdgeAlpha',0);hold on
-%     histogram(strength_shuffled(:,i,:),prctile(strength(:,i),2.5):0.01:prctile(strength(:,i),97.5),'Normalization','probability','EdgeAlpha',0)
-% end
-
-
 
 %%%%% Visualise projection
 if plot_option == 1

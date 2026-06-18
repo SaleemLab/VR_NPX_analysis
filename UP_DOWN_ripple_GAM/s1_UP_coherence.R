@@ -44,11 +44,43 @@ dat$geo_coherencePRE1 <- sign(dat$firstRippleV1PRE * dat$firstRippleHPC) *
   sqrt(abs(dat$lastRippleV1PRE * dat$firstRippleHPC))
 
 
+
+dat_lateUP_NoRipple <- dat %>%
+  filter(
+    # Keep if the value is <= 1s OR if the value is NaN/NA
+    #(UPDuration > 0.2    | is.na(UPDuration)) &
+      (TimefromLastRipple > 0.1    | is.na(TimefromLastRipple)) 
+    #(UPDuration_Match >= 0.1    | is.na(UPDuration_Match)) &
+    #(UPDuration_NonMatch >= 0.1 | is.na(UPDuration_NonMatch)) 
+  )
+
+
+dat_Time <- dat %>%
+  filter(
+    # Keep if the value is <= 1s OR if the value is NaN/NA
+    (UPDuration > 0.2    | is.na(UPDuration)) &
+      (UPDuration < 1    | is.na(UPDuration)) 
+    #(UPDuration_Match >= 0.1    | is.na(UPDuration_Match)) &
+    #(UPDuration_NonMatch >= 0.1 | is.na(UPDuration_NonMatch)) 
+  )
+
+
 # 3. Create Z-scores for all numeric columns
 dat_clean <- dat %>%
   mutate(across(where(is.numeric), 
                 ~ as.numeric(scale(.)), 
                 .names = "{.col}_z"))
+
+dat_Time <- dat_Time %>%
+  mutate(across(where(is.numeric), 
+                ~ as.numeric(scale(.)), 
+                .names = "{.col}_z"))
+
+dat_lateUP_NoRipple <- dat_lateUP_NoRipple %>%
+  mutate(across(where(is.numeric), 
+                ~ as.numeric(scale(.)), 
+                .names = "{.col}_z"))
+
 
 # --- 3. Clean Data ---
 z_thresh <- 3.5  # include <99.9th centiles of data
@@ -66,7 +98,15 @@ dat_clean <- dat_clean %>%
     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
   )
 
+dat_Time <- dat_Time %>%
+  filter(
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
+  )
 
+dat_lateUP_NoRipple <- dat_lateUP_NoRipple %>%
+  filter(
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
+  )
 
 
 ########
@@ -74,10 +114,10 @@ dat_clean <- dat_clean %>%
 ########
 
 
-mdl_final <- bam(earlyUPV1_z ~ 
+mdl_final <- bam(firstRippleHPC_z ~ 
                    # 1. Surviving Main Power Effects
-                   s(earlyUPHPC_z, k = 5) +
-                   s(firstRippleHPC_z, k = 5) +
+                   s(earlyUPV1_z, k = 5) +
+                   #s(firstRippleHPC_z, k = 5) +
                    
                    # 4. Control Term
                    s(AnimalID, bs = "re") +
@@ -93,6 +133,28 @@ print(summary(mdl_final))
 
 
 
+
+
+########
+######## Early UP and ripple
+########
+
+mdl_final <- bam(lateUPV1_z ~ 
+                   # 1. Surviving Main Power Effects
+                   s(earlyUPV1_z, k = 5) +
+                   s(earlyUPHPC_z, k = 5) +
+                   
+                   # 4. Control Term
+                   s(AnimalID, bs = "re") +
+                   s(SessionID, bs = "re"), 
+                 
+                 data = dat_Time, 
+                 method = "fREML", 
+                 discrete = TRUE, 
+                 nthreads = 4)
+
+message("\n--- FINAL MODEL SUMMARY ---")
+print(summary(mdl_final))
 
 
 
@@ -138,32 +200,6 @@ print(summary(mdl_final))
 
 
 
-mdl_final <- bam(geo_coherence_z ~ 
-                   # 1. Surviving Main Power Effects
-                   #s(lastRippleV1PRE_z, k = 5) +
-                   #s(lastRippleHPC_z, k = 5) +
-                   
-                   #s(lastRipplePower, k = 5) +
-                   s(TimeToLastRipple_z, k = 5) +
-                   s(lastRippleNormalisedUP_z, k = 5) + 
-                   ti(lastRippleNormalisedUP_z, TimeToLastRipple_z, k = 5) +
-                   
-                   #ti(lastRipple_z, lastRippleNormalisedUP_z, k = 5) +
-                   #ti(lastRippleV1PRE_z, lastRippleNormalisedUP_z, k = 5) +
-                   #te(TimetoLastRipple_z, lastRippleNormalisedUP_z, k = c(5, 5))+
-                
-                   # 4. Control Term
-                   s(AnimalID, bs = "re") +
-                   s(SessionID, bs = "re"), 
-                 
-                 data = dat_clean, 
-                 method = "fREML", 
-                 discrete = TRUE, 
-                 nthreads = 4)
-
-message("\n--- FINAL MODEL SUMMARY ---")
-print(summary(mdl_final))
-
 ### HC bias
 # Calculate scaling factors
 raw_breaks <- c(-2,-1,0,1,2)
@@ -205,61 +241,6 @@ p_HC_raw <- draw(mdl_final, select = "s(lastRippleV1PRE_z)", residuals = FALSE, 
 dev.new(noRStudioGD = TRUE)
 print(p_HC_raw)
 
-
-### Normalised duration
-
-# Calculate scaling factors
-raw_breaks <- c(0, 0.25, 0.5,0.75,1)
-z_breaks <- sapply(raw_breaks, function(val) {
-  dat_clean$lastRippleNormalisedUP_z[which.min(abs(dat_clean$lastRippleNormalisedUP - val))]
-})
-
-# cairo_pdf("ripple_power_post_z_raw.pdf", width = 4.3, height = 4.3)
-p_norm_raw <- draw(mdl_final, select = "s(lastRippleNormalisedUP_z)", residuals = FALSE, rug = FALSE) + 
-  theme_bw(base_family = "Arial") + 
-  theme(aspect.ratio = 1) +
-  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  labs(
-    title = "lastRippleNormalisedUP and prediction", 
-    x = "lastRippleNormalisedUP", 
-    y = "Partial Effect"
-  )
-
-print(p_norm_raw)
-
-dev.off()
-
-
-
-
-
-library(lme4)
-
-# Fit the model
-model_lmer <- lmer(lastRippleV1_z ~ lastRippleV1PRE_z + lastRipple_z + 
-                     (1 | AnimalID) + (1 | SessionID), data = dat_clean)
-
-# View results
-summary(model_lmer)
-
-
-library("tidyverse")
-library("afex")
-library("emmeans")
-theme_set(
-  theme_bw(base_size = 15) +
-    theme(legend.position = "bottom", panel.grid.major.x = element_blank())
-)
-
-# 
-# m1 <- mixed(
-#   lastRippleV1 ~
-#     lastRippleV1PRE + lastRippleHPC + lastRippleHPC * lastRipplePower_z
-#     + (1 | AnimalID) + (1 | SessionID)
-#   , data = dat_clean
-# )
-# 
-# summary(m1)
 
 
 

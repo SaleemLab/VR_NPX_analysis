@@ -3898,9 +3898,9 @@ V1_phase = [];
 
 for hemi = 1:2
     
-    for nession = 1:22
-        V1_phase{hemi}(1,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,1,:);
-        V1_phase{hemi}(2,nession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,2,:);
+    for nsession = 1:22
+        V1_phase{hemi}(1,nsession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,1,:);
+        V1_phase{hemi}(2,nsession,:) = SO_phase_MUA_spike_rate{nsession}(hemi,2,:);
         %         V1_phase{hemi}(1,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,1,:),'range');
         % V1_phase{hemi}(2,nession,:) = normalize(SO_phase_MUA_spike_rate{nsession}(hemi,2,:),'range');
     end
