@@ -74,7 +74,6 @@ end
 
 
 %% Grouping of DOWN-UP and UP-DOWN and ripples based on detetcion lags
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
@@ -570,7 +569,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%% All DOWN UP rpples
-event_averaging_scale = 10;
+event_averaging_scale = 15;
 x = linspace(0,1,20);
 
 % for ngroup = 1:length(event_idx)
@@ -578,7 +577,7 @@ ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650/3 465];
 fig.Name = 'Left-Right combined Ipsi-contra normalised UP ripple probability'
-
+% fig.Name = 'Left-Right combined Ipsi-contra normalised UP ripple probability (15)'
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
 
@@ -639,6 +638,8 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 
 % baseline
 binnedArray = probability_merged.ipsi_ripples_baseline_UP;
+% binnedArray = (probability_merged.ipsi_ripples_baseline_UP + probability_merged.ipsi_ripples_baseline_DOWN)/2;
+
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
@@ -655,6 +656,7 @@ xlabel('Normalised duration of UP')
 ylabel('Probability')
 legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
+
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 
@@ -674,7 +676,7 @@ non_overlap_idx = merged_event_info.DOWN_non_overlap_idx{end};
 all_lags =merged_event_info.DOWN_lags_all{end};
 
 
-
+W
 event_idx = [];
 
 lags =all_lags(all_lags>=-0.15 & all_lags<=0.15);
@@ -998,13 +1000,13 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%% All DOWN UP rpples
-event_averaging_scale = 30;
+event_averaging_scale = 15;
 
 % for ngroup = 1:length(event_idx)
 ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650/3 465];
-fig.Name = 'Left-Right combined Ipsi-contra normalised DOWN ripple probability'
+fig.Name = 'Left-Right combined Ipsi-contra normalised DOWN ripple probability (15)'
 
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
@@ -1066,7 +1068,9 @@ ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAl
 % xline(0,'r',LineWidth=1)
 
 % baseline
-binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+% binnedArray = probability_merged.ipsi_ripples_baseline_DOWN;
+binnedArray = (probability_merged.ipsi_ripples_baseline_UP + probability_merged.ipsi_ripples_baseline_DOWN)/2;
+
 y = mean(binnedArray,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
 LCI = prctile(binnedArray,2.5);
@@ -1087,24 +1091,6 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 
 
 save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_probability_merged_normalised.mat'),'probability_merged')
+% load(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_probability_merged_normalised.mat'),'probability_merged')
 
-%%
-
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
-
-
-%% Visualise and compare first vs final ripples in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
-
-% SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 end

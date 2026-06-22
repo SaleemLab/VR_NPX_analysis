@@ -40,8 +40,6 @@ T1_bins = InIntervals(timevec_edge_RUN', lap_times(track_ID == 1,:));
 T2_bins = InIntervals(timevec_edge_RUN', lap_times(track_ID == 2,:));
 
 X = [n_original(T1_bins,:); n_original(T2_bins,:)];
-X = X - mean(X,2); % Mean centred residual
-
 Y = [ones(sum(T1_bins),1); 2*ones(sum(T2_bins),1)];
 bins_RUN = [bins_RUN(T1_bins,:);bins_RUN(T2_bins,:) ];
 
@@ -54,13 +52,12 @@ position_Z = [position_interp1(T1_bins) position_interp1(T2_bins)];
 if good_bin_option ==1
     [index,Locb] = ismember(position_Z,PLS.good_position);
 
-    X = (X(index,:));
+    X = zscore(X(index,:));
     Y = Y(index);
     bins_RUN = bins_RUN(index,:);
 else
-    X = (X(:,:));
+    X = zscore(X(:,:));
 end
-
 
 % -------------------- STEP 2: Train PLS --------------------
 [XL,~,~,~,~,~,~] = plsregress(X, Y, 3);
@@ -95,12 +92,11 @@ bins_fine = [bins_fine(InT1,:);bins_fine(InT2,:) ];
 % Valid bins: labeled and high-speed
 valid_idx = Y_fine > 0;
 
-% Mean centering (remove mean activity component)
-% mean_act = mean(X_fine, 2);
-% coeff = (mean_act' * X_fine) / (mean_act' * mean_act);
-% global_pattern = mean_act * coeff;
-% X_fine_residuals = X_fine - global_pattern;
-X_fine_residuals = X_fine - mean(X_fine, 2);
+% Global pattern regression (remove mean activity component)
+mean_act = mean(X_fine, 2);
+coeff = (mean_act' * X_fine) / (mean_act' * mean_act);
+global_pattern = mean_act * coeff;
+X_fine_residuals = X_fine - global_pattern;
 
 % Final inputs for decoding
 X_fine = X_fine_residuals(valid_idx, :);
@@ -162,11 +158,11 @@ T2_prob = nan(size(fold_id_fine));
 labels = Y_fine;
 
 for fold = 1:10
-%     tic
+    %     tic
     train_mask = fold_id ~= fold;
-    
-    KDE_T1 = X(train_mask & Y == 1, :) * W;
-    KDE_T2 = X(train_mask & Y == 2, :) * W;
+
+    KDE_T1 = X(train_mask & Y == 1, :) * W_train;
+    KDE_T2 = X(train_mask & Y == 2, :) * W_train;
 
     test_mask = fold_id_fine == fold;
     test_data = X_fine_proj(test_mask, :);

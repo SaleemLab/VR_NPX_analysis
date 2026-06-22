@@ -88,7 +88,6 @@ end
 
 
 %% Grouping of DOWN-UP and UP-DOWN and ripples based on detetcion lags
-load(fullfile(analysis_folder,'V1-HPC sleep interaction','k_cluster_ipsi_contra_events.mat'),'k_cluster');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','merged_UP_DOWN_ripples_event_info.mat'),'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
 
@@ -601,16 +600,17 @@ end
 
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
+
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%% All DOWN UP rpples
-event_averaging_scale = 30;
+event_averaging_scale = 15;
 
 % for ngroup = 1:length(event_idx)
 % ngroup = 2;
 fig = figure('Color','w');
 fig.Position = [350 59 1650 465];
-fig.Name = 'Left-Right combined ipsi contra ripple distribution around DOWN-UP transition'
+fig.Name = 'Left-Right combined ipsi contra ripple distribution around DOWN-UP transition (15)'
 
 colour_lines = [0,90,50;74,20,134]/256; % Green Purple
 
@@ -631,18 +631,20 @@ duration_bin_position = 51 + duration_in_bins;
 plot(flip(duration_bin_position), flip(1:numel(duration)), 'r--', 'LineWidth', 1)
 
 
-% imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
+xticks([0.5 13 25.5 38 50.5 62.5 75 82.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
+xticklabels([-1 -0.75 -0.5 -0.25 0 0.25 0.5 0.75 1])
+
 xline(50.5,'r',LineWidth=1)
 clim([0 1])
+xlim([35 100])
 colorbar
 colormap(flipud(gray))
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('Event sorted by UP duration')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('ipsi ripples')
+
 
 nexttile
 duration = event_times(:,2) - event_times(:,1);
@@ -661,11 +663,12 @@ duration_bin_position = 51 + duration_in_bins;
 % Plot yellow dashed line
 plot(flip(duration_bin_position), flip(1:numel(duration)), 'r--', 'LineWidth', 1)
 
-xticks([1.5 25.5 50.5 75.5 100.5])
+xticks([0.5 13 25.5 38 50.5 62.5 75 82.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
+xticklabels([-1 -0.75 -0.5 -0.25 0 0.25 0.5 0.75 1])
 xline(50.5,'r',LineWidth=1)
 clim([0 1])
+xlim([35 100])
 colorbar
 colormap(flipud(gray))
 xlabel('Time relative to DOWN-UP transition (s)')
@@ -707,6 +710,8 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 
 % xline(0,'r')
 ylim([0 0.06])
+xlim([-0.3 1])
+xticks(-1:0.25:1)
 % title('ipsi ripples')
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('Probability')
@@ -1080,7 +1085,7 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 %%%%%%%%%%%%
 %%%%%%%%%%%%
 %%%%%%%%%%%% All UP DOWN rpples
-event_averaging_scale = 30;
+event_averaging_scale = 15;
 
 % for ngroup = 1:length(event_idx)
 ngroup = 2;
@@ -1107,17 +1112,20 @@ duration_bin_position = 51 + duration_in_bins;
 % Plot yellow dashed line
 plot(flip(duration_bin_position), flip(1:numel(duration)), 'r--', 'LineWidth', 1)
 
-xticks([1.5 25.5 50.5 75.5 100.5])
+xticks([0.5 13 25.5 38 50.5 62.5 75 82.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
+xticklabels([-1 -0.75 -0.5 -0.25 0 0.25 0.5 0.75 1])
+
 xline(50.5,'r',LineWidth=1)
 clim([0 1])
+xlim([35 100])
 colorbar
 colormap(flipud(gray))
 xlabel('Time relative to UP-DOWN transition (s)')
 ylabel('Event sorted by DOWN duration')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 title('ipsi ripples')
+
 
 nexttile
 duration = event_times(:,2) - event_times(:,1);
@@ -1136,11 +1144,12 @@ duration_bin_position = 51 + duration_in_bins;
 plot(flip(duration_bin_position), flip(1:numel(duration)), 'r--', 'LineWidth', 1)
 
 % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-xticks([1.5 25.5 50.5 75.5 100.5])
+xticks([0.5 13 25.5 38 50.5 62.5 75 82.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
-xticklabels([-1 -0.5 0 0.5 1])
+xticklabels([-1 -0.75 -0.5 -0.25 0 0.25 0.5 0.75 1])
 xline(50.5,'r',LineWidth=1)
 clim([0 1])
+xlim([35 100])
 colorbar
 colormap(flipud(gray))
 xlabel('Time relative to UP-DOWN transition (s)')
@@ -1182,36 +1191,21 @@ ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','Li
 
 % xline(0,'r')
 ylim([0 0.09])
+xlim([-0.3 1])
+xticks(-1:0.25:1)
 % title('ipsi ripples')
 xlabel('Time relative to DOWN-UP transition (s)')
 ylabel('Probability')
 legend([ERROR_SHADE(1:end)],{'ipsi','contra','shuffled'},'box','off')
 set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
+
 save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'ContentType','vector')
 
 % load(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_probability_merged.mat'),'probability_merged')
 
 save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
-
-% load('SO_ripples_spindles_probability_merged.mat')
-%%
-
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
 
 
-%% Visualise and compare first vs final ripples in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
-
-% SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
-% SO_spindles_coupling = nan(length(slow_waves(probe_no).shank_id), length(spindles(probe_no).onset));
 end

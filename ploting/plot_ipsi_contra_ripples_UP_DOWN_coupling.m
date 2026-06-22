@@ -699,23 +699,9 @@ save_all_figures(fullfile(analysis_folder,'V1-HPC bilateral interaction'),[],'Co
 
 
 
-save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
-
+% save(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
+load(fullfile(analysis_folder,'V1-HPC bilateral interaction','SO_ripples_spindles_probability_merged.mat'),'probability_merged')
 %%
-
-ipsi_probability = [probability_normalised_whole(1).L_ripples_UP; probability_normalised_whole(2).R_ripples_UP];
-contra_probability = [probability_normalised_whole(1).R_ripples_UP; probability_normalised_whole(2).L_ripples_UP];
-
-ipsi_HPC_MUA_baseline = [PSTH_MUA_baseline(1).L_HPC_UP; PSTH_MUA_baseline(2).R_HPC_UP];
-contra_HPC_MUA_baseline = [PSTH_MUA_baseline(1).R_HPC_UP; PSTH_MUA_baseline(2).L_HPC_UP];
-
-
-%% Visualise and compare first vs final ripples in terms of ipsi-contra PLV diff, corr diff and lag diff
-lags = ipsi_lag_ripples{nprobe} - contra_lag_ripples{nprobe};
-corrs = ipsi_corr_ripples{nprobe} - contra_corr_ripples{nprobe};
-plvs = ipsi_plv_ripples{nprobe} - contra_plv_ripples{nprobe};
-
-
 
 % SO_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));
 % spindle_ripples_coupling = nan(length(slow_waves(probe_no).shank_id), length(ripples(probe_no).peaktimes));

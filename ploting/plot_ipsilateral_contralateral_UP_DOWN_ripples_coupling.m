@@ -54,7 +54,7 @@ end
 %% Ripple probability during UP-DOWN onset
 probability= probability_psth_whole;
 probability_baseline = probability_psth_whole_baseline;
-event_averaging_scale = 30;
+event_averaging_scale = 15;
 
 % colour_lines = [44,123,182;215,25,28]/256;% Blue Red
 % colour_lines = [44,123,182;215,25,28]/256;% Blue Red
@@ -68,7 +68,7 @@ L_ripples = probability(nprobe).L_ripples_DOWN;
 
 nexttile
 [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
-imagesc(30*movmean(L_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
+imagesc(event_averaging_scale*movmean(L_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
 % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
 xticks([1.5 25.5 50.5 75.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
@@ -89,7 +89,7 @@ R_ripples = probability(nprobe).R_ripples_DOWN;
 nexttile
 [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
 % imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(50*movmean(R_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
+imagesc(event_averaging_scale*movmean(R_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
 xticks([1.5 25.5 50.5 75.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
 xticklabels([-1 -0.5 0 0.5 1])
@@ -109,7 +109,7 @@ R_ripples = probability(nprobe).R_ripples_DOWN;
 nexttile
 [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
 % imagesc(movmean(50*movmean(R_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(30*movmean(R_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
+imagesc(event_averaging_scale*movmean(R_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
 xticks([1.5 25.5 50.5 75.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
 xticklabels([-1 -0.5 0 0.5 1])
@@ -130,7 +130,7 @@ L_ripples = probability(nprobe).L_ripples_DOWN;
 nexttile
 [~,sorted_index] = sort(slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,2)-slow_waves_all(nprobe).DOWN_ints(probability(nprobe).DOWN_all_index,1));
 % imagesc(movmean(50*movmean(L_ripples(sorted_index,:),50,1,'omitnan'),3,2,'omitnan'))
-imagesc(30*movmean(L_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
+imagesc(event_averaging_scale*movmean(L_ripples(sorted_index,:),event_averaging_scale,1,'omitnan'))
 xticks([1.5 25.5 50.5 75.5 100.5])
 % xticklabels([PSTH_MUA(nprobe).timebins([1 50 100 150 200])+mean(diff(PSTH_MUA(nprobe).timebins)/2)])
 xticklabels([-1 -0.5 0 0.5 1])
@@ -167,9 +167,9 @@ PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
 
 
-y = mean(probability_baseline(nprobe).L_ripples_DOWN_bootstrap,'omitnan');
-LCI = prctile(probability_baseline(nprobe).L_ripples_DOWN_bootstrap,2.5);
-UCI = prctile(probability_baseline(nprobe).L_ripples_DOWN_bootstrap,97.5);
+y = mean(probability_baseline(nprobe).L_ripples_bootstrap,'omitnan');
+LCI = prctile(probability_baseline(nprobe).L_ripples_bootstrap,2.5);
+UCI = prctile(probability_baseline(nprobe).L_ripples_bootstrap,97.5);
 
 PLOT = plot(x,y,'k');hold on;
 ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');
@@ -191,8 +191,8 @@ x = time_wondows(1)+time_bin/2:time_bin:time_wondows(end)-time_bin/2;
 
 y = mean(probability(nprobe).R_ripples_DOWN,'omitnan');
 %     y = mean(cumsum(probability(nprobe).L_ripples_DOWN_bootstrap,2));
-LCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,2.5);
-UCI = prctile(probability(nprobe).R_ripples_DOWN_bootstrap,97.5);
+LCI = prctile(probability(nprobe).R_ripples_bootstrap,2.5);
+UCI = prctile(probability(nprobe).R_ripples_bootstrap,97.5);
 
 PLOT = plot(x,y,'Color',colour_lines(1,:));hold on;
 ERROR_SHADE(1) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(1,:),'FaceAlpha','0.3','LineStyle','none');
@@ -206,9 +206,9 @@ UCI = prctile(probability(nprobe).L_ripples_DOWN_bootstrap,97.5);
 PLOT = plot(x,y,'Color',colour_lines(2,:));hold on;
 ERROR_SHADE(2) = patch([x fliplr(x)],[UCI fliplr(LCI)],colour_lines(2,:),'FaceAlpha','0.3','LineStyle','none');
 
-y = mean(probability_baseline(nprobe).R_ripples_UP_bootstrap,'omitnan');
-LCI = prctile(probability_baseline(nprobe).R_ripples_UP_bootstrap,2.5);
-UCI = prctile(probability_baseline(nprobe).R_ripples_UP_bootstrap,97.5);
+y = mean(probability_baseline(nprobe).R_ripples_bootstrap,'omitnan');
+LCI = prctile(probability_baseline(nprobe).R_ripples_bootstrap,2.5);
+UCI = prctile(probability_baseline(nprobe).R_ripples_bootstrap,97.5);
 
 PLOT = plot(x,y,'k');hold on;
 ERROR_SHADE(3) = patch([x fliplr(x)],[UCI fliplr(LCI)],'k','FaceAlpha','0.3','LineStyle','none');

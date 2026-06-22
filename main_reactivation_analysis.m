@@ -691,7 +691,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession =3:10
+for nsession =1:22
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -962,7 +962,7 @@ for nsession =3:10
 
       if contains(stimulus_name{n},'Masa2tracks')
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS','-v7.3')
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN','PLS','-v7.3')
           save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_UP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_UP','-v7.3')
           save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_DOWN%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_DOWN','-v7.3')
       else
@@ -1044,7 +1044,7 @@ for nsession =3:10
 
       if contains(stimulus_name{n},'Masa2tracks')
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
-          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1','KDE_RUN_V1','PLS_V1','-v7.3')
+          save(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN_V1','PLS_V1','-v7.3')
           save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_V1_UP%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1_UP','-v7.3')
           save(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_V1_DOWN%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1_DOWN','-v7.3')
       else
@@ -1126,9 +1126,10 @@ for nsession =1:length(experiment_info)
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_ripple_events%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             load(fullfile(options.ANALYSIS_DATAPATH,sprintf('extracted_clusters_ks4%s.mat',erase(stimulus_name{n},'Masa2tracks'))));
             clusters=clusters_ks4;
-
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation','KDE_RUN','PLS')
-            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_reactivation_V1','KDE_RUN_V1','PLS_V1')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_ripples%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN','PLS')
+            load(fullfile(options.ANALYSIS_DATAPATH,sprintf('KDE_reactivation_V1_ripples%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN_V1','PLS_V1')
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN','PLS')
+            % load(fullfile(options.ANALYSIS_DATAPATH,sprintf('PLS_KDE_reactivation_V1%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'KDE_RUN_V1','PLS_V1')
         elseif contains(stimulus_name{n},'Sleep')
             %             load(fullfile(options.ANALYSIS_DATAPATH,'extracted_PSD.mat'));
             % load(fullfile(options.ANALYSIS_DATAPATH,'extracted_LFP.mat'),'LFP');
