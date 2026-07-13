@@ -49,8 +49,8 @@ colors = [
 
 %%%%% 6/6 Define windows after time zero to calc. the peak and mean FR - Depends on stimulus type 
 % for grey screen these are calculated during stim offset for duration of prior element (i.e. from 0-150ms after stim offset for a 150ms stim).
-stim_onset_response_calc_begins  = 0.03; % calc peak onset response during 30-80ms after stimulus onset
-stim_onset_response_calc_ends = 0.08; % calc peak onset response during 30-80ms after stimulus onset
+stim_onset_response_calc_begins  = 0.03; % calc peak onset response during 30-80ms after stimulus onset (for LFP a 30-75ms window is used but here the spiking bins are 10ms...
+stim_onset_response_calc_ends = 0.08; % calc peak onset response during 30-80ms after stimulus onset (for LFP a 30-75ms window is used but here the spiking bins are 10ms...
 
 stim_latter_response_calc_begins = 0.08; % calc mean latter (i.e. post-onset) response during 80-150ms after stimulus onset
 stim_latter_response_calc_ends = 0.15; % calc mean latter (i.e. post-onset) response during 80-150ms after stimulus onset
@@ -58,9 +58,9 @@ stim_latter_response_calc_ends = 0.15; % calc mean latter (i.e. post-onset) resp
 grey_peak_response_calc_begins = 0.0; % find greyscreen peak during 150ms following greyscreen onset
 grey_peak_response_calc_ends = 0.15; % find greyscreen peak during 150ms following greyscreen onset
 
-grey_prior_response_calc_begins = -0.07; % calc mean prior response during -70 to 0ms before greyscreen onset, 
+grey_prior_response_calc_begins = -0.08; % calc mean prior response during -80 to 0ms before greyscreen onset, 
 % i.e. matching the prior stim latter response calc. window  ********ASSUMING THE STIMULUS ELEMENT DURATION IS 150MS
-grey_prior_response_calc_ends = 0.0; % calc mean prior response during -70 to 0ms before greyscreen onset, i.e. matching the prior stim latter response calc. window
+grey_prior_response_calc_ends = 0.0; % calc mean prior response during -80 to 0ms before greyscreen onset, i.e. matching the prior stim latter response calc. window
 
 if contains(Stimulus_type, 'GAVNIK_')
     stim_window_starts = 0:0.15:0.45;

@@ -28,6 +28,9 @@
 %
 function [stimData,eyeData,peripherals,photodiodeData,stimTimes] = import_and_align_bonsai_logs_Ellie(EPHYS_DATAPATH,TRIALDATA_DATAPATH,PERIPHERALS_DATAPATH,EYEDATA_DATAPATH,PHOTODIODE_DATAPATH,options)
 
+parts = strsplit(PHOTODIODE_DATAPATH, filesep);
+recording_date_num = str2double(parts{7});
+
 % Step 1: Get stimulus times and data parameters
 if ~strcmp(options.paradigm,'photodiode_timestamp')
     [stimData,StimulusName] = import_BonVisionParams_Ellie(TRIALDATA_DATAPATH);
@@ -186,29 +189,50 @@ switch(StimulusName)
             
             % Define tolerance (you can tweak this)
             tol = 0.3 * (high_center - mid_center);
+            
+            if recording_date_num >= 20260604
+                if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+6:i+7) > (high_center - tol))) || ...% if coming from grey quad and the next value and three subsequent values exceed 320 (i.e. heading to white)
+                                              (up_condition_2(i) && all(photodiode.Photodiode(i+14:i+16) > (high_center - tol)))) % if coming from black quad and the values of positions 4-7 ahead exceed 320 (i.e. when the quad is going to white but not grey, an upswing will be detected).
+                    pd_ON_OFF(i) = 1;
+                    state = 1;          % Set state to ON
+                    last_transition = 1;  % Mark last transition as UP
+                    %disp(['UP Transition at ', num2str(i)]);  % Debugging output
+                end
+        
+            else
 
-        % Check upward transitions (only if last transition was NOT up)
-            if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+4:i+5) > (high_center - tol))) || ...% if coming from grey quad and the next value and three subsequent values exceed 280
-                                  (up_condition_2(i) && all(photodiode.Photodiode(i+7:i+9) > (high_center - tol)))) % if coming from black quad and the values of positions 4-7 ahead exceed 350 (i.e. when the quad is going to white but not grey, an upswing will be detected).
-                pd_ON_OFF(i) = 1;
-                state = 1;          % Set state to ON
-                last_transition = 1;  % Mark last transition as UP
-                %disp(['UP Transition at ', num2str(i)]);  % Debugging output
+            % Check upward transitions (only if last transition was NOT up)
+                if (last_transition ~= 1) && ((up_condition_1(i) && all(photodiode.Photodiode(i+4:i+5) > (high_center - tol))) || ...% if coming from grey quad and the next value and three subsequent values exceed 280
+                                      (up_condition_2(i) && all(photodiode.Photodiode(i+7:i+9) > (high_center - tol)))) % if coming from black quad and the values of positions 4-7 ahead exceed 350 (i.e. when the quad is going to white but not grey, an upswing will be detected).
+                    pd_ON_OFF(i) = 1;
+                    state = 1;          % Set state to ON
+                    last_transition = 1;  % Mark last transition as UP
+                    %disp(['UP Transition at ', num2str(i)]);  % Debugging output
+                end
             end
-
             % Keep the state as 1 until a downswing is detected
             if state == 1
                 pd_ON_OFF(i) = 1;  % Keep state as 1 (ON)
             end
 
             % Check downward transitions (only if last transition was NOT down)
-            if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < (high_center - tol)))
-                pd_ON_OFF(i) = 0;
-                state = 0;          % Set state to OFF
-                last_transition = 0;  % Mark last transition as DOWN
-                %disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
+            if recording_date_num >= 20260604
+                if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < (high_center - tol)))... % both the current sample and the next sample must be below the high PD level
+                        && mean(photodiode.Photodiode(i:i+1)) < mean(photodiode.Photodiode(i-2:i-1)) % the average of samples i and i+1 must be lower than the average of samples i-2 and i-1
+                    pd_ON_OFF(i) = 0;
+                    state = 0;          % Set state to OFF
+                    last_transition = 0;  % Mark last transition as DOWN
+                    %disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
+                end    
+            else
+                    
+                if (last_transition ~= 0) && (down_condition(i) && all(photodiode.Photodiode(i:i+1) < (high_center - tol)))
+                    pd_ON_OFF(i) = 0;
+                    state = 0;          % Set state to OFF
+                    last_transition = 0;  % Mark last transition as DOWN
+                    %disp(['DOWN Transition at ', num2str(i)]);  % Debugging output
+                end
             end
-    
         end
 
         % Extract ON and OFF transition indices
@@ -219,8 +243,62 @@ switch(StimulusName)
 
     otherwise
         photodiode.Photodiode_smoothed = smoothdata(photodiode.Photodiode,'movmedian',5);
-
-        pd_ON_OFF = photodiode.Photodiode_smoothed >= mean(photodiode.Photodiode); % find ON and OFF
+        if recording_date_num >= 20260604 % new screen used from 4th June 2026 onwards with different brightness settings and slower PD transitions
+            photodiode_median = movmedian(photodiode.Photodiode,[4 0]);
+        
+            pd_ON_OFF = zeros(size(photodiode.Photodiode));
+        
+            % Cluster into black and white levels
+            [idx, centers] = kmeans(double(photodiode.Photodiode(:)),2);
+        
+            centers = sort(centers);
+            centers = centers(:)';
+        
+            black_center = centers(1);
+            white_center = centers(2);
+        
+            % Assign photodiode_median to closest cluster
+            [~, cluster_id] = min(abs(photodiode_median(:) - centers),[],2);
+        
+            black_condition = (cluster_id == 1);
+            white_condition = (cluster_id == 2);
+        
+            last_transition = -1;
+            state = 0;
+        
+            tol = 0.15 * (white_center - black_center);
+        
+            for i = 1:length(photodiode.Photodiode)-50
+                % UP transition
+                if (last_transition ~= 1) && ...
+                   black_condition(i) && ...
+                   all(photodiode.Photodiode(i+15:i+17) > (white_center - tol))
+        
+                    pd_ON_OFF(i) = 1;
+                    state = 1;
+                    last_transition = 1;
+                end
+                % Maintain ON state
+                if state == 1
+                    pd_ON_OFF(i) = 1;
+                end
+        
+                % DOWN transition
+                if (last_transition ~= 0) && ...
+                   white_condition(i) && ...
+                   all(photodiode.Photodiode(i:i+1) < (white_center - tol)) && ...
+                   mean(photodiode.Photodiode(i:i+1)) < ...
+                   mean(photodiode.Photodiode(i-2:i-1))
+        
+                    pd_ON_OFF(i) = 0;
+                    state = 0;
+                    last_transition = 0;
+                end
+            end
+        else
+            pd_ON_OFF = photodiode.Photodiode_smoothed >= mean(photodiode.Photodiode); % find ON and OFF
+        end
+        
         pd_ON = find(diff(pd_ON_OFF) == 1); % Find ON
         pd_OFF = find(diff(pd_ON_OFF) == -1); % Find OFF
 

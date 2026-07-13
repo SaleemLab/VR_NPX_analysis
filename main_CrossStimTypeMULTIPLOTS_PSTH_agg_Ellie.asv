@@ -8,14 +8,14 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % 1/6 Choose your probe depth of interest and mouse
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-SUBJECTS = {'M00096'};
+SUBJECTS = {'M00100'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/6
-Stimulus_types = {'GAVNIK250_ABCD', 'GAVNIK250_A_CD', 'GAVNIK250_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_method = 'per_neuron'; % NONE or per_neuron or population (i.e. aggregated SUA)
 z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'none' = no z scoring, 'entire_session' or 'first30secs' (for every stimulus recording
@@ -28,7 +28,7 @@ cd(analysis_dir) % 3/6 files will be saved here in the cd
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%%% 5/6 row numbers of recording dates in "experiment_info" 15, 9
-sessions_to_plot = [6]; 
+sessions_to_plot = [11]; 
 
 if contains(Stimulus_types{2}, 'GAVNIK DCBA') || contains(Stimulus_types{2}, 'GAVNIK250 DCBA') 
     stimulus_colors = [
@@ -43,18 +43,16 @@ end
 
 % 6/6 Define windows after time zero to calc. the peak and mean FR - Depends on stimulus type              
 stim_onset_response_calc_begins  = 0.03; % calc peak onset response during 30-75ms after stimulus onset
-stim_onset_response_calc_ends = 0.080; % calc peak onset response during 30-75ms after stimulus onset
+stim_onset_response_calc_ends = 0.075; % calc peak onset response during 30-75ms after stimulus onset
 
 if contains(Stimulus_types{1}, 'GAVNIK_') || contains(Stimulus_types{1}, 'GAVNIK ') 
     stim_window_starts = 0:0.15:0.45;
     stim_window_ends = 0.15:0.15:0.6;
     grey_window_starts = 0.65; % look from 50ms-150ms after stim D offset
     grey_window_ends = 0.75; % look from 50ms-150ms after stim D offset
-    stim_duration = 150;
 elseif contains(Stimulus_types{1}, 'GAVNIK250')  
     stim_window_starts = 0:0.25:0.75;
-    stim_window_ends = 0.25:0.25:1;  
-    stim_duration = 250;
+    stim_window_ends = 0.25:0.25:1;    
 else
     stim_window_starts = 0:0.3:0.9;
     stim_window_ends = 0.15:0.3:1.05;
@@ -71,13 +69,12 @@ all_mean_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_s
 %all_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
 
 %initiate struct to save peak firing rate following onset of element 2
-FRomit_summary = struct([]);
+FR_peak_element2_onset = struct([]);
 entry_counter = 0;
 
 for nsession = sessions_to_plot 
     for stim_idx = 1:length(Stimulus_types)
         Stimulus_type = Stimulus_types{stim_idx};
-        stimulus = regexp(Stimulus_type, '(ABCD|A_CD|E_CD)$', 'match', 'once');
         session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     
         stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -657,18 +654,18 @@ for nsession = sessions_to_plot
                             idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
 
-                        %for i = 1:length(stim_window_starts)
+                        for i = 1:length(stim_window_starts)
                             if contains(z_score_period, 'none')
                                 % Find indices of bins within current window
-                                %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
-                                peak_FR_by_stimwindow(i) = max(mean_trace(idx_peak));
-                                %mean_FR_by_stimwindow(i) = mean(mean_trace(idx_in_stimwindow));
+                                idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
+                                peak_FR_by_stimwindow(i) = max(mean_trace(idx_in_stimwindow));
+                                mean_FR_by_stimwindow(i) = mean(mean_trace(idx_in_stimwindow));
                                 
                             else
                                 % Find indices of bins within current window
-                                %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
-                                peak_FR_by_stimwindow(i) = max(z_trace(idx_peak));
-                                %mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));
+                                idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
+                                peak_FR_by_stimwindow(i) = max(z_trace(idx_in_stimwindow));
+                                mean_FR_by_stimwindow(i) = mean(z_trace(idx_in_stimwindow));
                                 
                             end
                         end
@@ -697,19 +694,18 @@ for nsession = sessions_to_plot
                         
                         % add to struct
                         entry_counter = entry_counter + 1;
-                        FRomit_summary(entry_counter).mouse = SUBJECTS{1};
-                        FRomit_summary(entry_counter).session_number = nsession;
-                        FRomit_summary(entry_counter).day = experiment_info(nsession).date;
-                        FRomit_summary(entry_counter).stimulus = stimulus;
-                        FRomit_summary(entry_counter).depth_for_analysis = depth_for_analysis;
-                        FRomit_summary(entry_counter).z_score_period = z_score_period;
-                        FRomit_summary(entry_counter).stim_duration = stim_duration;
+                        FR_peak_element2_onset(entry_counter).subject = SUBJECTS{1};
+                        FR_peak_element2_onset(entry_counter).session_number = nsession;
+                        FR_peak_element2_onset(entry_counter).day = experiment_info(nsession).date;
+                        FR_peak_element2_onset(entry_counter).stimulus_type = Stimulus_type;
+                        FR_peak_element2_onset(entry_counter).depth_for_analysis = depth_for_analysis;
+                        FR_peak_element2_onset(entry_counter).z_score_period = z_score_period;
 
-                        FRomit_summary(entry_counter).element2_peak_FR = peak_FR_by_stimwindow(2);
+                        FR_peak_element2_onset(entry_counter).stim.peak_FR = peak_FR_by_stimwindow(2);
                         % ---- Window definitions (critical metadata) ----
-                        FRomit_summary(entry_counter).stim_window_starts = stim_window_starts;
-                        FRomit_summary(entry_counter).stim_window_ends   = stim_window_ends;
-                        FRomit_summary(entry_counter).stim_onset_response_calc = ...
+                        FR_peak_element2_onset(entry_counter).stim_window_starts = stim_window_starts;
+                        FR_peak_element2_onset(entry_counter).stim_window_ends   = stim_window_ends;
+                        FR_peak_element2_onset(entry_counter).stim_onset_response_calc = ...
                             [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
                 
 
@@ -718,7 +714,7 @@ for nsession = sessions_to_plot
                         elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
                             xlim([-0.3 1.55]);
                         end    
-                        %ylim([-1 5]);
+                        ylim([-1 5]);
                         xticks(-0.4:0.2:1.4);
                         xlabel('Time (s)', 'FontSize', 24)
                         set(gca, 'FontSize', 24);  % Tick labels font size
@@ -769,7 +765,7 @@ end
 hold off;
 
 %save struct
-if contains(Stimulus_types{2}, 'GAVNIK_A_CD') || contains(Stimulus_types{2}, 'GAVNIK250_A_CD') 
+if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
     save(fullfile(subjects_dir, ...
         ['FRomit_summary_' depth_for_analysis '_' SUBJECTS{1} '_' Stimulus_types{1} '_' num2str(experiment_info(nsession).date) '.mat']), ...
         'FRomit_summary');

@@ -21,18 +21,16 @@ n_pls_components = 3;
 rng(1); % for reproducibility, fix the random number generator for the cross-validation split
 
 %%% 3/5
-Stimulus_type = 'TRAIN_2'; % OMIT, 'TRAIN_1' 'GAVNIK_ABCD_1' MUST specify which recording _#
+Stimulus_type = 'GAVNIK_ABCD_1'; % OMIT, 'TRAIN_1' 'GAVNIK_ABCD_1' MUST specify which recording _#
 temporal_structure = 'trial spikecounts'; % 'trial spikecounts' or 'timebinned spikes' to analyse spiking per neuron per trial across timebins, 'trial spikecounts' to just consider mean spiking per timebin during each trial
 % simple spikecounts gives better PCA silhouette scores for my TRAIN protocol 20250203
 % timebinned spikes gives better PCA silhouette scores for GAVNIK protocol 20250217
-z_score_period = 'entire_session'; % z score either over 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
-% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus. 'none' may be useful 
-% to try for the aggregate TRAIN case across days)
+z_score_period = 'stim_session'; % z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'entire_session' or 'first30secs' or 'none'
 psthBinSize = 0.01; % for GAVNIK protocol 20250217, using 1ms worsens cluster separation a lot. 0.02 worsens separation somewhat.
 stim_window = [0.03 0.16];  % in seconds: [start, end] For GAVNIK protocol 20250217, [0.03 0.16] is superior  to a longer or shorter window, in terms of mean silhouette score and centroid separation
                             % For my TRAIN protocol 20250203, [0.02 0.21] seems best. But across training days an uptick in spiking develops in the greyscreen period following stimulus offset
 
-cd('V:\Ellie\DATA\SUBJECTS\M00069\analysis\20251006\TRAIN_2') % 3/4 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00069\analysis\20250929\GAVNIK_ABCD_1') % 3/4 files will be saved here in the cd
 
 %% SET THIS 4/5***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -52,7 +50,7 @@ elseif probe_type == 1
     shank_ids = shank_ids(:);
 end
 
-for nsession = 9 %5/5 row number of recording date in "experiment_info" 
+for nsession = 4 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     
@@ -125,7 +123,9 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 depth_ranges = Sub_CA1_depth_range;
         end
 
-        
+        if contains(z_score_period, 'stim_session') % excludes variable grey screen period before and after the stimulus paradigm ran
+            time_edges = (min(Task_info.stim_onset) - 2):psthBinSize:(max(Task_info.stim_onset) + 2);
+        end
 
         if (contains(Stimulus_type, 'GAVNIK_ABCD')) || (contains(Stimulus_type, 'TRAIN'))
             for nprobe = 1:length(clusters)
@@ -236,7 +236,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                         for nCluster = 1:length(cluster_id) % loop through each good cluster
                             spike_times_this_cluster = depth_selected_clusters(nprobe).spike_times(depth_selected_clusters(nprobe).spike_id == cluster_id(nCluster)); % extract the spike times for this cluster    
                             % Compute appropriate histogram counts for z-scoring
-                            if contains(z_score_period, 'entire_session')
+                            if contains(z_score_period, 'entire_session') || contains(z_score_period, 'stim_session')
                                 zscore_counts = histcounts(spike_times_this_cluster, time_edges);
                             elseif contains(z_score_period, 'first30secs')
                                 baseline_spikes = spike_times_this_cluster(spike_times_this_cluster >= baseline_window(1) & spike_times_this_cluster <= baseline_window(2));
@@ -349,7 +349,8 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 elseif strcmp(pls_mode, 'full')         
                     [XL, YL, XS, YS, beta, PCTVAR, ~, stats] = plsregress(X, Y, n_pls_components); %  start with 3 PLS components
                     pls_model = struct();
-                    pls_model.W = stats.W; % projection weights               
+                    pls_model.W = stats.W; % projection weights   
+                    pls_model.qr_W = qr_W;% projection weights based on orthonormlised loading matrix
                     pls_model.XL = XL; % X loadings
                     pls_model.beta = beta; % regression coefficients
                     pls_model.PCTVAR = PCTVAR; % variance explained
@@ -383,13 +384,45 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 %centroid_score_pls = XS(:, 1:PLS_for_centroids);
 
                 if strcmp(pls_mode, 'cross_validation')
-                    XS_train_plot = XS_train(:, 1:PLS_for_centroids);
-                
-                    % Project held-out trials into PLS space
-                    Xmean_train = mean(X_train, 1);
-                    X_test_centered = X_test - Xmean_train;
-                    XS_test_plot = X_test_centered * stats.W(:, 1:PLS_for_centroids);
-                
+                    % XS_train_plot = XS_train(:, 1:PLS_for_centroids);
+                    % 
+                    % % Project held-out trials into PLS space
+                    % Xmean_train = mean(X_train, 1);
+                    % X_test_centered = X_test - Xmean_train;
+                    % XS_test_plot = X_test_centered * stats.W(:, 1:PLS_for_centroids);
+                    
+                    %%%% Projecting train data based on QR orthonormalised
+                    %%%% projection matrix with mean activity across
+                    %%%% neurons removed
+                    
+                    popMean = mean(X_train,2);
+                    Xreg = [ones(size(popMean)) popMean];
+                    X_residual = zeros(size(X_train));
+                    for ncell = 1:size(X_train,2)
+                        beta = Xreg \ X_train(:,ncell);
+                        X_residual(:,ncell) = X_train(:,ncell) - Xreg*beta;
+                    end
+                    [qr_W,~] = qr(XL,0);
+                    % pls_model.qr_W = qr_W;
+                    XS_train_plot = X_residual * qr_W(:, 1:PLS_for_centroids);
+
+                    %%%% Projecting test data based on QR orthonormalised
+                    %%%% projection matrix with mean activity across
+                    %%%% neurons removed
+
+                    popMean = mean(X_test,2);
+                    Xreg = [ones(size(popMean)) popMean];
+                    X_residual = zeros(size(X_test));
+                    for ncell = 1:size(X_test,2)
+                        beta = Xreg \ X_test(:,ncell);
+                        X_residual(:,ncell) = X_test(:,ncell) - Xreg*beta;
+                    end
+                    [qr_W,~] = qr(XL,0);
+                    % pls_model.qr_W = qr_W;
+                    % XS_test_plot = X_residual * stats.W(:, 1:PLS_for_centroids);
+                    XS_test_plot = X_residual * qr_W(:, 1:PLS_for_centroids);
+
+
                     labels_train = cond_labels(train_idx);
                     labels_test  = cond_labels(test_idx);
                 else
@@ -468,6 +501,10 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                                       (1:length(ordered_oris))', ordered_oris, 'UniformOutput', false);
                 end
                 
+                
+                %%& Directly using weight of train data
+                % XS_train_plot = XS_train(:, 1:PLS_for_centroids);
+
                 %%%% ---- Plot PLS (z-scored data) ----
                 fig_pls = figure;
                 cla;
@@ -483,6 +520,9 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                         36, colors(i,:), 'filled', 'MarkerFaceAlpha', 0.6);
                 end
                 hold on
+
+           
+
                 if strcmp(pls_mode, 'cross_validation') % outlined markers for test data
                     for i = 1:length(ordered_oris)
                         idx = labels_test == i;
@@ -524,7 +564,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                     legend_entries{end+1} = 'Training centroids';
 
                     % Add "Test datapoints" entry manually
-                    legend_entries{end+1} = 'Test datapoints';
+                    legend_entries{end+1} = 'Test datapoints (true label colour)';
                     
                     %% Training centroids handle (largest, 120)
                     h_legend(length(ordered_oris)+1) = scatter3(NaN, NaN, NaN, 120, colors(1, :), 'filled', 'MarkerFaceAlpha', 0.6, 'MarkerEdgeColor','k','LineWidth',1.5);
@@ -549,7 +589,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                 
                 %% ---- Combine metrics into annotation text ----
                 if strcmp(pls_mode, 'cross_validation')
-                    header_line = sprintf('PLS metrics derived using %.0f%% of trials:\n\n', train_fraction*100);
+                    header_line = sprintf('PLS metrics derived using %.0f%% of trials (i.e. "training" trials):\n\n', train_fraction*100);
                 else
                     header_line = '';
                 end
@@ -589,7 +629,7 @@ for nsession = 9 %5/5 row number of recording date in "experiment_info"
                     accuracy_test = mean(pred_labels_test == labels_test);  % fraction correct
                 
                     % ---- Text for SW box ----
-                    metrics_text_test = sprintf('Test trial classification based on nearest\ntraining centroid: %.1f%% accuracy', ...
+                    metrics_text_test = sprintf('Test trial (i.e. held-out trials) classification based on nearest\ntraining centroid: %.1f%% accuracy', ...
                                                 accuracy_test*100);
                 
                     % ---- Place box in SW ----

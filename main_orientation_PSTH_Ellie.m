@@ -20,8 +20,7 @@ plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurat
 plot_type = 'FR'; % 'FR' firing rate or 'raster' or 'struct' (for no plotting but output of metrics).
 sliced_plot_option = 'no'; % 'yes' if you want to plot traces by groups of 40 trials to look for changes during the session
 z_method = 'per_neuron'; % 'per_neuron' or 'in_aggregate'
-z_score_period = 'stim_session'; % z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'entire_session' or 'first30secs' or 'none' (for every stimulus recording
-% session from 20250205 onward, I presented grey screen to the mouse for at least 30s before starting the stimulus.
+z_score_period = 'stim_session'; % z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'entire_session' or 'first30secs' or 'none'
 %nprobe = 1;
 %base_folder='V:\Ellie\DATA\SUBJECTS';
 

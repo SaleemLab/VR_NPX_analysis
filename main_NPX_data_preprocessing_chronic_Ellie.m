@@ -28,7 +28,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
-all_SUBJECTS = {'M00088'};
+all_SUBJECTS = {'M00100'};
 % all_SUBJECTS = {'M00014'};
 
 Error_session_stimuli = [];
@@ -67,44 +67,113 @@ for n = 1:length(all_SUBJECTS)
 
             bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,'*.ap.bin'));
             meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(1).EPHYS_DATAPATH,bin_DIR.name));
-            stimuli_info.imErrFlags0(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
-                stimuli_info.date == experiment_info(nsession).date&...
-                stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
+            
+            
+            %stimuli_info.imErrFlags0(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+             %   stimuli_info.date == experiment_info(nsession).date&...
+               % stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
 
-            if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
-                    + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
-                    + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(9))~=0
-                sprintf('Session with non-zero imErrFlags0...')
+            %if str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(3))...
+             %       + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(7)) ...
+              %      + str2double(meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY(9))~=0
+               % sprintf('Session with non-zero imErrFlags0...')
+                %Error_session_stimuli = [Error_session_stimuli experiment_info(nsession).StimulusName(nstimuli)];
+                %Error_session_date = [Error_session_date experiment_info(nsession).date];
+                %Error_session_subject = [Error_session_subject; {experiment_info(nsession).subject}];
+                %                 Error_session_date
+                %experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;                              
+            %end
+
+            
+            %% ----- Handle different SpikeGLX metadata versions -----
+            if isfield(meta_this_session, 'imErrFlags0_IS_CT_SR_LK_PP_SY_MS')           
+                errFlags0 = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY_MS;            
+            elseif isfield(meta_this_session, 'imErrFlags0_IS_CT_SR_LK_PP_SY')            
+                errFlags0 = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;            
+            else           
+                warning('No imErrFlags0 field found.');
+                errFlags0 = '0 0 0 0 0 0 0';            
+            end
+            
+            
+            %% ----- Store err flags in table -----            
+            stimuli_info.imErrFlags0( ...
+                find(ismember(stimuli_info.stimulus_type, experiment_info(nsession).StimulusName(nstimuli)) & ...
+                stimuli_info.date == experiment_info(nsession).date & ...
+                stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)) ...
+                ) = string(errFlags0);
+                        
+            %% ----- Convert string to numeric vector -----           
+            errVals0 = str2double(split(string(errFlags0)));            
+            % Remove NaNs in case of strange formatting
+            errVals0 = errVals0(~isnan(errVals0));
+            
+            %% ----- Check for non-zero error flags -----           
+            if any(errVals0 ~= 0)            
+                disp('Session with non-zero imErrFlags0...')            
                 Error_session_stimuli = [Error_session_stimuli experiment_info(nsession).StimulusName(nstimuli)];
                 Error_session_date = [Error_session_date experiment_info(nsession).date];
                 Error_session_subject = [Error_session_subject; {experiment_info(nsession).subject}];
-                %                 Error_session_date
-                experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = meta_this_session.imErrFlags0_IS_CT_SR_LK_PP_SY;
-                
-                
+                experiment_info(nsession).session(nstimuli).probe(1).imErrFlags = errFlags0;           
             end
+
 
 
             if length(experiment_info(nsession).session(nstimuli).probe)==2
                 bin_DIR = dir(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,'*.ap.bin'));
                 meta_this_session = ReadMeta(fullfile(experiment_info(nsession).session(nstimuli).probe(2).EPHYS_DATAPATH,bin_DIR.name));
 
-                stimuli_info.imErrFlags1(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
-                    stimuli_info.date == experiment_info(nsession).date&...
-                    stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+                %stimuli_info.imErrFlags1(find(ismember(stimuli_info.stimulus_type,experiment_info(nsession).StimulusName(nstimuli))&...
+                 %   stimuli_info.date == experiment_info(nsession).date&...
+%                    stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)))=meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
 
-                if str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(3))...
-                        + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(7)) ...
-                        + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(9))~=0
-                    sprintf('Session with non-zero imErrFlags1...')
+ %               if str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(1))+ str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(3))...
+  %                      + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(5)) + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(7)) ...
+   %                     + str2double(meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY(9))~=0
+    %                sprintf('Session with non-zero imErrFlags1...')
+     %               Error_session_stimuli1 = [Error_session_stimuli1 experiment_info(nsession).StimulusName(nstimuli)];
+      %              Error_session_date1 = [Error_session_date1 experiment_info(nsession).date];
+       %             Error_session_subject1 = [Error_session_subject1; {experiment_info(nsession).subject}];
+                    %                     Error_session_date
+        %            experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
+
+         %       end
+
+                %% ----- Handle different SpikeGLX metadata versions -----
+                if isfield(meta_this_session, 'imErrFlags1_IS_CT_SR_LK_PP_SY_MS')           
+                    errFlags1 = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY_MS;            
+                elseif isfield(meta_this_session, 'imErrFlags1_IS_CT_SR_LK_PP_SY')            
+                    errFlags1 = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;            
+                else           
+                    warning('No imErrFlags1 field found.');
+                    errFlags1 = '0 0 0 0 0 0 0';            
+                end
+                
+                
+                %% ----- Store err flags in table -----            
+                stimuli_info.imErrFlags1( ...
+                    find(ismember(stimuli_info.stimulus_type, experiment_info(nsession).StimulusName(nstimuli)) & ...
+                    stimuli_info.date == experiment_info(nsession).date & ...
+                    stimuli_info.gs_number == experiment_info(nsession).gFileNum(nstimuli)) ...
+                    ) = string(errFlags1);
+                            
+                %% ----- Convert string to numeric vector -----           
+                errVals1 = str2double(split(string(errFlags1)));            
+                % Remove NaNs in case of strange formatting
+                errVals1 = errVals1(~isnan(errVals1));
+                
+                %% ----- Check for non-zero error flags -----           
+                if any(errVals1 ~= 0)            
+                    disp('Session with non-zero imErrFlags1...')            
                     Error_session_stimuli1 = [Error_session_stimuli1 experiment_info(nsession).StimulusName(nstimuli)];
                     Error_session_date1 = [Error_session_date1 experiment_info(nsession).date];
                     Error_session_subject1 = [Error_session_subject1; {experiment_info(nsession).subject}];
-                    %                     Error_session_date
-                    experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = meta_this_session.imErrFlags1_IS_CT_SR_LK_PP_SY;
-
+                    experiment_info(nsession).session(nstimuli).probe(2).imErrFlags = errFlags1;           
                 end
+    
             end
+
+
 
             if exist(session_info.probe(1).ANALYSIS_DATAPATH) == 0
                 mkdir(session_info.probe(1).ANALYSIS_DATAPATH)
@@ -142,7 +211,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %%%%%% Option 1 use subject_session_stimuli_mapping_Ellie for all animals you
 %%%%%% want to process. 
-SUBJECTS = {'M00088'};
+SUBJECTS = {'M00100'};
 options = 'V1-HPC';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
@@ -158,7 +227,8 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % All_stimuli = {'OP_Tuning'};
 
 
-All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'};
+All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'
+};
 
 % All_stimuli = 'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3';
 %All_stimuli = {'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms'}

@@ -1,13 +1,13 @@
 %%% ERB 2025. This code performs sleep-staging and calls functions to
 % detect slow waves, ripples and spindles, and saves the results. It plots V1 peri-ripplepeak spiking activity. 
 % For LFP analyses this script uses one channel from putative L5 and one from putative
-% CA1, both based on best regional power per PSD analysis (for which, use PSD_analysis_UnProcessedLFP_ellie).
+% CA1, both based on best regional power per PSD analysis.
 % L4 depth is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie)
 
 clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
-SUBJECTS = {'M00087'};  %% set this - 1/4
+SUBJECTS = {'M00069'};  %% set this - 1/4
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 params = create_cluster_selection_params('sorting_option','ellie');
@@ -15,9 +15,9 @@ psthBinSize = 0.01; % this script divides this by 10 (to 0.001s) for raster plot
 
 %% 2/4
 Stimulus_type = 'Sleep_Box_2'; % 'Sleep_Box' 'Sleep_Box_1' 'Sleep_Box_2' 'Sleep_Box_3'
-cd('V:\Ellie\DATA\SUBJECTS\M00087\analysis\20260211\Sleep_Box_2')
-V1_sleepstaging_shank = 1; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
-HPC_sleepstaging_shank = 4;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
+cd('V:\Ellie\DATA\SUBJECTS\M00069\analysis\20250929\Sleep_Box_2')
+V1_sleepstaging_shank = 3; %*************************visually inspect the PSD plots and choose whichever shank best captures V1
+HPC_sleepstaging_shank = 3;   %*****************************visually inspect the PSD plots and choose whichever shank best captures CA1
 
 %% 3/4***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
@@ -38,7 +38,7 @@ elseif probe_type == 1
 end
 
 %% 4/4
-for nsession = 6 %5/5 row number of recording date in "experiment_info" 
+for nsession = 4 %5/5 row number of recording date in "experiment_info" 
     session_info = experiment_info(nsession).session(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(strcmp(experiment_info(nsession).StimulusName,Stimulus_type));
 
@@ -514,6 +514,9 @@ for nsession = 6 %5/5 row number of recording date in "experiment_info"
         
         
         %% Extract and save sleep data for projection into pls space
+        % V1 spiking activity around SWS ripple events is formatted into the same structure as waking trial data so the sleep activity 
+        % can be projected into the latent PLS space that was inferred from the trial spiking data. The aim here is to test whether
+        % population activity during sleep resembles activity patterns during prior wake (i.e. whether there is reactivation)
         SleepData = struct();
         SleepData.subject = subject_number;
         SleepData.session = session_info.probe.SESSION;
@@ -525,34 +528,42 @@ for nsession = 6 %5/5 row number of recording date in "experiment_info"
         for nprobe = 1:length(V1_clusters)
 
             % Initialize
-            nNeurons = length(V1_clusters(nprobe).cluster_id);
-            nRipples = length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"));
-            nTimeBins = size(allCluster_binnedArrays{1},2); % bins from psthAndBA
+            nNeurons = length(V1_clusters(nprobe).cluster_id); %number of V1 neurons recorded from this probe
+            nRipples = length(ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS")); % use ripples only during SWS
+            nTimeBins = size(allCluster_binnedArrays{1},2); % bins from psthAndBA; number of bins spanning each ripple-aligned activity period
             
+            %Preallocate array that mirrors the organisation of the waking trial spiking response matrices used for latent-space learning
             X_sleep = nan(nRipples, nTimeBins, nNeurons);
             
             for nCluster = 1:nNeurons
-                binnedArray = allCluster_binnedArrays{nCluster};  % [nRipples x nTimeBins]
+                binnedArray = allCluster_binnedArrays{nCluster}; %[nRipples x nTimeBins] - binned peri-ripple spikecounts for this neuron
                 all_counts = binnedArray(:);  % vector of all counts
-                meanCounts = mean(all_counts);
-                stdCounts  = std(all_counts);
+                % z-score so that neurons with different firing rates contribute comparably to the latent-space projection
+                meanCounts = mean(all_counts); % mean across all ripple bins
+                stdCounts  = std(all_counts); % std deviation across all ripple bins
                 if stdCounts == 0, stdCounts = 1; % avoid divide by zero if neuron silent
                 end
                 
-                % Apply z-scoring to each ripple separately
+                % Apply z-scoring to each ripple separately, using the neuron's activity around ripples
                 z_binned = (binnedArray - meanCounts) ./ stdCounts;
-                X_sleep(:,:,nCluster) = z_binned;
+                X_sleep(:,:,nCluster) = z_binned; % X_sleep is the z-scored peri-ripple activity for each cluster
             end
         
-            SleepData.V1(nprobe).cluster_id = V1_clusters(nprobe).cluster_id;
+            SleepData.V1(nprobe).cluster_id = V1_clusters(nprobe).cluster_id; % store neuron identities
             SleepData.V1(nprobe).X_sleep = X_sleep; % [ripples x timebins x neurons]
+
+            % PLS expects each observaton to be a single row vector; need to reshape so that each ripple event contains the activity of
+            % all neurons across all timebins in one "feature vector" (i.e. a numerical representation of one observation/sample). This 
+            % allows projection into the previously learned PLS latent space, where each ripple is treated as one observation; each ripple 
+            % becomes a feature vector with # neurons x # timebins features (each feature corresponds to the spiking of a particular
+            % neuron in a particular timebin          
             SleepData.V1(nprobe).X_sleep_reshaped = reshape(X_sleep, nRipples, nTimeBins*nNeurons);
-            SleepData.V1(nprobe).X_sleep_mean = squeeze(mean(X_sleep, 2)); % [nRipples x nNeurons]  
+            SleepData.V1(nprobe).X_sleep_mean = squeeze(mean(X_sleep, 2)); % [nRipples x nNeurons] mean peri-ripple response across timebins  
             
-            SleepData.V1(nprobe).binnedArrays = allCluster_binnedArrays; % {cluster}{event x timebin}
-            SleepData.V1(nprobe).bins = bins;
-            SleepData.V1(nprobe).psthBinSize = psthBinSize;
-            SleepData.V1(nprobe).ripple_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS");
+            SleepData.V1(nprobe).binnedArrays = allCluster_binnedArrays; % {cluster}{event x timebin} non-normalised spike count data
+            SleepData.V1(nprobe).bins = bins; %timebin definitions
+            SleepData.V1(nprobe).psthBinSize = psthBinSize; %timebin definitions
+            SleepData.V1(nprobe).ripple_peaktimes = ripples(nprobe).peaktimes(ripples(nprobe).state == "SWS"); % ripplepeak timestamps
         end    
         
         SleepData.ripples = ripples;
