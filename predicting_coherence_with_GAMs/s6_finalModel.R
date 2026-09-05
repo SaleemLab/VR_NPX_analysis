@@ -88,16 +88,16 @@ message("\nFitting the Final Minimal Adequate Model...")
 mdl_final <- bam(Event_Coherence_Post_GeoMean ~ 
                    # 1. Surviving Main Power Effects
                    s(RipplePower_Z, k = 5) + 
-                   s(SpindlePower_Match_Z, k = 5) + 
+                   # s(SpindlePower_Match_Z, k = 5) + 
                    # s(SpindlePower_NonMatch_Z, k = 5) +
                    #ti(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = 5) +
                    #te(SpindlePower_Match_Z, SpindlePower_NonMatch_Z, k = c(5, 5))+
                  
                    # 2. The Baseline Phase Landscape (Synergy)
                    #te(SOPhase_Match, SOPhase_NonMatch, bs = "cc", k = 8) + 
-                   ti(SOPhase_Match, SOPhase_NonMatch, bs = "cc", k = 8) + 
-                   s(SOPhase_Match, bs = "cc", k = 8) + 
-                   s(SOPhase_NonMatch, bs = "cc", k = 8) + 
+                   # ti(SOPhase_Match, SOPhase_NonMatch, bs = "cc", k = 8) + 
+                   # s(SOPhase_Match, bs = "cc", k = 8) + 
+                   # s(SOPhase_NonMatch, bs = "cc", k = 8) + 
                    
                    # 3. The Winning Interaction (Local Ripple Gate)
                    #ti(RipplePower_Z, SOPhase_Match, bs = c("tp", "cc"), k = c(5, 8)) +

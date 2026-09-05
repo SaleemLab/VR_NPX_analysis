@@ -1,4 +1,4 @@
-function [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(event_A, event_B,num_bins,shuffle_options)
+function [probabilities,event_index,normalized_duration,binnedArray] = calculate_relative_event_probability(event_A, event_B,num_bins,shuffle_options,varargin)
 % Calculate the probability distribution of observing event B relative to event A for a range of normalized time bins.
 %
 % Parameters:
@@ -12,8 +12,18 @@ function [probabilities,event_index,normalized_duration,binnedArray] = calculate
 % outside_count (int): Count of event_B occurrences outside of event_A
 % event_index (array): Array indicating which event_A each event_B falls into
 % normalized_duration (array): Array indicating the normalized time of each event_B within event_A
+p = inputParser;
+addParameter(p,'Range',[0 1],@isnumeric)
+% lfp;
+% timevec;
+
+% assign parameters (either defaults or given)
+parse(p,varargin{:});
+Range = p.Results.Range;
 
 % Initialize the probabilities array
+% bin_edges = linspace(0, 1, num_bins+1);
+bin_edges = linspace(Range(1), Range(2), num_bins+1);
 probabilities = zeros(1, num_bins);
 binnedArray = zeros(size(event_A,1), num_bins);
 outside_count = 0;
@@ -21,7 +31,7 @@ event_index = [];
 normalized_duration = nan(1,length(event_B));
 event_B_index = 1:size(event_B,1);
 count = 1;
-bin_edges = linspace(0, 1, num_bins+1);
+% bin_edges = [bin_edges(1)-diff(bin_edges) bin_edges bin_edges(end)+diff(bin_edges)];
 bin_centres = bin_edges(1:end-1) + diff(bin_edges)/2;
 
 % Iterate through each event_A
@@ -32,8 +42,8 @@ for i = 1:size(event_A, 1)
 
     % Normalize event_B times relative to the duration of event_A
     relative_times = (event_B - onset_A) / duration_A;
-    B_index_this_event=find(relative_times(:,end)>=0 & relative_times(:,1)<=1);
-    relative_times = relative_times(relative_times(:,end)>=0 & relative_times(:,1)<=1,:);
+    B_index_this_event=find(relative_times(:,end)>=bin_edges(1) & relative_times(:,1)<=bin_edges(end));
+    relative_times = relative_times(relative_times(:,end)>=bin_edges(1) & relative_times(:,1)<=bin_edges(end),:);
 
     if isempty(relative_times)
         continue
@@ -56,6 +66,10 @@ for i = 1:size(event_A, 1)
         n = bins(j);
         bin_start = (n - 1) / num_bins;
         bin_end = n / num_bins;
+
+        bin_start = bin_edges(n);
+        bin_end = bin_edges(n+1);
+
         probabilities(j) = probabilities(j) + sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);
 
         binnedArray(i,j) =sum(relative_times(:,end) >= bin_start & relative_times(:,1) < bin_end);

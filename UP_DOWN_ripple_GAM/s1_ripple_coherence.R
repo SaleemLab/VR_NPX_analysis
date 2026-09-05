@@ -152,8 +152,8 @@ z_thresh <- 3.5  # include <99th centiles of data
 
 # List of the new Z-score columns to filter
 z_cols <- c(
-  "V1_pre_z", "V1_post_z", "HC_post_z" , "HC_pre_z" ,
-  "geo_coherencePRE_z","geo_coherence_z" 
+  "V1_pre_z", "V1_post_z", "HC_post_z" , "HC_pre_z",
+  "geo_coherencePRE_z","geo_coherence_z"
 )
 
 message(sprintf("Trimming extreme outliers beyond +/- %s Z-scores for %d variables...", z_thresh, length(z_cols)))
@@ -175,103 +175,142 @@ dat_Time <- dat_Time %>%
 ########
 ########
 ########
+# 
+# 
+# library(mgcv)
+# library(mgcViz)
+# # Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
+# mdl_pre_post <- bam(V1_post_z ~ 
+#                     # s(HC_post_z,k = 5) +
+#                     # s(V1_pre_z, k = 5) +
+#                     te(V1_pre_z, HC_post_z, k = c(5,5)) +
+#                     s(AnimalID, bs = "re")+
+#                     s(SessionID, bs = "re"), 
+#                   data = dat_clean, method = "fREML", discrete = TRUE)
+# 
+# print(summary(mdl_pre_post))
+# 
+# 
+# 
+# # Convert to an mgcViz object and plot
+# dev.new(noRStudioGD = TRUE)
+# viz <- getViz(mdl_pre_post)
+# plot(sm(viz, 1)) + 
+#   l_fitRaster() + 
+#   l_fitContour() + 
+#   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+#   labs(title = "Post V1 Bias as a function of Pre-V1 Bias and HC",
+#        x = "Pre-V1 Track Bias", y = "HC Track bias")
 
 
-library(mgcv)
-library(mgcViz)
-# Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
-mdl_pre_post <- bam(V1_post_z ~ 
-                    # s(HC_post_z,k = 5) +
-                    # s(V1_pre_z, k = 5) +
-                    te(V1_pre_z, HC_post_z, k = c(5,5)) +
-                    s(AnimalID, bs = "re")+
-                    s(SessionID, bs = "re"), 
-                  data = dat_clean, method = "fREML", discrete = TRUE)
 
-print(summary(mdl_pre_post))
-
-
-
-# Convert to an mgcViz object and plot
-viz <- getViz(mdl_pre_post)
-plot(sm(viz, 1)) + 
-  l_fitRaster() + 
-  l_fitContour() + 
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-  labs(title = "Post V1 Bias as a function of Pre-V1 Bias and HC",
-       x = "Pre-V1 Track Bias", y = "HC Track bias")
-
-
-
-
+#####
 library(mgcv)
 library(ggplot2)
 library(dplyr)
+# Fit the model where HC bias is predicted by the interaction of Pre-V1 and Time
+mdl_pre_post <- bam(V1_post_z ~ 
+                      s(HC_post_z,k = 5) +
+                      s(V1_pre_z, k = 5) +
+                      # ti(V1_pre_z, HC_post_z, k = c(5,5)) +
+                      # te(V1_pre_z, HC_post_z, k = c(5,5)) +
+                      s(AnimalID, bs = "re")+
+                      s(SessionID, bs = "re"), 
+                    data = dat_clean, method = "fREML", discrete = TRUE)
+
+print(summary(mdl_pre_post))
 
 # ---------------------------------------------------------
 # Plot 1: Main Effect of HC_post_z
 # ---------------------------------------------------------
-sm_hc <- smooth_estimates(mdl_visual, smooth = "s(HC_post_z)", n = 100) %>%
-  mutate(
-    .lower_ci = .estimate - (1.96 * .se),
-    .upper_ci = .estimate + (1.96 * .se)
-  )
+### HC post
+# Calculate scaling factors
+raw_breaks <- c(-2.5,-1,0,1,2.5)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean$HC_post_z[which.min(abs(dat_clean$HC_post - val))]
+})
 
-p_hc <- ggplot(sm_hc, aes(x = HC_post_z, y = .estimate)) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2, fill = "dodgerblue") +
-  geom_line(linewidth = 1, color = "dodgerblue") +
-  theme_bw() + 
-  labs(title = "Isolated Main Effect: HC Post (Z)", 
-       x = "HC_post_z", y = "Partial Effect")
+# cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
+p_HC_raw <- draw(mdl_pre_post, select = "s(HC_post_z)", residuals = FALSE, rug = FALSE) + 
+  theme_bw(base_family = "Arial") + 
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  labs(
+    title = "HC ripple bias predicting post V1 track bias", 
+    x = "HC bias", 
+    y = "Partial Effect"
+  )
 dev.new(noRStudioGD = TRUE)
-# cairo_pdf("SO_NonMatch_effect.pdf", width = 4.3, height = 4.3)
-print(p_hc)
+print(p_HC_raw)
+
+
 # ---------------------------------------------------------
 # Plot 2: Main Effect of V1_pre_z
 # ---------------------------------------------------------
-sm_v1 <- smooth_estimates(mdl_visual, smooth = "s(V1_pre_z)", n = 200) %>%
-  mutate(
-    .lower_ci = .estimate - (1.96 * .se),
-    .upper_ci = .estimate + (1.96 * .se)
-  )
+# sm_v1 <- smooth_estimates(mdl_pre_post, smooth = "s(V1_pre_z)", n = 200) %>%
+#   mutate(
+#     .lower_ci = .estimate - (1.96 * .se),
+#     .upper_ci = .estimate + (1.96 * .se)
+#   )
+# 
+# p_v1 <- ggplot(sm_v1, aes(x = V1_pre_z, y = .estimate)) +
+#   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2, fill = "firebrick") +
+#   geom_line(linewidth = 1, color = "firebrick") +
+#   theme_bw() + 
+#   labs(title = "Isolated Main Effect: V1 Pre (Z)", 
+#        x = "V1_pre_z", y = "Partial Effect")
+# 
+# print(p_v1)
 
-p_v1 <- ggplot(sm_v1, aes(x = V1_pre_z, y = .estimate)) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2, fill = "firebrick") +
-  geom_line(linewidth = 1, color = "firebrick") +
-  theme_bw() + 
-  labs(title = "Isolated Main Effect: V1 Pre (Z)", 
-       x = "V1_pre_z", y = "Partial Effect")
 
-print(p_v1)
+### V1_pre
+# Calculate scaling factors
+raw_breaks <- c(-2,-1,0,1,2)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean$V1_pre_z[which.min(abs(dat_clean$V1_pre - val))]
+})
 
-
-# ---------------------------------------------------------
-# Plot 3: Pure Interaction Tensor (ti) 
-# ---------------------------------------------------------
-sm_2d <- smooth_estimates(mdl_pre_post, smooth = "ti(V1_pre_z,HC_post_z)", n = 100)
-
-p_interaction <- ggplot(sm_2d, aes(x = V1_pre_z, y = HC_post_z, fill = .estimate)) +
-  geom_tile() + 
-  geom_contour(aes(z = .estimate), color = "black", alpha = 0.2) + 
-  scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Effect") +
-  theme_minimal() +
+# cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
+p_preV1_raw <- draw(mdl_pre_post, select = "s(V1_pre_z)", residuals = FALSE, rug = FALSE) + 
+  theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
-  labs(title = "Pure Tensor Interaction (ti Term)",
-       subtitle = "Variance unique to the combination",
-       x = "V1_pre_z", y = "HC_post_z")
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  labs(
+    title = "V1 pre-ripple bias predicting post V1 bias", 
+    x = "pre-ripple V1 bias", 
+    y = "Partial Effect"
+  )
+dev.new(noRStudioGD = TRUE)
+print(p_preV1_raw)
 
-print(p_interaction)
+# 
+# # ---------------------------------------------------------
+# # Plot 3: Pure Interaction Tensor (ti) 
+# # ---------------------------------------------------------
+# sm_2d <- smooth_estimates(mdl_pre_post, smooth = "ti(V1_pre_z,HC_post_z)", n = 100)
+# 
+# p_interaction <- ggplot(sm_2d, aes(x = V1_pre_z, y = HC_post_z, fill = .estimate)) +
+#   geom_tile() + 
+#   geom_contour(aes(z = .estimate), color = "black", alpha = 0.2) + 
+#   scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Effect") +
+#   theme_minimal() +
+#   theme(aspect.ratio = 1) +
+#   labs(title = "Pure Tensor Interaction (ti Term)",
+#        subtitle = "Variance unique to the combination",
+#        x = "V1_pre_z", y = "HC_post_z")
+# 
+# print(p_interaction)
 
-
-# ==============================================================================
-# --- RECREATING THE TOTAL LANDSCAPE ---
-# ==============================================================================
-
+# 
+# # ==============================================================================
+# # --- RECREATING THE TOTAL LANDSCAPE ---
+# # ==============================================================================
+# 
 # 1. Create a clean grid across the observed range of your data
 # grid_range_v1 <- seq(min(dat_clean$V1_pre_z, na.rm=TRUE), max(dat_clean$V1_pre_z, na.rm=TRUE), length.out = 100)
 # grid_range_hc <- seq(min(dat_clean$HC_post_z, na.rm=TRUE), max(dat_clean$HC_post_z, na.rm=TRUE), length.out = 100)
-grid_range_v1 <- seq(-3,3, length.out = 100)
-grid_range_hc <- seq(-3,3, length.out = 100)
+grid_range_v1 <- seq(-2.5,2.5, length.out = 40)
+grid_range_hc <- seq(-2.5,2.5, length.out = 40)
 
 pred_grid_total <- expand.grid(
   V1_pre_z  = grid_range_v1,
@@ -284,25 +323,38 @@ pred_grid_total <- expand.grid(
 term_preds <- predict(mdl_pre_post, newdata = pred_grid_total, type = "terms")
 
 # 3. Sum only your targets of interest
-pred_grid_total$Reconstructed_Effect <- 
-  term_preds[, "s(HC_post_z)"] + 
-  term_preds[, "s(V1_pre_z)"] 
+pred_grid_total$Reconstructed_Effect <-
+  term_preds[, "s(HC_post_z)"] +
+  term_preds[, "s(V1_pre_z)"]
   # term_preds[, "ti(V1_pre_z,HC_post_z)"]
 
 # 4. Plot Combined Surface
 p_combined <- ggplot(pred_grid_total, aes(x = V1_pre_z, y = HC_post_z, fill = Reconstructed_Effect)) +
-  geom_tile() + 
-  geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) + 
-  scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Total\nEffect") +
+  geom_tile() +
+  geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "firebrick", midpoint = 0, name = "Total\nEffect") +
   theme_minimal() +
-  theme(aspect.ratio = 1) +
+  # theme(aspect.ratio = 1) +
   labs(
-    title = "Total Combined Effect Surface", 
+    title = "Total Combined Effect Surface",
     subtitle = "Reconstructed: s(HC) + s(V1) + ti(V1, HC)",
-    x = "V1_pre_z", 
+    x = "V1_pre_z",
     y = "HC_post_z"
   )
+dev.new(noRStudioGD = TRUE)
 print(p_combined)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ########
@@ -338,7 +390,7 @@ print(summary(mdl_1))
 # Coherence depends on Normalised UP duration and Time To DOWN
 mdl_1 <- bam(geo_coherence_z ~ 
                s(NormalisedUP_Match_z, k = 5) +
-               s(NormalisedUP_NonMatch_z, k = 5) +
+               # s(NormalisedUP_NonMatch_z, k = 5) +
                #ti(NormalisedUP_Match_z, NormalisedUP_NonMatch_z, k = 5) +
     
                    # 4. Control Term

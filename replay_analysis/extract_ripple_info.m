@@ -1,4 +1,4 @@
-function predict_post_V1_from_HC_and_pre_V1(KDE_reactivation_ripples_PSTH,ripple_info)
+function extract_ripple_info(KDE_reactivation_ripples_PSTH,ripple_info)
 % predict_post_V1_from_HC_and_pre_V1
 % Analyzes how pre-ripple V1 bias and HC ripple bias influence post-ripple V1 bias.
 
@@ -9,9 +9,9 @@ function predict_post_V1_from_HC_and_pre_V1(KDE_reactivation_ripples_PSTH,ripple
 % window_HC      = [0.02,   0.12];
 % window_V1_post = [0.02,   0.12];
 
-window_V1_pre  = [-0.1, 0];
+window_V1_pre  = [-0.2, 0];
 window_HC      = [0,   0.1];
-window_V1_post = [0,   0.1];
+window_V1_post = [0,   0.2];
 
 disp('--- Track Bias Incongruent Analysis ---');
 fprintf('V1 Pre-Ripple Window:   [%.2f, %.2f] s\n', window_V1_pre);
@@ -200,7 +200,7 @@ tbl = table(ripple_info.ripple_power(UP_ripples), ...
 
 % 
 % --- Save as CSV ---
-output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple.csv');
+output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple_200ms.csv');
 % output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple_20_120ms.csv');
 % output_path = fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'pre_post_normalised_UP_ripple_-150_-50ms.csv');
 writetable(tbl, output_path);

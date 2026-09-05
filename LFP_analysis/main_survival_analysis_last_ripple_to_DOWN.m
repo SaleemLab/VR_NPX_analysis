@@ -1,0 +1,988 @@
+% MAIN_SURVIVAL_ANALYSIS_LAST_RIPPLE_TO_DOWN
+% Event-level Survival Analysis for Cortical UP State Termination after Last Ripple
+% Evaluates contributions of:
+% 1. Last ripple features (LFP power, duration, MUA sum & mean rate)
+% 2. Past ripples history (cumulative duration, count, MUA sum & mean rate)
+% 3. Non-ripple activity (cumulative duration, HPC & ipsilateral V1 MUA sum & mean rate)
+% 4. 1st vs 2nd Half UP State MUA (HPC & ipsilateral V1 MUA sum & mean rate)
+
+addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
+addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
+
+if exist('C:\Users\masah\OneDrive\Documents\corticohippocampal_replay', 'dir')
+    analysis_folder = 'C:\Users\masah\OneDrive\Documents\corticohippocampal_replay';
+elseif exist('D:\corticohippocampal_replay', 'dir')
+    analysis_folder = 'D:\corticohippocampal_replay';
+elseif exist('P:\corticohippocampal_replay', 'dir')
+    analysis_folder = 'P:\corticohippocampal_replay';
+else
+    analysis_folder = pwd;
+end
+
+output_dir = fullfile(analysis_folder, 'V1-HPC bilateral interaction', 'survival_analysis_last_ripple_to_DOWN');
+if ~exist(output_dir, 'dir')
+    mkdir(output_dir);
+end
+
+%% 1. Load Data
+load(fullfile(analysis_folder, 'ripples_all_POST.mat'));
+load(fullfile(analysis_folder, 'V1-HPC sleep interaction', 'SO_ripples_probability_whole_combined.mat'));
+probability_psth_whole = probability;
+
+load(fullfile(analysis_folder, 'slow_waves_all_POST.mat'));
+load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'UP_DOWN_info_100ms.mat'), 'UP_DOWN_info');
+load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'ripple_info.mat'), 'ripple_info');
+load(fullfile(analysis_folder, 'V1-HPC sleep interaction', 'merged_UP_DOWN_ripples_event_info.mat'), 'merged_event_info');
+load(fullfile(analysis_folder, 'V1-HPC sleep interaction', 'UP_DOWN_ripples_event_info.mat'), 'event_info');
+
+%% 2. Process Session Timestamps and Merge Bilateral Ripples & Spike Times
+UP_ints = [];
+DOWN_ints = [];
+ripple_peaktimes = [];
+ripple_ints = [];
+SO_ints = [];
+V1_MUA_spiketimes = [];
+HC_MUA_spiketimes = [];
+
+sessions_to_process = 1:max(slow_waves_all(1).UP_session_count);
+
+for nprobe = 1:2
+    V1_MUA_spiketimes{nprobe} = [];
+    HC_MUA_spiketimes{nprobe} = [];
+
+    UP_ints{nprobe}    = slow_waves_all(nprobe).UP_ints;
+    DOWN_ints{nprobe}  = slow_waves_all(nprobe).DOWN_ints;
+    SO_ints{nprobe}    = slow_waves_all(nprobe).DOWN_intervals;
+    ripple_peaktimes{nprobe} = ripples_all(nprobe).peaktimes(ripples_all(nprobe).SWS_index == 1);
+    ripple_ints{nprobe}      = [ripples_all(nprobe).onset(ripples_all(nprobe).SWS_index == 1), ...
+                                ripples_all(nprobe).offset(ripples_all(nprobe).SWS_index == 1)];
+
+    for nsession = 1:length(sessions_to_process)
+        sess_val = sessions_to_process(nsession);
+        
+        index = find(slow_waves_all(nprobe).DOWN_intervals_session == sess_val);
+        SO_ints{nprobe}(index, :) = SO_ints{nprobe}(index, :) + nsession * 1000000;
+
+        index = find(slow_waves_all(nprobe).UP_session_count == sess_val);
+        UP_ints{nprobe}(index, :) = UP_ints{nprobe}(index, :) + nsession * 1000000;
+
+        index = find(slow_waves_all(nprobe).DOWN_session_count == sess_val);
+        DOWN_ints{nprobe}(index, :) = DOWN_ints{nprobe}(index, :) + nsession * 1000000;
+
+        index = find(ripples_all(nprobe).session_count(ripples_all(nprobe).SWS_index == 1) == sess_val);
+        ripple_ints{nprobe}(index, :) = ripple_ints{nprobe}(index, :) + nsession * 1000000;
+        ripple_peaktimes{nprobe}(index, :) = ripple_peaktimes{nprobe}(index, :) + nsession * 1000000;
+
+        if nsession <= length(slow_waves_all(nprobe).V1_MUA_spiketimes) && ~isempty(slow_waves_all(nprobe).V1_MUA_spiketimes{nsession})
+            V1_MUA_spiketimes{nprobe} = [V1_MUA_spiketimes{nprobe}; slow_waves_all(nprobe).V1_MUA_spiketimes{nsession} + nsession * 1000000];
+            HC_MUA_spiketimes{nprobe} = [HC_MUA_spiketimes{nprobe}; slow_waves_all(nprobe).HPC_MUA_spiketimes{nsession} + nsession * 1000000];
+        end
+    end
+end
+
+% Assemble merged events across probes
+merged_event_info.UP_ints   = [UP_ints{1}(probability_psth_whole(1).UP_all_index, :); ...
+                                UP_ints{2}(probability_psth_whole(2).UP_all_index, :)];
+merged_event_info.DOWN_ints = [DOWN_ints{1}(probability_psth_whole(1).DOWN_all_index, :); ...
+                                DOWN_ints{2}(probability_psth_whole(2).DOWN_all_index, :)];
+
+merged_event_info.UP_hemisphere_id   = [ones(length(probability_psth_whole(1).UP_all_index), 1); ...
+                                        2 * ones(length(probability_psth_whole(2).UP_all_index), 1)];
+merged_event_info.DOWN_hemisphere_id = [ones(length(probability_psth_whole(1).DOWN_all_index), 1); ...
+                                        2 * ones(length(probability_psth_whole(2).DOWN_all_index), 1)];
+
+merged_event_info.ripples_peaktimes     = [ripple_peaktimes{1}; ripple_peaktimes{2}];
+merged_event_info.ripples_ints          = [ripple_ints{1}; ripple_ints{2}];
+merged_event_info.ripples_hemisphere_id = [ones(length(ripple_peaktimes{1}), 1); ...
+                                            2 * ones(length(ripple_peaktimes{2}), 1)];
+
+[event_ids_first, event_ids_second] = merge_bilateral_ripple_events(merged_event_info.ripples_hemisphere_id, ...
+    merged_event_info.ripples_peaktimes, 0.05);
+
+merged_event_info.ripples_hemisphere_id = merged_event_info.ripples_hemisphere_id(event_ids_first);
+merged_event_info.ripples_peaktimes     = merged_event_info.ripples_peaktimes(event_ids_first, :);
+merged_event_info.ripples_ints          = merged_event_info.ripples_ints(event_ids_first, :);
+
+ripples_original_index = [find(ripples_all(1).SWS_index); find(ripples_all(2).SWS_index)];
+merged_event_info.ripples_original_index = ripples_original_index(event_ids_first);
+
+ripplePower = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index); ripples_all(2).peak_zscore(ripples_all(2).SWS_index)];
+ripplePower = mean([ripplePower(event_ids_first), ripplePower(event_ids_second)], 2);
+merged_event_info.ripples_power = ripplePower;
+
+% Session and subject metadata extraction
+UP_session_count = [slow_waves_all(1).UP_session_count(probability_psth_whole(1).UP_all_index); ...
+                    slow_waves_all(2).UP_session_count(probability_psth_whole(2).UP_all_index)];
+subject_id = str2double(cellstr(slow_waves_all(1).subject(UP_session_count, end-1:end)));
+[~, ~, subject_id] = unique(subject_id);
+
+merged_event_info.session_id = UP_session_count;
+merged_event_info.subject_id = subject_id;
+
+%% 3. Build Event-Level Summary Table
+fprintf('Building last-ripple to DOWN event summary table...\n');
+% T_last_ripple = build_last_ripple_to_DOWN_summary_table(merged_event_info, ...
+%     V1_MUA_spiketimes, HC_MUA_spiketimes, ...
+%     'time_reference', 'offset', ...
+%     'non_ripple_scope', 'entire_UP');
+T_last_ripple = build_last_ripple_to_DOWN_summary_table(merged_event_info, ...
+    V1_MUA_spiketimes, HC_MUA_spiketimes, ...
+    'time_reference', 'offset', ...
+    'non_ripple_scope', 'prior_to_last_ripple');
+
+T_last_ripple.UP_to_last_ripple = T_last_ripple.up_duration-T_last_ripple.last_ripple_duration-T_last_ripple.last_ripple_to_UP_term;
+
+
+T_last_ripple.diff_half_HPC_MUA_sum  = T_last_ripple.second_half_HPC_MUA_sum - T_last_ripple.first_half_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_MUA_mean = T_last_ripple.second_half_HPC_MUA_mean - T_last_ripple.first_half_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_MUA_sum   = T_last_ripple.second_half_V1_MUA_sum - T_last_ripple.first_half_V1_MUA_sum;
+T_last_ripple.diff_half_V1_MUA_mean  = T_last_ripple.second_half_V1_MUA_mean - T_last_ripple.first_half_V1_MUA_mean;
+
+T_last_ripple.diff_half_HPC_ripple_MUA_sum  = T_last_ripple.second_half_ripple_HPC_MUA_sum - T_last_ripple.first_half_ripple_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_ripple_MUA_mean = T_last_ripple.second_half_ripple_HPC_MUA_mean - T_last_ripple.first_half_ripple_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_ripple_MUA_sum   = T_last_ripple.second_half_ripple_V1_MUA_sum - T_last_ripple.first_half_ripple_V1_MUA_sum;
+T_last_ripple.diff_half_V1_ripple_MUA_mean  = T_last_ripple.second_half_ripple_V1_MUA_mean - T_last_ripple.first_half_ripple_V1_MUA_mean;
+
+T_last_ripple.diff_half_HPC_past_ripples_MUA_sum  = T_last_ripple.second_half_past_ripples_HPC_MUA_sum - T_last_ripple.first_half_past_ripples_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_past_ripples_MUA_mean = T_last_ripple.second_half_past_ripples_HPC_MUA_mean - T_last_ripple.first_half_past_ripples_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_past_ripples_MUA_sum   = T_last_ripple.second_half_past_ripples_V1_MUA_sum - T_last_ripple.first_half_past_ripples_V1_MUA_sum;
+T_last_ripple.diff_half_V1_past_ripples_MUA_mean  = T_last_ripple.second_half_past_ripples_V1_MUA_mean - T_last_ripple.first_half_past_ripples_V1_MUA_mean;
+
+
+T_last_ripple.diff_half_HPC_non_ripple_MUA_sum  = T_last_ripple.second_half_non_ripple_HPC_MUA_sum - T_last_ripple.first_half_non_ripple_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_non_ripple_MUA_mean = T_last_ripple.second_half_non_ripple_HPC_MUA_mean - T_last_ripple.first_half_non_ripple_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_non_ripple_MUA_sum   = T_last_ripple.second_half_non_ripple_V1_MUA_sum - T_last_ripple.first_half_non_ripple_V1_MUA_sum;
+T_last_ripple.diff_half_V1_non_ripple_MUA_mean  = T_last_ripple.second_half_non_ripple_V1_MUA_mean - T_last_ripple.first_half_non_ripple_V1_MUA_mean;
+
+T_last_ripple.last_ripple_HPC_MUA_gain = T_last_ripple.last_ripple_HPC_MUA_mean./T_last_ripple.past_ripples_HPC_MUA_mean;
+T_last_ripple.last_ripple_HPC_MUA_gain_baseline = T_last_ripple.last_ripple_HPC_MUA_mean./T_last_ripple.non_ripple_HPC_MUA_mean;
+T_last_ripple.past_ripples_HPC_MUA_gain_baseline = T_last_ripple.past_ripples_HPC_MUA_mean./T_last_ripple.non_ripple_HPC_MUA_mean;
+% T_last_ripple.last_ripple_HPC_MUA_gain = T_last_ripple.last_ripple_HPC_MUA_sum./T_last_ripple.past_ripples_HPC_MUA_sum;
+% T_last_ripple.last_ripple_HPC_MUA_gain_baseline = T_last_ripple.last_ripple_HPC_MUA_sum./T_last_ripple.non_ripple_HPC_MUA_sum;
+% T_last_ripple.past_ripples_HPC_MUA_gain_baseline = T_last_ripple.past_ripples_HPC_MUA_sum./T_last_ripple.non_ripple_HPC_MUA_sum;
+
+T_last_ripple.last_ripple_HPC_MUA_gain(isinf(T_last_ripple.last_ripple_HPC_MUA_gain))=nan;
+T_last_ripple.last_ripple_HPC_MUA_gain_baseline(isinf(T_last_ripple.last_ripple_HPC_MUA_gain_baseline))=nan;
+T_last_ripple.past_ripples_HPC_MUA_gain_baseline(isinf(T_last_ripple.past_ripples_HPC_MUA_gain_baseline))=nan;
+
+T_last_ripple.last_ripple_HPC_MUA_gain(T_last_ripple.last_ripple_HPC_MUA_gain>prctile(T_last_ripple.last_ripple_HPC_MUA_gain,99.5))=prctile(T_last_ripple.last_ripple_HPC_MUA_gain,99.5);
+T_last_ripple.last_ripple_HPC_MUA_gain_baseline(T_last_ripple.last_ripple_HPC_MUA_gain_baseline>prctile(T_last_ripple.last_ripple_HPC_MUA_gain_baseline,99.5))=prctile(T_last_ripple.last_ripple_HPC_MUA_gain_baseline,99.5);
+T_last_ripple.past_ripples_HPC_MUA_gain_baseline(T_last_ripple.past_ripples_HPC_MUA_gain_baseline>prctile(T_last_ripple.past_ripples_HPC_MUA_gain_baseline,99.5))=prctile(T_last_ripple.past_ripples_HPC_MUA_gain_baseline,99.5);
+
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+
+
+
+
+save(fullfile(output_dir, 'last_ripple_to_DOWN_table.mat'), 'T_last_ripple');
+fprintf('Summary table generated with %d UP events (%d with ripples).\n', ...
+    height(T_last_ripple), sum(~isnan(T_last_ripple.last_ripple_to_UP_term)));
+
+%% 4. Model 1: Last Ripple Features Effect
+fprintf('Running Model 1: Last Ripple Features...\n');
+% model1_covariates = {'last_ripple_power'};
+% model1_labels     = {'Last Ripple Power'};
+% model1_covariates = {'last_ripple_HPC_MUA_sum', 'last_ripple_power', 'last_ripple_duration'};
+% model1_labels     = {'Last Ripple HPC MUA', 'Last Ripple Power', 'Last Ripple Duration'};
+% model1_covariates = {'last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_peak'};
+% model1_labels     = {'Last Ripple HPC MUA mean','Last Ripple HPC MUA peak'};
+
+% model1_covariates = {'last_ripple_HPC_MUA_peak','last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_sum','UP_to_last_ripple'};
+% model1_labels     = {'Last Ripple HPC MUA peak','Last Ripple HPC MUA mean','Last Ripple HPC MUA sum','UP to last ripple duration'};
+% model1_covariates = {'last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_sum','UP_to_last_ripple'};
+% model1_labels     = {'Last Ripple HPC MUA mean','Last Ripple HPC MUA sum','UP to last ripple duration'};
+% 
+% T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+% output_model = plot_last_ripple_UP_survival(T_last_ripple1, model1_covariates, ...
+%     'title_name', 'Last Ripple HC MUA mean vs sum effect on UP Survival (duration controlled)', ...
+%     'feature_labels', model1_labels, ...
+%     'strata_var', 'session_id');
+% 
+
+model1_covariates = {'last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_sum'};
+model1_labels     = {'Last Ripple HPC MUA mean','Last Ripple HPC MUA sum'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model1_covariates, ...
+    'title_name', 'Last Ripple HC MUA mean vs sum effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_last_ripple_MUA_mean_vs_sum.mat'), 'output_model');
+save_all_figures(output_dir, []);
+% 
+% model1_covariates = {'last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_peak'};
+% model1_labels     = {'Last Ripple HPC MUA mean','Last Ripple HPC MUA peak'};
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model1_covariates, ...
+    'title_name', 'Last Ripple HC MUA sum vs mean effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id');
+
+
+
+save(fullfile(output_dir, 'model_last_ripple_MUA_peak_vs_sum.mat'), 'output_model');
+save_all_figures(output_dir, []);
+% 
+% figure;histogram2(T_last_ripple.last_ripple_HPC_MUA_mean,T_last_ripple.last_ripple_HPC_MUA_peak);
+% xline(prctile(T_last_ripple.last_ripple_HPC_MUA_sum,25))
+% xline(prctile(T_last_ripple.last_ripple_HPC_MUA_sum,75))
+% yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,25))
+% yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,75))
+
+figure;scatter(T_last_ripple.past_ripples_HPC_MUA_mean,T_last_ripple.recency_weighted_past_HPC_MUA_mean);
+figure;scatter(T_last_ripple.past_ripples_HPC_MUA_sum,T_last_ripple.recency_weighted_past_HPC_MUA_sum);
+
+xline(prctile(T_last_ripple.last_ripple_HPC_MUA_sum,25))
+xline(prctile(T_last_ripple.last_ripple_HPC_MUA_sum,75))
+yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,25))
+yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,75))
+
+
+
+% 5. Model 2: Past Ripples History Effect
+fprintf('Running Model 2: Past Ripples History...\n');
+% model2_covariates = {'past_ripples_HPC_MUA_sum', 'past_ripples_duration', 'past_ripples_count'};
+% model2_labels     = {'Past Ripples HPC MUA', 'Past Ripples Duration', 'Past Ripples Count'};
+
+% model2_covariates = {'past_ripples_HPC_MUA_sum', 'last_ripple_power', 'non_ripple_HPC_MUA_sum'};
+% model2_labels     = {'Past Ripples HPC MUA', 'Last Ripple power', 'Non-Ripple HPC MUA'};
+% 
+% model2_covariates = {'past_ripples_HPC_MUA_sum', 'last_ripple_HPC_MUA_sum'};
+% model2_labels     = {'Past Ripples HPC MUA', 'Last Ripple HPC MUA'};
+% model2_covariates = {'past_ripples_HPC_MUA_mean', 'last_ripple_HPC_MUA_mean'};
+% model2_labels     = {'Past Ripples HPC MUA', 'Last Ripple HPC MUA'};
+
+% model2_covariates = {'past_ripples_HPC_MUA_sum', 'last_ripple_HPC_MUA_sum', 'last_ripple_HPC_MUA_peak'};
+% model2_labels     = {'Past Ripples HPC MUA', 'Last Ripple HPC MUA sum','Last Ripple HPC MUA peak'};
+% model2_covariates = {'past_ripples_HPC_MUA_sum', 'last_ripple_HPC_MUA_sum'};
+% model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA sum'};
+
+%% past ripples MUA rate vs last ripple MUA rate 
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+
+model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+                     'past_ripples_HPC_MUA_mean', ...
+                     'non_ripple_HPC_MUA_mean'};
+
+model4_labels     = {'Last Ripple HPC MUA rate', ...
+                     'Past Ripples HPC MUA rate', ...
+                     'Non-Ripple HPC MUA rate'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Past ripple vs last ripple MUA rate on UP Survival', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+                     'past_ripples_HPC_MUA_mean', ...
+                     'non_ripple_HPC_MUA_mean',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA rate', ...
+                     'Past Ripples HPC MUA rate', ...
+                     'Non-Ripple HPC MUA rate',...
+                     'UP to last ripple duration'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Past ripple vs last ripple MUA rate on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_past_ripple_vs_last_ripple_MUA_rate.mat'), 'output_model','output_model2');
+save_all_figures(output_dir, []);
+
+%%%%% Divided by recency bins
+model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+                     'past_ripples_0_100ms_HPC_MUA_mean', ...
+                     'past_ripples_100_200ms_HPC_MUA_mean', ...
+                     'past_ripples_200plus_ms_HPC_MUA_mean', ...
+                     'non_ripple_HPC_MUA_mean',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA rate', ...
+                     'Past Ripples HPC MUA rate 0-100ms','Past Ripples HPC MUA rate 100-200ms','Past Ripples HPC MUA rate 200ms',...
+                     'Non-Ripple HPC MUA rate',...
+                     'UP to last ripple duration'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Past ripple (by bins) vs last ripple MUA rate on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+%% past ripples sum vs last ripple sum influence on UP termination
+
+model2_covariates = {'last_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','non_ripple_HPC_MUA_sum','UP_to_last_ripple'};
+model2_labels     = {'Last Ripple HPC MUA sum','Past Ripples HPC MUA sum','Non-Ripple HPC MUA sum','UP to last ripple duration'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Past Ripples History vs last ripple MUA sum effect on UP Survival (UP to last ripple duration accounted)', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+model2_covariates = {'last_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','non_ripple_HPC_MUA_sum'};
+model2_labels     = {'Last Ripple HPC MUA sum','Past Ripples HPC MUA sum','Non-Ripple HPC MUA sum'};
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Past Ripples History vs last ripple MUA sum effect on UP Survival', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_past_ripple_vs_last_ripple_MUA_sum.mat'), 'output_model','output_model2');
+save_all_figures(output_dir, []);
+
+
+%%%%% By recency bins
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+
+model4_covariates = {'last_ripple_HPC_MUA_sum', ...
+                     'past_ripples_0_100ms_HPC_MUA_sum', ...
+                     'past_ripples_100_200ms_HPC_MUA_sum', ...
+                     'past_ripples_200plus_ms_HPC_MUA_sum', ...
+                     'non_ripple_HPC_MUA_sum',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA sum', ...
+                     'Past Ripples HPC MUA sum 0-100ms','Past Ripples HPC MUA sum 100-200ms','Past Ripples HPC MUA sum 200ms',...
+                     'Non-Ripple HPC MUA sum',...
+                     'UP to last ripple duration'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Past ripple (by bins) vs last ripple MUA sum on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+
+model4_covariates = {'last_ripple_HPC_MUA_sum', ...
+                     'past_ripples_0_100ms_HPC_MUA_sum', ...
+                     'past_ripples_100_200ms_HPC_MUA_sum', ...
+                     'past_ripples_200plus_ms_HPC_MUA_sum', ...
+                     'non_ripple_HPC_MUA_sum'};
+
+model4_labels     = {'Last Ripple HPC MUA sum', ...
+                     'Past Ripples HPC MUA sum 0-100ms','Past Ripples HPC MUA sum 100-200ms','Past Ripples HPC MUA sum 200ms',...
+                     'Non-Ripple HPC MUA sum'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Past ripple (by bins) vs last ripple MUA sum on UP Survival', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+%% last ripple MUA gain
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_gain_baseline','last_ripple_HPC_MUA_gain',...
+    'UP_to_last_ripple'};
+model4_labels     = {'Last Ripple relative to non ripple MUA rate','Last Ripple relative to past ripples MUA rate', ...
+                     'UP to last ripple duration'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Ripple MUA relative to baseline and past ripples on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_gain_baseline','last_ripple_HPC_MUA_gain'};
+model4_labels     = {'Last Ripple relative to non ripple MUA rate','Last Ripple relative to past ripples MUA rate'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Ripple MUA relative to baseline and past ripples on UP Survival', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+model4_covariates = {'last_ripple_HPC_MUA_mean','last_ripple_HPC_MUA_gain_baseline'};
+model4_labels     = {,'Last Ripple MUA rate','Last Ripple relative to non ripple MUA rate'};
+
+output_model3 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Ripple MUA relative to baseline on UP Survival', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+save(fullfile(output_dir, 'model_last_ripple_MUA_rate_ratio.mat'), 'output_model','output_model2','output_model3');
+save_all_figures(output_dir, []);
+
+% model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+%                      'last_ripple_HPC_MUA_gain_baseline', ...
+%                      'past_ripples_HPC_MUA_mean',...
+%                      'past_ripples_HPC_MUA_gain_baseline'};
+% 
+% model4_labels     = {'Last Ripple MUA rate', ...
+%                      'Last Ripple relative to non ripple MUA rate', ...
+%                      'Past Ripples MUA rate', ...
+%                      'Past Ripples relative to non ripple MUA rate'};
+%% Combined model
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','non_ripple_HPC_MUA_sum','last_ripple_HPC_MUA_gain_baseline',...
+'last_ripple_HPC_MUA_gain','UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA sum','Past Ripples HPC MUA sum','Non-Ripple HPC MUA sum',...
+'Last Ripple relative to non ripple MUA rate','Last Ripples relative to past ripples MUA rate','UP to last ripple duration'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model (with MUA rate ratio) on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_combined.mat'), 'output_model');
+save_all_figures(output_dir, []);
+
+
+
+%%
+
+
+
+% 
+% %% past ripples sum vs last ripple peak influence on UP termination
+% model2_covariates = {'past_ripples_HPC_MUA_sum','last_ripple_HPC_MUA_peak','UP_to_last_ripple'};
+% model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA peak','UP to last ripple duration'};
+% output_model = plot_last_ripple_UP_survival(T_last_ripple, model2_covariates, ...
+%     'title_name', 'Past Ripples History vs last ripple MUA peak effect on UP Survival (UP to last ripple duration accounted)', ...
+%     'feature_labels', model2_labels, ...
+%     'strata_var', 'session_id');
+% 
+% 
+% model2_covariates = {'past_ripples_HPC_MUA_sum','last_ripple_HPC_MUA_peak'};
+% model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA peak'};
+% output_model2 = plot_last_ripple_UP_survival(T_last_ripple, model2_covariates, ...
+%     'title_name', 'Past Ripples History vs last ripple MUA peak effect on UP Survival', ...
+%     'feature_labels', model2_labels, ...
+%     'strata_var', 'session_id');
+% 
+% 
+% save(fullfile(output_dir, 'model_past_ripple_vs_last_ripple_MUA_peak.mat'), 'output_model','output_model2');
+% save_all_figures(output_dir, []);
+
+%%
+model2_covariates = {'last_ripple_interval','UP_to_last_ripple'};
+model2_labels     = {'Inter ripple interval','UP to last ripple duration'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model2_covariates, ...
+    'title_name', 'Inter ripple interval on UP Survival (UP to last ripple duration accounted)', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+%%
+% 
+% model2_covariates = {'last_ripple_HPC_MUA_sum','recency_weighted_past_HPC_MUA_sum','UP_to_last_ripple'};
+% model2_labels     = {'Last Ripple HPC MUA sum','Recency weighted past HPC MUA','UP to last ripple duration'};
+% 
+% 
+% model2_covariates = {'recency_weighted_past_HPC_MUA_mean','recency_weighted_past_HPC_MUA_sum','UP_to_last_ripple'};
+% model2_labels     = {'Recency weighted past HPC MUA mean','Recency weighted past HPC MUA sum','UP to last ripple duration'};
+
+model2_covariates = {'last_ripple_HPC_MUA_sum','recency_weighted_past_HPC_MUA_sum','UP_to_last_ripple'};
+model2_labels     = {'Last Ripple HPC MUA sum','Recency weighted past HPC MUA','UP to last ripple duration'};
+
+
+
+model2_covariates = {'past_ripples_HPC_MUA_mean','recency_weighted_past_HPC_MUA_mean','UP_to_last_ripple'};
+model2_labels     = {'Past Ripples HPC MUA','Recency weighted past HPC MUA sum','UP to last ripple duration'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model2_covariates, ...
+    'title_name', 'Past Ripples History with and without recency effect on UP Survival (UP to last ripple duration accounted)', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+model2_covariates = {'past_ripples_HPC_MUA_mean','recency_weighted_past_HPC_MUA_mean'};
+model2_labels     = {'Past Ripples HPC MUA mean','Recency weighted past HPC MUA mean'};
+% model2_covariates = {'recency_weighted_past_HPC_MUA_mean'};
+% model2_labels     = {'Recency weighted past HPC MUA mean'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Past Ripples History with and without recency effect on UP Survival', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+% model2_covariates = {'past_ripples_HPC_MUA_sum','last_ripple_HPC_MUA_sum','UP_to_last_ripple'};
+% model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA sum','UP to last ripple duration'};
+
+%%
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+% model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA sum'};
+model2_covariates = {'past_ripples_HPC_MUA_sum','last_ripple_HPC_MUA_sum','last_ripple_HPC_MUA_peak','UP_to_last_ripple'};
+model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA sum','Last Ripple HPC MUA peak','UP to last ripple duration'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Past Ripples History vs last ripple MUA effect on UP Survival (UP to last ripple duration accounted)', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+model2_covariates = {'past_ripples_HPC_MUA_sum','last_ripple_HPC_MUA_sum','last_ripple_HPC_MUA_peak'};
+model2_labels     = {'Past Ripples HPC MUA','Last Ripple HPC MUA sum','Last Ripple HPC MUA peak'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Past Ripples History vs last ripple MUA effect on UP Survival', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+save(fullfile(output_dir, 'model_past_ripple_vs_last_ripple_MUA.mat'), 'output_model','output_model2');
+save_all_figures(output_dir, []);
+
+
+
+% figure;scatter(T_last_ripple.past_ripples_HPC_MUA_sum,T_last_ripple.last_ripple_HPC_MUA_peak);
+% xline(prctile(T_last_ripple.past_ripples_HPC_MUA_sum,20))
+% xline(prctile(T_last_ripple.past_ripples_HPC_MUA_sum,80))
+% yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,20))
+% yline(prctile(T_last_ripple.last_ripple_HPC_MUA_peak,80))
+
+
+
+T_last_ripple.ripple_duration = T_last_ripple.second_half_ripple_duration + T_last_ripple.first_half_ripple_duration;
+T_last_ripple.past_ripple_duration = T_last_ripple.second_half_ripple_duration + T_last_ripple.first_half_ripple_duration-T_last_ripple.last_ripple_duration;
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model2_covariates = {'past_ripple_duration', 'last_ripple_duration','UP_to_last_ripple'};
+model2_labels     = {'Past Ripples duration', 'Last Ripple duration','UP to last ripple duration'};
+% model2_covariates = {'ripple_duration','UP_to_last_ripple'};
+% model2_labels     = {'Ripples duration','UP to last ripple duration'};
+
+% model2_covariates = {'ripple_duration'};
+% model2_labels     = {'Ripples duration'};
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Ripple duration Effect on UP Survival', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_ripple_duration.mat'), 'output_model');
+save_all_figures(output_dir, []);
+
+
+
+
+
+T_last_ripple.ripple_duration = T_last_ripple.second_half_ripple_duration + T_last_ripple.first_half_ripple_duration;
+T_last_ripple.past_ripple_duration = T_last_ripple.second_half_ripple_duration + T_last_ripple.first_half_ripple_duration-T_last_ripple.last_ripple_duration;
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model2_covariates = {'past_ripple_duration', 'last_ripple_duration','UP_to_last_ripple'};
+model2_labels     = {'Past Ripples duration', 'Last Ripple duration','UP to last ripple duration'};
+% model2_covariates = {'ripple_duration','UP_to_last_ripple'};
+% model2_labels     = {'Ripples duration','UP to last ripple duration'};
+
+% model2_covariates = {'ripple_duration'};
+% model2_labels     = {'Ripples duration'};
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model2_covariates, ...
+    'title_name', 'Ripple duration Effect on UP Survival', ...
+    'feature_labels', model2_labels, ...
+    'strata_var', 'session_id');
+
+
+
+%% 6. Model 4: non ripple Model
+fprintf('Running Model 4: Full Multivariable Combined Model...\n');
+% model3_covariates = {'non_ripple_HPC_MUA_sum','UP_to_last_ripple'};
+% model3_labels     = {'Non-Ripple HPC MUA', 'UP to last ripple duration'};
+
+model3_covariates = {'non_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum'};
+model3_labels     = {'Non-Ripple HPC MUA sum', 'Past ripples HPC MUA sum'};
+
+% 
+model3_covariates = {'non_ripple_HPC_MUA_mean','past_ripples_HPC_MUA_sum'};
+model3_labels     = {'Non-Ripple HPC MUA mean', 'Past ripples HPC MUA mean'};
+
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model3_covariates, ...
+    'title_name', 'Non ripple vs ripple past MUA on UP Survival', ...
+    'feature_labels', model3_labels, ...
+    'strata_var', 'session_id');
+
+
+model3_covariates = {'non_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','UP_to_last_ripple'};
+model3_labels     = {'Non-Ripple HPC MUA', 'past_ripples_HPC_MUA_sum','UP to last ripple duration'};
+
+% 
+% model3_covariates = {'non_ripple_HPC_MUA_sum'};
+% model3_labels     = {'Non-Ripple HPC MUA'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple, model3_covariates, ...
+    'title_name', 'Non ripple vs ripple past MUA on UP Survival (UP to last ripple duration accounted)', ...
+    'feature_labels', model3_labels, ...
+    'strata_var', 'session_id');
+
+
+save(fullfile(output_dir, 'model_non_ripple_vs_past_ripples.mat'), 'output_model','output_model2');
+save_all_figures(output_dir, []);
+
+
+%% 7. Model 4: Full Combined Multivariable Model
+fprintf('Running Model 4: Full Multivariable Combined Model...\n');
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_sum', ...
+                     'past_ripples_HPC_MUA_sum', ...
+                     'non_ripple_HPC_MUA_sum',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA sum', ...
+                     'Past Ripples HPC MUA', ...
+                     'Non-Ripple HPC MUA', ...
+                     'UP to last ripple duration'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model on UP Survival (last ripple HPC MUA sum)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+model4_covariates = {'last_ripple_HPC_MUA_peak', ...
+                     'past_ripples_HPC_MUA_sum', ...
+                     'non_ripple_HPC_MUA_sum',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA peak', ...
+                     'Past Ripples HPC MUA', ...
+                     'Non-Ripple HPC MUA', ...
+                     'UP to last ripple duration'};
+
+output_model2 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model on UP Survival (last ripple HPC MUA peak)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+                     'past_ripples_HPC_MUA_mean', ...
+                     'non_ripple_HPC_MUA_mean'};
+
+model4_labels     = {'Last Ripple HPC MUA rate', ...
+                     'Past Ripples HPC MUA rate', ...
+                     'Non-Ripple HPC MUA rate'};
+
+output_model3 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model (MUA rate) on UP Survival', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+                     'past_ripples_HPC_MUA_mean', ...
+                     'non_ripple_HPC_MUA_mean',...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA rate', ...
+                     'Past Ripples HPC MUA rate', ...
+                     'Non-Ripple HPC MUA rate',...
+                     'UP to last ripple duration'};
+
+output_model4 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model (MUA rate) on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+T_last_ripple.last_ripple_HPC_MUA_gain = T_last_ripple.last_ripple_HPC_MUA_mean./T_last_ripple.past_ripples_HPC_MUA_mean;
+T_last_ripple.last_ripple_HPC_MUA_gain_baseline = T_last_ripple.last_ripple_HPC_MUA_mean./T_last_ripple.non_ripple_HPC_MUA_mean;
+T_last_ripple.past_ripples_HPC_MUA_gain_baseline = T_last_ripple.past_ripples_HPC_MUA_mean./T_last_ripple.non_ripple_HPC_MUA_mean;
+
+T_last_ripple.last_ripple_HPC_MUA_gain(isinf(T_last_ripple.last_ripple_HPC_MUA_gain))=nan;
+T_last_ripple.last_ripple_HPC_MUA_gain_baseline(isinf(T_last_ripple.last_ripple_HPC_MUA_gain_baseline))=nan;
+T_last_ripple.past_ripples_HPC_MUA_gain_baseline(isinf(T_last_ripple.past_ripples_HPC_MUA_gain_baseline))=nan;
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+model4_covariates = {'past_ripples_HPC_MUA_gain_baseline', ...
+                     'last_ripple_HPC_MUA_gain_baseline', ...
+                     'UP_to_last_ripple'};
+
+model4_labels     = {'Past Ripples relative to non ripple MUA rate', ...
+                     'Last Ripple relative to non ripple MUA rate', ...
+                     'UP to last ripple duration'};
+% model4_covariates = {'last_ripple_HPC_MUA_mean', ...
+%                      'last_ripple_HPC_MUA_gain_baseline', ...
+%                      'past_ripples_HPC_MUA_mean',...
+%                      'past_ripples_HPC_MUA_gain_baseline'};
+% 
+% model4_labels     = {'Last Ripple MUA rate', ...
+%                      'Last Ripple relative to non ripple MUA rate', ...
+%                      'Past Ripples MUA rate', ...
+%                      'Past Ripples relative to non ripple MUA rate'};
+
+                     
+model4_covariates = {'last_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','non_ripple_HPC_MUA_sum','last_ripple_HPC_MUA_gain_baseline',...
+'last_ripple_HPC_MUA_gain','UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA sum','Past Ripples HPC MUA sum','Non-Ripple HPC MUA sum',...
+'Last Ripple relative to non ripple MUA rate','Last Ripples relative to past ripples MUA rate','UP to last ripple duration'};
+
+output_model5 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model (with MUA rate ratio) on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+
+           
+model4_covariates = {'last_ripple_HPC_MUA_sum','past_ripples_HPC_MUA_sum','non_ripple_HPC_MUA_sum',...
+    'last_ripple_HPC_MUA_mean','past_ripples_HPC_MUA_mean','non_ripple_HPC_MUA_mean','UP_to_last_ripple'};
+
+model4_labels     = {'Last Ripple HPC MUA sum','Past Ripples HPC MUA sum','Non-Ripple HPC MUA sum',...
+'Last Ripple HPC MUA rate','Past Ripples HPC MUA rate','Non-Ripple HPC MUA rate','UP to last ripple duration'};
+
+output_model5 = plot_last_ripple_UP_survival(T_last_ripple1, model4_covariates, ...
+    'title_name', 'Combined Multivariable Model (sum and rate) on UP Survival (UP to last ripple accounted)', ...
+    'feature_labels', model4_labels, ...
+    'strata_var', 'session_id');
+
+
+
+save(fullfile(output_dir, 'model_combined_multivariable.mat'), 'output_model','output_model2','output_model3');
+save_all_figures(output_dir, []);
+
+
+figure;scatter(T_last_ripple.past_ripples_HPC_MUA_mean,T_last_ripple.UP_to_last_ripple);
+xlabel('past_ripples_HPC_MUA_mean')
+ylabel('UP_to_last_ripple')
+xline(prctile(T_last_ripple.past_ripples_HPC_MUA_mean,20))
+xline(prctile(T_last_ripple.past_ripples_HPC_MUA_mean,80))
+yline(prctile(T_last_ripple.UP_to_last_ripple,20))
+yline(prctile(T_last_ripple.UP_to_last_ripple,80))
+
+
+%% 8. Model 5: 1st vs 2nd Half UP MUA Effect
+fprintf('Running Model 5: First vs Second Half UP MUA Effect...\n');
+T_last_ripple.diff_half_HPC_MUA_sum  = T_last_ripple.second_half_HPC_MUA_sum - T_last_ripple.first_half_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_MUA_mean = T_last_ripple.second_half_HPC_MUA_mean - T_last_ripple.first_half_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_MUA_sum   = T_last_ripple.second_half_V1_MUA_sum - T_last_ripple.first_half_V1_MUA_sum;
+T_last_ripple.diff_half_V1_MUA_mean  = T_last_ripple.second_half_V1_MUA_mean - T_last_ripple.first_half_V1_MUA_mean;
+
+% model5_covariates = {'diff_half_HPC_MUA_mean'}
+% model5_labels     = {'2nd half - 1st half HPC MUA'};
+model5_covariates = {'diff_half_HPC_MUA_sum','diff_half_V1_MUA_sum'}
+model5_labels     = {'2nd half - 1st half HPC MUA','2nd half - 1st half V1 MUA'};
+
+output_model5 = plot_last_ripple_UP_survival(T_last_ripple, model5_covariates, ...
+    'title_name', '1st vs 2nd Half UP MUA Effect on UP Survival', ...
+    'feature_labels', model5_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model5_half_UP_MUA_effect.mat'), 'output_model5');
+
+
+%% 8. Model 5: 1st vs 2nd Half UP Ripple Effect
+fprintf('Running Model 5: First vs Second Half UP MUA Effect...\n');
+
+T_last_ripple.diff_half_HPC_MUA_sum  = T_last_ripple.second_half_HPC_MUA_sum - T_last_ripple.first_half_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_MUA_mean = T_last_ripple.second_half_HPC_MUA_mean - T_last_ripple.first_half_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_MUA_sum   = T_last_ripple.second_half_V1_MUA_sum - T_last_ripple.first_half_V1_MUA_sum;
+T_last_ripple.diff_half_V1_MUA_mean  = T_last_ripple.second_half_V1_MUA_mean - T_last_ripple.first_half_V1_MUA_mean;
+
+% 
+% model_covariates = {'diff_half_HPC_MUA_sum','diff_half_V1_MUA_sum'}
+% model_labels     = {'2nd half - 1st half HC MUA','2nd half - 1st half V1 MUA'};
+% 
+% output_model = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+%     'title_name', '1st vs 2nd Half UP MUA Effect on UP Survival', ...
+%     'feature_labels', model_labels, ...
+%     'strata_var', 'subject_id');
+% 
+% save(fullfile(output_dir, 'model_half_UP_MUA_effect.mat'), 'output_model');
+% 
+
+T_last_ripple.diff_half_HPC_ripple_MUA_sum  = T_last_ripple.second_half_ripple_HPC_MUA_sum - T_last_ripple.first_half_ripple_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_ripple_MUA_mean = T_last_ripple.second_half_ripple_HPC_MUA_mean - T_last_ripple.first_half_ripple_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_ripple_MUA_sum   = T_last_ripple.second_half_ripple_V1_MUA_sum - T_last_ripple.first_half_ripple_V1_MUA_sum;
+T_last_ripple.diff_half_V1_ripple_MUA_mean  = T_last_ripple.second_half_ripple_V1_MUA_mean - T_last_ripple.first_half_ripple_V1_MUA_mean;
+
+T_last_ripple.diff_half_HPC_past_ripples_MUA_sum  = T_last_ripple.second_half_past_ripples_HPC_MUA_sum - T_last_ripple.first_half_past_ripples_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_past_ripples_MUA_mean = T_last_ripple.second_half_past_ripples_HPC_MUA_mean - T_last_ripple.first_half_past_ripples_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_past_ripples_MUA_sum   = T_last_ripple.second_half_past_ripples_V1_MUA_sum - T_last_ripple.first_half_past_ripples_V1_MUA_sum;
+T_last_ripple.diff_half_V1_past_ripples_MUA_mean  = T_last_ripple.second_half_past_ripples_V1_MUA_mean - T_last_ripple.first_half_past_ripples_V1_MUA_mean;
+
+
+T_last_ripple.diff_half_HPC_non_ripple_MUA_sum  = T_last_ripple.second_half_non_ripple_HPC_MUA_sum - T_last_ripple.first_half_non_ripple_HPC_MUA_sum;
+T_last_ripple.diff_half_HPC_non_ripple_MUA_mean = T_last_ripple.second_half_non_ripple_HPC_MUA_mean - T_last_ripple.first_half_non_ripple_HPC_MUA_mean;
+T_last_ripple.diff_half_V1_non_ripple_MUA_sum   = T_last_ripple.second_half_non_ripple_V1_MUA_sum - T_last_ripple.first_half_non_ripple_V1_MUA_sum;
+T_last_ripple.diff_half_V1_non_ripple_MUA_mean  = T_last_ripple.second_half_non_ripple_V1_MUA_mean - T_last_ripple.first_half_non_ripple_V1_MUA_mean;
+
+
+% 
+% model_covariates = {'second_half_past_ripples_HPC_MUA_sum','second_half_non_ripple_HPC_MUA_sum'}
+% model_labels     = {'2nd half HPC ripple MUA','2nd half HPC non ripple MUA'};
+
+model_covariates = {'second_half_past_ripples_HPC_MUA_sum','first_half_past_ripples_HPC_MUA_sum'}
+model_labels     = {'2nd half HPC ripple MUA','1st half HPC ripple MUA'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'session_id');
+
+
+
+model_covariates = {'diff_half_HPC_ripple_MUA_sum','diff_half_HPC_non_ripple_MUA_sum','UP_to_last_ripple'}
+model_labels     = {'2nd half - 1st half HPC ripple MUA','2nd half - 1st half HPC non ripple MUA','UP to last ripple duration'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_half_UP_HC_MUA_effect.mat'), 'output_model');
+save_all_figures(output_dir, []);
+
+
+
+model_covariates = {'diff_half_HPC_past_ripples_MUA_sum','diff_half_HPC_non_ripple_MUA_sum','UP_to_last_ripple'};
+model_labels     = {'2nd half - 1st half HPC past ripples MUA','2nd half - 1st half HPC non ripple MUA','UP to last ripple duration'};
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC MUA Effect on UP Survival (past ripples)', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'session_id');
+
+save(fullfile(output_dir, 'model_half_UP_HC_MUA_effect_exclude_last_ripple.mat'), 'output_model');
+save_all_figures(output_dir, []);
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>1,:);
+for i = 1:size(T_last_ripple,1)
+    if isnan(T_last_ripple.last_ripple_to_UP_term)
+        T_last_ripple.diff_half_HPC_last_ripple_MUA_sum = 0;
+    elseif T_last_ripple.last_ripple_to_UP_term(i) > T_last_ripple.up_duration(i)/2
+        T_last_ripple.diff_half_HPC_last_ripple_MUA_sum = -T_last_ripple.last_ripple_HPC_MUA_sum;
+    elseif T_last_ripple.last_ripple_to_UP_term(i) < T_last_ripple.up_duration(i)/2
+        T_last_ripple.diff_half_HPC_last_ripple_MUA_sum = T_last_ripple.last_ripple_HPC_MUA_sum;
+    end
+end
+
+
+model_covariates = {'diff_half_HPC_past_ripples_MUA_sum','diff_half_HPC_last_ripple_MUA_sum'};
+model_labels     = {'2nd half - 1st half HPC past ripples MUA','2nd half - 1st half HPC last ripple MUA'};
+
+
+T_last_ripple1 = T_last_ripple(T_last_ripple.ripple_count>0,:);
+output_model = plot_last_ripple_UP_survival(T_last_ripple1, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC MUA Effect on UP Survival (past ripples vs last ripple)', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'session_id');
+
+
+
+model_covariates = {'second_half_ripple_HPC_MUA_sum','first_half_ripple_HPC_MUA_sum'}
+model_labels     = {'2nd half HC MUA','1st half HC MUA'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC ripple Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+
+model_covariates = {'second_half_non_ripple_HPC_MUA_sum','first_half_non_ripple_HPC_MUA_sum'}
+model_labels     = {'2nd half HC MUA','1st half HC MUA'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC non ripple Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+
+% model_covariates = {'diff_half_HPC_ripple_MUA_sum','diff_half_HPC_non_ripple_MUA_sum','UP_to_last_ripple'}
+% model_labels     = {'2nd half - 1st half HPC ripple MUA','2nd half - 1st half HPC non ripple MUA','UP to last ripple duration'};
+% model_covariates = {'diff_half_HPC_non_ripple_MUA_sum','UP_to_last_ripple'}
+% model_labels     = {'2nd half - 1st half HPC non ripple MUA','UP to last ripple duration'};
+
+
+model_covariates = {'diff_half_V1_ripple_MUA_sum','diff_half_V1_non_ripple_MUA_sum'}
+model_labels     = {'2nd half - 1st half V1 ripple MUA','2nd half - 1st half V1 non ripple MUA'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP V1 MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model_half_UP_V1_MUA_effect.mat'), 'output_model');
+
+
+model_covariates = {'diff_half_V1_ripple_MUA_mean','diff_half_HPC_ripple_MUA_mean'}
+model_labels     = {'2nd half - 1st half V1 ripple MUA','2nd half - 1st half HC ripple MUA'};
+% model_covariates = {'diff_half_HPC_ripple_MUA_sum','diff_half_V1_ripple_MUA_sum'}
+% model_labels     = {'2nd half - 1st half HC ripple MUA','2nd half - 1st half V1 ripple MUA'};
+
+output_model = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP HC vs V1 ripple MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model_half_UP_ripple_MUA_effect.mat'), 'output_model');
+
+%% 9. Model: Last Ripple Peak MUA Effect
+fprintf('Running Model: Last Ripple Peak MUA Effect...\n');
+model_covariates = {'last_ripple_HPC_MUA_peak', 'last_ripple_V1_MUA_peak', 'last_ripple_power'};
+model_labels     = {'Last Ripple HPC MUA Peak', 'Last Ripple Ipsi V1 MUA Peak', 'Last Ripple Power'};
+
+output_model_peak = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', 'Last Ripple Peak MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model_last_ripple_peak_MUA_survival.mat'), 'output_model_peak');
+
+%% 10. Model: 1st vs 2nd Half of Last Ripple Duration MUA Effect
+fprintf('Running Model: 1st vs 2nd Half of Last Ripple Duration MUA Effect...\n');
+T_last_ripple.diff_last_ripple_half_HPC_MUA_mean = T_last_ripple.last_ripple_second_half_HPC_MUA_mean - T_last_ripple.last_ripple_first_half_HPC_MUA_mean;
+T_last_ripple.diff_last_ripple_half_V1_MUA_mean  = T_last_ripple.last_ripple_second_half_V1_MUA_mean - T_last_ripple.last_ripple_first_half_V1_MUA_mean;
+
+model_covariates = {'last_ripple_first_half_HPC_MUA_mean', 'last_ripple_second_half_HPC_MUA_mean', ...
+                     'last_ripple_first_half_V1_MUA_mean', 'last_ripple_second_half_V1_MUA_mean'};
+model_labels     = {'1st Half Last Ripple HPC MUA Rate', '2nd Half Last Ripple HPC MUA Rate', ...
+                     '1st Half Last Ripple V1 MUA Rate', '2nd Half Last Ripple V1 MUA Rate'};
+
+output_model_half_rip = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half of Last Ripple Duration MUA Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model_last_ripple_half_duration_MUA_survival.mat'), 'output_model_half_rip');
+
+%% 11. Model: 1st vs 2nd Half UP Ripple & Non-Ripple Duration Effect
+fprintf('Running Model: 1st vs 2nd Half UP Ripple & Non-Ripple Duration Effect...\n');
+T_last_ripple.diff_half_ripple_duration     = T_last_ripple.second_half_ripple_duration - T_last_ripple.first_half_ripple_duration;
+T_last_ripple.diff_half_non_ripple_duration = T_last_ripple.second_half_non_ripple_duration - T_last_ripple.first_half_non_ripple_duration;
+
+model_covariates = {'diff_half_ripple_duration'};
+model_labels     = {'2nd half - 1st half UP ripple duration'};
+
+output_model_half_dur = plot_last_ripple_UP_survival(T_last_ripple, model_covariates, ...
+    'title_name', '1st vs 2nd Half UP Ripple Effect on UP Survival', ...
+    'feature_labels', model_labels, ...
+    'strata_var', 'subject_id');
+
+save(fullfile(output_dir, 'model_half_UP_ripple_duration_survival.mat'), 'output_model_half_dur');
+
+%% 12. Save Figures
+if exist('save_all_figures', 'file')
+    save_all_figures(output_dir, []);
+end
+
+fprintf('Last ripple to DOWN survival analysis pipeline completed successfully.\n');
+
+

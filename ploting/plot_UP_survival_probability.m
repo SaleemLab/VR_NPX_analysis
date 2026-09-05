@@ -14,6 +14,7 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     addParameter(p, 'subject_id', []);
     addParameter(p, 'bilateral_merging', []);
     addParameter(p, 'shuffle_option', []);
+    
 
     parse(p, varargin{:});
     title_name = p.Results.title_name;
@@ -147,8 +148,6 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
     set(gca, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 12)
 
 
-
-
     fig = figure
     fig.Position = [700 120 790 650];
 
@@ -220,6 +219,9 @@ function boot_output = plot_UP_survival_probability(ripple_feature, timeToTransi
 
             % Plot survival
             x = binCenters';
+            x = [0; x];% Start with 0 Time for plotting
+            y_boot = [ones(1000,1) y_boot];% Start with 1 for plotting
+
             y = mean(y_boot)';
             LCI = prctile(y_boot, 2.5)';
             UCI = prctile(y_boot, 97.5)';
