@@ -8,15 +8,14 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % Choose your probe depth of interest
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'supraL4' or 'subL4', 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-
-SUBJECTS = {'M00013'};
+SUBJECTS = {'M00096'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/6
-Stimulus_type = 'TRAIN'; %%%% BUT IF THERE ARE MULTIPLE TYPES E.G. GAVNIK_ABCD_1, also NEED TO SPECIFY THIS IN 5/6
+Stimulus_type = 'GAVNIK250_ABCD'; %%%% BUT IF THERE ARE MULTIPLE TYPES E.G. GAVNIK_ABCD_1, also NEED TO SPECIFY THIS IN 5/6
 plot_choice = 'aggregate'; % curated 'single_units' or in 'aggregate' or uncurated 'MUA'; MUA includes all clusters from kilosort, unfiltered
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 neuron_type = 'All'; % for GAVNIK stimuli (coded for so far) set this to 'PYR only' if you want to include only putative pyramidal neurons. distinguish between putative PYR (wide waveform, lower tau rise than SOM), PV (narrow waveform) and SOM (wide waveform, higher tau rise in the ACG i.e. probability of spiking again increases quite slowly)
@@ -25,16 +24,19 @@ z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (e
 % session from 20250205 onward, for a while, I presented grey screen to the mouse for at least 30s before starting the stimulus).
 
 % 3/6 files will be saved here in the cd
-cd('V:\Ellie\DATA\SUBJECTS\M00013\analysis') % 3/5 files will be saved here in the cd
+cd('V:\Ellie\DATA\SUBJECTS\M00096\analysis') % 3/5 files will be saved here in the cd
+subjects_dir = 'V:\Ellie\DATA\SUBJECTS'; % the per element FR struct will be saved in the SUBJECTS folder ready for cross-mouse analysis
+save_elementFRstruct = true; % true/false if you want/don't want to save it
+save_FRtrace_struct = false; % true/false if you want/don't want to save it
 
 %% SET THIS 4/6***** For NPX2.0 you will use a different L4 channel for each shank. Use CSD to estimate the best channel to use in L4
-probe_type = 0; % NPX1.0 is type 0, NPX2.0 is type 1.
+probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%% 5/6
-sessions_to_plot = [4, 8]; %5/6 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8    9, 10, 11, 12, 13   11, 12, 13, 14, 15
+sessions_to_plot = [2, 6]; %5/6 row numbers of recording dates in "experiment_info" 4, 5, 6, 7, 8    9, 10, 11, 12, 13   11, 12, 13, 14, 15
 stimulus_choice = containers.Map( ...
-    {4 8}, ... % 4 5 6 7 8   [9 10 11 12 13] {22}
-    {'TRAIN', 'TRAIN'}... % 'GAVNIK_ABCD_1', 'GAVNIK_ABCD'
+    {2 6}, ... % 4 5 6 7 8   [9 10 11 12 13] {22}
+    {'GAVNIK250_ABCD_1', 'GAVNIK250_ABCD'}... % 'GAVNIK_ABCD_1', 'GAVNIK_ABCD'
 );
 
 colors = [
@@ -48,60 +50,105 @@ colors = [
 ];
 
 %%%%% 6/6 Define windows after time zero to calc. the peak and mean FR - Depends on stimulus type 
-% for grey screen these are calculated during stim offset for duration of prior element (i.e. from 0-150ms after stim offset for a 150ms stim).
-stim_onset_response_calc_begins  = 0.03; % calc peak onset response during 30-80ms after stimulus onset (for LFP a 30-75ms window is used but here the spiking bins are 10ms...
-stim_onset_response_calc_ends = 0.08; % calc peak onset response during 30-80ms after stimulus onset (for LFP a 30-75ms window is used but here the spiking bins are 10ms...
+stim_onset_response_calc_begins  = 0.03; % calc peak onset response during 30-80ms after stimulus onset 
+stim_onset_response_calc_ends = 0.08; % calc peak onset response during 30-80ms after stimulus onset 
 
-stim_latter_response_calc_begins = 0.08; % calc mean latter (i.e. post-onset) response during 80-150ms after stimulus onset
-stim_latter_response_calc_ends = 0.15; % calc mean latter (i.e. post-onset) response during 80-150ms after stimulus onset
+stim_latter_response_calc_begins = 0.18; % for the 250ms protocol, calc peak latter (i.e. post-onset) response during 180-280ms after stimulus onset, being the additional 100ms of this stim vs the 150ms stim prior to the onset response to the next element
+stim_latter_response_calc_ends = 0.28; % for the 250ms protocol, calc peak latter (i.e. post-onset) response during 180-280ms after stimulus onset, being the additional 100ms of this stim vs the 150ms stim prior to the onset response to the next element
 
-grey_peak_response_calc_begins = 0.0; % find greyscreen peak during 150ms following greyscreen onset
-grey_peak_response_calc_ends = 0.15; % find greyscreen peak during 150ms following greyscreen onset
+stim_mean_response_calc_begins = 0.03; % as the visual response is seen in V1 after ~30ms with our rig, and to be consistent with the onset response windows
 
-grey_prior_response_calc_begins = -0.08; % calc mean prior response during -80 to 0ms before greyscreen onset, 
+grey_onset_response_calc_begins = 0.03; % find greyscreen peak and mean during 150ms following greyscreen onset
+grey_onset_response_calc_ends = 0.08; % find greyscreen peak and mean during 150ms following greyscreen onset
+
+grey_mean_response_calc_begins = 0.03; % as the visual response is seen in V1 after ~30ms with our rig, and to be consistent with the onset response windows
+
+%grey_prior_response_calc_begins = -0.08; % calc mean prior response during -80 to 0ms before greyscreen onset, 
 % i.e. matching the prior stim latter response calc. window  ********ASSUMING THE STIMULUS ELEMENT DURATION IS 150MS
-grey_prior_response_calc_ends = 0.0; % calc mean prior response during -80 to 0ms before greyscreen onset, i.e. matching the prior stim latter response calc. window
+%grey_prior_response_calc_ends = 0.0; % calc mean prior response during -80 to 0ms before greyscreen onset, i.e. matching the prior stim latter response calc. window
 
 if contains(Stimulus_type, 'GAVNIK_')
     stim_window_starts = 0:0.15:0.45;
     stim_window_ends = 0.15:0.15:0.6;
-    grey_window_starts = 0.6; % look from 0ms-150ms after stim D offset
-    grey_window_ends = 0.75; % look from 0ms-150ms after stim D offset
+    grey_window_starts = 0.6; 
+    grey_window_ends = 0.75; 
+    grey_intervals = [-0.5 0; 0.6 2.0];
+    stim_duration = 150; 
+    stim_mean_response_calc_ends = 0.18; % calc simple mean response during total 30-180ms after stimulus onset
+    grey_mean_response_calc_ends = 0.18; % 30ms lag
 elseif contains(Stimulus_type, 'GAVNIK250_ABCD')    
     stim_window_starts = 0:0.25:0.75;
     stim_window_ends = 0.25:0.25:1.0;
     grey_window_starts = 1.0; % look from 0ms-250ms after stim D offset
     grey_window_ends = 1.25; % look from 0ms-250ms after stim D offset
+    grey_intervals = [-0.5 0; 1.0 2.0];
+    stim_duration = 250; 
+    stim_mean_response_calc_ends = 0.28; % calc simple mean response during total 30-280ms after stimulus onset
+    grey_mean_response_calc_ends = 0.28; 
 elseif contains(Stimulus_type, '_1000ms') 
     stim_window_starts = 0;
     stim_window_ends = 1;
     grey_window_starts = 1.0; % look from 0ms-1000ms after stim offset
-    grey_window_ends = 2; % look from 0ms-1000ms after stim offset   
-elseif contains(Stimulus_type, 'F_150ms') 
+    grey_window_ends = 2; % look from 0ms-1000ms after stim offset  
+    grey_intervals = [-0.5 0; 1.0 2.0];
+    stim_duration = 1000; 
+    stim_mean_response_calc_ends = 1.03; 
+    grey_mean_response_calc_ends = 1.03; 
+elseif contains(Stimulus_type, '_500ms') 
+    stim_window_starts = 0;
+    stim_window_ends = 0.5;
+    grey_window_starts = 0.5; % look from 0ms-1000ms after stim offset
+    grey_window_ends = 2; % look from 0ms-1000ms after stim offset  
+    grey_intervals = [-0.5 0; 0.5 2.0];   
+    stim_duration = 500; 
+    stim_mean_response_calc_ends = 0.53;
+    grey_mean_response_calc_ends = 0.53; 
+elseif contains(Stimulus_type, 'F_150ms') || contains(Stimulus_type, 'GAVNIK_A___')
     stim_window_starts = 0;
     stim_window_ends = 0.15;
     grey_window_starts = 0.15; % look from 0ms-150ms after stim offset
-    grey_window_ends = 0.3; % look from 0ms-150ms after stim offset    
+    grey_window_ends = 0.3; % look from 0ms-150ms after stim offset
+    grey_intervals = [-0.5 0; 0.15 2.0];
+    stim_duration = 150; 
+    stim_mean_response_calc_ends = 0.18;
+    grey_mean_response_calc_ends = 0.18; 
 elseif contains(Stimulus_type, 'TRAIN250') 
     stim_window_starts = 0:0.5:1.5;
     stim_window_ends = 0.25:0.5:1.75;
     grey_window_starts = 0.25:0.5:1.75; % look from 0ms-250ms after stim offset
     grey_window_ends = [0.5 1.0 1.5 2.0]; % look from 0ms-250ms after stim offset
+    grey_intervals = [-0.5 0; 0.25 0.5; 0.75 1.0; 1.25 1.5; 1.75 2.8];
+    stim_duration = 250; 
+    stim_mean_response_calc_ends = 0.28;
+    grey_mean_response_calc_ends = 0.28; 
 else
     stim_window_starts = 0:0.3:0.9;
     stim_window_ends = 0.15:0.3:1.05;
     grey_window_starts = 0.15:0.3:1.05; % look from 0ms-150ms after stim offset
     grey_window_ends = [0.3 0.6 0.9 1.2]; % look from 0ms-150ms after stim offset
+    grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
+    stim_mean_response_calc_ends = 0.18;
+    grey_mean_response_calc_ends = 0.18; 
 end
-
+                                                  
+          
 fig1 = figure; % for traces
+hold on;
+for i = 1:size(grey_intervals,1)
+    h = xregion(grey_intervals(i,1), grey_intervals(i,2), ...
+        FaceColor=[0.7 0.7 0.7], ...
+        FaceAlpha=0.3);
+    h.HandleVisibility = 'off';
+end
 fig2 = figure; % for bar charts
 all_peak_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
+all_peaklatter_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 all_mean_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 all_peak_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
 all_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
 
 sem_peak_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
+sem_peaklatter_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 sem_mean_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 sem_peak_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
 sem_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_starts));
@@ -109,6 +156,9 @@ sem_mean_FR_by_greywindow = zeros(length(sessions_to_plot), length(grey_window_s
 %initiate struct to save peak and mean firing rate stats
 FRs_peak_and_mean = struct([]);
 entry_counter = 0;
+% Initiate struct to save per-unit z-scored FR traces
+FRtrace_struct = struct([]);
+trace_entry_counter = 0;
 
 for nsession = sessions_to_plot 
     %session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
@@ -243,7 +293,7 @@ for nsession = sessions_to_plot
         end
 
 
-        if contains(Stimulus_type, 'TRAIN') || contains(Stimulus_type, '_1000ms') || contains(Stimulus_type, 'F_150ms')...
+        if contains(Stimulus_type, 'TRAIN') || contains(Stimulus_type, '_1000ms') || contains(Stimulus_type, 'F_150ms') || contains(Stimulus_type, '_500ms')...
                 && contains(plot_choice, 'aggregate') && contains(plot_type, 'FR')        
             
             for nprobe = 1:length(clusters)
@@ -356,6 +406,7 @@ for nsession = sessions_to_plot
                     ylim ([0 16]);
                 else 
                     if strcmp(z_method, 'population')
+
                         baseline_mean = mean(zscore_counts);
                         baseline_std = std(zscore_counts);
                         zscored_trials = (binnedArray - baseline_mean) / baseline_std; 
@@ -398,6 +449,7 @@ for nsession = sessions_to_plot
                         nUnits_valid = size(unit_ztraces, 1);
 
                         unit_peak_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
+                        unit_peaklatter_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
                         unit_mean_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
                         unit_peak_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
                         unit_mean_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
@@ -406,21 +458,25 @@ for nsession = sessions_to_plot
                         
                             idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
-                        
-                            idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
+
+                            idx_peaklatter = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
                         
+                            idx_mean = bins >= (stim_window_starts(i) + stim_mean_response_calc_begins) & ...
+                                       bins <  (stim_window_starts(i) + stim_mean_response_calc_ends);
+                        
                             unit_peak_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peak), [], 2);
+                            unit_peaklatter_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peaklatter), [], 2);
                             unit_mean_FR_by_stimwindow(:, i) = mean(unit_ztraces(:, idx_mean), 2);
                         end
 
                         for i = 1:length(grey_window_starts)
                         
-                            idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
-                                       bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
+                            idx_grey_peak = bins >= (grey_window_starts(i) + grey_onset_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_onset_response_calc_ends);
                         
-                            idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
-                                       bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
+                            idx_grey_mean = bins >= (grey_window_starts(i) + grey_mean_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_mean_response_calc_ends);
                         
                             unit_peak_FR_by_greywindow(:, i) = max(unit_ztraces(:, idx_grey_peak), [], 2);
                             unit_mean_FR_by_greywindow(:, i) = mean(unit_ztraces(:, idx_grey_mean), 2);
@@ -450,10 +506,10 @@ for nsession = sessions_to_plot
                         end 
                     elseif contains(z_method, 'per_neuron')   
                         if contains(z_score_period, 'entire_session')
-                            ylabel('FR (z-scored per unit over entire session)', 'FontSize', 24);
+                            ylabel('FR (z-scored by unit over entire session)', 'FontSize', 24);
                             ylim([-2 6]);
                         elseif contains(z_score_period, 'stim_session') 
-                            ylabel('FR (z-scored per unit over stim session)', 'FontSize', 24);
+                            ylabel('FR (z-scored by unit over stim session)', 'FontSize', 24);
                         end    
                     end    
                 end    
@@ -473,42 +529,49 @@ for nsession = sessions_to_plot
                     %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);
                     idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
-                    
-                    idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
+
+                    idx_peaklatter = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
                                bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
+                  
+                    idx_mean = bins >= (stim_window_starts(i) + stim_mean_response_calc_begins) & ...
+                               bins <  (stim_window_starts(i) + stim_mean_response_calc_ends);
 
 
                     if contains(z_method, 'none')                                         
                         peak_FR_by_stimwindow(i) = max(mean_trace(idx_peak));
+                        peaklatter_FR_by_stimwindow(i) = max(mean_trace(idx_peaklatter));
                         mean_FR_by_stimwindow(i) = mean(mean_trace(idx_mean));
                         %for SEM
                         peak_FR_trials_by_stimwindow(:, i) = max(binnedArray(:, idx_peak), [], 2);
+                        peaklatter_FR_trials_by_stimwindow(:, i) = max(binnedArray(:, idx_peaklatter), [], 2);
                         mean_FR_trials_by_stimwindow(:, i) = mean(binnedArray(:, idx_mean), 2);
                         
                     else 
                         peak_FR_by_stimwindow(i) = max(z_trace(idx_peak));
+                        peaklatter_FR_by_stimwindow(i) = max(z_trace(idx_peaklatter));
                         mean_FR_by_stimwindow(i) = mean(z_trace(idx_mean));
                         
                         if strcmp(z_method, 'population')
                         % per-trial SEM is valid here
                             peak_FR_trials_by_stimwindow(:, i) = max(zscored_trials(:, idx_peak), [], 2);
+                            peaklatter_FR_trials_by_stimwindow(:, i) = max(zscored_trials(:, idx_peaklatter), [], 2);
                             mean_FR_trials_by_stimwindow(:, i) = mean(zscored_trials(:, idx_mean), 2);
                         elseif strcmp(z_method, 'per_neuron')
                             % SEM already computed across units, not trials
                             peak_FR_trials_by_stimwindow(:, i) = NaN;
+                            peaklatter_FR_trials_by_stimwindow(:, i) = NaN;
                             mean_FR_trials_by_stimwindow(:, i) = NaN;
                         end    
                     end
                 end
                 
                 for i = 1:length(grey_window_starts)
-                    %idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i); 
+                                       
+                    idx_grey_peak = bins >= (grey_window_starts(i) + grey_onset_response_calc_begins) & ...
+                               bins <  (grey_window_starts(i) + grey_onset_response_calc_ends);
                     
-                    idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
-                               bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
-                    
-                    idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
-                               bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
+                    idx_grey_mean = bins >= (grey_window_starts(i) + grey_mean_response_calc_begins) & ...
+                               bins <  (grey_window_starts(i) + grey_mean_response_calc_ends);
                     
                     if contains(z_method, 'none')                                          
                         peak_FR_by_greywindow(i) = max(mean_trace(idx_grey_peak));
@@ -534,77 +597,158 @@ for nsession = sessions_to_plot
 
                 session_idx = find(sessions_to_plot == nsession); % Map actual session number to index in preallocated array
                 all_peak_FR_by_stimwindow(session_idx, :) = peak_FR_by_stimwindow;
+                all_peaklatter_FR_by_stimwindow(session_idx, :) = peaklatter_FR_by_stimwindow;
                 all_mean_FR_by_stimwindow(session_idx, :) = mean_FR_by_stimwindow;
                 all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                 all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                 
                 if strcmp(z_method, 'population')
-                    sem_peak_FR_by_stimwindow(session_idx, :) = std(peak_FR_trials_by_stimwindow, 0, 1) / sqrt(size(peak_FR_trials_by_stimwindow,1));
-                    sem_mean_FR_by_stimwindow(session_idx, :) = std(mean_FR_trials_by_stimwindow, 0, 1) / sqrt(size(mean_FR_trials_by_stimwindow,1));
-                    sem_peak_FR_by_greywindow(session_idx, :) = std(peak_FR_trials_by_greywindow, 0, 1) / sqrt(size(peak_FR_trials_by_greywindow,1));
-                    sem_mean_FR_by_greywindow(session_idx, :) = std(mean_FR_trials_by_greywindow, 0, 1) / sqrt(size(mean_FR_trials_by_greywindow,1));
+                    % Calculate SEM of CUMULATIVE stacked-bar values. First calculate the cumulative response separately for each
+                    % trial, then calculate the SEM across trials.
+                    % -------------------------------------------------------------
+                
+                    % Stimulus peak
+                    cumulative_peak_trials_stim = cumsum(peak_FR_trials_by_stimwindow, 2);
+                    cumulative_peaklatter_trials_stim = cumsum(peaklatter_FR_trials_by_stimwindow, 2);
+                
+                    sem_peak_FR_by_stimwindow(session_idx, :) = std(cumulative_peak_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_trials_stim), 1));
+                    sem_peaklatter_FR_by_stimwindow(session_idx, :) = std(cumulative_peaklatter_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peaklatter_trials_stim), 1));
+                                
+                    % Stimulus mean
+                    cumulative_mean_trials_stim = cumsum(mean_FR_trials_by_stimwindow, 2);
+                
+                    sem_mean_FR_by_stimwindow(session_idx, :) = std(cumulative_mean_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_trials_stim), 1));
+                
+                    % Grey peak
+                    cumulative_peak_trials_grey = cumsum(peak_FR_trials_by_greywindow, 2);
+                
+                    sem_peak_FR_by_greywindow(session_idx, :) = std(cumulative_peak_trials_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_trials_grey), 1));
+                                
+                    % Grey mean
+                    cumulative_mean_trials_grey = cumsum(mean_FR_trials_by_greywindow, 2);
+                
+                    sem_mean_FR_by_greywindow(session_idx, :) = std(cumulative_mean_trials_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_trials_grey), 1));
                 elseif strcmp(z_method, 'per_neuron')
 
                     % SEM across units
-                    sem_peak_FR_by_stimwindow(session_idx, :) = ...
-                        std(unit_peak_FR_by_stimwindow, 0, 1) / sqrt(size(unit_peak_FR_by_stimwindow,1));
-                
-                    sem_mean_FR_by_stimwindow(session_idx, :) = ...
-                        std(unit_mean_FR_by_stimwindow, 0, 1) / sqrt(size(unit_mean_FR_by_stimwindow,1));
-                
-                    sem_peak_FR_by_greywindow(session_idx, :) = ...
-                        std(unit_peak_FR_by_greywindow, 0, 1) / sqrt(size(unit_peak_FR_by_greywindow,1));
-                
-                    sem_mean_FR_by_greywindow(session_idx, :) = ...
-                        std(unit_mean_FR_by_greywindow, 0, 1) / sqrt(size(unit_mean_FR_by_greywindow,1));
-                end
+                    cumulative_peak_units_stim = cumsum(unit_peak_FR_by_stimwindow, 2);
+                    cumulative_peaklatter_units_stim = cumsum(unit_peaklatter_FR_by_stimwindow, 2);
 
-                if contains(z_method, 'none') 
-                                        
-                    % add to struct
-    
-                    entry_counter = entry_counter + 1;
-    
-                    FRs_peak_and_mean(entry_counter).subject = SUBJECTS{1};   % e.g. 'M00071'
-                    FRs_peak_and_mean(entry_counter).session_number = nsession;
-                    FRs_peak_and_mean(entry_counter).day = experiment_info(nsession).date;
-                    FRs_peak_and_mean(entry_counter).stimulus_type = Stimulus_type;
-                    FRs_peak_and_mean(entry_counter).depth_for_analysis = depth_for_analysis;
-                    FRs_peak_and_mean(entry_counter).z_score_period = z_score_period;
+                    sem_peak_FR_by_stimwindow(session_idx, :) = std(cumulative_peak_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_units_stim), 1));
+                    sem_peaklatter_FR_by_stimwindow(session_idx, :) = std(cumulative_peaklatter_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peaklatter_units_stim), 1));
+                
+                    cumulative_mean_units_stim = cumsum(unit_mean_FR_by_stimwindow, 2);
+
+                    sem_mean_FR_by_stimwindow(session_idx, :) = std(cumulative_mean_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_units_stim), 1));
+                
+                    % Grey peak: cumulative stimulus + grey response
+                    cumulative_peak_units_grey = ...
+                        sum(unit_peak_FR_by_stimwindow, 2) + ...
+                        cumsum(unit_peak_FR_by_greywindow, 2);
                     
-                    % ---- Stimulus windows (summary) ----
-                    FRs_peak_and_mean(entry_counter).stim.peak_FR = peak_FR_by_stimwindow;
-                    FRs_peak_and_mean(entry_counter).stim.mean_FR = mean_FR_by_stimwindow;
+                    sem_peak_FR_by_greywindow(session_idx, :) = ...
+                        std(cumulative_peak_units_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_units_grey), 1));
+                
+                    % Grey mean: cumulative stimulus + grey response
+                    cumulative_mean_units_grey = ...
+                        sum(unit_mean_FR_by_stimwindow, 2) + ...
+                        cumsum(unit_mean_FR_by_greywindow, 2);
                     
-                    % ---- Grey windows (summary) ----
-                    FRs_peak_and_mean(entry_counter).grey.peak_FR = peak_FR_by_greywindow;
-                    FRs_peak_and_mean(entry_counter).grey.mean_FR = mean_FR_by_greywindow;
-                    
-                    % ---- Trial-level values (for SEM / stats) ----
-                    FRs_peak_and_mean(entry_counter).stim.peak_FR_trials = peak_FR_trials_by_stimwindow;
-                    FRs_peak_and_mean(entry_counter).stim.mean_FR_trials = mean_FR_trials_by_stimwindow;
-                    
-                    FRs_peak_and_mean(entry_counter).grey.peak_FR_trials = peak_FR_trials_by_greywindow;
-                    FRs_peak_and_mean(entry_counter).grey.mean_FR_trials = mean_FR_trials_by_greywindow;
-                    
-                    % ---- Window definitions (critical metadata) ----
-                    FRs_peak_and_mean(entry_counter).stim_window_starts = stim_window_starts;
-                    FRs_peak_and_mean(entry_counter).stim_window_ends   = stim_window_ends;
-                    FRs_peak_and_mean(entry_counter).grey_window_starts = grey_window_starts;
-                    FRs_peak_and_mean(entry_counter).grey_window_ends   = grey_window_ends;
-                    
-                    FRs_peak_and_mean(entry_counter).stim_onset_response_calc = ...
-                        [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
-                    
-                    FRs_peak_and_mean(entry_counter).stim_latter_response_calc = ...
-                        [stim_latter_response_calc_begins, stim_latter_response_calc_ends];
-                    
-                    FRs_peak_and_mean(entry_counter).grey_peak_response_calc = ...
-                        [grey_peak_response_calc_begins, grey_peak_response_calc_ends];
-                    
-                    FRs_peak_and_mean(entry_counter).grey_prior_response_calc = ...
-                        [grey_prior_response_calc_begins, grey_prior_response_calc_ends];
+                    sem_mean_FR_by_greywindow(session_idx, :) = ...
+                        std(cumulative_mean_units_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_units_grey), 1));
                 end
+                                                       
+                % add to struct  
+                entry_counter = entry_counter + 1;
+
+                FRs_peak_and_mean(entry_counter).subject = SUBJECTS{1};   % e.g. 'M00071'
+                FRs_peak_and_mean(entry_counter).session_number = nsession;
+                FRs_peak_and_mean(entry_counter).day = experiment_info(nsession).date;
+                FRs_peak_and_mean(entry_counter).stimulus_type = Stimulus_type;
+                FRs_peak_and_mean(entry_counter).stim_duration = stim_duration;
+                FRs_peak_and_mean(entry_counter).depth_for_analysis = depth_for_analysis;
+                FRs_peak_and_mean(entry_counter).z_score_period = z_score_period;
+                FRs_peak_and_mean(entry_counter).z_method = z_method;
+                
+                % ---- Number of neurons ----
+                FRs_peak_and_mean(entry_counter).n_units = ...
+                    size(unit_peak_FR_by_stimwindow, 1);
+
+                % ---- Stimulus windows (summary) ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR = peak_FR_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR = peaklatter_FR_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.mean_FR = mean_FR_by_stimwindow;
+                
+                % ---- Grey windows (summary) ----
+                FRs_peak_and_mean(entry_counter).grey.peak_FR = peak_FR_by_greywindow;
+                FRs_peak_and_mean(entry_counter).grey.mean_FR = mean_FR_by_greywindow;
+
+                % ---- Neuron-level values ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR_units = ...
+                    unit_peak_FR_by_stimwindow;
+
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR_units = ...
+                    unit_peaklatter_FR_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).stim.mean_FR_units = ...
+                    unit_mean_FR_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.peak_FR_units = ...
+                    unit_peak_FR_by_greywindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.mean_FR_units = ...
+                    unit_mean_FR_by_greywindow;
+                
+                
+                % ---- Trial-level values (for SEM / stats) ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR_trials = peak_FR_trials_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR_trials = peaklatter_FR_trials_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.mean_FR_trials = mean_FR_trials_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.peak_FR_trials = peak_FR_trials_by_greywindow;
+                FRs_peak_and_mean(entry_counter).grey.mean_FR_trials = mean_FR_trials_by_greywindow;
+                
+                % ---- Window definitions (critical metadata) ----
+                FRs_peak_and_mean(entry_counter).stim_window_starts = stim_window_starts;
+                FRs_peak_and_mean(entry_counter).stim_window_ends   = stim_window_ends;
+                FRs_peak_and_mean(entry_counter).grey_window_starts = grey_window_starts;
+                FRs_peak_and_mean(entry_counter).grey_window_ends   = grey_window_ends;
+                % ---- Number of elements ----
+                FRs_peak_and_mean(entry_counter).n_stim_elements = ...
+                    size(unit_peak_FR_by_stimwindow, 2);
+
+                FRs_peak_and_mean(entry_counter).n_stimlatter_elements = ...
+                    size(unit_peaklatter_FR_by_stimwindow, 2);
+                
+                FRs_peak_and_mean(entry_counter).n_grey_elements = ...
+                    size(unit_peak_FR_by_greywindow, 2);
+                
+                % ---- Calculation windows ----
+                FRs_peak_and_mean(entry_counter).stim_onset_response_calc = ...
+                    [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
+
+                FRs_peak_and_mean(entry_counter).stim_latter_response_calc = ...
+                    [stim_latter_response_calc_begins, stim_latter_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).stim_mean_response_calc = ...
+                    [stim_mean_response_calc_begins, stim_mean_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).grey_peak_response_calc = ...
+                    [grey_onset_response_calc_begins, grey_onset_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).grey_mean_response_calc = ...
+                    [grey_mean_response_calc_begins, grey_mean_response_calc_ends];
+                
 
 
                 if contains(Stimulus_type, 'TRAIN250')
@@ -623,32 +767,13 @@ for nsession = sessions_to_plot
                 legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'FontSize', 24);
                 hold on;                
             end
-                    % Define grey intervals
-            if (contains(Stimulus_type, '_1000ms'))        
-                grey_intervals = [-0.5 0; 1 2];
-            elseif (contains(Stimulus_type, 'F_150ms'))        
-                grey_intervals = [-0.5 0; 0.15 2];     
-            elseif (contains(Stimulus_type, 'TRAIN250'))    
-                grey_intervals = [-0.5 0; 0.25 0.5; 0.75 1.0; 1.25 1.5; 1.75 2.8];
-            else
-                grey_intervals = [-0.5 0; 0.15 0.3; 0.45 0.6; 0.75 0.9; 1.05 2];
-            end    
-                          
-            % Get current y-axis limits for full vertical shading
-            yl = ylim;
-                
-            % Shade each interval
-            for i = 1:size(grey_intervals, 1)
-                x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                y = [yl(1), yl(1), yl(2), yl(2)];
-                fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-            end
+            
             
             if (contains(Stimulus_type, 'E_1000ms'))
                 xline(0, 'k', (sprintf('E %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
             elseif (contains(Stimulus_type, 'A_1000ms'))
                 xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
-            elseif contains(Stimulus_type, 'F_')
+            elseif contains(Stimulus_type, 'F_') || contains(Stimulus_type, '_500ms') 
                 xline(0, 'k', (sprintf('F %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);    
             elseif (contains(Stimulus_type, 'TRAIN250'))
                 xline(0, 'k', (sprintf('A %d%s onset', round(rad2deg(ordered_oris(1))), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
@@ -678,107 +803,153 @@ for nsession = sessions_to_plot
             hold on;
                         
             num_sessions = length(sessions_to_plot);
-            cumulative_peak_stim = sum(all_peak_FR_by_stimwindow(:, :), 2);
-            cumulative_mean_stim = sum(all_mean_FR_by_stimwindow(:, :), 2);
-            cumulative_peak_grey = sum(all_peak_FR_by_greywindow(:, :), 2);
-            cumulative_mean_grey = sum(all_mean_FR_by_greywindow(:, :), 2);
-                      
-            % Set bar width and spacing
-            num_bars = 4;
+            num_bars = 2;
             bar_width = 0.15;
-            x_offsets = ((1:num_bars) - (num_bars+1)/2); % e.g., [-1.5, -0.5, 0.5, 1.5]
+            
+            x_offsets = ((1:num_bars) - (num_bars+1)/2);
             x = 1:num_sessions;
+            
+            % Combine stimulus elements + terminal grey element
+            cumulative_peak_all = ...
+                sum(all_peak_FR_by_stimwindow, 2) + ...
+                sum(all_peak_FR_by_greywindow, 2);
+            
+            cumulative_mean_all = ...
+                sum(all_mean_FR_by_stimwindow, 2);
             
             for i = 1:num_sessions
                 xpos = x(i);
             
-                % Stimulus peak
-                b1 = bar(xpos + x_offsets(1)*bar_width, cumulative_peak_stim(i), bar_width, 'FaceColor', colors(i,:));
-                % Stimulus mean
-                b2 = bar(xpos + x_offsets(2)*bar_width, cumulative_mean_stim(i), bar_width, 'FaceColor', colors(i,:));
-                % Grey peak
-                b3 = bar(xpos + x_offsets(3)*bar_width, cumulative_peak_grey(i), bar_width, 'FaceColor', [0.7 0.7 0.7]);
-                % Grey mean
-                b4 = bar(xpos + x_offsets(4)*bar_width, cumulative_mean_grey(i), bar_width, 'FaceColor', [0.7 0.7 0.7]);
+                 %% ---------------- PEAK BAR ----------------
             
-                % Add dividing lines for stim windows on stimulus bars
+                peak_x = xpos + x_offsets(1)*bar_width;
+            
+                bar(peak_x, cumulative_peak_all(i), bar_width, ...
+                    'FaceColor', colors(i,:));
+            
+                % Add dividing lines between elements
+                % including the final grey element
                 cum_val = 0;
+            
                 for w = 1:size(all_peak_FR_by_stimwindow, 2)
-                    cum_val = cum_val + all_peak_FR_by_stimwindow(i, w);
-                    plot([xpos + x_offsets(1)*bar_width - bar_width/2, xpos + x_offsets(1)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Stimulus peak error bars
-                        y_offset = 0;
-                        for w = 1:size(all_peak_FR_by_stimwindow, 2)
-                            y_val = y_offset + all_peak_FR_by_stimwindow(i, w);
-                            y_err = sem_peak_FR_by_stimwindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(1)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end
+            
+                    cum_val = cum_val + all_peak_FR_by_stimwindow(i,w);
+            
+                    plot([peak_x - bar_width/2, peak_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
                 end
             
-                cum_val = 0;
-                for w = 1:size(all_mean_FR_by_stimwindow, 2)
-                    cum_val = cum_val + all_mean_FR_by_stimwindow(i, w);
-                    plot([xpos + x_offsets(2)*bar_width - bar_width/2, xpos + x_offsets(2)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Stimulus mean error bars
-                        y_offset = 0;
-                        for w = 1:size(all_mean_FR_by_stimwindow, 2)
-                            y_val = y_offset + all_mean_FR_by_stimwindow(i, w);
-                            y_err = sem_mean_FR_by_stimwindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(2)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end    
-                end
-            
-                cum_val = 0;
+                % Add terminal grey element to the cumulative bar
                 for w = 1:size(all_peak_FR_by_greywindow, 2)
-                    cum_val = cum_val + all_peak_FR_by_greywindow(i, w);
-                    plot([xpos + x_offsets(3)*bar_width - bar_width/2, xpos + x_offsets(3)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Grey peak error bars
-                        y_offset = 0;
-                        for w = 1:size(all_peak_FR_by_greywindow, 2)
-                            y_val = y_offset + all_peak_FR_by_greywindow(i, w);
-                            y_err = sem_peak_FR_by_greywindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(3)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end 
+            
+                    cum_val = cum_val + all_peak_FR_by_greywindow(i,w);
+            
+                    plot([peak_x - bar_width/2, peak_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
                 end
             
-                cum_val = 0;
-                for w = 1:size(all_mean_FR_by_greywindow, 2)
-                    cum_val = cum_val + all_mean_FR_by_greywindow(i, w);
-                    plot([xpos + x_offsets(4)*bar_width - bar_width/2, xpos + x_offsets(4)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Grey mean error bars
-                        y_offset = 0;
-                        for w = 1:size(all_mean_FR_by_greywindow, 2)
-                            y_val = y_offset + all_mean_FR_by_greywindow(i, w);
-                            y_err = sem_mean_FR_by_greywindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(4)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end    
-                    
+                % Error bars
+                if ~strcmp(z_method, 'none')
+            
+                    y_offset = 0;
+            
+                    % Stimulus elements
+                    for w = 1:size(all_peak_FR_by_stimwindow, 2)
+            
+                        y_val = y_offset + all_peak_FR_by_stimwindow(i,w);
+                        y_err = sem_peak_FR_by_stimwindow(i,w);
+            
+                        errorbar(peak_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
+                    % Terminal grey element
+                    for w = 1:size(all_peak_FR_by_greywindow, 2)
+            
+                        y_val = y_offset + all_peak_FR_by_greywindow(i,w);
+                        y_err = sem_peak_FR_by_greywindow(i,w);
+            
+                        errorbar(peak_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
                 end
-                hold on;
+            
+            
+                %% ---------------- MEAN BAR ----------------
+            
+                mean_x = xpos + x_offsets(2)*bar_width;
+            
+                bar(mean_x, cumulative_mean_all(i), bar_width, ...
+                    'FaceColor', colors(i,:));
+            
+                % Add dividing lines between elements
+                cum_val = 0;
+            
+                for w = 1:size(all_mean_FR_by_stimwindow, 2)
+            
+                    cum_val = cum_val + all_mean_FR_by_stimwindow(i,w);
+            
+                    plot([mean_x - bar_width/2, mean_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
+                end
+            
+                % Add terminal grey element
+                % for w = 1:size(all_mean_FR_by_greywindow, 2)
+                % 
+                %     cum_val = cum_val + all_mean_FR_by_greywindow(i,w);
+                % 
+                %     plot([mean_x - bar_width/2, mean_x + bar_width/2], ...
+                %          [cum_val, cum_val], ...
+                %          'k-', 'LineWidth', 1);
+                % 
+                % end
+            
+                % Error bars
+                if ~strcmp(z_method, 'none')
+            
+                    y_offset = 0;
+            
+                    % Stimulus elements
+                    for w = 1:size(all_mean_FR_by_stimwindow, 2)
+            
+                        y_val = y_offset + all_mean_FR_by_stimwindow(i,w);
+                        y_err = sem_mean_FR_by_stimwindow(i,w);
+            
+                        errorbar(mean_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
+                    % Terminal grey element
+                    % for w = 1:size(all_mean_FR_by_greywindow, 2)
+                    % 
+                    %     y_val = y_offset + all_mean_FR_by_greywindow(i,w);
+                    %     y_err = sem_mean_FR_by_greywindow(i,w);
+                    % 
+                    %     errorbar(mean_x, y_val, y_err, ...
+                    %              'k.', 'CapSize', 8, 'LineWidth', 1);
+                    % 
+                    %     y_offset = y_val;
+                    % 
+                    % end
+            
+                end
+            
             end
             
             xticks(1:num_sessions);
@@ -790,15 +961,15 @@ for nsession = sessions_to_plot
             elseif contains(z_method, 'population')  
                 ylabel(sprintf('Cumulative FR (z-scored in aggregate over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
             else
-                ylabel(sprintf('Cumulative FR (z-scored per unit over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
+                ylabel(sprintf('Cumulative FR (z-scored by unit over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
             end 
             
             sgtitle(sprintf('%s - %s: %s Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
             legend({...
                 sprintf('Stim peak (%.2f–%.2f s)', stim_onset_response_calc_begins, stim_onset_response_calc_ends), ...
-                sprintf('Stim mean (%.2f–%.2f s)', stim_latter_response_calc_begins, stim_latter_response_calc_ends), ...
-                sprintf('Grey peak (%.2f–%.2f s)', grey_peak_response_calc_begins, grey_peak_response_calc_ends),...
-                sprintf('Grey mean prior (%.2f–%.2f s)', grey_prior_response_calc_begins, grey_prior_response_calc_ends)}, 'Location', 'northeast', 'FontSize', 24);
+                sprintf('Stim mean (%.2f–%.2f s)', stim_mean_response_calc_begins, stim_mean_response_calc_ends), ...
+                sprintf('Grey peak (%.2f–%.2f s)', grey_onset_response_calc_begins, grey_onset_response_calc_ends),...
+                sprintf('Grey mean (%.2f–%.2f s)', grey_mean_response_calc_begins, grey_mean_response_calc_ends)}, 'Location', 'northwest', 'FontSize', 24);
             grid on;
 
             % Save bar chart figure
@@ -900,12 +1071,8 @@ for nsession = sessions_to_plot
                 ori = 1;
                 stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
                 
-                if contains(Stimulus_type, 'GAVNIK250_ABCD')
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);  
-                else    
-                    [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.35], psthBinSize);  
-                end
-                
+                [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);  
+                           
                 mean_trace = mean(binnedArray, 1); % average over trials
                 nTrials = size(binnedArray, 1);
                 
@@ -914,22 +1081,7 @@ for nsession = sessions_to_plot
 
                 if contains(z_method, 'none')
                     ylim ([0 16]);
-                     % Define grey intervals
-                    if contains(Stimulus_type, 'GAVNIK250_ABCD')
-                        grey_intervals = [-0.5 0; 1.0 1.9];
-                    else    
-                        grey_intervals = [-0.5 0; 0.6 1.5];
-                    end
-
-                    % Get current y-axis limits for full vertical shading
-                    yl = ylim;
-                        
-                    % Shade each interval
-                    for i = 1:size(grey_intervals, 1)
-                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                        y = [yl(1), yl(1), yl(2), yl(2)];
-                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                    end
+                     
                     
                     % Plot raw mean firing rate trace
                     plot(bins, mean_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s', experiment_info(nsession).date, depth_for_analysis));
@@ -953,13 +1105,10 @@ for nsession = sessions_to_plot
                             this_unit = unique_units(u);
                     
                             unit_mask = all_spike_ids == this_unit;
-                            unit_spike_times = all_spike_times(unit_mask);
+                            unit_spike_times = all_spike_times(unit_mask);             
+                           
+                            [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
                             
-                            if(contains(Stimulus_type, 'GAVNIK250_ABCD'))
-                                [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
-                            else
-                                [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
-                            end  
                             % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
 
                             mu = unit_baseline_mean(u);
@@ -980,6 +1129,7 @@ for nsession = sessions_to_plot
                         nUnits_valid = size(unit_ztraces, 1);
 
                         unit_peak_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
+                        unit_peaklatter_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
                         unit_mean_FR_by_stimwindow = zeros(nUnits_valid, length(stim_window_starts));
                         unit_peak_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
                         unit_mean_FR_by_greywindow = zeros(nUnits_valid, length(grey_window_starts));
@@ -988,29 +1138,54 @@ for nsession = sessions_to_plot
                         
                             idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
-                        
-                            idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
+
+                            idx_peaklatter = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
                         
+                            idx_mean = bins >= (stim_window_starts(i) + stim_mean_response_calc_begins) & ...
+                                       bins <  (stim_window_starts(i) + stim_mean_response_calc_ends);
+                        
                             unit_peak_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peak), [], 2);
+                            unit_peaklatter_FR_by_stimwindow(:, i) = max(unit_ztraces(:, idx_peaklatter), [], 2);
                             unit_mean_FR_by_stimwindow(:, i) = mean(unit_ztraces(:, idx_mean), 2);
                         end
 
                         for i = 1:length(grey_window_starts)
                         
-                            idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
-                                       bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
+                            idx_grey_peak = bins >= (grey_window_starts(i) + grey_onset_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_onset_response_calc_ends);
                         
-                            idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
-                                       bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
+                            idx_grey_mean = bins >= (grey_window_starts(i) + grey_mean_response_calc_begins) & ...
+                                       bins <  (grey_window_starts(i) + grey_mean_response_calc_ends);
                         
                             unit_peak_FR_by_greywindow(:, i) = max(unit_ztraces(:, idx_grey_peak), [], 2);
                             unit_mean_FR_by_greywindow(:, i) = mean(unit_ztraces(:, idx_grey_mean), 2);
                         end
                     end
 
-
-
+                    %% -------- SAVE PER-UNIT Z-SCORED FR TRACE DATA --------
+                    trace_entry_counter = trace_entry_counter + 1;
+                    FRtrace_struct(trace_entry_counter).subject = SUBJECTS{1};
+                    FRtrace_struct(trace_entry_counter).session_number = nsession;
+                    FRtrace_struct(trace_entry_counter).recording_date = experiment_info(nsession).date;
+                    FRtrace_struct(trace_entry_counter).stimulus_type = Stimulus_type;
+                    FRtrace_struct(trace_entry_counter).stim_duration = stim_duration;
+                    FRtrace_struct(trace_entry_counter).depth_for_analysis = depth_for_analysis;
+                    
+                    FRtrace_struct(trace_entry_counter).z_method = z_method;
+                    FRtrace_struct(trace_entry_counter).z_score_period = z_score_period;
+                    
+                    FRtrace_struct(trace_entry_counter).psthBinSize = psthBinSize;
+                    FRtrace_struct(trace_entry_counter).time_window = [-0.30 1.75];
+                    
+                    FRtrace_struct(trace_entry_counter).bins = bins;
+                    FRtrace_struct(trace_entry_counter).unit_ztraces = unit_ztraces;
+                    FRtrace_struct(trace_entry_counter).z_trace = z_trace;
+                    
+                    FRtrace_struct(trace_entry_counter).n_trials = nTrials;
+                    FRtrace_struct(trace_entry_counter).n_units = nUnits_valid;
+                                        
+                    
                     % Plot SEM shading
                     if ~contains(z_method, 'none')
                         fill([bins, fliplr(bins)], ...
@@ -1031,43 +1206,26 @@ for nsession = sessions_to_plot
                         end 
                     elseif contains(z_method, 'per_neuron')   
                         if contains(z_score_period, 'entire_session')
-                            ylabel('FR (z-scored per unit over entire session)', 'FontSize', 24);
+                            ylabel('FR (z-scored by unit over entire session)', 'FontSize', 24);
                             ylim([-2 6]);
                         elseif contains(z_score_period, 'stim_session')
-                            ylabel('FR (z-scored per unit over stim session)', 'FontSize', 24);
+                            ylabel('FR (z-scored by unit over stim session)', 'FontSize', 24);
                         end    
                     end  
-
-                    % Define grey intervals
-                    if (contains(Stimulus_type, 'GAVNIK_A___'))
-                        grey_intervals = [-0.5 0; 0.15 1.5];
-                    elseif contains(Stimulus_type, 'GAVNIK250_ABCD')  
-                        grey_intervals = [-0.5 0; 1.0 1.9];
-                    else
-                        grey_intervals = [-0.5 0; 0.6 1.5];
-                    end    
-                                   
-                    % Get current y-axis limits for full vertical shading
-                    yl = ylim;
-                        
-                    % Shade each interval
-                    for i = 1:size(grey_intervals, 1)
-                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                        y = [yl(1), yl(1), yl(2), yl(2)];
-                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                    end
-
+                   
                     plot(bins, z_trace, 'Color', colors(find(sessions_to_plot == nsession),:), 'LineWidth', 1.5, 'DisplayName', sprintf('Day %d, %s', experiment_info(nsession).date, depth_for_analysis));
                                         
                 end    
                 
                 peak_FR_by_stimwindow = zeros(1, length(stim_window_starts));
+                peaklatter_FR_by_stimwindow = zeros(1, length(stim_window_starts));
                 mean_FR_by_stimwindow = zeros(1, length(stim_window_starts));
                 peak_FR_by_greywindow = zeros(1, length(grey_window_starts));
                 mean_FR_by_greywindow = zeros(1, length(grey_window_starts));
 
                 % per trial values for SEM calculation
                 peak_FR_trials_by_stimwindow = zeros(nTrials, length(stim_window_starts)); % preallocate
+                peaklatter_FR_trials_by_stimwindow = zeros(nTrials, length(stim_window_starts)); % preallocate
                 mean_FR_trials_by_stimwindow = zeros(nTrials, length(stim_window_starts)); % preallocate
                 peak_FR_trials_by_greywindow = zeros(nTrials, length(grey_window_starts)); % preallocate
                 mean_FR_trials_by_greywindow = zeros(nTrials, length(grey_window_starts)); % preallocate
@@ -1077,40 +1235,48 @@ for nsession = sessions_to_plot
                     idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
                     
-                    idx_mean = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
+                    idx_peaklatter = bins >= (stim_window_starts(i) + stim_latter_response_calc_begins) & ...
                                bins <  (stim_window_starts(i) + stim_latter_response_calc_ends);
+                    
+                    idx_mean = bins >= (stim_window_starts(i) + stim_mean_response_calc_begins) & ...
+                               bins <  (stim_window_starts(i) + stim_mean_response_calc_ends);
 
 
                     if contains(z_method, 'none')
                         peak_FR_by_stimwindow(i) = max(mean_trace(idx_peak));
+                        peaklatter_FR_by_stimwindow(i) = max(mean_trace(idx_peaklatter));
                         mean_FR_by_stimwindow(i) = mean(mean_trace(idx_mean));
                         %for SEM
                         peak_FR_trials_by_stimwindow(:, i) = max(binnedArray(:, idx_peak), [], 2);
+                        peaklatter_FR_trials_by_stimwindow(:, i) = max(binnedArray(:, idx_peaklatter), [], 2);
                         mean_FR_trials_by_stimwindow(:, i) = mean(binnedArray(:, idx_mean), 2);
                                                 
                     else
                         peak_FR_by_stimwindow(i) = max(z_trace(idx_peak));
+                        peaklatter_FR_by_stimwindow(i) = max(z_trace(idx_peaklatter));
                         mean_FR_by_stimwindow(i) = mean(z_trace(idx_mean));
 
                         if strcmp(z_method, 'population')
                         % per-trial SEM is valid here
                             peak_FR_trials_by_stimwindow(:, i) = max(zscored_trials(:, idx_peak), [], 2);
+                            peaklatter_FR_trials_by_stimwindow(:, i) = max(zscored_trials(:, idx_peaklatter), [], 2);
                             mean_FR_trials_by_stimwindow(:, i) = mean(zscored_trials(:, idx_mean), 2);
                         elseif strcmp(z_method, 'per_neuron')
                             % SEM already computed across units, not trials
                             peak_FR_trials_by_stimwindow(:, i) = NaN;
+                            peaklatter_FR_trials_by_stimwindow(:, i) = NaN;
                             mean_FR_trials_by_stimwindow(:, i) = NaN;
                         end 
                     end
                 end
                 
                 for i = 1:length(grey_window_starts)
-                    %idx_in_greywindow = bins >= grey_window_starts(i) & bins < grey_window_ends(i);
-                    idx_grey_peak = bins >= (grey_window_starts(i) + grey_peak_response_calc_begins) & ...
-                               bins <  (grey_window_starts(i) + grey_peak_response_calc_ends);
                     
-                    idx_grey_mean = bins >= (grey_window_starts(i) + grey_prior_response_calc_begins) & ...
-                               bins <  (grey_window_starts(i) + grey_prior_response_calc_ends);
+                    idx_grey_peak = bins >= (grey_window_starts(i) + grey_onset_response_calc_begins) & ...
+                               bins <  (grey_window_starts(i) + grey_onset_response_calc_ends);
+                    
+                    idx_grey_mean = bins >= (grey_window_starts(i) + grey_mean_response_calc_begins) & ...
+                               bins <  (grey_window_starts(i) + grey_mean_response_calc_ends);
 
                     if contains(z_method, 'none')              
                         peak_FR_by_greywindow(i) = max(mean_trace(idx_grey_peak));
@@ -1136,82 +1302,169 @@ for nsession = sessions_to_plot
                 session_idx = find(sessions_to_plot == nsession); % Map actual session number to index in preallocated array
                 
                 all_peak_FR_by_stimwindow(session_idx, :) = peak_FR_by_stimwindow;
+                all_peaklatter_FR_by_stimwindow(session_idx, :) = peaklatter_FR_by_stimwindow;
                 all_mean_FR_by_stimwindow(session_idx, :) = mean_FR_by_stimwindow;
                 all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                 all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                 if strcmp(z_method, 'population')
-                    sem_peak_FR_by_stimwindow(session_idx, :) = std(peak_FR_trials_by_stimwindow, 0, 1) / sqrt(size(peak_FR_trials_by_stimwindow,1));
-                    sem_mean_FR_by_stimwindow(session_idx, :) = std(mean_FR_trials_by_stimwindow, 0, 1) / sqrt(size(mean_FR_trials_by_stimwindow,1));
-                    sem_peak_FR_by_greywindow(session_idx, :) = std(peak_FR_trials_by_greywindow, 0, 1) / sqrt(size(peak_FR_trials_by_greywindow,1));
-                    sem_mean_FR_by_greywindow(session_idx, :) = std(mean_FR_trials_by_greywindow, 0, 1) / sqrt(size(mean_FR_trials_by_greywindow,1));
+                    % Calculate SEM of CUMULATIVE stacked-bar values. First calculate the cumulative response separately for each
+                    % trial, then calculate the SEM across trials.
+                    % -------------------------------------------------------------
+                
+                    % Stimulus peak
+                    cumulative_peak_trials_stim = cumsum(peak_FR_trials_by_stimwindow, 2);
+                    cumulative_peaklatter_trials_stim = cumsum(peaklatter_FR_trials_by_stimwindow, 2);
+
+                    sem_peak_FR_by_stimwindow(session_idx, :) = std(cumulative_peak_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_trials_stim), 1));
+                    sem_peaklatter_FR_by_stimwindow(session_idx, :) = std(cumulative_peaklatter_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peaklatter_trials_stim), 1));
+                                
+                    % Stimulus mean
+                    cumulative_mean_trials_stim = cumsum(mean_FR_trials_by_stimwindow, 2);
+                
+                    sem_mean_FR_by_stimwindow(session_idx, :) = std(cumulative_mean_trials_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_trials_stim), 1));
+                
+                    % Grey peak
+                    cumulative_peak_trials_grey = cumsum(peak_FR_trials_by_greywindow, 2);
+                
+                    sem_peak_FR_by_greywindow(session_idx, :) = std(cumulative_peak_trials_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_trials_grey), 1));
+                                
+                    % Grey mean
+                    cumulative_mean_trials_grey = cumsum(mean_FR_trials_by_greywindow, 2);
+                
+                    sem_mean_FR_by_greywindow(session_idx, :) = std(cumulative_mean_trials_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_trials_grey), 1));
                 elseif strcmp(z_method, 'per_neuron')
 
                     % SEM across units
-                    sem_peak_FR_by_stimwindow(session_idx, :) = ...
-                        std(unit_peak_FR_by_stimwindow, 0, 1) / sqrt(size(unit_peak_FR_by_stimwindow,1));
+                    cumulative_peak_units_stim = cumsum(unit_peak_FR_by_stimwindow, 2);
+                    cumulative_peaklatter_units_stim = cumsum(unit_peaklatter_FR_by_stimwindow, 2);
+                    
+                    sem_peak_FR_by_stimwindow(session_idx, :) = std(cumulative_peak_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_units_stim), 1));
+                    sem_peaklatter_FR_by_stimwindow(session_idx, :) = std(cumulative_peaklatter_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peaklatter_units_stim), 1));
                 
-                    sem_mean_FR_by_stimwindow(session_idx, :) = ...
-                        std(unit_mean_FR_by_stimwindow, 0, 1) / sqrt(size(unit_mean_FR_by_stimwindow,1));
+                    cumulative_mean_units_stim = cumsum(unit_mean_FR_by_stimwindow, 2);
+
+                    sem_mean_FR_by_stimwindow(session_idx, :) = std(cumulative_mean_units_stim, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_units_stim), 1));
                 
+                    % Grey peak: cumulative stimulus + grey response
+                    cumulative_peak_units_grey = ...
+                        sum(unit_peak_FR_by_stimwindow, 2) + ...
+                        cumsum(unit_peak_FR_by_greywindow, 2);
+                    
                     sem_peak_FR_by_greywindow(session_idx, :) = ...
-                        std(unit_peak_FR_by_greywindow, 0, 1) / sqrt(size(unit_peak_FR_by_greywindow,1));
+                        std(cumulative_peak_units_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_peak_units_grey), 1));
                 
+                    % Grey mean: cumulative stimulus + grey response
+                    cumulative_mean_units_grey = ...
+                        sum(unit_mean_FR_by_stimwindow, 2) + ...
+                        cumsum(unit_mean_FR_by_greywindow, 2);
+                    
                     sem_mean_FR_by_greywindow(session_idx, :) = ...
-                        std(unit_mean_FR_by_greywindow, 0, 1) / sqrt(size(unit_mean_FR_by_greywindow,1));
+                        std(cumulative_mean_units_grey, 0, 1, 'omitnan') ./ ...
+                        sqrt(sum(isfinite(cumulative_mean_units_grey), 1));
                 end
 
-                if contains(z_method, 'none')      
-                    % add to struct
-                    entry_counter = entry_counter + 1;
-    
-                    FRs_peak_and_mean(entry_counter).subject = SUBJECTS{1};   % e.g. 'M00071'
-                    FRs_peak_and_mean(entry_counter).session_number = nsession;
-                    FRs_peak_and_mean(entry_counter).day = experiment_info(nsession).date;
-                    FRs_peak_and_mean(entry_counter).stimulus_type = Stimulus_type;
-                    FRs_peak_and_mean(entry_counter).depth_for_analysis = depth_for_analysis;
-                    FRs_peak_and_mean(entry_counter).z_score_period = z_score_period;
-                    
-                    % ---- Stimulus windows (summary) ----
-                    FRs_peak_and_mean(entry_counter).stim.peak_FR = peak_FR_by_stimwindow;
-                    FRs_peak_and_mean(entry_counter).stim.mean_FR = mean_FR_by_stimwindow;
-                    
-                    % ---- Grey windows (summary) ----
-                    FRs_peak_and_mean(entry_counter).grey.peak_FR = peak_FR_by_greywindow;
-                    FRs_peak_and_mean(entry_counter).grey.mean_FR = mean_FR_by_greywindow;
-                    
-                    % ---- Trial-level values (for SEM / stats) ----
-                    FRs_peak_and_mean(entry_counter).stim.peak_FR_trials = peak_FR_trials_by_stimwindow;
-                    FRs_peak_and_mean(entry_counter).stim.mean_FR_trials = mean_FR_trials_by_stimwindow;
-                    
-                    FRs_peak_and_mean(entry_counter).grey.peak_FR_trials = peak_FR_trials_by_greywindow;
-                    FRs_peak_and_mean(entry_counter).grey.mean_FR_trials = mean_FR_trials_by_greywindow;
-                    
-                    % ---- Window definitions (critical metadata) ----
-                    FRs_peak_and_mean(entry_counter).stim_window_starts = stim_window_starts;
-                    FRs_peak_and_mean(entry_counter).stim_window_ends   = stim_window_ends;
-                    FRs_peak_and_mean(entry_counter).grey_window_starts = grey_window_starts;
-                    FRs_peak_and_mean(entry_counter).grey_window_ends   = grey_window_ends;
-                    
-                    FRs_peak_and_mean(entry_counter).stim_onset_response_calc = ...
-                        [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
-                    
-                    FRs_peak_and_mean(entry_counter).stim_latter_response_calc = ...
-                        [stim_latter_response_calc_begins, stim_latter_response_calc_ends];
-    
-                    FRs_peak_and_mean(entry_counter).grey_peak_response_calc = ...
-                        [grey_peak_response_calc_begins, grey_peak_response_calc_ends];
-                    
-                    FRs_peak_and_mean(entry_counter).grey_prior_response_calc = ...
-                        [grey_prior_response_calc_begins, grey_prior_response_calc_ends];
-                end
+                
+                % add to struct
+                entry_counter = entry_counter + 1;
 
-                if contains(Stimulus_type, 'GAVNIK250_ABCD')
-                    xlim([-0.3 1.75]);
-                    xticks(-0.2:0.2:1.6);
-                else    
-                    xlim([-0.3 1.35]);
-                    xticks(-0.4:0.2:1.4);
-                end
+                FRs_peak_and_mean(entry_counter).subject = SUBJECTS{1};
+                FRs_peak_and_mean(entry_counter).session_number = nsession;
+                FRs_peak_and_mean(entry_counter).day = experiment_info(nsession).date;
+                FRs_peak_and_mean(entry_counter).stimulus_type = Stimulus_type;
+                FRs_peak_and_mean(entry_counter).stim_duration = stim_duration;
+                FRs_peak_and_mean(entry_counter).depth_for_analysis = depth_for_analysis;
+                FRs_peak_and_mean(entry_counter).z_score_period = z_score_period;
+                FRs_peak_and_mean(entry_counter).z_method = z_method;
+                
+                % ---- Number of neurons ----
+                FRs_peak_and_mean(entry_counter).n_units = ...
+                    size(unit_peak_FR_by_stimwindow, 1);
+                
+                % ---- Stimulus windows (summary) ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR = peak_FR_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR = peaklatter_FR_by_stimwindow;
+                FRs_peak_and_mean(entry_counter).stim.mean_FR = mean_FR_by_stimwindow;
+                
+                % ---- Grey windows (summary) ----
+                FRs_peak_and_mean(entry_counter).grey.peak_FR = peak_FR_by_greywindow;
+                FRs_peak_and_mean(entry_counter).grey.mean_FR = mean_FR_by_greywindow;
+                
+                % ---- Neuron-level values ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR_units = ...
+                    unit_peak_FR_by_stimwindow;
+
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR_units = ...
+                    unit_peaklatter_FR_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).stim.mean_FR_units = ...
+                    unit_mean_FR_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.peak_FR_units = ...
+                    unit_peak_FR_by_greywindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.mean_FR_units = ...
+                    unit_mean_FR_by_greywindow;
+                
+                % ---- Trial-level values ----
+                FRs_peak_and_mean(entry_counter).stim.peak_FR_trials = ...
+                    peak_FR_trials_by_stimwindow;
+
+                FRs_peak_and_mean(entry_counter).stim.peaklatter_FR_trials = ...
+                    peaklatter_FR_trials_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).stim.mean_FR_trials = ...
+                    mean_FR_trials_by_stimwindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.peak_FR_trials = ...
+                    peak_FR_trials_by_greywindow;
+                
+                FRs_peak_and_mean(entry_counter).grey.mean_FR_trials = ...
+                    mean_FR_trials_by_greywindow;
+                
+                % ---- Window definitions ----
+                FRs_peak_and_mean(entry_counter).stim_window_starts = stim_window_starts;
+                FRs_peak_and_mean(entry_counter).stim_window_ends = stim_window_ends;
+                FRs_peak_and_mean(entry_counter).grey_window_starts = grey_window_starts;
+                FRs_peak_and_mean(entry_counter).grey_window_ends = grey_window_ends;
+                
+                % ---- Number of elements ----
+                FRs_peak_and_mean(entry_counter).n_stim_elements = ...
+                    size(unit_peak_FR_by_stimwindow, 2);
+
+                FRs_peak_and_mean(entry_counter).n_stimlatter_elements = ...
+                    size(unit_peaklatter_FR_by_stimwindow, 2);
+                
+                FRs_peak_and_mean(entry_counter).n_grey_elements = ...
+                    size(unit_peak_FR_by_greywindow, 2);
+                
+                % ---- Calculation windows ----
+                FRs_peak_and_mean(entry_counter).stim_onset_response_calc = ...
+                    [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
+
+                FRs_peak_and_mean(entry_counter).stim_latter_response_calc = ...
+                    [stim_latter_response_calc_begins, stim_latter_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).stim_mean_response_calc = ...
+                    [stim_mean_response_calc_begins, stim_mean_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).grey_peak_response_calc = ...
+                    [grey_onset_response_calc_begins, grey_onset_response_calc_ends];
+                
+                FRs_peak_and_mean(entry_counter).grey_mean_response_calc = ...
+                    [grey_mean_response_calc_begins, grey_mean_response_calc_ends];
+                                
+                xlim([-0.3 1.75]);
+                xticks(-0.4:0.2:1.6);
+                
                 set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 24);
                 xlabel('Time (s) since onset of A', 'FontSize', 24)
                 
@@ -1248,130 +1501,264 @@ for nsession = sessions_to_plot
             figure(fig2); % switch to bar chart figure
             hold on;
                         
-            num_sessions = length(sessions_to_plot);
-            cumulative_peak_stim = sum(all_peak_FR_by_stimwindow(:, :), 2);
-            cumulative_mean_stim = sum(all_mean_FR_by_stimwindow(:, :), 2);
-            cumulative_peak_grey = sum(all_peak_FR_by_greywindow(:, :), 2);
-            cumulative_mean_grey = sum(all_mean_FR_by_greywindow(:, :), 2);
-                      
-            % Set bar width and spacing
-            num_bars = 4;
+            num_sessions = length(sessions_to_plot);   % e.g. 2 = Day 1 and Day 5
             bar_width = 0.15;
-            x_offsets = ((1:num_bars) - (num_bars+1)/2); % e.g., [-1.5, -0.5, 0.5, 1.5]
-            x = 1:num_sessions;
+            
+            % Position of each type of response along the x-axis
+            peak_onset_position = 1;
+            
+            if stim_duration == 250
+                peak_latter_position = 2;
+                mean_position = 3;
+            else
+                mean_position = 2;
+            end
+            
+            % Position Day 1 and Day 5 bars around each response-type position
+            day_offsets = [-0.55, 0.55] * bar_width;
+            
+            % Combine stimulus elements + terminal grey element
+            % for onset peak
+            cumulative_peak_all = ...
+                sum(all_peak_FR_by_stimwindow, 2) + ...
+                sum(all_peak_FR_by_greywindow, 2);
+
+            % Latter peak: stimulus elements only
+            if stim_duration == 250
+                cumulative_peaklatter_all = ...
+                    sum(all_peaklatter_FR_by_stimwindow, 2);
+            end
+            
+            cumulative_mean_all = ...
+                sum(all_mean_FR_by_stimwindow, 2);
             
             for i = 1:num_sessions
-                xpos = x(i);
+
+                %xpos = x(i);
             
-                % Stimulus peak
-                b1 = bar(xpos + x_offsets(1)*bar_width, cumulative_peak_stim(i), bar_width, 'FaceColor', colors(i,:));
-                % Stimulus mean
-                b2 = bar(xpos + x_offsets(2)*bar_width, cumulative_mean_stim(i), bar_width, 'FaceColor', colors(i,:));
-                % Grey peak
-                b3 = bar(xpos + x_offsets(3)*bar_width, cumulative_peak_grey(i), bar_width, 'FaceColor', [0.7 0.7 0.7]);
-                % Grey mean
-                b4 = bar(xpos + x_offsets(4)*bar_width, cumulative_mean_grey(i), bar_width, 'FaceColor', [0.7 0.7 0.7]);
+                %% ---------------- PEAK ONSET BAR ----------------
             
-                % Add dividing lines for stim windows on stimulus bars
+                peak_x = peak_onset_position + day_offsets(i);
+            
+                bar(peak_x, cumulative_peak_all(i), bar_width, ...
+                    'FaceColor', colors(i,:));
+            
+                % Add dividing lines between elements
+                % including the final grey element
                 cum_val = 0;
+            
                 for w = 1:size(all_peak_FR_by_stimwindow, 2)
-                    cum_val = cum_val + all_peak_FR_by_stimwindow(i, w);
-                    plot([xpos + x_offsets(1)*bar_width - bar_width/2, xpos + x_offsets(1)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    
-                    if ~strcmp(z_method, 'none')
-                        % Stimulus peak error bars
-                        y_offset = 0;
-                        for w = 1:size(all_peak_FR_by_stimwindow, 2)
-                            y_val = y_offset + all_peak_FR_by_stimwindow(i, w);
-                            y_err = sem_peak_FR_by_stimwindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(1)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end
+            
+                    cum_val = cum_val + all_peak_FR_by_stimwindow(i,w);
+            
+                    plot([peak_x - bar_width/2, peak_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
                 end
             
-                cum_val = 0;
-                for w = 1:size(all_mean_FR_by_stimwindow, 2)
-                    cum_val = cum_val + all_mean_FR_by_stimwindow(i, w);
-                    plot([xpos + x_offsets(2)*bar_width - bar_width/2, xpos + x_offsets(2)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Stimulus mean error bars
-                        y_offset = 0;
-                        for w = 1:size(all_mean_FR_by_stimwindow, 2)
-                            y_val = y_offset + all_mean_FR_by_stimwindow(i, w);
-                            y_err = sem_mean_FR_by_stimwindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(2)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end    
-                end
-            
-                cum_val = 0;
+                % Add terminal grey element to the cumulative bar
                 for w = 1:size(all_peak_FR_by_greywindow, 2)
-                    cum_val = cum_val + all_peak_FR_by_greywindow(i, w);
-                    plot([xpos + x_offsets(3)*bar_width - bar_width/2, xpos + x_offsets(3)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Grey peak error bars
-                        y_offset = 0;
-                        for w = 1:size(all_peak_FR_by_greywindow, 2)
-                            y_val = y_offset + all_peak_FR_by_greywindow(i, w);
-                            y_err = sem_peak_FR_by_greywindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(3)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end    
+            
+                    cum_val = cum_val + all_peak_FR_by_greywindow(i,w);
+            
+                    plot([peak_x - bar_width/2, peak_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
                 end
             
-                cum_val = 0;
-                for w = 1:size(all_mean_FR_by_greywindow, 2)
-                    cum_val = cum_val + all_mean_FR_by_greywindow(i, w);
-                    plot([xpos + x_offsets(4)*bar_width - bar_width/2, xpos + x_offsets(4)*bar_width + bar_width/2], ...
-                         [cum_val, cum_val], 'k-', 'LineWidth', 1)
-                    if ~strcmp(z_method, 'none')
-                        % Grey mean error bars
-                        y_offset = 0;
-                        for w = 1:size(all_mean_FR_by_greywindow, 2)
-                            y_val = y_offset + all_mean_FR_by_greywindow(i, w);
-                            y_err = sem_mean_FR_by_greywindow(i, w);
-                        
-                            errorbar(xpos + x_offsets(4)*bar_width, y_val, y_err, ...
-                                     'k.', 'CapSize', 8, 'LineWidth', 1);
-                            y_offset = y_val;
-                        end
-                    end    
+                % Error bars
+                if ~strcmp(z_method, 'none')
+            
+                    y_offset = 0;
+            
+                    % Stimulus elements
+                    for w = 1:size(all_peak_FR_by_stimwindow, 2)
+            
+                        y_val = y_offset + all_peak_FR_by_stimwindow(i,w);
+                        y_err = sem_peak_FR_by_stimwindow(i,w);
+            
+                        errorbar(peak_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
+                    % Terminal grey element
+                    for w = 1:size(all_peak_FR_by_greywindow, 2)
+            
+                        y_val = y_offset + all_peak_FR_by_greywindow(i,w);
+                        y_err = sem_peak_FR_by_greywindow(i,w);
+            
+                        errorbar(peak_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
                 end
-                hold on;
+
+                %% ---------------- LATTER PEAK BAR ----------------
+
+                if stim_duration == 250
+            
+                    peaklatter_x = peak_latter_position + day_offsets(i);
+            
+                    bar(peaklatter_x, cumulative_peaklatter_all(i), bar_width, ...
+                        'FaceColor', colors(i,:));
+            
+                    % Add dividing lines between latter-peak elements
+                    cum_val = 0;
+            
+                    for w = 1:size(all_peaklatter_FR_by_stimwindow, 2)
+            
+                        cum_val = ...
+                            cum_val + all_peaklatter_FR_by_stimwindow(i,w);
+            
+                        plot([peaklatter_x - bar_width/2, peaklatter_x + bar_width/2], ...
+                             [cum_val, cum_val], ...
+                             'k-', 'LineWidth', 1);
+            
+                    end
+            
+                    % Error bars
+                    if ~strcmp(z_method, 'none')
+            
+                        y_offset = 0;
+            
+                        for w = 1:size(all_peaklatter_FR_by_stimwindow, 2)
+            
+                            y_val = ...
+                                y_offset + all_peaklatter_FR_by_stimwindow(i,w);
+            
+                            y_err = sem_peaklatter_FR_by_stimwindow(i,w);
+            
+                            errorbar(peaklatter_x, y_val, y_err, ...
+                                     'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                            y_offset = y_val;
+            
+                        end
+            
+                    end
+            
+                end
+                        
+            
+                %% ---------------- MEAN BAR ----------------
+            
+                mean_x = mean_position + day_offsets(i);
+            
+                bar(mean_x, cumulative_mean_all(i), bar_width, ...
+                    'FaceColor', colors(i,:));
+            
+                % Add dividing lines between elements
+                cum_val = 0;
+            
+                for w = 1:size(all_mean_FR_by_stimwindow, 2)
+            
+                    cum_val = cum_val + all_mean_FR_by_stimwindow(i,w);
+            
+                    plot([mean_x - bar_width/2, mean_x + bar_width/2], ...
+                         [cum_val, cum_val], ...
+                         'k-', 'LineWidth', 1);
+            
+                end
+            
+                % Add terminal grey element
+                % for w = 1:size(all_mean_FR_by_greywindow, 2)
+                % 
+                %     cum_val = cum_val + all_mean_FR_by_greywindow(i,w);
+                % 
+                %     plot([mean_x - bar_width/2, mean_x + bar_width/2], ...
+                %          [cum_val, cum_val], ...
+                %          'k-', 'LineWidth', 1);
+                % 
+                % end
+            
+                % Error bars
+                if ~strcmp(z_method, 'none')
+            
+                    y_offset = 0;
+            
+                    % Stimulus elements
+                    for w = 1:size(all_mean_FR_by_stimwindow, 2)
+            
+                        y_val = y_offset + all_mean_FR_by_stimwindow(i,w);
+                        y_err = sem_mean_FR_by_stimwindow(i,w);
+            
+                        errorbar(mean_x, y_val, y_err, ...
+                                 'k.', 'CapSize', 8, 'LineWidth', 1);
+            
+                        y_offset = y_val;
+            
+                    end
+            
+                    % Terminal grey element
+                    % for w = 1:size(all_mean_FR_by_greywindow, 2)
+                    % 
+                    %     y_val = y_offset + all_mean_FR_by_greywindow(i,w);
+                    %     y_err = sem_mean_FR_by_greywindow(i,w);
+                    % 
+                    %     errorbar(mean_x, y_val, y_err, ...
+                    %              'k.', 'CapSize', 8, 'LineWidth', 1);
+                    % 
+                    %     y_offset = y_val;
+                    % 
+                    % end
+            
+                end
+            
             end
             
             xticks(1:num_sessions);
-            
+            xticklabels(arrayfun(@(x) sprintf('Day %d', experiment_info(x).date), sessions_to_plot, 'UniformOutput', false));
+            xticks(1:3);
+            if stim_duration == 250
+                xticklabels({'Peak onset', 'Peak latter', 'Mean'});
+            else
+                xticks(1:2);
+                xticklabels({'Peak onset', 'Mean'});
+            end
+            set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 24);
             if contains(z_method, 'none')
                 ylabel('Cumulative firing rate (Hz)', 'FontSize', 24);
                 %ylim ([0 16]);
             elseif contains(z_method, 'population')  
                 ylabel(sprintf('Cumulative FR (z-scored in aggregate over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
             else
-                ylabel(sprintf('Cumulative FR (z-scored per unit over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
+                ylabel(sprintf('Cumulative FR (z-scored by unit over %s)', z_score_period), 'Interpreter', 'none', 'FontSize', 24);
             end 
 
-            xlabel('Training Day', 'FontSize', 24)
             set(gca, "TickDir", "out", 'box', 'off', 'Color', 'none', 'FontSize', 24);
             sgtitle(sprintf('%s - %s: %s Cumulative Peak and Mean Firing Rates Across Days', subject_number, Stimulus_type, depth_for_analysis), 'Interpreter', 'none');
-            legend({...
-                sprintf('Stim peak (%.2f–%.2f s)', stim_onset_response_calc_begins, stim_onset_response_calc_ends), ...
-                sprintf('Stim mean (%.2f–%.2f s)', stim_latter_response_calc_begins, stim_latter_response_calc_ends), ...
-                sprintf('Grey peak (%.2f–%.2f s)', grey_peak_response_calc_begins, grey_peak_response_calc_ends),...
-                sprintf('Grey mean prior (%.2f–%.2f s)', grey_prior_response_calc_begins, grey_prior_response_calc_ends)}, 'Location', 'northeast', 'FontSize', 24);
-            grid on;
+                        
+            legend_entries = { ...
+                sprintf('Element onset peak (%.2f–%.2f s)', ...
+                    stim_onset_response_calc_begins, ...
+                    stim_onset_response_calc_ends)};
+            
+            if stim_duration == 250
+            
+                legend_entries{end+1} = sprintf( ...
+                    'Element latter peak (%.2f–%.2f s)', ...
+                    stim_latter_response_calc_begins, ...
+                    stim_latter_response_calc_ends);
+            
+            end
+            
+            legend_entries{end+1} = sprintf( ...
+                'Element mean (%.2f–%.2f s)', ...
+                stim_mean_response_calc_begins, ...
+                stim_mean_response_calc_ends);
+            
+            legend(legend_entries, ...
+                'Location', 'northwest', ...
+                'FontSize', 24);
+            grid off;
 
             % Save bar chart figure
             saveas(fig2, fullfile(pwd, sprintf('%s %s - Multiplot %s cumulative peak and mean FRs across %d days Zscored %s %s.fig', subject_number, Stimulus_type, depth_for_analysis, length(sessions_to_plot), z_method, z_score_period)));
@@ -1399,4 +1786,44 @@ if strcmp(z_method, 'none') && (contains(Stimulus_type, 'F_150ms') || contains(S
     );
     
     save(filename, 'FRs_peak_and_mean');
+end
+
+
+if save_elementFRstruct == true
+    subject_str = SUBJECTS{1};                 % e.g. 'M00071'
+    stim_str    = Stimulus_type;               % e.g. 'TRAIN'
+    nSessions   = numel(sessions_to_plot);
+    
+    % Clean stimulus string for filenames (remove problematic characters)
+    stim_str = regexprep(stim_str, '[^a-zA-Z0-9]', '');
+    
+    filename = sprintf( ...
+        '%sFRs_Zscore_%s_peak_and_mean_%s_%s_nDays%d.mat', ...
+        depth_for_analysis, z_method, subject_str, stim_str, nSessions ...
+    );
+    
+    save(fullfile(subjects_dir, filename), 'FRs_peak_and_mean');
+end    
+
+%% -------- SAVE PER-UNIT Z-SCORED FR TRACE STRUCT --------
+
+if save_FRtrace_struct == true
+
+    subject_str = SUBJECTS{1};              % e.g. 'M00113'
+    stim_str    = Stimulus_type;            % e.g. 'GAVNIK250_ABCD'
+    nSessions   = numel(sessions_to_plot);
+
+    % Clean stimulus string for filename
+    stim_str = regexprep(stim_str, '[^a-zA-Z0-9]', '');
+
+    filename = sprintf( ...
+        '%sFRtrace_Zscore_%s_%s_%s_nDays%d.mat', ...
+        depth_for_analysis, ...
+        z_method, ...
+        subject_str, ...
+        stim_str, ...
+        nSessions);
+
+    save(fullfile(subjects_dir, filename), 'FRtrace_struct');
+
 end

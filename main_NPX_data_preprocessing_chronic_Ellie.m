@@ -28,7 +28,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 %     ROOTPATH = 'X:\ibn-vision';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
-all_SUBJECTS = {'M00100'};
+all_SUBJECTS = {'M00113'};
 % all_SUBJECTS = {'M00014'};
 
 Error_session_stimuli = [];
@@ -211,7 +211,7 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
 %%%%%% Option 1 use subject_session_stimuli_mapping_Ellie for all animals you
 %%%%%% want to process. 
-SUBJECTS = {'M00100'};
+SUBJECTS = {'M00113'};
 options = 'V1-HPC';
 ROOTPATH = 'V:\Ellie'; % Bendor Neuropixels folder is mapped to V drive
 
@@ -227,7 +227,9 @@ experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS,options);
 % All_stimuli = {'OP_Tuning'};
 
 
-All_stimuli = {'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'
+All_stimuli = {'GAVNIK250_A_CD', ...
+    'F_150ms', 'F_150ms_1', 'F_150ms_2', 'F_1000ms', ...
+    'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3'
 };
 
 % All_stimuli = 'Sleep_Box', 'Sleep_Box_1', 'Sleep_Box_2', 'Sleep_Box_3';

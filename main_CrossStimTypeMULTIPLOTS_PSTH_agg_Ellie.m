@@ -8,14 +8,14 @@ addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 clear all
 % 1/6 Choose your probe depth of interest and mouse
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 'Sub_HPC'
-SUBJECTS = {'M00096'};
+SUBJECTS = {'M00069'};
 
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
 
 %%% 2/6
-Stimulus_types = {'GAVNIK250_ABCD', 'GAVNIK250_A_CD', 'GAVNIK250_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'
+Stimulus_types = {'GAVNIK_ABCD', 'GAVNIK_A_CD', 'GAVNIK_E_CD'}; % IN ORDER with abcd first. 'GAVNIK_A_CD', 'GAVNIK_E_CD', 'GAVNIK DCBA'   'GAVNIK250_ABCD', 'GAVNIK250_A_CD', 'GAVNIK250_E_CD'
 plot_type = 'FR'; % 'FR' firing rate or 'raster'
 z_method = 'per_neuron'; % NONE or per_neuron or population (i.e. aggregated SUA)
 z_score_period = 'stim_session'; % NONE or z score either over 'stim_session' (excludes variable greyscreen periods before and after stim paradigm), 'none' = no z scoring, 'entire_session' or 'first30secs' (for every stimulus recording
@@ -28,7 +28,7 @@ cd(analysis_dir) % 3/6 files will be saved here in the cd
 probe_type = 1; % NPX1.0 is type 0, NPX2.0 is type 1.
 
 %%%% 5/6 row numbers of recording dates in "experiment_info" 15, 9
-sessions_to_plot = [6]; 
+sessions_to_plot = [8]; 
 
 if contains(Stimulus_types{2}, 'GAVNIK DCBA') || contains(Stimulus_types{2}, 'GAVNIK250 DCBA') 
     stimulus_colors = [
@@ -51,10 +51,12 @@ if contains(Stimulus_types{1}, 'GAVNIK_') || contains(Stimulus_types{1}, 'GAVNIK
     grey_window_starts = 0.65; % look from 50ms-150ms after stim D offset
     grey_window_ends = 0.75; % look from 50ms-150ms after stim D offset
     stim_duration = 150;
+    grey_intervals = [-0.5 0; 0.6 2.0];
 elseif contains(Stimulus_types{1}, 'GAVNIK250')  
     stim_window_starts = 0:0.25:0.75;
     stim_window_ends = 0.25:0.25:1;  
     stim_duration = 250;
+    grey_intervals = [-0.5 0; 1.0 2.0];
 else
     stim_window_starts = 0:0.3:0.9;
     stim_window_ends = 0.15:0.3:1.05;
@@ -64,6 +66,13 @@ end
 
 
 fig1 = figure; % for traces
+hold on;
+for i = 1:size(grey_intervals,1)
+    h = xregion(grey_intervals(i,1), grey_intervals(i,2), ...
+        FaceColor=[0.7 0.7 0.7], ...
+        FaceAlpha=0.3);
+    h.HandleVisibility = 'off';
+end
 %fig2 = figure; % for bar charts
 all_peak_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
 all_mean_FR_by_stimwindow = zeros(length(sessions_to_plot), length(stim_window_starts));
@@ -287,16 +296,14 @@ for nsession = sessions_to_plot
                         ordered_oris = unique(Task_info.stim_orientation, 'stable');               
                         ori = 1;
                         stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
-                        if contains(Stimulus_types{1}, 'GAVNIK250')
-                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);  
-                        else
-                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.35], psthBinSize); 
-                        end    
+                        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);  
+                           
                         mean_trace = mean(binnedArray, 1); % average over trials
                         nTrials = size(binnedArray, 1);
                         
                         figure(fig1);
                         hold on;
+                        
         
                         if contains(z_score_period, 'none')
                             % Plot raw mean firing rate trace
@@ -323,11 +330,8 @@ for nsession = sessions_to_plot
                                     unit_mask = all_spike_ids == this_unit;
                                     unit_spike_times = all_spike_times(unit_mask);
                                     
-                                    if(contains(Stimulus_types{1}, 'GAVNIK250'))
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
-                                    else
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
-                                    end  
+                                    [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
+                                    
                                     % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
     
                                     mu = unit_baseline_mean(u);
@@ -365,10 +369,10 @@ for nsession = sessions_to_plot
                                 end 
                             elseif contains(z_method, 'per_neuron')   
                                 if contains(z_score_period, 'entire_session')
-                                    ylabel('FR (z-scored per unit over entire session)', 'FontSize', 24);
+                                    ylabel('FR (z-scored by unit over entire session)', 'FontSize', 24);
                                     ylim([-0.2 1.5]);
                                 elseif contains(z_score_period, 'stim_session')
-                                    ylabel('FR (z-scored per unit over stim session)', 'FontSize', 24);
+                                    ylabel('FR (z-scored by unit over stim session)', 'FontSize', 24);
                                 end    
                             end
                                                    
@@ -417,33 +421,14 @@ for nsession = sessions_to_plot
                         %all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                         %all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
                         
-                        if contains(Stimulus_types{1}, 'GAVNIK250')
-                            xlim([-0.3 1.75]);
-                        else
-                            xlim([-0.3 1.35]);
-                        end    
-                        xticks(-0.4:0.2:1.4);
+                        xlim([-0.3 1.75]);
+                        xticks(-0.4:0.2:1.6);
                         xlabel('Time (s)', 'FontSize', 24)
                         set(gca, 'FontSize', 24);  % Tick labels font size
                         legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'Interpreter', 'none');
                         hold on;                
                     end
-                            % Define grey intervals
-                    if contains(Stimulus_types{1}, 'GAVNIK250')  
-                        grey_intervals = [-0.5 0; 1.0 1.9];
-                    else        
-                        grey_intervals = [-0.5 0; 0.6 1.5];
-                    end    
-                                   
-                    % Get current y-axis limits for full vertical shading
-                    yl = ylim;
-                        
-                    % Shade each interval
-                    for i = 1:size(grey_intervals, 1)
-                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                        y = [yl(1), yl(1), yl(2), yl(2)];
-                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                    end
+                            
                     if (contains(Stimulus_types{stim_idx}, 'GAVNIK_ABCD')) % to label the plot only once
                         xline(0, 'k', (sprintf('A %d%s or D onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         xline(0.15, 'k', (sprintf('B %d%s or C onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
@@ -560,16 +545,13 @@ for nsession = sessions_to_plot
                         
                         ori = 1; %plot from onset of first stimulus in sequence
                         stim_onsets = Task_info.stim_onset(Task_info.stim_orientation == ordered_oris(ori));
-                        if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
-                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.35], psthBinSize);   
-                        elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
-                            [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);
-                        end    
+                        [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(all_spike_times, stim_onsets, [-0.3 1.75], psthBinSize);   
+                            
                         mean_trace = mean(binnedArray, 1); % average over trials
                         nTrials = size(binnedArray, 1);
 
                         figure(fig1);
-                        hold on;
+                        hold on;                       
                         
                         if contains(z_score_period, 'none')
                             % Plot raw mean firing rate trace
@@ -597,11 +579,9 @@ for nsession = sessions_to_plot
                                     unit_mask = all_spike_ids == this_unit;
                                     unit_spike_times = all_spike_times(unit_mask);
                                     
-                                    if(contains(Stimulus_type, 'GAVNIK250_'))
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
-                                    else
-                                        [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.35], psthBinSize);
-                                    end  
+                                    
+                                    [~, ~, ~, ~, ~, binnedArray_u] = psthAndBA(unit_spike_times, stim_onsets, [-0.30 1.75], psthBinSize);
+                                     
                                     % binnedArray_u  is  [nTrials × nTimeBins] for one unit only
     
                                     mu = unit_baseline_mean(u);
@@ -639,32 +619,39 @@ for nsession = sessions_to_plot
                                 end 
                             elseif contains(z_method, 'per_neuron')   
                                 if contains(z_score_period, 'entire_session')
-                                    ylabel('FR (z-scored per unit over entire session)', 'FontSize', 24);
+                                    ylabel('FR (z-scored by unit over entire session)', 'FontSize', 24);
                                     ylim([-2 6]);
                                 elseif contains(z_score_period, 'stim_session')
-                                    ylabel('FR (z-scored per unit over stim session)', 'FontSize', 24);
+                                    ylabel('FR (z-scored by unit over stim session)', 'FontSize', 24);
                                 end    
                             end                    
                         end    
                                            
                         peak_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
+                        FR_at_stim_onset = zeros(1, length(stim_window_starts));
                         mean_FR_by_stimwindow = zeros(1, length(stim_window_starts)); % preallocate
                         %peak_FR_by_greywindow = zeros(1, length(grey_window_starts)); % preallocate
                         %mean_FR_by_greywindow = zeros(1, length(grey_window_starts)); % preallocate
                         
                         for i = 1:length(stim_window_starts)
+                            % Bin closest to stimulus onset
+                            [~, idx_onset] = min(abs(bins - stim_window_starts(i)));
                             %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);
                             idx_peak = bins >= (stim_window_starts(i) + stim_onset_response_calc_begins) & ...
                                        bins <  (stim_window_starts(i) + stim_onset_response_calc_ends);
 
                         %for i = 1:length(stim_window_starts)
                             if contains(z_score_period, 'none')
+                                %interpolate the firing at stim onset from the bins on either side
+                                FR_at_stim_onset(i) = interp1(bins, mean_trace, stim_window_starts(i), 'linear');
                                 % Find indices of bins within current window
                                 %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
                                 peak_FR_by_stimwindow(i) = max(mean_trace(idx_peak));
                                 %mean_FR_by_stimwindow(i) = mean(mean_trace(idx_in_stimwindow));
                                 
                             else
+                                %interpolate the firing at stim onset from the bins on either side
+                                FR_at_stim_onset(i) = interp1(bins, z_trace, stim_window_starts(i), 'linear');
                                 % Find indices of bins within current window
                                 %idx_in_stimwindow = bins >= stim_window_starts(i) & bins < stim_window_ends(i);                    
                                 peak_FR_by_stimwindow(i) = max(z_trace(idx_peak));
@@ -694,7 +681,9 @@ for nsession = sessions_to_plot
                         all_mean_FR_by_stimwindow(session_idx, :) = mean_FR_by_stimwindow;
                         %all_peak_FR_by_greywindow(session_idx, :) = peak_FR_by_greywindow;
                         %all_mean_FR_by_greywindow(session_idx, :) = mean_FR_by_greywindow;
-                        
+                        FR_omission_response = peak_FR_by_stimwindow(2) - FR_at_stim_onset(2);
+
+
                         % add to struct
                         entry_counter = entry_counter + 1;
                         FRomit_summary(entry_counter).mouse = SUBJECTS{1};
@@ -704,8 +693,12 @@ for nsession = sessions_to_plot
                         FRomit_summary(entry_counter).depth_for_analysis = depth_for_analysis;
                         FRomit_summary(entry_counter).z_score_period = z_score_period;
                         FRomit_summary(entry_counter).stim_duration = stim_duration;
-
+                        
+                        FRomit_summary(entry_counter).element2_onset_FR = FR_at_stim_onset(2);
                         FRomit_summary(entry_counter).element2_peak_FR = peak_FR_by_stimwindow(2);
+                        FRomit_summary(entry_counter).OmissionResponse = FR_omission_response;
+                        FRomit_summary(entry_counter).element2_onset_time = stim_window_starts(2);
+
                         % ---- Window definitions (critical metadata) ----
                         FRomit_summary(entry_counter).stim_window_starts = stim_window_starts;
                         FRomit_summary(entry_counter).stim_window_ends   = stim_window_ends;
@@ -713,33 +706,15 @@ for nsession = sessions_to_plot
                             [stim_onset_response_calc_begins, stim_onset_response_calc_ends];
                 
 
-                        if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
-                            xlim([-0.3 1.35]);
-                        elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
-                            xlim([-0.3 1.55]);
-                        end    
+                        xlim([-0.3 1.75]);
                         %ylim([-1 5]);
-                        xticks(-0.4:0.2:1.4);
+                        xticks(-0.4:0.2:1.6);
                         xlabel('Time (s)', 'FontSize', 24)
                         set(gca, 'FontSize', 24);  % Tick labels font size
                         legend(flipud(findobj(gca,'-property','DisplayName')), 'Location', 'northeast', 'Interpreter', 'none');
                         hold on;                
                     end
-                            % Define grey intervals
-                    if contains(Stimulus_types{2}, 'GAVNIK_A_CD')
-                        grey_intervals = [-0.5 0; 0.6 1.5];
-                    elseif contains(Stimulus_types{2}, 'GAVNIK250_A_CD')
-                        grey_intervals = [-0.5 0; 1 1.9];
-                    end               
-                    % Get current y-axis limits for full vertical shading
-                    yl = ylim;
-                        
-                    % Shade each interval
-                    for i = 1:size(grey_intervals, 1)
-                        x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                        y = [yl(1), yl(1), yl(2), yl(2)];
-                        fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                    end
+                    
                     if (contains(Stimulus_types{stim_idx}, 'GAVNIK_ABCD')) % to label the plot only once
                         xline(0, 'k', (sprintf('A %d%s or E novel onset', round(ordered_oris(1)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);
                         xline(0.15, 'k', (sprintf('B %d%s or grey onset', round(ordered_oris(2)), char(176))), 'LabelVerticalAlignment','top', 'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off', 'FontSize', 24);

@@ -2,13 +2,13 @@
 % Depths of V1 L5 and CA1 are both based on best regional power per PSD analysis (for which, use PSD_analysis_UnProcessedLFP_ellie).
 % V1 L4 depth is identified via CSD analysis (for which, run CSD_Gratings_afterFILT_ellie or CSD_GAVNIKstims_afterFILT_ellie
 
-%% setting metrics to screen good clusters
-clear all
 addpath(genpath('C:\Users\eleanor.benoit\Documents\GitHub\VR_NPX_analysis'))
 
+%% setting metrics to screen good clusters
+clear all
 % 1/5 Choose your probe depth of interest 
 depth_for_analysis = 'V1'; % choose 'L4' or 'V1' or 'CA1' or 'Sub_CA1' or 
-SUBJECTS = {'M00087'};
+SUBJECTS = {'M00071'};
 params = create_cluster_selection_params('sorting_option','ellie');
 option = 'V1-HPC';
 experiment_info = subject_session_stimuli_mapping_Ellie(SUBJECTS, option);
@@ -1836,20 +1836,10 @@ for nsession = 22 % row number of recording date in "experiment_info"
                 fig.Name = sprintf('%s: Aggregate activity: %s', Stimulus_type, depth_for_analysis);
                 fig.Position = [114 90 770 650];
 
-                % Define grey intervals
-                if (contains(Stimulus_type, 'GAVNIK250_ABCD'))
-                    grey_intervals = [-0.5 0; 1.0 2.0];
-                elseif (contains(Stimulus_type, 'GAVNIK200_ABCD'))
-                    grey_intervals = [-0.5 0; 0.8 1.8];
-                else
-                    grey_intervals = [-0.5 0; 0.6 1.5];
-                end    
-
                 for i = 1:size(grey_intervals,1)
-                    h = xregion(grey_intervals(i,1), grey_intervals(i,2), ...
+                    xregion(grey_intervals(i,1), grey_intervals(i,2), ...
                         FaceColor=[0.7 0.7 0.7], ...
                         FaceAlpha=0.3);
-                    h.HandleVisibility = 'off';
                 end 
                 
                 ori = 1;
@@ -1905,7 +1895,15 @@ for nsession = 22 % row number of recording date in "experiment_info"
                     mean_FR_by_greywindow(i) = mean(z_trace(idx_in_greywindow));
                 end
                 
-               
+                % Define grey intervals
+                if (contains(Stimulus_type, 'GAVNIK250_ABCD'))
+                    grey_intervals = [-0.5 0; 1.0 2.0];
+                elseif (contains(Stimulus_type, 'GAVNIK200_ABCD'))
+                    grey_intervals = [-0.5 0; 0.8 1.8];
+                else
+                    grey_intervals = [-0.5 0; 0.6 1.5];
+                end    
+
                 hold on; % Make sure current plot stays visible
                 
                 % Get current y-axis limits for full vertical shading
@@ -2072,19 +2070,13 @@ for nsession = 22 % row number of recording date in "experiment_info"
                                 end    
                                              
                                 % Get current y-axis limits for full vertical shading
-                                %yl = ylim;
+                                yl = ylim;
                                     
                                 % Shade each interval
-                                %for i = 1:size(grey_intervals, 1)
-                                 %   x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                                  %  y = [yl(1), yl(1), yl(2), yl(2)];
-                                   % fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                                %end
-                                for i = 1:size(grey_intervals,1)
-                                    h = xregion(grey_intervals(i,1), grey_intervals(i,2), ...
-                                        FaceColor=[0.7 0.7 0.7], ...
-                                        FaceAlpha=0.3);
-                                    h.HandleVisibility = 'off';
+                                for i = 1:size(grey_intervals, 1)
+                                    x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                                    y = [yl(1), yl(1), yl(2), yl(2)];
+                                    fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                                 end
 
                                 % Plot raw mean firing rate trace
@@ -2118,20 +2110,13 @@ for nsession = 22 % row number of recording date in "experiment_info"
                                 end    
                                              
                                 % Get current y-axis limits for full vertical shading
-                                %yl = ylim;
+                                yl = ylim;
                                     
                                 % Shade each interval
-                                %for i = 1:size(grey_intervals, 1)
-                                 %   x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
-                                  %  y = [yl(1), yl(1), yl(2), yl(2)];
-                                   % fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
-                                %end
-
-                                for i = 1:size(grey_intervals,1)
-                                    h = xregion(grey_intervals(i,1), grey_intervals(i,2), ...
-                                        FaceColor=[0.7 0.7 0.7], ...
-                                        FaceAlpha=0.3);
-                                    h.HandleVisibility = 'off';
+                                for i = 1:size(grey_intervals, 1)
+                                    x = [grey_intervals(i,1), grey_intervals(i,2), grey_intervals(i,2), grey_intervals(i,1)];
+                                    y = [yl(1), yl(1), yl(2), yl(2)];
+                                    fill(x, y, [0.7 0.7 0.7], 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility', 'off'); % grey color with transparency
                                 end
                                 
                                 plot(bins, z_trace, 'Color', 'b', 'LineWidth', 1.5, 'DisplayName', sprintf('%s (200x)', Stimulus_type));

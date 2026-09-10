@@ -1,6 +1,19 @@
 function [bonsai_data] = alignBonsaiToEphysSyncTimes(bonsai_data,syncTimes_ephys)
 bonsai_idx = find(diff(bonsai_data.Sync)==1);
 syncTimes_bonsai = bonsai_data.Time(bonsai_idx+1)./1000; % add 1 to idx to compensate for diff and convert from ms to s
+
+%% DEBUG ERB - to check if an incorrect Arduino timestamp from Bonsai is ruining alignment
+%figure
+%subplot(2,1,1)
+%plot(syncTimes_bonsai,'.-')
+%ylabel('Time (s)')
+%title('Raw Bonsai sync pulse times')
+%subplot(2,1,2)
+%plot(syncTimes_ephys,'.-')
+%ylabel('Time (s)')
+%title('Raw ephys sync pulse times')
+
+
 % Especially in early recordings in a session there may be significant
 % delay between the start of Bonsai measurements and the start of ephys
 % measurements. This can make xcorr less reliable as there are a large
