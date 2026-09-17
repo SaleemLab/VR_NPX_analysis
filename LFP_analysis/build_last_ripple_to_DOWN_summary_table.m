@@ -25,7 +25,7 @@ addParameter(p, 'time_reference', 'offset', @(x) ismember(x, {'offset', 'peak'})
 addParameter(p, 'non_ripple_scope', 'entire_UP', @(x) ismember(x, {'entire_UP', 'prior_to_last_ripple'}));
 addParameter(p, 'time_bin', 0.01, @isnumeric);
 addParameter(p, 'min_interval_dur', 1e-5, @isnumeric);
-addParameter(p, 'tau_recency', 0.5, @isnumeric);
+addParameter(p, 'tau_recency', 0.2, @isnumeric);
 parse(p, varargin{:});
 
 time_ref    = p.Results.time_reference;
@@ -113,9 +113,16 @@ last_ripple_HPC_MUA_mean_col = nan(nUP, 1);
 last_ripple_V1_MUA_sum_col   = nan(nUP, 1);
 last_ripple_V1_MUA_mean_col  = nan(nUP, 1);
 
-% Last Ripple Peak MUA & Half-Duration MUA metrics
 last_ripple_HPC_MUA_peak_col                 = nan(nUP, 1);
 last_ripple_V1_MUA_peak_col                  = nan(nUP, 1);
+
+% First Ripple Features (Actual unclipped ripple bounds)
+first_ripple_HPC_MUA_sum_col   = nan(nUP, 1);
+first_ripple_HPC_MUA_mean_col  = nan(nUP, 1);
+first_ripple_HPC_MUA_peak_col  = nan(nUP, 1);
+first_ripple_V1_MUA_sum_col    = nan(nUP, 1);
+first_ripple_V1_MUA_mean_col   = nan(nUP, 1);
+first_ripple_V1_MUA_peak_col   = nan(nUP, 1);
 last_ripple_first_half_HPC_MUA_sum_col       = nan(nUP, 1);
 last_ripple_first_half_HPC_MUA_mean_col      = nan(nUP, 1);
 last_ripple_second_half_HPC_MUA_sum_col      = nan(nUP, 1);
@@ -184,6 +191,28 @@ non_ripple_200plus_ms_HPC_MUA_sum_col  = zeros(nUP, 1);
 non_ripple_200plus_ms_HPC_MUA_mean_col = zeros(nUP, 1);
 non_ripple_200plus_ms_V1_MUA_sum_col   = zeros(nUP, 1);
 non_ripple_200plus_ms_V1_MUA_mean_col  = zeros(nUP, 1);
+
+% Delta (200ms pre-last-ripple vs 200ms UP onset MUA)
+delta_200ms_pre_last_ripple_HPC_MUA_sum_col  = nan(nUP, 1);
+delta_200ms_pre_last_ripple_HPC_MUA_mean_col = nan(nUP, 1);
+delta_200ms_pre_last_ripple_V1_MUA_sum_col   = nan(nUP, 1);
+delta_200ms_pre_last_ripple_V1_MUA_mean_col  = nan(nUP, 1);
+
+delta_200ms_pre_last_non_ripple_HPC_MUA_sum_col  = nan(nUP, 1);
+delta_200ms_pre_last_non_ripple_HPC_MUA_mean_col = nan(nUP, 1);
+delta_200ms_pre_last_non_ripple_V1_MUA_sum_col   = nan(nUP, 1);
+delta_200ms_pre_last_non_ripple_V1_MUA_mean_col  = nan(nUP, 1);
+
+% Ratio (200ms pre-last-ripple vs 200ms UP onset MUA)
+ratio_200ms_pre_last_ripple_HPC_MUA_sum_col  = nan(nUP, 1);
+ratio_200ms_pre_last_ripple_HPC_MUA_mean_col = nan(nUP, 1);
+ratio_200ms_pre_last_ripple_V1_MUA_sum_col   = nan(nUP, 1);
+ratio_200ms_pre_last_ripple_V1_MUA_mean_col  = nan(nUP, 1);
+
+ratio_200ms_pre_last_non_ripple_HPC_MUA_sum_col  = nan(nUP, 1);
+ratio_200ms_pre_last_non_ripple_HPC_MUA_mean_col = nan(nUP, 1);
+ratio_200ms_pre_last_non_ripple_V1_MUA_sum_col   = nan(nUP, 1);
+ratio_200ms_pre_last_non_ripple_V1_MUA_mean_col  = nan(nUP, 1);
 
 % Factor 3: Non-Ripple MUA
 non_ripple_duration_col     = zeros(nUP, 1);
@@ -287,8 +316,9 @@ for iUP = 1:nUP
     end
     
     % Find ripples overlapping this UP event
-    overlapIdx = find(ripIntsAbs(:,2) > upOnset & ripIntsAbs(:,1) < upOffset);
-    
+    % overlapIdx = find(ripIntsAbs(:,1) > upOnset & ripIntsAbs(:,1) < upOffset);
+    overlapIdx = find(ripPeakAbs(:,1) > upOnset & ripPeakAbs(:,1) < upOffset);
+        % 
     ripAbsOn  = [];
     ripAbsOff = [];
     ripAbsPk  = [];
@@ -470,6 +500,31 @@ for iUP = 1:nUP
         last_ripple_HPC_MUA_peak_col(iUP) = max(lastHpcMUA);
         last_ripple_V1_MUA_peak_col(iUP)  = max(lastV1MUA);
         
+        % Extract MUA across actual first ripple bounds (relative to session offset)
+        first_abs_on  = ripAbsOn(1);
+        first_abs_off = ripAbsOff(1);
+        
+        rel_first_on  = first_abs_on - s_offset;
+        rel_first_off = first_abs_off - s_offset;
+        
+        bStart_first = max(1, floor(rel_first_on / time_bin) + 1);
+        bEnd_first   = min(length(norm_v1_L{sessID}), ceil(rel_first_off / time_bin));
+        if bStart_first > bEnd_first, bEnd_first = bStart_first; end
+        
+        firstHpcMUA = mean([norm_hc_L{sessID}(bStart_first:bEnd_first); norm_hc_R{sessID}(bStart_first:bEnd_first)], 1, 'omitnan');
+        if hemiID == 1
+            firstV1MUA = norm_v1_L{sessID}(bStart_first:bEnd_first);
+        else
+            firstV1MUA = norm_v1_R{sessID}(bStart_first:bEnd_first);
+        end
+        
+        first_ripple_HPC_MUA_sum_col(iUP)  = sum(firstHpcMUA);
+        first_ripple_HPC_MUA_mean_col(iUP) = mean(firstHpcMUA);
+        first_ripple_HPC_MUA_peak_col(iUP) = max(firstHpcMUA);
+        first_ripple_V1_MUA_sum_col(iUP)   = sum(firstV1MUA);
+        first_ripple_V1_MUA_mean_col(iUP)  = mean(firstV1MUA);
+        first_ripple_V1_MUA_peak_col(iUP)  = max(firstV1MUA);
+        
         % 1st Half vs 2nd Half of Last Ripple Duration MUA
         nRipBins = length(lastHpcMUA);
         rHalf    = floor(nRipBins / 2);
@@ -593,24 +648,13 @@ for iUP = 1:nUP
             recency_weighted_past_HPC_MUA_mean_col(iUP) = rec_mean_hpc / n_past;
             recency_weighted_past_V1_MUA_mean_col(iUP)  = rec_mean_v1 / n_past;
             
-            % Past ripples MUA in distance windows relative to last ripple peak (0-100ms, 100-200ms, 200+ms)
-            past_mask_0_100   = false(1, nBins);
-            past_mask_100_200 = false(1, nBins);
-            past_mask_200plus = false(1, nBins);
+            % Past ripples MUA in distance windows relative to last ripple ONSET (0-100ms, 100-200ms, 200+ms)
+            last_on_rel = last_abs_on - upOnset;
+            dist_from_last_on = last_on_rel - binCenters;
             
-            for pIdx = 1:n_past
-                dist_p = ripAbsPk(end) - pastAbsPk(pIdx);
-                pOn_rel  = pastAbsOn(pIdx) - upOnset;
-                pOff_rel = pastAbsOff(pIdx) - upOnset;
-                
-                if dist_p >= 0 && dist_p < 0.100
-                    past_mask_0_100 = past_mask_0_100 | (binCenters >= pOn_rel & binCenters < pOff_rel);
-                elseif dist_p >= 0.100 && dist_p < 0.200
-                    past_mask_100_200 = past_mask_100_200 | (binCenters >= pOn_rel & binCenters < pOff_rel);
-                elseif dist_p >= 0.200
-                    past_mask_200plus = past_mask_200plus | (binCenters >= pOn_rel & binCenters < pOff_rel);
-                end
-            end
+            past_mask_0_100   = pastBinMask & (dist_from_last_on >= 0 & dist_from_last_on < 0.100);
+            past_mask_100_200 = pastBinMask & (dist_from_last_on >= 0.100 & dist_from_last_on < 0.200);
+            past_mask_200plus = pastBinMask & (dist_from_last_on >= 0.200);
             
             if any(past_mask_0_100)
                 past_ripples_0_100ms_HPC_MUA_sum_col(iUP)  = sum(hpcMUA(past_mask_0_100));
@@ -668,14 +712,14 @@ for iUP = 1:nUP
             non_ripple_V1_MUA_mean_col(iUP)  = 0;
         end
         
-        % Non-ripple MUA prior to last ripple peak in distance windows (0-100ms, 100-200ms, 200+ms)
-        last_pk_rel = last_abs_pk - upOnset;
-        nonRipPriorMask = (binCenters < last_pk_rel) & ~isRipBin;
-        dist_bin = last_pk_rel - binCenters;
+        % Non-ripple MUA prior to last ripple ONSET in distance windows (0-100ms, 100-200ms, 200+ms)
+        last_on_rel = last_abs_on - upOnset;
+        dist_from_last_on = last_on_rel - binCenters;
+        nonRipPriorMask = (dist_from_last_on > 0) & ~isRipBin;
         
-        nonrip_mask_0_100   = nonRipPriorMask & (dist_bin >= 0 & dist_bin < 0.100);
-        nonrip_mask_100_200 = nonRipPriorMask & (dist_bin >= 0.100 & dist_bin < 0.200);
-        nonrip_mask_200plus = nonRipPriorMask & (dist_bin >= 0.200);
+        nonrip_mask_0_100   = nonRipPriorMask & (dist_from_last_on >= 0 & dist_from_last_on < 0.100);
+        nonrip_mask_100_200 = nonRipPriorMask & (dist_from_last_on >= 0.100 & dist_from_last_on < 0.200);
+        nonrip_mask_200plus = nonRipPriorMask & (dist_from_last_on >= 0.200);
         
         if any(nonrip_mask_0_100)
             non_ripple_0_100ms_HPC_MUA_sum_col(iUP)  = sum(hpcMUA(nonrip_mask_0_100));
@@ -697,8 +741,79 @@ for iUP = 1:nUP
             non_ripple_200plus_ms_V1_MUA_sum_col(iUP)   = sum(v1MUA(nonrip_mask_200plus));
             non_ripple_200plus_ms_V1_MUA_mean_col(iUP)  = mean(v1MUA(nonrip_mask_200plus));
         end
+        
+        % Delta & Ratio of 200ms Pre-Last-Ripple vs 200ms UP-Onset MUA
+        onset_mask = (binCenters >= 0 & binCenters < 0.200);
+        onset_rip_mask    = onset_mask & isRipBin;
+        onset_nonrip_mask = onset_mask & ~isRipBin;
+        
+        pre_last_mask = (dist_from_last_on >= 0 & dist_from_last_on < 0.200);
+        pre_last_rip_mask    = pre_last_mask & isRipBin;
+        pre_last_nonrip_mask = pre_last_mask & ~isRipBin;
+        
+        % Onset Window Metrics
+        onset_rip_hpc_sum  = 0; onset_rip_hpc_mean  = 0;
+        onset_rip_v1_sum   = 0; onset_rip_v1_mean   = 0;
+        if any(onset_rip_mask)
+            onset_rip_hpc_sum  = sum(hpcMUA(onset_rip_mask));
+            onset_rip_hpc_mean = mean(hpcMUA(onset_rip_mask));
+            onset_rip_v1_sum   = sum(v1MUA(onset_rip_mask));
+            onset_rip_v1_mean  = mean(v1MUA(onset_rip_mask));
+        end
+        
+        onset_nonrip_hpc_sum  = 0; onset_nonrip_hpc_mean  = 0;
+        onset_nonrip_v1_sum   = 0; onset_nonrip_v1_mean   = 0;
+        if any(onset_nonrip_mask)
+            onset_nonrip_hpc_sum  = sum(hpcMUA(onset_nonrip_mask));
+            onset_nonrip_hpc_mean = mean(hpcMUA(onset_nonrip_mask));
+            onset_nonrip_v1_sum   = sum(v1MUA(onset_nonrip_mask));
+            onset_nonrip_v1_mean  = mean(v1MUA(onset_nonrip_mask));
+        end
+        
+        % Pre-Last-Ripple Window Metrics
+        pre_rip_hpc_sum  = 0; pre_rip_hpc_mean  = 0;
+        pre_rip_v1_sum   = 0; pre_rip_v1_mean   = 0;
+        if any(pre_last_rip_mask)
+            pre_rip_hpc_sum  = sum(hpcMUA(pre_last_rip_mask));
+            pre_rip_hpc_mean = mean(hpcMUA(pre_last_rip_mask));
+            pre_rip_v1_sum   = sum(v1MUA(pre_last_rip_mask));
+            pre_rip_v1_mean  = mean(v1MUA(pre_last_rip_mask));
+        end
+        
+        pre_nonrip_hpc_sum  = 0; pre_nonrip_hpc_mean  = 0;
+        pre_nonrip_v1_sum   = 0; pre_nonrip_v1_mean   = 0;
+        if any(pre_last_nonrip_mask)
+            pre_nonrip_hpc_sum  = sum(hpcMUA(pre_last_nonrip_mask));
+            pre_nonrip_hpc_mean = mean(hpcMUA(pre_last_nonrip_mask));
+            pre_nonrip_v1_sum   = sum(v1MUA(pre_last_nonrip_mask));
+            pre_nonrip_v1_mean  = mean(v1MUA(pre_last_nonrip_mask));
+        end
+        
+        % Absolute Delta (pre_last - onset)
+        delta_200ms_pre_last_ripple_HPC_MUA_sum_col(iUP)  = pre_rip_hpc_sum - onset_rip_hpc_sum;
+        delta_200ms_pre_last_ripple_HPC_MUA_mean_col(iUP) = pre_rip_hpc_mean - onset_rip_hpc_mean;
+        delta_200ms_pre_last_ripple_V1_MUA_sum_col(iUP)   = pre_rip_v1_sum - onset_rip_v1_sum;
+        delta_200ms_pre_last_ripple_V1_MUA_mean_col(iUP)  = pre_rip_v1_mean - onset_rip_v1_mean;
+        
+        delta_200ms_pre_last_non_ripple_HPC_MUA_sum_col(iUP)  = pre_nonrip_hpc_sum - onset_nonrip_hpc_sum;
+        delta_200ms_pre_last_non_ripple_HPC_MUA_mean_col(iUP) = pre_nonrip_hpc_mean - onset_nonrip_hpc_mean;
+        delta_200ms_pre_last_non_ripple_V1_MUA_sum_col(iUP)   = pre_nonrip_v1_sum - onset_nonrip_v1_sum;
+        delta_200ms_pre_last_non_ripple_V1_MUA_mean_col(iUP)  = pre_nonrip_v1_mean - onset_nonrip_v1_mean;
+        
+        % Fold-Change Ratio ( (pre_last + 1e-5) / (onset + 1e-5) )
+        eps_val = 1e-5;
+        ratio_200ms_pre_last_ripple_HPC_MUA_sum_col(iUP)  = (pre_rip_hpc_sum + eps_val) / (onset_rip_hpc_sum + eps_val);
+        ratio_200ms_pre_last_ripple_HPC_MUA_mean_col(iUP) = (pre_rip_hpc_mean + eps_val) / (onset_rip_hpc_mean + eps_val);
+        ratio_200ms_pre_last_ripple_V1_MUA_sum_col(iUP)   = (pre_rip_v1_sum + eps_val) / (onset_rip_v1_sum + eps_val);
+        ratio_200ms_pre_last_ripple_V1_MUA_mean_col(iUP)  = (pre_rip_v1_mean + eps_val) / (onset_rip_v1_mean + eps_val);
+        
+        ratio_200ms_pre_last_non_ripple_HPC_MUA_sum_col(iUP)  = (pre_nonrip_hpc_sum + eps_val) / (onset_nonrip_hpc_sum + eps_val);
+        ratio_200ms_pre_last_non_ripple_HPC_MUA_mean_col(iUP) = (pre_nonrip_hpc_mean + eps_val) / (onset_nonrip_hpc_mean + eps_val);
+        ratio_200ms_pre_last_non_ripple_V1_MUA_sum_col(iUP)   = (pre_nonrip_v1_sum + eps_val) / (onset_nonrip_v1_sum + eps_val);
+        ratio_200ms_pre_last_non_ripple_V1_MUA_mean_col(iUP)  = (pre_nonrip_v1_mean + eps_val) / (onset_nonrip_v1_mean + eps_val);
     end
 end
+
 
 %% 4. Assemble output table
 T = table(...
@@ -718,6 +833,12 @@ T = table(...
     last_ripple_V1_MUA_mean_col, ...
     last_ripple_HPC_MUA_peak_col, ...
     last_ripple_V1_MUA_peak_col, ...
+    first_ripple_HPC_MUA_sum_col, ...
+    first_ripple_HPC_MUA_mean_col, ...
+    first_ripple_HPC_MUA_peak_col, ...
+    first_ripple_V1_MUA_sum_col, ...
+    first_ripple_V1_MUA_mean_col, ...
+    first_ripple_V1_MUA_peak_col, ...
     last_ripple_first_half_HPC_MUA_sum_col, ...
     last_ripple_first_half_HPC_MUA_mean_col, ...
     last_ripple_second_half_HPC_MUA_sum_col, ...
@@ -770,6 +891,22 @@ T = table(...
     non_ripple_200plus_ms_HPC_MUA_mean_col, ...
     non_ripple_200plus_ms_V1_MUA_sum_col, ...
     non_ripple_200plus_ms_V1_MUA_mean_col, ...
+    delta_200ms_pre_last_ripple_HPC_MUA_sum_col, ...
+    delta_200ms_pre_last_ripple_HPC_MUA_mean_col, ...
+    delta_200ms_pre_last_ripple_V1_MUA_sum_col, ...
+    delta_200ms_pre_last_ripple_V1_MUA_mean_col, ...
+    delta_200ms_pre_last_non_ripple_HPC_MUA_sum_col, ...
+    delta_200ms_pre_last_non_ripple_HPC_MUA_mean_col, ...
+    delta_200ms_pre_last_non_ripple_V1_MUA_sum_col, ...
+    delta_200ms_pre_last_non_ripple_V1_MUA_mean_col, ...
+    ratio_200ms_pre_last_ripple_HPC_MUA_sum_col, ...
+    ratio_200ms_pre_last_ripple_HPC_MUA_mean_col, ...
+    ratio_200ms_pre_last_ripple_V1_MUA_sum_col, ...
+    ratio_200ms_pre_last_ripple_V1_MUA_mean_col, ...
+    ratio_200ms_pre_last_non_ripple_HPC_MUA_sum_col, ...
+    ratio_200ms_pre_last_non_ripple_HPC_MUA_mean_col, ...
+    ratio_200ms_pre_last_non_ripple_V1_MUA_sum_col, ...
+    ratio_200ms_pre_last_non_ripple_V1_MUA_mean_col, ...
     non_ripple_duration_col, ...
     non_ripple_HPC_MUA_sum_col, ...
     non_ripple_HPC_MUA_mean_col, ...
@@ -810,6 +947,8 @@ T = table(...
     'last_ripple_HPC_MUA_sum', 'last_ripple_HPC_MUA_mean', ...
     'last_ripple_V1_MUA_sum', 'last_ripple_V1_MUA_mean', ...
     'last_ripple_HPC_MUA_peak', 'last_ripple_V1_MUA_peak', ...
+    'first_ripple_HPC_MUA_sum', 'first_ripple_HPC_MUA_mean', 'first_ripple_HPC_MUA_peak', ...
+    'first_ripple_V1_MUA_sum', 'first_ripple_V1_MUA_mean', 'first_ripple_V1_MUA_peak', ...
     'last_ripple_first_half_HPC_MUA_sum', 'last_ripple_first_half_HPC_MUA_mean', ...
     'last_ripple_second_half_HPC_MUA_sum', 'last_ripple_second_half_HPC_MUA_mean', ...
     'last_ripple_first_half_V1_MUA_sum', 'last_ripple_first_half_V1_MUA_mean', ...
@@ -836,6 +975,14 @@ T = table(...
     'non_ripple_100_200ms_V1_MUA_sum', 'non_ripple_100_200ms_V1_MUA_mean', ...
     'non_ripple_200plus_ms_HPC_MUA_sum', 'non_ripple_200plus_ms_HPC_MUA_mean', ...
     'non_ripple_200plus_ms_V1_MUA_sum', 'non_ripple_200plus_ms_V1_MUA_mean', ...
+    'delta_200ms_pre_last_ripple_HPC_MUA_sum', 'delta_200ms_pre_last_ripple_HPC_MUA_mean', ...
+    'delta_200ms_pre_last_ripple_V1_MUA_sum', 'delta_200ms_pre_last_ripple_V1_MUA_mean', ...
+    'delta_200ms_pre_last_non_ripple_HPC_MUA_sum', 'delta_200ms_pre_last_non_ripple_HPC_MUA_mean', ...
+    'delta_200ms_pre_last_non_ripple_V1_MUA_sum', 'delta_200ms_pre_last_non_ripple_V1_MUA_mean', ...
+    'ratio_200ms_pre_last_ripple_HPC_MUA_sum', 'ratio_200ms_pre_last_ripple_HPC_MUA_mean', ...
+    'ratio_200ms_pre_last_ripple_V1_MUA_sum', 'ratio_200ms_pre_last_ripple_V1_MUA_mean', ...
+    'ratio_200ms_pre_last_non_ripple_HPC_MUA_sum', 'ratio_200ms_pre_last_non_ripple_HPC_MUA_mean', ...
+    'ratio_200ms_pre_last_non_ripple_V1_MUA_sum', 'ratio_200ms_pre_last_non_ripple_V1_MUA_mean', ...
     'non_ripple_duration', 'non_ripple_HPC_MUA_sum', ...
     'non_ripple_HPC_MUA_mean', 'non_ripple_V1_MUA_sum', ...
     'non_ripple_V1_MUA_mean', ...
@@ -854,5 +1001,7 @@ T = table(...
     'first_half_ripple_duration', 'second_half_ripple_duration', ...
     'first_half_non_ripple_duration', 'second_half_non_ripple_duration'} ...
 );
+
+T.last_ripple_to_UP_term(T.last_ripple_to_UP_term<0)=0;
 
 end

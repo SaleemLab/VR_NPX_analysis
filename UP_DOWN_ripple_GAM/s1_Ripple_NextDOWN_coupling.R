@@ -14,6 +14,9 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_offset.csv")
+
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -191,7 +194,7 @@ z_cols <- c(
 dat_clean1 <- dat_clean %>%
   filter(
     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.)),
-    nextDOWNlag <0.2,
+    #nextDOWNlag <0.3,
     # nextDOWNlagSigned <= 0
     # nextDOWNlagSigned >= 0
   )
@@ -231,7 +234,7 @@ p_lag_raw <- draw(mdl_final, select = "s(nextDOWNlag_z)", residuals = FALSE, rug
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
   # coord_cartesian() +
-  coord_cartesian(xlim = c(-1.2,2.3),ylim = c(-0.2,0.27),expand = FALSE) +
+  coord_cartesian(xlim = c(-1.2,2.3),ylim = c(-0.17,0.27),expand = FALSE) +
 
   labs(
     title = "Next DOWN lag predicts next DOWN SO power",
@@ -399,7 +402,8 @@ z_cols <- c(
 
 dat_clean1 <- dat_clean %>%
   filter(
-    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.)),
+    #nextDOWNlag <0.15,
   )
 
 
@@ -586,6 +590,20 @@ dev.off()
 
 
 
+
+
+z_cols <- c(
+  "nextDOWNlag_z","nextDOWNSOPower_z","lastRipplePower_z",
+  "TimefromLastRipple_z"
+)
+
+dat_clean1 <- dat_clean %>%
+  filter(
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.)),
+    #nextDOWNlag <0.3,
+  )
+
+
 ###
 ### Next DOWN lag
 mdl_final <- bam(nextDOWNlag_z ~ 
@@ -669,7 +687,7 @@ dev.off()
 # 1. Define sequence ranges using your actual RAW data minimums and maximums
 # (Adjust the min/max or length if you want rounded limits like seq(0, 100, by=1))
 raw_range_RipplePower   <- seq(5, 
-                               20, length.out = 100)
+                               16, length.out = 100)
 
 raw_range_Time  <- seq(0, 
                        0.5, length.out = 100)
@@ -699,6 +717,8 @@ p_interaction_raw_scale <- ggplot(pred_grid_ti, aes(x = TimefromLastRipple, y = 
   geom_tile() + 
   geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.2) + 
   scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Effect") +
+  scale_y_continuous(breaks = c(5,10,15)) +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5)) +
   theme_minimal() +
   theme(aspect.ratio = 1) +
   labs(
@@ -712,13 +732,14 @@ cairo_pdf("TimefromLastRipple_and_lastRipplePower_ti_predicts_DownLag.pdf", widt
 print(p_interaction_raw_scale)
 dev.off()
 
+
 # ==============================================================================
 # --- ti + s Total effect ---
 # ==============================================================================
 # 1. Define sequence ranges using your actual RAW data minimums and maximums
 # (Adjust the min/max or length if you want rounded limits like seq(0, 100, by=1))
 raw_range_RipplePower   <- seq(5, 
-                               20, length.out = 100)
+                               16, length.out = 100)
 
 raw_range_Time  <- seq(0, 
                        0.5, length.out = 100)
@@ -752,6 +773,8 @@ p_interaction_raw_scale <- ggplot(pred_grid_reconstruct, aes(x = TimefromLastRip
   geom_tile() + 
   geom_contour(aes(z = Reconstructed_effect), color = "black", alpha = 0.2) + 
   scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "firebrick", midpoint = 0, name = "Effect") +
+  scale_y_continuous(breaks = c(5,10,15)) +
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,0.5)) +
   theme_minimal() +
   theme(aspect.ratio = 1) +
   labs(
@@ -767,6 +790,18 @@ dev.off()
 
 
 
+############################################################
+############################################################
+
+z_cols <- c(
+  "nextDOWNlag_z","nextDOWNSOPower_z","lastRipplePower_z",
+  "TimefromLastRipple_z"
+)
+
+dat_clean1 <- dat_clean %>%
+  filter(
+    if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.)),
+  )
 
 
 
@@ -898,7 +933,7 @@ term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
 # Isolate the pure interaction tensor term
 pred_grid_ti$Interaction_Effect <- 
   term_preds[, "s(nextDOWNSOPower_z)"] + 
-  term_preds[, "s(nextDOWNlag_z)"] +
+  #  term_preds[, "s(nextDOWNlag_z)"] +
   term_preds[, "ti(nextDOWNSOPower_z,nextDOWNlag_z)"]
 
 

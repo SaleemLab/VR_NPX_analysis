@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"\\(Get-Content 'C:\\\\Users\\\\masah\\\\Documents\\\\GitHub\\\\VR_NPX_analysis\\\\replay_analysis\\\\main_predict_ipsi_contra_UP_DOWN_ripples_MUA.m' | Measure-Object -Line\\).Lines\")"
+    ]
+  }
+}

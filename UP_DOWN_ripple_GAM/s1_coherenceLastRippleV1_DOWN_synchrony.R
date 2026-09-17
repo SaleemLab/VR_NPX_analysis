@@ -14,6 +14,9 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+# dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_offset.csv")
+
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -191,7 +194,7 @@ dat_clean$is_near_DOWN <- ifelse(dat_clean$TimefromLastRipple < 0.1, "yes", "no"
 dat_clean$is_near_DOWN <- as.factor(dat_clean$is_near_DOWN)
 
 # Log transform with tiny offset to avoid inf
-dat_clean$log_TimefromLastRipple <- log(dat_clean$TimefromLastRipple + 0.000001)
+dat_clean$log_TimefromLastRipple <- log10(dat_clean$TimefromLastRipple + 0.000001)
 dat_clean <- dat_clean %>%
   mutate(log_TimefromLastRipple_z = as.numeric(scale(log_TimefromLastRipple)))
 
@@ -222,17 +225,22 @@ dat_clean <- dat_clean %>%
 #     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
 #   )
 
-z_thresh = 3.5
+
+
+
+z_thresh = 3
+
 z_cols <- c(
-    "firstRipplePower_z",
-    "lastRipplePower_z",
-  # "geo_coherenceEarly_z",
-  "geo_coherence_z","geo_coherenceRippleNext_z",
-  "nextDOWNlag_z","nextDOWNSOPower_z",
-  "TimefromFirstRipple_z",
-  "TimefromLastRipple_z"
+  # "geo_coherence_z","geo_coherenceRippleNext_z","geo_coherenceNext_z",
+  "geo_coherence_z",
+  # "nextDOWNlag_z","nextDOWNSOPower_z",
+  # "log_TimefromLastRipple_z",
+  "lastRippleMUArate_z",
+  "lastRipplePower_z"
 )
-dat_clean1 <- dat_clean1 %>%
+
+
+dat_clean1 <- dat_clean %>%
   filter(
     if_all(all_of(z_cols), ~ abs(.) < z_thresh | is.na(.))
   )
@@ -253,22 +261,27 @@ mdl_final <- bam(geo_coherence_z ~
                    # s(nextDOWNlag_z, k = 5) +
                    # s(nextDOWNDuration_z, k = 5) +
                    
-                   is_near_DOWN +
-                   s(lastRipplePower_z,by = is_near_DOWN,k=5)+
+                   # is_near_DOWN +
+                   # s(lastRipplePower_z,by = is_near_DOWN,k=5)+
                    # is_near_DOWN +
                    # s(firstRipplePower_z,by = is_near_DOWN,k=5)+
                    # s(firstRipplePower_z,k=5)+
-                   
+
                    # s(lastRipplePower_z,k=5)+
                    # ti(lastRipplePower_z, nextDOWNSOPower_z, k = 5)+
                    # te(nextDOWNSOPower_z, nextDOWNlag_z, k = 5)+
                    # s(TimefromFirstRipple_z, k = 5) +
-                   s(TimefromLastRipple_z, k = 5) +
-                   # ti(lastRipplePower_z, TimefromLastRipple_z, k = 5)+
+                   # s(TimefromLastRipple_z, k = 5) +
+                   # ti(lastRipplePower_z, log_TimefromLastRipple_z, k = 5)+
                    # ti(firstRipplePower_z, TimefromFirstRipple_z, k = 5)+
-                   s(nextDOWNSOPower_z, k = 5) +
-                   s(nextDOWNlag_z, k = 5) +
-                   ti(nextDOWNSOPower_z, nextDOWNlag_z, k = 5)+
+                   s(lastRippleMUArate_z,k=5)+
+                   # is_near_DOWN +
+                   # s(lastRippleMUArate_z,by = is_near_DOWN,k=5)+
+                   # s(log_TimefromLastRipple_z, k = 5) +
+                   # ti(lastRippleMUArate_z, log_TimefromLastRipple_z, k = 5)+
+                   # s(nextDOWNSOPower_z, k = 5) +
+                   # s(nextDOWNlag_z, k = 5) +
+                   # ti(nextDOWNSOPower_z, nextDOWNlag_z, k = 5)+
                    
                    # s(TimetoNextUP_z, k = 5) +
                    
@@ -287,26 +300,88 @@ print(summary(mdl_final))
 
 ### last ripple power -> last ripple coherence
 # Calculate scaling factors
-raw_breaks <- c(5,10,15)
+raw_breaks <- c(5,7,9,11,13,15)
 z_breaks <- sapply(raw_breaks, function(val) {
   dat_clean1$lastRipplePower_z[which.min(abs(dat_clean1$lastRipplePower - val))]
 })
 
 # cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
-# p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z)", residuals = FALSE, rug = FALSE) +
-p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
+p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z)", residuals = FALSE, rug = FALSE) +
+# p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
+  theme_bw(base_family = "Arial") +
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
+  # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
+  labs(
+    title = "Ripple power on last ripple coherence",
+    x = "Ripple power",
+    y = "Partial Effect"
+  )
+# dev.new(noRStudioGD = TRUE)
+
+print(p_lag_raw)
+cairo_pdf("lastRipplePower_Coherence.pdf", width = 4.3, height = 4.3)
+print(p_HC_raw)
+dev.off()
+
+
+
+### last ripple Mua -> NextUP V1
+# Calculate scaling factors
+raw_breaks <- c(0.25,0.5,0.75,1)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean1$lastRippleMUArate_z[which.min(abs(dat_clean1$lastRippleMUArate - val))]
+})
+
+# cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
+p_lag_raw <- draw(mdl_final, select = "s(lastRippleMUArate_z)", residuals = FALSE, rug = FALSE) +
+  # p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
+  theme_bw(base_family = "Arial") +
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  # coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
+  # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
+  labs(
+    title = "Ripple HC MUA rate on last ripple HC-V1 coherence",
+    x = "Ripple HC MUA",
+    y = "Partial Effect"
+  )
+# dev.new(noRStudioGD = TRUE)
+print(p_lag_raw)
+cairo_pdf("lastRippleHCmuaRate_Coherence.pdf", width = 4.3, height = 4.3)
+
+# ---------------------------------------------------------
+# Plot 1: ripple power not near DOWN
+# ---------------------------------------------------------
+### HC post
+# Calculate scaling factors
+raw_breaks <- c(5,7,9,11,13,15)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean1$lastRipplePower_z[which.min(abs(dat_clean1$lastRipplePower - val))]
+})
+
+
+p_HC_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(xlim = c(-1.3,2.3),ylim=c(-0.15,0.12),expand = FALSE) + 
-  # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) + 
+  # coord_cartesian(xlim = c(-4,4), ylim = c(-0.21, 0.21),expand = FALSE) +
+  coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
+  
   labs(
-    title = "Ripple power on last ripple coherence", 
-    x = "Ripple power", 
+    title = "Ripple power and V1-HC coherence (last ripple >100ms away from DOWN)", 
+    x = "HC bias", 
     y = "Partial Effect"
   )
-dev.new(noRStudioGD = TRUE)
-print(p_lag_raw)
+# dev.new(noRStudioGD = TRUE)
+print(p_HC_raw)
+
+cairo_pdf("lastRipplePower_Coherence_away_from_DOWN.pdf", width = 4.3, height = 4.3)
+print(p_HC_raw)
+dev.off()
+
+
 
 # 
 # p_hist_raw <- ggplot(dat_clean1, aes(x = lastRipplePower)) +
@@ -335,18 +410,18 @@ z_breaks <- sapply(raw_breaks, function(val) {
 # cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
 # p_lag_raw <- draw(mdl_final, select = "s(firstRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
 p_lag_raw <- draw(mdl_final, select = "s(firstRipplePower_z)", residuals = FALSE, rug = FALSE) +
-  theme_bw(base_family = "Arial") + 
+  theme_bw(base_family = "Arial") +
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(xlim = c(-1.4,2.3),ylim=c(-0.11,0.11),expand = FALSE) + 
+  # coord_cartesian(xlim = c(-1.4,2.3),ylim=c(-0.11,0.11),expand = FALSE) +
   labs(
-    title = "Ripple power on last ripple coherence", 
-    x = "Ripple power", 
+    title = "Ripple power on last ripple coherence",
+    x = "Ripple power",
     y = "Partial Effect"
   )
-dev.new(noRStudioGD = TRUE)
+# dev.new(noRStudioGD = TRUE)
 print(p_lag_raw)
-
+# 
 
 
 ### HC bias

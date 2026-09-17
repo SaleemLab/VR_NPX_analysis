@@ -14,6 +14,7 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -300,15 +301,16 @@ mdl_multipleUP <- bam(next_earlyUPV1_z ~
                         # prev_ripple_quantile +
                         # s(lastRippleHPC_z, by = is_near_DOWN)+
                         s(prev_lastRippleHPC_z,by = prev_is_near_DOWN, k = 5) +
-                        # s(prev_lastRippleHPC_z,by = prev_ripple_quantile, k = 5) +
+                        s(prev_lastRippleV1PRE_z,by = prev_is_near_DOWN, k = 5) +
                         
-                        s(prev_lastRippleV1PRE_z, k = 5) +
+                        # s(prev_lastRippleV1PRE_z, k = 5) +
                         
                         curr_is_near_DOWN+
                         # curr_ripple_quantile +
                         s(curr_lastRippleHPC_z, by = curr_is_near_DOWN,k = 5) +
                         # s(curr_lastRippleHPC_z, by = curr_ripple_quantile,k = 5) +
-                        s(curr_lastRippleV1PRE_z, k = 5) +
+                        s(curr_lastRippleV1PRE_z, by = curr_is_near_DOWN,k = 5) +
+                        # s(curr_lastRippleV1PRE_z, k = 5) +
 
                         s(AnimalID, bs = "re")+
                         s(SessionID, bs = "re"),

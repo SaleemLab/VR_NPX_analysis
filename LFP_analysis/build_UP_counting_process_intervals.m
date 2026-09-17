@@ -30,7 +30,7 @@ min_dur  = p.Results.min_interval_dur;
 nUP = size(merged_event_info.UP_ints, 1);
 ripIntsAbs  = merged_event_info.ripples_ints;
 ripPowerAbs = merged_event_info.ripples_power;
-
+ripPeakAbs  = merged_event_info.ripples_peaktimes;    
 % Session and subject metadata assignment
 if isfield(merged_event_info, 'session_id') && ~isempty(merged_event_info.session_id)
     session_id = merged_event_info.session_id;
@@ -128,6 +128,24 @@ cumTotalV1_MUA_list      = cell(nUP, 1);
 
 cumRippleCount_list      = cell(nUP, 1);
 
+cumRippleHPC_MUA_incl_list    = cell(nUP, 1);
+cumNonRippleHPC_MUA_incl_list = cell(nUP, 1);
+cumTotalHPC_MUA_incl_list     = cell(nUP, 1);
+cumRippleV1_MUA_incl_list     = cell(nUP, 1);
+cumNonRippleV1_MUA_incl_list  = cell(nUP, 1);
+cumTotalV1_MUA_incl_list      = cell(nUP, 1);
+cumRippleCount_incl_list      = cell(nUP, 1);
+
+hasRipple_list      = cell(nUP, 1);
+numRipplesInUP_list = cell(nUP, 1);
+
+lastRipplePower_list        = cell(nUP, 1);
+lastRippleHPC_MUA_sum_list  = cell(nUP, 1);
+lastRippleHPC_MUA_mean_list = cell(nUP, 1);
+lastRippleV1_MUA_sum_list   = cell(nUP, 1);
+lastRippleV1_MUA_mean_list  = cell(nUP, 1);
+timeSinceLastRipple_list    = cell(nUP, 1);
+
 %% 3. Slice UP State Events into Time-Varying Intervals
 for iUP = 1:nUP
     upOnset  = merged_event_info.UP_ints(iUP, 1);
@@ -167,8 +185,9 @@ for iUP = 1:nUP
     binCenters = (0:nBins-1) * time_bin + time_bin/2;
     
     % Identify ripples overlapping this UP state
-    overlapIdx = find(ripIntsAbs(:,2) > upOnset & ripIntsAbs(:,1) < upOffset);
-    
+    % overlapIdx = find(ripIntsAbs(:,2) > upOnset & ripIntsAbs(:,1) < upOffset);
+    overlapIdx = find(ripPeakAbs(:,1) > upOnset & ripPeakAbs(:,1) < upOffset);
+
     ripRel = [];
     ripPow = [];
     if ~isempty(overlapIdx)
@@ -182,6 +201,9 @@ for iUP = 1:nUP
             end
         end
     end
+
+    nRipples = size(ripRel, 1);
+    hasRip   = double(nRipples > 0);
     
     % Generate cutpoints at 0, UP duration, and ripple onsets/offsets
     if ~isempty(ripRel)
@@ -238,12 +260,34 @@ for iUP = 1:nUP
     i_cumTotV1     = zeros(nInt, 1);
     
     i_cumRipCount  = zeros(nInt, 1);
-    
+
+    i_cumRipHPC_incl    = zeros(nInt, 1);
+    i_cumNonRipHPC_incl = zeros(nInt, 1);
+    i_cumTotHPC_incl    = zeros(nInt, 1);
+    i_cumRipV1_incl     = zeros(nInt, 1);
+    i_cumNonRipV1_incl  = zeros(nInt, 1);
+    i_cumTotV1_incl     = zeros(nInt, 1);
+    i_cumRipCount_incl  = zeros(nInt, 1);
+
+    i_lastRipPow          = zeros(nInt, 1);
+    i_lastRipHpcSum       = zeros(nInt, 1);
+    i_lastRipHpcMean      = zeros(nInt, 1);
+    i_lastRipV1Sum        = zeros(nInt, 1);
+    i_lastRipV1Mean       = zeros(nInt, 1);
+    i_timeSinceLastRipple = zeros(nInt, 1);
+
     runningRipHPC    = 0;
     runningNonRipHPC = 0;
     runningRipV1     = 0;
     runningNonRipV1  = 0;
     runningRipCount  = 0;
+
+    last_rip_pow      = 0;
+    last_rip_hpc_sum  = 0;
+    last_rip_hpc_mean = 0;
+    last_rip_v1_sum   = 0;
+    last_rip_v1_mean  = 0;
+    last_rip_off      = NaN;
     
     for j = 1:nInt
         t0 = cuts(j);
@@ -279,7 +323,7 @@ for iUP = 1:nUP
         i_cumTotV1(j)     = runningRipV1 + runningNonRipV1;
         
         i_cumRipCount(j)  = runningRipCount;
-        
+
         % Identify bins falling inside [t0, t1)
         binMask = (binCenters >= t0 & binCenters < t1);
         if ~any(binMask)
@@ -320,6 +364,27 @@ for iUP = 1:nUP
             runningRipHPC   = runningRipHPC + hpcSumVal;
             runningRipV1    = runningRipV1  + v1SumVal;
             runningRipCount = runningRipCount + 1;
+
+            % Update carried-forward ripple features
+            last_rip_pow      = powVal;
+            last_rip_hpc_sum  = hpcSumVal;
+            last_rip_hpc_mean = hpcMeanVal;
+            last_rip_v1_sum   = v1SumVal;
+            last_rip_v1_mean  = v1MeanVal;
+            
+            % Update last ripple offset
+            if ~isempty(ripRel)
+                for r = 1:size(ripRel, 1)
+                    ovStart = max(t0, ripRel(r,1));
+                    ovStop  = min(t1, ripRel(r,2));
+                    if (ovStop - ovStart) >= 0.5 * dt || (ovStop - ovStart) >= 0.01
+                        last_rip_off = ripRel(r, 2);
+                        break;
+                    end
+                end
+            end
+
+            i_timeSinceLastRipple(j) = 0;
         else
             i_inRip(j)     = 0;
             i_ripPow(j)    = 0;
@@ -337,8 +402,32 @@ for iUP = 1:nUP
             
             runningNonRipHPC = runningNonRipHPC + hpcSumVal;
             runningNonRipV1  = runningNonRipV1  + v1SumVal;
+
+            if isnan(last_rip_off)
+                i_timeSinceLastRipple(j) = 0;
+            else
+                i_timeSinceLastRipple(j) = max(0, t1 - last_rip_off);
+            end
         end
         
+        % Assign inclusive cumulative metrics (values up to t1, including current interval)
+        i_cumRipHPC_incl(j)    = runningRipHPC;
+        i_cumNonRipHPC_incl(j) = runningNonRipHPC;
+        i_cumTotHPC_incl(j)    = runningRipHPC + runningNonRipHPC;
+        
+        i_cumRipV1_incl(j)     = runningRipV1;
+        i_cumNonRipV1_incl(j)  = runningNonRipV1;
+        i_cumTotV1_incl(j)     = runningRipV1 + runningNonRipV1;
+        
+        i_cumRipCount_incl(j)  = runningRipCount;
+
+        % Assign carried-forward ripple features
+        i_lastRipPow(j)     = last_rip_pow;
+        i_lastRipHpcSum(j)  = last_rip_hpc_sum;
+        i_lastRipHpcMean(j) = last_rip_hpc_mean;
+        i_lastRipV1Sum(j)   = last_rip_v1_sum;
+        i_lastRipV1Mean(j)  = last_rip_v1_mean;
+
         % Event status: last interval ends in DOWN transition (event=1, censoring=0)
         if j == nInt
             i_event(j) = 1;
@@ -386,6 +475,26 @@ for iUP = 1:nUP
     cumTotalV1_MUA_list{iUP}      = i_cumTotV1;
     
     cumRippleCount_list{iUP}      = i_cumRipCount;
+
+    cumRippleHPC_MUA_incl_list{iUP}    = i_cumRipHPC_incl;
+    cumNonRippleHPC_MUA_incl_list{iUP} = i_cumNonRipHPC_incl;
+    cumTotalHPC_MUA_incl_list{iUP}     = i_cumTotHPC_incl;
+    
+    cumRippleV1_MUA_incl_list{iUP}     = i_cumRipV1_incl;
+    cumNonRippleV1_MUA_incl_list{iUP}  = i_cumNonRipV1_incl;
+    cumTotalV1_MUA_incl_list{iUP}      = i_cumTotV1_incl;
+    
+    cumRippleCount_incl_list{iUP}      = i_cumRipCount_incl;
+
+    hasRipple_list{iUP}      = repmat(hasRip, nInt, 1);
+    numRipplesInUP_list{iUP} = repmat(nRipples, nInt, 1);
+
+    lastRipplePower_list{iUP}        = i_lastRipPow;
+    lastRippleHPC_MUA_sum_list{iUP}  = i_lastRipHpcSum;
+    lastRippleHPC_MUA_mean_list{iUP} = i_lastRipHpcMean;
+    lastRippleV1_MUA_sum_list{iUP}   = i_lastRipV1Sum;
+    lastRippleV1_MUA_mean_list{iUP}  = i_lastRipV1Mean;
+    timeSinceLastRipple_list{iUP}    = i_timeSinceLastRipple;
 end
 
 % Concatenate all intervals into a single table
@@ -420,6 +529,21 @@ T = table(...
     vertcat(cumNonRippleV1_MUA_list{:}), ...
     vertcat(cumTotalV1_MUA_list{:}), ...
     vertcat(cumRippleCount_list{:}), ...
+    vertcat(cumRippleHPC_MUA_incl_list{:}), ...
+    vertcat(cumNonRippleHPC_MUA_incl_list{:}), ...
+    vertcat(cumTotalHPC_MUA_incl_list{:}), ...
+    vertcat(cumRippleV1_MUA_incl_list{:}), ...
+    vertcat(cumNonRippleV1_MUA_incl_list{:}), ...
+    vertcat(cumTotalV1_MUA_incl_list{:}), ...
+    vertcat(cumRippleCount_incl_list{:}), ...
+    vertcat(hasRipple_list{:}), ...
+    vertcat(numRipplesInUP_list{:}), ...
+    vertcat(lastRipplePower_list{:}), ...
+    vertcat(lastRippleHPC_MUA_sum_list{:}), ...
+    vertcat(lastRippleHPC_MUA_mean_list{:}), ...
+    vertcat(lastRippleV1_MUA_sum_list{:}), ...
+    vertcat(lastRippleV1_MUA_mean_list{:}), ...
+    vertcat(timeSinceLastRipple_list{:}), ...
     'VariableNames', { ...
     'upID', 'session_id', 'subject_id', 'hemisphere_id', ...
     'start', 'stop', 'duration', 'event', 'censoring', ...
@@ -432,7 +556,13 @@ T = table(...
     'intervalV1_MUA_sum', 'intervalV1_MUA_mean', ...
     'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA', 'cumTotalHPC_MUA', ...
     'cumRippleV1_MUA', 'cumNonRippleV1_MUA', 'cumTotalV1_MUA', ...
-    'cumRippleCount'} ...
+    'cumRippleCount', ...
+    'cumRippleHPC_MUA_incl', 'cumNonRippleHPC_MUA_incl', 'cumTotalHPC_MUA_incl', ...
+    'cumRippleV1_MUA_incl', 'cumNonRippleV1_MUA_incl', 'cumTotalV1_MUA_incl', ...
+    'cumRippleCount_incl', ...
+    'hasRipple', 'numRipplesInUP', ...
+    'lastRipplePower', 'lastRippleHPC_MUA_sum', 'lastRippleHPC_MUA_mean', ...
+    'lastRippleV1_MUA_sum', 'lastRippleV1_MUA_mean', 'timeSinceLastRipple'} ...
 );
 
 end

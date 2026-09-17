@@ -14,6 +14,9 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_offset.csv")
+
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -224,6 +227,9 @@ dat_clean <- dat_clean %>%
   mutate(log_TimefromLastRipple_z = as.numeric(scale(log_TimefromLastRipple)))
 
 
+
+
+
 ########
 ######## last ripple HC content (especially those close to DOWN state) predicts does not predict V1 ripple content
 ########
@@ -248,6 +254,7 @@ dat_clean1 <- dat_clean %>%
 
 mdl_lastRipple <- bam(lastRippleV1_z ~ 
                         s(lastRippleV1PRE_z, bs = "tp",k = 5) +
+                        # s(lastRippleV1PRE_z, by = is_near_DOWN)+
                         is_near_DOWN +
                         s(lastRippleHPC_z, by = is_near_DOWN)+
                         
@@ -283,7 +290,7 @@ z_breaks <- sapply(raw_breaks, function(val) {
   dat_clean$lastRippleHPC_z[which.min(abs(dat_clean$lastRippleHPC - val))]
 })
 
-cairo_pdf("lastRippleHPC_away_from_DOWN.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_lastRipple, select = "s(lastRippleHPC_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
@@ -297,6 +304,7 @@ p_HC_raw <- draw(mdl_lastRipple, select = "s(lastRippleHPC_z):is_near_DOWNno", r
     y = "Partial Effect"
   )
 # dev.new(noRStudioGD = TRUE)
+cairo_pdf("lastRippleHPC_away_from_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 # ---------------------------------------------------------
@@ -310,7 +318,7 @@ z_breaks <- sapply(raw_breaks, function(val) {
   dat_clean$lastRippleHPC_z[which.min(abs(dat_clean$lastRippleHPC - val))]
 })
 
-cairo_pdf("lastRippleHPC_close_to_DOWN.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_lastRipple, select = "s(lastRippleHPC_z):is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
@@ -322,6 +330,7 @@ p_HC_raw <- draw(mdl_lastRipple, select = "s(lastRippleHPC_z):is_near_DOWNyes", 
     y = "Partial Effect"
   )
 # dev.new(noRStudioGD = TRUE)
+cairo_pdf("lastRippleHPC_close_to_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 

@@ -14,6 +14,7 @@ library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
 dat$AnimalID <- as.factor(dat$AnimalID)
@@ -231,8 +232,9 @@ dat_clean1 <- dat_clean %>%
   )
 
 mdl_lastRippleNext <- bam(nextUPV1_z ~ 
-                        s(lastRippleV1PRE_z, bs = "tp",k = 5) +
-                        s(lastRippleV1_z, by = is_near_DOWN) +
+                        # s(lastRippleV1_z, bs = "tp",k = 5) +
+                        # s(lastRippleV1_z, by = is_near_DOWN) +
+                        s(lastRippleV1PRE_z, by = is_near_DOWN) +
                         is_near_DOWN +
                         s(lastRippleHPC_z, by = is_near_DOWN)+
 
@@ -268,12 +270,12 @@ z_breaks <- sapply(raw_breaks, function(val) {
   dat_clean$lastRippleHPC_z[which.min(abs(dat_clean$lastRippleHPC - val))]
 })
 
-cairo_pdf("lastRippleHPC_nextUP_away_from_DOWN.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleHPC_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(xlim = c(-4,4), ylim = c(-0.21, 0.21),expand = FALSE) +
+  coord_cartesian(xlim = c(-3.8,3.8), ylim = c(-0.21, 0.21),expand = FALSE) +
   
   labs(
     title = "HC ripple bias predicting nextUP V1 track bias (last ripple >100ms away from DOWN)", 
@@ -281,6 +283,8 @@ p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleHPC_z):is_near_DOWNno
     y = "Partial Effect"
   )
 # dev.new(noRStudioGD = TRUE)
+print(p_HC_raw)
+cairo_pdf("lastRippleHPC_nextUP_away_from_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
@@ -297,19 +301,21 @@ z_breaks <- sapply(raw_breaks, function(val) {
   dat_clean$lastRippleHPC_z[which.min(abs(dat_clean$lastRippleHPC - val))]
 })
 
-cairo_pdf("lastRippleHPC_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleHPC_z):is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(xlim = c(-4,4), ylim = c(-0.21, 0.21),expand = FALSE) +
+  coord_cartesian(xlim = c(-3.8,3.8), ylim = c(-0.21, 0.21),expand = FALSE) +
   labs(
     title = "HC ripple bias predicting nextUP V1 track bias (last ripple <100ms away from DOWN)", 
     x = "HC bias", 
     y = "Partial Effect"
   )
+print(p_HC_raw)
 # dev.new(noRStudioGD = TRUE)
 print(p_HC_raw)
+cairo_pdf("lastRippleHPC_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
 dev.off()
 
 
@@ -317,64 +323,66 @@ dev.off()
 
 
 # ---------------------------------------------------------
-# Plot 1: V1 away from DOWN
+# Plot 3: V1 PRE away from DOWN
 # ---------------------------------------------------------
 
 ### HC post
 # Calculate scaling factors
 raw_breaks <- c(-2,-1,0,1,2)
 z_breaks <- sapply(raw_breaks, function(val) {
-  dat_clean$lastRippleV1_z[which.min(abs(dat_clean$lastRippleV1 - val))]
+  dat_clean$lastRippleV1PRE_z[which.min(abs(dat_clean$lastRippleV1PRE - val))]
 })
 
 
-p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleV1_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
+p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleV1PRE_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(xlim = c(-4,4), ylim = c(-0.21, 0.21),expand = FALSE) +
+  coord_cartesian(xlim = c(-3.8,3.8), ylim = c(-0.21, 0.21),expand = FALSE) +
   labs(
-    title = "V1 ripple bias predicting nextUP V1 track bias (last ripple >100ms away from DOWN)", 
+    title = "PRE V1 ripple bias predicting nextUP V1 track bias (last ripple >100ms away from DOWN)", 
     x = "HC bias", 
     y = "Partial Effect"
   )
-# dev.new(noRStudioGD = TRUE)
-cairo_pdf("lastRippleV1_nextUP_away_from_DOWN.pdf", width = 4.3, height = 4.3)
+print(p_HC_raw)
+
+cairo_pdf("lastRippleV1PRE_nextUP_away_from_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
 
 # ---------------------------------------------------------
-# Plot 1: V1 near DOWN
+# Plot 4: V1 PRE near DOWN
 # ---------------------------------------------------------
 
 ### HC post
 # Calculate scaling factors
 raw_breaks <- c(-2,-1,0,1,2)
 z_breaks <- sapply(raw_breaks, function(val) {
-  dat_clean$lastRippleV1_z[which.min(abs(dat_clean$lastRippleV1 - val))]
+  dat_clean$lastRippleV1PRE_z[which.min(abs(dat_clean$lastRippleV1PRE - val))]
 })
 
 
-p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleV1_z):is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
+p_HC_raw <- draw(mdl_lastRippleNext, select = "s(lastRippleV1PRE_z):is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
   coord_cartesian(xlim = c(-4,4), ylim = c(-0.4, 0.52),expand = FALSE) +
   labs(
-    title = "V1 ripple bias predicting nextUP V1 track bias (last ripple <100ms away from DOWN)", 
+    title = "PRE V1 ripple bias predicting nextUP V1 track bias (last ripple <100ms away from DOWN)", 
     x = "HC bias", 
     y = "Partial Effect"
   )
-# dev.new(noRStudioGD = TRUE)
-cairo_pdf("lastRippleV1_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
+print(p_HC_raw)
+
+cairo_pdf("lastRippleV1PRE_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
 
 
 # ==============================================================================
-# --- COMBINED EFFECT SURFACE: lastRippleV1_z + lastRippleHPC_z | is_near_DOWN == "yes" ---
+# --- COMBINED EFFECT SURFACE: lastRippleV1PRE_z + lastRippleHPC_z | is_near_DOWN == "yes" ---
 # ==============================================================================
 
 # 1. Grid across observed (z-scored) range
@@ -382,48 +390,42 @@ grid_range_v1  <- seq(-2.5, 2.5, length.out = 50)
 grid_range_hpc <- seq(-2.5, 2.5, length.out = 50)
 
 pred_grid_total <- expand.grid(
-  lastRippleV1PRE_z = 0,
-  lastRippleV1_z  = grid_range_v1,
-  lastRippleHPC_z = grid_range_hpc,
-  is_near_DOWN    = factor("yes", levels = levels(dat_clean1$is_near_DOWN)), # <- fixed to "yes"
-  AnimalID        = dat_clean1$AnimalID[1],  # held constant, random effect ~ ignored by type="terms"
-  SessionID       = dat_clean1$SessionID[1]
+  lastRippleV1PRE_z = grid_range_v1,
+  lastRippleHPC_z   = grid_range_hpc,
+  is_near_DOWN      = factor("yes", levels = levels(dat_clean1$is_near_DOWN)),
+  AnimalID          = dat_clean1$AnimalID[1],
+  SessionID         = dat_clean1$SessionID[1]
 )
 
 # 2. Extract term components matrix
 term_preds <- predict(mdl_lastRippleNext, newdata = pred_grid_total, type = "terms")
 
-# sanity check: confirm the exact column names before summing
-colnames(term_preds)
-
 # 3. Sum only the "yes" by-level smooths of interest
 pred_grid_total$Reconstructed_Effect <-
-  term_preds[, "s(lastRippleV1_z):is_near_DOWNyes"] +
+  term_preds[, "s(lastRippleV1PRE_z):is_near_DOWNyes"] +
   term_preds[, "s(lastRippleHPC_z):is_near_DOWNyes"]
 
 # 4. Plot combined surface
-p_combined_yes <- ggplot(pred_grid_total, aes(x = lastRippleV1_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
+p_combined_yes <- ggplot(pred_grid_total, aes(x = lastRippleV1PRE_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
   geom_tile() +
   geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
   scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick", midpoint = 0, name = "Total\nEffect") +
   theme_minimal() +
   labs(
     title = "Combined Effect Surface (is_near_DOWN = yes)",
-    subtitle = "Reconstructed: s(lastRippleV1_z):yes + s(lastRippleHPC_z):yes",
-    x = "lastRippleV1_z (z-scored)",
+    subtitle = "Reconstructed: s(lastRippleV1PRE_z):yes + s(lastRippleHPC_z):yes",
+    x = "lastRippleV1PRE_z (z-scored)",
     y = "lastRippleHPC_z (z-scored)"
   )
+print(p_combined_yes)
 
-cairo_pdf("lastRippleV1_and_HPC_combined_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
+cairo_pdf("lastRippleV1PRE_and_HPC_combined_nextUP_close_to_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_combined_yes)
 dev.off()
-# 
-# 
-# 
-# 
+
 
 # ==============================================================================
-# --- COMBINED EFFECT SURFACE: lastRippleV1_z + lastRippleHPC_z | is_near_DOWN == "no" ---
+# --- COMBINED EFFECT SURFACE: lastRippleV1PRE_z + lastRippleHPC_z | is_near_DOWN == "no" ---
 # ==============================================================================
 
 # 1. Grid across observed (z-scored) range
@@ -431,35 +433,31 @@ grid_range_v1  <- seq(-2.5, 2.5, length.out = 50)
 grid_range_hpc <- seq(-2.5, 2.5, length.out = 50)
 
 pred_grid_total <- expand.grid(
-  lastRippleV1PRE_z = 0,
-  lastRippleV1_z  = grid_range_v1,
-  lastRippleHPC_z = grid_range_hpc,
-  is_near_DOWN    = factor("no", levels = levels(dat_clean1$is_near_DOWN)), # <- fixed to "yes"
-  AnimalID        = dat_clean1$AnimalID[1],  # held constant, random effect ~ ignored by type="terms"
-  SessionID       = dat_clean1$SessionID[1]
+  lastRippleV1PRE_z = grid_range_v1,
+  lastRippleHPC_z   = grid_range_hpc,
+  is_near_DOWN      = factor("no", levels = levels(dat_clean1$is_near_DOWN)),
+  AnimalID          = dat_clean1$AnimalID[1],
+  SessionID         = dat_clean1$SessionID[1]
 )
 
 # 2. Extract term components matrix
 term_preds <- predict(mdl_lastRippleNext, newdata = pred_grid_total, type = "terms")
 
-# sanity check: confirm the exact column names before summing
-colnames(term_preds)
-
-# 3. Sum only the "yes" by-level smooths of interest
+# 3. Sum only the "no" by-level smooths of interest
 pred_grid_total$Reconstructed_Effect <-
-  term_preds[, "s(lastRippleV1_z):is_near_DOWNno"] +
+  term_preds[, "s(lastRippleV1PRE_z):is_near_DOWNno"] +
   term_preds[, "s(lastRippleHPC_z):is_near_DOWNno"]
 
 # 4. Plot combined surface
-p_combined_no <- ggplot(pred_grid_total, aes(x = lastRippleV1_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
+p_combined_no <- ggplot(pred_grid_total, aes(x = lastRippleV1PRE_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
   geom_tile() +
   geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
   scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick", midpoint = 0, name = "Total\nEffect") +
   theme_minimal() +
   labs(
-    title = "Combined Effect Surface (is_near_DOWN = yes)",
-    subtitle = "Reconstructed: s(lastRippleV1_z):no + s(lastRippleHPC_z):no",
-    x = "lastRippleV1_z (z-scored)",
+    title = "Combined Effect Surface (is_near_DOWN = no)",
+    subtitle = "Reconstructed: s(lastRippleV1PRE_z):no + s(lastRippleHPC_z):no",
+    x = "lastRippleV1PRE_z (z-scored)",
     y = "lastRippleHPC_z (z-scored)"
   )
 
@@ -480,8 +478,6 @@ library(tidyverse)
 message("\nCalculating 4 Effect Size Metrics for mdl_lastRippleNext (This may take a minute)...")
 
 # --- 0. PRE-PROCESS DATASET WITH ISOLATED NUMERIC DUMMIES ---
-# Mirrors the quantile strategy in MultipleUP, but here there is only ONE
-# smooth term (lastRippleHPC_z) split by the single near/away-from-DOWN factor
 dat_clean1 <- dat_clean1 %>%
   mutate(
     DOWN_no  = as.numeric(is_near_DOWN == "no"),
@@ -489,26 +485,22 @@ dat_clean1 <- dat_clean1 %>%
   )
 
 # --- 1. DEFINE MODEL ARCHITECTURE ---
-# Parametric baseline + covariate control kept in every single model refit
 BASE_TERMS <- c(
-  "is_near_DOWN",
-  "s(lastRippleV1PRE_z, bs = 'tp', k = 5)"
+  "is_near_DOWN"
 )
 
-# The two levels of the target smooth, tested/dropped EXACTLY one at a time via negative indexing [-j]
 formula_terms <- c(
   "s(lastRippleHPC_z, by = DOWN_no, k = 5)",
   "s(lastRippleHPC_z, by = DOWN_yes, k = 5)",
-  "s(lastRippleV1_z, by = DOWN_no, k = 5)",
-  "s(lastRippleV1_z, by = DOWN_yes, k = 5)"
+  "s(lastRippleV1PRE_z, by = DOWN_no, k = 5)",
+  "s(lastRippleV1PRE_z, by = DOWN_yes, k = 5)"
 )
 
-# Character match labels matching mgcv internal formatting keys
 smooth_labels <- c(
   "s(lastRippleHPC_z):DOWN_no",
   "s(lastRippleHPC_z):DOWN_yes",
-  "s(lastRippleV1_z):DOWN_no",
-  "s(lastRippleV1_z):DOWN_yes"
+  "s(lastRippleV1PRE_z):DOWN_no",
+  "s(lastRippleV1PRE_z):DOWN_yes"
 )
 
 RE_TERMS <- c("s(SessionID, bs = 're')", "s(AnimalID, bs = 're')")
@@ -519,13 +511,9 @@ message(sprintf("\nLaunching %d Case Bootstrap Replicates...", B))
 # --- 2. BOOTSTRAP WORKER FUNCTION ---
 run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, smooth_labels) {
   
-  # 1. Resample data with replacement
   boot_data <- original_data[sample(nrow(original_data), replace = TRUE), ]
-  
-  # Structural settings explicitly declared
   boot_data$is_near_DOWN <- factor(boot_data$is_near_DOWN)
   
-  # 2. Fit Full Model using the explicit numeric dummy paths
   full_form <- as.formula(paste(
     "nextUPV1_z ~",
     paste(c(base_terms, formula_terms, RE_TERMS), collapse = " + ")
@@ -546,11 +534,9 @@ run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, 
   run_res <- data.frame(Term = smooth_labels, Partial_Deviance = NA, Eta_Sq_Partial = NA,
                         Amplitude = NA, RMS = NA, Rep = rep_id)
   
-  # 3. Process every individual expanded smooth term
   for (j in seq_along(smooth_labels)) {
     target_term <- smooth_labels[j]
     
-    # A. Corrected Partial Deviance: Drop ONLY the single targeted level j
     act_terms <- c(base_terms, formula_terms[-j], RE_TERMS)
     
     r_form <- as.formula(paste("nextUPV1_z ~", paste(act_terms, collapse = " + ")))
@@ -562,17 +548,14 @@ run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, 
       run_res$Partial_Deviance[j] <- full_dev - (summary(mdl_r)$dev.expl * 100)
     }
     
-    # B. Partial Eta-Squared
     t_row <- sum_tab[sum_tab$Term == target_term, ]
     if (nrow(t_row) == 1) {
       run_res$Eta_Sq_Partial[j] <- (t_row$F * t_row$edf) / ((t_row$F * t_row$edf) + res_df)
     }
     
-    # C & D. Amplitude and RMS via prediction grid isolation
-    v_smooth <- if (grepl("lastRippleV1_z", target_term)) "lastRippleV1_z" else "lastRippleHPC_z"
+    v_smooth <- if (grepl("lastRippleV1PRE_z", target_term)) "lastRippleV1PRE_z" else "lastRippleHPC_z"
     v_dummy  <- if (grepl("yes", target_term)) "DOWN_yes" else "DOWN_no"
     
-    # Build cleanly spanned evaluation range over target variable space
     x_seq <- seq(min(boot_data[[v_smooth]], na.rm = TRUE),
                  max(boot_data[[v_smooth]], na.rm = TRUE),
                  length.out = 50)
@@ -580,7 +563,6 @@ run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, 
     grid_clean <- data.frame(x = x_seq)
     colnames(grid_clean) <- v_smooth
     
-    # Populate balance structure rules across missing values to allow execution of predict()
     all_model_vars <- all.vars(full_form)[-1]
     missing_vars <- setdiff(all_model_vars, colnames(grid_clean))
     
@@ -595,7 +577,6 @@ run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, 
         f_val <- if (grepl("DOWN_yes", v_dummy)) "yes" else "no"
         grid_clean[[mv]] <- factor(f_val, levels = levels(boot_data$is_near_DOWN))
       } else if (mv %in% dummy_cols) {
-        # Set target sub-track level matrix active to 1, all competing dummy features to 0
         grid_clean[[mv]] <- as.numeric(mv == v_dummy)
       } else if (is.numeric(boot_data[[mv]])) {
         grid_clean[[mv]] <- mean(boot_data[[mv]], na.rm = TRUE)
@@ -604,7 +585,6 @@ run_one_bootstrap <- function(rep_id, original_data, base_terms, formula_terms, 
       }
     }
     
-    # Extract isolated predictions safely using the lp design matrix mapping columns
     Xp <- predict(mdl_f, newdata = grid_clean, type = "lpmatrix")
     smooth_cols <- grep(target_term, colnames(Xp), fixed = TRUE)
     
@@ -682,15 +662,15 @@ plot_data <- raw_iterations_clean %>%
                     labels = c("Deviance Explained (%)", "Partial Eta-Squared",
                                "Peak-to-Trough Amplitude", "RMS Effect")),
     Term = case_when(
-      Term == "s(lastRippleHPC_z):DOWN_no"  ~ "HPC | Near DOWN: No (>100ms away)",
-      Term == "s(lastRippleHPC_z):DOWN_yes" ~ "HPC | Near DOWN: Yes (<100ms away)",
-      Term == "s(lastRippleV1_z):DOWN_no"   ~ "V1 | Near DOWN: No (>100ms away)",
-      Term == "s(lastRippleV1_z):DOWN_yes"  ~ "V1 | Near DOWN: Yes (<100ms away)",
+      Term == "s(lastRippleHPC_z):DOWN_no"    ~ "HPC | Near DOWN: No (>100ms away)",
+      Term == "s(lastRippleHPC_z):DOWN_yes"   ~ "HPC | Near DOWN: Yes (<100ms away)",
+      Term == "s(lastRippleV1PRE_z):DOWN_no"  ~ "V1 PRE | Near DOWN: No (>100ms away)",
+      Term == "s(lastRippleV1PRE_z):DOWN_yes" ~ "V1 PRE | Near DOWN: Yes (<100ms away)",
       TRUE ~ as.character(Term)
     ),
     Term = factor(Term, levels = c(
       "HPC | Near DOWN: Yes (<100ms away)", "HPC | Near DOWN: No (>100ms away)",
-      "V1 | Near DOWN: Yes (<100ms away)",  "V1 | Near DOWN: No (>100ms away)"
+      "V1 PRE | Near DOWN: Yes (<100ms away)", "V1 PRE | Near DOWN: No (>100ms away)"
     ))
   )
 
@@ -755,10 +735,10 @@ model_stats <- as.data.frame(summary(mdl_lastRippleNext)$s.table) %>%
 
 flat_bootstrap_results <- flat_bootstrap_results %>%
   mutate(Term = case_when(
-    Term == "s(lastRippleHPC_z):DOWN_no"  ~ "HPC | Near DOWN: No (>100ms away)",
-    Term == "s(lastRippleHPC_z):DOWN_yes" ~ "HPC | Near DOWN: Yes (<100ms away)",
-    Term == "s(lastRippleV1_z):DOWN_no"   ~ "V1 | Near DOWN: No (>100ms away)",
-    Term == "s(lastRippleV1_z):DOWN_yes"  ~ "V1 | Near DOWN: Yes (<100ms away)",
+    Term == "s(lastRippleHPC_z):DOWN_no"    ~ "s(lastRippleHPC_z):is_near_DOWNno",
+    Term == "s(lastRippleHPC_z):DOWN_yes"   ~ "s(lastRippleHPC_z):is_near_DOWNyes",
+    Term == "s(lastRippleV1PRE_z):DOWN_no"  ~ "s(lastRippleV1PRE_z):is_near_DOWNno",
+    Term == "s(lastRippleV1PRE_z):DOWN_yes" ~ "s(lastRippleV1PRE_z):is_near_DOWNyes",
     TRUE ~ Term
   ))
 

@@ -200,8 +200,8 @@ setwd(my_folder)
 
 
 # Time from last ripple boundary.
-# q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.25, 0.5,0.75), na.rm = TRUE), Inf)
-q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.2, 0.4,0.6,0.8), na.rm = TRUE), Inf)
+q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.25, 0.5,0.75), na.rm = TRUE), Inf)
+# q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.2, 0.4,0.6,0.8), na.rm = TRUE), Inf)
 # q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9), na.rm = TRUE), Inf)
 # q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(1/6,2/6,3/6,4/6,5/6), na.rm = TRUE), Inf)
 
@@ -209,8 +209,8 @@ q_boundaries <- c(0, quantile(dat_clean$TimefromLastRipple, probs = c(0.2, 0.4,0
 dat_clean$ripple_quantile <- cut(
   dat_clean$TimefromLastRipple,
   breaks = q_boundaries,
-  # labels = c("Q1", "Q2", "Q3", "Q4"),
-  labels = c("Q1", "Q2", "Q3", "Q4","Q5"),
+  labels = c("Q1", "Q2", "Q3", "Q4"),
+  # labels = c("Q1", "Q2", "Q3", "Q4","Q5"),
   # labels = c("Q1", "Q2", "Q3", "Q4","Q5","Q6"),
   include.lowest = TRUE
 )
@@ -249,12 +249,13 @@ dat_clean1 <- dat_clean %>%
   )
 
 mdl_lastRipple <- bam(lastRippleV1_z ~ 
-                        s(lastRippleV1PRE_z, bs = "tp",k = 5) +
+                        # s(lastRippleV1PRE_z, bs = "tp",k = 5) +
                         # is_near_DOWN +
                         # s(lastRippleHPC_z, by = is_near_DOWN)+
                         # 
                         ripple_quantile +
                         s(lastRippleHPC_z, by = ripple_quantile)+
+                        s(lastRippleV1PRE_z, by = ripple_quantile)+
 
                         # s(log_TimefromLastRipple_z, bs = "tp",k = 5) +
                         # s(lastRippleHPC_z, bs = "tp",k = 5) +

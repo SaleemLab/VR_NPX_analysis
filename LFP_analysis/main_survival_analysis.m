@@ -1,7 +1,7 @@
 % MAIN_SURVIVAL_ANALYSIS
 % Counting-process Cox Proportional Hazards Survival Analysis for Cortical UP State Termination
 % Evaluates individual ripple LFP/MUA, cumulative ripple activity, and baseline MUA.
-
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
@@ -119,9 +119,130 @@ merged_event_info.subject_id = subject_id;
 %% 3. Build Counting Process Interval Table directly from raw spike times
 fprintf('Building UP state counting process interval table directly from raw spiketimes...\n');
 T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spiketimes, HC_MUA_spiketimes);
+% T.upID
+
 
 save(fullfile(output_dir, 'survival_analysis_interval_table.mat'), 'T');
 fprintf('Interval table generated with %d sub-intervals across %d UP events.\n', size(T,1), max(T.upID));
+
+
+%% Model 1 V1 baseline activity
+T_ripples = T(T.numRipplesInUP>0,:);
+model1_covariates = {'cumTotalV1_MUA_incl'};
+model1_labels     = {'Cumulative V1 activity'};
+% model1_covariates = {'start','cumTotalV1_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity'};
+
+
+output_model1 = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Baseline V1 Effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false);
+
+
+%% 4. Model 2: Individual Ripple Effect on UP State Termination
+T_ripples = T(T.numRipplesInUP>0,:);
+% 
+% unique(T_ripples.upID)
+fprintf('Running Model 1: Individual Ripple Effect...\n');
+% model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum', 'rippleHPC_MUA_mean'};
+% model1_labels     = {'In Ripple', 'Ripple Power', 'Ripple HPC MUA Sum', 'Ripple HPC MUA Rate'};
+% model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum'};
+% model1_labels     = {'In Ripple', 'Ripple Power', 'Ripple HPC MUA Sum'};
+
+% model1_covariates = {'rippleHPC_MUA_sum','nonRippleHPC_MUA_sum'};
+% model1_labels     = {'Ripple HPC MUA','Non Ripple HPC MUA'};
+
+% model1_covariates = {'rippleHPC_MUA_sum','cumRippleHPC_MUA','cumNonRippleHPC_MUA'};
+% model1_labels     = {'Ripple HPC MUA','Past Ripple HPC MUA','Non Ripple HPC MUA'};
+model1_covariates = {'cumTotalV1_MUA_incl','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum'}; % Last here means ripple power during ripple as well as interval after ripple 
+model1_labels     = {'Cumulative V1 activity','Ripple power','Ripple HPC MUA rate','Ripple HPC MUA sum'};
+% model1_covariates = {'cumTotalV1_MUA_incl'};
+% model1_labels     = {'Cumulative V1 activity'};
+
+% model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
+
+output_model = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Individual Ripple Effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'is_multivariate', true, ...
+    'bootstrap',false);
+
+output_model_univariate = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Individual Ripple Effect on UP Survival (univariate)', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'is_multivariate', false, ...
+    'bootstrap',false);
+
+save(fullfile(output_dir, 'survival_model_counting_process_individual_ripples.mat'), 'output_model','output_model_univariate');
+save_all_figures(output_dir, []);
+
+
+
+model1_covariates = {'cumTotalV1_MUA_incl','cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+model1_labels     = {'Cumulative V1 activity','Cum Ripple HPC MUA','Cum Non-Ripple HPC MUA'};
+% model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
+% output_model1 = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+%     'title_name', 'past ripple and past non-ripple history on UP Survival (univariate)', ...
+%     'feature_labels', model1_labels, ...
+%     'strata_var', 'session_id',....
+%     'is_multivariate', false, ...
+%     'bootstrap',false);
+
+output_model2 = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'past ripple and past non-ripple history on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false,...
+    'plot_survival',true);
+
+
+
+
+%% 4. Model 2: All effects
+% T_ripples = T;
+T_ripples = T(T.numRipplesInUP>0,:);
+fprintf('Running Model 1: Individual Ripple Effect...\n');
+% model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum', 'rippleHPC_MUA_mean'};
+% model1_labels     = {'In Ripple', 'Ripple Power', 'Ripple HPC MUA Sum', 'Ripple HPC MUA Rate'};
+% model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum'};
+% model1_labels     = {'In Ripple', 'Ripple Power', 'Ripple HPC MUA Sum'};
+
+% model1_covariates = {'rippleHPC_MUA_sum','nonRippleHPC_MUA_sum'};
+% model1_labels     = {'Ripple HPC MUA','Non Ripple HPC MUA'};
+
+% model1_covariates = {'rippleHPC_MUA_sum','cumRippleHPC_MUA','cumNonRippleHPC_MUA'};
+% model1_labels     = {'Ripple HPC MUA','Past Ripple HPC MUA','Non Ripple HPC MUA'};
+model1_covariates = {'cumTotalV1_MUA_incl','lastRipplePower','lastRippleHPC_MUA_mean','cumRippleHPC_MUA', 'cumNonRippleHPC_MUA_incl'};
+model1_labels     = {'Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+% model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
+
+output_model = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Ripple Effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false);
+
+output_model_univariate = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Ripple Effect on UP Survival (univariate)', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false,...
+    'is_multivariate', false, ...
+    'plot_survival',false);
+
+save(fullfile(output_dir, 'survival_model_counting_process_all.mat'), 'output_model','output_model_univariate');
+save_all_figures(output_dir, []);
+
 
 %% 4. Model 1: Individual Ripple Effect on UP State Termination
 fprintf('Running Model 1: Individual Ripple Effect...\n');
@@ -133,13 +254,19 @@ fprintf('Running Model 1: Individual Ripple Effect...\n');
 % model1_covariates = {'rippleHPC_MUA_sum','nonRippleHPC_MUA_sum'};
 % model1_labels     = {'Ripple HPC MUA','Non Ripple HPC MUA'};
 
-model1_covariates = {'rippleHPC_MUA_sum','cumRippleHPC_MUA','cumNonRippleHPC_MUA'};
-model1_labels     = {'Ripple HPC MUA','Past Ripple HPC MUA','Non Ripple HPC MUA'};
+% model1_covariates = {'rippleHPC_MUA_sum','cumRippleHPC_MUA','cumNonRippleHPC_MUA'};
+% model1_labels     = {'Ripple HPC MUA','Past Ripple HPC MUA','Non Ripple HPC MUA'};
+model1_covariates = {'cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+model1_labels     = {'Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+% model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
 
 output_model1 = plot_UP_survival_counting_process(T, model1_covariates, ...
     'title_name', 'Individual Ripple Effect on UP Survival', ...
     'feature_labels', model1_labels, ...
-    'strata_var', 'session_id');
+    'strata_var', 'session_id',....
+    'bootstrap',false);
 
 % output_model1 = plot_UP_survival_counting_process(T, model1_covariates, ...
 %     'title_name', 'Individual Ripple Effect on UP Survival', ...
@@ -188,7 +315,20 @@ output_model4 = plot_UP_survival_counting_process(T, model4_covariates, ...
 
 save(fullfile(output_dir, 'model4_full_multivariable_survival.mat'), 'output_model4');
 
-%% 8. Save Figures
+%% 8. Model 5: Carried-Forward Ripple & Post-Ripple Elapsing Time Model
+fprintf('Running Model 5: Carried-Forward Ripple & Post-Ripple Elapsing Time Model...\n');
+model5_covariates = {'lastRipplePower', 'lastRippleHPC_MUA_sum', 'timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+model5_labels     = {'Last Ripple Power', 'Last Ripple HPC MUA', 'Time Since Last Ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
+output_model5 = plot_UP_survival_counting_process(T, model5_covariates, ...
+    'title_name', 'Carried-Forward Ripple and Post-Ripple Delay Survival Model', ...
+    'feature_labels', model5_labels, ...
+    'strata_var', 'session_id', ...
+    'stratify_feature', 'lastRipplePower');
+
+save(fullfile(output_dir, 'model5_carried_forward_ripple_survival.mat'), 'output_model5');
+
+%% 9. Save Figures
 if exist('save_all_figures', 'file')
     save_all_figures(output_dir, []);
 end
