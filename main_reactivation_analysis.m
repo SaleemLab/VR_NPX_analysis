@@ -691,7 +691,7 @@ Stimulus_type = 'Sleep';
 % Stimulus_types_all = {'RUN','POST'};
 
 
-for nsession =1:22
+for nsession =1:14
     session_info = experiment_info(nsession).session(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     stimulus_name = experiment_info(nsession).StimulusName(contains(experiment_info(nsession).StimulusName,Stimulus_type));
     load(fullfile(session_info(1).probe(1).ANALYSIS_DATAPATH,'..','best_channels.mat'));
@@ -891,7 +891,11 @@ for nsession =1:22
           V1_spikes_template(V1_spikes_template(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
           V1_spikes_sleep(V1_spikes_sleep(:,2)== unique_clusters(iCell),2)=iCell;% swap cell id to start from 1
       end
-      clear KDE_reactivation_ripples KDE_reactivation KDE_RUN PLS KDE_reactivation_UP KDE_reactivation_DOWN unique_clusters 
+      
+      % Clear all structures entirely to reset templates for this session
+      clear PLS KDE_RUN KDE_reactivation_ripples KDE_reactivation_UP KDE_reactivation_DOWN
+      clear PLS_V1 KDE_RUN_V1 KDE_reactivation_V1_ripples KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN
+      clear unique_clusters
 
       % for ntrack = 1:max(session_clusters_RUN.track_ID_all{1})
       time_bin_size=0.02;
@@ -1055,7 +1059,7 @@ for nsession =1:22
           % save(fullfile(options.ANALYSIS_DATAPATH,sprintf('reactivation_strength%s.mat',erase(stimulus_name{n},'Masa2tracks'))),'reactivation_strength','assembly_templates','-v7.3');
       end
 
-      clear KDE_reactivation_V1 KDE_RUN PLS KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN
+      clear KDE_reactivation_V1 KDE_RUN PLS KDE_reactivation_V1_UP KDE_reactivation_V1_DOWN PLS_V1 KDE_RUN_V1 KDE_reactivation_V1_ripples
 
     end
 end
