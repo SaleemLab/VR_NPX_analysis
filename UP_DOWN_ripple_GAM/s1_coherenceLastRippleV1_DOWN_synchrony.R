@@ -235,6 +235,7 @@ z_cols <- c(
   "geo_coherence_z",
   # "nextDOWNlag_z","nextDOWNSOPower_z",
   # "log_TimefromLastRipple_z",
+  "lastRippleNormalisedUP_z",
   "lastRippleMUArate_z",
   "lastRipplePower_z"
 )
@@ -274,7 +275,10 @@ mdl_final <- bam(geo_coherence_z ~
                    # s(TimefromLastRipple_z, k = 5) +
                    # ti(lastRipplePower_z, log_TimefromLastRipple_z, k = 5)+
                    # ti(firstRipplePower_z, TimefromFirstRipple_z, k = 5)+
-                   s(lastRippleMUArate_z,k=5)+
+                   # s(lastRippleMUArate_z,k=5)+
+                   s(lastRippleNormalisedUP_z,k=5)+
+                   
+                   
                    # is_near_DOWN +
                    # s(lastRippleMUArate_z,by = is_near_DOWN,k=5)+
                    # s(log_TimefromLastRipple_z, k = 5) +

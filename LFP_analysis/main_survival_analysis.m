@@ -31,6 +31,7 @@ load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'UP_DOWN_info_100ms.
 load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'ripple_info.mat'), 'ripple_info');
 load(fullfile(analysis_folder, 'V1-HPC sleep interaction', 'merged_UP_DOWN_ripples_event_info.mat'), 'merged_event_info');
 load(fullfile(analysis_folder,'V1-HPC sleep interaction','UP_DOWN_ripples_event_info.mat'),'event_info');
+load(fullfile(analysis_folder, 'V1-HPC sleep reactivation', 'KDE_reactivation_ripples_PSTH.mat'));
 
 %% 2. Process Session Timestamps and Merge Bilateral Ripples & Spike Times
 UP_ints = [];
@@ -107,6 +108,36 @@ ripplePower = [ripples_all(1).peak_zscore(ripples_all(1).SWS_index); ripples_all
 ripplePower = mean([ripplePower(event_ids_first), ripplePower(event_ids_second)], 2);
 merged_event_info.ripples_power = ripplePower;
 
+%% 2b. Per-Ripple HC and V1 Reactivation Log-Odds Bias (post-ripple and pre-ripple windows)
+% Same construction as main_build_UP_DOWN_info_GAM_table.m section 10, reindexed
+% to the merged (bilaterally-deduplicated) ripple order used throughout this script.
+timebin_logodds = 0.01;
+time_windows_logodds = [-1 1];
+bin_edges_logodds = time_windows_logodds(1):timebin_logodds:time_windows_logodds(2);
+bin_centers_logodds = bin_edges_logodds(1:end-1) + timebin_logodds/2;
+
+z_bias    = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+
+z_bias1 = z_bias(isfinite(z_bias));
+z_bias(z_bias >= inf)  = prctile(z_bias1, 99.5);
+z_bias(z_bias <= -inf) = prctile(z_bias1, 0.5);
+
+z_bias1 = z_bias(isfinite(z_bias_V1));
+z_bias_V1(z_bias_V1 >= inf)  = prctile(z_bias1, 99.5);
+z_bias_V1(z_bias_V1 <= -inf) = prctile(z_bias1, 0.5);
+
+z_bias    = z_bias    + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = z_bias_V1 + KDE_reactivation_ripples_PSTH.nan_mask';
+
+z_bias    = z_bias(:, event_ids_first);
+z_bias_V1 = z_bias_V1(:, event_ids_first);
+
+ripple_HC_logodds     = mean(z_bias(bin_centers_logodds>0 & bin_centers_logodds<0.1, :), 'omitnan')';
+ripple_HC_logodds_PRE = mean(z_bias(bin_centers_logodds>-0.1 & bin_centers_logodds<0, :), 'omitnan')';
+ripple_V1_logodds     = mean(z_bias_V1(bin_centers_logodds>0 & bin_centers_logodds<0.1, :), 'omitnan')';
+ripple_V1_logodds_PRE = mean(z_bias_V1(bin_centers_logodds>-0.1 & bin_centers_logodds<0, :), 'omitnan')';
+
 % Session and subject metadata extraction
 UP_session_count = [slow_waves_all(1).UP_session_count(probability_psth_whole(1).UP_all_index); ...
                     slow_waves_all(2).UP_session_count(probability_psth_whole(2).UP_all_index)];
@@ -118,7 +149,8 @@ merged_event_info.subject_id = subject_id;
 
 %% 3. Build Counting Process Interval Table directly from raw spike times
 fprintf('Building UP state counting process interval table directly from raw spiketimes...\n');
-T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spiketimes, HC_MUA_spiketimes);
+T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spiketimes, HC_MUA_spiketimes, ...
+    ripple_HC_logodds, ripple_HC_logodds_PRE, ripple_V1_logodds, ripple_V1_logodds_PRE);
 % T.upID
 
 
@@ -203,13 +235,40 @@ output_model2 = plot_UP_survival_counting_process(T_ripples, model1_covariates, 
     'bootstrap',false,...
     'plot_survival',true);
 
+%%
 
+T_ripples = T(T.numRipplesInUP>0,:);
+model1_covariates = {'cumTotalV1_MUA_incl','lastRippleCoherence','lastRippleHPC_MUA_mean'}; % Last here means ripple power during ripple as well as interval after ripple 
+model1_labels     = {'Cumulative V1 activity','preV1-HC coherence','Ripple HPC MUA rate'};
+% model1_covariates = {'cumTotalV1_MUA_incl'};
+% model1_labels     = {'Cumulative V1 activity'};
+
+% model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
+% model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
+
+
+output_model = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Individual Ripple Effect on UP Survival', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'is_multivariate', true, ...
+    'bootstrap',false);
+
+output_model_univariate = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Individual Ripple Effect on UP Survival (univariate)', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'is_multivariate', false, ...
+    'bootstrap',false);
+
+save(fullfile(output_dir, 'survival_model_counting_process_individual_ripples.mat'), 'output_model','output_model_univariate');
+save_all_figures(output_dir, []);
 
 
 %% 4. Model 2: All effects
 % T_ripples = T;
-T_ripples = T(T.numRipplesInUP>0,:);
-fprintf('Running Model 1: Individual Ripple Effect...\n');
+
+fprintf('Running Model All Effect...\n');
 % model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum', 'rippleHPC_MUA_mean'};
 % model1_labels     = {'In Ripple', 'Ripple Power', 'Ripple HPC MUA Sum', 'Ripple HPC MUA Rate'};
 % model1_covariates = {'inRipple', 'ripplePower', 'rippleHPC_MUA_sum'};
@@ -225,7 +284,7 @@ model1_labels     = {'Cumulative V1 activity','Ripple Power','Ripple HPC MUA rat
 % model1_covariates = {'start','cumTotalV1_MUA','lastRipplePower','lastRippleHPC_MUA_mean','lastRippleHPC_MUA_sum','timeSinceLastRipple', 'cumRippleHPC_MUA', 'cumNonRippleHPC_MUA'};
 % model1_labels     = {'Time elapsed since UP','Cumulative V1 activity','Ripple Power','Ripple HPC MUA rate','Ripple HPC MUA sum','Time since ripple', 'Cum Ripple HPC MUA', 'Cum Non-Ripple HPC MUA'};
 
-
+T_ripples = T(T.numRipplesInUP>0,:);
 output_model = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
     'title_name', 'Ripple Effect on UP Survival', ...
     'feature_labels', model1_labels, ...
@@ -243,6 +302,24 @@ output_model_univariate = plot_UP_survival_counting_process(T_ripples, model1_co
 save(fullfile(output_dir, 'survival_model_counting_process_all.mat'), 'output_model','output_model_univariate');
 save_all_figures(output_dir, []);
 
+
+T_ripples = T(T.numRipplesInUP>1,:);
+output_model = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Ripple Effect on UP Survival (multiple ripples)', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false);
+
+output_model_univariate = plot_UP_survival_counting_process(T_ripples, model1_covariates, ...
+    'title_name', 'Ripple Effect on UP Survival (multiple ripples) (univariate)', ...
+    'feature_labels', model1_labels, ...
+    'strata_var', 'session_id',....
+    'bootstrap',false,...
+    'is_multivariate', false, ...
+    'plot_survival',false);
+
+save(fullfile(output_dir, 'survival_model_counting_process_all_more_than_one_ripple.mat'), 'output_model','output_model_univariate');
+save_all_figures(output_dir, []);
 
 %% 4. Model 1: Individual Ripple Effect on UP State Termination
 fprintf('Running Model 1: Individual Ripple Effect...\n');
