@@ -409,7 +409,9 @@ pred_grid_total$Reconstructed_Effect <-
 p_combined_yes <- ggplot(pred_grid_total, aes(x = lastRippleV1PRE_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
   geom_tile() +
   geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
-  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick", midpoint = 0, name = "Total\nEffect") +
+  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick",
+                       midpoint = 0,limits = c(-0.8, 0.8),
+                       oob = scales::squish,name = "Total\nEffect") +
   theme_minimal() +
   labs(
     title = "Combined Effect Surface (is_near_DOWN = yes)",
@@ -627,6 +629,9 @@ write.csv(raw_iterations_clean, "LastRippleNextUP_GAM_model_raw_bootstrap_iterat
 message("Raw bootstrap iteration file saved successfully.")
 
 
+my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/V1_HC_lastRipple_NextUP"
+setwd(my_folder)
+
 raw_iterations_clean <- read.csv("LastRippleNextUP_GAM_model_raw_bootstrap_iterations.csv",
                                  stringsAsFactors = FALSE)
 
@@ -685,7 +690,7 @@ limits_df <- data.frame(
   Val = c(0, 0.17,      # Deviance Explained (%)
           0, 0.0017,    # Partial Eta-Squared
           0, 0.61,      # Peak-to-Trough Amplitude
-          0, 0.6),      # RMS Effect
+          0, 0.26),      # RMS Effect
   Term = plot_data$Term[1]  # dummy placeholder, any valid factor level works
 )
 

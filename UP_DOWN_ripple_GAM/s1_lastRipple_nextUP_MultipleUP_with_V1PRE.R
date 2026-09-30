@@ -13,7 +13,7 @@ library(dplyr)
 library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+# dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 
 dat$SessionID <- as.factor(dat$SessionID)
@@ -322,22 +322,25 @@ print(summary(mdl_multipleUP))
 # ---------------------------------------------------------
 # Plot 1: Main Effect of last ripple current UP HC
 # ---------------------------------------------------------
-raw_breaks <- c(-2,-1,0,1,2)
+raw_breaks <- c(-3,-2,-1,0,1,2,3)
 z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$curr_lastRippleHPC_z[which.min(abs(ripple_chain_dataset$curr_lastRippleHPC - val))]
 })
 
-cairo_pdf("currentUP_last_ripple_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_multipleUP, select = "s(curr_lastRippleHPC_z):curr_is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-3.5,3.5), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "last ripple near DOWN -> next Up V1", 
     x = "HC bias (current UP last ripple)", 
     y = "Partial Effect"
   )
+print(p_HC_raw)
+
+cairo_pdf("currentUP_last_ripple_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
@@ -349,39 +352,46 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$curr_lastRippleHPC_z[which.min(abs(ripple_chain_dataset$curr_lastRippleHPC - val))]
 })
 
-cairo_pdf("currentUP_last_ripple_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_multipleUP, select = "s(curr_lastRippleHPC_z):curr_is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-3.5,3.5), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "last ripple away from DOWN -> next Up V1", 
     x = "HC bias", 
     y = "Partial Effect"
   )
 print(p_HC_raw)
+
+cairo_pdf("currentUP_last_ripple_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+print(p_HC_raw)
 dev.off()
 
 # ---------------------------------------------------------
 # Plot 3: Current UP V1 PRE near DOWN
 # ---------------------------------------------------------
-raw_breaks <- c(-2,-1,0,1,2)
+raw_breaks <- c(-3,-2,-1,0,1,2,3)
 z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$curr_lastRippleV1PRE_z[which.min(abs(ripple_chain_dataset$curr_lastRippleV1PRE - val))]
 })
 
-cairo_pdf("currentUP_last_ripple_V1PRE_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_V1PRE_raw <- draw(mdl_multipleUP, select = "s(curr_lastRippleV1PRE_z):curr_is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  # coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-4,4), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "curr V1 PRE last ripple near DOWN -> next Up V1", 
     x = "V1 PRE bias (current UP last ripple)", 
     y = "Partial Effect"
   )
+print(p_V1PRE_raw)
+
+cairo_pdf("currentUP_last_ripple_V1PRE_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_V1PRE_raw)
 dev.off()
 
@@ -393,17 +403,20 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$curr_lastRippleV1PRE_z[which.min(abs(ripple_chain_dataset$curr_lastRippleV1PRE - val))]
 })
 
-cairo_pdf("currentUP_last_ripple_V1PRE_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_V1PRE_raw <- draw(mdl_multipleUP, select = "s(curr_lastRippleV1PRE_z):curr_is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-4,4), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "curr V1 PRE last ripple away from DOWN -> next Up V1", 
     x = "V1 PRE bias", 
     y = "Partial Effect"
   )
+print(p_V1PRE_raw)
+
+cairo_pdf("currentUP_last_ripple_V1PRE_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_V1PRE_raw)
 dev.off()
 
@@ -415,17 +428,20 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$prev_lastRippleHPC_z[which.min(abs(ripple_chain_dataset$prev_lastRippleHPC - val))]
 })
 
-cairo_pdf("previousUP_last_ripple_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 p_HC_raw <- draw(mdl_multipleUP, select = "s(prev_lastRippleHPC_z):prev_is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-3.5,3.5), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "prev HC last ripple near DOWN -> next Up V1", 
     x = "HC bias (previous UP last ripple)", 
     y = "Partial Effect"
   )
+print(p_HC_raw)
+
+
+cairo_pdf("previousUP_last_ripple_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
@@ -437,17 +453,20 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$prev_lastRippleHPC_z[which.min(abs(ripple_chain_dataset$prev_lastRippleHPC - val))]
 })
 
-cairo_pdf("previousUP_last_ripple_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_HC_raw <- draw(mdl_multipleUP, select = "s(prev_lastRippleHPC_z):prev_is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-3.5,3.5), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "prev HC last ripple away from DOWN -> next Up V1", 
     x = "HC bias", 
     y = "Partial Effect"
   )
+print(p_HC_raw)
+
+cairo_pdf("previousUP_last_ripple_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_HC_raw)
 dev.off()
 
@@ -459,17 +478,20 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$prev_lastRippleV1PRE_z[which.min(abs(ripple_chain_dataset$prev_lastRippleV1PRE - val))]
 })
 
-cairo_pdf("previousUP_last_ripple_V1PRE_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
+
 p_V1PRE_raw <- draw(mdl_multipleUP, select = "s(prev_lastRippleV1PRE_z):prev_is_near_DOWNyes", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-4,4), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "prev V1 PRE last ripple near DOWN -> next Up V1", 
     x = "V1 PRE bias (previous UP last ripple)", 
     y = "Partial Effect"
   )
+print(p_V1PRE_raw)
+
+cairo_pdf("previousUP_last_ripple_V1PRE_nearDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_V1PRE_raw)
 dev.off()
 
@@ -481,17 +503,20 @@ z_breaks <- sapply(raw_breaks, function(val) {
   ripple_chain_dataset$prev_lastRippleV1PRE_z[which.min(abs(ripple_chain_dataset$prev_lastRippleV1PRE - val))]
 })
 
-cairo_pdf("previousUP_last_ripple_V1PRE_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 p_V1PRE_raw <- draw(mdl_multipleUP, select = "s(prev_lastRippleV1PRE_z):prev_is_near_DOWNno", residuals = FALSE, rug = FALSE) + 
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  coord_cartesian(ylim = c(-0.4, 0.4)) +
+  coord_cartesian(xlim = c(-4,4), ylim = c(-0.42, 0.42), expand = FALSE) +
   labs(
     title = "prev V1 PRE last ripple away from DOWN -> next Up V1", 
     x = "V1 PRE bias", 
     y = "Partial Effect"
   )
+print(p_V1PRE_raw)
+
+
+cairo_pdf("previousUP_last_ripple_V1PRE_awayDOWN_nextUP.pdf", width = 4.3, height = 4.3)
 print(p_V1PRE_raw)
 dev.off()
 
@@ -799,4 +824,4 @@ combined_results <- model_stats %>%
   left_join(flat_bootstrap_results, by = "Term")
 
 write.csv(combined_results, "MultipleUP_GAM_model_CI_output.csv", row.names = FALSE)
-message("\nAnalysis Pipeline Complete! Saved 'MultipleUP_GAM_model_CI_output.csv' and figures.")
+message("\nAnalysis Pipeline Complete! Saved 'MultipleUP_GAM_model_CI_output.csv' and figures.")

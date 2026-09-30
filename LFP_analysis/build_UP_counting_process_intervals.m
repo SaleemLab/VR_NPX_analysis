@@ -1,4 +1,5 @@
-function T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spiketimes, HC_MUA_spiketimes, varargin)
+function T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spiketimes, HC_MUA_spiketimes, ...
+    ripple_HC_logodds, ripple_HC_logodds_PRE, ripple_V1_logodds, ripple_V1_logodds_PRE, varargin)
 % BUILD_UP_COUNTING_PROCESS_INTERVALS Slices UP state events into counting process
 % intervals [start, stop) bounded by hippocampal ripple onsets and offsets.
 %
@@ -10,11 +11,29 @@ function T = build_UP_counting_process_intervals(merged_event_info, V1_MUA_spike
 %       .UP_ints              - Nx2 matrix [onset, offset] of UP states (abs time)
 %       .UP_hemisphere_id     - Nx1 vector (1=Left, 2=Right)
 %       .ripples_ints         - Mx2 matrix [onset, offset] of ripples (abs time)
+%       .ripples_peaktimes    - Mx1 vector of ripple peak times (abs time)
 %       .ripples_power        - Mx1 vector of LFP ripple z-score peak powers
 %       .session_id           - Nx1 vector of session IDs
 %       .subject_id           - (Optional) Nx1 vector of subject IDs
 %   V1_MUA_spiketimes - Cell array {1} (Left V1) and {2} (Right V1) of spike times
 %   HC_MUA_spiketimes - Cell array {1} (Left HPC) and {2} (Right HPC) of spike times
+%   ripple_HC_logodds, ripple_HC_logodds_PRE       - Mx1 vectors, HPC reactivation log-odds
+%                                                     bias for each ripple event (post-ripple /
+%                                                     pre-ripple windows), aligned to
+%                                                     merged_event_info.ripples_* order.
+%   ripple_V1_logodds, ripple_V1_logodds_PRE       - Mx1 vectors, V1 reactivation log-odds
+%                                                     bias for each ripple event (post/pre),
+%                                                     same order/alignment.
+%
+% For each ripple, the signed geometric mean of its HC and V1 log-odds bias is also
+% computed as a same-track coherence index (coherence = sign(V1*HC)*sqrt(|V1*HC|),
+% and coherencePRE using the PRE-ripple bias). Both the raw log-odds and the derived
+% coherence are recorded on the ripple's own interval row (rippleHC_logodds, ...,
+% rippleCoherence, rippleCoherencePRE) and carried forward onto every subsequent
+% non-ripple interval until the next ripple (lastRippleHC_logodds, ...,
+% lastRippleCoherence, lastRippleCoherencePRE), mirroring how lastRipplePower etc.
+% are carried forward, since ripple content should keep influencing hazard after
+% the ripple itself has ended.
 %
 % Output:
 %   T                 - MATLAB table containing interval-level counting process data.
@@ -103,6 +122,13 @@ censoring_list     = cell(nUP, 1);
 inRipple_list      = cell(nUP, 1);
 ripplePower_list   = cell(nUP, 1);
 
+rippleHC_logodds_list     = cell(nUP, 1);
+rippleV1_logodds_list     = cell(nUP, 1);
+rippleHC_logoddsPRE_list  = cell(nUP, 1);
+rippleV1_logoddsPRE_list  = cell(nUP, 1);
+rippleCoherence_list      = cell(nUP, 1);
+rippleCoherencePRE_list   = cell(nUP, 1);
+
 rippleHPC_MUA_sum_list   = cell(nUP, 1);
 rippleHPC_MUA_mean_list  = cell(nUP, 1);
 rippleV1_MUA_sum_list    = cell(nUP, 1);
@@ -146,6 +172,13 @@ lastRippleV1_MUA_sum_list   = cell(nUP, 1);
 lastRippleV1_MUA_mean_list  = cell(nUP, 1);
 timeSinceLastRipple_list    = cell(nUP, 1);
 
+lastRippleHC_logodds_list     = cell(nUP, 1);
+lastRippleV1_logodds_list     = cell(nUP, 1);
+lastRippleHC_logoddsPRE_list  = cell(nUP, 1);
+lastRippleV1_logoddsPRE_list  = cell(nUP, 1);
+lastRippleCoherence_list      = cell(nUP, 1);
+lastRippleCoherencePRE_list   = cell(nUP, 1);
+
 %% 3. Slice UP State Events into Time-Varying Intervals
 for iUP = 1:nUP
     upOnset  = merged_event_info.UP_ints(iUP, 1);
@@ -188,8 +221,14 @@ for iUP = 1:nUP
     % overlapIdx = find(ripIntsAbs(:,2) > upOnset & ripIntsAbs(:,1) < upOffset);
     overlapIdx = find(ripPeakAbs(:,1) > upOnset & ripPeakAbs(:,1) < upOffset);
 
-    ripRel = [];
-    ripPow = [];
+    ripRel    = [];
+    ripPow    = [];
+    ripHC     = [];
+    ripV1     = [];
+    ripHCPRE  = [];
+    ripV1PRE  = [];
+    ripCoh    = [];
+    ripCohPRE = [];
     if ~isempty(overlapIdx)
         for r = 1:length(overlapIdx)
             idx = overlapIdx(r);
@@ -198,6 +237,18 @@ for iUP = 1:nUP
             if rOff - rOn > min_dur
                 ripRel = [ripRel; rOn, rOff];
                 ripPow = [ripPow; ripPowerAbs(idx)];
+
+                hcVal    = ripple_HC_logodds(idx);
+                v1Val    = ripple_V1_logodds(idx);
+                hcPREVal = ripple_HC_logodds_PRE(idx);
+                v1PREVal = ripple_V1_logodds_PRE(idx);
+
+                ripHC     = [ripHC; hcVal];
+                ripV1     = [ripV1; v1Val];
+                ripHCPRE  = [ripHCPRE; hcPREVal];
+                ripV1PRE  = [ripV1PRE; v1PREVal];
+                ripCoh    = [ripCoh; sign(v1Val * hcVal) * sqrt(abs(v1Val * hcVal))]; % Coherence between V1 and HC at ripple
+                ripCohPRE = [ripCohPRE; sign(v1PREVal * hcVal) * sqrt(abs(v1PREVal * hcVal))]; % Coherence between PRE V1 and HC
             end
         end
     end
@@ -235,7 +286,14 @@ for iUP = 1:nUP
     i_cens     = zeros(nInt, 1);
     i_inRip    = zeros(nInt, 1);
     i_ripPow   = zeros(nInt, 1);
-    
+
+    i_ripHC     = zeros(nInt, 1);
+    i_ripV1     = zeros(nInt, 1);
+    i_ripHCPRE  = zeros(nInt, 1);
+    i_ripV1PRE  = zeros(nInt, 1);
+    i_ripCoh    = zeros(nInt, 1);
+    i_ripCohPRE = zeros(nInt, 1);
+
     i_ripHpcSum   = zeros(nInt, 1);
     i_ripHpcMean  = zeros(nInt, 1);
     i_ripV1Sum    = zeros(nInt, 1);
@@ -276,6 +334,13 @@ for iUP = 1:nUP
     i_lastRipV1Mean       = zeros(nInt, 1);
     i_timeSinceLastRipple = zeros(nInt, 1);
 
+    i_lastRipHC     = nan(nInt, 1);
+    i_lastRipV1     = nan(nInt, 1);
+    i_lastRipHCPRE  = nan(nInt, 1);
+    i_lastRipV1PRE  = nan(nInt, 1);
+    i_lastRipCoh    = nan(nInt, 1);
+    i_lastRipCohPRE = nan(nInt, 1);
+
     runningRipHPC    = 0;
     runningNonRipHPC = 0;
     runningRipV1     = 0;
@@ -288,7 +353,14 @@ for iUP = 1:nUP
     last_rip_v1_sum   = 0;
     last_rip_v1_mean  = 0;
     last_rip_off      = NaN;
-    
+
+    last_rip_HC     = nan;
+    last_rip_V1     = nan;
+    last_rip_HCPRE  = nan;
+    last_rip_V1PRE  = nan;
+    last_rip_coh    = nan;
+    last_rip_cohPRE = nan;
+
     for j = 1:nInt
         t0 = cuts(j);
         t1 = cuts(j+1);
@@ -301,6 +373,7 @@ for iUP = 1:nUP
         % Check if [t0, t1) is a ripple interval
         isRip = false;
         powVal = 0;
+        matchedRipIdx = NaN;
         if ~isempty(ripRel)
             for r = 1:size(ripRel, 1)
                 ovStart = max(t0, ripRel(r,1));
@@ -308,6 +381,7 @@ for iUP = 1:nUP
                 if (ovStop - ovStart) >= 0.5 * dt || (ovStop - ovStart) >= 0.01
                     isRip = true;
                     powVal = ripPow(r);
+                    matchedRipIdx = r;
                     break;
                 end
             end
@@ -349,7 +423,14 @@ for iUP = 1:nUP
         if isRip
             i_inRip(j)     = 1;
             i_ripPow(j)    = powVal;
-            
+
+            i_ripHC(j)     = ripHC(matchedRipIdx);
+            i_ripV1(j)     = ripV1(matchedRipIdx);
+            i_ripHCPRE(j)  = ripHCPRE(matchedRipIdx);
+            i_ripV1PRE(j)  = ripV1PRE(matchedRipIdx);
+            i_ripCoh(j)    = ripCoh(matchedRipIdx);
+            i_ripCohPRE(j) = ripCohPRE(matchedRipIdx);
+
             % Ripple-specific MUA (0 for non-ripple)
             i_ripHpcSum(j)  = hpcSumVal;
             i_ripHpcMean(j) = hpcMeanVal;
@@ -371,7 +452,14 @@ for iUP = 1:nUP
             last_rip_hpc_mean = hpcMeanVal;
             last_rip_v1_sum   = v1SumVal;
             last_rip_v1_mean  = v1MeanVal;
-            
+
+            last_rip_HC     = i_ripHC(j);
+            last_rip_V1     = i_ripV1(j);
+            last_rip_HCPRE  = i_ripHCPRE(j);
+            last_rip_V1PRE  = i_ripV1PRE(j);
+            last_rip_coh    = i_ripCoh(j);
+            last_rip_cohPRE = i_ripCohPRE(j);
+
             % Update last ripple offset
             if ~isempty(ripRel)
                 for r = 1:size(ripRel, 1)
@@ -428,6 +516,13 @@ for iUP = 1:nUP
         i_lastRipV1Sum(j)   = last_rip_v1_sum;
         i_lastRipV1Mean(j)  = last_rip_v1_mean;
 
+        i_lastRipHC(j)     = last_rip_HC;
+        i_lastRipV1(j)     = last_rip_V1;
+        i_lastRipHCPRE(j)  = last_rip_HCPRE;
+        i_lastRipV1PRE(j)  = last_rip_V1PRE;
+        i_lastRipCoh(j)    = last_rip_coh;
+        i_lastRipCohPRE(j) = last_rip_cohPRE;
+
         % Event status: last interval ends in DOWN transition (event=1, censoring=0)
         if j == nInt
             i_event(j) = 1;
@@ -450,7 +545,14 @@ for iUP = 1:nUP
     censoring_list{iUP}     = i_cens;
     inRipple_list{iUP}      = i_inRip;
     ripplePower_list{iUP}   = i_ripPow;
-    
+
+    rippleHC_logodds_list{iUP}    = i_ripHC;
+    rippleV1_logodds_list{iUP}    = i_ripV1;
+    rippleHC_logoddsPRE_list{iUP} = i_ripHCPRE;
+    rippleV1_logoddsPRE_list{iUP} = i_ripV1PRE;
+    rippleCoherence_list{iUP}     = i_ripCoh;
+    rippleCoherencePRE_list{iUP}  = i_ripCohPRE;
+
     rippleHPC_MUA_sum_list{iUP}   = i_ripHpcSum;
     rippleHPC_MUA_mean_list{iUP}  = i_ripHpcMean;
     rippleV1_MUA_sum_list{iUP}    = i_ripV1Sum;
@@ -495,6 +597,13 @@ for iUP = 1:nUP
     lastRippleV1_MUA_sum_list{iUP}   = i_lastRipV1Sum;
     lastRippleV1_MUA_mean_list{iUP}  = i_lastRipV1Mean;
     timeSinceLastRipple_list{iUP}    = i_timeSinceLastRipple;
+
+    lastRippleHC_logodds_list{iUP}    = i_lastRipHC;
+    lastRippleV1_logodds_list{iUP}    = i_lastRipV1;
+    lastRippleHC_logoddsPRE_list{iUP} = i_lastRipHCPRE;
+    lastRippleV1_logoddsPRE_list{iUP} = i_lastRipV1PRE;
+    lastRippleCoherence_list{iUP}     = i_lastRipCoh;
+    lastRippleCoherencePRE_list{iUP}  = i_lastRipCohPRE;
 end
 
 % Concatenate all intervals into a single table
@@ -510,6 +619,12 @@ T = table(...
     vertcat(censoring_list{:}), ...
     vertcat(inRipple_list{:}), ...
     vertcat(ripplePower_list{:}), ...
+    vertcat(rippleHC_logodds_list{:}), ...
+    vertcat(rippleV1_logodds_list{:}), ...
+    vertcat(rippleHC_logoddsPRE_list{:}), ...
+    vertcat(rippleV1_logoddsPRE_list{:}), ...
+    vertcat(rippleCoherence_list{:}), ...
+    vertcat(rippleCoherencePRE_list{:}), ...
     vertcat(rippleHPC_MUA_sum_list{:}), ...
     vertcat(rippleHPC_MUA_mean_list{:}), ...
     vertcat(rippleV1_MUA_sum_list{:}), ...
@@ -544,10 +659,18 @@ T = table(...
     vertcat(lastRippleV1_MUA_sum_list{:}), ...
     vertcat(lastRippleV1_MUA_mean_list{:}), ...
     vertcat(timeSinceLastRipple_list{:}), ...
+    vertcat(lastRippleHC_logodds_list{:}), ...
+    vertcat(lastRippleV1_logodds_list{:}), ...
+    vertcat(lastRippleHC_logoddsPRE_list{:}), ...
+    vertcat(lastRippleV1_logoddsPRE_list{:}), ...
+    vertcat(lastRippleCoherence_list{:}), ...
+    vertcat(lastRippleCoherencePRE_list{:}), ...
     'VariableNames', { ...
     'upID', 'session_id', 'subject_id', 'hemisphere_id', ...
     'start', 'stop', 'duration', 'event', 'censoring', ...
     'inRipple', 'ripplePower', ...
+    'rippleHC_logodds', 'rippleV1_logodds', 'rippleHC_logoddsPRE', 'rippleV1_logoddsPRE', ...
+    'rippleCoherence', 'rippleCoherencePRE', ...
     'rippleHPC_MUA_sum', 'rippleHPC_MUA_mean', ...
     'rippleV1_MUA_sum', 'rippleV1_MUA_mean', ...
     'nonRippleHPC_MUA_sum', 'nonRippleHPC_MUA_mean', ...
@@ -562,7 +685,9 @@ T = table(...
     'cumRippleCount_incl', ...
     'hasRipple', 'numRipplesInUP', ...
     'lastRipplePower', 'lastRippleHPC_MUA_sum', 'lastRippleHPC_MUA_mean', ...
-    'lastRippleV1_MUA_sum', 'lastRippleV1_MUA_mean', 'timeSinceLastRipple'} ...
+    'lastRippleV1_MUA_sum', 'lastRippleV1_MUA_mean', 'timeSinceLastRipple', ...
+    'lastRippleHC_logodds', 'lastRippleV1_logodds', 'lastRippleHC_logoddsPRE', 'lastRippleV1_logoddsPRE', ...
+    'lastRippleCoherence', 'lastRippleCoherencePRE'} ...
 );
 
 end

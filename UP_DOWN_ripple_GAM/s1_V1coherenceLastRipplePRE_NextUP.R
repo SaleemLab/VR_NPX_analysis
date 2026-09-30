@@ -61,14 +61,14 @@ dat$geo_coherenceNext <- sign(dat$lateUPHPC * dat$nextUPV1) *
 dat$geo_coherenceNextV1 <- sign(dat$lateUPV1 * dat$nextUPV1) * 
   sqrt(abs(dat$lateUPV1 * dat$nextUPV1))
 
-dat$geo_coherenceLateNextV1 <- sign(dat$lateUPV1 * dat$nextUPV1) * 
-  sqrt(abs(dat$lateUPV1 * dat$nextUPV1))
+# dat$geo_coherenceLateNextV1 <- sign(dat$lateUPV1 * dat$nextUPV1) * 
+#   sqrt(abs(dat$lateUPV1 * dat$nextUPV1))
 
 dat$geo_coherenceRippleNextV1 <- sign(dat$lastRippleV1 * dat$nextUPV1) * 
   sqrt(abs(dat$lastRippleV1 * dat$nextUPV1))
 
 dat$geo_coherenceRippleNextV1PRE <- sign(dat$lastRippleV1PRE * dat$nextUPV1) * 
-  sqrt(abs(dat$lastRippleV1 * dat$nextUPV1))
+  sqrt(abs(dat$lastRippleV1PRE * dat$nextUPV1))
 
 dat$geo_coherencePRE <- sign(dat$lastRippleV1PRE * dat$lastRippleHPC) * 
   sqrt(abs(dat$lastRippleV1PRE * dat$lastRippleHPC))
@@ -78,6 +78,12 @@ dat$geo_coherenceEarlyUPLastRipple <- sign(dat$earlyUPV1 * dat$lastRippleHPC) *
 
 dat$geo_coherenceEarlyNextV1 <- sign(dat$earlyUPV1 * dat$nextUPV1) * 
   sqrt(abs(dat$earlyUPV1 * dat$nextUPV1))
+
+dat$geo_coherenceFirstPRE <- sign(dat$firstRippleV1PRE * dat$firstRippleHPC) * 
+  sqrt(abs(dat$firstRippleV1PRE * dat$firstRippleHPC))
+
+dat$geo_coherenceFirstNextPRE <- sign(dat$firstRippleV1PRE * dat$nextUPV1) * 
+  sqrt(abs(dat$firstRippleV1PRE * dat$nextUPV1))
 
 
 dat_Ripple <- dat %>%
@@ -226,30 +232,33 @@ z_thresh = 3
 z_cols <- c(
   # "geo_coherence_z","geo_coherenceRippleNext_z","geo_coherenceNext_z",\
   # "geo_coherenceLate_z",
-  "geo_coherencePRE_z",
   "geo_coherenceRippleNextV1PRE_z",
-  # "geo_coherenceLateNextV1_z",
-  "nextDOWNlag_z","nextDOWNSOPower_z",
+  # "geo_coherenceRippleNextV1_z",
+  # "geo_coherence_z",
   "log_TimefromLastRipple_z",
   "log_nextDOWNDuration_z",
-  "lastRippleMUArate_z"
-  # "lastRipplePower_z"
+  "lastRippleMUArate_z",
+  # "lastRipplePower_z",
+  # "lastRippleNormalisedUP_z",
+  "nextDOWNlag_z","nextDOWNSOPower_z",
+  "geo_coherencePRE_z"
 )
 
+
+# 
 # z_cols <- c(
 #   # "geo_coherence_z","geo_coherenceRippleNext_z","geo_coherenceNext_z",\
-#   "geo_coherenceEarlyUPLastRipple_z",
-#   "geo_coherenceEarlyNextV1_z",
-#   # "geo_coherencePRE_z",
-#   # "geo_coherenceRippleNextV1_z",
-#   # "geo_coherenceLateNextV1_z",
-#   "nextDOWNlag_z","nextDOWNSOPower_z",
+#   # "geo_coherenceLate_z",
+#   # "geo_coherenceRippleNextV1PRE_z",
+#   "geo_coherenceRippleNextV1_z",
+#   "geo_coherence_z",
 #   "log_TimefromLastRipple_z",
 #   "log_nextDOWNDuration_z",
 #   "lastRippleMUArate_z"
-#   # "lastRipplePower_z"
+#   # "lastRipplePower_z",
+#   # "lastRippleNormalisedUP_z",
+#   # "nextDOWNlag_z","nextDOWNSOPower_z",
 # )
-
 
 dat_clean1 <- dat_clean %>%
   filter(
@@ -268,26 +277,23 @@ dat_clean1 <- dat_clean %>%
 
 # geo_coherenceRippleNextV1PRE_z
 # geo_coherenceLateNextV1_z
+# geo_coherencePRE_z
+
 mdl_final <- bam(geo_coherenceRippleNextV1PRE_z ~ 
-                   # is_near_DOWN +
-                   # s(geo_coherenceLate_z,by = is_near_DOWN,k=5)+
-                   # s(lastRipplePower_z,k=5)+
+                   # 
+                   s(log_TimefromLastRipple_z, k = 5) +
+                   s(log_nextDOWNDuration_z, k = 5) +
+                   ti(log_TimefromLastRipple_z, log_nextDOWNDuration_z, k = 5)+
+                   
                    s(lastRippleMUArate_z,k=5)+
-                   # s(log_TimefromLastRipple_z, k = 5) +
-                   # s(log_nextDOWNDuration_z, k = 5) +
-                   # s(geo_coherenceLate_z, k = 5) +
                    s(geo_coherencePRE_z, k = 5) +
                    ti(lastRippleMUArate_z, geo_coherencePRE_z, k = 5)+
-                   # ti(log_TimefromLastRipple_z, geo_coherenceLate_z, k = 5)+
-                   
-                   # ti(lastRipplePower_z, log_nextDOWNDuration_z, k = 5)+
-                   # ti(log_TimefromLastRipple_z, log_nextDOWNDuration_z, k = 5)+
-                   # ti(log_TimefromLastRipple_z, lastRipplePower_z, k = 5)+
-                   
-                   # s(nextDOWNSOPower_z, k = 5) +
+                   s(nextDOWNSOPower_z, k = 5) +
+                   ti(nextDOWNSOPower_z, geo_coherencePRE_z, k = 5)+
                    # s(nextDOWNlag_z, k = 5) +
-                   # ti(nextDOWNSOPower_z, nextDOWNlag_z, k = 5)+
-                   # ti(lastRipplePower_z, nextDOWNSOPower_z, k = 5)+
+                   # ti(log_nextDOWNDuration_z, geo_coherencePRE_z, k = 5)+
+                   # ti(log_TimefromLastRipple_z, geo_coherencePRE_z, k = 5)+
+                   # ti(lastRippleMUArate_z, nextDOWNSOPower_z, k = 5)+
                    # ti(lastRipplePower_z, nextDOWNlag_z, k = 5)+
                    
                    # s(TimetoNextUP_z, k = 5) +
@@ -304,7 +310,38 @@ mdl_final <- bam(geo_coherenceRippleNextV1PRE_z ~
 #message("\n--- FINAL MODEL SUMMARY ---")
 print(summary(mdl_final))
 
-library(ggplot2)
+
+# 
+# ### nextDOWN lag -> nextDOWN power
+# # Calculate scaling factors
+# # raw_breaks <- c(0,0.1,0.2,0.3,0.4,0.5)
+# raw_breaks <- c(0,0.1,0.2,0.3)
+# z_breaks <- sapply(raw_breaks, function(val) {
+#   dat_clean1$nextDOWNlag_z[which.min(abs(dat_clean1$nextDOWNlag - val))]
+# })
+# 
+# 
+# p_lag_raw <- draw(mdl_final, select = "s(nextDOWNlag_z)", residuals = FALSE, rug = FALSE) +
+#   theme_bw(base_family = "Arial") +
+#   theme(aspect.ratio = 1) +
+#   scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+#   # coord_cartesian() +
+#   coord_cartesian(xlim = c(-1.2,2.3),ylim = c(-0.17,0.27),expand = FALSE) +
+#   
+#   labs(
+#     title = "Next DOWN lag predicts geo_coherenceRippleNextV1PRE_z",
+#     x = "DOWN lag",
+#     y = "Partial Effect"
+#   )
+# # dev.new(noRStudioGD = TRUE)
+# print(p_lag_raw)
+# 
+# cairo_pdf("DownLag_and_SOPower.pdf", width = 4.3, height = 4.3)
+# print(p_lag_raw)
+# dev.off()
+
+
+# library(ggplot2)
 # 
 # dat_clean1 <- dat_clean %>%
 #   filter(
@@ -312,25 +349,27 @@ library(ggplot2)
 #     (RippleCounts>0)
 #   )
 
-ggplot(dat_clean1, aes(x = geo_coherenceLate, y = geo_coherenceLateNextV1)) +
-  geom_hex(bins = 100) +
-  scale_fill_viridis_c() +
-  geom_smooth(method = "lm", color = "red", se = FALSE) +
-  theme_minimal() +
-  labs(title = "Density of geo_coherenceLate vs geo_coherenceLateNextV1",
-       x = "geo_coherenceLate", y = "geo_coherenceLateNextV1",
-       fill = "Count")
+# ggplot(dat_clean1, aes(x = geo_coherenceLate, y = geo_coherenceLateNextV1)) +
+#   geom_hex(bins = 100) +
+#   scale_fill_viridis_c() +
+#   geom_smooth(method = "lm", color = "red", se = FALSE) +
+#   theme_minimal() +
+#   labs(title = "Density of geo_coherenceLate vs geo_coherenceLateNextV1",
+#        x = "geo_coherenceLate", y = "geo_coherenceLateNextV1",
+#        fill = "Count")
 
 ### geo_coherenceLate_z -> geo_coherenceLateNextV1_z
+
+
 
 # Calculate scaling factors
 raw_breaks <- c(-2,-1,0,1,2)
 z_breaks <- sapply(raw_breaks, function(val) {
-  dat_clean1$geo_coherenceEarlyUPLastRipple_z[which.min(abs(dat_clean1$geo_coherenceEarlyUPLastRipple - val))]
+  dat_clean1$geo_coherencePRE_z[which.min(abs(dat_clean1$geo_coherencePRE - val))]
 })
 
 # cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
-p_lag_raw <- draw(mdl_final, select = "s(geo_coherenceEarlyUPLastRipple_z)", residuals = FALSE, rug = FALSE) +
+p_lag_raw <- draw(mdl_final, select = "s(geo_coherencePRE_z)", residuals = FALSE, rug = FALSE) +
   # p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
   theme_bw(base_family = "Arial") +
   theme(aspect.ratio = 1) +
@@ -338,25 +377,56 @@ p_lag_raw <- draw(mdl_final, select = "s(geo_coherenceEarlyUPLastRipple_z)", res
   # coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
   # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
   labs(
-    title = "EarlyUP and last ripple HC coherence effect on earlyUP - NextUP V1 coherence",
-    x = "Early UP HC-V1 coherence",
+    # title = "EarlyUP and last ripple HC coherence effect on earlyUP - NextUP V1 coherence",
+    title = "last ripple preV1-HC coherence effect on last ripple preV1-NextUP V1 coherence",
+    x = "last ripple preV1-HC coherence",
     y = "Partial Effect"
   )
 # dev.new(noRStudioGD = TRUE)
 print(p_lag_raw)
 
 
+
+
+### last ripple Mua -> NextUP V1
+
+# Calculate scaling factors
+raw_breaks <- c(0.2,0.4,0.6,0.8,1)
+z_breaks <- sapply(raw_breaks, function(val) {
+  dat_clean1$lastRippleMUArate_z[which.min(abs(dat_clean1$lastRippleMUArate - val))]
+})
+
+# cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
+p_lag_raw <- draw(mdl_final, select = "s(lastRippleMUArate_z)", residuals = FALSE, rug = FALSE) +
+  # p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
+  theme_bw(base_family = "Arial") +
+  theme(aspect.ratio = 1) +
+  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
+  # coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
+  # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
+  labs(
+    title = "Ripple HC MUA rate on lateUP to nextUP V1 coherence",
+    x = "Ripple HC MUA",
+    y = "Partial Effect"
+  )
+# dev.new(noRStudioGD = TRUE)
+print(p_lag_raw)
+cairo_pdf("lastRippleMUArate_predicts_lastRipplePREV1_NextUPV1_coherence.pdf", width = 4.3, height = 4.3)
+# dev.new(noRStudioGD = TRUE)
+print(p_lag_raw)
+dev.off()
+
 # 
-# ### last ripple Mua -> NextUP V1
+# ### last ripple power -> NextUP V1
 # 
 # # Calculate scaling factors
-# raw_breaks <- c(0.25,0.5,0.75,1)
+# raw_breaks <- c(5,7,9,11,13,15)
 # z_breaks <- sapply(raw_breaks, function(val) {
-#   dat_clean1$lastRippleMUArate_z[which.min(abs(dat_clean1$lastRippleMUArate - val))]
+#   dat_clean1$lastRipplePower_z[which.min(abs(dat_clean1$lastRipplePower - val))]
 # })
 # 
 # # cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
-# p_lag_raw <- draw(mdl_final, select = "s(lastRippleMUArate_z)", residuals = FALSE, rug = FALSE) +
+# p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z)", residuals = FALSE, rug = FALSE) +
 #   # p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
 #   theme_bw(base_family = "Arial") +
 #   theme(aspect.ratio = 1) +
@@ -364,38 +434,12 @@ print(p_lag_raw)
 #   # coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
 #   # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
 #   labs(
-#     title = "Ripple HC MUA rate on lateUP to nextUP V1 coherence",
-#     x = "Ripple HC MUA",
+#     title = "Ripple power on last ripple coherence",
+#     x = "Ripple power",
 #     y = "Partial Effect"
 #   )
 # # dev.new(noRStudioGD = TRUE)
 # print(p_lag_raw)
-
-
-
-### last ripple power -> NextUP V1
-
-# Calculate scaling factors
-raw_breaks <- c(5,7,9,11,13,15)
-z_breaks <- sapply(raw_breaks, function(val) {
-  dat_clean1$lastRipplePower_z[which.min(abs(dat_clean1$lastRipplePower - val))]
-})
-
-# cairo_pdf("lateUPHPC_nextUP", width = 4.3, height = 4.3)
-p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z)", residuals = FALSE, rug = FALSE) +
-  # p_lag_raw <- draw(mdl_final, select = "s(lastRipplePower_z):is_near_DOWNno", residuals = FALSE, rug = FALSE) +
-  theme_bw(base_family = "Arial") +
-  theme(aspect.ratio = 1) +
-  scale_x_continuous(breaks = z_breaks, labels = raw_breaks) +
-  # coord_cartesian(xlim = c(-1.3,1.8),ylim=c(-0.15,0.12),expand = FALSE) +
-  # coord_cartesian(xlim = c(-1.3,2),ylim=c(-0.1,0.06),expand = FALSE) +
-  labs(
-    title = "Ripple power on last ripple coherence",
-    x = "Ripple power",
-    y = "Partial Effect"
-  )
-# dev.new(noRStudioGD = TRUE)
-print(p_lag_raw)
 
 
 ### Log Time from last ripple effect
@@ -427,7 +471,7 @@ p_lag_raw <- draw(mdl_final, select = "s(log_TimefromLastRipple_z)", residuals =
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_labels) +
-  coord_cartesian(xlim = c(-2.8, 1.41),ylim = c(-0.06, 0.11),expand = FALSE) +
+  coord_cartesian(xlim = c(-2.8, 1.41),ylim = c(-0.1, 0.3),expand = FALSE) +
   
   labs(
     title = "TimefromLastRipple on LateUP-NextUP V1 coherence", 
@@ -436,7 +480,7 @@ p_lag_raw <- draw(mdl_final, select = "s(log_TimefromLastRipple_z)", residuals =
   )
 print(p_lag_raw)
 
-cairo_pdf("LogTimefromLastRipple_lastRippleNextUPCoherence.pdf", width = 4.3, height = 4.3)
+cairo_pdf("LogTimefromLastRipple_lastRipplePREV1_NextUPV1_coherence.pdf", width = 4.3, height = 4.3)
 # dev.new(noRStudioGD = TRUE)
 print(p_lag_raw)
 dev.off()
@@ -475,7 +519,7 @@ p_lag_raw <- draw(mdl_final, select = "s(log_nextDOWNDuration_z)", residuals = F
   theme_bw(base_family = "Arial") + 
   theme(aspect.ratio = 1) +
   scale_x_continuous(breaks = z_breaks, labels = raw_labels) +
-  coord_cartesian(xlim = c(-2.6, 1.7),ylim = c(-0.08, 0.11),expand = FALSE) +
+  # coord_cartesian(xlim = c(-2.6, 1.7),ylim = c(-0.08, 0.11),expand = FALSE) +
   
   labs(
     title = "log_nextDOWNDuration on lateUP nextUP V1 coherence", 
@@ -485,7 +529,7 @@ p_lag_raw <- draw(mdl_final, select = "s(log_nextDOWNDuration_z)", residuals = F
 print(p_lag_raw)
 
 
-cairo_pdf("log_nextDOWNDuration_LateUP_NextUP_V1_coherence.pdf", width = 4.3, height = 4.3)
+cairo_pdf("log_nextDOWNDuration_lastRipplePREV1_NextUPV1_coherence.pdf", width = 4.3, height = 4.3)
 # dev.new(noRStudioGD = TRUE)
 print(p_lag_raw)
 dev.off()
@@ -522,7 +566,8 @@ pred_grid_ti <- expand.grid(
   nextDOWNDuration     = raw_range_down_dur,
   nextDOWNSOPower_z    = 0, # Constant mean for other model variables
   nextDOWNlag_z        = 0, # Constant mean for other model variables
-  lastRipplePower_z    = 0, # Constant mean for other model variables
+  lastRippleMUArate_z    = 0, # Constant mean for other model variables
+  geo_coherencePRE_z    = 0, # Constant mean for other model variables
   AnimalID             = dat_clean1$AnimalID[1],
   SessionID            = dat_clean1$SessionID[1]
 )
@@ -574,7 +619,7 @@ p_interaction_raw_scale <- ggplot(
 print(p_interaction_raw_scale)
 
 # 6. Save figure
-cairo_pdf("TimefromLastRipple_DOWNDuration_ti_lateUP_nextUP_V1_cohernece.pdf", width = 4.3, height = 4.3)
+cairo_pdf("TimefromLastRipple_DOWNDuration_ti_lastRipplePREV1_nextUPV1_cohernece.pdf", width = 4.3, height = 4.3)
 print(p_interaction_raw_scale)
 dev.off()
 
@@ -615,7 +660,8 @@ pred_grid_ti <- expand.grid(
   nextDOWNDuration     = raw_range_down_dur,
   nextDOWNSOPower_z    = 0, # Constant mean for other model variables
   nextDOWNlag_z        = 0, # Constant mean for other model variables
-  lastRipplePower_z    = 0, # Constant mean for other model variables
+  lastRippleMUArate_z    = 0, # Constant mean for other model variables
+  geo_coherencePRE_z    = 0, # Constant mean for other model variables
   AnimalID             = dat_clean1$AnimalID[1],
   SessionID            = dat_clean1$SessionID[1]
 )
@@ -655,116 +701,28 @@ p_interaction_raw_scale <- ggplot(
     mid = "white", 
     high = "firebrick", 
     midpoint = 0, 
-    limits = c(0, 0.155), 
+    limits = c(0, 0.25),
     oob = scales::squish,
-    name = "Effect"
+    name = "Total effect"
   ) +
   theme_minimal() +
   theme(aspect.ratio = 1) +
   labs(
-    title = "Pure Tensor Interaction (ti + s + s Term)",
-    subtitle = "Total Variance (Raw Scale Mapping)",
-    x = "Time from Last Ripple (Raw)", 
-    y = "Next DOWN Duration (Raw)"
+    title = "Interaction between Time from last ripple and Next DOWN duration (ti + s + s Term)",
+    subtitle = "Total Variance",
+    x = "Time from Last Ripple (s)", 
+    y = "Next DOWN Duration (s)"
   )
 
 print(p_interaction_raw_scale)
 
 # 6. Save figure
-cairo_pdf("TimefromLastRipple_DOWNDuration_total_lateUP_nextUP_V1_cohernece.pdf", width = 4.3, height = 4.3)
+cairo_pdf("TimefromLastRipple_DOWNDuration_total_lastRipplePREV1_nextUPV1_cohernece.pdf", width = 4.3, height = 4.3)
 print(p_interaction_raw_scale)
 dev.off()
 
 
 
-
-# ==============================================================================
-# --- Total : log_TimefromLastRipple_z and log_nextDOWNDuration_z ---
-# ==============================================================================
-
-# 1. Define sequence ranges using your actual RAW data minimums and maximums
-# (Adjust the min/max values to match your dataset's raw range)
-# raw_range_ripple_time <- seq(
-#   min(dat_clean1$TimefromLastRipple, na.rm = TRUE),
-#   max(dat_clean1$TimefromLastRipple, na.rm = TRUE),
-#   length.out = 100
-# )
-# 
-# raw_range_down_dur <- seq(
-#   min(dat_clean1$nextDOWNDuration, na.rm = TRUE),
-#   max(dat_clean1$nextDOWNDuration, na.rm = TRUE),
-#   length.out = 100
-# )
-
-raw_range_ripple_time   <- seq(0.02,
-                               0.3, length.out = 100)
-
-raw_range_down_dur  <- seq(0.02,
-                           0.3, length.out = 100)
-
-# 2. Build the prediction grid using the RAW scales
-pred_grid_ti <- expand.grid(
-  TimefromLastRipple   = raw_range_ripple_time,
-  nextDOWNDuration     = raw_range_down_dur,
-  nextDOWNSOPower_z    = 0, # Constant mean for other model variables
-  nextDOWNlag_z        = 0, # Constant mean for other model variables
-  lastRipplePower_z    = 0, # Constant mean for other model variables
-  AnimalID             = dat_clean1$AnimalID[1],
-  SessionID            = dat_clean1$SessionID[1]
-)
-
-# 3. Log-transform and Z-score columns dynamically to match model requirements
-# (Replace log() with log10() if your original transformation used base 10)
-pred_grid_ti$log_TimefromLastRipple <- log10(pred_grid_ti$TimefromLastRipple)
-pred_grid_ti$log_nextDOWNDuration   <- log10(pred_grid_ti$nextDOWNDuration)
-
-pred_grid_ti$log_TimefromLastRipple_z <- (
-  pred_grid_ti$log_TimefromLastRipple - mean(dat_clean1$log_TimefromLastRipple, na.rm = TRUE)
-) / sd(dat_clean1$log_TimefromLastRipple, na.rm = TRUE)
-
-pred_grid_ti$log_nextDOWNDuration_z <- (
-  pred_grid_ti$log_nextDOWNDuration - mean(dat_clean1$log_nextDOWNDuration, na.rm = TRUE)
-) / sd(dat_clean1$log_nextDOWNDuration, na.rm = TRUE)
-
-# 4. Extract specific term components matrix using the z-scores
-term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
-
-# Isolate the pure interaction tensor term
-# pred_grid_ti$Interaction_Effect <- term_preds[, "ti(log_TimefromLastRipple_z,log_nextDOWNDuration_z)"]
-pred_grid_ti$Interaction_Effect <- 
-  term_preds[, "s(log_TimefromLastRipple_z)"] + 
-  term_preds[, "s(log_nextDOWNDuration_z)"]
-  # term_preds[, "ti(log_TimefromLastRipple_z,log_nextDOWNDuration_z)"]
-
-# 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
-p_interaction_raw_scale <- ggplot(
-  pred_grid_ti, 
-  aes(x = TimefromLastRipple, y = nextDOWNDuration, fill = Interaction_Effect)
-) +
-  geom_tile() + 
-  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.2) + 
-  scale_fill_gradient2(
-    low = "dodgerblue", 
-    mid = "white", 
-    high = "firebrick", 
-    midpoint = 0, 
-    name = "Effect"
-  ) +
-  theme_minimal() +
-  theme(aspect.ratio = 1) +
-  labs(
-    title = "Pure Tensor Interaction (s + s Term)",
-    subtitle = "Total Variance (Raw Scale Mapping)",
-    x = "Time from Last Ripple (Raw)", 
-    y = "Next DOWN Duration (Raw)"
-  )
-
-print(p_interaction_raw_scale)
-
-# 6. Save figure
-cairo_pdf("TimefromLastRipple_DOWNDuration_total_without_ti_lateUP_nextUP_V1_cohernece.pdf", width = 4.3, height = 4.3)
-print(p_interaction_raw_scale)
-dev.off()
 
 # 
 # # ==============================================================================
@@ -826,21 +784,340 @@ dev.off()
 
 
 
+
 # ==============================================================================
-# --- ti interaction: lastRippleMUArate_z and geo_coherencePRE_z ---
+# --- ti interaction: nextDOWNSOPower_z and geo_coherencePRE_z ---
+# ==============================================================================
+
+# 1. Define sequence ranges using your actual RAW data minimums and maximums
+# Adjust these to match the real range of dat_clean1$nextDOWNSOPower
+raw_range_SOPower <- seq(
+  1,
+  4,
+  length.out = 100
+)
+
+raw_range_coherence <- seq(
+  -2, 2,
+  length.out = 100
+)
+
+# 2. Build the prediction grid using the RAW scales
+pred_grid_ti <- expand.grid(
+  nextDOWNSOPower       = raw_range_SOPower,
+  geo_coherencePRE      = raw_range_coherence,
+  log_TimefromLastRipple_z = 0,
+  log_nextDOWNDuration_z   = 0,
+  lastRippleMUArate_z      = 0,
+  # Add any OTHER predictors in mdl_final here, held at their mean/reference level
+  AnimalID               = dat_clean1$AnimalID[1],
+  SessionID              = dat_clean1$SessionID[1]
+)
+
+# 3. Z-score columns dynamically to match model requirements
+pred_grid_ti$nextDOWNSOPower_z <- (
+  pred_grid_ti$nextDOWNSOPower - mean(dat_clean1$nextDOWNSOPower, na.rm = TRUE)
+) / sd(dat_clean1$nextDOWNSOPower, na.rm = TRUE)
+
+pred_grid_ti$geo_coherencePRE_z <- (
+  pred_grid_ti$geo_coherencePRE - mean(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+) / sd(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+
+# 4. Extract specific term components matrix using the z-scores
+term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
+
+# Isolate the pure interaction tensor term + main effects
+# NOTE: check colnames(term_preds) to confirm the exact ti() term name/order
+pred_grid_ti$Interaction_Effect <- term_preds[, "ti(nextDOWNSOPower_z,geo_coherencePRE_z)"] +
+  term_preds[, "s(nextDOWNSOPower_z)"] +
+  term_preds[, "s(geo_coherencePRE_z)"]
+
+# 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
+p_interaction_raw_scale <- ggplot(
+  pred_grid_ti,
+  aes(x = nextDOWNSOPower, y = geo_coherencePRE, fill = Interaction_Effect)
+) +
+  geom_tile() +
+  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.05) +
+  scale_fill_gradient2(
+    low = "dodgerblue",
+    mid = "white",
+    high = "firebrick",
+    midpoint = 0,
+    limits = c(-0.5, 1),  # <- recalibrate to this model's actual effect range
+    oob = scales::squish,
+    name = "Total effect"
+  ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1) +
+  labs(
+    title = "Next DOWN SO Power and preV1-postHC coherence predicting preV1-NextUPV1 coherence",
+    subtitle = "Variance unique to the combination (Raw Scale Mapping)",
+    x = "Next DOWN SO Power (z)",
+    y = "Last ripple preV1-HC coherence"
+  )
+
+print(p_interaction_raw_scale)
+# 6. Save figure
+cairo_pdf("nextDOWNSOPower_PREV1_HC_coherence_total_lastRipplePREV1_nextUPV1_cohernece.pdf", width = 4.3, height = 4.3)
+print(p_interaction_raw_scale)
+dev.off()
+
+
+
+# ==============================================================================
+# --- ti interaction: log_TimefromLastRipple_z and geo_coherencePRE_z ---
+# ==============================================================================
+
+# 1. Define sequence ranges using your actual RAW data minimums and maximums
+# Adjust these to match the real range of dat_clean1$TimefromLastRipple
+raw_range_ripple_time <- seq(
+  min(dat_clean1$TimefromLastRipple, na.rm = TRUE),
+  0.2,
+  length.out = 100
+)
+
+raw_range_coherence <- seq(
+  -2, 2,
+  length.out = 100
+)
+
+# 2. Build the prediction grid using the RAW scale for ripple time
+pred_grid_ti <- expand.grid(
+  TimefromLastRipple       = raw_range_ripple_time,
+  geo_coherencePRE         = raw_range_coherence,
+  log_nextDOWNDuration_z   = 0,
+  nextDOWNSOPower_z        = 0,
+  lastRippleMUArate_z      = 0,
+  # Add any OTHER predictors in mdl_final here, held at their mean/reference level
+  AnimalID                 = dat_clean1$AnimalID[1],
+  SessionID                = dat_clean1$SessionID[1]
+)
+
+# 3. Log-transform, then z-score, to match model requirements
+# (Replace log10() with log() if your original transform used natural log)
+pred_grid_ti$log_TimefromLastRipple <- log10(pred_grid_ti$TimefromLastRipple)
+
+pred_grid_ti$log_TimefromLastRipple_z <- (
+  pred_grid_ti$log_TimefromLastRipple - mean(dat_clean1$log_TimefromLastRipple, na.rm = TRUE)
+) / sd(dat_clean1$log_TimefromLastRipple, na.rm = TRUE)
+
+pred_grid_ti$geo_coherencePRE_z <- (
+  pred_grid_ti$geo_coherencePRE - mean(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+) / sd(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+
+# 4. Extract specific term components matrix using the z-scores
+term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
+
+# Isolate the pure interaction tensor term + main effects
+# NOTE: check colnames(term_preds) to confirm the exact ti() term name/order
+pred_grid_ti$Interaction_Effect <- 
+  term_preds[, "s(log_TimefromLastRipple_z)"] +
+  term_preds[, "s(geo_coherencePRE_z)"]+
+  term_preds[, "ti(log_TimefromLastRipple_z,geo_coherencePRE_z)"] 
+
+# 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
+p_interaction_raw_scale <- ggplot(
+  pred_grid_ti,
+  aes(x = TimefromLastRipple, y = geo_coherencePRE, fill = Interaction_Effect)
+) +
+  geom_tile() +
+  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.05) +
+  scale_fill_gradient2(
+    low = "dodgerblue",
+    mid = "white",
+    high = "firebrick",
+    midpoint = 0,
+    limits = c(-0.5, 1),  # <- recalibrate to this model's actual effect range
+    oob = scales::squish,
+    name = "Total effect"
+  ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1) +
+  labs(
+    title = "Time from Last Ripple and preV1-postHC coherence predicting preV1-NextUPV1 coherence",
+    subtitle = "Variance unique to the combination (Raw Scale Mapping)",
+    x = "Time from Last Ripple (Raw)",
+    y = "Last ripple preV1-HC coherence"
+  )
+
+print(p_interaction_raw_scale)
+cairo_pdf("log_TimefromLastRipple_PREV1_HC_coherence_total_lastRipplePREV1_nextUPV1_cohernece.pdf", width = 4.3, height = 4.3)
+print(p_interaction_raw_scale)
+dev.off()
+
+
+
+# ==============================================================================
+# --- ti interaction: log_nextDOWNDuration_z and geo_coherencePRE_z ---
+# ==============================================================================
+
+# 1. Define sequence ranges using your actual RAW data minimums and maximums
+raw_range_down_duration <- seq(
+  min(dat_clean1$nextDOWNDuration, na.rm = TRUE),
+  0.25,
+  length.out = 100
+)
+
+raw_range_coherence <- seq(
+  -2, 2,
+  length.out = 100
+)
+
+# 2. Build the prediction grid using the RAW scale for down duration
+pred_grid_ti2 <- expand.grid(
+  nextDOWNDuration          = raw_range_down_duration,
+  geo_coherencePRE          = raw_range_coherence,
+  log_TimefromLastRipple_z  = 0,
+  nextDOWNSOPower_z         = 0,
+  lastRippleMUArate_z       = 0,
+  # Add any OTHER predictors in mdl_final here, held at their mean/reference level
+  AnimalID                  = dat_clean1$AnimalID[1],
+  SessionID                 = dat_clean1$SessionID[1]
+)
+
+# 3. Log-transform, then z-score, to match model requirements
+# (Replace log10() with log() if your original transform used natural log)
+pred_grid_ti2$log_nextDOWNDuration <- log10(pred_grid_ti2$nextDOWNDuration)
+
+pred_grid_ti2$log_nextDOWNDuration_z <- (
+  pred_grid_ti2$log_nextDOWNDuration - mean(dat_clean1$log_nextDOWNDuration, na.rm = TRUE)
+) / sd(dat_clean1$log_nextDOWNDuration, na.rm = TRUE)
+
+pred_grid_ti2$geo_coherencePRE_z <- (
+  pred_grid_ti2$geo_coherencePRE - mean(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+) / sd(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+
+# 4. Extract specific term components matrix using the z-scores
+term_preds2 <- predict(mdl_final, newdata = pred_grid_ti2, type = "terms")
+
+# Isolate the pure interaction tensor term + main effects
+# NOTE: check colnames(term_preds2) to confirm the exact ti() term name/order
+pred_grid_ti2$Interaction_Effect <- 
+  term_preds2[, "s(log_nextDOWNDuration_z)"] +
+  term_preds2[, "s(geo_coherencePRE_z)"] +
+  term_preds2[, "ti(log_nextDOWNDuration_z,geo_coherencePRE_z)"]
+
+# 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
+p_interaction_raw_scale2 <- ggplot(
+  pred_grid_ti2,
+  aes(x = nextDOWNDuration, y = geo_coherencePRE, fill = Interaction_Effect)
+) +
+  geom_tile() +
+  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.05) +
+  scale_fill_gradient2(
+    low = "dodgerblue",
+    mid = "white",
+    high = "firebrick",
+    midpoint = 0,
+    limits = c(-0.5, 0.5),  # <- recalibrate to this model's actual effect range
+    oob = scales::squish,
+    name = "Total effect"
+  ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1) +
+  labs(
+    title = "Next DOWN duration and preV1-postHC coherence predicting preV1-NextUPV1 coherence",
+    subtitle = "Variance unique to the combination (Raw Scale Mapping)",
+    x = "Next DOWN Duration (Raw)",
+    y = "Last ripple preV1-HC coherence"
+  )
+
+print(p_interaction_raw_scale2)
+cairo_pdf("log_nextDOWNDuration_PREV1_HC_coherence_total_lastRipplePREV1_nextUPV1_coherence.pdf", width = 4.3, height = 4.3)
+print(p_interaction_raw_scale2)
+dev.off()
+
+# 
+# # ==============================================================================
+# # --- ti interaction: lastRipplePower_z and geo_coherencePRE_z ---
+# # ==============================================================================
+# 
+# # 1. Define sequence ranges using your actual RAW data minimums and maximums
+# # Adjust these to match dat_clean1$lastRippleMUArate and dat_clean1$geo_coherencePRE
+# raw_range_power <- seq(
+#   5,
+#   20,
+#   length.out = 100
+# )
+# 
+# raw_range_coherence <- seq(
+#   -2,
+#   2,
+#   length.out = 100
+# )
+# 
+# # 2. Build the prediction grid using the RAW scales
+# pred_grid_ti <- expand.grid(
+#   lastRipplePower    = raw_range_power,
+#   geo_coherencePRE     = raw_range_coherence,
+#   # Add any OTHER predictors in mdl_final here, held at their mean/reference level
+#   # e.g. nextDOWNSOPower_z = 0, nextDOWNlag_z = 0, etc.
+#   AnimalID              = dat_clean1$AnimalID[1],
+#   SessionID             = dat_clean1$SessionID[1]
+# )
+# 
+# # 3. Z-score columns dynamically to match model requirements
+# # (No log transform applied here — remove/add log10() if your model actually used it)
+# pred_grid_ti$lastRipplePower_z <- (
+#   pred_grid_ti$lastRipplePower - mean(dat_clean1$lastRipplePower, na.rm = TRUE)
+# ) / sd(dat_clean1$lastRipplePower, na.rm = TRUE)
+# 
+# pred_grid_ti$geo_coherencePRE_z <- (
+#   pred_grid_ti$geo_coherencePRE - mean(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+# ) / sd(dat_clean1$geo_coherencePRE, na.rm = TRUE)
+# 
+# # 4. Extract specific term components matrix using the z-scores
+# term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
+# 
+# # Isolate the pure interaction tensor term
+# # pred_grid_ti$Interaction_Effect <- term_preds[, "ti(lastRipplePower_z,geo_coherencePRE_z)"] + term_preds[,"s(lastRipplePower_z)"] 
+# # +term_preds[,"s(geo_coherencePRE_z)"]
+# pred_grid_ti$Interaction_Effect <- term_preds[, "ti(lastRipplePower_z,geo_coherencePRE_z)"] + term_preds[,"s(lastRipplePower_z)"] 
+# +term_preds[,"s(geo_coherencePRE_z)"]
+# # 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
+# p_interaction_raw_scale <- ggplot(
+#   pred_grid_ti,
+#   aes(x = lastRipplePower, y = geo_coherencePRE, fill = Interaction_Effect)
+# ) +
+#   geom_tile() +
+#   geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.2) +
+#   scale_fill_gradient2(
+#     low = "dodgerblue",
+#     mid = "white",
+#     high = "firebrick",
+#     midpoint = 0,
+#     # limits = c(0, 0.155),  # <- recalibrate these to this model's effect range
+#     oob = scales::squish,
+#     name = "Effect"
+#   ) +
+#   theme_minimal() +
+#   theme(aspect.ratio = 1) +
+#   labs(
+#     title = "Ripple power and ripple preV1-postHC coherence predicting preV1-NextUPV1 coherence",
+#     subtitle = "Variance unique to the combination (Raw Scale Mapping)",
+#     x = "Last Ripple power",
+#     y = "Last ripple preV1-HC coherence"
+#   )
+# 
+# print(p_interaction_raw_scale)
+# 
+
+
+
+# ==============================================================================
+# --- ti interaction: lastRippleMUArate_z and geo_coherence_z ---
 # ==============================================================================
 
 # 1. Define sequence ranges using your actual RAW data minimums and maximums
 # Adjust these to match dat_clean1$lastRippleMUArate and dat_clean1$geo_coherencePRE
 raw_range_MUArate <- seq(
-  min(dat_clean1$lastRippleMUArate, na.rm = TRUE),
-  max(dat_clean1$lastRippleMUArate, na.rm = TRUE),
+  0.2,1,
   length.out = 100
 )
 
 raw_range_coherence <- seq(
-  min(dat_clean1$geo_coherencePRE, na.rm = TRUE),
-  max(dat_clean1$geo_coherencePRE, na.rm = TRUE),
+  -2,2,
   length.out = 100
 )
 
@@ -848,6 +1125,9 @@ raw_range_coherence <- seq(
 pred_grid_ti <- expand.grid(
   lastRippleMUArate    = raw_range_MUArate,
   geo_coherencePRE     = raw_range_coherence,
+  log_TimefromLastRipple_z = 0,
+  log_nextDOWNDuration_z = 0,
+  nextDOWNSOPower_z = 0,
   # Add any OTHER predictors in mdl_final here, held at their mean/reference level
   # e.g. nextDOWNSOPower_z = 0, nextDOWNlag_z = 0, etc.
   AnimalID              = dat_clean1$AnimalID[1],
@@ -868,8 +1148,10 @@ pred_grid_ti$geo_coherencePRE_z <- (
 term_preds <- predict(mdl_final, newdata = pred_grid_ti, type = "terms")
 
 # Isolate the pure interaction tensor term
-pred_grid_ti$Interaction_Effect <- term_preds[, "ti(lastRippleMUArate_z,geo_coherencePRE_z)"] + term_preds[,"s(lastRippleMUArate_z)"] 
-+term_preds[,"s(geo_coherencePRE_z)"]
+pred_grid_ti$Interaction_Effect <- 
+  term_preds[, "ti(lastRippleMUArate_z,geo_coherencePRE_z)"] +
+  term_preds[,"s(lastRippleMUArate_z)"] +
+  term_preds[,"s(geo_coherencePRE_z)"]
 
 # 5. Plot Pure Interaction Surface using RAW scales for X and Y axes
 p_interaction_raw_scale <- ggplot(
@@ -877,35 +1159,29 @@ p_interaction_raw_scale <- ggplot(
   aes(x = lastRippleMUArate, y = geo_coherencePRE, fill = Interaction_Effect)
 ) +
   geom_tile() +
-  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.2) +
+  geom_contour(aes(z = Interaction_Effect), color = "black", alpha = 0.05) +
   scale_fill_gradient2(
     low = "dodgerblue",
     mid = "white",
     high = "firebrick",
     midpoint = 0,
-    # limits = c(0, 0.155),  # <- recalibrate these to this model's effect range
+    limits = c(-0.65, 0.65),  # <- recalibrate these to this model's effect range
     oob = scales::squish,
-    name = "Effect"
+    name = "Total effect"
   ) +
   theme_minimal() +
   theme(aspect.ratio = 1) +
   labs(
     title = "Ripple MUA and ripple preV1-postHC coherence predicting preV1-NextUPV1 coherence",
-    subtitle = "Variance unique to the combination (Raw Scale Mapping)",
-    x = "Last Ripple MUA Rate (Raw)",
-    y = "Geodesic Coherence, Pre (Raw)"
+    subtitle = "total s + s + ti",
+    x = "Last Ripple MUA Rate (Normalised)",
+    y = "Last ripple preV1-HC coherence"
   )
 
 print(p_interaction_raw_scale)
-
-
-
-
-
-
-
-
-
+cairo_pdf("HCmuaRate_PREV1_HC_coherence_total_lastRipplePREV1_nextUPV1_cohernece.pdf", width = 4.3, height = 4.3)
+print(p_interaction_raw_scale)
+dev.off()
 
 
 # ==============================================================================

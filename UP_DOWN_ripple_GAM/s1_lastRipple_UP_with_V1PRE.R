@@ -13,8 +13,8 @@ library(dplyr)
 library(tidyr)
 # --- 2. Load and Prepare Data ---
 message("Loading data...")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
-dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_offset.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM.csv")
+#dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_offset.csv")
 
 dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak.csv")
 # dat <- read.csv("C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/UP_DOWN_info_GAM_peak2.csv")
@@ -413,7 +413,9 @@ pred_grid_total$Reconstructed_Effect <-
 p_combined_yes <- ggplot(pred_grid_total, aes(x = lastRippleV1PRE_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
   geom_tile() +
   geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
-  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick", midpoint = 0, name = "Total\nEffect") +
+  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick",
+                       midpoint = 0,limits = c(-0.8, 0.8),
+                       oob = scales::squish,name = "Total\nEffect") +
   theme_minimal() +
   labs(
     title = "Combined Effect Surface (is_near_DOWN = yes)",
@@ -456,7 +458,9 @@ pred_grid_total$Reconstructed_Effect <-
 p_combined_no <- ggplot(pred_grid_total, aes(x = lastRippleV1PRE_z, y = lastRippleHPC_z, fill = Reconstructed_Effect)) +
   geom_tile() +
   geom_contour(aes(z = Reconstructed_Effect), color = "black", alpha = 0.2) +
-  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick", midpoint = 0, name = "Total\nEffect") +
+  scale_fill_gradient2(high = "blue", mid = "white", low = "firebrick",
+                       midpoint = 0,limits = c(-0.85, 0.8),
+                       oob = scales::squish,name = "Total\nEffect") +
   theme_minimal() +
   labs(
     title = "Combined Effect Surface (is_near_DOWN = no)",
@@ -469,6 +473,7 @@ print(p_combined_no)
 cairo_pdf("lastRippleV1PRE_and_HPC_combined_UP_away_from_DOWN.pdf", width = 4.3, height = 4.3)
 print(p_combined_no)
 dev.off()
+
 
 # ==============================================================================
 # --- MULTI-METRIC EFFECT SIZE CALCULATIONS FOR FINAL MODEL ---
@@ -630,6 +635,9 @@ write.csv(raw_iterations_clean, "LastRippleV1_GAM_model_raw_bootstrap_iterations
 message("Raw bootstrap iteration file saved successfully.")
 
 
+my_folder <- "C:/Users/masah/Documents/GitHub/VR_NPX_analysis/UP_DOWN_ripple_GAM/V1_HC_lastRipple_UP"
+setwd(my_folder)
+
 raw_iterations_clean <- read.csv("LastRippleV1_GAM_model_raw_bootstrap_iterations.csv",
                                  stringsAsFactors = FALSE)
 
@@ -686,7 +694,7 @@ limits_df <- data.frame(
   Val = c(0, 0.17,      # Deviance Explained (%)
           0, 0.0017,    # Partial Eta-Squared
           0, 0.61,      # Peak-to-Trough Amplitude
-          0, 0.6),      # RMS Effect
+          0, 0.9),      # RMS Effect
   Term = plot_data$Term[1]  # dummy placeholder, any valid factor level works
 )
 

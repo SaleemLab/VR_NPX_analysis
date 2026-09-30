@@ -1,4 +1,4 @@
-function detect_behavioural_and_brain_states_add_on(session_info,stimulus_name,best_channels,varargin)
+function detect_behavioural_and_brain_states(session_info,stimulus_name,best_channels,varargin)
 % SETTINGS
 p = inputParser;
 addParameter(p, 'V1_best_channel', []);
