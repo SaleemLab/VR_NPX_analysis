@@ -1,5 +1,5 @@
 %% Corticohippocampal reactivation during ripples
-
+clear all
 addpath(genpath('C:\Users\masahiro.takigawa\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\Documents\GitHub\VR_NPX_analysis'))
 addpath(genpath('C:\Users\masah\OneDrive\Documents\GitHub\VR_NPX_analysis'))
@@ -46,11 +46,11 @@ HPC_ref_shank = [];
 
 for nsession = 1:max(ripples_all(1).session_count)
     for probe_no = 1:2
-        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
-            &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
+%         cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession} == slow_waves_all(probe_no).shank{nsession}(slow_waves_all(probe_no).channel{nsession} == slow_waves_all(probe_no).best_channel(nsession))...
+%             &slow_waves_all(probe_no).probe_hemisphere{nsession} == probe_no);
 
-        % cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
-        %     & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
+        cortex_ref_shank(nsession,probe_no) = find(slow_waves_all(probe_no).shank_id{nsession}==cortex_SO_ref_shank_all(nsession,probe_no) ...
+            & slow_waves_all(probe_no).probe_hemisphere{nsession}==probe_no);
         % [~,idx] = min(abs(ripples_all(probe_no).SWR_peaktimes{nsession}' - ripples_all(probe_no).peaktimes(ripples_all(probe_no).session_count==nsession))');
         % ripple_counts = histcounts(idx,length(ripples_all(probe_no).shank_id{nsession}));
         % [~,HPC_ref_shank(nsession,probe_no)] = max(ripple_counts);
@@ -204,8 +204,11 @@ bin_centers = bin_edges(1:end-1) + timebin/2;
 % z_bias = KDE_reactivation_ripples_PSTH.HPC_z_ripples';
 % z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_ripples';
 
-z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
-z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+% z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples';
+% z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples';
+z_bias = KDE_reactivation_ripples_PSTH.HPC_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+z_bias_V1 = KDE_reactivation_ripples_PSTH.V1_z_logodds_ripples' + KDE_reactivation_ripples_PSTH.nan_mask';
+
 
 z_bias1 = z_bias(isfinite(z_bias));
 z_bias(z_bias>=inf) = prctile(z_bias1,99.5);
@@ -243,8 +246,8 @@ for probe_no = 1:2
     for nsession = 1:length(sessions_to_process)
         % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:)];
         % spindle_amplitude{probe_no} = [spindle_amplitude{probe_no} ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:)];
+%         temp = ripples_all(probe_no).spindle_amplitude_ripple_onset{nsession}(cortex_ref_shank(nsession,:),:);
         temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
-        % temp = ripples_all(probe_no).spindle_amplitude_ripple_peaktime{nsession}(cortex_ref_shank(nsession,:),:);
         percentiles = (tiedrank(temp')' - 0.5) / length(temp) * 100;
         spindle_percentile{probe_no} = [spindle_percentile{probe_no} percentiles];
     end
@@ -261,12 +264,12 @@ spindle_thresholds = prctile(ripple_info.spindle_amplitude, 0:99.9/4:99.9);
 nBins = length(spindle_thresholds) - 1;
 
 bins_to_use = bin_centers>0 & bin_centers<0.1;
-% bins_to_select = bin_centers>0 & bin_centers<0.2;
+bins_to_select = bin_centers>0 & bin_centers<0.2;
 
-bins_to_select = bin_centers>-0.1 & bin_centers<0.1;
+% bins_to_select = bin_centers>-0.1 & bin_centers<0.1;
 % bins_to_select = bin_centers>-0.1 & bin_centers<0.1;
 
-bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
+% bins_to_use_shifted = bin_centers > -1 & bin_centers < -0.9;
 nBoot = 1000;
 colour_lines = [ ...
     241, 182, 218;   % original end (lightest)
@@ -279,8 +282,8 @@ spindle_power_KDE_bias_difference = struct;
 
 fig = figure;
 fig.Position = [640 100 1100 650*2];
-fig.Name = 'KDE bias difference in HPC with different spindle powers percentile (-0.2 to 0.2s)';
-% fig.Name = 'KDE bias difference in HPC with different spindle powers percentile';
+% fig.Name = 'KDE bias difference in HPC with different spindle powers percentile (-0.2 to 0.2s)';
+fig.Name = 'KDE bias difference in HPC with different spindle powers percentile';
 tiledlayout(nBins, 3, 'TileSpacing', 'compact');
 
 for npower = 1:nBins
@@ -631,7 +634,7 @@ set(gca,"TickDir","out",'box', 'off','Color','none','FontSize',12)
 
 % Save results
 % save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference');
-save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference_200ms');
+% save('spindle_power_percentile_KDE_bias_difference_based_on_V1_bias.mat', 'spindle_power_KDE_bias_difference_200ms');
 save_all_figures(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE bias difference based on V1 bias'),[])
 
 

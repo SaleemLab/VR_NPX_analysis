@@ -505,13 +505,15 @@ for t = 1:nTime
         AUC.shifted_ci(t, npower, :) = prctile(auc_shift_boot, [2.5 97.5]);
     end
 end
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
 
 % -------- Plot --------
 fig = figure('Name','Temporal HPC log-odds AUC by spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
 for npower = 1:nBins
     nexttile; hold on;
     m  = AUC.mean(:,npower);
@@ -549,6 +551,7 @@ end
 %%%%%%%%
 %%%%%%%%
 %%%%%%%%
+% load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
 
 %% Temporal log odds AUC with spindle power in matching and non-matching (V1→HPC)
 spindle_thresholds = prctile(ripple_info.spindle_amplitude>0, 99.9/2:99.9);
@@ -668,12 +671,14 @@ for t = 1:nTime
     end
 end
 
+save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
+load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
+
+
 % -------- Plot --------
 fig = figure('Name','Temporal HPC log-odds AUC by spindle power (0.1s win 0.02s step)','Position',[640 100 400 900]);
 tiledlayout(nBins,1,'TileSpacing','compact');
 
-save(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'),'AUC')
-load(fullfile(analysis_folder,'V1-HPC sleep reactivation','KDE_temporal_bias_spindle_power.mat'))
 for npower = 1:nBins
     nexttile; hold on;
     m  = AUC.mean(:,npower);

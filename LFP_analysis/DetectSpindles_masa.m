@@ -42,7 +42,8 @@ function [spindles] = DetectSpindles_masa(lfp, timevec, varargin)
 %                     .onset          Nx1 spindle start times
 %                     .offset         Nx1 spindle end times
 %                     .peaktimes      Nx1 peak power timestamps
-%                     .peak_zscore    Nx1 peak z-scored sigma power
+%                     .peak_z_amp     Nx1 peak z-scored amplitude
+%                     .peak_raw_amp   Nx1 peak raw envelope amplitude (uV)
 %                     .rel_power      Nx1 mean relative sigma power
 %                     .n_cycles       Nx1 number of oscillatory cycles
 %                     .best_channel   Channel used for detection
@@ -74,7 +75,7 @@ addParameter(p, 'passband',      [9 17],      @isnumeric);
 addParameter(p, 'broadband',     [1 30],       @isnumeric);
 addParameter(p, 'min_rel_power', 0.15,         @isnumeric);
 addParameter(p, 'min_cycles',    3,            @isnumeric);
-addParameter(p, 'delta_reject',  true,         @islogical);
+addParameter(p, 'delta_reject',  false,         @islogical);
 addParameter(p, 'delta_band',    [0.5 4],      @isnumeric);
 addParameter(p, 'delta_thresh',  3,            @isnumeric);
 addParameter(p, 'behaviour',     [],           @isstruct);
@@ -83,6 +84,7 @@ addParameter(p, 'show',          'off',        @isstr);
 addParameter(p, 'best_channel',  [],           @isnumeric);
 addParameter(p, 'saveMat',       false,        @islogical);
 addParameter(p, 'savepath',      [],           @isstr);
+addParameter(p, 'method',      [],           @isstr);
 parse(p, varargin{:});
 
 frequency       = p.Results.frequency;
@@ -101,39 +103,96 @@ behaviour       = p.Results.behaviour;
 noise           = p.Results.noise;
 show            = p.Results.show;
 best_channel    = p.Results.best_channel;
+method          = p.Results.method;
+
+if strcmp(method, 'default') && ismember('thresholds', p.UsingDefaults)
+    lowThresh = 2.5;
+    highThresh = 5;
+end
 
 % Ensure column vectors
 lfp = lfp(:);
 timevec = timevec(:);
+lfp = lfp-mean(lfp);
 
-%% 1. Bandpass filter in sigma band (10-16 Hz default)
+
+%% 1. Bandpass filter in sigma band
 filter_order = round(6 * frequency / (max(passband) - min(passband)));
 norm_freq = passband / (frequency / 2);
 b_sigma = fir1(filter_order, norm_freq, 'bandpass');
 sigma_signal = filtfilt(b_sigma, 1, lfp);
 
 %% 2. Broadband filter (1-30 Hz) for relative power calculation
-filter_order_bb = round(6 * frequency / (max(broadband_range) - min(broadband_range)));
+% filter_order_bb = round(6 * frequency / (max(broadband_range) - min(broadband_range)));
+% norm_freq_bb = broadband_range / (frequency / 2);
+% b_broadband = fir1(filter_order_bb, norm_freq_bb, 'bandpass');
+% broadband_signal = filtfilt(b_broadband, 1, lfp);
+
+% Design a 3rd-order Butterworth bandpass filter
+% (Note: filtfilt doubles the order to 6, which is ideal for EEG)
 norm_freq_bb = broadband_range / (frequency / 2);
-b_broadband = fir1(filter_order_bb, norm_freq_bb, 'bandpass');
-broadband_signal = filtfilt(b_broadband, 1, lfp);
+[b_broadband, a_broadband] = butter(3, norm_freq_bb, 'bandpass');
+
+% Apply the filter to the raw lfp 
+% (The sharp 1 Hz cutoff will automatically kill the DC offset)
+broadband_signal = filtfilt(b_broadband, a_broadband, lfp);
 
 %% 3. Compute envelopes
-rms_window = round(frequency / 5);  % ~200 ms window
+% rms_window = round(frequency / 5);  % ~200 ms window
 
-sigma_envelope    = envelope(sigma_signal, rms_window, 'rms');
-broadband_envelope = envelope(broadband_signal, rms_window, 'rms');
+% Z-score the filtered signal
+% 1. Raw Hilbert Envelopes for Relative Power
+% Get raw squared amplitude (microvolts squared)
+raw_sq_sigma = abs(hilbert(sigma_signal)).^2;
+raw_sq_broad = abs(hilbert(broadband_signal)).^2;
 
-% Smooth the sigma envelope
-sigma_envelope = smoothdata(sigma_envelope, 'gaussian', rms_window);
+% Smooth both exactly the same way (e.g. 100ms or 320ms window)
+if strcmp(method, 'new')
+    % 100 ms moving average (1 cycle) is optimal for [1.5, 3] thresholds in mice
+    windowLength = round(frequency * 0.320);
+else
+    % Classic FMA FindSpindles uses exactly 320 ms
+    windowLength = round(frequency * 0.320);
+end
+smooth_win = ones(windowLength, 1) / windowLength;
 
-% Z-score the sigma envelope for thresholding
-zscored_sigma = zscore(sigma_envelope);
+power_sigma = filtfilt(smooth_win, 1, raw_sq_sigma);
+power_broad = filtfilt(smooth_win, 1, raw_sq_broad);
 
-%% 4. Compute relative sigma power (YASA-inspired criterion)
-% Avoid division by zero
-broadband_envelope(broadband_envelope < eps) = eps;
-relative_sigma_power = (sigma_envelope.^2) ./ (broadband_envelope.^2);
+% Compute relative sigma power (YASA-inspired criterion)
+power_broad(power_broad < eps) = eps;
+relative_sigma_power = power_sigma ./ power_broad;
+
+if strcmp(method, 'new')
+    % --- NEW HYBRID METHOD ---
+
+    %Calculate Linear Z-scored Envelope for [1.5, 3] Thresholding
+    % We take the linear amplitude, smooth it, THEN z-score it
+    % This preserves the meaning of your [1.5, 3] SD thresholds!
+    sigma_envelope = abs(hilbert(sigma_signal));
+    sigma_envelope = filtfilt(smooth_win, 1, sigma_envelope);
+    zscored_sigma  = zscore(sigma_envelope);
+
+    % (Optional) Keep broadband linear envelope for downstream plotting compatibility
+    broadband_envelope = sqrt(power_broad);
+
+else % 'default' (classic FMA FindSpindles logic)
+
+    % 2. Normalized Hilbert Envelope strictly for Thresholding
+    % Z-score the raw filtered signal first (Classic Buzsaki method)
+    z_sigma = zscore(sigma_signal);
+
+    % Get squared envelope of the Z-scored signal
+    z_sq_sigma = abs(hilbert(z_sigma)).^2;
+
+    % Smooth it
+    zscored_sigma = filtfilt(smooth_win, 1, z_sq_sigma);
+
+    % Now you can apply the strict [2.5, 5] Buzsaki thresholds to `zscored_sigma_envelope`!
+end
+
+
+
 
 %% 5. Optional: Delta power for co-occurrence check
 if delta_reject
@@ -222,7 +281,11 @@ for i = 1:size(secondPass, 1)
     mean_rel_power(i) = mean(relative_sigma_power(secondPass(i,1):secondPass(i,2)));
 end
 
-valid_rel = mean_rel_power >= min_rel_power;
+if strcmp(method, 'new')
+    valid_rel = mean_rel_power >= min_rel_power;
+else
+    valid_rel = true(size(secondPass, 1), 1); % Skip relative power check in default mode
+end
 secondPass = secondPass(valid_rel, :);
 peakNormedPower = peakNormedPower(valid_rel);
 mean_rel_power = mean_rel_power(valid_rel);
@@ -243,7 +306,11 @@ for i = 1:size(secondPass, 1)
     n_cycles_vec(i) = zc / 2;  % half-cycles -> full cycles
 end
 
-valid_cycles = n_cycles_vec >= min_cycles;
+if strcmp(method, 'new')
+    valid_cycles = n_cycles_vec >= min_cycles;
+else
+    valid_cycles = true(size(secondPass, 1), 1); % Skip cycle check in default mode
+end
 secondPass = secondPass(valid_cycles, :);
 peakNormedPower = peakNormedPower(valid_cycles);
 mean_rel_power = mean_rel_power(valid_cycles);
@@ -315,22 +382,37 @@ for i = 1:size(secondPass, 1)
     peakPosition(i) = minIdx + secondPass(i,1) - 1;
 end
 
-%% 15. Recalculate peak power
+%% 15. Recalculate peak power and extract aligned amplitudes
+% Compute the full raw instantaneous envelope once
+raw_sigma_envelope = abs(hilbert(sigma_signal)); 
+
+raw_hilbert_amplitude = zeros(size(secondPass, 1), 1);
+
 for i = 1:size(secondPass, 1)
-    [maxVal, ~] = max(zscored_sigma(secondPass(i,1):secondPass(i,2)));
+    seg_start = secondPass(i,1);
+    seg_end   = secondPass(i,2);
+    
+    % 1. Find the exact index where the Z-scored detection envelope peaks
+    [maxVal, maxIdx] = max(zscored_sigma(seg_start:seg_end));
+    
+    % 2. Save the Z-scored amplitude (this overwrites peakNormedPower)
     peakNormedPower(i) = maxVal;
+    
+    % 3. Save the Raw amplitude at that EXACT same index
+    raw_hilbert_amplitude(i) = raw_sigma_envelope(seg_start + maxIdx - 1);
 end
 
 disp(['DetectSpindles: ' num2str(size(secondPass, 1)) ' spindle events detected (final).']);
 
 %% 16. Build output struct
-spindles.onset       = timevec(secondPass(:, 1));
-spindles.offset      = timevec(secondPass(:, 2));
-spindles.peaktimes   = timevec(peakPosition);
-spindles.peak_zscore = peakNormedPower;
-spindles.rel_power   = mean_rel_power;
-spindles.n_cycles    = n_cycles_vec;
-spindles.best_channel = best_channel;
+spindles.onset         = timevec(secondPass(:, 1));
+spindles.offset        = timevec(secondPass(:, 2));
+spindles.peaktimes     = timevec(peakPosition);
+spindles.peak_z_amp    = peakNormedPower;         
+spindles.peak_raw_amp  = raw_hilbert_amplitude;   
+spindles.rel_power     = mean_rel_power;
+spindles.n_cycles      = n_cycles_vec;
+spindles.best_channel  = best_channel;
 
 % Detector info
 detectorinfo.detectorname    = 'DetectSpindles_masa';
@@ -348,13 +430,13 @@ spindles.detectorinfo = detectorinfo;
 if strcmp(show, 'on')
     plot_spindle_detection(timevec, lfp, sigma_signal, zscored_sigma, ...
         relative_sigma_power, spindles, lowThresh, highThresh, ...
-        min_rel_power, behaviour, frequency, passband);
+        min_rel_power, behaviour, frequency, passband, method);
 end
 
 %% 18. Save
-if p.Results.saveMat
-    save(fullfile(p.Results.savepath, 'detected_spindle_events.mat'), 'spindles');
-end
+% if p.Results.saveMat
+%     save(fullfile(p.Results.savepath, 'detected_spindle_events.mat'), 'spindles');
+% end
 
 end
 
@@ -368,7 +450,8 @@ function spindles = make_empty_spindles(best_channel, params)
     spindles.onset       = [];
     spindles.offset      = [];
     spindles.peaktimes   = [];
-    spindles.peak_zscore = [];
+    spindles.peak_z_amp  = [];
+    spindles.peak_raw_amp = [];
     spindles.rel_power   = [];
     spindles.n_cycles    = [];
     spindles.best_channel = best_channel;
@@ -388,7 +471,7 @@ end
 
 function plot_spindle_detection(timevec, lfp, sigma_signal, zscored_sigma, ...
     relative_sigma_power, spindles, lowThresh, highThresh, ...
-    min_rel_power, behaviour, frequency, passband)
+    min_rel_power, behaviour, frequency, passband, method)
 %PLOT_SPINDLE_DETECTION Visualize detected spindles.
 
     if isempty(spindles.onset) || length(spindles.onset) < 3
@@ -405,7 +488,7 @@ function plot_spindle_detection(timevec, lfp, sigma_signal, zscored_sigma, ...
     t_end   = spindles.offset(last_sp) + 2;
     time_mask = timevec >= t_start & timevec <= t_end;
     
-    figure('Name', sprintf('Spindle Detection (%d-%d Hz)', passband(1), passband(2)), ...
+    figure('Name', sprintf('spindle_detection_%s', method), ...
            'Position', [100 100 1200 800]);
     
     % Panel 1: Raw LFP with spindle-band overlay
@@ -470,10 +553,10 @@ function plot_spindle_detection(timevec, lfp, sigma_signal, zscored_sigma, ...
     linkaxes([ax1 ax2 ax3 ax4], 'x');
     
     % Summary figure: spindle statistics
-    figure('Name', 'Spindle Detection Summary', 'Position', [100 100 1000 400]);
+    figure('Name', sprintf('spindle_detection_summary_%s', method), 'Position', [100 100 1000 400]);
     
     subplot(1, 3, 1);
-    histogram(spindles.peak_zscore, 30, 'FaceColor', [0.2 0.5 0.8]);
+    histogram(spindles.peak_z_amp, 30, 'FaceColor', [0.2 0.5 0.8]);
     xlabel('Peak z-score'); ylabel('Count');
     title('Peak sigma power'); 
     set(gca, 'TickDir', 'out', 'box', 'off', 'FontSize', 11);
