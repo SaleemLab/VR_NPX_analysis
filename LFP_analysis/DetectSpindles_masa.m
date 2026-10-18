@@ -35,7 +35,25 @@ function [spindles] = DetectSpindles_masa(lfp, timevec, varargin)
 %     'best_channel'    Channel index for metadata
 %     'saveMat'         Save results to .mat (default = false)
 %     'savepath'        Path for saving
+%     'method'          'new' or 'default' (see METHODS below)
+%     'intervals'       [start stop] times (s), e.g. SWS epochs, used as the
+%                       z-score reference for 'default' (default = [] = whole
+%                       recording). Detection still runs on the whole recording.
+%     'merge_gap'       'default' only: merge events closer than this (s)
+%                       (default = 0.4, as Maingret et al. 2016; FMA uses 0.5)
 %    =========================================================================
+%
+% METHODS
+%    'new'      Linear Hilbert envelope (320 ms smoothing), z-scored; thresholds
+%               in SD; relative sigma power and cycle-count criteria.
+%    'default'  FMAToolbox FindSpindles steps: squared Hilbert envelope of the
+%               z-scored sigma signal, 320 ms boxcar (filtfilt); crossings of
+%               thresholds(1) shorter than 50 ms dropped; events closer than
+%               merge_gap merged; peak >= thresholds(2); onset correction (start
+%               re-thresholded at peak/3 when that exceeds thresholds(1), searching
+%               back to the previous spindle's end, so a leading delta wave does
+%               not pull the start earlier); merged again; durations applied.
+%               No relative power or cycle criteria.
 %
 % OUTPUT
 %    spindles       Struct with fields:
@@ -53,6 +71,8 @@ function [spindles] = DetectSpindles_masa(lfp, timevec, varargin)
 %   Lacourse et al. (2018) - multi-feature spindle detection (basis for YASA)
 %   Latchoumane et al. (2017) PNAS - SO-spindle-ripple coupling
 %   Peyrache et al. (2011) Nat Neurosci - Hilbert-based spindle detection
+%   FMAToolbox FindSpindles (Zugaro, Maingret, Todorova) - 'default' method
+%   Maingret et al. (2016) Nat Neurosci - 0.4 s merging
 %
 % Modified from FindSpindles_masa.m by Masahiro Takigawa
 % Masahiro Takigawa, 2026
@@ -85,6 +105,8 @@ addParameter(p, 'best_channel',  [],           @isnumeric);
 addParameter(p, 'saveMat',       false,        @islogical);
 addParameter(p, 'savepath',      [],           @isstr);
 addParameter(p, 'method',      [],           @isstr);
+addParameter(p, 'intervals',     [],           @isnumeric);
+addParameter(p, 'merge_gap',     0.4,          @isnumeric);
 parse(p, varargin{:});
 
 frequency       = p.Results.frequency;
@@ -104,10 +126,15 @@ noise           = p.Results.noise;
 show            = p.Results.show;
 best_channel    = p.Results.best_channel;
 method          = p.Results.method;
+intervals       = p.Results.intervals;
+merge_gap       = p.Results.merge_gap;
 
 if strcmp(method, 'default') && ismember('thresholds', p.UsingDefaults)
     lowThresh = 2.5;
     highThresh = 5;
+end
+if strcmp(method, 'default') && ismember('durations', p.UsingDefaults)
+    maxDuration = 3.5;   % FindSpindles default [400 3500] ms
 end
 
 % Ensure column vectors
@@ -179,8 +206,16 @@ if strcmp(method, 'new')
 else % 'default' (classic FMA FindSpindles logic)
 
     % 2. Normalized Hilbert Envelope strictly for Thresholding
-    % Z-score the raw filtered signal first (Classic Buzsaki method)
-    z_sigma = zscore(sigma_signal);
+    % Z-score the raw filtered signal first (Classic Buzsaki method). FindSpindles
+    % expects SWS-only input, so the mean/SD can come from 'intervals' (e.g. SWS).
+    ref = true(size(sigma_signal));
+    if ~isempty(intervals)
+        ref = false(size(sigma_signal));
+        for k = 1:size(intervals, 1)
+            ref(timevec >= intervals(k, 1) & timevec <= intervals(k, 2)) = true;
+        end
+    end
+    z_sigma = (sigma_signal - mean(sigma_signal(ref))) / std(sigma_signal(ref));
 
     % Get squared envelope of the Z-scored signal
     z_sq_sigma = abs(hilbert(z_sigma)).^2;
@@ -243,30 +278,37 @@ stop_idx = stop_idx(1:n_events);
 firstPass = [start_idx, stop_idx];
 disp(['DetectSpindles: ' num2str(size(firstPass, 1)) ' candidates after thresholding.']);
 
-%% 8. Peak threshold filter
-secondPass = [];
-peakNormedPower = [];
-for i = 1:size(firstPass, 1)
-    segment = zscored_sigma(firstPass(i,1):firstPass(i,2));
-    [maxVal, ~] = max(segment);
-    if maxVal > highThresh
-        secondPass = [secondPass; firstPass(i,:)];
-        peakNormedPower = [peakNormedPower; maxVal];
+if strcmp(method, 'new')
+    %% 8. Peak threshold filter
+    secondPass = [];
+    peakNormedPower = [];
+    for i = 1:size(firstPass, 1)
+        segment = zscored_sigma(firstPass(i,1):firstPass(i,2));
+        [maxVal, ~] = max(segment);
+        if maxVal > highThresh
+            secondPass = [secondPass; firstPass(i,:)];
+            peakNormedPower = [peakNormedPower; maxVal];
+        end
     end
-end
 
-if isempty(secondPass)
-    spindles = make_empty_spindles(best_channel, p.Results);
-    disp('No spindles survived peak threshold.');
-    return
-end
-disp(['DetectSpindles: ' num2str(size(secondPass, 1)) ' candidates after peak threshold.']);
+    if isempty(secondPass)
+        spindles = make_empty_spindles(best_channel, p.Results);
+        disp('No spindles survived peak threshold.');
+        return
+    end
+    disp(['DetectSpindles: ' num2str(size(secondPass, 1)) ' candidates after peak threshold.']);
 
-%% 9. Duration filter
-durations_s = timevec(secondPass(:,2)) - timevec(secondPass(:,1));
-valid_dur = (durations_s >= minDuration) & (durations_s <= maxDuration);
-secondPass = secondPass(valid_dur, :);
-peakNormedPower = peakNormedPower(valid_dur);
+    %% 9. Duration filter
+    durations_s = timevec(secondPass(:,2)) - timevec(secondPass(:,1));
+    valid_dur = (durations_s >= minDuration) & (durations_s <= maxDuration);
+    secondPass = secondPass(valid_dur, :);
+    peakNormedPower = peakNormedPower(valid_dur);
+else
+    %% 8-9. FMAToolbox FindSpindles steps: drop < 50 ms bouts, merge, peak test,
+    % onset correction, merge again, duration filter
+    [secondPass, peakNormedPower] = findspindles_steps(zscored_sigma, firstPass, ...
+        frequency, lowThresh, highThresh, merge_gap, minDuration, maxDuration);
+end
 
 if isempty(secondPass)
     spindles = make_empty_spindles(best_channel, p.Results);
@@ -444,6 +486,55 @@ end
 %% ========================================================================
 %  Helper functions
 %  ========================================================================
+
+function [events, peaks] = findspindles_steps(z, firstPass, fs, thr, minPeak, merge_gap, minDur, maxDur)
+%FINDSPINDLES_STEPS Event logic of FMAToolbox FindSpindles on a thresholded envelope.
+%   z          smoothed squared envelope of the z-scored sigma signal
+%   firstPass  [start stop] sample indices of crossings of thr
+    on = firstPass(:, 1); off = firstPass(:, 2);
+    keep = (off - on + 1) / fs >= 0.050;          % drop bouts < 50 ms
+    on = on(keep); off = off(keep);
+    gap = round(merge_gap * fs);
+    [on, off] = merge_close(on, off, zeros(size(on)), zeros(size(on)), gap);
+    pv = zeros(size(on)); pk = zeros(size(on));
+    for i = 1:numel(on)
+        [pv(i), im] = max(z(on(i):off(i)));
+        pk(i) = on(i) + im - 1;
+    end
+    keep = pv >= minPeak;
+    on = on(keep); off = off(keep); pv = pv(keep); pk = pk(keep);
+    % onset correction: a leading delta wave can pull the start earlier, so for
+    % strong events the start is re-thresholded at peak/3
+    for i = 1:numel(on)
+        newThr = pv(i) / 3;
+        if newThr > thr
+            if i == 1; lo = 1; else; lo = off(i - 1) + 1; end
+            j = find(z(lo:pk(i)) < newThr, 1, 'last');
+            if ~isempty(j); on(i) = lo + j; end   % first sample above newThr
+        end
+    end
+    [on, off, pv] = merge_close(on, off, pv, pk, gap);
+    dur = (off - on) / fs;
+    keep = dur >= minDur & dur <= maxDur;
+    events = [on(keep) off(keep)];
+    peaks = pv(keep);
+end
+
+
+function [on, off, pv, pk] = merge_close(on, off, pv, pk, gap)
+%MERGE_CLOSE Merge events separated by fewer than GAP samples (larger peak kept).
+    i = 1;
+    while i < numel(on)
+        if on(i + 1) - off(i) < gap
+            off(i) = off(i + 1);
+            if pv(i + 1) > pv(i); pv(i) = pv(i + 1); pk(i) = pk(i + 1); end
+            on(i + 1) = []; off(i + 1) = []; pv(i + 1) = []; pk(i + 1) = [];
+        else
+            i = i + 1;
+        end
+    end
+end
+
 
 function spindles = make_empty_spindles(best_channel, params)
 %MAKE_EMPTY_SPINDLES Create an empty spindles struct with consistent fields.
