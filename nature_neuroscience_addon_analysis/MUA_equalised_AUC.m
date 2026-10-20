@@ -10,7 +10,11 @@
 %                  to it (V1 > 0 -> hemisphere 2, V1 < 0 -> hemisphere 1), <= 25 vs > 75;
 %                  thresholds from |V1| of all events. Temporal V1 window centred on each bin.
 %   SO_phase     : V1->HPC as spindle, SO peak [-pi/2, pi/2] vs trough.
-% HPC = mean z log odds 0-0.1 s; V1 = mean z log odds over the V1 window.
+%   SO_trough_uni_bi : V1->HPC as spindle, dominant hemisphere in SO trough with
+%                  the non-dominant hemisphere in peak (unilateral, 'Peak') vs
+%                  also in trough (bilateral, 'Trough'), as hemisphere_conditions
+%                  'SO_trough_bilateral'.
+% HPC =mean z log odds 0-0.1 s; V1 = mean z log odds over the V1 window.
 % MUA (z, 10 ms bins): HC 0-0.1 s; V1 of the dominant hemisphere over the V1 window
 % (dominance from the V1 bias sign in that window, so matching is redone per window).
 % Each iteration (seeded): one MUA-matched draw of Low and High events in every
@@ -18,9 +22,15 @@
 % < min_events matched events dropped), pooled, then one bootstrap resample of the
 % pooled events. Shuffled control keeps the selector un-resampled while resampling
 % the measure (as reactivation_coherence_auc). Unmatched AUC uses the same bootstrap
-% without matching. Matched High - Low difference is taken within each iteration.
-% Output: nature_neuroscience_revision_analysis\MUA_equalised_event_control\AUC
-function MUA_equalised_AUC()
+% without matching. Matched second - first condition difference (High - Low,
+% Trough - Peak; bilateral - unilateral for SO_trough_uni_bi) is taken within each
+% iteration; diff_p is one-sided (difference <= 0).
+% Output: nature_neuroscience_revision_analysis\MUA_equalised_event_control\AUC,
+% plus the low vs high bar plot (plot_AUC_low_vs_high_controls).
+%   which : analyses to run (default all: 'ripple_power', 'spindle', 'SO_phase',
+%           'SO_trough_uni_bi'); static results of the others are kept from the
+%           saved MUA_equalised_AUC_static.mat
+function MUA_equalised_AUC(which)
     if exist('D:\corticohippocampal_replay', 'dir') > 0
         analysis_folder = 'D:\corticohippocampal_replay';
     elseif exist('P:\corticohippocampal_replay', 'dir') > 0
@@ -65,11 +75,16 @@ function MUA_equalised_AUC()
     cR = [zeros(n_ev, 1) cumsum(double(ripple_MUA_V1_R), 2)];
     clear HC V1 ripple_MUA_HPC ripple_MUA_V1_L ripple_MUA_V1_R
 
+    style = AUC_low_high_style();
     an = struct( ...
-        'name',      {'ripple_power', 'spindle', 'SO_phase'}, ...
-        'title',     {'Ripple power, within session (HPC->V1)', 'Spindle-band power, matched hemisphere (V1->HPC)', 'SO phase, matched hemisphere (V1->HPC)'}, ...
-        'direction', {'HPC->V1', 'V1->HPC', 'V1->HPC'}, ...
-        'alignment', {'centred', 'centred', 'centred'});
+        'name',      {'ripple_power', 'spindle', 'SO_phase', 'SO_trough_uni_bi'}, ...
+        'title',     {'Ripple power, within session (HPC->V1)', 'Spindle-band power, matched hemisphere (V1->HPC)', ...
+                      'SO phase, matched hemisphere (V1->HPC)', 'Dominant SO trough, non-dominant peak vs trough (V1->HPC)'}, ...
+        'direction', {'HPC->V1', 'V1->HPC', 'V1->HPC', 'V1->HPC'}, ...
+        'alignment', {'centred', 'centred', 'centred', 'centred'}, ...
+        'colors',    {style.ripple_power.colors, style.spindle.colors, style.SO_phase.colors, style.SO_trough_uni_bi.colors});
+    an_all = an;
+    if nargin >= 1, an = an(ismember({an.name}, which)); end
     cfg = struct('nIter', nIter, 'nQ', nQ, 'min_events', min_events);
 
     %% Static AUC: pre and post V1 windows
@@ -77,6 +92,15 @@ function MUA_equalised_AUC()
         'range', {[-0.2 0], [0 0.2]});
     Tstat = table();
     res = struct();
+    static_file = fullfile(out_dir, 'MUA_equalised_AUC_static.mat');
+    if nargin >= 1 && exist(static_file, 'file')
+        % keep the saved results of the analyses not rerun
+        S = load(static_file, 'res', 'Tstat');
+        res = S.res;
+        rerun = intersect(fieldnames(res), {an.name});
+        if ~isempty(rerun), res = rmfield(res, rerun); end
+        Tstat = S.Tstat(~ismember(S.Tstat.analysis, {an.name}), :);
+    end
     for iA = 1:numel(an)
         for w = 1:numel(v1_windows)
             W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, v1_windows(w).range);
@@ -89,9 +113,10 @@ function MUA_equalised_AUC()
         end
     end
     disp(Tstat);
-    save(fullfile(out_dir, 'MUA_equalised_AUC_static.mat'), 'res', 'Tstat', 'v1_windows', 'cfg');
+    save(static_file, 'res', 'Tstat', 'v1_windows', 'cfg');
     writetable(Tstat, fullfile(out_dir, 'MUA_equalised_AUC_static.csv'));
-    plot_static(res, an, v1_windows, fullfile(out_dir, 'MUA_equalised_AUC_static'));
+    plot_static(res, an_all(isfield(res, {an_all.name})), v1_windows, fullfile(out_dir, 'MUA_equalised_AUC_static'));
+    plot_AUC_low_vs_high_controls('MUA_equalised');
 
     %% Temporal AUC: sliding V1 window (HPC fixed 0-0.1 s)
     tp.win_size = 0.1;
@@ -188,9 +213,23 @@ function [masks, labels] = condition_masks(name, E, hemi)
             labels = {'Low', 'High'};
         case 'SO_phase'
             f = dominant_feature(E.SO_phase, hemi);
-            masks = {f >= -pi/2 & f <= pi/2, (f >= -pi & f < -pi/2) | (f > pi/2 & f <= pi)};
+            masks = {peak(f), trough(f)};
             labels = {'Peak', 'Trough'};
+        case 'SO_trough_uni_bi'
+            % dominant (f) in trough; non-dominant (g) in peak (unilateral) or trough (bilateral)
+            f = dominant_feature(E.SO_phase, hemi);
+            g = dominant_feature(E.SO_phase, 3 - hemi);
+            masks = {trough(f) & peak(g), trough(f) & trough(g)};
+            labels = {'Peak', 'Trough'};   % non-dominant hemisphere's phase
     end
+end
+
+function m = peak(x)
+    m = x >= -pi/2 & x <= pi/2;
+end
+
+function m = trough(x)
+    m = (x >= -pi & x < -pi/2) | (x > pi/2 & x <= pi);
 end
 
 function f = dominant_feature(F, hemi)
@@ -316,11 +355,11 @@ end
 
 function plot_static(res, an, v1_windows, save_path)
     % Per condition: shuffled (grey), unmatched (outline), MUA-matched (filled) with 95% CI
-    cond_colors = {[0.2 0.6 0.8], [231, 41, 138] / 256};
-    fig = figure('Name', 'MUA-equalised AUC', 'Position', [100 100 760 330 * numel(an)]);
+    fig = figure('Name', 'MUA-equalised AUC', 'Position', [100 50 860 330 * numel(an)]);
     tiledlayout(numel(an), numel(v1_windows), 'TileSpacing', 'compact');
     bw = 0.22;
     for iA = 1:numel(an)
+        cond_colors = num2cell(an(iA).colors, 2);
         for w = 1:numel(v1_windows)
             ax = nexttile; hold on;
             r = res.(an(iA).name).(v1_windows(w).name);
@@ -338,9 +377,10 @@ function plot_static(res, an, v1_windows, save_path)
             yline(0, 'k-');
             set(ax, 'XTick', [1 2], 'XTickLabel', r.labels, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 11);
             xlim([0.5 2.5]); ylabel('Reactivation coherence AUC');
-            title({sprintf('%s, %s', an(iA).title, v1_windows(w).label), ...
-                sprintf('%s-%s matched %.3f [%.3f %.3f], p = %.3f (unmatched %.3f, p = %.3f)', r.labels{2}, r.labels{1}, ...
-                r.diff_mean, r.diff_CI(1), r.diff_CI(2), r.diff_p, r.diff_unmatched_mean, r.diff_unmatched_p)}, ...
+            title({an(iA).title, v1_windows(w).label, ...
+                sprintf('%s-%s matched %.3f [%.3f %.3f], p = %.3f', r.labels{2}, r.labels{1}, ...
+                r.diff_mean, r.diff_CI(1), r.diff_CI(2), r.diff_p), ...
+                sprintf('(unmatched %.3f, p = %.3f)', r.diff_unmatched_mean, r.diff_unmatched_p)}, ...
                 'FontSize', 8, 'FontWeight', 'normal');
         end
     end
@@ -351,7 +391,7 @@ end
 
 function plot_temporal(AUC, a, save_path)
     % Tiles: each condition (matched + shuffled, unmatched dashed) and matched difference
-    cond_colors = {[0.2 0.6 0.8], [231, 41, 138] / 256};
+    cond_colors = num2cell(a.colors, 2);
     tvec = AUC.time_bins;
     if strcmp(AUC.window_alignment, 'centred')
         xlab = 'V1 window centre (s rel. ripple onset)';
@@ -396,10 +436,13 @@ function plot_temporal(AUC, a, save_path)
 end
 
 function export_png(fig, png_path)
-    % Retry: the PNG can be briefly locked by a viewer / sync client
+    % PNG plus vector PDF (same name). Retry: files can be briefly locked by a
+    % viewer / sync client
+    [p, f] = fileparts(png_path);
     for k = 1:5
         try
             exportgraphics(fig, png_path, 'Resolution', 300);
+            exportgraphics(fig, fullfile(p, [f '.pdf']), 'ContentType', 'vector');
             return
         catch err
             fprintf('PNG export failed (%s), retry %d/5\n', err.message, k);

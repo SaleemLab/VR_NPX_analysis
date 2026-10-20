@@ -8,20 +8,40 @@
 % Static AUC uses a pre (-0.2-0 s) and post (0-0.2 s) V1 window; temporal AUC
 % slides the V1 window, as in POST.
 % sleep: 'PRE' (default) or 'POST_matched' (POST events from the 12 PRE
-%   sessions only; spindle percentile recomputed within session from the
-%   untruncated spindle_amplitude_peak, as for PRE). Output folder = sleep.
+%   sessions only; spindle percentile of spindle_amplitude with the bottom 10%
+%   excluded, as in the original paper), 'POST' (all 22 POST
+%   sessions, same processing) or 'POST_rate_lt10' (as 'POST' with the PLS-KDE
+%   log odds of decoders built from neurons < 10 Hz, assemble_PLS_KDE_rate_lt10_
+%   PSTH_POST), 'POST_Bayes' / 'POST_Bayes_rate_lt10' (as 'POST' with the
+%   multinomial Bayesian log odds of run_Bayesian_logodds_PSTH_POST, all cells /
+%   cells < 10 Hz; windows without spikes = log odds 0); 'POST_Bayes_raw' /
+%   'POST_Bayes_raw_rate_lt10' use the raw instead of the z-scored Bayesian log odds.
+%   'awake': non-SWS POST ripples (make_unique_awake_ripple_data), all 22 sessions;
+%   spindle percentile is within session among awake ripples (0-100). Adds a
+%   temporal AUC of the ripple power quartiles.
+%   Output folder = sleep.
 % equal_n: if true, each session is randomly subsampled (fixed seed) to
 %   min(PRE, POST) events of that session, so PRE and POST have the same number
 %   of events per session. Ripple power quartiles and spindle percentiles are
 %   assigned on all events of the session before subsampling. Output folder =
 %   [sleep '_equal_n'].
-function reactivation_AUC_coherence_PRE(sleep, equal_n)
+% only_spindle: if true, run only the spindle sections (static and temporal)
+%   and leave the other outputs in the folder unchanged (default false).
+function reactivation_AUC_coherence_PRE(sleep, equal_n, only_spindle)
     if nargin < 1
         sleep = 'PRE';
     end
     if nargin < 2
         equal_n = false;
     end
+    if nargin < 3
+        only_spindle = false;
+    end
+    is_awake = strcmp(sleep, 'awake');
+    if is_awake && (equal_n || only_spindle)
+        error('equal_n and only_spindle are not available for awake ripples');
+    end
+    run_all = ~only_spindle;
     tag = sleep;
     if equal_n
         tag = [sleep '_equal_n'];
@@ -52,24 +72,44 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n)
             info.ripple_power = ripple_info_PRE.ripple_power(:);
             info.SO_phase = ripple_info_PRE.SO_phase;
             info.spindle_percentile = ripple_info_PRE.spindle_percentile;
-        case 'POST_matched'
-            load(fullfile(rev_dir, 'KDE_reactivation_ripples_PSTH_POST_unique.mat'), 'KDE_reactivation_ripples_PSTH');
+        case {'POST_matched', 'POST', 'POST_rate_lt10', 'POST_Bayes', 'POST_Bayes_rate_lt10', 'POST_Bayes_raw', 'POST_Bayes_raw_rate_lt10'}
+            switch erase(sleep, '_raw')
+                case 'POST_rate_lt10'
+                    load(fullfile(rev_dir, 'KDE_reactivation_ripples_PSTH_POST_unique_rate_lt10.mat'), 'KDE_reactivation_ripples_PSTH');
+                case 'POST_Bayes'
+                    load(fullfile(rev_dir, 'Bayes_reactivation_ripples_PSTH_POST_unique.mat'), 'Bayes_reactivation_ripples_PSTH');
+                    KDE_reactivation_ripples_PSTH = Bayes_reactivation_ripples_PSTH;
+                case 'POST_Bayes_rate_lt10'
+                    load(fullfile(rev_dir, 'Bayes_reactivation_ripples_PSTH_POST_unique_rate_lt10.mat'), 'Bayes_reactivation_ripples_PSTH');
+                    KDE_reactivation_ripples_PSTH = Bayes_reactivation_ripples_PSTH;
+                otherwise
+                    load(fullfile(rev_dir, 'KDE_reactivation_ripples_PSTH_POST_unique.mat'), 'KDE_reactivation_ripples_PSTH');
+            end
             PSTH = KDE_reactivation_ripples_PSTH;
-            keep = ismember(ripple_info.session_id(:), pre_sessions);
+            if strcmp(sleep, 'POST_matched')
+                keep = ismember(ripple_info.session_id(:), pre_sessions);
+            else
+                keep = true(numel(ripple_info.session_id), 1);   % all 22 POST sessions
+            end
             info.session_id = ripple_info.session_id(keep);
             info.session_id = info.session_id(:);
             info.ripple_power = ripple_info.ripple_power(keep);
             info.ripple_power = info.ripple_power(:);
             info.SO_phase = ripple_info.SO_phase(keep, :);
-            % POST spindle_percentile is NaN below the 10th percentile; recompute
-            % from spindle_amplitude_peak as in add_spindle_percentile_PRE
-            amp_all = ripple_info.spindle_amplitude_peak(keep, :);
-            info.spindle_percentile = NaN(size(amp_all));
-            for s = unique(info.session_id)'
-                idx = info.session_id == s;
-                amp = amp_all(idx, :);
-                info.spindle_percentile(idx, :) = (tiedrank(amp) - 0.5) ./ size(amp, 1) * 100;
-            end
+            % POST spindle percentile of spindle_amplitude as in the original paper:
+            % events below the 10th within-session percentile are NaN (excluded),
+            % so Q1 covers the 10-25th percentile
+            info.spindle_percentile = ripple_info.spindle_percentile(keep, :);
+        case 'awake'
+            load(fullfile(rev_dir, 'KDE_reactivation_ripples_PSTH_awake_unique.mat'), 'KDE_reactivation_ripples_PSTH_awake');
+            load(fullfile(rev_dir, 'ripple_info_awake_unique.mat'), 'ripple_info_awake');
+            PSTH = KDE_reactivation_ripples_PSTH_awake;
+            clear KDE_reactivation_ripples_PSTH_awake
+            keep = true(numel(ripple_info_awake.session_id), 1);
+            info.session_id = ripple_info_awake.session_id(:);
+            info.ripple_power = ripple_info_awake.ripple_power(:);
+            info.SO_phase = ripple_info_awake.SO_phase;
+            info.spindle_percentile = ripple_info_awake.spindle_percentile;
         otherwise
             error('Unknown sleep %s', sleep);
     end
@@ -95,8 +135,14 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n)
     fprintf('%s: %d events from %d sessions\n', tag, numel(keep), numel(unique(info.session_id)));
 
     % Track bias matrices (nBins x nEvents)
-    track_bias_HC = (PSTH.HPC_z_logodds_ripples(keep, :) + PSTH.nan_mask(keep, :))';
-    track_bias_V1 = (PSTH.V1_z_logodds_ripples(keep, :) + PSTH.nan_mask(keep, :))';
+    % '_raw' modes: raw (not z-scored) log odds, so windows without spikes stay at 0
+    if contains(sleep, '_raw')
+        lo_field = '_logodds_ripples';
+    else
+        lo_field = '_z_logodds_ripples';
+    end
+    track_bias_HC = (PSTH.(['HPC' lo_field])(keep, :) + PSTH.nan_mask(keep, :))';
+    track_bias_V1 = (PSTH.(['V1' lo_field])(keep, :) + PSTH.nan_mask(keep, :))';
     clear PSTH KDE_reactivation_ripples_PSTH KDE_reactivation_ripples_PSTH_PRE
 
     % Time parameters
@@ -117,17 +163,19 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n)
     nEv = numel(mean_HPC);
 
     %% SECTION 1: ALL RIPPLES (HPC->V1)
-    fprintf('Processing All Ripples...\n');
     all_set = struct('label', 'All Ripples', 'mask', true(1, nEv), 'c1', [], 'c2', []);
-    run_condition_set(tag, all_set, 'HPC->V1', main_color, sprintf('All %s Ripples (HPC->V1)', tag), 'AUC_all_events', ...
-        out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    if run_all
+        fprintf('Processing All Ripples...\n');
+        run_condition_set(tag, all_set, 'HPC->V1', main_color, sprintf('All %s Ripples (HPC->V1)', tag), 'AUC_all_events', ...
+            out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
 
-    %% SECTION 2: RIPPLE POWER QUARTILES, within session (HPC->V1)
-    fprintf('Processing Ripple Percentiles...\n');
-    q_labels = {'Q1 (Low)', 'Q2', 'Q3', 'Q4 (High)'};
-    rp_set = struct('label', q_labels, 'mask', q_masks, 'c1', [], 'c2', []);
-    run_condition_set(tag, rp_set, 'HPC->V1', cool(4), 'Ripple Power Percentiles, within session (HPC->V1)', 'AUC_ripple_percentile', ...
-        out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+        %% SECTION 2: RIPPLE POWER QUARTILES, within session (HPC->V1)
+        fprintf('Processing Ripple Percentiles...\n');
+        q_labels = {'Q1 (Low)', 'Q2', 'Q3', 'Q4 (High)'};
+        rp_set = struct('label', q_labels, 'mask', q_masks, 'c1', [], 'c2', []);
+        run_condition_set(tag, rp_set, 'HPC->V1', cool(4), 'Ripple Power Percentiles, within session (HPC->V1)', 'AUC_ripple_percentile', ...
+            out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    end
 
     %% SECTION 3: SPINDLE PERCENTILE QUARTILES, hemisphere-matched (V1->HPC)
     fprintf('Processing Spindle Percentiles...\n');
@@ -135,18 +183,20 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n)
     run_condition_set(tag, sp_set, 'V1->HPC', cool(4), 'Spindle Percentiles, within session (V1->HPC)', 'AUC_spindle_percentile', ...
         out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
 
-    %% SECTION 4: SO PHASE, hemisphere-matched (V1->HPC)
-    fprintf('Processing SO Phase...\n');
     so_set = add_all_mask(hemisphere_conditions('SO', info), nEv);
-    run_condition_set(tag, so_set, 'V1->HPC', [0.2 0.6 0.8; 0.8 0.2 0.2], 'SO Phase (V1->HPC)', 'AUC_SO_phase', ...
-        out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
-
-    %% SECTION 4b: DOMINANT SO TROUGH, non-dominant hemisphere peak vs trough (V1->HPC)
-    fprintf('Processing SO Trough (non-dominant peak vs trough)...\n');
     sob_set = add_all_mask(hemisphere_conditions('SO_trough_bilateral', info), nEv);
     sob_colors = [0.95 0.65 0.82; 0.8 0.1 0.5];
-    run_condition_set(tag, sob_set, 'V1->HPC', sob_colors, 'Dominant SO Trough, non-dominant Peak vs Trough (V1->HPC)', ...
-        'AUC_SO_trough_bilateral', out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    if run_all
+        %% SECTION 4: SO PHASE, hemisphere-matched (V1->HPC)
+        fprintf('Processing SO Phase...\n');
+        run_condition_set(tag, so_set, 'V1->HPC', [0.2 0.6 0.8; 0.8 0.2 0.2], 'SO Phase (V1->HPC)', 'AUC_SO_phase', ...
+            out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+
+        %% SECTION 4b: DOMINANT SO TROUGH, non-dominant hemisphere peak vs trough (V1->HPC)
+        fprintf('Processing SO Trough (non-dominant peak vs trough)...\n');
+        run_condition_set(tag, sob_set, 'V1->HPC', sob_colors, 'Dominant SO Trough, non-dominant Peak vs Trough (V1->HPC)', ...
+            'AUC_SO_trough_bilateral', out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    end
 
     %% SECTION 5: TEMPORAL AUC
     % V1 window centred on each time bin (t +/- win_size/2) for all sets, as in
@@ -157,18 +207,27 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n)
     tp.time_bins = -1:tp.step_size:1;
     tp.bin_centers = bin_centers;
 
-    fprintf('Processing Temporal AUC (all ripples)...\n');
-    run_temporal_set(tag, all_set, 'HPC->V1', 'centred', main_color, sprintf('All %s Ripples (HPC->V1)', tag), ...
-        ['KDE_temporal_AUC_all_ripples_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    if run_all
+        fprintf('Processing Temporal AUC (all ripples)...\n');
+        run_temporal_set(tag, all_set, 'HPC->V1', 'centred', main_color, sprintf('All %s Ripples (HPC->V1)', tag), ...
+            ['KDE_temporal_AUC_all_ripples_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    end
+    if is_awake
+        fprintf('Processing Temporal AUC (ripple power)...\n');
+        run_temporal_set(tag, rp_set, 'HPC->V1', 'centred', cool(4), 'Ripple Power Percentiles (HPC->V1)', ...
+            ['KDE_temporal_AUC_ripple_percentile_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    end
     fprintf('Processing Temporal AUC (spindle)...\n');
     run_temporal_set(tag, sp_set, 'V1->HPC', 'centred', cool(4), 'Spindle Percentiles (V1->HPC)', ...
         ['KDE_temporal_AUC_spindle_percentile_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
-    fprintf('Processing Temporal AUC (SO)...\n');
-    run_temporal_set(tag, so_set, 'V1->HPC', 'centred', [0.2 0.6 0.8; 0.8 0.2 0.2], 'SO Phase (V1->HPC)', ...
-        ['KDE_temporal_AUC_SO_phase_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
-    fprintf('Processing Temporal AUC (SO trough, non-dominant peak vs trough)...\n');
-    run_temporal_set(tag, sob_set, 'V1->HPC', 'centred', sob_colors, 'Dominant SO Trough (V1->HPC)', ...
-        ['KDE_temporal_AUC_SO_trough_bilateral_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    if run_all
+        fprintf('Processing Temporal AUC (SO)...\n');
+        run_temporal_set(tag, so_set, 'V1->HPC', 'centred', [0.2 0.6 0.8; 0.8 0.2 0.2], 'SO Phase (V1->HPC)', ...
+            ['KDE_temporal_AUC_SO_phase_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+        fprintf('Processing Temporal AUC (SO trough, non-dominant peak vs trough)...\n');
+        run_temporal_set(tag, sob_set, 'V1->HPC', 'centred', sob_colors, 'Dominant SO Trough (V1->HPC)', ...
+            ['KDE_temporal_AUC_SO_trough_bilateral_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    end
 
     fprintf('All analyses finished successfully!\n');
 end
@@ -250,6 +309,7 @@ function run_condition_set(sleep, conds, direction, colors, title_str, save_name
     sgtitle([title_str '  (grey: shuffled)'], 'FontSize', 13);
     savefig(fig, fullfile(out_dir, [save_name '.fig']));
     exportgraphics(fig, fullfile(out_dir, [save_name '.png']), 'Resolution', 300);
+    exportgraphics(fig, fullfile(out_dir, [save_name '.pdf']), 'ContentType', 'vector');
 end
 
 function run_temporal_set(sleep, conds, direction, alignment, colors, title_str, save_name, out_dir, mean_HPC, track_bias_V1, tp, nBoot)
@@ -314,4 +374,5 @@ function run_temporal_set(sleep, conds, direction, alignment, colors, title_str,
     sgtitle([sleep ' temporal: ' title_str '  (black: shuffled)'], 'FontSize', 12);
     savefig(fig, fullfile(out_dir, [save_name '.fig']));
     exportgraphics(fig, fullfile(out_dir, [save_name '.png']), 'Resolution', 300);
+    exportgraphics(fig, fullfile(out_dir, [save_name '.pdf']), 'ContentType', 'vector');
 end

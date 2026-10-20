@@ -312,6 +312,8 @@ function plot_session_coherence(T, S, analysis, title_str, v1_windows, save_path
     sgtitle([title_str ': unmatched vs MUA-equalised events'], 'FontSize', 12);
     savefig(fig, [save_path '.fig']);
     exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
+    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
+    print(fig, [save_path '.svg'], '-dsvg', '-vector');
 end
 
 function plot_MUA_distributions(M, analysis, title_str, v1_windows, save_path)
@@ -344,6 +346,8 @@ function plot_MUA_distributions(M, analysis, title_str, v1_windows, save_path)
     sgtitle([title_str ': MUA before and after equalisation (pooled sessions, draw 1)'], 'FontSize', 12);
     savefig(fig, [save_path '.fig']);
     exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
+    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
+    print(fig, [save_path '.svg'], '-dsvg', '-vector');
 end
 
 function plot_pooled_AUC(P, analyses, titles, v1_windows, save_path)
@@ -376,4 +380,6 @@ function plot_pooled_AUC(P, analyses, titles, v1_windows, save_path)
     sgtitle('Pooled AUC: matched draws (dots, bar = mean) vs unmatched (diamond)', 'FontSize', 11);
     savefig(fig, [save_path '.fig']);
     exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
+    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
+    print(fig, [save_path '.svg'], '-dsvg', '-vector');
 end
