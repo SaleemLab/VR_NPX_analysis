@@ -1,7 +1,8 @@
 %% MUA-equalised event control: pooled reactivation coherence AUC (POST)
 % Same conditions and AUC as reactivation_AUC_coherence_PRE (POST data), with
-% Low and High events equalised for HC MUA and dominant-hemisphere V1 MUA within
-% each session (as MUA_equalised_event_control), then pooled across sessions.
+% Low and High events equalised for HC MUA and dominant-hemisphere V1 MUA (and for
+% 'with_nondominant' also non-dominant V1 MUA) within each session (as
+% MUA_equalised_geomean), then pooled across sessions.
 %   ripple_power : HPC->V1. Events selected by within-session ripple power
 %                  percentile <= 25 (Low) vs > 75 (High); thresholds from |HPC| of
 %                  each condition's events. Temporal V1 window centred on each bin.
@@ -15,34 +16,34 @@
 %                  also in trough (bilateral, 'Trough'), as hemisphere_conditions
 %                  'SO_trough_bilateral'.
 % HPC =mean z log odds 0-0.1 s; V1 = mean z log odds over the V1 window.
-% MUA (z, 10 ms bins): HC 0-0.1 s; V1 of the dominant hemisphere over the V1 window
-% (dominance from the V1 bias sign in that window, so matching is redone per window).
+% MUA (z, 10 ms bins): HC 0-0.1 s; V1 of the dominant (and non-dominant) hemisphere
+% over the V1 window (dominance from the V1 bias sign in that window, so matching is
+% redone per window).
 % Each iteration (seeded): one MUA-matched draw of Low and High events in every
-% session (nQ x nQ joint quantile bins, min(nA, nB) kept per bin; sessions with
-% < min_events matched events dropped), pooled, then one bootstrap resample of the
+% session (MUA_match_prepare / MUA_match_draw: nQ quantile bins per MUA measure,
+% min(nA, nB) kept per joint bin; sessions with < min_events matched events
+% dropped), pooled, then one bootstrap resample of the
 % pooled events. Shuffled control keeps the selector un-resampled while resampling
 % the measure (as reactivation_coherence_auc). Unmatched AUC uses the same bootstrap
 % without matching. Matched second - first condition difference (High - Low,
 % Trough - Peak; bilateral - unilateral for SO_trough_uni_bi) is taken within each
 % iteration; diff_p is one-sided (difference <= 0).
-% Output: nature_neuroscience_revision_analysis\MUA_equalised_event_control\AUC,
-% plus the low vs high bar plot (plot_AUC_low_vs_high_controls).
-%   which : analyses to run (default all: 'ripple_power', 'spindle', 'SO_phase',
-%           'SO_trough_uni_bi'); static results of the others are kept from the
-%           saved MUA_equalised_AUC_static.mat
-function MUA_equalised_AUC(which)
-    if exist('D:\corticohippocampal_replay', 'dir') > 0
-        analysis_folder = 'D:\corticohippocampal_replay';
-    elseif exist('P:\corticohippocampal_replay', 'dir') > 0
-        analysis_folder = 'P:\corticohippocampal_replay';
-    end
-    rev_dir = fullfile(analysis_folder, 'nature_neuroscience_revision_analysis');
-    out_dir = fullfile(rev_dir, 'MUA_equalised_event_control', 'AUC');
+% Output: nature_neuroscience_revision_analysis\<variant folder>\AUC, plus the low
+% vs high bar plot (plot_AUC_low_vs_high_controls).
+%   variant : 'dominant' (default) or 'with_nondominant' (MUA_equalised_variant)
+%   which   : analyses to run (default all: 'ripple_power', 'spindle', 'SO_phase',
+%             'SO_trough_uni_bi'); static results of the others are kept from the
+%             saved MUA_equalised_AUC_static.mat
+function MUA_equalised_AUC(variant, which)
+    if nargin < 1 || isempty(variant), variant = 'dominant'; end
+    v = MUA_equalised_variant(variant);
+    rev_dir = addon_setup();
+    out_dir = fullfile(rev_dir, v.folder, 'AUC');
     if ~exist(out_dir, 'dir')
         mkdir(out_dir);
     end
     nIter = 1000;
-    nQ = 5;
+    nQ = v.nQ;
     min_events = 10;
 
     % --- Load non-duplicated POST data (rows aligned to ripple_info) ---
@@ -84,8 +85,9 @@ function MUA_equalised_AUC(which)
         'alignment', {'centred', 'centred', 'centred', 'centred'}, ...
         'colors',    {style.ripple_power.colors, style.spindle.colors, style.SO_phase.colors, style.SO_trough_uni_bi.colors});
     an_all = an;
-    if nargin >= 1, an = an(ismember({an.name}, which)); end
-    cfg = struct('nIter', nIter, 'nQ', nQ, 'min_events', min_events);
+    if nargin >= 2, an = an(ismember({an.name}, which)); end
+    cfg = struct('nIter', nIter, 'nQ', nQ, 'min_events', min_events, 'variant', v.name, 'matched_vars', {v.vars});
+    match_matrix = v.matrix;
 
     %% Static AUC: pre and post V1 windows
     v1_windows = struct('name', {'pre', 'post'}, 'label', {'V1 -0.2-0 s (pre)', 'V1 0-0.2 s (post)'}, ...
@@ -93,7 +95,7 @@ function MUA_equalised_AUC(which)
     Tstat = table();
     res = struct();
     static_file = fullfile(out_dir, 'MUA_equalised_AUC_static.mat');
-    if nargin >= 1 && exist(static_file, 'file')
+    if nargin >= 2 && exist(static_file, 'file')
         % keep the saved results of the analyses not rerun
         S = load(static_file, 'res', 'Tstat');
         res = S.res;
@@ -103,7 +105,7 @@ function MUA_equalised_AUC(which)
     end
     for iA = 1:numel(an)
         for w = 1:numel(v1_windows)
-            W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, v1_windows(w).range);
+            W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, v1_windows(w).range, match_matrix);
             r = matched_auc(an(iA), E, W, cfg);
             res.(an(iA).name).(v1_windows(w).name) = r;
             Tstat = [Tstat; summary_row(an(iA).name, v1_windows(w).name, r)]; %#ok<AGROW>
@@ -115,8 +117,8 @@ function MUA_equalised_AUC(which)
     disp(Tstat);
     save(static_file, 'res', 'Tstat', 'v1_windows', 'cfg');
     writetable(Tstat, fullfile(out_dir, 'MUA_equalised_AUC_static.csv'));
-    plot_static(res, an_all(isfield(res, {an_all.name})), v1_windows, fullfile(out_dir, 'MUA_equalised_AUC_static'));
-    plot_AUC_low_vs_high_controls('MUA_equalised');
+    plot_static(res, an_all(isfield(res, {an_all.name})), v1_windows, v.label, fullfile(out_dir, 'MUA_equalised_AUC_static'));
+    plot_AUC_low_vs_high_controls(v.key);
 
     %% Temporal AUC: sliding V1 window (HPC fixed 0-0.1 s)
     tp.win_size = 0.1;
@@ -124,9 +126,9 @@ function MUA_equalised_AUC(which)
     tp.time_bins = -0.6:tp.step_size:0.6;
     for iA = 1:numel(an)
         fprintf('Temporal AUC: %s\n', an(iA).name);
-        AUC = temporal_auc(an(iA), E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp, cfg);
+        AUC = temporal_auc(an(iA), E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp, cfg, match_matrix);
         save(fullfile(out_dir, ['MUA_equalised_AUC_temporal_' an(iA).name '.mat']), 'AUC');
-        plot_temporal(AUC, an(iA), fullfile(out_dir, ['MUA_equalised_AUC_temporal_' an(iA).name]));
+        plot_temporal(AUC, an(iA), v.label, fullfile(out_dir, ['MUA_equalised_AUC_temporal_' an(iA).name]));
     end
     fprintf('Saved to %s\n', out_dir);
 end
@@ -135,23 +137,21 @@ function X = fillmissing_zero(X)
     X(~isfinite(X)) = 0;
 end
 
-function W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, range)
-    % V1 bias, dominant hemisphere and its V1 MUA for one V1 window
+function W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, range, match_matrix)
+    % V1 bias, dominant hemisphere and the matched MUA measures (W.X) for one V1 window
     b = find(bin_centers > range(1) & bin_centers < range(2));
     m = find(mua_centers > range(1) & mua_centers < range(2));
     W.V1_b = ((cV1(b(end) + 1, :) - cV1(b(1), :)) ./ (nV1(b(end) + 1, :) - nV1(b(1), :)))';
     W.hemi = NaN(size(W.V1_b)); W.hemi(W.V1_b < 0) = 1; W.hemi(W.V1_b > 0) = 2;
     V1_L = (cL(:, m(end) + 1) - cL(:, m(1))) / numel(m);
     V1_R = (cR(:, m(end) + 1) - cR(:, m(1))) / numel(m);
-    W.V1_MUA = NaN(size(W.V1_b));
-    W.V1_MUA(W.hemi == 1) = V1_L(W.hemi == 1);
-    W.V1_MUA(W.hemi == 2) = V1_R(W.hemi == 2);
+    W.X = match_matrix(E.HC_MUA, V1_L, V1_R, W.hemi);
 end
 
 function r = matched_auc(a, E, W, cfg)
     % Bootstrapped AUC per condition: MUA-matched, shuffled (matched) and unmatched
     [masks, r.labels] = condition_masks(a.name, E, W.hemi);
-    valid = isfinite(W.V1_b) & isfinite(E.HPC_b) & isfinite(E.HC_MUA) & isfinite(W.V1_MUA);
+    valid = isfinite(W.V1_b) & isfinite(E.HPC_b) & all(isfinite(W.X), 2);
     if strcmp(a.direction, 'HPC->V1')
         sel = E.HPC_b; meas = W.V1_b;
     else
@@ -167,13 +167,13 @@ function r = matched_auc(a, E, W, cfg)
         end
         t = prctile(ref, 0:10:100); th{c} = t(1:end-1);
     end
-    P = prepare_matching(idxU{1}, idxU{2}, E.sess, E.HC_MUA, W.V1_MUA, cfg.nQ, cfg.min_events);
+    P = MUA_match_prepare(idxU{1}, idxU{2}, E.sess, W.X, cfg.nQ, cfg.min_events);
 
     nIter = cfg.nIter;
     au_m = NaN(nIter, 2); au_s = NaN(nIter, 2); au_u = NaN(nIter, 2);
     parfor i = 1:nIter
         s = RandStream('philox4x32_10', 'Seed', i);
-        idxM = draw_matched(P, s);
+        idxM = MUA_match_draw(P, s);
         am = NaN(1, 2); as = NaN(1, 2); au = NaN(1, 2);
         for c = 1:2
             m = idxM{c};
@@ -253,48 +253,6 @@ function pct = within_session_percentile(X, session_ids)
     end
 end
 
-function P = prepare_matching(ia, ib, sess, x1, x2, nQ, min_events)
-    % Per session joint (x1, x2) quantile bins; keep bins with events in both sets
-    P.ea = {}; P.eb = {}; P.k = []; P.session = [];
-    for s = unique(sess([ia; ib]))'
-        a = ia(sess(ia) == s); b = ib(sess(ib) == s);
-        if isempty(a) || isempty(b), continue; end
-        pooled = [a; b];
-        ca = joint_bin(x1, x2, pooled, a, nQ);
-        cb = joint_bin(x1, x2, pooled, b, nQ);
-        ea = {}; eb = {}; k = [];
-        for c = unique([ca; cb])'
-            n = min(sum(ca == c), sum(cb == c));
-            if n > 0
-                ea{end+1} = a(ca == c); eb{end+1} = b(cb == c); k(end+1) = n; %#ok<AGROW>
-            end
-        end
-        if sum(k) >= min_events
-            P.ea = [P.ea ea]; P.eb = [P.eb eb]; P.k = [P.k k];
-            P.session = [P.session s * ones(1, numel(k))];
-        end
-    end
-end
-
-function idx = draw_matched(P, s)
-    sa = cell(numel(P.k), 1); sb = sa;
-    for j = 1:numel(P.k)
-        sa{j} = P.ea{j}(randperm(s, numel(P.ea{j}), P.k(j)));
-        sb{j} = P.eb{j}(randperm(s, numel(P.eb{j}), P.k(j)));
-    end
-    idx = {vertcat(sa{:}), vertcat(sb{:})};
-end
-
-function cid = joint_bin(x1, x2, pooled, idx, nQ)
-    cid = (quantile_bin(x1(pooled), x1(idx), nQ) - 1) * nQ + quantile_bin(x2(pooled), x2(idx), nQ);
-end
-
-function q = quantile_bin(ref, x, nQ)
-    edges = unique(prctile(ref, linspace(0, 100, nQ + 1)));
-    edges(1) = -Inf; edges(end) = Inf;
-    q = discretize(x, edges);
-end
-
 function d = bias_diff(sel, meas, th)
     % mean(meas | sel >= th) - mean(meas | sel <= -th), as reactivation_coherence_auc
     d = NaN(1, numel(th));
@@ -323,7 +281,7 @@ function row = summary_row(name, window, r)
         'n_per_cond_matched', 'n_sessions_matched'});
 end
 
-function AUC = temporal_auc(a, E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp, cfg)
+function AUC = temporal_auc(a, E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp, cfg, match_matrix)
     nT = numel(tp.time_bins);
     f = {'matched_mean', 'shuffled_mean', 'unmatched_mean'};
     for k = 1:numel(f), AUC.(f{k}) = NaN(nT, 2); end
@@ -337,7 +295,7 @@ function AUC = temporal_auc(a, E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp
         else
             t0 = tp.time_bins(t);
         end
-        W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, [t0 - 1e-9, t0 + tp.win_size - 1e-9]);
+        W = window_data(E, cV1, nV1, cL, cR, bin_centers, mua_centers, [t0 - 1e-9, t0 + tp.win_size - 1e-9], match_matrix);
         r = matched_auc(a, E, W, cfg);
         for k = 1:numel(f), AUC.(f{k})(t, :) = r.(f{k}); end
         for k = 1:numel(fci), AUC.(fci{k})(t, :, :) = permute(r.(fci{k}), [3 2 1]); end
@@ -353,7 +311,7 @@ function AUC = temporal_auc(a, E, cV1, nV1, cL, cR, bin_centers, mua_centers, tp
     AUC.cfg = cfg;
 end
 
-function plot_static(res, an, v1_windows, save_path)
+function plot_static(res, an, v1_windows, match_label, save_path)
     % Per condition: shuffled (grey), unmatched (outline), MUA-matched (filled) with 95% CI
     fig = figure('Name', 'MUA-equalised AUC', 'Position', [100 50 860 330 * numel(an)]);
     tiledlayout(numel(an), numel(v1_windows), 'TileSpacing', 'compact');
@@ -384,12 +342,12 @@ function plot_static(res, an, v1_windows, save_path)
                 'FontSize', 8, 'FontWeight', 'normal');
         end
     end
-    sgtitle('Pooled AUC, within-session MUA-equalised (grey: shuffled, outline: unmatched, filled: matched)', 'FontSize', 11);
+    sgtitle({['Pooled AUC, ' match_label], '(grey: shuffled, outline: unmatched, filled: matched)'}, 'FontSize', 11);
     savefig(fig, [save_path '.fig']);
     export_png(fig, [save_path '.png']);
 end
 
-function plot_temporal(AUC, a, save_path)
+function plot_temporal(AUC, a, match_label, save_path)
     % Tiles: each condition (matched + shuffled, unmatched dashed) and matched difference
     cond_colors = num2cell(a.colors, 2);
     tvec = AUC.time_bins;
@@ -430,7 +388,7 @@ function plot_temporal(AUC, a, save_path)
     set(ax3, 'TickDir', 'out', 'Box', 'off', 'FontSize', 11);
     xlabel(xlab);
     set([ax ax3], 'XLim', [-0.5 0.5]);
-    sgtitle(['MUA-equalised temporal: ' a.title], 'FontSize', 11);
+    sgtitle({['MUA-equalised temporal: ' a.title], ['(' match_label ')']}, 'FontSize', 11);
     savefig(fig, [save_path '.fig']);
     export_png(fig, [save_path '.png']);
 end

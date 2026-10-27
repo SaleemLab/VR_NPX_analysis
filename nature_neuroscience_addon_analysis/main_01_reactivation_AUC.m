@@ -10,12 +10,12 @@
 %   KDE_reactivation_ripples_PSTH_PRE_unique.mat, KDE_reactivation_ripples_PSTH_POST_unique.mat
 % Outputs (nature_neuroscience_revision_analysis):
 %   PRE, PRE_equal_n, POST_matched, POST_matched_equal_n, POST   (AUC_*.mat, figures,
-%       AUC_low_vs_high.fig/png/pdf)
-%   POST_original_AUC_hierarchical
-%   awake   (as the sleep folders, plus KDE_temporal_AUC_ripple_percentile_awake; inputs
-%       ripple_info_awake_unique.mat, KDE_reactivation_ripples_PSTH_awake_unique.mat)
+%       AUC_low_vs_high.fig/png/pdf, temporal_AUC_low_vs_high.fig/png/pdf)
+%   POST_original_AUC_hierarchical   (also hier_temporal_AUC_low_vs_high)
+%   awake   (as the sleep folders; inputs ripple_info_awake_unique.mat,
+%       KDE_reactivation_ripples_PSTH_awake_unique.mat)
 rev_dir = addon_setup();
-run_analysis = true;   % false: only redraw the low vs high bar plots from saved results
+run_analysis = true;   % false: only redraw the low vs high bar / temporal plots from saved results
 
 %% 1. AUC per sleep (folder = sleep, '_equal_n' when PRE and POST events per session are equalised)
 % 'POST_matched': POST events of the 12 sessions with PRE sleep; 'POST': all 22 sessions
@@ -28,15 +28,18 @@ for k = 1:numel(runs)
     folder = runs(k).sleep;
     if runs(k).equal_n, folder = [folder '_equal_n']; end
     plot_AUC_low_vs_high(folder);
+    plot_temporal_AUC_low_vs_high(folder);
 end
 
 %% 2. Original POST decoder, hierarchical (session -> event) bootstrap
 if run_analysis
     hierarchical_AUC_POST_original();
 end
+plot_temporal_AUC_low_vs_high('POST_original_AUC_hierarchical');
 
-%% 3. Awake (non-SWS POST) ripples: same sections, plus temporal ripple power AUC
+%% 3. Awake (non-SWS POST) ripples: same sections
 if run_analysis
     reactivation_AUC_coherence_PRE('awake');
 end
 plot_AUC_low_vs_high('awake');
+plot_temporal_AUC_low_vs_high('awake');

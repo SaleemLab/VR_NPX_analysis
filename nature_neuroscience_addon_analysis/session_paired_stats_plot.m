@@ -113,6 +113,7 @@ for iA = 1:numel(analyses)
     sgtitle(sprintf('%s (%s, one-sided)', strrep(analyses(iA), '_', ' '), test_titles(test_method)), 'FontSize', 12);
     savefig(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.fig']));
     exportgraphics(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.png']), 'Resolution', 300);
+    exportgraphics(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.pdf']), 'ContentType', 'vector');
 end
 
 % --- Matched PRE vs POST plots (paired tests only): sessions with both values ---
@@ -149,6 +150,7 @@ if ~strcmp(test_method, 'ranksum')
             test_titles(test_method)), 'FontSize', 12);
         savefig(fig, fullfile(out_dir, [prefix 'PREvsPOST_matched_' char(analyses(iA)) '.fig']));
         exportgraphics(fig, fullfile(out_dir, [prefix 'PREvsPOST_matched_' char(analyses(iA)) '.png']), 'Resolution', 300);
+        exportgraphics(fig, fullfile(out_dir, [prefix 'PREvsPOST_matched_' char(analyses(iA)) '.pdf']), 'ContentType', 'vector');
     end
 end
 end

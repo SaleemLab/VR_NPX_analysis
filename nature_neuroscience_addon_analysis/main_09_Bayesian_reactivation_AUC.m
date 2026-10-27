@@ -20,4 +20,5 @@ for k = 1:numel(cell_filters)
     end
     reactivation_AUC_coherence_PRE(tags{k});
     plot_AUC_low_vs_high(tags{k});
+    plot_temporal_AUC_low_vs_high(tags{k});
 end

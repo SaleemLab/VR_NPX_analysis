@@ -4,6 +4,7 @@ function plot_AUC_low_vs_high_controls(which)
 %   'MUA_equalised'           : MUA_equalised_AUC, MUA-matched AUC and its shuffle
 %                               (one row; ripple power, spindle, SO phase,
 %                               dominant SO trough with non-dominant peak vs trough)
+%   'MUA_equalised_with_nondominant' : as above, also non-dominant V1 MUA matched
 %   'split_half'              : split_half_V1_AUC_POST (event bootstrap)
 %   'split_half_hierarchical' : split_half_V1_AUC_POST_hierarchical (session ->
 %                               event bootstrap)
@@ -23,10 +24,16 @@ function plot_AUC_low_vs_high_controls(which)
         analysis_folder = 'P:\corticohippocampal_replay';
     end
     rev_dir = fullfile(analysis_folder, 'nature_neuroscience_revision_analysis');
-    if nargin < 1, which = {'MUA_equalised', 'split_half', 'split_half_hierarchical'}; end
+    if nargin < 1
+        which = {'MUA_equalised', 'MUA_equalised_with_nondominant', 'split_half', 'split_half_hierarchical'};
+    end
     which = cellstr(which);
-    if ismember('MUA_equalised', which)
-        plot_MUA_equalised(fullfile(rev_dir, 'MUA_equalised_event_control', 'AUC'));
+    variants = {'dominant', 'with_nondominant'};
+    for k = 1:numel(variants)
+        v = MUA_equalised_variant(variants{k});
+        if ismember(v.key, which)
+            plot_MUA_equalised(fullfile(rev_dir, v.folder, 'AUC'), v.label);
+        end
     end
     if ismember('split_half', which)
         plot_split_half(fullfile(rev_dir, 'split_half_V1_AUC_POST'), 'split_half_AUC_static_', ...
@@ -38,8 +45,13 @@ function plot_AUC_low_vs_high_controls(which)
     end
 end
 
-function plot_MUA_equalised(in_dir)
-    L = load(fullfile(in_dir, 'MUA_equalised_AUC_static.mat'), 'res');
+function plot_MUA_equalised(in_dir, match_label)
+    static_file = fullfile(in_dir, 'MUA_equalised_AUC_static.mat');
+    if ~exist(static_file, 'file')
+        warning('plot_AUC_low_vs_high_controls:missing', 'Missing %s', static_file);
+        return
+    end
+    L = load(static_file, 'res');
     style = AUC_low_high_style();
     names = {'ripple_power', 'spindle', 'SO_phase', 'SO_trough_uni_bi'};
     names = names(isfield(L.res, names));
@@ -61,7 +73,7 @@ function plot_MUA_equalised(in_dir)
         AUC_low_high_panel(ax, R{iA}, st.labels, st.colors, {'V1 -0.2-0 s', 'V1 0-0.2 s'}, y_lim, P{iA}, yb);
         title(ax, st.title, 'FontWeight', 'normal');
     end
-    sgtitle({'POST MUA-equalised (within-session HC and V1 MUA matched)', ...
+    sgtitle({['POST MUA-equalised (' match_label ')'], ...
         'bracket: two-sided bootstrap p, second vs first condition'}, 'FontSize', 13);
     save_fig(fig, fullfile(in_dir, 'MUA_equalised_AUC_low_vs_high'));
 end

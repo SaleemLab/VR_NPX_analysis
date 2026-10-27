@@ -1,0 +1,437 @@
+<title>V1–HC Remapping Findings</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) for prose; figures and tables break out to a wider measure. Figures sit on white plates in both themes because the panels are white-background MATLAB exports. */
+:root {
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --fg: #182223;
+  --muted: #586a6c;
+  --rule: #d6dfdf;
+  --accent: #0d6a64;
+  --accent-soft: #dcefec;
+  --neg: #9d4545;
+  --neg-soft: #f6e3e1;
+  --plate: #ffffff;
+  --font-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-data: "JetBrains Mono", Consolas, "Courier New", monospace;
+  --measure: 68ch;
+  --wide: 1180px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111718; --surface: #182122; --fg: #e3eaea; --muted: #97a8a9; --rule: #2b3839;
+    --accent: #5fc2b7; --accent-soft: #1d3a37; --neg: #e39494; --neg-soft: #3d2526; --plate: #ffffff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111718; --surface: #182122; --fg: #e3eaea; --muted: #97a8a9; --rule: #2b3839;
+  --accent: #5fc2b7; --accent-soft: #1d3a37; --neg: #e39494; --neg-soft: #3d2526; --plate: #ffffff;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.6; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 48px 72px; display: grid; gap: 56px; }
+.col { max-width: var(--measure); margin-inline: auto; width: 100%; min-width: 0; }
+.wide { max-width: var(--wide); margin-inline: auto; width: 100%; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(2rem, 4.5vw, 2.9rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.55rem; font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+.stack { display: grid; gap: 16px; }
+.eyebrow { font-family: var(--font-data); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.dek { font-size: 1.2rem; color: var(--muted); }
+.meta { font-family: var(--font-data); font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.num { font-family: var(--font-data); font-size: 0.92em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+code { font-family: var(--font-data); font-size: 0.85em; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.summary { border-top: 3px solid var(--accent); padding-top: 20px; display: grid; gap: 18px; }
+.findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.findings li { display: grid; gap: 4px; }
+.findings b { font-family: var(--font-display); font-weight: 600; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--font-display); font-size: 0.92rem; border-block: 1px solid var(--rule); padding-block: 12px; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+figure { margin: 0; display: grid; gap: 12px; }
+.plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 4px; padding: 10px; overflow-x: auto; }
+.plate img { display: block; width: 100%; min-width: 760px; height: auto; }
+figcaption { font-size: 0.95rem; color: var(--muted); max-width: var(--measure); }
+figcaption b { color: var(--fg); font-family: var(--font-display); font-weight: 600; }
+
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 620px; height: auto; }
+.d-track { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+.d-grey { fill: var(--rule); stroke: var(--muted); stroke-width: 1; }
+.d-epoch { fill: var(--accent); }
+.d-text { fill: var(--fg); font-family: var(--font-display); font-size: 13px; }
+.d-small { fill: var(--muted); font-family: var(--font-data); font-size: 11px; }
+.d-line { stroke: var(--muted); stroke-width: 1; }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 220px; }
+thead th { font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+td:first-child { font-family: var(--font-body); }
+tbody tr:last-child td { border-bottom: 0; }
+td.pos { background: var(--accent-soft); }
+td.neg { background: var(--neg-soft); color: var(--neg); }
+td.na { color: var(--muted); }
+.note { font-size: 0.92rem; color: var(--muted); }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+footer { font-size: 0.9rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 18px; }
+@media (max-width: 600px) { body { font-size: 16px; } .page { gap: 40px; padding-block: 28px 48px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main class="page">
+  <header class="col stack">
+    <div class="eyebrow">V1_HC_attractor_remapping · results report</div>
+    <h1>V1–HC Remapping Findings</h1>
+    <p class="dek">How hippocampal and V1 track representations behave across the grey screen between laps, and on the first lap after a block switch.</p>
+    <div class="meta"><span>24 Oct 2026 · v2: event-locked 100 ms bins</span><span>RUN1 · 22 sessions · 6 mice</span><span>1,716 lap transitions · 175 block switches</span><span>theta: MUA only (LFP server down)</span></div>
+  </header>
+
+  <section class="col summary" aria-labelledby="short">
+    <h2 id="short">In short</h2>
+    <ul class="findings">
+      <li><b>Expectation does not slow the switch at track onset.</b> On the first lap of a new block, both regions represent the new track within 100–200 ms, as fast as late in the block. V1 codes the new track more strongly on that first lap (beyond its higher firing); HPC is no different in the first 200 ms and slightly better from 200 ms on. This looks like a surprise or release-from-adaptation signal, not a cost of expecting the old track.</li>
+      <li><b>HPC keeps the track just run for about 1 s into the grey screen.</b> After one lap of the new track, the grey representation flips to it, and this holds 0.2–1 s after lap end, past any visual latency. It is lap-locked, survives the drift, lick, spike and speed controls, and comes mainly from end-of-track cells. It is gone by the last second before onset and does not build up over the block. V1's grey signal is confined to the first 200 ms after lap end: its response to the screen turning grey.</li>
+      <li><b>Trial by trial, the bias in the last second of grey predicts the bias in the first 200 ms of the track.</b> HPC partial ρ is 0.41 (22/22 sessions, 6/6 animals) and V1 0.27, beyond spikes, speed, licks, block and track pair. It is specific to that trial and peaks at 100–200 ms after onset. Onset does not reset the HPC state (continuity is the same across onset as within the grey); V1 resets partially. So this is an ongoing state carried through onset, not an expectation signal.</li>
+      <li><b>No theta-paced flicker to the old track.</b> Decoded theta cycle by theta cycle, the first lap of a block switches to the new track in the first cycle, like any other lap. The pre-onset state predicts which track the first few cycles express on every lap, not specifically on switches.</li>
+      <li><b>HPC and V1 do not co-fluctuate in the grey, and neither leads the other.</b> This holds within trials, between trials, and with lags computed only inside the grey. Coupling does not modulate the pre → post prediction.</li>
+      <li><b>HPC MUA is theta-paced whenever the animal runs</b> (peak 7 Hz, on the track and in the grey). Theta cycles here come from MUA; LFP validation is pending.</li>
+      <li><b>Slow drift is large, and the block design turns it into a fake "block-track bias".</b> Every claim above uses a drift-robust contrast. Raw and z-scored log odds give the same conclusions.</li>
+    </ul>
+  </section>
+
+  <nav class="col toc" aria-label="Sections">
+    <a href="#design">Design</a><a href="#drift">Drift</a><a href="#time">Time course</a><a href="#grey">Grey screen</a><a href="#onset">Onset</a><a href="#trial">Trial to trial</a><a href="#reset">Onset reset</a><a href="#cells">Carrier cells</a><a href="#flicker">Theta flicker</a><a href="#coupling">V1–HPC coupling</a><a href="#theta">Theta</a><a href="#animals">Per animal</a><a href="#raw">Raw vs z</a><a href="#next">Next</a>
+  </nav>
+
+  <section class="col stack" aria-labelledby="design">
+    <h2 id="design">What was measured</h2>
+    <p>Each lap transition runs from lap <i>k</i>−1 to lap <i>k</i>, with a grey screen between them that lasts 4–6 s (uniform; median 4.98 s over 1,809 transitions). Track bias is the decoded log odds of Track L (T1) over Track R (T2) in non-overlapping 100 ms bins whose edges sit exactly on the lap end and on track onset, so no bin straddles a transition.</p>
+    <div class="diagram" role="img" aria-label="Timeline of one lap transition: last second of lap k-1, first and last second of grey, 0-200 ms and 0.2-1 s after onset.">
+      <svg viewBox="0 0 760 175" xmlns="http://www.w3.org/2000/svg">
+        <rect class="d-track" x="20" y="20" width="210" height="44" rx="3"/>
+        <rect class="d-grey" x="230" y="20" width="300" height="44"/>
+        <rect class="d-track" x="530" y="20" width="210" height="44" rx="3"/>
+        <text class="d-text" x="34" y="47">lap k−1, track on</text>
+        <text class="d-text" x="296" y="47">grey screen, 4–6 s</text>
+        <text class="d-text" x="560" y="47">lap k, track on</text>
+        <rect class="d-epoch" x="170" y="78" width="60" height="8"/>
+        <rect class="d-epoch" x="230" y="78" width="60" height="8"/>
+        <rect class="d-epoch" x="470" y="78" width="60" height="8"/>
+        <rect class="d-epoch" x="530" y="78" width="12" height="8"/>
+        <rect class="d-epoch" x="542" y="112" width="48" height="8" opacity="0.6"/>
+        <text class="d-small" x="150" y="104">end_prev</text>
+        <text class="d-small" x="150" y="118">last 1 s</text>
+        <text class="d-small" x="244" y="104">grey_early</text>
+        <text class="d-small" x="244" y="118">first 1 s</text>
+        <text class="d-small" x="452" y="104">grey_late</text>
+        <text class="d-small" x="452" y="118">last 1 s</text>
+        <text class="d-small" x="548" y="96">onset 0–200 ms</text>
+        <text class="d-small" x="596" y="122">onset_late 0.2–1 s</text>
+        <line class="d-line" x1="530" y1="14" x2="530" y2="160"/>
+        <text class="d-small" x="474" y="172">track onset</text>
+      </svg>
+    </div>
+    <ul class="plain">
+      <li><b>Decoders.</b> Bayesian with position marginalised (multinomial as main, Poisson as a check) and the paper's location-agnostic PLS-KDE. Templates come only from in-track running data; the grey screen never gets a position.</li>
+      <li><b>Cross-validation by held-out blocks.</b> Everything in the segment of lap <i>k</i> is decoded by a decoder trained without that block and its neighbours, with T1 and T2 training laps equalised. <span class="num">lobo3</span> holds out blocks b−1 to b+1, <span class="num">lobo5</span> holds out b−2 to b+2, and <span class="num">all laps</span> trains on everything (valid for grey windows only).</li>
+      <li><b>Animals.</b> HPC uses all six. V1 excludes M24018 (3–15 V1_L cells), leaving 5 animals and 19 sessions.</li>
+    </ul>
+  </section>
+
+  <section class="stack" aria-labelledby="drift">
+    <div class="col stack">
+      <h2 id="drift">1 · Drift makes the block design tricky</h2>
+      <p>Population activity drifts over minutes. Because tracks alternate in blocks, a decoder tends to favour whichever track's training laps lie closest in time. With <span class="num">lobo3</span> the nearest training laps of the current block's track are closer than the other track's; with <span class="num">lobo5</span> it is the reverse. So the two decoders push drift in opposite directions.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 1: drift diagnostics" src="{{fig1}}"></div>
+      <figcaption class="col"><b>A</b> Cross-validated in-lap track accuracy drops when the training blocks are further away (session 2: HPC 0.80 → 0.51, V1 0.98 → 0.74). <b>B</b> HPC early-grey bias toward the previous track for switch (red) and non-switch (black) transitions. The two swap places between lobo3 and lobo5, the signature of decoder drift: the pre-switch grey is decoded by the new block's decoder. <b>C</b> Averaging switch and non-switch transitions cancels the drift, and then all decoders agree. HPC early grey: <span class="num">+0.22 to +0.28 z</span> (Bayes), <span class="num">+0.12 to +0.14</span> (PLS). HPC late grey: <span class="num">+0.01 to +0.07</span>. V1: <span class="num">+0.04 to +0.07</span> early (the offset response) and ≈ 0 late. Dots = sessions, diamonds = animal means, colour = animal.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="time">
+    <div class="col stack">
+      <h2 id="time">2 · The time course around each transition</h2>
+      <p>Bias toward the upcoming lap's track, by the upcoming lap's position in its block. On the first lap after a switch (red), the previous lap was the other track, so a negative value before onset means the representation still favours the old track.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 2: bias toward the upcoming track over time" src="{{fig2}}"></div>
+      <figcaption class="col"><b>Left</b> aligned to the end of the previous lap; <b>middle</b> to track onset; <b>right</b> onset zoom. Event-locked 100 ms bins, ±1 s. HPC (top) keeps the just-run track into the grey and decays over about a second. V1 (bottom) loses it within about 0.2–0.3 s. At onset every lap type rises within 100–200 ms; afterwards the first lap is highest, lap 2 next, later laps lowest (clearest in V1). Multinomial Bayes, lobo3, mean ± SEM over sessions.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="grey">
+    <div class="col stack">
+      <h2 id="grey">3 · HPC carries the previous track into the early grey</h2>
+      <p>The drift-robust test is a step at the switch. Compare the grey screen just after the first lap of the new track with the grey just before it. The two are about one lap apart and decoded by the same decoder, and the change between consecutive laps inside a block gives the drift baseline.</p>
+      <p class="callout">In the first second of grey, HPC steps toward the new track by <span class="num">+0.61 z</span> (all-laps decoder; <span class="num">p = 4e-4</span>, 17/22 sessions, 5/6 animals; <span class="num">+4.8 nats</span> raw). Excluding the first 200 ms, where visual latency could still carry the last track frame, it is <span class="num">+0.52</span> for 0.2–1 s (<span class="num">p = 6e-4</span>, 18/22 sessions). Held-out Bayes gives <span class="num">+0.42</span> and PLS <span class="num">+0.20</span> (<span class="num">p = 0.014</span>).</p>
+      <ul class="plain">
+        <li><b>Controls.</b> It survives removing transitions with licks (<span class="num">+0.50</span>) and regressing out spike count and speed (<span class="num">+0.47</span>, held-out Bayes, 0–1 s). The within-block baseline is about zero.</li>
+        <li><b>Timing.</b> It decays from <span class="num">+0.97</span> at 0–0.2 s to <span class="num">+0.66</span> at 0.2–0.5 s and <span class="num">+0.44</span> at 0.5–1 s.</li>
+        <li><b>Late grey.</b> <span class="num">+0.10</span>, not significant.</li>
+        <li><b>V1.</b> The step is real only in the first 200 ms after lap end (<span class="num">+0.40</span>, 19/19 sessions) and ≈ 0 from 0.5 s: visual latency or offset response, not persistence.</li>
+      </ul>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 3: HPC grey-screen persistence" src="{{fig3}}"></div>
+      <figcaption class="col"><b>A</b> Switch-locked HPC bias toward the new track (transition 0 = last old lap to first new lap). The early grey (black) jumps between 0 and 1; the late grey (grey) changes little and gradually, consistent with slow drift around the boundary. <b>B</b> The step for each decoder; diamonds are animals. M24062, the animal with the weakest HPC decoding, shows no step. <b>C</b> Single HPC cells: correlation between a cell's track preference and its change in early-grey firing at the switch (all cells <span class="num">ρ = 0.17</span>, 22/22 sessions, 6/6 animals). It is carried by end-of-track cells (<span class="num">ρ = 0.29, p = 4e-4</span>, 6/6 animals), weaker for mid-track cells and absent for start cells. Grey points are the within-block baseline. <b>D</b> The step by time after lap end: V1 (purple) only in the first 200 ms; HPC (green) persists to 1 s.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="onset">
+    <div class="col stack">
+      <h2 id="onset">4 · The first lap of a block is enhanced, not delayed</h2>
+      <p>If expecting the old track interfered, onset decoding should be worse on the first lap of a block. It is not. In V1 it is clearly better, and firing is higher.</p>
+      <ul class="plain">
+        <li><b>V1, 0–200 ms.</b> First lap minus laps 6+: <span class="num">+0.35 z</span> (17/19 sessions, 5/5 animals). After regressing out spike count and speed it is <span class="num">+0.19</span> (<span class="num">p = 0.018</span>, 15/19 sessions, 5/5 animals); PLS gives <span class="num">+0.16</span> (<span class="num">p = 0.02</span>).</li>
+        <li><b>V1, lap 2 minus lap 1.</b> <span class="num">−0.16</span> at 0–200 ms (<span class="num">p = 0.044</span>) and <span class="num">−0.16</span> at 0.2–1 s (<span class="num">p = 0.02</span>).</li>
+        <li><b>Firing on the first lap.</b> V1 fires <span class="num">+17</span> spikes per 100 ms bin more at onset than in late laps (18/19 sessions). HPC fires <span class="num">+8</span> more at 0.2–1 s (20/22 sessions, 6/6 animals). Running speed does not differ.</li>
+        <li><b>Decline over the block.</b> V1 onset coding declines with laps in the block (<span class="num">p = 2e-5</span>); HPC only weakly (<span class="num">p = 0.10</span>).</li>
+        <li><b>HPC.</b> The first lap is no different from late laps in the first 200 ms (<span class="num">−0.01</span>). It is slightly better from 200 ms on: <span class="num">+0.22 z</span> (<span class="num">p = 0.012</span>), p(true track) <span class="num">+0.06</span> (18/22 sessions), and <span class="num">+0.16</span> with PLS after controls (<span class="num">p = 0.005</span>).</li>
+      </ul>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 4: first-lap enhancement at track onset" src="{{fig4}}"></div>
+      <figcaption class="col"><b>A</b> Onset bias toward the current track by lap in block (first blocks excluded). <b>B</b> Onset firing, as % of each session's mean. <b>C</b> First lap minus laps 6+ with spike count and speed regressed out. <b>D</b> Single cells: for each cell and lap type, first-lap minus late onset firing, correlated with the cell's preference for the old track (0–200 ms). In V1, cells tuned to the new track increase and old-track cells decrease: <span class="num">ρ = −0.25</span> in V1 R (0/19 sessions and 0/5 animals positive) and <span class="num">−0.11</span> in V1 L (<span class="num">p = 0.008</span>). HPC shows nothing.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="trial">
+    <div class="col stack">
+      <h2 id="trial">5 · Pre-onset bias predicts post-onset bias, trial by trial</h2>
+      <p>This tests your question directly. For every transition, the bias in the first 200 ms after onset (and the 0–100 and 100–200 ms bins separately) was modelled from the bias in the last 1 s of grey, in a mixed model with:</p>
+      <ul class="plain">
+        <li>track pair (previous × upcoming) and lap in block;</li>
+        <li>spike count and speed in both epochs, as main effects and signed by track (log odds grow with spikes in the decoded track's direction);</li>
+        <li>lick side in both epochs;</li>
+        <li>random intercepts for animal, session and block (the last absorbs each held-out decoder's offset).</li>
+      </ul>
+      <div class="wide tablewrap">
+        <table>
+          <thead><tr><th>Late grey (−1–0 s) predicting…</th><th>HPC, Bayes</th><th>HPC, PLS</th><th>V1, Bayes</th><th>V1, PLS</th></tr></thead>
+          <tbody>
+            <tr><td>0–200 ms after onset (β)</td><td>0.82</td><td>0.72</td><td>0.79</td><td>0.65</td></tr>
+            <tr><td>0–100 ms (β)</td><td>0.77</td><td>0.71</td><td>0.77</td><td>0.65</td></tr>
+            <tr><td>100–200 ms (β)</td><td>0.90</td><td>0.76</td><td>0.79</td><td>0.66</td></tr>
+            <tr><td>0.2–1 s (β)</td><td>0.51</td><td>0.38</td><td>0.52</td><td>0.40</td></tr>
+            <tr><td>Per-session partial Spearman, 0–200 ms</td><td>0.41 (22/22)</td><td>0.33 (22/22)</td><td>0.27 (17/19)</td><td>0.22 (18/19)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="callout">All coefficients <span class="num">p &lt; 1e-19</span>; every animal is positive (HPC weakest in M24065, <span class="num">ρ 0.16</span>). In HPC the pre-onset state weighs most on the 100–200 ms bin, when the track representation is arriving.</p>
+      <p>Three checks say this is a trial-specific state rather than a slow trend:</p>
+      <ul class="plain">
+        <li><b>Neighbouring trials.</b> Their late-grey bias, added to the same model, gets coefficients of only <span class="num">−0.05 to 0.15</span>.</li>
+        <li><b>Timing.</b> The correlation with the 0–200 ms bias grows toward onset, from about 0.15 at −1.5 s to 0.3 in the last 100–200 ms (HPC; V1 similar).</li>
+        <li><b>Earlier epochs.</b> Early grey and lap end add little once the late grey is in the model.</li>
+      </ul>
+      <p>HPC carries the pre-onset state for at least 1.5 s after onset; in V1 it is concentrated in the first ~300 ms.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 5a: time-resolved correlation before vs after onset" src="{{fig5a}}"></div>
+      <figcaption class="col">Residual bias (block × track-pair means removed) correlated across transitions between every pre-onset and every post-onset 100 ms bin (event-locked bins). <b>Left</b> same transition; <b>middle</b> pre-onset of one transition against post-onset of the next transition in the block (control, about zero); <b>right</b> correlation with the 0–200 ms onset bias as a function of pre-onset bin. Multinomial Bayes, lobo3.</figcaption>
+    </figure>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure 5b: model coefficients and per-session correlations" src="{{fig5b}}"></div>
+      <figcaption class="col"><b>A, B</b> Model coefficients (95% CI) for HPC and V1 onset bias; markers are the four decoders. The cross-region row (one region's late grey predicting the other's onset) is small for V1→HPC (<span class="num">β 0.11–0.14</span>) and zero for HPC→V1. It vanishes with raw log odds (<span class="num">0.02–0.05</span>, ns), so I am not treating it as a finding. <b>C</b> Per-session partial correlation; diamonds are animals.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="reset">
+    <div class="col stack">
+      <h2 id="reset">5b · What carries the pre-onset state into the track?</h2>
+      <p>Ruled out so far: slow trends (the neighbouring trial barely predicts it); spikes, speed and licks (all in the model); V1–HPC coupling (section 6). The remaining question is whether track onset interrupts the ongoing state. For a reference time t0, I took the residual bias in the 1 s before t0 and correlated it with the next 200 ms. With t0 at 0.2–0.5 s before onset, both windows lie in the grey: this measures the state's own continuity. With t0 = onset, the 200 ms are on the new track.</p>
+      <p class="callout"><b>HPC:</b> continuity is the same across onset (<span class="num">ρ 0.40</span>) as within the grey (<span class="num">0.42</span>; difference −0.02, <span class="num">p = 0.43</span>; PLS +0.00). Onset does not reset the HPC state; the new track's input adds to it. <b>V1:</b> a partial reset, <span class="num">ρ 0.31</span> across onset vs <span class="num">0.39</span> within grey (<span class="num">p = 0.013</span>; 4/5 animals lower; PLS p = 0.049).</p>
+      <p>So the pre → post link is an ongoing, trial-specific population state with about a second of memory that carries straight through track onset in HPC. It does not look like a pre-onset expectation signal: it does not build up over the block and does not differ before switch laps.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: continuity of the track-bias state across onset" src="{{fig12}}"></div>
+      <figcaption class="col">Spearman ρ between the residual bias over [t0 − 1 s, t0) and over [t0, t0 + 200 ms) as t0 moves from 0.5 s before onset to onset (black: multinomial Bayes; blue: PLS; mean ± SEM over sessions). Right: across-onset minus within-grey ρ per session (colour = animal).</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="cells">
+    <div class="col stack">
+      <h2 id="cells">5d · Which cells carry the pre-onset state?</h2>
+      <p>To split the carry-over into cells, I used a linear stand-in for the decoder: each cell weighted by its log rate ratio between the tracks. Across sessions it tracks the Bayes carry-over closely (<span class="num">r = 0.82</span> HPC, <span class="num">0.76</span> V1). Its late grey → 0–200 ms correlation then splits exactly into each cell's own persistence plus co-fluctuation between cells.</p>
+      <div class="wide tablewrap">
+        <table>
+          <thead><tr><th>Contribution to carry-over r</th><th>HPC, across onset</th><th>HPC, within grey</th><th>V1, across onset</th><th>V1, within grey</th></tr></thead>
+          <tbody>
+            <tr><td>Total</td><td>0.48</td><td>0.49</td><td>0.34</td><td>0.45</td></tr>
+            <tr><td>Each cell's own persistence</td><td class="pos">0.26 (22/22)</td><td>0.32</td><td class="pos">0.10 (19/19)</td><td>0.17</td></tr>
+            <tr><td>Co-fluctuation of cells preferring the same track</td><td class="pos">0.34 (21/22)</td><td>0.26</td><td class="pos">0.23 (18/19)</td><td>0.37</td></tr>
+            <tr><td>Co-fluctuation of cells preferring opposite tracks</td><td>−0.11 (ns)</td><td>−0.09</td><td>0.01 (ns)</td><td>−0.09</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="plain">
+        <li><b>Half own persistence, half coordination (HPC).</b> About half the HPC carry-over is each track-selective cell's own slow firing fluctuation persisting across onset. The other half is cells that prefer the same track rising and falling together. Opposite-preference pairs contribute nothing, so this is a track-structured population mode, not a global gain fluctuation. V1 is dominated by the same-preference co-fluctuation, and onset weakens both of its parts.</li>
+        <li><b>Distributed, not localised.</b> Every HPC field group carries it (single-cell ρ 0.22–0.25 for start, middle and end cells; 22/22 sessions each). Removing start, middle, end or high-rate cells from the Bayes decoder lowers the carry-over no more than removing the same number of random cells (all ns). So it is not anticipation in start-field cells, nor persistence in end-field cells.</li>
+        <li><b>What makes a cell carry more</b> (HPC mixed model on cell ρ): stronger track preference (<span class="num">β 0.21 per unit |pref|, p = 1e-14</span>) and higher firing rate (<span class="num">p = 1e-37</span>). Field position does not matter (ns), and theta locking slightly lowers it (<span class="num">p = 0.049</span>). In V1, high-rate cells carry more than their share (<span class="num">+22%</span> of the carry-over beyond their cell fraction, 18/19 sessions).</li>
+        <li><b>Single cells mirror the population on reset.</b> HPC cells carry their state across onset almost as well as within the grey. V1 cells lose some of it at onset.</li>
+      </ul>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: single-cell decomposition of the carry-over" src="{{fig13}}"></div>
+      <figcaption class="col"><b>A</b> Decomposition of the linear carry-over (filled: across onset; open: within grey). <b>B</b> Linear stand-in vs Bayes carry-over per session. <b>C, D</b> Single-cell carry-over by field group (low-rate cells) and by rate. <b>E</b> Each group's share of the carry-over vs its share of cells. <b>F</b> Bayes-decoder ablation: carry-over without the group minus without random cells. <b>G</b> V1 hemispheres. <b>H</b> HPC cell carry-over against cell properties (LME).</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="flicker">
+    <div class="col stack">
+      <h2 id="flicker">5c · Theta-cycle flicker after onset</h2>
+      <p>Each MUA-defined theta cycle (running > 5 cm/s) from 6 cycles before to 10 cycles after onset was decoded with the block-held-out multinomial Bayes decoder (HPC: median 81 spikes per cycle). As in Jezek et al. (2011), I asked whether, on the first lap of a new block, some cycles keep expressing the old track before the representation settles.</p>
+      <ul class="plain">
+        <li><b>No flicker toward the old track.</b> After onset, 16% of HPC cycles decode as the other track on every kind of lap. First laps of a block do not exceed laps 6+ in cycles 1–3, 4–6 or 7–10 (<span class="num">−0.02 to −0.03</span>, ns; 1–2/6 animals higher). V1 is the same.</li>
+        <li><b>The switch happens in the first theta cycle.</b> Before onset on first laps, HPC cycles sit near 50/50 between the tracks; late laps are ~60% toward the block's track, the persistence of the just-run track. From cycle 1 after onset, every lap type expresses the new track equally, with no gradual settling.</li>
+        <li><b>The pre-onset state sets which track the first cycles express.</b> Late-grey bias toward the other track predicts other-track cycles among cycles 1–5 (GLME, HPC <span class="num">β 1.75 per z, p = 1e-81</span>; V1 <span class="num">2.3, p = 2e-22</span>), equally on switch and late laps (interaction <span class="num">p = 0.95</span>). This is the pre → post carry-over at theta resolution: it shows up as a few wrong cycles on any lap, not as switch-specific flicker.</li>
+        <li><b>Conflict hypothesis</b> (HPC–V1 coupled and biased toward a different track than the upcoming one). Not supported consistently. In V1, own bias × coupling is <span class="num">+2.0 (p = 1e-4)</span>, but the same interaction was opposite in sign in the 100 ms onset model. In HPC it is <span class="num">+0.41 (p = 0.07)</span>, and the other region's bias × coupling is ns in HPC.</li>
+      </ul>
+      <p>Caveat: the theta phase comes from HPC spatial-cell MUA, not LFP. It is internally consistent (7 Hz, most cells phase-locked), but should be validated against LFP when the server is back.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: theta-cycle decoding around onset" src="{{fig10}}"></div>
+      <figcaption class="col">Per-cycle decoding around onset. <b>Columns 1–2</b> fraction of cycles decoded as the other track, and per-cycle log odds toward the current track, by cycle from onset (red: first lap of a block; orange: lap 2; blue: laps 6+). <b>Column 3</b> first lap minus laps 6+ in the other-track fraction, per session. <b>Column 4</b> GLME of other-track cycles in cycles 1–5. Top HPC, bottom V1.</figcaption>
+    </figure>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: example session, per-cycle decoding" src="{{fig11}}"></div>
+      <figcaption class="col">Example session (16, M24064): HPC per-cycle log odds toward the lap's track for first laps of blocks (left) and laps 6+ (right). Green = current track, red = other track, open = fewer than 3 spikes; gaps are cycles without running > 5 cm/s. Examples for every session are in <code>results\theta_flicker\examples\</code>.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="coupling">
+    <div class="col stack">
+      <h2 id="coupling">6 · Do HPC and V1 co-fluctuate in the grey screen?</h2>
+      <p>Concatenating every 100 ms bin of the grey across trials mixes two different things: whether whole trials co-vary, and whether the two regions move together bin by bin within a trial. I measured both separately. Before the within-trial measure, I removed the average time course of each track pair (the decay after lap end); otherwise that shared shape alone looks like coupling. The null pairs HPC from one trial with V1 from another trial of the same track pair.</p>
+      <p>Lags are computed only within the grey. Both bins of a pair must lie inside the window, and the first 300 ms after lap end are excluded, because that is where V1's response to the screen turning grey sits. The early window is 0.3–1.3 s after lap end; the late window is the last 1 s before onset.</p>
+      <p class="callout">There is essentially no coupling and no lead/lag.</p>
+      <ul class="plain">
+        <li><b>Bin by bin within trials:</b> <span class="num">r ≤ 0.017</span>, with a null of ≈ 0.</li>
+        <li><b>Lead/lag over the whole grey</b> (0.3 s after lap end to onset, 37–57 bins per trial): lagged r minus the shuffled-trial null stays within <span class="num">±0.015</span> at every lag up to ±300 ms. The same holds for 0.3–1.5 s after lap end and for the last 1.5 s before onset, for all three decoders, and with spikes and speed regressed out. The asymmetry index is ≈ 0. A V1-leads bump seen when the window included the lap end disappears once the offset response is excluded.</li>
+        <li><b>Between trials:</b> ≈ 0, slightly negative in the late grey (<span class="num">−0.08</span>), and <span class="num">−0.02 to −0.04</span> once spikes and speed are removed.</li>
+        <li><b>Concatenated:</b> ≈ 0.</li>
+        <li><b>Coupling as a modulator:</b> per-trial coupling does not strengthen the pre → post onset prediction in either region. The Bayes interaction is not significant. PLS gives a <i>negative</i> HPC interaction, the opposite of the hypothesis and not shared by Bayes.</li>
+        <li><b>What shapes coupling:</b> none of speed, firing, licks, lap in block, switch, grey duration or time in session relates to it.</li>
+      </ul>
+      <p>So in the grey each region's own state carries into its own onset, but the two regions' track biases are not linked trial by trial or bin by bin.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: HPC-V1 grey coupling" src="{{fig7}}"></div>
+      <figcaption class="col"><b>A</b> Within-trial lagged HPC–V1 correlation of residual log odds in the 1 s windows (positive lag: V1 after HPC); dotted lines are the shuffled-trial null. <b>B</b> Between-trial, within-trial and concatenated correlations per session. <b>C</b> Interaction of late-grey bias × per-trial coupling on onset bias (0–200, 0–100, 100–200 ms). <b>D</b> Trial factors associated with stronger late-grey coupling.</figcaption>
+    </figure>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: HPC-V1 lead and lag inside the grey only" src="{{fig9}}"></div>
+      <figcaption class="col">Lead/lag using only grey bins from 0.3 s after lap end to onset. Lagged HPC–V1 correlation minus the shuffled-trial null for the whole grey, 0.3–1.5 s after lap end and the last 1.5 s before onset (top: as decoded; bottom: spikes and speed regressed out). Black = Bayes lobo3, grey = Bayes all-laps, blue = PLS. Right: per-session asymmetry (positive = HPC leads).</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="theta">
+    <div class="col stack">
+      <h2 id="theta">7 · Theta from HPC spiking (no LFP yet)</h2>
+      <p>With the server down, theta was estimated from HPC spatial-cell spiking alone. I pooled the spikes into 5 ms bins, took 2 s running epochs, and compared each power spectrum with the same spikes jittered by ±200 ms. The jitter keeps slow rate changes and removes theta rhythm. Peak prominence is the 6–9 Hz power over the 3–5 and 11–14 Hz flanks.</p>
+      <ul class="plain">
+        <li><b>Running.</b> A sharp peak at 7 Hz in every session, about 9× the jittered spectrum at its height. Prominence is <span class="num">3.0</span> on the track and <span class="num">2.6</span> in the grey (> 5 cm/s, medians); > 1 cm/s gives the same. It holds with lick periods removed.</li>
+        <li><b>Still.</b> No peak (prominence <span class="num">1.3</span>). Power is raised broadly at 1–15 Hz instead: population synchrony, not theta.</li>
+        <li><b>By animal.</b> Strongest in M24064 and M24065 (3–5.7), weakest in M24062 (1.3–2.6; session 14 is marginal).</li>
+        <li><b>Running coverage.</b> The animal runs > 5 cm/s for 57–99% of the first second after onset and 67–100% of the last second of grey, so theta-cycle analysis around onset is feasible.</li>
+      </ul>
+      <p><b>Phase.</b> The phase follows Vollan et al. (2025): 10 ms bins, 5–10 Hz second-order Butterworth, PCA across units, phase zero at minimal population firing. Cycles run from one minimal-firing point to the next, which matches how Jezek et al. (2011) delimited cycles for their flicker analysis.</p>
+      <p>The PC1–PC2 plane rotates at theta in only 1 of 22 sessions. Our population is HPC spatial cells only, without the interneurons Vollan et al. included, so its theta-band activity is close to one-dimensional. The other 21 sessions use the Hilbert phase of PC1 instead.</p>
+      <ul class="plain">
+        <li><b>Frequency.</b> <span class="num">6.5–7.4 Hz</span> while running.</li>
+        <li><b>Locking.</b> <span class="num">76–100%</span> of cells are phase-locked (Rayleigh p &lt; 0.001 and stable across session halves).</li>
+        <li><b>Agreement.</b> The phase difference from a plain summed-MUA Hilbert phase is consistent (<span class="num">0.62–0.97</span>, median 0.87).</li>
+        <li><b>Cycles.</b> About 140 ms long, covering 82–97% of running time.</li>
+        <li><b>Speed threshold.</b> > 5 and > 1 cm/s give the same results.</li>
+      </ul>
+      <p>LFP validation remains the last check before the theta-cycle flicker analysis.</p>
+    </div>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: theta from HPC MUA" src="{{fig6}}"></div>
+      <figcaption class="col"><b>A</b> HPC MUA spectrum over the jittered spectrum, mean ± SEM over sessions, by condition. <b>B</b> Theta peak prominence per session (1 = no peak). <b>C</b> Fraction of time running in the first second of the track and the last second of grey.</figcaption>
+    </figure>
+    <figure class="wide">
+      <div class="plate"><img alt="Figure: MUA-based theta phase" src="{{fig8}}"></div>
+      <figcaption class="col"><b>A</b> HPC population firing by estimated theta phase (zero = minimal firing), one line per session. <b>B</b> Theta frequency and the fraction of phase-locked cells per session. <b>C</b> Firing modulation depth and the consistency of the phase difference from a summed-MUA Hilbert phase. Running > 5 cm/s; colour = animal.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="animals">
+    <div class="col stack">
+      <h2 id="animals">8 · Variability across animals</h2>
+      <p>Animal means of the key effects. Shading marks the direction of an effect larger than ±0.1. The grey-screen step is the most variable result: strong in M24017 and M24064, absent in M24062. M24062 also has the weakest HPC decoding and the weakest theta. The pre → post onset link is positive in every animal, weakest in M24065.</p>
+    </div>
+    <div class="wide tablewrap">
+      <table>
+        <thead><tr><th>Measure</th><th>M24016</th><th>M24017</th><th>M24018</th><th>M24062</th><th>M24064</th><th>M24065</th></tr></thead>
+        <tbody>
+          <tr><td>HPC onset track accuracy (CV)</td><td>0.75</td><td>0.82</td><td>0.66</td><td>0.67</td><td>0.86</td><td>0.83</td></tr>
+          <tr><td>HPC theta peak prominence (running)</td><td>4.0</td><td>2.3</td><td>2.7</td><td>1.8</td><td>4.4</td><td>3.8</td></tr>
+          <tr><td>HPC grey switch step, 0.2–1 s after lap end (z, all-laps)</td><td class="pos">0.25</td><td class="pos">1.00</td><td class="pos">0.30</td><td>−0.06</td><td class="pos">0.90</td><td class="pos">0.62</td></tr>
+          <tr><td>HPC late-grey switch step (z, all-laps)</td><td class="neg">−0.15</td><td class="pos">0.25</td><td class="pos">0.13</td><td class="neg">−0.20</td><td class="pos">0.36</td><td class="pos">0.16</td></tr>
+          <tr><td>V1 first-lap gain, 0–200 ms (z, spikes &amp; speed removed)</td><td>0.02</td><td class="pos">0.13</td><td class="na">excl.</td><td class="pos">0.51</td><td class="pos">0.18</td><td>0.07</td></tr>
+          <tr><td>V1 onset, lap 1 − lap 2, 0–200 ms (z)</td><td class="neg">−0.17</td><td>0.08</td><td class="na">excl.</td><td class="pos">0.31</td><td class="pos">0.50</td><td>0.01</td></tr>
+          <tr><td>HPC late grey → 0–200 ms, partial ρ</td><td class="pos">0.41</td><td class="pos">0.43</td><td class="pos">0.64</td><td class="pos">0.45</td><td class="pos">0.43</td><td class="pos">0.16</td></tr>
+          <tr><td>V1 late grey → 0–200 ms, partial ρ</td><td class="pos">0.11</td><td class="pos">0.26</td><td class="na">excl.</td><td class="pos">0.41</td><td class="pos">0.28</td><td class="pos">0.24</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="raw">
+    <div class="col stack">
+      <h2 id="raw">9 · Raw log odds or z-scored?</h2>
+      <p>The z-score is a per-session linear rescale of the log odds, clipped at the 0.5 and 99.5 percentiles. It cannot change signs or within-session rank statistics; it only changes how much each session weighs when sessions are pooled.</p>
+      <p>That weighting matters here. For the same epoch, one session's spread of raw log odds can be 10–30× another's (HPC grey: SD 1.4 to 18 nats; V1 onset up to 50), and PLS-KDE values reach about 150. With raw values, a few high-cell sessions and outlier trials dominate pooled means and models.</p>
+    </div>
+    <div class="wide tablewrap">
+      <table>
+        <thead><tr><th>Effect</th><th>z-scored</th><th>raw log odds</th><th>Same conclusion?</th></tr></thead>
+        <tbody>
+          <tr><td>HPC early-grey switch step (Bayes, all-laps, 0–1 s)</td><td>+0.61 z, p = 4e-4</td><td>+4.8 nats, p = 4e-4</td><td>yes</td></tr>
+          <tr><td>HPC early-grey switch step (PLS)</td><td>+0.26 z, p = 0.002</td><td>+0.98, p = 9e-4</td><td>yes</td></tr>
+          <tr><td>HPC late-grey switch step (Bayes, all-laps)</td><td>+0.10 z, p = 0.29</td><td>+0.98 nats, p = 0.12</td><td>yes (not significant)</td></tr>
+          <tr><td>V1 first-lap gain, 0–200 ms, spikes &amp; speed removed</td><td>+0.19 z, p = 0.018</td><td>+2.8 nats, p = 0.033</td><td>yes</td></tr>
+          <tr><td>V1 onset, lap 2 − lap 1, 0–200 ms</td><td>−0.16 z, p = 0.044</td><td>−3.1 nats, p = 0.044</td><td>yes</td></tr>
+          <tr><td>HPC late grey → 0–200 ms, Bayes β / partial ρ</td><td>0.82 / 0.41</td><td>0.86 / 0.41</td><td>yes</td></tr>
+          <tr><td>HPC late grey → 0–200 ms, PLS β / partial ρ</td><td>0.72 / 0.33</td><td>0.38 / 0.28</td><td>ρ yes; raw β outlier-dominated</td></tr>
+          <tr><td>V1 late grey → HPC onset (cross-region)</td><td>β 0.11–0.14</td><td>β 0.02–0.05, ns</td><td>no: dropped</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="col"><b>Recommendation.</b> Keep z-scored log odds for anything pooled across sessions. Quote Bayesian effects in raw nats when a physical unit helps (for example, the HPC early-grey step is about 5 nats of track evidence per 100 ms bin).</p>
+  </section>
+
+  <section class="col stack" aria-labelledby="next">
+    <h2 id="next">10 · Caveats and next steps</h2>
+    <ul class="plain">
+      <li>The plain grey-screen "bias toward the block's track" should not be used on its own; it flips with the decoder. Use the switch step or the switch/non-switch average.</li>
+      <li><b>The pre → post onset link</b> is an ongoing population state with about a second of memory that onset does not reset in HPC. It is carried half by single cells' own persistence and half by a track-structured co-fluctuation, distributed over all field positions. Whether that mode is a hippocampal sequence or replay-like event in the grey, or slow excitability fluctuations of track assemblies, is open. Theta-sequence or replay decoding in the grey could separate the two.</li>
+      <li><b>Theta.</b> Validate the MUA phase against LFP when the server is back. Then repeat the flicker analysis with half-cycles (Jezek also used them), and with the Jezek-style population-vector assignment (stored per cycle but not yet summarised).</li>
+      <li>V1_L and V1_R show small opposite late-grey shifts in single cells that do not reach significance at the population level. Not interpreted.</li>
+      <li><b>First-lap enhancement.</b> Probe laps and the previous block's reward and lick history could separate surprise from adaptation.</li>
+    </ul>
+  </section>
+
+  <footer class="col stack">
+    <p><b>Data</b> <code>D:\corticohippocampal_replay\V1_HC_attractor_remapping\results\</code>: <code>population\&lt;decoder&gt;\</code>, <code>population_rawLO\</code>, <code>single_cell\</code>, <code>trial_prediction\</code>, <code>grey_coupling\</code>, <code>grey_lag\</code>, <code>theta_mua\</code>, <code>theta_phase\</code>, <code>report\</code> (figures as .fig, .png and vector .pdf). The earlier 50 ms-stepped version is kept in <code>_v1_overlap50ms\</code>.</p>
+    <p><b>Code</b> <code>VR_NPX_analysis\V1_HC_attractor_remapping\</code>: <code>main_01_decode</code> to <code>main_05_theta_and_report</code>. Details and every number: <code>RESULTS_SUMMARY.md</code>.</p>
+  </footer>
+</main>

@@ -1,12 +1,13 @@
-%% Dominant V1 MUA PSTH around ripple onset: Low vs High (Peak vs Trough), POST
+%% Dominant / non-dominant V1 MUA PSTH around ripple onset: Low vs High (Peak vs Trough), POST
 % Firing-rate check for the condition comparisons (R1.2, R4.2/4/6): is dominant-
-% hemisphere V1 MUA around ripples different between the two event groups?
+% (or non-dominant-) hemisphere V1 MUA around ripples different between the two
+% event groups? All events, no MUA matching.
 %
 % Dominant hemisphere from the V1 bias sign in the dominance window (as
-% MUA_equalised_event_control): V1 > 0 -> V1 R, V1 < 0 -> V1 L. Done separately
-% for dominance from the pre (-0.2-0 s), post (0-0.2 s) and full (-0.2-0.2 s)
-% V1 window.
-% Conditions (within session, as MUA_equalised_event_control):
+% MUA_equalised_geomean): V1 > 0 -> V1 R, V1 < 0 -> V1 L; the non-dominant
+% hemisphere is the other one. Done separately for dominance from the pre
+% (-0.2-0 s), post (0-0.2 s) and full (-0.2-0.2 s) V1 window.
+% Conditions (within session, as MUA_equalised_geomean):
 %   ripple_power : ripple power percentile <= 25 (Low) vs > 75 (High)
 %   spindle      : dominant-hemisphere spindle percentile <= 25 (Low) vs > 75 (High)
 %   SO_phase     : dominant-hemisphere SO peak [-pi/2, pi/2] vs trough
@@ -15,10 +16,21 @@
 % Across sessions: mean +- SE PSTH; paired signed-rank test High vs Low
 % (Trough vs Peak) on the session means, for each MUA window.
 % Sessions need >= min_events events in both conditions.
-% Output: nature_neuroscience_revision_analysis\MUA_equalised_event_control\MUA_PSTH
-function MUA_PSTH_low_vs_high()
+%   hemisphere : 'dominant' (default) -> MUA_equalised_event_control\MUA_PSTH
+%                'non_dominant' -> MUA_equalised_event_control_with_nondominant\MUA_PSTH
+% Output: nature_neuroscience_revision_analysis\<folder>\MUA_PSTH
+function MUA_PSTH_low_vs_high(hemisphere)
+    if nargin < 1, hemisphere = 'dominant'; end
+    switch hemisphere
+        case 'dominant'
+            v = MUA_equalised_variant('dominant'); hemi_label = 'Dominant V1 MUA';
+        case 'non_dominant'
+            v = MUA_equalised_variant('with_nondominant'); hemi_label = 'Non-dominant V1 MUA';
+        otherwise
+            error('MUA_PSTH_low_vs_high:hemisphere', 'Unknown hemisphere %s', hemisphere);
+    end
     rev_dir = addon_setup();
-    out_dir = fullfile(rev_dir, 'MUA_equalised_event_control', 'MUA_PSTH');
+    out_dir = fullfile(rev_dir, v.folder, 'MUA_PSTH');
     if ~exist(out_dir, 'dir')
         mkdir(out_dir);
     end
@@ -68,8 +80,13 @@ function MUA_PSTH_low_vs_high()
         V1_b = mean(V1(in_wb, :), 'omitnan')';
         hemi = NaN(n_ev, 1); hemi(V1_b < 0) = 1; hemi(V1_b > 0) = 2;
         MUA = NaN(n_ev, numel(mua_centers), 'single');
-        MUA(hemi == 1, :) = ripple_MUA_V1_L(hemi == 1, :);
-        MUA(hemi == 2, :) = ripple_MUA_V1_R(hemi == 2, :);
+        if strcmp(hemisphere, 'dominant')
+            MUA(hemi == 1, :) = ripple_MUA_V1_L(hemi == 1, :);
+            MUA(hemi == 2, :) = ripple_MUA_V1_R(hemi == 2, :);
+        else
+            MUA(hemi == 1, :) = ripple_MUA_V1_R(hemi == 1, :);
+            MUA(hemi == 2, :) = ripple_MUA_V1_L(hemi == 2, :);
+        end
         valid = ~isnan(hemi) & all(isfinite(MUA), 2);
         win_MUA = NaN(n_ev, numel(mua_windows));
         for m = 1:numel(mua_windows)
@@ -132,7 +149,7 @@ function MUA_PSTH_low_vs_high()
     end
     disp(S);
 
-    save(fullfile(out_dir, 'MUA_PSTH_low_vs_high.mat'), 'R', 'T', 'S', 'min_events', 'dom_windows', 'mua_windows');
+    save(fullfile(out_dir, 'MUA_PSTH_low_vs_high.mat'), 'R', 'T', 'S', 'min_events', 'dom_windows', 'mua_windows', 'hemisphere');
     writetable(T, fullfile(out_dir, 'MUA_PSTH_session_window_means.csv'));
     writetable(S, fullfile(out_dir, 'MUA_PSTH_session_stats.csv'));
 
@@ -140,11 +157,11 @@ function MUA_PSTH_low_vs_high()
         for iA = 1:numel(analyses)
             key = sprintf('%s_%s', analyses{iA}, dom_windows(w).name);
             plot_session_PSTHs(R.(key), sprintf('%s, %s', titles{iA}, dom_windows(w).label), ...
-                mua_windows, fullfile(out_dir, ['MUA_PSTH_sessions_' key]));
+                mua_windows, hemi_label, fullfile(out_dir, ['MUA_PSTH_sessions_' key]));
         end
     end
-    plot_mean_PSTH(R, S, analyses, titles, dom_windows, mua_windows, fullfile(out_dir, 'MUA_PSTH_mean_SE'));
-    plot_window_means(R, S, analyses, titles, dom_windows, mua_windows, fullfile(out_dir, 'MUA_PSTH_window_means'));
+    plot_mean_PSTH(R, S, analyses, titles, dom_windows, mua_windows, hemi_label, fullfile(out_dir, 'MUA_PSTH_mean_SE'));
+    plot_window_means(R, S, analyses, titles, dom_windows, mua_windows, hemi_label, fullfile(out_dir, 'MUA_PSTH_window_means'));
     fprintf('Saved to %s\n', out_dir);
 end
 
@@ -211,7 +228,7 @@ function save_figure(fig, save_path)
     exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
 end
 
-function plot_session_PSTHs(D, title_str, mua_windows, save_path)
+function plot_session_PSTHs(D, title_str, mua_windows, hemi_label, save_path)
     % One tile per session: mean +- SE (across events) PSTH per condition
     cond_colors = {[0.5 0.5 0.5], [231, 41, 138] / 256};
     n_sess = numel(D.sessions);
@@ -236,18 +253,18 @@ function plot_session_PSTHs(D, title_str, mua_windows, save_path)
         xlim(D.t([1 end]));
         if si == 1
             legend(D.labels, 'Box', 'off', 'Location', 'best');
-            ylabel('Dominant V1 MUA (z)');
+            ylabel([hemi_label ' (z)']);
             xlabel('Time from ripple onset (s)');
         end
     end
-    sgtitle([title_str ': dominant V1 MUA PSTH per session (mean \pm SE across events)'], 'FontSize', 11);
+    sgtitle([title_str ': ' hemi_label ' PSTH per session (mean \pm SE across events)'], 'FontSize', 11);
     save_figure(fig, save_path);
 end
 
-function plot_mean_PSTH(R, S, analyses, titles, dom_windows, mua_windows, save_path)
+function plot_mean_PSTH(R, S, analyses, titles, dom_windows, mua_windows, hemi_label, save_path)
     % Rows: dominance window; columns: analysis. Mean +- SE across sessions.
     cond_colors = {[0.5 0.5 0.5], [231, 41, 138] / 256};
-    fig = figure('Name', 'Dominant V1 MUA PSTH', 'Position', [80 80 380 * numel(analyses) 340 * numel(dom_windows)]);
+    fig = figure('Name', [hemi_label ' PSTH'],'Position', [80 80 380 * numel(analyses) 340 * numel(dom_windows)]);
     tiledlayout(numel(dom_windows), numel(analyses), 'TileSpacing', 'compact');
     for w = 1:numel(dom_windows)
         for iA = 1:numel(analyses)
@@ -267,19 +284,19 @@ function plot_mean_PSTH(R, S, analyses, titles, dom_windows, mua_windows, save_p
                 'FontSize', 8, 'FontWeight', 'normal');
             set(ax, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 10);
             xlim(D.t([1 end]));
-            xlabel('Time from ripple onset (s)'); ylabel('Dominant V1 MUA (z)');
+            xlabel('Time from ripple onset (s)'); ylabel([hemi_label ' (z)']);
             legend(D.labels, 'Box', 'off', 'Location', 'northwest');
         end
     end
-    sgtitle('Dominant V1 MUA around ripple onset: mean \pm SE across sessions (signed-rank on session means)', 'FontSize', 11);
+    sgtitle([hemi_label ' around ripple onset: mean \pm SE across sessions (signed-rank on session means)'], 'FontSize', 11);
     save_figure(fig, save_path);
 end
 
-function plot_window_means(R, S, analyses, titles, dom_windows, mua_windows, save_path)
+function plot_window_means(R, S, analyses, titles, dom_windows, mua_windows, hemi_label, save_path)
     % Session-mean MUA per window, paired lines across conditions
     cond_colors = {[0.6 0.6 0.6], [231, 41, 138] / 256};
     n_col = numel(analyses) * numel(mua_windows);
-    fig = figure('Name', 'Dominant V1 MUA window means', 'Position', [80 80 230 * n_col 330 * numel(dom_windows)]);
+    fig = figure('Name', [hemi_label ' window means'],'Position', [80 80 230 * n_col 330 * numel(dom_windows)]);
     tiledlayout(numel(dom_windows), n_col, 'TileSpacing', 'compact');
     for w = 1:numel(dom_windows)
         for iA = 1:numel(analyses)
@@ -300,10 +317,10 @@ function plot_window_means(R, S, analyses, titles, dom_windows, mua_windows, sav
                     sprintf('p = %.3g, n = %d', Sr.p_signrank_two, Sr.n_sessions)}, 'FontSize', 8, 'FontWeight', 'normal');
                 set(ax, 'XTick', [1 2], 'XTickLabel', D.labels, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 10);
                 xlim([0.4 2.6]);
-                ylabel('Dominant V1 MUA (z, session mean)');
+                ylabel([hemi_label ' (z, session mean)']);
             end
         end
     end
-    sgtitle('Dominant V1 MUA per session: Low vs High (Peak vs Trough), two-sided signed-rank', 'FontSize', 11);
+    sgtitle([hemi_label ' per session: Low vs High (Peak vs Trough), two-sided signed-rank'], 'FontSize', 11);
     save_figure(fig, save_path);
 end

@@ -25,11 +25,12 @@ the whole file or one section at a time.
 | `main_01_reactivation_AUC` | Pooled reactivation coherence AUC (ripple power, spindle, SO phase, dominant SO trough), PRE / POST, equal-n, hierarchical bootstrap | `PRE`, `PRE_equal_n`, `POST_matched`, `POST_matched_equal_n`, `POST`, `POST_original_AUC_hierarchical` |
 | `main_02_session_level_stats` | Per-session and per-animal AUC and geomean coherence; Low vs High, PRE vs POST, vs shuffle; abs bias; per-session / per-animal bootstrapped static and temporal AUC of the original POST decoder | `PRE_vs_POST`, `session_AUC_vs_shuffle`, `session_bootAUC_PRE_vs_POST*`, `session_bootGeomean*`, `POST_animal`, `abs_bias`, `POST_original_bootAUC_per_session`, `POST_original_bootAUC_per_animal` |
 | `main_03_sleep_controls` | PRE vs POST: interhemispheric SO synchrony, spindle and ripple power | `SO_bilateral_synchrony_PRE_vs_POST`, `spindle_ripple_PRE_vs_POST` |
-| `main_04_MUA_equalised_event_control` | Firing-rate control: Low/High events matched for HC and V1 MUA | `MUA_equalised_event_control\geomean`, `MUA_equalised_event_control\AUC` |
+| `main_04_MUA_equalised_event_control` | Firing-rate control: Low/High events matched for HC and dominant V1 MUA (`MUA_equalised_event_control`), and additionally non-dominant V1 MUA (`MUA_equalised_event_control_with_nondominant`); geomean, AUC and V1 MUA PSTH | `<folder>\geomean`, `<folder>\AUC`, `<folder>\MUA_PSTH` |
 | `main_05_V1_split_half` | Split-half V1 decoders: dominance half vs selector half | `split_half_V1_AUC_POST`, `split_half_V1_AUC_POST_hierarchical` (decoders in `C:\Data\PLS_split_half`) |
 | `main_06_low_rate_decoder` | PLS-KDE decoders from neurons < 10 Hz | `PLS_KDE_rate_lt10`, `POST_rate_lt10`, `POST_rate_lt10_bootAUC_per_animal` |
 | `main_07_Bayesian_decoding` | Bayesian decoding: RUN1 cross-validation and POST replay (all cells, < 10 Hz) | `Bayesian_RUN_decoding*`, `Bayesian_replay_decoding*` |
 | `main_08_Lseq_decoding` | Sequence-likelihood (L_seq) decoding: RUN1 cross-validation and POST replay | `Lseq_RUN_decoding`, `Lseq_replay_decoding` |
+| `main_10_pairwise_coupling` | Pairwise V1-HC neuron coupling across POST ripples vs shared track preference; gain control by leave-one-out total-V1 or own-hemisphere MUA | `pairwise_V1_HC_coupling\counts`, `pairwise_V1_HC_coupling\gain_total_V1`, `pairwise_V1_HC_coupling\gain_own_hemisphere` |
 
 Dependencies between analyses:
 - Everything uses the `main_00` inputs.

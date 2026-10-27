@@ -37,9 +37,11 @@ if run_analysis
     split_half_V1_AUC_POST();
 end
 plot_AUC_low_vs_high_controls('split_half');
+plot_temporal_AUC_low_vs_high('split_half');
 
 %% 4. Split-half AUC, hierarchical (session -> event) bootstrap -> split_half_V1_AUC_POST_hierarchical
 if run_analysis
     split_half_V1_AUC_POST_hierarchical();
 end
 plot_AUC_low_vs_high_controls('split_half_hierarchical');
+plot_temporal_AUC_low_vs_high('split_half_hierarchical');

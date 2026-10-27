@@ -1,7 +1,8 @@
-%% MUA-equalised event control: Low vs High reactivation coherence (POST)
+%% MUA-equalised event control: Low vs High session geomean coherence (POST)
 % Firing-rate control for the condition comparisons (R1.2, R4.2/4/6): within each
-% session, Low and High events are subsampled so their joint distribution of
-% HC MUA and dominant-hemisphere V1 MUA is equal, then coherence is recomputed.
+% session, Low and High events are subsampled so their joint MUA distribution is
+% equal, then the per-session geomean coherence is recomputed. Pooled AUC with the
+% same matching: MUA_equalised_AUC; V1 MUA PSTHs: MUA_PSTH_low_vs_high.
 % Decoding is unchanged (decoder trained on RUN; each event's bias is independent
 % of which events are selected).
 %
@@ -9,34 +10,35 @@
 % HPC = mean z log odds 0-0.1 s, V1 = mean z log odds over pre (-0.2-0 s) or post
 % (0-0.2 s) window. Dominant hemisphere from the V1 bias sign in that window
 % (V1 > 0 -> hemisphere 2 / V1 R, V1 < 0 -> hemisphere 1 / V1 L).
-% MUA (z-scored, 10 ms bins, -2 to 2 s): HC MUA 0-0.1 s, V1 MUA of the dominant
-% hemisphere over the same window as V1 bias.
+% MUA (z-scored, 10 ms bins, -2 to 2 s): HC MUA 0-0.1 s, V1 MUA of the dominant (and
+% for 'with_nondominant' also the non-dominant) hemisphere over the same window as
+% V1 bias.
 % Conditions (within session):
 %   ripple_power : ripple power percentile <= 25 (Low) vs > 75 (High)
 %   spindle      : dominant-hemisphere spindle percentile <= 25 (Low) vs > 75 (High),
 %                  re-ranked within session over unique events
 %   SO_phase     : dominant-hemisphere SO peak [-pi/2, pi/2] vs trough
-% Matching: within session, HC MUA and V1 MUA are each split into nQ quantile bins
-% (edges from both conditions pooled); in every joint bin both conditions keep
-% min(nA, nB) randomly drawn events. Repeated nDraw times (seeded).
-% Outputs per session: unmatched and matched (mean over draws) geomean coherence,
-% paired signed-rank tests across sessions; pooled AUC (V1 selector, HPC measure;
-% reactivation_coherence_auc) per draw.
-% Output: nature_neuroscience_revision_analysis\MUA_equalised_event_control\geomean
-function MUA_equalised_event_control()
-    if exist('D:\corticohippocampal_replay', 'dir') > 0
-        analysis_folder = 'D:\corticohippocampal_replay';
-    elseif exist('P:\corticohippocampal_replay', 'dir') > 0
-        analysis_folder = 'P:\corticohippocampal_replay';
-    end
-    rev_dir = fullfile(analysis_folder, 'nature_neuroscience_revision_analysis');
-    out_dir = fullfile(rev_dir, 'MUA_equalised_event_control', 'geomean');
+% Matching (MUA_match_prepare / MUA_match_draw): within session, each matched MUA
+% measure is split into nQ quantile bins (edges from both conditions pooled); in
+% every joint bin both conditions keep min(nA, nB) randomly drawn events. Repeated
+% nDraw times (seeded by session and draw); session coherence = mean over draws.
+% Sessions with < min_events matched events per condition are left out.
+% Outputs per session: unmatched and matched (mean over draws) geomean coherence and
+% MUA, paired signed-rank tests across sessions.
+%   variant : 'dominant' (default) or 'with_nondominant' (MUA_equalised_variant)
+% Output: nature_neuroscience_revision_analysis\<variant folder>\geomean
+function MUA_equalised_geomean(variant)
+    if nargin < 1, variant = 'dominant'; end
+    v = MUA_equalised_variant(variant);
+    rev_dir = addon_setup();
+    out_dir = fullfile(rev_dir, v.folder, 'geomean');
     if ~exist(out_dir, 'dir')
         mkdir(out_dir);
     end
     nDraw = 200;
-    nQ = 5;          % quantile bins per MUA dimension (nQ x nQ joint bins)
+    nQ = v.nQ;       % quantile bins per MUA measure (nQ^d joint bins)
     min_events = 10; % per condition per session after matching
+    nV = numel(v.vars);
 
     % --- Load non-duplicated POST data (rows aligned to ripple_info) ---
     load(fullfile(rev_dir, 'ripple_info.mat'), 'ripple_info');
@@ -72,8 +74,7 @@ function MUA_equalised_event_control()
     titles = {'Ripple power (within-session percentile)', 'Spindle-band power (dominant hemisphere)', 'SO phase (dominant hemisphere)'};
 
     T = table();          % per session x window x analysis x condition
-    P = table();          % pooled AUC per draw
-    M = struct();         % example matched events (draw 1) for MUA distribution plots
+    M = struct();         % matched events (draw 1) for MUA distribution plots
     for w = 1:numel(v1_windows)
         wn = v1_windows(w).name;
         in_w = mua_centers > v1_windows(w).range(1) & mua_centers < v1_windows(w).range(2);
@@ -83,64 +84,53 @@ function MUA_equalised_event_control()
         hemi = NaN(n_ev, 1); hemi(V1_b < 0) = 1; hemi(V1_b > 0) = 2;
         V1_L = double(mean(ripple_MUA_V1_L(:, in_w), 2));
         V1_R = double(mean(ripple_MUA_V1_R(:, in_w), 2));
-        V1_MUA = NaN(n_ev, 1);
-        V1_MUA(hemi == 1) = V1_L(hemi == 1);
-        V1_MUA(hemi == 2) = V1_R(hemi == 2);
-        valid = isfinite(coh) & isfinite(HC_MUA) & isfinite(V1_MUA) & ~isnan(hemi);
+        X = v.matrix(HC_MUA, V1_L, V1_R, hemi);
+        valid = isfinite(coh) & all(isfinite(X), 2) & ~isnan(hemi);
 
         for iA = 1:numel(analyses)
             [masks, labels] = condition_masks(analyses{iA}, ripple_info, ripple_pct, spindle_pct, hemi);
             A = masks{1} & valid; B = masks{2} & valid;
-            pooled_idx = cell(nDraw, 2);
+            idx_d1 = {zeros(0, 1), zeros(0, 1)};   % draw 1, pooled over kept sessions
             for s = sessions
                 ia = find(A & sess == s); ib = find(B & sess == s);
-                [draws_a, draws_b] = match_events(ia, ib, HC_MUA, V1_MUA, nQ, nDraw, s);
-                n_match = numel(draws_a{1});
-                coh_m = [NaN NaN]; hc_m = [NaN NaN]; v1_m = [NaN NaN];
+                Pm = MUA_match_prepare(ia, ib, sess, X, nQ, 0);
+                n_match = sum(Pm.k);
+                coh_m = [NaN NaN]; mua_m = NaN(2, nV);
                 if n_match >= min_events
-                    ca = cellfun(@(i) mean(coh(i)), draws_a); cb = cellfun(@(i) mean(coh(i)), draws_b);
-                    coh_m = [mean(ca) mean(cb)];
-                    hc_m = [mean(cellfun(@(i) mean(HC_MUA(i)), draws_a)) mean(cellfun(@(i) mean(HC_MUA(i)), draws_b))];
-                    v1_m = [mean(cellfun(@(i) mean(V1_MUA(i)), draws_a)) mean(cellfun(@(i) mean(V1_MUA(i)), draws_b))];
+                    coh_d = NaN(nDraw, 2); mua_d = NaN(nDraw, nV, 2);
                     for d = 1:nDraw
-                        pooled_idx{d, 1} = [pooled_idx{d, 1}; draws_a{d}];
-                        pooled_idx{d, 2} = [pooled_idx{d, 2}; draws_b{d}];
+                        idx = MUA_match_draw(Pm, RandStream('philox4x32_10', 'Seed', s * 100000 + d));
+                        for c = 1:2
+                            coh_d(d, c) = mean(coh(idx{c}));
+                            mua_d(d, :, c) = mean(X(idx{c}, :), 1);
+                        end
+                        if d == 1
+                            idx_d1 = {[idx_d1{1}; idx{1}], [idx_d1{2}; idx{2}]};
+                        end
                     end
+                    coh_m = mean(coh_d, 1);
+                    mua_m = permute(mean(mua_d, 1), [3 2 1]);   % condition x measure
                 end
                 idx_c = {ia, ib};
                 for c = 1:2
                     i = idx_c{c};
-                    T = [T; table(s, string(wn), string(analyses{iA}), string(labels{c}), ...
+                    row = table(s, string(wn), string(analyses{iA}), string(labels{c}), ...
                         mean(coh(i)), coh_m(c), numel(i), n_match * (n_match >= min_events), ...
-                        mean(HC_MUA(i)), hc_m(c), mean(V1_MUA(i)), v1_m(c), ...
                         'VariableNames', {'session_id', 'V1_window', 'analysis', 'condition', ...
-                        'coh_unmatched', 'coh_matched', 'n_unmatched', 'n_matched', ...
-                        'HC_MUA_unmatched', 'HC_MUA_matched', 'V1_MUA_unmatched', 'V1_MUA_matched'})]; %#ok<AGROW>
+                        'coh_unmatched', 'coh_matched', 'n_unmatched', 'n_matched'});
+                    for j = 1:nV
+                        row.([v.vars{j} '_unmatched']) = mean(X(i, j));
+                        row.([v.vars{j} '_matched']) = mua_m(c, j);
+                    end
+                    T = [T; row]; %#ok<AGROW>
                 end
             end
 
-            % Pooled AUC (V1 selector -> HPC measure): unmatched and per matched draw
-            auc_un = [auc_point(V1_b(A), HPC_b(A)) auc_point(V1_b(B), HPC_b(B))];
-            auc_m = NaN(nDraw, 2);
-            parfor d = 1:nDraw
-                auc_m(d, :) = [auc_point(V1_b(pooled_idx{d, 1}), HPC_b(pooled_idx{d, 1})), ...
-                    auc_point(V1_b(pooled_idx{d, 2}), HPC_b(pooled_idx{d, 2}))];
-            end
-            P = [P; table(string(wn), string(analyses{iA}), string(labels{1}), string(labels{2}), ...
-                auc_un(1), auc_un(2), {auc_m(:, 1)}, {auc_m(:, 2)}, ...
-                mean(auc_m(:, 2) - auc_m(:, 1)), prctile(auc_m(:, 2) - auc_m(:, 1), 2.5), ...
-                prctile(auc_m(:, 2) - auc_m(:, 1), 97.5), mean(auc_m(:, 2) - auc_m(:, 1) <= 0), ...
-                sum(A), sum(B), numel(pooled_idx{1, 1}), ...
-                'VariableNames', {'V1_window', 'analysis', 'cond_A', 'cond_B', ...
-                'AUC_A_unmatched', 'AUC_B_unmatched', 'AUC_A_matched', 'AUC_B_matched', ...
-                'AUC_diff_matched_mean', 'AUC_diff_CI_lo', 'AUC_diff_CI_hi', 'p_draw_diff_le0', ...
-                'n_A_unmatched', 'n_B_unmatched', 'n_per_cond_matched'})]; %#ok<AGROW>
-
             key = sprintf('%s_%s', analyses{iA}, wn);
             M.(key) = struct('labels', {labels}, 'A', find(A), 'B', find(B), ...
-                'A_m', pooled_idx{1, 1}, 'B_m', pooled_idx{1, 2}, 'HC_MUA', HC_MUA, 'V1_MUA', V1_MUA);
+                'A_m', idx_d1{1}, 'B_m', idx_d1{2}, 'X', X);
             fprintf('%s %s: %d/%d events retained per condition (pooled)\n', wn, analyses{iA}, ...
-                numel(pooled_idx{1, 1}), min(sum(A), sum(B)));
+                numel(idx_d1{1}), min(sum(A), sum(B)));
         end
     end
 
@@ -156,21 +146,18 @@ function MUA_equalised_event_control()
         end
     end
     disp(S);
-    Pout = removevars(P, {'AUC_A_matched', 'AUC_B_matched'});
-    disp(Pout);
 
-    save(fullfile(out_dir, 'MUA_equalised_event_control.mat'), 'T', 'S', 'P', 'nDraw', 'nQ', 'min_events');
+    matched_vars = v.vars;
+    save(fullfile(out_dir, 'MUA_equalised_event_control.mat'), 'T', 'S', 'nDraw', 'nQ', 'min_events', 'variant', 'matched_vars');
     writetable(T, fullfile(out_dir, 'MUA_equalised_session_coherence.csv'));
     writetable(S, fullfile(out_dir, 'MUA_equalised_session_stats.csv'));
-    writetable(Pout, fullfile(out_dir, 'MUA_equalised_pooled_AUC.csv'));
 
     for iA = 1:numel(analyses)
-        plot_session_coherence(T, S, analyses{iA}, titles{iA}, v1_windows, ...
+        plot_session_coherence(T, S, analyses{iA}, titles{iA}, v1_windows, v.label, ...
             fullfile(out_dir, ['MUA_equalised_session_coherence_' analyses{iA}]));
-        plot_MUA_distributions(M, analyses{iA}, titles{iA}, v1_windows, ...
+        plot_MUA_distributions(M, analyses{iA}, titles{iA}, v1_windows, v.var_labels, ...
             fullfile(out_dir, ['MUA_equalised_MUA_distributions_' analyses{iA}]));
     end
-    plot_pooled_AUC(P, analyses, titles, v1_windows, fullfile(out_dir, 'MUA_equalised_pooled_AUC'));
     fprintf('Saved to %s\n', out_dir);
 end
 
@@ -213,49 +200,6 @@ function f = dominant_feature(F, hemi, n)
     f(hemi == 2) = F(hemi == 2, 2);
 end
 
-function [draws_a, draws_b] = match_events(ia, ib, x1, x2, nQ, nDraw, seed)
-    % Equalise the joint (x1, x2) distribution of event sets ia and ib by
-    % subsampling within nQ x nQ quantile bins (edges from both sets pooled)
-    draws_a = repmat({zeros(0, 1)}, nDraw, 1); draws_b = draws_a;
-    if isempty(ia) || isempty(ib)
-        return
-    end
-    pooled = [ia; ib];
-    ca = joint_bin(x1, x2, pooled, ia, nQ);
-    cb = joint_bin(x1, x2, pooled, ib, nQ);
-    cells = unique([ca; cb])';
-    for d = 1:nDraw
-        s = RandStream('philox4x32_10', 'Seed', seed * 100000 + d);
-        sa = []; sb = [];
-        for c = cells
-            ea = ia(ca == c); eb = ib(cb == c);
-            k = min(numel(ea), numel(eb));
-            if k > 0
-                sa = [sa; ea(randperm(s, numel(ea), k))]; %#ok<AGROW>
-                sb = [sb; eb(randperm(s, numel(eb), k))]; %#ok<AGROW>
-            end
-        end
-        draws_a{d} = sa; draws_b{d} = sb;
-    end
-end
-
-function cid = joint_bin(x1, x2, pooled, idx, nQ)
-    q1 = quantile_bin(x1(pooled), x1(idx), nQ);
-    q2 = quantile_bin(x2(pooled), x2(idx), nQ);
-    cid = (q1 - 1) * nQ + q2;
-end
-
-function q = quantile_bin(ref, x, nQ)
-    edges = unique(prctile(ref, linspace(0, 100, nQ + 1)));
-    edges(1) = -Inf; edges(end) = Inf;
-    q = discretize(x, edges);
-end
-
-function a = auc_point(sel, meas)
-    r = reactivation_coherence_auc(sel, meas, 0);
-    a = r.AUC_mean;
-end
-
 function [Y, labels] = session_matrix(T, window, analysis, var)
     Ts = T(T.V1_window == window & T.analysis == analysis, :);
     labels = cellstr(unique(Ts.condition, 'stable'))';
@@ -279,7 +223,14 @@ function row = paired_test(analysis, window, meas, labels, a, b)
         'mean_A', 'mean_B', 'mean_diff', 'p_signrank_two', 'p_signrank_one'});
 end
 
-function plot_session_coherence(T, S, analysis, title_str, v1_windows, save_path)
+function save_figure(fig, save_path)
+    savefig(fig, [save_path '.fig']);
+    exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
+    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
+    print(fig, [save_path '.svg'], '-dsvg', '-vector');
+end
+
+function plot_session_coherence(T, S, analysis, title_str, v1_windows, match_label, save_path)
     % Rows: V1 window; columns: unmatched vs MUA-matched; lines = sessions
     cond_colors = {[0.6 0.6 0.6], [231, 41, 138] / 256};
     meas = ["unmatched", "matched"];
@@ -309,23 +260,20 @@ function plot_session_coherence(T, S, analysis, title_str, v1_windows, save_path
         end
     end
     linkaxes(findobj(fig, 'Type', 'axes'), 'y');
-    sgtitle([title_str ': unmatched vs MUA-equalised events'], 'FontSize', 12);
-    savefig(fig, [save_path '.fig']);
-    exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
-    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
-    print(fig, [save_path '.svg'], '-dsvg', '-vector');
+    sgtitle({[title_str ': unmatched vs MUA-equalised events'], ['(' match_label ')']}, 'FontSize', 12);
+    save_figure(fig, save_path);
 end
 
-function plot_MUA_distributions(M, analysis, title_str, v1_windows, save_path)
-    % HC and dominant V1 MUA, condition A vs B, before and after matching (draw 1)
+function plot_MUA_distributions(M, analysis, title_str, v1_windows, var_labels, save_path)
+    % Each matched MUA measure, condition A vs B, before and after matching (draw 1)
     cond_colors = {[0.5 0.5 0.5], [231, 41, 138] / 256};
-    fig = figure('Name', [title_str ' MUA'], 'Position', [100 100 1100 360 * numel(v1_windows)]);
-    tiledlayout(numel(v1_windows), 4, 'TileSpacing', 'compact');
-    vars = {'HC_MUA', 'V1_MUA'}; var_labels = {'HC MUA 0-0.1 s (z)', 'Dominant V1 MUA (z)'};
+    nV = numel(var_labels);
+    fig = figure('Name', [title_str ' MUA'], 'Position', [100 100 550 * nV 360 * numel(v1_windows)]);
+    tiledlayout(numel(v1_windows), 2 * nV, 'TileSpacing', 'compact');
     for w = 1:numel(v1_windows)
         D = M.(sprintf('%s_%s', analysis, v1_windows(w).name));
-        for v = 1:2
-            x = D.(vars{v});
+        for j = 1:nV
+            x = D.X(:, j);
             edges = linspace(prctile(x([D.A; D.B]), 0.5), prctile(x([D.A; D.B]), 99.5), 50);
             sets = {{D.A, D.B}, {D.A_m, D.B_m}}; set_names = {'unmatched', 'matched'};
             for k = 1:2
@@ -337,49 +285,12 @@ function plot_MUA_distributions(M, analysis, title_str, v1_windows, save_path)
                 [~, pks] = kstest2(x(sets{k}{1}), x(sets{k}{2}));
                 title({sprintf('%s, %s', v1_windows(w).label, set_names{k}), sprintf('n = %d / %d, KS p = %.2g', ...
                     numel(sets{k}{1}), numel(sets{k}{2}), pks)}, 'FontSize', 9, 'FontWeight', 'normal');
-                xlabel(var_labels{v}); ylabel('Probability');
-                if w == 1 && v == 1 && k == 1, legend(D.labels, 'Box', 'off'); end
+                xlabel(var_labels{j}); ylabel('Probability');
+                if w == 1 && j == 1 && k == 1, legend(D.labels, 'Box', 'off'); end
                 set(ax, 'TickDir', 'out', 'Box', 'off', 'Color', 'none', 'FontSize', 10);
             end
         end
     end
     sgtitle([title_str ': MUA before and after equalisation (pooled sessions, draw 1)'], 'FontSize', 12);
-    savefig(fig, [save_path '.fig']);
-    exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
-    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
-    print(fig, [save_path '.svg'], '-dsvg', '-vector');
-end
-
-function plot_pooled_AUC(P, analyses, titles, v1_windows, save_path)
-    % Pooled V1->HPC coherence AUC: unmatched (diamond) and matched draws (violin-like scatter)
-    cond_colors = {[0.5 0.5 0.5], [231, 41, 138] / 256};
-    fig = figure('Name', 'Pooled AUC MUA-equalised', 'Position', [100 100 360 * numel(analyses) 340 * numel(v1_windows)]);
-    tiledlayout(numel(v1_windows), numel(analyses), 'TileSpacing', 'compact');
-    for w = 1:numel(v1_windows)
-        for iA = 1:numel(analyses)
-            ax = nexttile; hold on;
-            Pr = P(P.V1_window == v1_windows(w).name & P.analysis == analyses{iA}, :);
-            vals = {Pr.AUC_A_matched{1}, Pr.AUC_B_matched{1}};
-            un = [Pr.AUC_A_unmatched Pr.AUC_B_unmatched];
-            for c = 1:2
-                swarm = c + 0.15 * (rand(size(vals{c})) - 0.5);
-                scatter(swarm, vals{c}, 6, cond_colors{c}, 'filled', 'MarkerFaceAlpha', 0.3);
-                plot(c + [-0.2 0.2], mean(vals{c}) * [1 1], 'k-', 'LineWidth', 2);
-                scatter(c + 0.3, un(c), 50, cond_colors{c}, 'd', 'filled', 'MarkerEdgeColor', 'k');
-            end
-            yline(0, 'k--');
-            set(ax, 'XTick', [1 2], 'XTickLabel', {Pr.cond_A, Pr.cond_B}, 'TickDir', 'out', 'Box', 'off', ...
-                'Color', 'none', 'FontSize', 10);
-            xlim([0.5 2.6]);
-            ylabel('V1\rightarrowHPC coherence AUC');
-            title({sprintf('%s, %s', titles{iA}, v1_windows(w).label), ...
-                sprintf('matched diff %.3f [%.3f %.3f], P(diff<=0) = %.3f', Pr.AUC_diff_matched_mean, ...
-                Pr.AUC_diff_CI_lo, Pr.AUC_diff_CI_hi, Pr.p_draw_diff_le0)}, 'FontSize', 8, 'FontWeight', 'normal');
-        end
-    end
-    sgtitle('Pooled AUC: matched draws (dots, bar = mean) vs unmatched (diamond)', 'FontSize', 11);
-    savefig(fig, [save_path '.fig']);
-    exportgraphics(fig, [save_path '.png'], 'Resolution', 300);
-    exportgraphics(fig, [save_path '.pdf'], 'ContentType', 'vector');
-    print(fig, [save_path '.svg'], '-dsvg', '-vector');
+    save_figure(fig, save_path);
 end

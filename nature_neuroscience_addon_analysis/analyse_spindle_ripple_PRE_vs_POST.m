@@ -8,7 +8,7 @@
 % each recording, so PRE vs POST compares power relative to that sleep's own mean);
 % POST uses spindle_amplitude_peak (untruncated, see below).
 % Dominant hemisphere from the V1 bias sign in each V1 window, as in
-% MUA_equalised_event_control (V1 > 0 -> hemisphere 2 / V1 R, V1 < 0 -> hemisphere 1).
+% MUA_equalised_geomean (V1 > 0 -> hemisphere 2 / V1 R, V1 < 0 -> hemisphere 1).
 % Per session and sleep, for each V1 window (pre -0.2-0 s, post 0-0.2 s):
 %   spindle_dom          : mean dominant-hemisphere spindle z
 %   spindle_nondom       : mean non-dominant-hemisphere spindle z

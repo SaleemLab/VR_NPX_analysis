@@ -17,31 +17,36 @@
 %   cells < 10 Hz; windows without spikes = log odds 0); 'POST_Bayes_raw' /
 %   'POST_Bayes_raw_rate_lt10' use the raw instead of the z-scored Bayesian log odds.
 %   'awake': non-SWS POST ripples (make_unique_awake_ripple_data), all 22 sessions;
-%   spindle percentile is within session among awake ripples (0-100). Adds a
-%   temporal AUC of the ripple power quartiles.
+%   spindle percentile is within session among awake ripples (0-100).
 %   Output folder = sleep.
 % equal_n: if true, each session is randomly subsampled (fixed seed) to
 %   min(PRE, POST) events of that session, so PRE and POST have the same number
 %   of events per session. Ripple power quartiles and spindle percentiles are
 %   assigned on all events of the session before subsampling. Output folder =
 %   [sleep '_equal_n'].
-% only_spindle: if true, run only the spindle sections (static and temporal)
-%   and leave the other outputs in the folder unchanged (default false).
-function reactivation_AUC_coherence_PRE(sleep, equal_n, only_spindle)
+% only: run only some sections and leave the other outputs in the folder
+%   unchanged: 'spindle' (or true) = spindle sections (static and temporal),
+%   'ripple_temporal' = temporal AUC of the ripple power quartiles
+%   (default '' / false: all sections).
+function reactivation_AUC_coherence_PRE(sleep, equal_n, only)
     if nargin < 1
         sleep = 'PRE';
     end
     if nargin < 2
         equal_n = false;
     end
-    if nargin < 3
-        only_spindle = false;
+    if nargin < 3 || isequal(only, false)
+        only = '';
+    elseif isequal(only, true)
+        only = 'spindle';
     end
     is_awake = strcmp(sleep, 'awake');
-    if is_awake && (equal_n || only_spindle)
-        error('equal_n and only_spindle are not available for awake ripples');
+    if is_awake && (equal_n || ~isempty(only))
+        error('equal_n and only are not available for awake ripples');
     end
-    run_all = ~only_spindle;
+    run_all = isempty(only);
+    run_spindle = run_all || strcmp(only, 'spindle');
+    run_ripple_temporal = run_all || strcmp(only, 'ripple_temporal');
     tag = sleep;
     if equal_n
         tag = [sleep '_equal_n'];
@@ -164,6 +169,8 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n, only_spindle)
 
     %% SECTION 1: ALL RIPPLES (HPC->V1)
     all_set = struct('label', 'All Ripples', 'mask', true(1, nEv), 'c1', [], 'c2', []);
+    q_labels = {'Q1 (Low)', 'Q2', 'Q3', 'Q4 (High)'};
+    rp_set = struct('label', q_labels, 'mask', q_masks, 'c1', [], 'c2', []);
     if run_all
         fprintf('Processing All Ripples...\n');
         run_condition_set(tag, all_set, 'HPC->V1', main_color, sprintf('All %s Ripples (HPC->V1)', tag), 'AUC_all_events', ...
@@ -171,17 +178,17 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n, only_spindle)
 
         %% SECTION 2: RIPPLE POWER QUARTILES, within session (HPC->V1)
         fprintf('Processing Ripple Percentiles...\n');
-        q_labels = {'Q1 (Low)', 'Q2', 'Q3', 'Q4 (High)'};
-        rp_set = struct('label', q_labels, 'mask', q_masks, 'c1', [], 'c2', []);
         run_condition_set(tag, rp_set, 'HPC->V1', cool(4), 'Ripple Power Percentiles, within session (HPC->V1)', 'AUC_ripple_percentile', ...
             out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
     end
 
     %% SECTION 3: SPINDLE PERCENTILE QUARTILES, hemisphere-matched (V1->HPC)
-    fprintf('Processing Spindle Percentiles...\n');
     sp_set = add_all_mask(hemisphere_conditions('spindle', info), nEv);
-    run_condition_set(tag, sp_set, 'V1->HPC', cool(4), 'Spindle Percentiles, within session (V1->HPC)', 'AUC_spindle_percentile', ...
-        out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    if run_spindle
+        fprintf('Processing Spindle Percentiles...\n');
+        run_condition_set(tag, sp_set, 'V1->HPC', cool(4), 'Spindle Percentiles, within session (V1->HPC)', 'AUC_spindle_percentile', ...
+            out_dir, mean_HPC, track_bias_V1, v1_windows, nBoot);
+    end
 
     so_set = add_all_mask(hemisphere_conditions('SO', info), nEv);
     sob_set = add_all_mask(hemisphere_conditions('SO_trough_bilateral', info), nEv);
@@ -212,14 +219,16 @@ function reactivation_AUC_coherence_PRE(sleep, equal_n, only_spindle)
         run_temporal_set(tag, all_set, 'HPC->V1', 'centred', main_color, sprintf('All %s Ripples (HPC->V1)', tag), ...
             ['KDE_temporal_AUC_all_ripples_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
     end
-    if is_awake
+    if run_ripple_temporal
         fprintf('Processing Temporal AUC (ripple power)...\n');
         run_temporal_set(tag, rp_set, 'HPC->V1', 'centred', cool(4), 'Ripple Power Percentiles (HPC->V1)', ...
             ['KDE_temporal_AUC_ripple_percentile_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
     end
-    fprintf('Processing Temporal AUC (spindle)...\n');
-    run_temporal_set(tag, sp_set, 'V1->HPC', 'centred', cool(4), 'Spindle Percentiles (V1->HPC)', ...
-        ['KDE_temporal_AUC_spindle_percentile_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    if run_spindle
+        fprintf('Processing Temporal AUC (spindle)...\n');
+        run_temporal_set(tag, sp_set, 'V1->HPC', 'centred', cool(4), 'Spindle Percentiles (V1->HPC)', ...
+            ['KDE_temporal_AUC_spindle_percentile_' tag], out_dir, mean_HPC, track_bias_V1, tp, nBoot);
+    end
     if run_all
         fprintf('Processing Temporal AUC (SO)...\n');
         run_temporal_set(tag, so_set, 'V1->HPC', 'centred', [0.2 0.6 0.8; 0.8 0.2 0.2], 'SO Phase (V1->HPC)', ...

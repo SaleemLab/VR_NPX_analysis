@@ -35,6 +35,7 @@ if run_analysis
     reactivation_AUC_coherence_PRE('POST_rate_lt10');
 end
 plot_AUC_low_vs_high('POST_rate_lt10');
+plot_temporal_AUC_low_vs_high('POST_rate_lt10');
 
 %% 4. Per-animal bootstrapped temporal AUC with the < 10 Hz decoders -> POST_rate_lt10_bootAUC_per_animal
 % (summary_temporal and summary_temporal_diff; as main_02 section 7 for the original decoder)

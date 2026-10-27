@@ -75,11 +75,13 @@ for iA = 1:numel(analyses)
     sgtitle(fig, sprintf('%s: (%s) POST vs PRE (one-sided)', strrep(analyses(iA), '_', ' '), delta_label), 'FontSize', 12);
     savefig(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.fig']));
     exportgraphics(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.png']), 'Resolution', 300);
+    exportgraphics(fig, fullfile(out_dir, [prefix char(analyses(iA)) '.pdf']), 'ContentType', 'vector');
     linkaxes(findobj(fig_m, 'Type', 'axes'), 'y');
     sgtitle(fig_m, sprintf('%s: (%s) POST vs PRE, matched sessions (one-sided)', strrep(analyses(iA), '_', ' '), delta_label), ...
         'FontSize', 12);
     savefig(fig_m, fullfile(out_dir, [prefix 'matched_' char(analyses(iA)) '.fig']));
     exportgraphics(fig_m, fullfile(out_dir, [prefix 'matched_' char(analyses(iA)) '.png']), 'Resolution', 300);
+    exportgraphics(fig_m, fullfile(out_dir, [prefix 'matched_' char(analyses(iA)) '.pdf']), 'ContentType', 'vector');
 end
 disp(S);
 writetable(S, fullfile(out_dir, [prefix 'stats.csv']));
